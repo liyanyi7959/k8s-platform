@@ -1,14 +1,22 @@
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+
+# ------------------------------
+# Go binaries and build outputs
+# ------------------------------
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+*.a
 
-# Test binary, built with `go test -c`
+# Common local build folders
+bin/
+dist/
+tmp/
+
+# Test binary, built with go test -c
 *.test
 
 # Code coverage profiles and other test artifacts
@@ -17,16 +25,53 @@ coverage.*
 *.coverprofile
 profile.cov
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
 # Go workspace file
 go.work
 go.work.sum
 
-# env file
-.env
+# ------------------------------
+# Frontend (Node.js / Vite)
+# ------------------------------
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
 
-# Editor/IDE
-# .idea/
-# .vscode/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ------------------------------
+# Environment and local config
+# ------------------------------
+.env
+.env.*
+!.env.example
+backend/config.yaml
+backend/config.local.yaml
+!backend/config.example.yaml
+
+# Local runtime data / sqlite / logs
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# ------------------------------
+# Editor / IDE
+# ------------------------------
+.idea/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# ------------------------------
+# OS generated files
+# ------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode
