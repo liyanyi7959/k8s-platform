@@ -32,7 +32,7 @@ func TestJWT_RoundTrip(t *testing.T) {
 		UserID:   42,
 		Username: "admin",
 		Roles:    []string{"admin", "viewer"},
-		Perms:    []string{"sys:user_admin", "server:read"},
+		Perms:    []string{"cluster:read", "k8s:read"},
 	}
 
 	tokenStr, err := m.IssueToken(params, 1*time.Hour)
@@ -57,8 +57,8 @@ func TestJWT_RoundTrip(t *testing.T) {
 	if len(claims.Roles) != 2 || claims.Roles[0] != "admin" {
 		t.Errorf("Roles = %v, want [admin viewer]", claims.Roles)
 	}
-	if len(claims.Perms) != 2 || claims.Perms[1] != "server:read" {
-		t.Errorf("Perms = %v, want [sys:user_admin server:read]", claims.Perms)
+	if len(claims.Perms) != 2 || claims.Perms[1] != "k8s:read" {
+		t.Errorf("Perms = %v, want [cluster:read k8s:read]", claims.Perms)
 	}
 }
 

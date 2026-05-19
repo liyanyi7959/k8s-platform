@@ -76,15 +76,6 @@ func TestValidate_MissingAdmin(t *testing.T) {
 	}
 }
 
-func TestValidate_OSSEnabled_MissingFields(t *testing.T) {
-	cfg := Default()
-	cfg.DB.MySQLDSN = "dsn"
-	cfg.OSS.Enabled = true
-	if err := cfg.Validate(); err == nil {
-		t.Error("Validate() should fail when OSS enabled without keys")
-	}
-}
-
 func TestValidate_RedisEnabled_MissingAddr(t *testing.T) {
 	cfg := Default()
 	cfg.DB.MySQLDSN = "dsn"

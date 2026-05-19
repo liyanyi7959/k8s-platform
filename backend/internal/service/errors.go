@@ -29,13 +29,6 @@ var (
 	ErrK8sTLS          = errors.New("k8s tls error")
 )
 
-// ─── SSH 哨兵错误 ───────────────────────────────────────────
-var (
-	ErrSSHNetwork = errors.New("ssh network")
-	ErrSSHTimeout = errors.New("ssh timeout")
-	ErrSSHAuth    = errors.New("ssh auth failed")
-)
-
 // ─── 任务哨兵错误 ───────────────────────────────────────────
 var (
 	ErrTaskNotFound     = errors.New("not found")

@@ -1,7 +1,7 @@
 // config 负责“应用配置”的定义、加载与校验。
 //
 // 设计目标：
-// - 配置集中化：端口、DB、JWT、迁移开关、OSS 等统一从 Config 注入
+// - 配置集中化：端口、DB、JWT、迁移开关、Redis 等统一从 Config 注入
 // - 兼容多环境：优先读取 YAML 文件，再用环境变量覆盖部分字段
 // - 失败尽早：启动时进行必填项校验，避免运行到一半才暴露配置问题
 package config
@@ -26,7 +26,6 @@ type Config struct {
 	JWT     JWTConfig     `yaml:"jwt"`
 	Auth    AuthConfig    `yaml:"auth"`
 	Crypto  CryptoConfig  `yaml:"crypto"`
-	OSS     OSSConfig     `yaml:"oss"`
 	Redis   RedisConfig   `yaml:"redis"`
 	Log     LogConfig     `yaml:"log"`
 	K8s     K8sConfig     `yaml:"k8s"`
@@ -65,25 +64,11 @@ type AuthConfig struct {
 	AdminPassword string `yaml:"admin_password"`
 }
 
-// OSSConfig 描述对象存储（阿里云 OSS）的接入参数。
-//
-// - Enabled=false 时，相关功能（例如知识库图片上传）会回退到本地 uploads 目录。
-// - PublicBaseURL 为空时，服务会根据 bucket+region 推导一个默认公网访问域名。
 // CryptoConfig 描述对称加密的 master key 配置。
-// 用于加密存储数据库中的敏感字段（kubeconfig、SSH 密码/私钥等）。
+// 用于加密存储数据库中的敏感字段（kubeconfig 等）。
 // 与 JWT secret 独立，避免密钥复用带来的安全风险。
 type CryptoConfig struct {
 	MasterKey string `yaml:"master_key"`
-}
-
-type OSSConfig struct {
-	Enabled         bool   `yaml:"enabled"`
-	AccessKeyID     string `yaml:"access_key_id"`
-	AccessKeySecret string `yaml:"access_key_secret"`
-	Bucket          string `yaml:"bucket"`
-	Region          string `yaml:"region"`
-	StoragePath     string `yaml:"storage_path"`
-	PublicBaseURL   string `yaml:"public_base_url"`
 }
 
 type LogConfig struct {
@@ -132,11 +117,6 @@ func Default() Config {
 		},
 		Crypto: CryptoConfig{
 			MasterKey: "", // 空值时回退使用 JWT secret（兼容旧配置），建议生产环境独立配置
-		},
-		OSS: OSSConfig{
-			Enabled:       false,
-			StoragePath:   "images/",
-			PublicBaseURL: "",
 		},
 		Redis: RedisConfig{
 			Enabled:    false,
@@ -211,17 +191,6 @@ func (c Config) Validate() error {
 	}
 	if strings.TrimSpace(c.Crypto.MasterKey) == "" {
 		_, _ = fmt.Fprintln(os.Stderr, "[WARN] crypto.master_key is not set, falling back to jwt.secret for encryption; consider setting a dedicated key for production")
-	}
-	if c.OSS.Enabled {
-		if c.OSS.AccessKeyID == "" || c.OSS.AccessKeySecret == "" {
-			return errors.New("oss.access_key_id/oss.access_key_secret is required")
-		}
-		if c.OSS.Bucket == "" {
-			return errors.New("oss.bucket is required")
-		}
-		if c.OSS.Region == "" {
-			return errors.New("oss.region is required")
-		}
 	}
 	if c.Redis.Enabled {
 		if strings.TrimSpace(c.Redis.Addr) == "" {
@@ -327,30 +296,6 @@ func applyEnvOverrides(cfg *Config) {
 
 	if v := os.Getenv("CRYPTO_MASTER_KEY"); v != "" {
 		cfg.Crypto.MasterKey = v
-	}
-
-	if v := os.Getenv("OSS_ENABLED"); v != "" {
-		if b, err := strconv.ParseBool(v); err == nil {
-			cfg.OSS.Enabled = b
-		}
-	}
-	if v := os.Getenv("OSS_ACCESS_KEY_ID"); v != "" {
-		cfg.OSS.AccessKeyID = v
-	}
-	if v := os.Getenv("OSS_ACCESS_KEY_SECRET"); v != "" {
-		cfg.OSS.AccessKeySecret = v
-	}
-	if v := os.Getenv("OSS_BUCKET"); v != "" {
-		cfg.OSS.Bucket = v
-	}
-	if v := os.Getenv("OSS_REGION"); v != "" {
-		cfg.OSS.Region = v
-	}
-	if v := os.Getenv("OSS_STORAGE_PATH"); v != "" {
-		cfg.OSS.StoragePath = v
-	}
-	if v := os.Getenv("OSS_PUBLIC_BASE_URL"); v != "" {
-		cfg.OSS.PublicBaseURL = v
 	}
 
 	if v := os.Getenv("REDIS_ENABLED"); v != "" {

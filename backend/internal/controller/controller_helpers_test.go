@@ -165,37 +165,6 @@ func TestWriteServiceErr_K8sWithUserMessage(t *testing.T) {
 }
 
 // ──────────────────────────────────────────────────────────
-//  WriteServiceErr — SSH 额外映射
-// ──────────────────────────────────────────────────────────
-
-func TestWriteServiceErr_SSHAuth(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-
-	WriteServiceErr(c, service.ErrSSHAuth, SSHErrMappings...)
-
-	body := jsonBody(w)
-	if body.Code != 5000 {
-		t.Errorf("code = %d, want 5000", body.Code)
-	}
-	if body.Message != "SSH 凭据不正确" {
-		t.Errorf("message = %q, want %q", body.Message, "SSH 凭据不正确")
-	}
-}
-
-func TestWriteServiceErr_SSHTimeout(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-
-	WriteServiceErr(c, service.ErrSSHTimeout, SSHErrMappings...)
-
-	body := jsonBody(w)
-	if body.Code != 5000 {
-		t.Errorf("code = %d, want 5000", body.Code)
-	}
-}
-
-// ──────────────────────────────────────────────────────────
 //  parseInt / parseInt64 / parseInt64Ptr
 // ──────────────────────────────────────────────────────────
 

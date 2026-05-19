@@ -21,7 +21,7 @@ type Claims struct {
 	// Roles 为用户拥有的角色名称列表（例如 ["admin"]）。
 	// 说明：当前后端在签发 token 时把角色快照写入 token，便于无 DB 访问的权限判断。
 	Roles []string `json:"roles,omitempty"`
-	// Perms 为用户拥有的权限点列表（例如 ["sys:user_admin","server:read"]）。
+	// Perms 为用户拥有的权限点列表（例如 ["cluster:read","k8s:read"]）。
 	// 说明：同样是“快照”设计；当后台修改角色权限后，旧 token 直到过期前可能仍携带旧权限点。
 	Perms []string `json:"perms,omitempty"`
 	jwt.RegisteredClaims

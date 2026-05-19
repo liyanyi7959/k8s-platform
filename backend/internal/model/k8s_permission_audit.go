@@ -65,8 +65,6 @@ type K8sPermissionAuditFinding struct {
 	WorkloadKind                     string          `gorm:"column:workload_kind;type:varchar(64);not null;default:''"`
 	WorkloadName                     string          `gorm:"column:workload_name;type:varchar(160);not null;default:''"`
 	ServiceAccountName               string          `gorm:"column:service_account_name;type:varchar(160);not null;default:''"`
-	AppReleaseID                     *uint64         `gorm:"column:app_release_id;index:idx_k8s_permission_audit_findings_app_release_id"`
-	AppReleaseName                   string          `gorm:"column:app_release_name;type:varchar(160);not null;default:''"`
 	Summary                          string          `gorm:"column:summary;type:varchar(512);not null;default:''"`
 	ReasonCodes                      JSONStringSlice `gorm:"column:reason_codes_json;type:json"`
 	DetailJSON                       JSONMap         `gorm:"column:detail_json;type:json"`

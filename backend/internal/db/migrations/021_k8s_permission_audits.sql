@@ -42,8 +42,6 @@ CREATE TABLE IF NOT EXISTS k8s_permission_audit_findings (
   workload_kind VARCHAR(64) NOT NULL DEFAULT '',
   workload_name VARCHAR(160) NOT NULL DEFAULT '',
   service_account_name VARCHAR(160) NOT NULL DEFAULT '',
-  app_release_id BIGINT UNSIGNED NULL,
-  app_release_name VARCHAR(160) NOT NULL DEFAULT '',
   summary VARCHAR(512) NOT NULL DEFAULT '',
   reason_codes_json JSON NULL,
   detail_json JSON NULL,
@@ -54,6 +52,5 @@ CREATE TABLE IF NOT EXISTS k8s_permission_audit_findings (
   KEY idx_k8s_permission_audit_findings_risk_level (risk_level),
   KEY idx_k8s_permission_audit_findings_ownership (ownership_class),
   KEY idx_k8s_permission_audit_findings_namespace (namespace),
-  KEY idx_k8s_permission_audit_findings_kind (kind),
-  KEY idx_k8s_permission_audit_findings_app_release_id (app_release_id)
+  KEY idx_k8s_permission_audit_findings_kind (kind)
 );

@@ -10,7 +10,6 @@ export type PermissionAuditPrivilegeClass = 'cluster_scoped' | 'runtime_high' | 
 export interface PermissionAuditCreateRequest {
   mode?: 'full'
   include_runtime_rbac?: boolean
-  include_platform_mapping?: boolean
   include_ownership_detection?: boolean
   namespaces?: string[]
   label_selector?: string
@@ -68,7 +67,7 @@ export interface PermissionAuditDetail {
 
 export interface PermissionAuditFindingItem {
   id: number
-  finding_type: 'resource' | 'workload' | 'app_release' | 'error'
+  finding_type: 'resource' | 'workload' | 'error'
   risk_level: PermissionAuditRiskLevel
   ownership_class: PermissionAuditOwnershipClass
   privilege_class: PermissionAuditPrivilegeClass

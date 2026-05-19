@@ -439,4 +439,3 @@ func registerWebSocketRoutes(authed *gin.RouterGroup, k8sCtl *controller.K8sCont
 		ws.GET("/pod-exec", middleware.RequirePerm("k8s:exec"), k8sCtl.PodExecWS)
 	}
 }
-

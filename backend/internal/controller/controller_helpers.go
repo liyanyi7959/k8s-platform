@@ -86,13 +86,6 @@ var K8sErrMappings = []errMapping{
 	{service.ErrK8s, 5000, "集群访问失败"},
 }
 
-// SSHErrMappings 为 SSH 领域的错误映射集合，由 ServerController 使用。
-var SSHErrMappings = []errMapping{
-	{service.ErrSSHTimeout, 5000, "SSH 连接超时"},
-	{service.ErrSSHAuth, 5000, "SSH 凭据不正确"},
-	{service.ErrSSHNetwork, 5000, "SSH 网络连接失败"},
-}
-
 // ──────────────────────────────────────────────────────────
 //  通用参数解析
 // ──────────────────────────────────────────────────────────

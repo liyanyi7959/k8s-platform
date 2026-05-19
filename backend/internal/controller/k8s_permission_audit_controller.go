@@ -21,7 +21,6 @@ func NewK8sPermissionAuditController(svc *service.K8sPermissionAuditService) *K8
 type createPermissionAuditReq struct {
 	Mode                      string   `json:"mode"`
 	IncludeRuntimeRBAC        bool     `json:"include_runtime_rbac"`
-	IncludePlatformMapping    bool     `json:"include_platform_mapping"`
 	IncludeOwnershipDetection bool     `json:"include_ownership_detection"`
 	Namespaces                []string `json:"namespaces"`
 	LabelSelector             string   `json:"label_selector"`
@@ -60,7 +59,6 @@ func (ctl *K8sPermissionAuditController) CreateManaged(c *gin.Context) {
 	data, err := ctl.svc.CreateManagedAudit(c.Request.Context(), clusterID, service.PermissionAuditCreateRequest{
 		Mode:                      req.Mode,
 		IncludeRuntimeRBAC:        req.IncludeRuntimeRBAC,
-		IncludePlatformMapping:    req.IncludePlatformMapping,
 		IncludeOwnershipDetection: req.IncludeOwnershipDetection,
 		Namespaces:                req.Namespaces,
 		LabelSelector:             req.LabelSelector,
@@ -96,7 +94,6 @@ func (ctl *K8sPermissionAuditController) CreateAdhoc(c *gin.Context) {
 		PermissionAuditCreateRequest: service.PermissionAuditCreateRequest{
 			Mode:                      req.Mode,
 			IncludeRuntimeRBAC:        req.IncludeRuntimeRBAC,
-			IncludePlatformMapping:    req.IncludePlatformMapping,
 			IncludeOwnershipDetection: req.IncludeOwnershipDetection,
 			Namespaces:                req.Namespaces,
 			LabelSelector:             req.LabelSelector,

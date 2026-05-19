@@ -177,10 +177,6 @@
         <el-form-item label="标签选择器">
           <el-input v-model="createForm.label_selector" placeholder="例如 app.kubernetes.io/instance=my-release" clearable />
         </el-form-item>
-        <el-form-item label="平台映射">
-          <el-switch v-model="createForm.include_platform_mapping" />
-          <span class="form-tip">尝试将结果映射到平台纳管工作负载记录</span>
-        </el-form-item>
         <el-form-item label="运行期 RBAC">
           <el-switch v-model="createForm.include_runtime_rbac" />
           <span class="form-tip">分析 ServiceAccount 绑定链、RBAC 写权限与高风险运行时能力</span>
@@ -232,10 +228,6 @@
         </el-form-item>
         <el-form-item label="标签选择器">
           <el-input v-model="adhocForm.label_selector" placeholder="例如 app=my-release" clearable />
-        </el-form-item>
-        <el-form-item label="平台映射">
-          <el-switch v-model="adhocForm.include_platform_mapping" />
-          <span class="form-tip">仅对已纳管集群效果更好，临时分析一般建议关闭</span>
         </el-form-item>
         <el-form-item label="运行期 RBAC">
           <el-switch v-model="adhocForm.include_runtime_rbac" />
@@ -305,7 +297,6 @@
               <el-select v-model="findingsQuery.finding_type" class="qb-select" size="default" clearable placeholder="类型">
                 <el-option label="工作负载" value="workload" />
                 <el-option label="资源" value="resource" />
-                <el-option label="平台映射" value="app_release" />
                 <el-option label="扫描错误" value="error" />
               </el-select>
               <el-select v-model="findingsQuery.risk_level" class="qb-select" size="default" clearable placeholder="风险等级">
@@ -576,7 +567,6 @@ const resourceAllowlistOptions = [
 const createForm = reactive<permissionAuditApi.PermissionAuditCreateRequest>({
   mode: 'full',
   include_runtime_rbac: true,
-  include_platform_mapping: true,
   include_ownership_detection: true,
   namespaces: [],
   label_selector: '',
@@ -589,7 +579,6 @@ const adhocForm = reactive<{ display_name: string; kubeconfig: string } & permis
   kubeconfig: '',
   mode: 'full',
   include_runtime_rbac: true,
-  include_platform_mapping: false,
   include_ownership_detection: true,
   namespaces: [],
   label_selector: '',
@@ -731,7 +720,6 @@ function onSortChange(payload: { prop?: string; order?: 'ascending' | 'descendin
 function openCreateDialog() {
   createForm.mode = 'full'
   createForm.include_runtime_rbac = true
-  createForm.include_platform_mapping = true
   createForm.include_ownership_detection = true
   createForm.namespaces = []
   createForm.label_selector = ''
@@ -744,7 +732,6 @@ function openAdhocDialog() {
   adhocForm.kubeconfig = ''
   adhocForm.mode = 'full'
   adhocForm.include_runtime_rbac = true
-  adhocForm.include_platform_mapping = false
   adhocForm.include_ownership_detection = true
   adhocForm.namespaces = []
   adhocForm.label_selector = ''
@@ -759,7 +746,6 @@ async function submitCreate() {
     const data = await permissionAuditApi.createClusterPermissionAudit(props.clusterId, {
       mode: 'full',
       include_runtime_rbac: createForm.include_runtime_rbac !== false,
-      include_platform_mapping: createForm.include_platform_mapping !== false,
       include_ownership_detection: createForm.include_ownership_detection !== false,
       namespaces: Array.isArray(createForm.namespaces) && createForm.namespaces.length > 0 ? createForm.namespaces : undefined,
       label_selector: createForm.label_selector?.trim() || undefined,
@@ -789,7 +775,6 @@ async function submitAdhoc() {
       kubeconfig: adhocForm.kubeconfig,
       mode: 'full',
       include_runtime_rbac: adhocForm.include_runtime_rbac !== false,
-      include_platform_mapping: adhocForm.include_platform_mapping === true,
       include_ownership_detection: adhocForm.include_ownership_detection !== false,
       namespaces: Array.isArray(adhocForm.namespaces) && adhocForm.namespaces.length > 0 ? adhocForm.namespaces : undefined,
       label_selector: adhocForm.label_selector?.trim() || undefined,

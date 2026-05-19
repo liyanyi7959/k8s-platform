@@ -73,13 +73,13 @@ func TestErrWithMessage_Normal(t *testing.T) {
 // ────────── UserMessage ──────────
 
 func TestUserMessage_WithServiceError(t *testing.T) {
-	err := ErrWithMessage(ErrSSHAuth, "密钥格式错误")
+	err := ErrWithMessage(ErrK8sUnauthorized, "kubeconfig 凭据无效")
 	msg, ok := UserMessage(err)
 	if !ok {
 		t.Fatal("UserMessage should return ok=true")
 	}
-	if msg != "密钥格式错误" {
-		t.Errorf("msg = %q, want %q", msg, "密钥格式错误")
+	if msg != "kubeconfig 凭据无效" {
+		t.Errorf("msg = %q, want %q", msg, "kubeconfig 凭据无效")
 	}
 }
 
@@ -104,7 +104,6 @@ func TestSentinels_Independent(t *testing.T) {
 	sentinels := []error{
 		ErrNotFound, ErrConflict, ErrInvalidParams, ErrCrypto,
 		ErrK8s, ErrK8sNetwork, ErrK8sTimeout, ErrK8sUnauthorized, ErrK8sForbidden, ErrK8sTLS,
-		ErrSSHNetwork, ErrSSHTimeout, ErrSSHAuth,
 		ErrTaskNotFound, ErrTaskCannotCancel,
 	}
 	for i := 0; i < len(sentinels); i++ {
