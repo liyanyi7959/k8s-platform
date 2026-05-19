@@ -31,7 +31,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	_ "k8s-platform-backend/docs"
 	"k8s-platform-backend/internal/auth"
 	"k8s-platform-backend/internal/config"
 	"k8s-platform-backend/internal/controller"
@@ -91,16 +90,13 @@ func main() {
 		zap.L().Fatal("ensure_builtin_rbac_failed", zap.Error(err))
 	}
 	authCtl := controller.NewAuthController(jwtMgr, rbacSvc, cfg.ParsedTokenTTL())
-	rbacCtl := controller.NewRbacController(rbacSvc)
 
 	r, err := router.New(router.Deps{
 		DB:             gdb,
 		JWTMgr:         jwtMgr,
 		AuthCtl:        authCtl,
-		RbacCtl:        rbacCtl,
 		RbacSvc:        rbacSvc,
 		EncryptionKey:  cfg.EncryptionKey(),
-		OSSCfg:         cfg.OSS,
 		CacheStore:     cacheStore,
 		CacheTTL:       cfg.ParsedRedisDefaultTTL(),
 		K8sInsecureTLS: cfg.K8s.InsecureSkipTLSVerify,

@@ -12,7 +12,6 @@ import (
 	"gorm.io/gorm"
 
 	"k8s-platform-backend/internal/auth"
-	"k8s-platform-backend/internal/config"
 	"k8s-platform-backend/internal/controller"
 	"k8s-platform-backend/internal/service"
 )
@@ -27,13 +26,11 @@ type Deps struct {
 	// ── 必需 ──
 	JWTMgr  *auth.Manager
 	AuthCtl *controller.AuthController
-	RbacCtl *controller.RbacController
 	RbacSvc *service.RbacService
 
 	// ── 可选：DB 存在时才注入 ──
 	DB             *gorm.DB
 	EncryptionKey  string
-	OSSCfg         config.OSSConfig
 	CacheStore     service.CacheStore
 	CacheTTL       time.Duration
 	K8sInsecureTLS bool

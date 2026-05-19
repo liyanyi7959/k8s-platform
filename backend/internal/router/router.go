@@ -11,38 +11,13 @@ package router
 
 import (
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"k8s-platform-backend/internal/controller"
 	"k8s-platform-backend/internal/middleware"
 	"k8s-platform-backend/internal/service"
 )
-
-func resolveUploadsDir() string {
-	if v := strings.TrimSpace(os.Getenv("UPLOADS_DIR")); v != "" {
-		return v
-	}
-	wd, err := os.Getwd()
-	if err != nil {
-		wd = "."
-	}
-	exe, err := os.Executable()
-	if err != nil {
-		return filepath.Join(wd, "uploads")
-	}
-	exeDir := filepath.Dir(exe)
-	tmp := filepath.Clean(os.TempDir())
-	if tmp != "" && strings.Contains(strings.ToLower(exeDir), strings.ToLower(tmp)) {
-		return filepath.Join(wd, "uploads")
-	}
-	return filepath.Join(exeDir, "uploads")
-}
 
 // New 组装路由。接收 Deps 依赖容器，消除长参数列表。
 func New(d Deps) (*gin.Engine, error) {
@@ -53,10 +28,6 @@ func New(d Deps) (*gin.Engine, error) {
 	r.Use(middleware.AccessLogger())
 	r.Use(middleware.RecoveryWithZap())
 	r.Use(middleware.CORS())
-
-	// ── 静态资源 & Swagger ──
-	r.Static("/uploads", resolveUploadsDir())
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.NewHandler()))
 
 	// ── 基础依赖（供当前仍在使用的 K8S 能力复用） ──
 	taskStore := service.NewTaskStore(d.DB)
@@ -116,7 +87,7 @@ func registerRoutes(
 	registerDashboardRoutes(authed, d, dashboardCtl)
 	registerPermissionAuditRoutes(authed, permissionAuditCtl)
 	registerK8sRoutes(authed, d, k8sCtl)
-	registerWebSocketRoutes(authed, k8sCtl, nil)
+	registerWebSocketRoutes(authed, k8sCtl)
 }
 
 func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sPermissionAuditController) {
@@ -461,265 +432,11 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 
 // ── WebSocket ──
 
-func registerWebSocketRoutes(authed *gin.RouterGroup, k8sCtl *controller.K8sController, terminalCtl *controller.ServerTerminalController) {
+func registerWebSocketRoutes(authed *gin.RouterGroup, k8sCtl *controller.K8sController) {
 	ws := authed.Group("/ws")
 	if k8sCtl != nil {
 		ws.GET("/pod-log", middleware.RequirePerm("k8s:read"), k8sCtl.PodLogWS)
 		ws.GET("/pod-exec", middleware.RequirePerm("k8s:exec"), k8sCtl.PodExecWS)
 	}
-	if terminalCtl != nil {
-		ws.GET("/ssh", middleware.RequirePerm("server:terminal"), terminalCtl.SSHWS)
-	}
 }
 
-// ── 服务器终端 ──
-func registerServerTerminalRoutes(authed *gin.RouterGroup, ctl *controller.ServerTerminalController) {
-	if ctl == nil {
-		return
-	}
-	authed.GET("/terminal/workspace", middleware.RequirePerm("server:terminal"), ctl.Workspace)
-	authed.GET("/terminal/favorites", middleware.RequirePerm("server:terminal"), ctl.ListFavorites)
-	authed.GET("/terminal/audits", middleware.RequirePerm("server:terminal"), ctl.ListAudits)
-	authed.GET("/terminal/sessions", middleware.RequirePerm("server:terminal"), ctl.ActiveSessions)
-	authed.DELETE("/terminal/sessions/:sessionId", middleware.RequirePerm("server:terminal"), ctl.CloseSession)
-	authed.POST("/servers/:id/terminal-favorite", middleware.RequirePerm("server:terminal"), ctl.AddFavorite)
-	authed.DELETE("/servers/:id/terminal-favorite", middleware.RequirePerm("server:terminal"), ctl.RemoveFavorite)
-	authed.POST("/servers/:id/terminal-ticket", middleware.RequirePerm("server:terminal"), ctl.IssueTicket)
-}
-
-// ── RBAC 管理 ──
-
-func registerRBACRoutes(authed *gin.RouterGroup, d Deps) {
-	if d.RbacCtl == nil {
-		return
-	}
-	admin := authed.Group("")
-	admin.Use(middleware.RequirePerm("sys:user_admin"))
-	admin.GET("/permissions", middleware.CacheJSON(d.CacheStore, d.CacheTTL), d.RbacCtl.ListPermissions)
-	admin.GET("/roles", middleware.CacheJSON(d.CacheStore, d.CacheTTL), d.RbacCtl.ListRoles)
-	admin.POST("/roles", d.RbacCtl.CreateRole)
-	admin.GET("/roles/:id/permissions", d.RbacCtl.GetRolePermissions)
-	admin.PUT("/roles/:id/permissions", d.RbacCtl.UpdateRolePermissions)
-	admin.GET("/users", middleware.CacheJSON(d.CacheStore, d.CacheTTL), d.RbacCtl.ListUsers)
-	admin.POST("/users", d.RbacCtl.CreateUser)
-	admin.PATCH("/users/:id", d.RbacCtl.PatchUser)
-	admin.POST("/users/:id/reset-password", d.RbacCtl.ResetUserPassword)
-}
-
-// ── 自动化作业 ──
-func registerAutomationJobRoutes(authed *gin.RouterGroup, ctl *controller.AutomationJobController) {
-	if ctl == nil {
-		return
-	}
-	jobs := authed.Group("/automation/jobs")
-	jobs.GET("", middleware.RequirePerm("automation:job_read"), ctl.List)
-	jobs.GET("/summary", middleware.RequirePerm("automation:job_read"), ctl.Summary)
-	jobs.GET("/:id", middleware.RequirePerm("automation:job_read"), ctl.Get)
-	jobs.POST("", middleware.RequirePerm("automation:job_write"), ctl.Create)
-	jobs.POST("/batch/run", middleware.RequirePerm("automation:job_run"), ctl.BatchRun)
-	jobs.PATCH("/batch/status", middleware.RequirePerm("automation:job_write"), ctl.BatchUpdateStatus)
-	jobs.DELETE("/batch", middleware.RequirePerm("automation:job_write"), ctl.BatchDelete)
-	jobs.PATCH("/:id", middleware.RequirePerm("automation:job_write"), ctl.Patch)
-	jobs.DELETE("/:id", middleware.RequirePerm("automation:job_write"), ctl.Delete)
-	jobs.POST("/:id/run", middleware.RequirePerm("automation:job_run"), ctl.Run)
-}
-
-// ── 凭据管理 ──
-
-func registerCredentialRoutes(authed *gin.RouterGroup, ctl *controller.CredentialController) {
-	if ctl == nil {
-		return
-	}
-	creds := authed.Group("/credentials")
-	creds.GET("", middleware.RequireAnyPerm("sys:credential_admin", "sys:credential_read"), ctl.List)
-	creds.POST("", middleware.RequireAnyPerm("sys:credential_admin", "sys:credential_create"), ctl.Create)
-	creds.GET("/:id", middleware.RequireAnyPerm("sys:credential_admin", "sys:credential_read"), ctl.Get)
-	creds.PATCH("/:id", middleware.RequireAnyPerm("sys:credential_admin", "sys:credential_update"), ctl.Patch)
-	creds.DELETE("/:id", middleware.RequireAnyPerm("sys:credential_admin", "sys:credential_delete"), ctl.Delete)
-	creds.GET("/:id/data", middleware.RequireAnyPerm("sys:credential_admin", "sys:credential_read"), ctl.GetData)
-}
-
-// ── Playbook 模板 ──
-
-func registerPlaybookRoutes(authed *gin.RouterGroup, ctl *controller.PlaybookTemplateController) {
-	if ctl == nil {
-		return
-	}
-	tpl := authed.Group("/automation/playbook-templates")
-	tpl.GET("", middleware.RequirePerm("server:read"), ctl.List)
-	tpl.GET("/:id", middleware.RequirePerm("server:read"), ctl.Get)
-	tpl.GET("/:id/versions", middleware.RequirePerm("server:read"), ctl.ListVersions)
-	tpl.POST("/:id/run", middleware.RequirePerm("server:exec"), ctl.Run)
-	tpl.POST("", middleware.RequirePerm("automation:template_admin"), ctl.Create)
-	tpl.PATCH("/:id", middleware.RequirePerm("automation:template_admin"), ctl.Patch)
-	tpl.DELETE("/:id", middleware.RequirePerm("automation:template_admin"), ctl.Delete)
-	tpl.POST("/:id/versions", middleware.RequirePerm("automation:template_admin"), ctl.CreateVersion)
-	tpl.POST("/:id/rollback", middleware.RequirePerm("automation:template_admin"), ctl.Rollback)
-	tpl.POST("/upload", middleware.RequirePerm("automation:template_admin"), ctl.UploadPlaybook)
-}
-
-func registerAutomationCatalogRoutes(authed *gin.RouterGroup, ctl *controller.AutomationCatalogController) {
-	if ctl == nil {
-		return
-	}
-	catalog := authed.Group("/automation/catalog-items")
-	catalog.GET("", middleware.RequirePerm("server:read"), ctl.List)
-	catalog.GET("/:id", middleware.RequirePerm("server:read"), ctl.Get)
-	catalog.POST("", middleware.RequirePerm("automation:template_admin"), ctl.Create)
-	catalog.PATCH("/:id", middleware.RequirePerm("automation:template_admin"), ctl.Patch)
-	catalog.DELETE("/:id", middleware.RequirePerm("automation:template_admin"), ctl.Delete)
-}
-
-// ── 服务器管理 ──
-
-func registerServerRoutes(authed *gin.RouterGroup, ctl *controller.ServerController) {
-	if ctl == nil {
-		return
-	}
-	servers := authed.Group("/servers")
-	servers.Use(middleware.RequirePerm("server:read"))
-	servers.GET("", ctl.List)
-	servers.GET("/:id", ctl.Get)
-	servers.POST("/:id/check-ssh", ctl.CheckSSH)
-	servers.POST("", middleware.RequirePerm("server:write"), ctl.Create)
-	servers.PATCH("/:id", middleware.RequirePerm("server:write"), ctl.Patch)
-	servers.DELETE("/:id", middleware.RequirePerm("server:write"), ctl.Delete)
-}
-
-// ── 服务器文件管理（SFTP）──
-
-func registerServerFileRoutes(authed *gin.RouterGroup, ctl *controller.ServerFileController) {
-	if ctl == nil {
-		return
-	}
-	files := authed.Group("/servers/:id/files")
-	files.Use(middleware.RequirePerm("server:read"))
-	files.GET("", ctl.ListDir)
-	files.GET("/read", ctl.ReadFile)
-	files.GET("/stat", ctl.Stat)
-	files.GET("/download", ctl.Download)
-	files.PUT("/write", middleware.RequirePerm("server:write"), ctl.WriteFile)
-	files.POST("/upload", middleware.RequirePerm("server:write"), ctl.Upload)
-	files.POST("/mkdir", middleware.RequirePerm("server:write"), ctl.Mkdir)
-	files.POST("/rename", middleware.RequirePerm("server:write"), ctl.Rename)
-	files.DELETE("", middleware.RequirePerm("server:write"), ctl.Remove)
-}
-
-// ── 服务器监控 ──
-
-func registerServerStatsRoutes(authed *gin.RouterGroup, ctl *controller.ServerStatsController) {
-	if ctl == nil {
-		return
-	}
-	authed.GET("/servers/:id/stats", middleware.RequirePerm("server:read"), ctl.GetStats)
-	authed.GET("/servers/:id/sysinfo", middleware.RequirePerm("server:read"), ctl.GetSysInfo)
-}
-
-// ── 服务器任务 ──
-
-func registerServerTaskRoutes(authed *gin.RouterGroup, ctl *controller.ServerTaskController) {
-	if ctl == nil {
-		return
-	}
-	st := authed.Group("/server-tasks")
-	st.GET("", middleware.RequirePerm("server:read"), ctl.List)
-	st.POST("", middleware.RequirePerm("server:exec"), ctl.Create)
-	st.GET("/:id", middleware.RequirePerm("server:read"), ctl.Get)
-	st.GET("/:id/logs", middleware.RequirePerm("server:read"), ctl.Logs)
-	st.POST("/:id/cancel", middleware.RequirePerm("server:exec"), ctl.Cancel)
-}
-
-// ── Ops / Ansible ──
-
-func registerOpsRoutes(authed *gin.RouterGroup, ctl *controller.AnsibleController) {
-	if ctl == nil {
-		return
-	}
-	ops := authed.Group("/ops")
-	ops.Use(middleware.RequirePerm("server:exec"))
-	ops.POST("/playbook", ctl.RunPlaybook)
-}
-
-// ── 服务器分组 ──
-
-func registerServerGroupRoutes(authed *gin.RouterGroup, ctl *controller.ServerGroupController) {
-	if ctl == nil {
-		return
-	}
-	sg := authed.Group("/server-groups")
-	sg.Use(middleware.RequirePerm("server:read"))
-	sg.GET("", ctl.List)
-	sg.POST("/regions", middleware.RequirePerm("server:write"), ctl.CreateRegion)
-	sg.PATCH("/regions/:id", middleware.RequirePerm("server:write"), ctl.PatchRegion)
-	sg.DELETE("/regions/:id", middleware.RequirePerm("server:write"), ctl.DeleteRegion)
-	sg.POST("/regions/:id/envs", middleware.RequirePerm("server:write"), ctl.CreateEnv)
-	sg.PATCH("/envs/:id", middleware.RequirePerm("server:write"), ctl.PatchEnv)
-	sg.DELETE("/envs/:id", middleware.RequirePerm("server:write"), ctl.DeleteEnv)
-}
-
-// ── 巡检中心 ──
-
-func registerInspectionRoutes(authed *gin.RouterGroup, ctl *controller.InspectionController) {
-	if ctl == nil {
-		return
-	}
-	// 概览与执行
-	authed.GET("/automation/inspections/overview", middleware.RequirePerm("server:read"), ctl.GetDashboard)
-	authed.POST("/automation/inspections/run", middleware.RequirePerm("server:exec"), ctl.RunNow)
-
-	// 巡检模板
-	tpl := authed.Group("/automation/inspection-templates")
-	tpl.GET("", middleware.RequirePerm("server:read"), ctl.ListTemplates)
-	tpl.GET("/:id", middleware.RequirePerm("server:read"), ctl.GetTemplate)
-	tpl.POST("", middleware.RequirePerm("automation:template_admin"), ctl.SaveTemplate)
-	tpl.PATCH("/:id", middleware.RequirePerm("automation:template_admin"), ctl.PatchTemplate)
-	tpl.DELETE("/:id", middleware.RequirePerm("automation:template_admin"), ctl.DeleteTemplate)
-
-	// 巡检计划
-	sched := authed.Group("/automation/inspection-schedules")
-	sched.GET("", middleware.RequirePerm("server:read"), ctl.ListSchedules)
-	sched.POST("", middleware.RequirePerm("automation:template_admin"), ctl.SaveSchedule)
-	sched.PATCH("/:id", middleware.RequirePerm("automation:template_admin"), ctl.PatchSchedule)
-	sched.DELETE("/:id", middleware.RequirePerm("automation:template_admin"), ctl.DeleteSchedule)
-
-	// 巡检报告
-	report := authed.Group("/automation/inspection-reports")
-	report.GET("", middleware.RequirePerm("server:read"), ctl.ListReports)
-	report.GET("/:id", middleware.RequirePerm("server:read"), ctl.GetReport)
-}
-
-// ── 应用模板 ──
-
-func registerAppTemplateRoutes(authed *gin.RouterGroup, ctl *controller.AppTemplateController) {
-	if ctl == nil {
-		return
-	}
-	tpl := authed.Group("/app-templates")
-	tpl.GET("", middleware.RequirePerm("app:read"), ctl.List)
-	tpl.GET("/:id", middleware.RequirePerm("app:read"), ctl.Get)
-	tpl.POST("", middleware.RequirePerm("app:write"), ctl.Create)
-	tpl.POST("/import-package", middleware.RequirePerm("app:write"), ctl.ImportPackage)
-	tpl.POST("/import-remote", middleware.RequirePerm("app:write"), ctl.ImportRemote)
-	tpl.PATCH("/:id", middleware.RequirePerm("app:write"), ctl.Patch)
-	tpl.DELETE("/:id", middleware.RequirePerm("app:write"), ctl.Delete)
-	tpl.POST("/:id/render", middleware.RequirePerm("app:read"), ctl.Render)
-}
-
-// ── 应用发布 ──
-
-func registerAppReleaseRoutes(authed *gin.RouterGroup, ctl *controller.AppReleaseController) {
-	if ctl == nil {
-		return
-	}
-	rel := authed.Group("/app-releases")
-	rel.GET("", middleware.RequirePerm("app:read"), ctl.List)
-	rel.GET("/:id", middleware.RequirePerm("app:read"), ctl.Get)
-	rel.GET("/:id/revisions", middleware.RequirePerm("app:read"), ctl.ListRevisions)
-	rel.POST("", middleware.RequirePerm("app:write"), ctl.Create)
-	rel.POST("/:id/upgrade", middleware.RequirePerm("app:write"), ctl.Upgrade)
-	rel.POST("/:id/rollback", middleware.RequirePerm("app:write"), ctl.Rollback)
-	rel.POST("/:id/start", middleware.RequirePerm("app:write"), ctl.Start)
-	rel.POST("/:id/stop", middleware.RequirePerm("app:write"), ctl.Stop)
-	rel.POST("/:id/toggle-pause", middleware.RequirePerm("app:write"), ctl.TogglePause)
-	rel.DELETE("/:id", middleware.RequirePerm("app:write"), ctl.Delete)
-}

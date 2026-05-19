@@ -37,7 +37,6 @@ const (
 
 	PermissionAuditFindingResource   = "resource"
 	PermissionAuditFindingWorkload   = "workload"
-	PermissionAuditFindingAppRelease = "app_release"
 	PermissionAuditFindingError      = "error"
 
 	PermissionAuditOwnershipDirect    = "direct"
@@ -55,7 +54,6 @@ const (
 type PermissionAuditCreateRequest struct {
 	Mode                      string   `json:"mode"`
 	IncludeRuntimeRBAC        bool     `json:"include_runtime_rbac"`
-	IncludePlatformMapping    bool     `json:"include_platform_mapping"`
 	IncludeOwnershipDetection bool     `json:"include_ownership_detection"`
 	Namespaces                []string `json:"namespaces"`
 	LabelSelector             string   `json:"label_selector"`
@@ -230,14 +228,6 @@ type permissionAuditSubjectBinding struct {
 	RoleRefName        string
 	Role               *permissionAuditRoleAnalysis
 	ClusterRoleBinding bool
-}
-
-type permissionAuditReleaseMatch struct {
-	ID              uint64
-	Name            string
-	Namespace       string
-	TemplateName    string
-	CurrentRevision int
 }
 
 type permissionAuditScannedObject struct {
@@ -533,7 +523,7 @@ func (s *K8sPermissionAuditService) ListFindings(ctx context.Context, auditID ui
 	}
 	if kw := strings.TrimSpace(req.Keyword); kw != "" {
 		like := "%" + kw + "%"
-		q = q.Where("name LIKE ? OR workload_name LIKE ? OR service_account_name LIKE ? OR app_release_name LIKE ? OR summary LIKE ?", like, like, like, like, like)
+		q = q.Where("name LIKE ? OR workload_name LIKE ? OR service_account_name LIKE ? OR summary LIKE ?", like, like, like, like)
 	}
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
@@ -826,7 +816,6 @@ func permissionAuditCreateRequestMap(req PermissionAuditCreateRequest) map[strin
 	return map[string]any{
 		"mode":                        req.Mode,
 		"include_runtime_rbac":        req.IncludeRuntimeRBAC,
-		"include_platform_mapping":    req.IncludePlatformMapping,
 		"include_ownership_detection": req.IncludeOwnershipDetection,
 		"namespaces":                  req.Namespaces,
 		"label_selector":              req.LabelSelector,
@@ -1382,10 +1371,6 @@ func permissionAuditGVRKey(gvr schema.GroupVersionResource) string {
 	return strings.ToLower(strings.Join([]string{gvr.Group, gvr.Version, gvr.Resource}, "|"))
 }
 
-func permissionAuditResourceKey(apiVersion, kind, namespace, name string) string {
-	return strings.ToLower(strings.Join([]string{strings.TrimSpace(apiVersion), strings.TrimSpace(kind), strings.TrimSpace(namespace), strings.TrimSpace(name)}, "|"))
-}
-
 func permissionAuditRoleKey(kind, namespace, name string) string {
 	return strings.ToLower(strings.Join([]string{kind, namespace, name}, "|"))
 }
@@ -1395,12 +1380,8 @@ func permissionAuditSubjectKey(namespace, name string) string {
 }
 
 func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context, row *model.K8sPermissionAudit, req PermissionAuditCreateRequest, mapper meta.RESTMapper, objects []permissionAuditScannedObject) ([]model.K8sPermissionAuditFinding, map[string]any, map[string]any, []string) {
-	resourceToRelease := map[string]permissionAuditReleaseMatch{}
 	releaseNamespaces := map[string]bool{}
 	ownershipEnabled := req.IncludeOwnershipDetection
-	if ownershipEnabled && req.IncludePlatformMapping && row.SourceType == PermissionAuditSourceManaged && row.ClusterID != nil {
-		resourceToRelease, releaseNamespaces = s.buildPlatformReleaseIndex(ctx, *row.ClusterID, mapper)
-	}
 	roles := map[string]*permissionAuditRoleAnalysis{}
 	bindingsBySubject := map[string][]permissionAuditBinding{}
 	workloadObjects := make([]permissionAuditScannedObject, 0)
@@ -1452,20 +1433,14 @@ func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context,
 	riskCounts := map[string]int{"critical": 0, "high": 0, "medium": 0, "low": 0}
 	blockerCount := 0
 	sharedCount := 0
-	appAggregates := map[uint64][]model.K8sPermissionAuditFinding{}
 	for _, item := range resourceObjects {
 		kind := firstNonEmpty(item.Object.GetKind(), item.Kind)
 		apiVersion := item.Object.GetAPIVersion()
 		namespace := item.Object.GetNamespace()
 		name := item.Object.GetName()
-		resourceKey := permissionAuditResourceKey(apiVersion, kind, namespace, name)
 		ownership := PermissionAuditOwnershipUnrelated
-		var releaseMatch permissionAuditReleaseMatch
 		if ownershipEnabled {
-			if match, ok := resourceToRelease[resourceKey]; ok {
-				ownership = PermissionAuditOwnershipDirect
-				releaseMatch = match
-			} else if isPermissionAuditSharedResource(item, releaseNamespaces, serviceAccountRefs, storageClassRefs, ingressClassRefs) {
+			if isPermissionAuditSharedResource(item, releaseNamespaces, serviceAccountRefs, storageClassRefs, ingressClassRefs) {
 				ownership = PermissionAuditOwnershipShared
 			}
 		}
@@ -1478,7 +1453,7 @@ func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context,
 		}
 		summaryCounts["total_resources"]++
 		ownershipCounts[ownership]++
-		if ownership != PermissionAuditOwnershipUnrelated && releaseMatch.ID == 0 {
+		if ownership != PermissionAuditOwnershipUnrelated {
 			summaryCounts["unmapped_resources"]++
 		}
 		deploymentBlocker := scope == "cluster" && ownership == PermissionAuditOwnershipDirect
@@ -1496,15 +1471,6 @@ func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context,
 			"api_version": item.Object.GetAPIVersion(),
 			"scope":       scope,
 		}
-		if releaseMatch.ID > 0 {
-			detail["platform_app_release"] = map[string]any{
-				"id":               releaseMatch.ID,
-				"name":             releaseMatch.Name,
-				"namespace":        releaseMatch.Namespace,
-				"current_revision": releaseMatch.CurrentRevision,
-				"template_name":    releaseMatch.TemplateName,
-			}
-		}
 		finding := model.K8sPermissionAuditFinding{
 			AuditID:                          row.ID,
 			FindingType:                      PermissionAuditFindingResource,
@@ -1518,32 +1484,20 @@ func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context,
 			Kind:                             kind,
 			Namespace:                        namespace,
 			Name:                             name,
-			AppReleaseName:                   releaseMatch.Name,
 			Summary:                          permissionAuditSummaryForResource(kind, ownership, scope, deploymentBlocker),
 			ReasonCodes:                      model.JSONStringSlice(reasonCodes),
 			DetailJSON:                       model.JSONMap(detail),
 		}
-		if releaseMatch.ID > 0 {
-			finding.AppReleaseID = &releaseMatch.ID
-		}
 		findings = append(findings, finding)
-		if finding.AppReleaseID != nil {
-			appAggregates[*finding.AppReleaseID] = append(appAggregates[*finding.AppReleaseID], finding)
-		}
 	}
 	for _, item := range workloadObjects {
 		kind := firstNonEmpty(item.Object.GetKind(), item.Kind)
 		apiVersion := item.Object.GetAPIVersion()
 		namespace := item.Object.GetNamespace()
 		name := item.Object.GetName()
-		resourceKey := permissionAuditResourceKey(apiVersion, kind, namespace, name)
 		ownership := PermissionAuditOwnershipUnrelated
-		var releaseMatch permissionAuditReleaseMatch
 		if ownershipEnabled {
-			if match, ok := resourceToRelease[resourceKey]; ok {
-				ownership = PermissionAuditOwnershipDirect
-				releaseMatch = match
-			} else if releaseNamespaces[namespace] {
+			if releaseNamespaces[namespace] {
 				ownership = PermissionAuditOwnershipShared
 			}
 		}
@@ -1609,15 +1563,6 @@ func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context,
 			"evidence_chain":                       bindingSummaries,
 			"depends_on_shared_cluster_capability": ownership == PermissionAuditOwnershipShared,
 		}
-		if releaseMatch.ID > 0 {
-			detail["platform_app_release"] = map[string]any{
-				"id":               releaseMatch.ID,
-				"name":             releaseMatch.Name,
-				"namespace":        releaseMatch.Namespace,
-				"current_revision": releaseMatch.CurrentRevision,
-				"template_name":    releaseMatch.TemplateName,
-			}
-		}
 		finding := model.K8sPermissionAuditFinding{
 			AuditID:            row.ID,
 			FindingType:        PermissionAuditFindingWorkload,
@@ -1632,54 +1577,11 @@ func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context,
 			WorkloadKind:       kind,
 			WorkloadName:       name,
 			ServiceAccountName: saName,
-			AppReleaseName:     releaseMatch.Name,
 			Summary:            permissionAuditSummaryForWorkload(kind, name, saName, privilegeClass),
 			ReasonCodes:        model.JSONStringSlice(reasonCodes),
 			DetailJSON:         model.JSONMap(detail),
 		}
-		if releaseMatch.ID > 0 {
-			finding.AppReleaseID = &releaseMatch.ID
-			appAggregates[*finding.AppReleaseID] = append(appAggregates[*finding.AppReleaseID], finding)
-		}
 		findings = append(findings, finding)
-	}
-	for releaseID, agg := range appAggregates {
-		if len(agg) == 0 {
-			continue
-		}
-		first := agg[0]
-		maxRisk := "low"
-		ownership := PermissionAuditOwnershipUnrelated
-		highCount := 0
-		for _, item := range agg {
-			if permissionAuditRiskRank(item.RiskLevel) > permissionAuditRiskRank(maxRisk) {
-				maxRisk = item.RiskLevel
-			}
-			if item.OwnershipClass == PermissionAuditOwnershipDirect {
-				ownership = PermissionAuditOwnershipDirect
-			}
-			if item.PrivilegeClass == PermissionAuditPrivilegeRuntimeHigh {
-				highCount++
-			}
-		}
-		appID := releaseID
-		findings = append(findings, model.K8sPermissionAuditFinding{
-			AuditID:        row.ID,
-			FindingType:    PermissionAuditFindingAppRelease,
-			RiskLevel:      maxRisk,
-			OwnershipClass: ownership,
-			PrivilegeClass: first.PrivilegeClass,
-			Namespace:      first.Namespace,
-			Name:           first.AppReleaseName,
-			AppReleaseID:   &appID,
-			AppReleaseName: first.AppReleaseName,
-			Summary:        fmt.Sprintf("应用 %s 关联 %d 条资源或工作负载结论，高权限工作负载=%d", first.AppReleaseName, len(agg), highCount),
-			ReasonCodes:    model.JSONStringSlice{"app_release_aggregate"},
-			DetailJSON: model.JSONMap{
-				"resource_count":       len(agg),
-				"high_privilege_count": highCount,
-			},
-		})
 	}
 	for _, errText := range partialErrors {
 		findings = append(findings, model.K8sPermissionAuditFinding{
@@ -1711,35 +1613,6 @@ func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context,
 		},
 	}
 	return findings, summary, stats, partialErrors
-}
-
-func (s *K8sPermissionAuditService) buildPlatformReleaseIndex(ctx context.Context, clusterID uint64, mapper meta.RESTMapper) (map[string]permissionAuditReleaseMatch, map[string]bool) {
-	index := map[string]permissionAuditReleaseMatch{}
-	namespaces := map[string]bool{}
-	if s.db == nil || clusterID == 0 {
-		return index, namespaces
-	}
-	var releases []model.AppRelease
-	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND cluster_id = ?", clusterID).Find(&releases).Error; err != nil {
-		return index, namespaces
-	}
-	parser := &AppReleaseService{}
-	for _, release := range releases {
-		namespaces[strings.TrimSpace(release.Namespace)] = true
-		var revision model.AppReleaseRevision
-		if err := s.db.WithContext(ctx).Where("release_id = ? AND revision = ?", release.ID, release.CurrentRevision).First(&revision).Error; err != nil {
-			continue
-		}
-		docs, err := parser.parseReleaseManifestDocuments(revision.ComposeManifest, release.Namespace, mapper)
-		if err != nil {
-			continue
-		}
-		for _, doc := range docs {
-			key := permissionAuditResourceKey(doc.Ref.APIVersion, doc.Ref.Kind, doc.Ref.Namespace, doc.Ref.Name)
-			index[key] = permissionAuditReleaseMatch{ID: release.ID, Name: release.Name, Namespace: release.Namespace, TemplateName: release.TemplateName, CurrentRevision: release.CurrentRevision}
-		}
-	}
-	return index, namespaces
 }
 
 func analyzePermissionAuditRole(item permissionAuditScannedObject) *permissionAuditRoleAnalysis {
