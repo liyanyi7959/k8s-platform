@@ -13,14 +13,7 @@
     </div>
     <template #dropdown>
       <el-dropdown-menu class="user-dropdown">
-        <el-dropdown-item command="profile">
-          <el-icon><User /></el-icon>个人设置
-        </el-dropdown-item>
-        <el-dropdown-item v-if="showSystemMenu" divided disabled>系统管理</el-dropdown-item>
-        <el-dropdown-item v-if="showSystemMenu && canUserAdmin" command="admin-users">用户管理</el-dropdown-item>
-        <el-dropdown-item v-if="showSystemMenu && canUserAdmin" command="admin-roles">角色管理</el-dropdown-item>
-        <el-dropdown-item v-if="showSystemMenu && canCredentialAdmin" command="admin-credentials">凭据管理</el-dropdown-item>
-        <el-dropdown-item divided command="logout">
+        <el-dropdown-item command="logout">
           <el-icon><SwitchButton /></el-icon>退出登录
         </el-dropdown-item>
       </el-dropdown-menu>
@@ -29,43 +22,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/app/store/user'
-import { User, SwitchButton } from '@element-plus/icons-vue'
+import { SwitchButton } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const roleNames = computed(() => (userStore.roles ?? []).map((r) => String(r)))
-const isSystemAdmin = computed(() => {
-  const roles = roleNames.value.map((r) => r.toLowerCase())
-  return roles.includes('admin') || roles.includes('super_admin') || roles.includes('superadmin') || roleNames.value.includes('超级管理员')
-})
-const canUserAdmin = computed(() => userStore.permissions.includes('sys:user_admin'))
-const canCredentialAdmin = computed(() => {
-  const perms = userStore.permissions
-  return perms.includes('sys:credential_admin') || perms.includes('sys:credential_read')
-})
-const showSystemMenu = computed(() => isSystemAdmin.value && (canUserAdmin.value || canCredentialAdmin.value))
-
 async function onUserCommand(cmd: string) {
-  if (cmd === 'profile') {
-    await router.push('/profile')
-    return
-  }
-  if (cmd === 'admin-users') {
-    await router.push('/admin/users')
-    return
-  }
-  if (cmd === 'admin-roles') {
-    await router.push('/admin/roles')
-    return
-  }
-  if (cmd === 'admin-credentials') {
-    await router.push('/automation/credentials')
-    return
-  }
   if (cmd === 'logout') {
     await userStore.logout()
     await router.push('/login')

@@ -35,9 +35,9 @@ const (
 	PermissionAuditStatusIncomplete = "incomplete"
 	PermissionAuditStatusCanceled   = "canceled"
 
-	PermissionAuditFindingResource   = "resource"
-	PermissionAuditFindingWorkload   = "workload"
-	PermissionAuditFindingError      = "error"
+	PermissionAuditFindingResource = "resource"
+	PermissionAuditFindingWorkload = "workload"
+	PermissionAuditFindingError    = "error"
 
 	PermissionAuditOwnershipDirect    = "direct"
 	PermissionAuditOwnershipShared    = "shared"
@@ -1380,7 +1380,7 @@ func permissionAuditSubjectKey(namespace, name string) string {
 }
 
 func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context, row *model.K8sPermissionAudit, req PermissionAuditCreateRequest, mapper meta.RESTMapper, objects []permissionAuditScannedObject) ([]model.K8sPermissionAuditFinding, map[string]any, map[string]any, []string) {
-	releaseNamespaces := map[string]bool{}
+	targetNamespaces := permissionAuditNamespaceSet(req.Namespaces)
 	ownershipEnabled := req.IncludeOwnershipDetection
 	roles := map[string]*permissionAuditRoleAnalysis{}
 	bindingsBySubject := map[string][]permissionAuditBinding{}
@@ -1440,9 +1440,7 @@ func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context,
 		name := item.Object.GetName()
 		ownership := PermissionAuditOwnershipUnrelated
 		if ownershipEnabled {
-			if isPermissionAuditSharedResource(item, releaseNamespaces, serviceAccountRefs, storageClassRefs, ingressClassRefs) {
-				ownership = PermissionAuditOwnershipShared
-			}
+			ownership = permissionAuditResourceOwnership(item, targetNamespaces, serviceAccountRefs, storageClassRefs, ingressClassRefs)
 		}
 		scope := "cluster"
 		if item.Namespaced {
@@ -1497,9 +1495,7 @@ func (s *K8sPermissionAuditService) analyzeScannedResources(ctx context.Context,
 		name := item.Object.GetName()
 		ownership := PermissionAuditOwnershipUnrelated
 		if ownershipEnabled {
-			if releaseNamespaces[namespace] {
-				ownership = PermissionAuditOwnershipShared
-			}
+			ownership = permissionAuditWorkloadOwnership(namespace, targetNamespaces)
 		}
 		saName := extractPermissionAuditWorkloadServiceAccount(item.Object)
 		bindingKey := permissionAuditSubjectKey(namespace, saName)
@@ -1787,22 +1783,59 @@ func extractPermissionAuditStorageClass(obj unstructured.Unstructured) string {
 	return ""
 }
 
-func isPermissionAuditSharedResource(item permissionAuditScannedObject, releaseNamespaces, serviceAccounts, storageClasses, ingressClasses map[string]bool) bool {
+func permissionAuditNamespaceSet(namespaces []string) map[string]bool {
+	out := map[string]bool{}
+	for _, ns := range namespaces {
+		if value := strings.TrimSpace(ns); value != "" {
+			out[value] = true
+		}
+	}
+	return out
+}
+
+func permissionAuditNamespaceInScope(namespace string, targetNamespaces map[string]bool) bool {
+	namespace = strings.TrimSpace(namespace)
+	if namespace == "" {
+		return false
+	}
+	if len(targetNamespaces) == 0 {
+		return true
+	}
+	return targetNamespaces[namespace]
+}
+
+func permissionAuditWorkloadOwnership(namespace string, targetNamespaces map[string]bool) string {
+	if permissionAuditNamespaceInScope(namespace, targetNamespaces) {
+		return PermissionAuditOwnershipDirect
+	}
+	return PermissionAuditOwnershipUnrelated
+}
+
+func permissionAuditResourceOwnership(item permissionAuditScannedObject, targetNamespaces, serviceAccounts, storageClasses, ingressClasses map[string]bool) string {
 	kind := firstNonEmpty(item.Object.GetKind(), item.Kind)
 	name := item.Object.GetName()
 	namespace := item.Object.GetNamespace()
+	if item.Namespaced && permissionAuditNamespaceInScope(namespace, targetNamespaces) {
+		return PermissionAuditOwnershipDirect
+	}
 	switch kind {
 	case "Namespace":
-		return releaseNamespaces[name]
-	case "ServiceAccount":
-		return serviceAccounts[permissionAuditSubjectKey(namespace, name)]
+		if len(targetNamespaces) > 0 && targetNamespaces[name] {
+			return PermissionAuditOwnershipDirect
+		}
 	case "StorageClass":
-		return storageClasses[name]
+		if storageClasses[name] {
+			return PermissionAuditOwnershipShared
+		}
 	case "IngressClass":
-		return ingressClasses[name]
-	default:
-		return false
+		if ingressClasses[name] {
+			return PermissionAuditOwnershipShared
+		}
 	}
+	if serviceAccounts[permissionAuditSubjectKey(namespace, name)] {
+		return PermissionAuditOwnershipShared
+	}
+	return PermissionAuditOwnershipUnrelated
 }
 
 func permissionAuditResourceRiskLevel(item permissionAuditScannedObject, ownership string, deploymentBlocker bool) string {
@@ -1851,7 +1884,7 @@ func permissionAuditReasonCodesForResource(item permissionAuditScannedObject, ow
 		codes = append(codes, "cluster_scoped_resource")
 	}
 	if ownership == PermissionAuditOwnershipDirect {
-		codes = append(codes, "platform_direct")
+		codes = append(codes, "audit_scope_direct")
 	}
 	if ownership == PermissionAuditOwnershipShared {
 		codes = append(codes, "shared_cluster_capability")

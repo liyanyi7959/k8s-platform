@@ -6,7 +6,7 @@
 package service
 
 // normalizePage 统一分页参数：默认 page=1/pageSize=10，并限制最大 pageSize=200。
-// 被 rbac_service / server_service / cluster_registry_service / credential_service 等共用。
+// 被 rbac_service / cluster_registry_service 等共用。
 func normalizePage(page, pageSize int) (int, int) {
 	if page <= 0 {
 		page = 1
@@ -18,4 +18,13 @@ func normalizePage(page, pageSize int) (int, int) {
 		pageSize = 200
 	}
 	return page, pageSize
+}
+
+func firstNonEmpty(vs ...string) string {
+	for _, v := range vs {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }

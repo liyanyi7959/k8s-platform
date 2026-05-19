@@ -8,10 +8,13 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
-	"gorm.io/driver/mysql"
+	mysqldriver "github.com/go-sql-driver/mysql"
+	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -33,10 +36,14 @@ func LoadConfigFromEnv() Config {
 // - *gorm.DB：业务层主要使用的 ORM 入口
 // - *sql.DB：用于设置连接池参数/健康检查等底层能力
 func Open(cfg Config) (*gorm.DB, *sql.DB, error) {
-	if cfg.MySQLDSN == "" {
+	dsn := strings.TrimSpace(cfg.MySQLDSN)
+	if dsn == "" {
 		return nil, nil, errors.New("MYSQL_DSN is required")
 	}
-	gdb, err := gorm.Open(mysql.Open(cfg.MySQLDSN), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err := ensureDatabase(dsn); err != nil {
+		return nil, nil, err
+	}
+	gdb, err := gorm.Open(gormmysql.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -48,6 +55,33 @@ func Open(cfg Config) (*gorm.DB, *sql.DB, error) {
 	sdb.SetMaxIdleConns(10)
 	sdb.SetConnMaxLifetime(30 * time.Minute)
 	return gdb, sdb, nil
+}
+
+func ensureDatabase(dsn string) error {
+	parsed, err := mysqldriver.ParseDSN(dsn)
+	if err != nil {
+		return err
+	}
+	dbName := strings.TrimSpace(parsed.DBName)
+	if dbName == "" {
+		return nil
+	}
+
+	parsed.DBName = ""
+	serverDB, err := sql.Open("mysql", parsed.FormatDSN())
+	if err != nil {
+		return err
+	}
+	defer func() { _ = serverDB.Close() }()
+
+	if _, err := serverDB.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", quoteIdentifier(dbName))); err != nil {
+		return err
+	}
+	return nil
+}
+
+func quoteIdentifier(name string) string {
+	return "`" + strings.ReplaceAll(name, "`", "``") + "`"
 }
 
 func firstNonEmpty(vs ...string) string {

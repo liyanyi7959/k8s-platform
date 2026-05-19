@@ -8,9 +8,3 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
-
-declare module 'markdown-it-task-lists' {
-  import type { PluginWithOptions } from 'markdown-it'
-  const plugin: PluginWithOptions<any>
-  export default plugin
-}

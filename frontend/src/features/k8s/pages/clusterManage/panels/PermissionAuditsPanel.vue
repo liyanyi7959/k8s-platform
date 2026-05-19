@@ -175,7 +175,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="标签选择器">
-          <el-input v-model="createForm.label_selector" placeholder="例如 app.kubernetes.io/instance=my-release" clearable />
+          <el-input v-model="createForm.label_selector" placeholder="例如 app.kubernetes.io/name=nginx" clearable />
         </el-form-item>
         <el-form-item label="运行期 RBAC">
           <el-switch v-model="createForm.include_runtime_rbac" />
@@ -183,7 +183,7 @@
         </el-form-item>
         <el-form-item label="归属识别">
           <el-switch v-model="createForm.include_ownership_detection" />
-          <span class="form-tip">识别资源是否属于平台纳管工作负载、共享能力或无关资源</span>
+          <span class="form-tip">识别资源是否属于共享能力或无关资源</span>
         </el-form-item>
         <el-form-item label="资源范围">
           <el-checkbox-group v-model="createForm.resource_allowlist" class="allowlist-grid">
@@ -227,7 +227,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="标签选择器">
-          <el-input v-model="adhocForm.label_selector" placeholder="例如 app=my-release" clearable />
+          <el-input v-model="adhocForm.label_selector" placeholder="例如 app=nginx" clearable />
         </el-form-item>
         <el-form-item label="运行期 RBAC">
           <el-switch v-model="adhocForm.include_runtime_rbac" />

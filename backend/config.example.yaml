@@ -6,7 +6,7 @@ server:
   idle_timeout: "60s"
   shutdown_timeout: "10s"
 db:
-  mysql_dsn: "root:Root@123@tcp(127.0.0.1:3306)/k8s_platform?charset=utf8mb4&parseTime=True&loc=Local"
+  mysql_dsn: "root:Root@123@tcp(127.0.0.1:3306)/k8spaltform?charset=utf8mb4&parseTime=True&loc=Local"
 migrate:
   auto: true
 jwt:
@@ -28,3 +28,5 @@ redis:
 log:
   level: "info"
   format: "json"
+k8s:
+  insecure_skip_tls_verify: false

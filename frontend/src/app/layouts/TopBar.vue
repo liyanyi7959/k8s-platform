@@ -73,10 +73,7 @@
         </button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="profile">
-              <el-icon><User /></el-icon>个人设置
-            </el-dropdown-item>
-            <el-dropdown-item divided command="logout">
+            <el-dropdown-item command="logout">
               <el-icon><SwitchButton /></el-icon>退出登录
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -95,7 +92,7 @@ import { useSidebarState } from '@/app/composables/useSidebarState'
 import { useTheme } from '@/app/composables/useTheme'
 import {
   HomeFilled, Search, Bell, Moon, Sunny, Monitor,
-  Fold, Expand, ArrowDown, User, SwitchButton
+  Fold, Expand, ArrowDown, SwitchButton
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -140,10 +137,6 @@ onBeforeUnmount(() => {
 
 /* ── 用户菜单 ─────────────────────────────────────────────────────────── */
 async function onUserCommand(cmd: string) {
-  if (cmd === 'profile') {
-    await router.push('/profile')
-    return
-  }
   if (cmd === 'logout') {
     await userStore.logout()
     await router.push('/login')
