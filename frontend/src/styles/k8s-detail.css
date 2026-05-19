@@ -1,0 +1,318 @@
+/* k8s-detail.css — K8s 资源详情页样式（tabs / summary / kv / section / table 等） */
+
+.k8s-detail-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.k8s-detail-tabs .el-tabs__header {
+  margin: 0;
+}
+
+.k8s-detail-tabs .el-tabs__nav-wrap::after {
+  opacity: 0.35;
+}
+
+.k8s-detail-tabs .el-tabs__content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-top: 10px;
+}
+
+.k8s-tab-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.k8s-pane-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.k8s-summary-card {
+  border-radius: 16px;
+  border: 1px solid var(--k8s-card-border);
+  background: linear-gradient(180deg, var(--k8s-card-bg-gradient-top), var(--k8s-card-bg-gradient-bot));
+  box-shadow: var(--k8s-card-shadow);
+}
+
+/* html.dark .k8s-summary-card — 通过 Token 自动切换暗色 */
+
+.k8s-summary-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.k8s-summary-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--k8s-text-title);
+}
+
+/* html.dark .k8s-summary-title — 通过 Token 自动切换 */
+
+.k8s-summary-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 14px;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .k8s-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .k8s-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.k8s-kv {
+  --k8s-kv-accent: var(--k8s-accent-muted);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: center;
+  padding: 10px 12px 10px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--k8s-card-border);
+  background: var(--k8s-kv-bg);
+}
+
+.k8s-kv::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--k8s-kv-accent);
+}
+
+/* html.dark .k8s-kv — 通过 Token 自动切换 */
+
+.k8s-kv--info {
+  --k8s-kv-accent: var(--k8s-accent-blue);
+}
+
+.k8s-kv--ok {
+  --k8s-kv-accent: var(--k8s-accent-emerald);
+}
+
+.k8s-kv--warn {
+  --k8s-kv-accent: var(--k8s-accent-amber);
+}
+
+.k8s-kv--bad {
+  --k8s-kv-accent: var(--k8s-accent-red);
+}
+
+.k8s-kv--muted {
+  --k8s-kv-accent: var(--k8s-accent-muted);
+}
+
+.k8s-k {
+  font-size: 12px;
+  color: var(--k8s-text-label);
+  font-weight: 800;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/* html.dark .k8s-k — 通过 Token 自动切换 */
+
+.k8s-v {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--k8s-text-title);
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* html.dark .k8s-v — 通过 Token 自动切换 */
+
+.k8s-v-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.k8s-link {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-weight: 900;
+  color: var(--k8s-link-color);
+}
+
+/* html.dark .k8s-link — 通过 Token 自动切换 */
+
+.k8s-kv-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.k8s-kv-actions .el-button {
+  height: 22px;
+  padding: 0 6px;
+  line-height: 22px;
+}
+
+.k8s-section-card {
+  --k8s-card-accent: var(--k8s-accent-muted-dim);
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid var(--k8s-card-border);
+  background: var(--k8s-card-bg);
+  overflow: hidden;
+}
+
+/* html.dark .k8s-section-card — 通过 Token 自动切换 */
+
+.k8s-accent-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  background: var(--k8s-card-accent);
+  opacity: 0.55;
+}
+
+.k8s-section-card + .k8s-section-card {
+  margin-top: 0;
+}
+
+.k8s-section-title {
+  font-weight: 900;
+}
+
+.k8s-section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.k8s-section-actions {
+  flex: 0 0 auto;
+}
+
+.k8s-detail-desc .el-descriptions__label {
+  color: var(--k8s-text-label);
+  font-weight: 800;
+}
+
+/* html.dark .k8s-detail-desc — 通过 Token 自动切换 */
+
+.k8s-detail-table .el-table__inner-wrapper::before {
+  opacity: 0.3;
+}
+
+.k8s-detail-table .el-table__row:hover > td.el-table__cell {
+  background: var(--k8s-table-hover);
+}
+
+/* html.dark .k8s-detail-table hover — 通过 Token 自动切换 */
+
+.k8s-detail-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--k8s-code-bg);
+  color: var(--k8s-code-text);
+  border: 1px solid var(--k8s-code-border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre;
+  tab-size: 2;
+  overflow: auto;
+  min-height: 40vh;
+}
+
+.k8s-detail-box--fill {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0;
+}
+
+.k8s-detail-box--wrap {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.k8s-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  opacity: 0.92;
+}
+
+/* base-meta-pill 系列（用于详情页中的小标签） */
+
+.base-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.base-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid var(--k8s-accent-muted-border);
+  background: var(--k8s-accent-muted-bg);
+  color: var(--k8s-text-body);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* html.dark .base-meta-pill — 通过 Token 自动切换 */
+
+.base-meta-pill--cluster {
+  background: var(--k8s-accent-blue-bg);
+  border-color: var(--k8s-accent-blue-border);
+}
+
+.base-meta-pill--kind {
+  background: var(--k8s-accent-violet-bg);
+  border-color: var(--k8s-accent-violet-border);
+}
+
+.base-meta-pill--target {
+  background: var(--k8s-accent-emerald-bg);
+  border-color: var(--k8s-accent-emerald-border);
+}

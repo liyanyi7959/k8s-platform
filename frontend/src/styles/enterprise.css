@@ -1,0 +1,986 @@
+/* ============================================================================
+   enterprise.css — 企业级统一组件样式系统
+   ============================================================================
+   
+   此文件为整个平台提供统一的 UI 组件规范，覆盖以下模块：
+   
+   1. 页面容器 (.page-card)
+   2. 工具栏 (.page-toolbar / .page-toolbar-left / .page-toolbar-right)
+   3. 筛选栏 (.page-filters)  
+   4. 操作按钮行 (.page-actions)
+   5. 表格操作列 (.cell-actions)
+   6. Dialog 尺寸层级 (.dialog-sm / .dialog-md / .dialog-lg / .dialog-xl)
+   7. 表单统一 (.form-standard)
+   8. 状态标签 (.status-tag)
+   9. 实用工具类 (.input-sm / .input-md / .input-lg / .input-full)
+   
+   所有规则引用 Token 体系，适配 Light / Dark 双主题。
+   ============================================================================ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. 页面容器 — .page-card
+   ═══════════════════════════════════════════════════════════════════════════ */
+.page-card {
+  border-radius: var(--radius-lg, 10px);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: visible;
+}
+.page-card > .el-card__body {
+  padding: 12px 16px;
+}
+html.dark .page-card {
+  border-color: var(--color-border-default);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. 页面工具栏 — .page-toolbar
+   统一筛选区 + 操作按钮 布局（替代各页面的自定义 toolbar）
+   ═══════════════════════════════════════════════════════════════════════════ */
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md, 6px);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-muted);
+  transition: background 0.2s, border-color 0.2s;
+}
+html.dark .page-toolbar {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--color-border-default);
+}
+.page-toolbar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.page-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. 表格操作列 — 统一为 link 按钮 + 分隔符风格
+   
+   所有表格操作列统一使用以下 HTML 结构:
+   <div class="cell-actions">
+     <el-button link type="primary" size="small">编辑</el-button>
+     <el-button link type="primary" size="small">查看</el-button>
+     <el-button link type="danger" size="small">删除</el-button>
+   </div>
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cell-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+.cell-actions .el-button {
+  padding: 0 8px;
+  height: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 0;
+  position: relative;
+}
+.cell-actions .el-button + .el-button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 14px;
+  background: var(--color-border-default);
+}
+.cell-actions .el-button:first-child {
+  padding-left: 0;
+}
+.cell-actions .el-button:last-child {
+  padding-right: 0;
+}
+/* link 按钮不需要背景/边框/阴影 */
+.cell-actions .el-button.is-link {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.cell-actions .el-button.is-link:hover {
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. Dialog 尺寸层级 — 4 档统一
+   
+   使用 CSS class 控制宽度，替代各处随意的 width="520px/720px/..." 
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* sm: 确认框 / 重置密码等简单表单 */
+.el-dialog.dialog-sm  { --el-dialog-width: 440px; width: 440px;  }
+/* md: 创建用户 / 编辑等标准表单 */
+.el-dialog.dialog-md  { --el-dialog-width: 580px; width: 580px;  }
+/* lg: 导入 / 凭据 / 内容较多的表单 */
+.el-dialog.dialog-lg  { --el-dialog-width: 720px; width: 720px;  }
+/* xl: 权限矩阵 / 编辑器 / 大内容 */
+.el-dialog.dialog-xl  { --el-dialog-width: 960px; width: 960px;  }
+
+/* ── Dialog 细节增强（header/body 基础间距由 theme-overrides.css 控制）──── */
+.el-dialog .el-dialog__title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+}
+.el-dialog .el-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. 表单统一 — .form-standard + Dialog 内表单全局美化
+   
+   统一 label-width / 间距 / 控件尺寸
+   ═══════════════════════════════════════════════════════════════════════════ */
+.form-standard .el-form-item {
+  margin-bottom: 20px;
+}
+.form-standard .el-form-item:last-child {
+  margin-bottom: 0;
+}
+.form-standard .el-form-item__label {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* ── Dialog / Drawer 内表单全局规范 ────────────────────────────────────── */
+
+/* 表单项间距 */
+.el-dialog__body .el-form .el-form-item,
+.el-drawer__body .el-form .el-form-item {
+  margin-bottom: 22px;
+}
+.el-dialog__body .el-form .el-form-item:last-child,
+.el-drawer__body .el-form .el-form-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Label 样式 — 颜色分层 + 加粗 */
+.el-dialog__body .el-form .el-form-item__label,
+.el-drawer__body .el-form .el-form-item__label {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+/* 输入框 — 统一背景/边框/圆角 */
+.el-dialog__body .el-input__wrapper,
+.el-dialog__body .el-textarea__inner,
+.el-dialog__body .el-select__wrapper,
+.el-drawer__body .el-input__wrapper,
+.el-drawer__body .el-textarea__inner,
+.el-drawer__body .el-select__wrapper {
+  background-color: var(--color-bg-muted);
+  border-radius: var(--radius-md, 6px);
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+/* hover */
+.el-dialog__body .el-input__wrapper:hover,
+.el-dialog__body .el-textarea__inner:hover,
+.el-dialog__body .el-select__wrapper:hover,
+.el-drawer__body .el-input__wrapper:hover,
+.el-drawer__body .el-textarea__inner:hover,
+.el-drawer__body .el-select__wrapper:hover {
+  background-color: var(--color-bg-input);
+}
+/* focus */
+.el-dialog__body .el-input__wrapper.is-focus,
+.el-dialog__body .el-textarea__inner:focus,
+.el-dialog__body .el-select__wrapper.is-focused,
+.el-drawer__body .el-input__wrapper.is-focus,
+.el-drawer__body .el-textarea__inner:focus,
+.el-drawer__body .el-select__wrapper.is-focused {
+  background-color: var(--color-bg-input);
+}
+
+/* InputNumber 圆角统一 */
+.el-dialog__body .el-input-number .el-input__wrapper,
+.el-drawer__body .el-input-number .el-input__wrapper {
+  border-radius: var(--radius-md, 6px);
+}
+
+/* Select 下拉箭头颜色 */
+.el-dialog__body .el-select .el-select__caret,
+.el-drawer__body .el-select .el-select__caret {
+  color: var(--color-text-muted);
+}
+
+/* ── dark mode 表单增强 ──────────────────────────────────────────────── */
+html.dark .el-dialog__body .el-input__wrapper,
+html.dark .el-dialog__body .el-textarea__inner,
+html.dark .el-dialog__body .el-select__wrapper,
+html.dark .el-drawer__body .el-input__wrapper,
+html.dark .el-drawer__body .el-textarea__inner,
+html.dark .el-drawer__body .el-select__wrapper {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+html.dark .el-dialog__body .el-input__wrapper:hover,
+html.dark .el-dialog__body .el-textarea__inner:hover,
+html.dark .el-dialog__body .el-select__wrapper:hover,
+html.dark .el-drawer__body .el-input__wrapper:hover,
+html.dark .el-drawer__body .el-textarea__inner:hover,
+html.dark .el-drawer__body .el-select__wrapper:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+html.dark .el-dialog__body .el-input__wrapper.is-focus,
+html.dark .el-dialog__body .el-textarea__inner:focus,
+html.dark .el-dialog__body .el-select__wrapper.is-focused,
+html.dark .el-drawer__body .el-input__wrapper.is-focus,
+html.dark .el-drawer__body .el-textarea__inner:focus,
+html.dark .el-drawer__body .el-select__wrapper.is-focused {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-accent-primary);
+}
+html.dark .el-dialog__body .el-form .el-form-item__label,
+html.dark .el-drawer__body .el-form .el-form-item__label {
+  color: var(--color-text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. 表单控件宽度工具类 — 替代 inline style="width: Xpx"
+   ═══════════════════════════════════════════════════════════════════════════ */
+.w-input-xs  { width: 120px; }
+.w-input-sm  { width: 160px; }
+.w-input-md  { width: 220px; }
+.w-input-lg  { width: 300px; }
+.w-input-xl  { width: 400px; }
+.w-input-full { width: 100%; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. 按钮增强 — 企业级按钮系统
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 默认按钮优化 — 更明显的边框与 hover ──────────────────────────────── */
+.el-button--default:not(.is-link):not(.is-circle):not(.is-disabled) {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+.el-button--default:not(.is-link):not(.is-circle):not(.is-disabled):hover {
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  background: rgba(59, 130, 246, 0.04);
+}
+html.dark .el-button--default:not(.is-link):not(.is-circle):not(.is-disabled) {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+html.dark .el-button--default:not(.is-link):not(.is-circle):not(.is-disabled):hover {
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* ── Circle 按钮统一（工具栏操作） ─────────────────────────────────────── */
+.el-button.is-circle {
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+}
+.el-button.is-circle:hover {
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+  background: rgba(59, 130, 246, 0.06);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+.el-button.is-circle.el-button--primary {
+  background: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  color: #fff;
+}
+.el-button.is-circle.el-button--primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+  color: #fff;
+}
+.el-button.is-circle.el-button--danger {
+  color: var(--el-color-danger);
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.05);
+}
+.el-button.is-circle.el-button--danger:hover {
+  color: #fff;
+  background: var(--el-color-danger);
+  border-color: var(--el-color-danger);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+}
+.el-button.is-circle.el-button--success {
+  color: var(--el-color-success);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+}
+.el-button.is-circle.el-button--success:hover {
+  color: #fff;
+  background: var(--el-color-success);
+  border-color: var(--el-color-success);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+html.dark .el-button.is-circle:not([class*="el-button--"]) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-border-default);
+  color: var(--color-text-muted);
+}
+html.dark .el-button.is-circle:not([class*="el-button--"]):hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. 表格增强 — 统一行高与紧凑度
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-table .el-table__cell {
+  padding: 6px 0;
+  font-size: 13px;
+}
+.el-table th.el-table__cell {
+  background: var(--table-header-bg) !important;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--table-header-text, #0f172a) !important;
+  letter-spacing: 0.02em;
+}
+.el-table .el-table__empty-text {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9. Input / Select 统一 — 增强焦点态与尺寸
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-input__wrapper,
+.el-select__wrapper {
+  border-radius: var(--radius-xs, 2px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.el-input__wrapper:hover,
+.el-select__wrapper:hover {
+  border-color: var(--color-accent-primary);
+}
+.el-textarea__inner {
+  border-radius: var(--radius-xs, 2px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.el-textarea__inner:hover {
+  border-color: var(--color-accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   10. Tag 增强 — 统一大小与边距
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-tag {
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  padding: 0 10px;
+  height: 24px;
+  line-height: 22px;
+}
+.el-tag--small {
+  padding: 0 8px;
+  height: 20px;
+  line-height: 18px;
+  font-size: 11px;
+}
+
+/* primary tag 强调色 */
+.el-tag--primary {
+  --el-tag-bg-color: rgba(59, 130, 246, 0.08);
+  --el-tag-border-color: rgba(59, 130, 246, 0.2);
+  --el-tag-text-color: var(--c-blue-600);
+}
+html.dark .el-tag--primary {
+  --el-tag-text-color: var(--c-blue-400);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   11. Notification / Message 增强
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-notification {
+  border-radius: var(--radius-md, 6px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--color-border-subtle);
+}
+html.dark .el-notification {
+  background: var(--color-glass-bg-dark);
+  border-color: var(--color-border-default);
+}
+.el-message {
+  border-radius: var(--radius-md, 6px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   12. Drawer 增强 — 统一尺寸层级
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Drawer header/body 基础间距由 theme-overrides.css 控制，此处仅增强 footer */
+.el-drawer .el-drawer__footer {
+  padding: 14px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   13. Pagination 增强 — 企业级精致分页
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-pagination {
+  margin-top: 8px;
+  gap: 4px;
+  font-size: 12px;
+  --el-pagination-button-width: 26px;
+  --el-pagination-button-height: 26px;
+}
+.el-pagination button,
+.el-pagination .el-pager li {
+  min-width: 26px;
+  height: 26px;
+  line-height: 26px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xs, 2px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+}
+.el-pagination button:hover:not(:disabled),
+.el-pagination .el-pager li:hover:not(.is-active):not(.is-disabled) {
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  background: rgba(59, 130, 246, 0.04);
+}
+.el-pagination .el-pager li.is-active {
+  background: transparent;
+  border-color: var(--color-border-subtle);
+  color: var(--el-color-primary);
+  font-weight: 700;
+  box-shadow: none;
+}
+.el-pagination.is-background button,
+.el-pagination.is-background .el-pager li {
+  border: 1px solid var(--color-border-subtle);
+  background: transparent;
+}
+.el-pagination.is-background .el-pager li.is-active {
+  background: transparent;
+  border-color: var(--color-border-subtle);
+  color: var(--el-color-primary);
+  font-weight: 700;
+  box-shadow: none;
+}
+.el-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--color-border-subtle);
+}
+html.dark .el-pagination button,
+html.dark .el-pagination .el-pager li {
+  background: transparent;
+  border-color: var(--color-border-default);
+  color: var(--color-text-muted);
+}
+html.dark .el-pagination button:hover:not(:disabled),
+html.dark .el-pagination .el-pager li:hover:not(.is-active):not(.is-disabled) {
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+html.dark .el-pagination .el-pager li.is-active {
+  background: transparent;
+  border-color: var(--color-border-default);
+  color: var(--el-color-primary);
+  font-weight: 700;
+  box-shadow: none;
+}
+/* 分页信息文字 */
+.el-pagination .el-pagination__total,
+.el-pagination .el-pagination__jump {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   14. Dropdown 菜单增强
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-dropdown-menu {
+  border-radius: var(--radius-md, 6px);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+}
+html.dark .el-dropdown-menu {
+  background: var(--color-glass-bg-dark);
+  border-color: var(--color-border-default);
+}
+.el-dropdown-menu__item {
+  border-radius: var(--radius-xs, 2px);
+  font-size: 13px;
+  padding: 8px 12px;
+  transition: background 0.15s;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   15. Tooltip 增强
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-tooltip__trigger:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs, 2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   16. MessageBox 增强
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-message-box {
+  border-radius: var(--radius-lg, 10px);
+  max-width: 440px;
+}
+.el-message-box__title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.el-message-box__message {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.el-message-box__btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   17. Loading 遮罩增强
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-loading-mask {
+  border-radius: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   18. Form 内联模式（筛选栏）增强
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-form--inline .el-form-item {
+  margin-right: 12px;
+  margin-bottom: 8px;
+}
+.el-form--inline .el-form-item__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   19. Switch / Checkbox / Radio 视觉统一
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-checkbox {
+  --el-checkbox-font-size: 13px;
+}
+.el-radio {
+  --el-radio-font-size: 13px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   20. 通用页面头部区域
+   ═══════════════════════════════════════════════════════════════════════════ */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.page-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+.page-subtitle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   21. 空状态统一
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-empty {
+  padding: 40px 0;
+}
+.el-empty__description {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   22. Popover / Popconfirm 增强
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-popover.el-popper {
+  border-radius: var(--radius-md, 6px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--color-border-subtle);
+}
+html.dark .el-popover.el-popper {
+  background: var(--color-glass-bg-dark);
+  border-color: var(--color-border-default);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   23. Divider 增强
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-divider--horizontal {
+  margin: 16px 0;
+  border-top-color: var(--color-border-subtle);
+}
+html.dark .el-divider--horizontal {
+  border-top-color: var(--color-border-default);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   24. Descriptions 统一
+   ═══════════════════════════════════════════════════════════════════════════ */
+.el-descriptions {
+  --el-descriptions-item-bordered-label-background: var(--color-bg-muted);
+}
+html.dark .el-descriptions {
+  --el-descriptions-item-bordered-label-background: rgba(255, 255, 255, 0.04);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   25. ProfileView 通用块样式
+   ═══════════════════════════════════════════════════════════════════════════ */
+.profile-block {
+  max-width: 520px;
+  padding: 20px 24px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-bg-card);
+}
+html.dark .profile-block {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--color-border-default);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   26. Link 按钮颜色语义增强 — cell-actions 中的 info/warning/success link
+   
+   语义规范：
+     · info    = 查看 / 详情 / 版本（只读操作）
+     · primary = 编辑 / 修改（核心操作）
+     · success = 执行 / 安装 / 启用 / 终端（正向操作）
+     · warning = 检测 / 检查 / 重置密码（注意操作）
+     · danger  = 删除 / 禁用（破坏操作）
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* info link - 柔和蓝灰色 */
+.cell-actions .el-button.is-link.el-button--info {
+  color: var(--el-color-info);
+}
+.cell-actions .el-button.is-link.el-button--info:hover {
+  color: var(--el-color-info-light-3);
+}
+
+/* warning link - 琥珀色 */
+.cell-actions .el-button.is-link.el-button--warning {
+  color: var(--el-color-warning);
+}
+.cell-actions .el-button.is-link.el-button--warning:hover {
+  color: var(--el-color-warning-light-3);
+}
+
+/* success link - 翡翠绿 */
+.cell-actions .el-button.is-link.el-button--success {
+  color: var(--el-color-success);
+}
+.cell-actions .el-button.is-link.el-button--success:hover {
+  color: var(--el-color-success-light-3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   27. 操作栏按钮组视觉分隔 — toolbar 中不同功能区域的分隔线
+   ═══════════════════════════════════════════════════════════════════════════ */
+.page-toolbar-right::before {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 24px;
+  background: var(--color-border-default);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+html.dark .page-toolbar-right::before {
+  background: var(--color-border-strong);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   28. 查询栏 — .srv-query-bar + .qb-* 统一查询/筛选/操作栏
+   
+   所有列表页共享同一查询栏布局：
+   <div class="srv-query-bar">
+     <div class="qb-search">...</div>       搜索框（前置图标）
+     <div class="qb-filters">...</div>       筛选项
+     <div class="qb-actions">...</div>       操作按钮
+   </div>
+   ═══════════════════════════════════════════════════════════════════════════ */
+.srv-query-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+html.dark .srv-query-bar {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(51, 65, 85, 0.9);
+}
+
+/* ── 搜索框 ── */
+.qb-search {
+  position: relative;
+  flex: 1;
+  min-width: 140px;
+  max-width: 340px;
+}
+.qb-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 15px;
+  z-index: 1;
+  pointer-events: none;
+}
+html.dark .qb-search-icon { color: #64748b; }
+
+.qb-keyword { width: 100%; }
+.qb-keyword .el-input__wrapper {
+  padding-left: 32px;
+  height: 34px;
+  border-radius: 8px;
+  box-shadow: none !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fafc;
+  transition: border-color 0.15s, background 0.15s;
+}
+.qb-keyword .el-input__wrapper:hover {
+  border-color: #cbd5e1 !important;
+  background: #fff;
+}
+.qb-keyword .el-input__wrapper.is-focus {
+  border-color: #3b82f6 !important;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.1) !important;
+}
+.qb-keyword .el-input__inner {
+  font-size: 13px;
+  color: #1e293b;
+}
+.qb-keyword .el-input__inner::placeholder { color: #94a3b8; }
+
+html.dark .qb-keyword .el-input__wrapper {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(51, 65, 85, 0.9) !important;
+}
+html.dark .qb-keyword .el-input__wrapper.is-focus {
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.15) !important;
+}
+html.dark .qb-keyword .el-input__inner { color: #e2e8f0; }
+
+/* 搜索区分隔线 */
+.qb-search::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background: #e2e8f0;
+}
+html.dark .qb-search::after { background: rgba(51, 65, 85, 0.8); }
+
+/* ── 筛选项 ── */
+.qb-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.qb-select { width: 100px; }
+.qb-select .el-select__wrapper {
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+  background: #f8fafc;
+  font-size: 13px;
+}
+.qb-select .el-select__wrapper:hover { border-color: #cbd5e1 !important; }
+.qb-select .el-select__wrapper.is-focused {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.1) !important;
+}
+html.dark .qb-select .el-select__wrapper {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(51, 65, 85, 0.9) !important;
+  color: #e2e8f0;
+}
+
+/* ── 内联输入框（标签筛选等） ── */
+.qb-input { width: 160px; }
+.qb-input--label { width: 180px; }
+.qb-input .el-input__wrapper {
+  height: 34px;
+  border-radius: 8px;
+  box-shadow: none !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fafc;
+}
+.qb-input .el-input__wrapper:hover {
+  border-color: #cbd5e1 !important;
+  background: #fff;
+}
+.qb-input .el-input__wrapper.is-focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.1) !important;
+  background: #fff;
+}
+html.dark .qb-input .el-input__wrapper {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(51, 65, 85, 0.9) !important;
+}
+
+/* ── 分组标签 ── */
+.qb-group-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 6px 0 8px;
+  border-radius: 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1;
+}
+.qb-group-close {
+  cursor: pointer;
+  color: #93c5fd;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+.qb-group-close:hover { color: #2563eb; }
+
+html.dark .qb-group-tag {
+  background: rgba(30, 64, 175, 0.18);
+  border-color: rgba(96, 165, 250, 0.28);
+  color: #93c5fd;
+}
+html.dark .qb-group-close { color: #60a5fa; }
+
+/* ── 操作按钮 ── */
+.qb-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.qb-btn.el-button {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  box-shadow: none;
+  gap: 4px;
+}
+.qb-btn.el-button:hover {
+  color: #2563eb;
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.qb-btn.el-button .el-icon { font-size: 14px; }
+.qb-btn--primary.el-button {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+  font-weight: 600;
+}
+.qb-btn--primary.el-button:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+html.dark .qb-btn.el-button {
+  background: rgba(30, 41, 59, 0.9);
+  color: #cbd5e1;
+  border-color: rgba(51, 65, 85, 0.7);
+}
+html.dark .qb-btn.el-button:hover {
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.34);
+  background: rgba(30, 64, 175, 0.18);
+}
+html.dark .qb-btn--primary.el-button {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+html.dark .qb-btn--primary.el-button:hover {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   29. 表格容器 — .table-shell 统一表格包裹器
+   ═══════════════════════════════════════════════════════════════════════════ */
+.table-shell {
+  border: 1px solid rgba(59, 130, 246, 0.08);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+html.dark .table-shell {
+  background: rgba(2, 6, 23, 0.96);
+  border-color: rgba(59, 130, 246, 0.12);
+}

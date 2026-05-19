@@ -1,0 +1,451 @@
+/* ============================================================================
+   k8s-panel.css — K8s 管理面板公共样式
+   从 17 个 Panel 文件中提取的重复 CSS，统一为全局 class
+   ============================================================================ */
+
+/* ── 表格操作列（紧凑图标按钮） ──────────────────────────────────────── */
+.table-actions {
+  width: 100%;
+  justify-content: center;
+  flex-wrap: nowrap !important;
+}
+
+.table-actions .el-button {
+  font-weight: 600;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.table-actions .el-button .el-icon {
+  margin-right: 2px;
+}
+
+/* YAML 按钮使用紫色品牌色 */
+.table-actions .btn-yaml {
+  color: var(--c-violet-600, #7c3aed);
+}
+
+.table-actions .btn-yaml:hover,
+.table-actions .btn-yaml:focus {
+  color: var(--c-violet-700, #6d28d9);
+}
+
+.table-actions .btn-yaml:active {
+  color: var(--c-violet-800, #5b21b6);
+}
+
+/* ── 紧凑图标操作按钮 ────────────────────────────────────────────────── */
+.k8s-act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 15px;
+}
+
+.k8s-act-btn svg {
+  width: 1em;
+  height: 1em;
+  display: block;
+}
+
+.k8s-act-btn--toolbar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.k8s-act-btn:hover {
+  background: rgba(59, 130, 246, 0.08);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.k8s-act-btn--toolbar:hover {
+  transform: translateY(-1px);
+}
+
+/* ── 按功能区分的色彩变体（静态统一灰，hover 显示功能色） ── */
+
+/* 所有变体静态时继承 .k8s-act-btn 的中性灰 color: #64748b */
+/* 所有变体静态时继承 .k8s-act-btn 的深色默认前景 */
+
+/* 详情/查看 → hover 蓝 */
+.k8s-act-btn--info:hover {
+  background: rgba(59, 130, 246, 0.08);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+/* 编辑 → hover 橙 */
+.k8s-act-btn--edit:hover {
+  background: rgba(245, 158, 11, 0.08);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+/* 日志/终端 → hover 青 */
+.k8s-act-btn--cyan:hover {
+  background: rgba(6, 182, 212, 0.08);
+  color: #0891b2;
+  border-color: rgba(6, 182, 212, 0.2);
+}
+
+/* 删除/危险 → hover 红 */
+.k8s-act-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* 重启/驱逐 → hover 琥珀 */
+.k8s-act-btn--warn:hover {
+  background: rgba(245, 158, 11, 0.08);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+/* 伸缩/Shell → hover 绿 */
+.k8s-act-btn--success:hover {
+  background: rgba(16, 185, 129, 0.08);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+/* YAML → hover 紫 */
+.k8s-act-btn--violet:hover {
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+/* 更多操作 → hover 蓝灰 */
+.k8s-act-btn--more:hover {
+  background: rgba(100, 116, 139, 0.08);
+  color: #475569;
+  border-color: rgba(100, 116, 139, 0.2);
+}
+
+/* 复制 → hover 靛蓝 */
+.k8s-act-btn--copy:hover {
+  background: rgba(99, 102, 241, 0.08);
+  color: #4f46e5;
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+/* ── Dark mode ── */
+html.dark .k8s-act-btn {
+  color: rgba(148, 163, 184, 0.65);
+}
+
+html.dark .k8s-act-btn--toolbar {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(148, 163, 184, 0.14);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.32);
+}
+
+html.dark .k8s-act-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+/* Dark mode hover: 各功能色 */
+html.dark .k8s-act-btn--info:hover {
+  background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3);
+}
+html.dark .k8s-act-btn--edit:hover {
+  background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);
+}
+html.dark .k8s-act-btn--cyan:hover {
+  background: rgba(6, 182, 212, 0.15); color: #22d3ee; border-color: rgba(6, 182, 212, 0.3);
+}
+html.dark .k8s-act-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);
+}
+html.dark .k8s-act-btn--warn:hover {
+  background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);
+}
+html.dark .k8s-act-btn--success:hover {
+  background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);
+}
+html.dark .k8s-act-btn--violet:hover {
+  background: rgba(139, 92, 246, 0.15); color: #a78bfa; border-color: rgba(139, 92, 246, 0.3);
+}
+html.dark .k8s-act-btn--copy:hover {
+  background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3);
+}
+html.dark .k8s-act-btn--more:hover {
+  background: rgba(148, 163, 184, 0.15); color: #94a3b8; border-color: rgba(148, 163, 184, 0.3);
+}
+
+/* 操作列容器 */
+.k8s-act-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.k8s-act-group--toolbar {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.k8s-act-group--footer {
+  width: 100%;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* disabled 状态 */
+.k8s-act-btn:disabled,
+.k8s-act-btn[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.k8s-act-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border-subtle, rgba(0, 0, 0, 0.06));
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+html.dark .k8s-act-divider {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+/* ── 操作下拉菜单项 ─────────────────────────────────────────────────── */
+.k8s-dropdown-item {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 6px;
+}
+
+.k8s-dropdown-item .el-icon {
+  margin-right: 2px;
+}
+
+.dropdown-item {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 6px;
+}
+
+.dropdown-item .el-icon {
+  margin-right: 2px;
+}
+
+/* ── 状态指示器（替代重型 tag） ──────────────────────────────────────── */
+.k8s-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.k8s-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.k8s-status--ok { color: #059669; background: rgba(16, 185, 129, 0.1); }
+.k8s-status--ok::before { background: #10b981; }
+
+.k8s-status--warn { color: #d97706; background: rgba(245, 158, 11, 0.12); }
+.k8s-status--warn::before { background: #f59e0b; }
+
+.k8s-status--err { color: #dc2626; background: rgba(239, 68, 68, 0.1); }
+.k8s-status--err::before { background: #ef4444; }
+
+.k8s-status--info { color: #64748b; background: rgba(148, 163, 184, 0.12); }
+.k8s-status--info::before { background: var(--color-text-muted, #94a3b8); }
+
+.k8s-status--pending { color: #2563eb; background: rgba(59, 130, 246, 0.12); }
+.k8s-status--pending::before { background: #3b82f6; animation: k8s-pulse 1.5s ease-in-out infinite; }
+
+html.dark .k8s-status--ok { color: #34d399; background: rgba(16, 185, 129, 0.16); }
+html.dark .k8s-status--warn { color: #fbbf24; background: rgba(245, 158, 11, 0.18); }
+html.dark .k8s-status--err { color: #f87171; background: rgba(239, 68, 68, 0.16); }
+html.dark .k8s-status--info { color: rgba(203, 213, 225, 0.84); background: rgba(148, 163, 184, 0.12); }
+html.dark .k8s-status--pending { color: #60a5fa; background: rgba(59, 130, 246, 0.18); }
+
+@keyframes k8s-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── 名称列（常规文本，不再加粗） ───────────────────────────────────── */
+.k8s-name {
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 400;
+  color: #111827;
+  cursor: copy;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.k8s-name:hover {
+  color: var(--color-accent-primary, #2563eb);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: rgba(37, 99, 235, 0.35);
+  text-underline-offset: 3px;
+}
+
+html.dark .k8s-name {
+  color: rgba(203, 213, 225, 0.78);
+}
+
+html.dark .k8s-name:hover {
+  color: #93c5fd;
+  text-decoration-color: rgba(147, 197, 253, 0.4);
+}
+
+/* ── Namespace / Service 文本 — 去掉背景框，保持清爽轻量 ─────────────── */
+.k8s-ns {
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 400;
+  padding: 0;
+  border-radius: 0;
+  display: inline;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #111827;
+  background: transparent;
+  border: 0;
+}
+
+/* 所有 data-ns-color 统一为同一色调，但不再显示 tag 背景 */
+.k8s-ns[data-ns-color] {
+  color: #111827;
+  background: transparent;
+  border-color: transparent;
+}
+
+html.dark .k8s-ns,
+html.dark .k8s-ns[data-ns-color] {
+  color: rgba(203, 213, 225, 0.78);
+  background: transparent;
+  border-color: transparent;
+}
+
+/* ── AGE 列 ────────────────────────────────────────────────────────────── */
+.k8s-age {
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 400;
+  color: #111827;
+}
+
+html.dark .k8s-age {
+  color: rgba(203, 213, 225, 0.78);
+}
+
+/* ── 数值列 ────────────────────────────────────────────────────────────── */
+.k8s-num {
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  color: #2563eb;
+  text-align: center;
+}
+
+html.dark .k8s-num {
+  color: #93c5fd;
+}
+
+/* ── Restarts 列智能着色 ─────────────────────────────────────────────── */
+.k8s-restarts {
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.k8s-restarts--zero {
+  color: var(--color-text-muted, #94a3b8);
+  font-weight: 400;
+}
+
+.k8s-restarts--low {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.k8s-restarts--high {
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+html.dark .k8s-restarts--low {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+}
+html.dark .k8s-restarts--high {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+/* ── Ready/Replicas 数值高亮 ─────────────────────────────────────────── */
+.k8s-ready-num {
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.k8s-ready-num--ok {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.k8s-ready-num--partial {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.k8s-ready-num--bad {
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+html.dark .k8s-ready-num--ok { color: #34d399; background: rgba(16, 185, 129, 0.16); }
+html.dark .k8s-ready-num--partial { color: #fbbf24; background: rgba(245, 158, 11, 0.18); }
+html.dark .k8s-ready-num--bad { color: #f87171; background: rgba(239, 68, 68, 0.16); }

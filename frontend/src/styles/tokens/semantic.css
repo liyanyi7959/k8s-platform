@@ -1,0 +1,324 @@
+/* ============================================================================
+   semantic.css — 语义 Token (Design Token Layer 2)
+   将 primitives 色阶映射为 UI 语义；light / dark 一处切换
+   ============================================================================ */
+
+/* ── Light Mode (默认) ─────────────────────────────────────────────────── */
+:root {
+  /* 背景 */
+  --color-bg-page:       #f7f9ff;                         /* 页面底色 */
+  --color-bg-card:       var(--c-white);                   /* 卡片/面板 */
+  --color-bg-sidebar:    var(--c-white);                   /* 侧栏 */
+  --color-bg-input:      var(--c-white);                   /* 输入框 */
+  --color-bg-hover:      var(--c-slate-50);                /* 可交互元素 hover */
+  --color-bg-active:     var(--c-blue-50);                 /* 选中态底色 */
+  --color-bg-muted:      var(--c-slate-100);               /* 弱底色区块 */
+  --color-bg-overlay:    rgba(0, 0, 0, 0.3);              /* 遮罩层 */
+
+  /* 玻璃效果 */
+  --color-glass-bg:          rgba(255, 255, 255, 0.7);
+  --color-glass-bg-strong:   rgba(255, 255, 255, 0.82);
+  --color-glass-bg-dark:     rgba(15, 23, 42, 0.85);
+  --color-glass-border:      rgba(59, 130, 246, 0.16);
+  --color-glass-border-light: rgba(255, 255, 255, 0.6);
+  --color-glass-border-dark:  rgba(255, 255, 255, 0.1);
+  --color-glass-footer:      rgba(255, 255, 255, 0.3);
+
+  /* 功能色边框 (20% 透明度) */
+  --color-success-border:    rgba(16, 185, 129, 0.2);
+  --color-warning-border:    rgba(245, 158, 11, 0.2);
+  --color-danger-border:     rgba(239, 68, 68, 0.2);
+  --color-info-border:       rgba(148, 163, 184, 0.2);
+  --color-primary-border:    rgba(37, 99, 235, 0.2);
+
+  /* 按钮辉光 */
+  --color-btn-close-bg:      rgba(0, 0, 0, 0.04);
+  --color-btn-close-hover:   rgba(0, 0, 0, 0.1);
+  --color-default-bg:        rgba(255, 255, 255, 0.8);
+  --color-default-hover-dark: rgba(255, 255, 255, 0.1);
+
+  /* 文字 */
+  --color-text-primary:    var(--c-slate-900);             /* 标题 / 主文字 */
+  --color-text-secondary:  var(--c-slate-600);             /* 正文 / 次文字 */
+  --color-text-muted:      var(--c-slate-400);             /* 辅助 / 占位符 */
+  --color-text-inverse:    var(--c-white);                 /* 深色底上的文字 */
+  --color-text-title:      rgba(2, 6, 23, 0.92);          /* 兼容旧 --app-title */
+
+  /* 边框 */
+  --color-border-default:  rgba(0, 0, 0, 0.10);           /* 默认边框 */
+  --color-border-subtle:   rgba(0, 0, 0, 0.10);           /* 分割线 */
+  --color-border-strong:   rgba(0, 0, 0, 0.15);           /* 输入框等强边框 */
+
+  /* 品牌 / 强调 */
+  --color-accent-primary:    var(--c-blue-500);
+  --color-accent-cyan:       var(--c-cyan-400);
+  --color-accent-violet:     var(--c-violet-400);
+
+  /* 语义功能色 */
+  --color-success:         var(--c-emerald-500);
+  --color-success-bg:      var(--c-emerald-50);
+  --color-success-text:    var(--c-emerald-700);
+
+  --color-warning:         var(--c-amber-500);
+  --color-warning-bg:      var(--c-amber-50);
+  --color-warning-text:    var(--c-amber-700);
+
+  --color-danger:          var(--c-red-500);
+  --color-danger-bg:       var(--c-red-50);
+  --color-danger-text:     var(--c-red-700);
+
+  --color-info:            var(--c-slate-500);
+  --color-info-bg:         var(--c-slate-100);
+  --color-info-text:       var(--c-slate-600);
+
+  /* 阴影（Light 使用 primitives 中的默认值） */
+  --shadow-card:           var(--shadow-lg);
+  --shadow-card-hover:     var(--shadow-xl);
+  --shadow-dropdown:       var(--shadow-md);
+
+  /* 布局 */
+  --content-max-width:     1600px;
+
+  /* Drawer 宽度层级 */
+  --drawer-sm:             380px;   /* 侧边配置面板 */
+  --drawer-md:             520px;   /* 中等表单 */
+  --drawer-lg:             72%;     /* 详情/编辑（K8s 资源） */
+
+  /* K8s 页面 — 通用文字 */
+  --k8s-text-title:      rgba(2, 6, 23, 0.86);
+  --k8s-text-label:      rgba(2, 6, 23, 0.56);
+  --k8s-text-body:       rgba(2, 6, 23, 0.76);
+  --k8s-text-strong:     rgba(2, 6, 23, 0.82);
+  --k8s-text-ro:         rgba(2, 6, 23, 0.82);
+
+  /* K8s 页面 — 卡片 / 面板 */
+  --k8s-card-border:       rgba(2, 6, 23, 0.09);
+  --k8s-card-bg:           rgba(255, 255, 255, 0.78);
+  --k8s-card-bg-gradient-top: rgba(255, 255, 255, 0.92);
+  --k8s-card-bg-gradient-bot: rgba(255, 255, 255, 0.75);
+  --k8s-card-shadow:       0 10px 30px rgba(2, 6, 23, 0.06);
+  --k8s-kv-bg:             rgba(255, 255, 255, 0.58);
+
+  /* K8s 页面 — accent 色 */
+  --k8s-accent-muted:      rgba(148, 163, 184, 0.7);
+  --k8s-accent-muted-dim:  rgba(148, 163, 184, 0.55);
+  --k8s-accent-muted-bg:   rgba(148, 163, 184, 0.12);
+  --k8s-accent-muted-border: rgba(148, 163, 184, 0.22);
+  --k8s-accent-blue:       rgba(37, 99, 235, 0.75);
+  --k8s-accent-blue-bg:    rgba(37, 99, 235, 0.1);
+  --k8s-accent-blue-border: rgba(37, 99, 235, 0.22);
+  --k8s-accent-emerald:    rgba(16, 185, 129, 0.82);
+  --k8s-accent-emerald-bg: rgba(16, 185, 129, 0.1);
+  --k8s-accent-emerald-border: rgba(16, 185, 129, 0.22);
+  --k8s-accent-amber:      rgba(245, 158, 11, 0.82);
+  --k8s-accent-red:        rgba(239, 68, 68, 0.82);
+  --k8s-accent-red-bg:     rgba(239, 68, 68, 0.06);
+  --k8s-accent-violet:     rgba(168, 85, 247, 0.55);
+  --k8s-accent-violet-bg:  rgba(168, 85, 247, 0.1);
+  --k8s-accent-violet-border: rgba(168, 85, 247, 0.22);
+  --k8s-accent-sky:        rgba(14, 165, 233, 0.55);
+  --k8s-accent-sky-dot:    rgba(14, 165, 233, 0.9);
+  --k8s-accent-violet-dot: rgba(168, 85, 247, 0.9);
+  --k8s-accent-emerald-dot: rgba(16, 185, 129, 0.9);
+  --k8s-accent-red-dot:    rgba(239, 68, 68, 0.9);
+  --k8s-accent-red-55:     rgba(239, 68, 68, 0.55);
+  --k8s-accent-amber-dot:  rgba(245, 158, 11, 0.95);
+  --k8s-accent-amber-border: rgba(245, 158, 11, 0.5);
+  --k8s-accent-amber-bg:   rgba(245, 158, 11, 0.06);
+  --k8s-accent-amber-55:   rgba(245, 158, 11, 0.55);
+
+  /* K8s 页面 — 链接 */
+  --k8s-link-color:        rgba(37, 99, 235, 0.92);
+
+  /* K8s 页面 — code box */
+  --k8s-code-bg:           rgba(2, 6, 23, 0.88);
+  --k8s-code-text:         rgba(255, 255, 255, 0.9);
+  --k8s-code-border:       rgba(255, 255, 255, 0.12);
+
+  /* K8s 页面 — table */
+  --k8s-table-hover:       rgba(59, 130, 246, 0.06);
+
+  /* K8s 页面 — 输入框 (meta-block) */
+  --k8s-input-shadow:      0 0 0 1px rgba(148, 163, 184, 0.35) inset;
+  --k8s-input-bg:          rgba(255, 255, 255, 0.78);
+  --k8s-input-focus-shadow: 0 0 0 1px rgba(37, 99, 235, 0.55) inset, 0 0 0 2px rgba(37, 99, 235, 0.12);
+
+  /* K8s 页面 — 底栏 / 导航 */
+  --k8s-footer-bg:         rgba(255, 255, 255, 0.92);
+  --k8s-footer-border:     rgba(2, 6, 23, 0.06);
+  --k8s-nav-bg:            rgba(255, 255, 255, 0.72);
+
+  /* K8s 页面 — tabs */
+  --k8s-tabs-bg:           rgba(148, 163, 184, 0.18);
+  --k8s-tabs-border:       rgba(148, 163, 184, 0.2);
+  --k8s-tabs-active:       rgba(255, 255, 255, 0.85);
+
+  /* K8s 页面 — 资源指示点 */
+  --k8s-dot-sky-ring:      0 0 0 3px rgba(14, 165, 233, 0.16);
+  --k8s-dot-violet-ring:   0 0 0 3px rgba(168, 85, 247, 0.16);
+  --k8s-dot-emerald-ring:  0 0 0 3px rgba(16, 185, 129, 0.14);
+  --k8s-dot-red-ring:      0 0 0 3px rgba(239, 68, 68, 0.14);
+  --k8s-probe-inset:       0 0 0 1px rgba(2, 6, 23, 0.08) inset;
+
+  /* K8s 页面 — meta-block 区块 */
+  --k8s-meta-bg:           rgba(255, 255, 255, 0.52);
+  --k8s-meta-head-bg:      rgba(148, 163, 184, 0.12);
+  --k8s-meta-mark:         rgba(148, 163, 184, 0.8);
+
+  /* 极光辉光 */
+  --glow-cyan:    rgba(34, 211, 238, 0.25);
+  --glow-blue:    rgba(59, 130, 246, 0.22);
+  --glow-violet:  rgba(167, 139, 250, 0.22);
+}
+
+/* ── Dark Mode ─────────────────────────────────────────────────────────── */
+html.dark {
+  /* 背景 */
+  --color-bg-page:       #070b14;
+  --color-bg-card:       var(--c-slate-900);
+  --color-bg-sidebar:    var(--c-slate-900);
+  --color-bg-input:      rgba(0, 0, 0, 0.3);
+  --color-bg-hover:      rgba(255, 255, 255, 0.06);
+  --color-bg-active:     rgba(59, 130, 246, 0.15);
+  --color-bg-muted:      rgba(255, 255, 255, 0.04);
+  --color-bg-overlay:    rgba(0, 0, 0, 0.5);
+
+  /* 玻璃效果 */
+  --color-glass-bg:          rgba(15, 23, 42, 0.55);
+  --color-glass-bg-strong:   rgba(15, 23, 42, 0.7);
+  --color-glass-bg-dark:     rgba(15, 23, 42, 0.85);
+  --color-glass-border:      rgba(59, 130, 246, 0.22);
+  --color-glass-border-light: rgba(255, 255, 255, 0.6);
+  --color-glass-border-dark:  rgba(255, 255, 255, 0.1);
+  --color-glass-footer:      rgba(0, 0, 0, 0.2);
+
+  /* 功能色边框 (20% 透明度 — 暗色模式偏亮) */
+  --color-success-border:    rgba(74, 222, 128, 0.2);
+  --color-warning-border:    rgba(251, 191, 36, 0.2);
+  --color-danger-border:     rgba(248, 113, 113, 0.2);
+  --color-info-border:       rgba(148, 163, 184, 0.2);
+  --color-primary-border:    rgba(96, 165, 250, 0.2);
+
+  /* 按钮辉光 */
+  --color-btn-close-bg:      rgba(255, 255, 255, 0.1);
+  --color-btn-close-hover:   rgba(255, 255, 255, 0.2);
+  --color-default-bg:        var(--color-bg-hover);
+  --color-default-hover-dark: rgba(255, 255, 255, 0.1);
+
+  /* 文字 */
+  --color-text-primary:    var(--c-slate-100);
+  --color-text-secondary:  var(--c-slate-300);
+  --color-text-muted:      var(--c-slate-500);
+  --color-text-inverse:    var(--c-slate-900);
+  --color-text-title:      rgba(226, 232, 240, 0.92);
+
+  /* 边框 */
+  --color-border-default:  rgba(255, 255, 255, 0.10);
+  --color-border-subtle:   rgba(255, 255, 255, 0.10);
+  --color-border-strong:   rgba(255, 255, 255, 0.12);
+
+  /* 品牌 / 强调 — 暗色模式稍微提亮 */
+  --color-accent-primary:    var(--c-blue-400);
+  --color-accent-cyan:       var(--c-cyan-400);
+  --color-accent-violet:     var(--c-violet-400);
+
+  /* 语义功能色 — 暗色底上使用更亮的前景色 */
+  --color-success:         var(--c-emerald-400);
+  --color-success-bg:      rgba(16, 185, 129, 0.14);
+  --color-success-text:    var(--c-emerald-300);
+
+  --color-warning:         var(--c-amber-400);
+  --color-warning-bg:      rgba(245, 158, 11, 0.14);
+  --color-warning-text:    var(--c-amber-300);
+
+  --color-danger:          var(--c-red-400);
+  --color-danger-bg:       rgba(239, 68, 68, 0.14);
+  --color-danger-text:     var(--c-red-300);
+
+  --color-info:            var(--c-slate-400);
+  --color-info-bg:         rgba(148, 163, 184, 0.1);
+  --color-info-text:       var(--c-slate-300);
+
+  /* 阴影 */
+  --shadow-card:           0 12px 34px rgba(0, 0, 0, 0.42);
+  --shadow-card-hover:     0 18px 48px rgba(0, 0, 0, 0.52);
+  --shadow-dropdown:       0 8px 24px rgba(0, 0, 0, 0.4);
+
+  /* 极光辉光 — 暗色模式略微降低不透明度 */
+  --glow-cyan:    rgba(34, 211, 238, 0.18);
+  --glow-blue:    rgba(59, 130, 246, 0.16);
+  --glow-violet:  rgba(167, 139, 250, 0.16);
+
+  /* K8s 页面 — 暗色覆盖 */
+  --k8s-text-title:      rgba(226, 232, 240, 0.92);
+  --k8s-text-label:      rgba(226, 232, 240, 0.62);
+  --k8s-text-body:       rgba(226, 232, 240, 0.84);
+  --k8s-text-strong:     rgba(226, 232, 240, 0.82);
+  --k8s-text-ro:         rgba(226, 232, 240, 0.9);
+
+  --k8s-card-border:       rgba(226, 232, 240, 0.10);
+  --k8s-card-bg:           rgba(2, 6, 23, 0.38);
+  --k8s-card-bg-gradient-top: rgba(2, 6, 23, 0.72);
+  --k8s-card-bg-gradient-bot: rgba(2, 6, 23, 0.52);
+  --k8s-card-shadow:       0 10px 30px rgba(0, 0, 0, 0.28);
+  --k8s-kv-bg:             rgba(2, 6, 23, 0.35);
+
+  --k8s-accent-muted-border: rgba(148, 163, 184, 0.18);
+  --k8s-accent-muted-bg:   rgba(148, 163, 184, 0.12);
+
+  --k8s-link-color:        rgba(96, 165, 250, 0.92);
+
+  --k8s-table-hover:       rgba(96, 165, 250, 0.12);
+
+  --k8s-input-shadow:      0 0 0 1px rgba(148, 163, 184, 0.22) inset;
+  --k8s-input-bg:          rgba(2, 6, 23, 0.22);
+  --k8s-input-focus-shadow: 0 0 0 1px rgba(96, 165, 250, 0.55) inset, 0 0 0 2px rgba(96, 165, 250, 0.12);
+
+  --k8s-footer-bg:         rgba(2, 6, 23, 0.72);
+  --k8s-footer-border:     rgba(226, 232, 240, 0.08);
+  --k8s-nav-bg:            rgba(2, 6, 23, 0.35);
+
+  --k8s-tabs-bg:           rgba(148, 163, 184, 0.14);
+  --k8s-tabs-border:       rgba(148, 163, 184, 0.16);
+  --k8s-tabs-active:       rgba(2, 6, 23, 0.42);
+
+  --k8s-dot-sky-ring:      0 0 0 3px rgba(14, 165, 233, 0.18);
+  --k8s-dot-violet-ring:   0 0 0 3px rgba(168, 85, 247, 0.18);
+  --k8s-dot-emerald-ring:  0 0 0 3px rgba(16, 185, 129, 0.16);
+  --k8s-dot-red-ring:      0 0 0 3px rgba(239, 68, 68, 0.16);
+  --k8s-probe-inset:       0 0 0 1px rgba(226, 232, 240, 0.08) inset;
+
+  --k8s-meta-bg:           rgba(2, 6, 23, 0.24);
+  --k8s-meta-head-bg:      rgba(148, 163, 184, 0.12);
+  --k8s-meta-mark:         rgba(148, 163, 184, 0.8);
+
+  /* K8s 页面 — 强调色暗色覆盖（base → 400 色阶，提亮保持对比度） */
+  --k8s-accent-muted:        rgba(148, 163, 184, 0.6);
+  --k8s-accent-muted-dim:    rgba(148, 163, 184, 0.45);
+  --k8s-accent-blue:         rgba(96, 165, 250, 0.75);
+  --k8s-accent-blue-bg:      rgba(96, 165, 250, 0.12);
+  --k8s-accent-blue-border:  rgba(96, 165, 250, 0.22);
+  --k8s-accent-emerald:      rgba(52, 211, 153, 0.82);
+  --k8s-accent-emerald-bg:   rgba(52, 211, 153, 0.12);
+  --k8s-accent-emerald-border: rgba(52, 211, 153, 0.22);
+  --k8s-accent-amber:        rgba(251, 191, 36, 0.82);
+  --k8s-accent-amber-bg:     rgba(251, 191, 36, 0.08);
+  --k8s-accent-amber-border: rgba(251, 191, 36, 0.5);
+  --k8s-accent-amber-55:     rgba(251, 191, 36, 0.55);
+  --k8s-accent-amber-dot:    rgba(251, 191, 36, 0.95);
+  --k8s-accent-red:          rgba(248, 113, 113, 0.82);
+  --k8s-accent-red-bg:       rgba(248, 113, 113, 0.1);
+  --k8s-accent-red-55:       rgba(248, 113, 113, 0.55);
+  --k8s-accent-red-dot:      rgba(248, 113, 113, 0.9);
+  --k8s-accent-violet:       rgba(192, 132, 252, 0.55);
+  --k8s-accent-violet-bg:    rgba(192, 132, 252, 0.12);
+  --k8s-accent-violet-border: rgba(192, 132, 252, 0.22);
+  --k8s-accent-violet-dot:   rgba(192, 132, 252, 0.9);
+  --k8s-accent-sky:          rgba(56, 189, 248, 0.55);
+  --k8s-accent-sky-dot:      rgba(56, 189, 248, 0.9);
+
+  /* K8s 页面 — 代码块暗色 */
+  --k8s-code-bg:           rgba(2, 6, 23, 0.95);
+  --k8s-code-text:         rgba(226, 232, 240, 0.92);
+  --k8s-code-border:       rgba(255, 255, 255, 0.1);
+}

@@ -1,0 +1,24 @@
+CREATE TABLE IF NOT EXISTS tasks (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  type VARCHAR(64) NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'pending',
+  title VARCHAR(255) NULL,
+  percent INT NOT NULL DEFAULT 0,
+  message TEXT NULL,
+  meta JSON NULL,
+  steps JSON NULL,
+  created_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  INDEX idx_tasks_status (status),
+  INDEX idx_tasks_created_by (created_by),
+  INDEX idx_tasks_created_at (created_at)
+);
+
+CREATE TABLE IF NOT EXISTS task_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  task_id BIGINT UNSIGNED NOT NULL,
+  content TEXT NOT NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  INDEX idx_task_logs_task_id (task_id)
+);

@@ -1,0 +1,597 @@
+/* k8s-edit.css — K8s 资源编辑 drawer 样式（edit-section / meta-block / container tabs 等） */
+
+/* ── edit-meta ────────────────────────────────────────────── */
+
+.edit-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.edit-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 760px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--k8s-accent-muted-bg);
+  border: 1px solid var(--k8s-accent-muted-border);
+  color: var(--k8s-text-body);
+  font-size: 12px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* html.dark .edit-meta-badge — 通过 Token 自动切换 */
+
+/* ── edit-section-card ────────────────────────────────────── */
+
+.edit-section-card {
+  --edit-card-accent: var(--k8s-accent-muted-dim);
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid var(--k8s-card-border);
+  background: var(--k8s-card-bg);
+}
+
+.edit-section-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  background: var(--edit-card-accent);
+  opacity: 0.35;
+}
+
+.edit-section-card > .el-card__header {
+  padding: 10px 12px 10px 16px;
+}
+
+.edit-section-card > .el-card__body {
+  padding: 12px 12px 12px 16px;
+}
+
+.edit-section-card--liveness > .el-card__body,
+.edit-section-card--readiness > .el-card__body,
+.edit-section-card--startup > .el-card__body {
+  padding: 10px 12px 10px 16px;
+}
+
+/* html.dark .edit-section-card — 通过 Token 自动切换 */
+
+.edit-section-card--resources,
+.edit-section-card--base,
+.edit-section-card--container,
+.edit-section-card--probes,
+.edit-section-card--liveness,
+.edit-section-card--readiness,
+.edit-section-card--startup {
+  --edit-card-accent: var(--k8s-accent-muted-dim);
+}
+
+.edit-section-card--resources {
+  --edit-card-accent: var(--k8s-accent-sky);
+}
+
+.edit-section-card--container {
+  --edit-card-accent: var(--k8s-accent-blue);
+}
+
+.edit-section-card--probes {
+  --edit-card-accent: var(--k8s-accent-muted-dim);
+}
+
+.edit-section-card--liveness {
+  --edit-card-accent: var(--k8s-accent-red-55);
+}
+
+.edit-section-card--readiness {
+  --edit-card-accent: var(--k8s-accent-emerald);
+}
+
+.edit-section-card--startup {
+  --edit-card-accent: var(--k8s-accent-violet);
+}
+
+/* ── edit-section-title ───────────────────────────────────── */
+
+.edit-section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.edit-title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.edit-section-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--k8s-text-title);
+}
+
+.edit-section-card--liveness .edit-section-title,
+.edit-section-card--readiness .edit-section-title,
+.edit-section-card--startup .edit-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-section-card--liveness .edit-section-title::before,
+.edit-section-card--readiness .edit-section-title::before,
+.edit-section-card--startup .edit-section-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  box-shadow: var(--k8s-probe-inset);
+}
+
+.edit-section-card--liveness .edit-section-title::before {
+  background: var(--k8s-accent-red-dot);
+}
+
+.edit-section-card--readiness .edit-section-title::before {
+  background: var(--k8s-accent-emerald-dot);
+}
+
+.edit-section-card--startup .edit-section-title::before {
+  background: var(--k8s-accent-violet-dot);
+}
+
+/* html.dark .edit-section-title — 通过 Token 自动切换 */
+
+/* html.dark .edit-section-card--*probe* .edit-section-title::before — 通过 Token 自动切换 */
+
+/* ── edit-dot ─────────────────────────────────────────────── */
+
+.edit-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid var(--k8s-accent-amber-border);
+  background: var(--k8s-accent-amber-dot);
+}
+
+.edit-dot--changed {
+  border-color: var(--k8s-accent-amber-border);
+  background: var(--k8s-accent-amber-dot);
+}
+
+/* html.dark .edit-dot — 通过 Token 自动切换 */
+
+.edit-container-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* ── meta-block（labels / tolerations 等） ────────────────── */
+
+.meta-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meta-block {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--k8s-card-border);
+  background: var(--k8s-meta-bg);
+}
+
+/* html.dark .meta-block — 通过 Token 自动切换 */
+
+.meta-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--k8s-card-border);
+  background: var(--k8s-accent-muted-bg);
+  margin-bottom: 8px;
+}
+
+/* html.dark .meta-block-head — 通过 Token 自动切换 */
+
+.meta-block--labels .meta-block-head {
+  background: var(--k8s-accent-blue-bg);
+}
+
+.meta-block--tolerations .meta-block-head {
+  background: var(--k8s-accent-violet-bg);
+}
+
+.meta-block-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--k8s-text-strong);
+}
+
+/* html.dark .meta-block-title — 通过 Token 自动切换 */
+
+.meta-block-head .el-button.el-button--primary {
+  color: #fff !important;
+}
+
+.meta-block-head .el-button.el-button--primary .el-button__text,
+.meta-block-head .el-button.el-button--primary .el-icon {
+  color: #fff !important;
+}
+
+.meta-block-mark {
+  width: 4px;
+  height: 14px;
+  border-radius: 99px;
+  background: var(--k8s-meta-mark);
+}
+
+.meta-block-mark--labels {
+  background: var(--k8s-accent-blue);
+}
+
+.meta-block-mark--tolerations {
+  background: var(--k8s-accent-violet-dot);
+}
+
+.meta-block .el-input__wrapper {
+  min-height: 28px;
+  padding: 2px 8px;
+  box-shadow: var(--k8s-input-shadow);
+  background: var(--k8s-input-bg);
+}
+
+/* html.dark .meta-block .el-input__wrapper — 通过 Token 自动切换 */
+
+.meta-block .el-input__wrapper.is-focus {
+  box-shadow: var(--k8s-input-focus-shadow);
+}
+
+/* html.dark .meta-block .el-input__wrapper.is-focus — 通过 Token 自动切换 */
+
+.meta-block .el-textarea__inner {
+  padding: 6px 10px;
+  box-shadow: var(--k8s-input-shadow);
+  background: var(--k8s-input-bg);
+}
+
+/* html.dark .meta-block .el-textarea__inner — 通过 Token 自动切换 */
+
+/* ── edit-grid / edit-kv ──────────────────────────────────── */
+
+.edit-grid4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 14px;
+  align-items: start;
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .edit-grid4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .edit-grid4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.edit-kv {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: center;
+  padding: 10px 12px 10px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--k8s-card-border);
+  background: var(--k8s-kv-bg);
+  overflow: hidden;
+}
+
+.edit-kv::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+  background: var(--k8s-accent-muted-dim);
+  opacity: 0.25;
+}
+
+/* html.dark .edit-kv — 通过 Token 自动切换 */
+
+.edit-kv--span4 {
+  grid-column: 1 / -1;
+}
+
+.edit-kv--span2 {
+  grid-column: span 2;
+}
+
+.edit-ro {
+  font-weight: 900;
+  color: var(--k8s-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edit-ro--name {
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.85;
+}
+
+/* html.dark .edit-ro — 通过 Token 自动切换 */
+
+.edit-k {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--k8s-text-label);
+  white-space: nowrap;
+}
+
+/* html.dark .edit-k — 通过 Token 自动切换 */
+
+.edit-v {
+  min-width: 0;
+}
+
+.edit-kv .el-input__wrapper {
+  width: 100%;
+}
+
+.edit-kv .el-input-number {
+  width: 100%;
+}
+
+/* ── edit-probe / edit-resources ───────────────────────────── */
+
+.edit-probe-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edit-res-table {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: center;
+}
+
+.edit-res-head {
+  position: relative;
+  padding-left: 14px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--k8s-text-strong);
+}
+
+.edit-res-head--cpu::before,
+.edit-res-head--mem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
+
+.edit-res-head--cpu::before {
+  background: var(--k8s-accent-sky-dot);
+  box-shadow: var(--k8s-dot-sky-ring);
+}
+
+.edit-res-head--mem::before {
+  background: var(--k8s-accent-violet-dot);
+  box-shadow: var(--k8s-dot-violet-ring);
+}
+
+/* html.dark .edit-res-head — 通过 Token 自动切换 */
+
+/* html.dark .edit-res-head--cpu/mem::before — 通过 Token 自动切换 */
+
+.edit-res-rowlabel {
+  position: relative;
+  padding-left: 14px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--k8s-text-label);
+  white-space: nowrap;
+}
+
+.edit-res-rowlabel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
+
+.edit-res-rowlabel--requests::before {
+  background: var(--k8s-accent-emerald-dot);
+  box-shadow: var(--k8s-dot-emerald-ring);
+}
+
+.edit-res-rowlabel--limits::before {
+  background: var(--k8s-accent-red-dot);
+  box-shadow: var(--k8s-dot-red-ring);
+}
+
+/* html.dark .edit-res-rowlabel — 通过 Token 自动切换 */
+
+/* html.dark .edit-res-rowlabel--requests/limits::before — 通过 Token 自动切换 */
+
+.edit-res-cell .el-input__wrapper {
+  width: 100%;
+}
+
+.edit-probe-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+
+/* ── drawer 变更状态高亮 ──────────────────────────────────── */
+
+.deployment-edit-drawer .el-input.is-changed .el-input__wrapper,
+.deployment-edit-drawer .el-select.is-changed .el-input__wrapper,
+.deployment-edit-drawer .el-input-number.is-changed .el-input__wrapper,
+.k8s-edit-drawer .el-input.is-changed .el-input__wrapper,
+.k8s-edit-drawer .el-select.is-changed .el-input__wrapper,
+.k8s-edit-drawer .el-input-number.is-changed .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--k8s-accent-amber-55) inset;
+  background: var(--k8s-accent-amber-bg);
+}
+
+.deployment-edit-drawer .el-input.is-invalid .el-input__wrapper,
+.k8s-edit-drawer .el-input.is-invalid .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--k8s-accent-red-55) inset;
+  background: var(--k8s-accent-red-bg);
+}
+
+.deployment-edit-drawer .el-textarea.is-changed .el-textarea__inner,
+.k8s-edit-drawer .el-textarea.is-changed .el-textarea__inner {
+  box-shadow: 0 0 0 1px var(--k8s-accent-amber-55) inset;
+  background: var(--k8s-accent-amber-bg);
+}
+
+.deployment-edit-drawer .el-textarea.is-invalid .el-textarea__inner,
+.k8s-edit-drawer .el-textarea.is-invalid .el-textarea__inner {
+  box-shadow: 0 0 0 1px var(--k8s-accent-red-55) inset;
+  background: var(--k8s-accent-red-bg);
+}
+
+/* ── edit-drawer-footer ───────────────────────────────────── */
+
+.edit-drawer-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: 12px;
+  padding: 10px 0 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: var(--k8s-footer-bg);
+  border-top: 1px solid var(--k8s-card-border);
+  backdrop-filter: blur(8px);
+}
+
+/* html.dark .edit-drawer-footer — 通过 Token 自动切换 */
+
+/* ── edit-container-nav / tabs ────────────────────────────── */
+
+.edit-container-shell {
+  width: 100%;
+}
+
+.edit-container-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--k8s-card-border);
+  background: var(--k8s-card-bg);
+  margin-bottom: 10px;
+}
+
+/* html.dark .edit-container-nav — 通过 Token 自动切换 */
+
+.edit-container-nav-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--k8s-text-title);
+  white-space: nowrap;
+}
+
+/* html.dark .edit-container-nav-title — 通过 Token 自动切换 */
+
+.edit-container-nav-scroll {
+  flex: 1;
+  min-width: 0;
+}
+
+.edit-container-nav-list {
+  justify-content: flex-end;
+}
+
+.edit-container-tabs {
+  width: 100%;
+}
+
+.edit-container-tabs .el-tabs__header {
+  margin: 0 0 10px;
+}
+
+.edit-container-tabs .el-tabs__nav {
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--k8s-tabs-bg);
+  border: 1px solid var(--k8s-tabs-border);
+}
+
+.edit-container-tabs .el-tabs__item.is-active {
+  background: var(--k8s-tabs-active);
+}
+
+.edit-container-tabs .el-tabs__item:hover {
+  color: var(--k8s-text-title);
+}
+
+/* html.dark .edit-container-tabs .el-tabs__nav — 通过 Token 自动切换 */
+
+/* html.dark .edit-container-tabs .el-tabs__item.is-active — 通过 Token 自动切换 */
+
+/* html.dark .edit-container-tabs .el-tabs__item:hover — 通过 Token 自动切换 */
+
+.edit-container-tabs .el-tabs__item {
+  height: 38px;
+  line-height: 38px;
+  border-radius: 12px 12px 0 0;
+}
+
+.edit-container-tabs .el-tabs__nav-wrap::after {
+  opacity: 0.35;
+}
+
+.edit-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}

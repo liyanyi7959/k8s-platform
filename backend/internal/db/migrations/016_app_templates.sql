@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS app_templates (
+  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name            VARCHAR(120)    NOT NULL,
+  category        VARCHAR(64)     NOT NULL DEFAULT '其他',
+  version         VARCHAR(32)     NOT NULL DEFAULT '1.0.0',
+  engine          VARCHAR(16)     NOT NULL DEFAULT 'helm',
+  summary         VARCHAR(512)    NOT NULL DEFAULT '',
+  tags            JSON,
+  manifest        LONGTEXT,
+  values_schema   JSON,
+  default_values  JSON,
+  source          VARCHAR(128)    NOT NULL DEFAULT '',
+  owner           VARCHAR(64)     NOT NULL DEFAULT '',
+  created_by      BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  updated_by      BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at      DATETIME(3)     NULL,
+  INDEX idx_app_templates_name    (name),
+  INDEX idx_app_templates_engine  (engine),
+  INDEX idx_app_templates_deleted (deleted_at)
+);

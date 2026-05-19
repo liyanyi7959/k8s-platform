@@ -1,0 +1,47 @@
+/* global-overrides.css — Element Plus 全局样式覆盖
+   注意：Tag 样式已统一迁移至 theme-overrides.css + tokens/semantic.css
+   此文件中 Tag 的 --el-tag-* 变量覆盖已通过 Token 体系替代 */
+
+.el-tag {
+  border-radius: var(--tag-radius);
+}
+
+.el-tag--info {
+  --el-tag-bg-color: var(--color-info-bg);
+  --el-tag-border-color: var(--color-info-border);
+  --el-tag-text-color: var(--color-info-text);
+}
+
+.el-tag--success {
+  --el-tag-bg-color: var(--color-success-bg);
+  --el-tag-border-color: var(--color-success-border);
+  --el-tag-text-color: var(--color-success-text);
+}
+
+.el-tag--warning {
+  --el-tag-bg-color: var(--color-warning-bg);
+  --el-tag-border-color: var(--color-warning-border);
+  --el-tag-text-color: var(--color-warning-text);
+}
+
+.el-tag--danger {
+  --el-tag-bg-color: var(--color-danger-bg);
+  --el-tag-border-color: var(--color-danger-border);
+  --el-tag-text-color: var(--color-danger-text);
+}
+
+html.dark .el-tag--info {
+  --el-tag-text-color: var(--color-info-text);
+}
+
+html.dark .el-tag--success {
+  --el-tag-text-color: var(--color-success-text);
+}
+
+html.dark .el-tag--warning {
+  --el-tag-text-color: var(--color-warning-text);
+}
+
+html.dark .el-tag--danger {
+  --el-tag-text-color: var(--color-danger-text);
+}

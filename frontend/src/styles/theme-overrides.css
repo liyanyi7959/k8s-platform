@@ -1,0 +1,170 @@
+/* theme-overrides.css — Glassmorphism & structural overrides for Element Plus
+   Token 层（component.css / semantic.css）已覆盖所有 CSS Variable 定制，
+   global-overrides.css 已覆盖 Tag 样式，此文件仅保留：
+     1. backdrop-filter / glass 背景（无法通过 --el-* 实现）
+     2. 结构性 padding/margin/sizing（EP 未暴露为变量）
+     3. 渐变按钮、hover 动效、focus ring
+     4. 固定列背景遮罩
+   所有规则遵守源序覆盖，仅 2 处 EP 自身使用 !important 处才保留 !important。 */
+
+/* ── Overlay ─────────────────────────────────────────────────────────── */
+.el-overlay { backdrop-filter: blur(6px); }
+
+/* ── Dialog (glassmorphism) ──────────────────────────────────────────── */
+.el-dialog {
+  background: var(--color-glass-bg-strong);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  box-shadow: var(--shadow-2xl), 0 0 0 1px var(--color-glass-border-light) inset;
+  border: none;
+  overflow: hidden;
+  padding: 0; /* EP 的 .el-dialog 没有 !important padding，源序即可覆盖 */
+}
+html.dark .el-dialog {
+  background: var(--color-glass-bg-dark);
+  box-shadow: var(--shadow-2xl), 0 0 0 1px var(--color-glass-border-dark) inset;
+}
+.el-dialog__header  { margin: 0; padding: 24px 24px 16px; border-bottom: 1px solid var(--color-border-subtle); }
+.el-dialog__title   { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.el-dialog__body    { padding: 24px; font-size: 15px; line-height: 1.6; }
+.el-dialog__footer  { padding: 16px 24px 24px; border-top: 1px solid var(--color-border-subtle); background: var(--color-glass-footer); }
+.el-dialog__headerbtn {
+  top: 24px; right: 24px; width: 32px; height: 32px;
+  border-radius: 50%; background: var(--color-btn-close-bg);
+  transition: all var(--duration-normal) var(--ease-default);
+}
+.el-dialog__headerbtn:hover { background: var(--color-btn-close-hover); transform: rotate(90deg); }
+
+/* ── MessageBox (glassmorphism) ──────────────────────────────────────── */
+.el-message-box {
+  background: var(--color-glass-bg-strong);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  border: none;
+  box-shadow: var(--shadow-2xl), 0 0 0 1px var(--color-glass-border-light) inset;
+  padding-bottom: 24px;
+}
+html.dark .el-message-box {
+  background: var(--color-glass-bg-dark);
+  box-shadow: var(--shadow-2xl), 0 0 0 1px var(--color-glass-border-dark) inset;
+}
+
+/* ── Drawer (glassmorphism) ──────────────────────────────────────────── */
+.el-drawer {
+  background: var(--color-glass-bg-strong);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  box-shadow: var(--shadow-2xl);
+  border-left: 1px solid var(--color-glass-border-light);
+}
+html.dark .el-drawer {
+  background: var(--color-glass-bg-dark);
+  border-left: 1px solid var(--color-glass-border-dark);
+}
+.el-drawer__header { margin-bottom: 0; padding: 20px 24px; border-bottom: 1px solid var(--color-border-subtle); }
+.el-drawer__title  { font-size: 18px; font-weight: 600; }
+.el-drawer__body   { padding: 24px; }
+.el-drawer__close-btn { border-radius: 50%; width: 32px; height: 32px; transition: all 0.2s; }
+.el-drawer__close-btn:hover { background: var(--color-bg-hover); }
+
+/* ── Card (glassmorphism) ────────────────────────────────────────────── */
+.el-card {
+  background: var(--color-glass-bg-strong);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  border: 1px solid var(--color-glass-border-light);
+  box-shadow: var(--card-glass-shadow);
+}
+html.dark .el-card {
+  background: var(--color-glass-bg-dark);
+  border-color: var(--color-glass-border-dark);
+}
+
+html.dark .el-table {
+  --el-table-border-color: rgba(255, 255, 255, 0.10);
+}
+
+.el-card__header { border-bottom: 1px solid var(--color-border-subtle); padding: 12px 16px; }
+.el-card__body   { padding: 12px 16px; }
+
+/* ── Input / Select — focus ring ─────────────────────────────────────── */
+/* EP 的 .el-input__wrapper.is-focus 用 !important 设 box-shadow，必须用 !important 覆盖 */
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  border-color: var(--color-accent-primary);
+  box-shadow: var(--input-focus-ring) !important; /* EP .is-focus 用 !important 设置 box-shadow */
+}
+
+/* ── Button — gradient & hover effects ───────────────────────────────── */
+.el-button { transition: all var(--duration-normal) var(--ease-default); }
+.el-button--primary:not(.is-link) {
+  background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-primary-light-3));
+  box-shadow: var(--btn-primary-shadow);
+}
+.el-button--primary:not(.is-link):hover  { filter: brightness(1.06); box-shadow: var(--btn-primary-hover-shadow); }
+.el-button--primary:not(.is-link):active { filter: brightness(0.96); }
+
+.el-button--danger:not(.is-link) {
+  background: linear-gradient(135deg, var(--c-red-500), var(--c-red-400));
+  box-shadow: var(--btn-danger-shadow);
+}
+.el-button--danger:not(.is-link):hover { filter: brightness(1.06); box-shadow: var(--btn-danger-hover-shadow); }
+
+.el-button--info:not(.is-link) {
+  background: linear-gradient(135deg, var(--c-slate-500), var(--c-slate-400));
+  box-shadow: var(--btn-info-shadow);
+}
+.el-button--info:not(.is-link):hover { filter: brightness(1.06); box-shadow: var(--btn-info-hover-shadow); }
+
+/* Link-style buttons — 去除背景与阴影 */
+.el-button.is-link { background: transparent; box-shadow: none; border: none; padding: 0; height: auto; }
+.el-button.is-link:hover { text-decoration: underline; transform: none; }
+
+/* Default button — semantic tokens 处理 light/dark 文字/背景色 */
+.el-button--default { background: var(--color-default-bg); border: 1px solid var(--color-border-default); color: var(--color-text-secondary); }
+.el-button--default:hover { border-color: var(--color-accent-primary); color: var(--color-accent-primary); }
+
+/* ── Checkbox / Radio — sizing ───────────────────────────────────────── */
+.el-checkbox__inner { border-radius: 3px; width: 18px; height: 18px; }
+.el-checkbox__input.is-checked .el-checkbox__inner,
+.el-radio__input.is-checked .el-radio__inner { box-shadow: var(--btn-checked-shadow); }
+.el-radio__inner { width: 18px; height: 18px; }
+
+/* ── Table — transparent bg & fixed-column mask ──────────────────────── */
+.el-table {
+  background-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: var(--table-header-bg);
+  --el-table-row-hover-bg-color: var(--table-row-hover);
+  --el-table-border-color: rgba(59, 130, 246, 0.12);
+  --el-fill-color-lighter: var(--table-stripe-bg, #f1f5f9);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--table-shadow);
+}
+.el-table th.el-table__cell {
+  font-weight: 700;
+  color: var(--table-header-text, #0f172a) !important;
+  font-size: 13px;
+}
+/* 固定列需要不透明背景遮住滚动内容 — EP 使用 !important 设背景 */
+.el-table .el-table__cell.is-fixed-left,
+.el-table .el-table__cell.is-fixed-right,
+.el-table .el-table-fixed-column--left,
+.el-table .el-table-fixed-column--right {
+  background-color: var(--color-bg-card) !important; /* EP 固定列用 !important 设背景色 */
+  --el-table-tr-bg-color: var(--color-bg-card);
+}
+
+/* ── Pagination ──────────────────────────────────────────────────────── */
+/* 基础样式由 enterprise.css §13 统一管理 */
+/* active 状态使用文字颜色高亮，不使用背景色块 */
+.el-pagination .el-pager li.is-active,
+.el-pagination.is-background .el-pager li.is-active {
+  box-shadow: none;
+  background: transparent !important;
+}
+
+/* ── Switch ──────────────────────────────────────────────────────────── */
+.el-switch.is-checked .el-switch__core { box-shadow: var(--btn-checked-shadow); }

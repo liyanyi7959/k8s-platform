@@ -1,0 +1,219 @@
+/* ============================================================================
+   component.css — 组件级 Token (Design Token Layer 3)
+   引用 semantic token；为各 UI 组件提供专属变量
+   同时将 Element Plus 可通过 CSS Variable 定制的属性收归此处
+   ============================================================================ */
+
+:root {
+  /* ── Header ──────────────────────────────────────────────────────────── */
+  --header-height:       48px;
+  --header-bg:           var(--color-glass-bg-strong);
+  --header-border:       var(--color-border-default);
+  --header-text:         var(--color-text-primary);
+  --header-text-muted:   var(--color-text-secondary);
+
+  /* ── Sidebar / Rail / Panel ──────────────────────────────────────────── */
+  --rail-width:          56px;
+  --rail-bg:             #0f172a;
+  --panel-width:         200px;
+  --panel-bg:            #1e293b;
+  --sidebar-width:       220px;
+  --sidebar-width-collapsed: 64px;
+  --sidebar-bg:          var(--color-bg-sidebar);
+  --sidebar-border:      var(--color-border-default);
+  --sidebar-item-hover:  var(--color-bg-hover);
+  --sidebar-item-active: var(--color-bg-active);
+
+  /* ── Card ─────────────────────────────────────────────────────────────── */
+  --card-bg:             var(--color-glass-bg);
+  --card-border:         var(--color-glass-border);
+  --card-radius:         var(--radius-md);
+  --card-shadow:         var(--shadow-card);
+  --card-shadow-hover:   var(--shadow-card-hover);
+  --card-padding:        var(--space-5);
+
+  /* ── Dialog ──────────────────────────────────────────────────────────── */
+  --dialog-bg:           var(--color-glass-bg-strong);
+  --dialog-border:       var(--color-glass-border);
+  --dialog-radius:       var(--radius-2xl);
+  --dialog-shadow:       var(--shadow-2xl);
+
+  /* ── Drawer ──────────────────────────────────────────────────────────── */
+  --drawer-bg:           var(--color-glass-bg-strong);
+  --drawer-border:       var(--color-border-default);
+
+  /* ── Table ───────────────────────────────────────────────────────────── */
+  --table-header-bg:     #dbeafe;
+  --table-header-text:   #1d4ed8;
+  --table-row-hover:     rgba(59, 130, 246, 0.10);
+  --table-stripe-bg:     #eff6ff;
+  --table-border:        var(--color-border-subtle);
+  --table-shadow:        0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --card-glass-shadow:   0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+  /* ── Tag ──────────────────────────────────────────────────────────────── */
+  --tag-radius:          var(--radius-xs);
+  --tag-font-weight:     500;
+
+  /* ── Input / Form ────────────────────────────────────────────────────── */
+  --input-bg:            var(--color-bg-input);
+  --input-border:        var(--color-border-strong);
+  --input-border-focus:  var(--color-accent-primary);
+  --input-radius:        var(--radius-md);
+  --input-focus-ring:    0 0 0 3px rgba(59, 130, 246, 0.15);
+
+  /* ── Button ──────────────────────────────────────────────────────────── */
+  --btn-radius:          var(--radius-md);
+  --btn-font-weight:     600;
+  --btn-sm-radius:       var(--radius-sm);
+  --btn-primary-shadow:  0 4px 12px rgba(59, 130, 246, 0.3);
+  --btn-primary-hover-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  --btn-danger-shadow:   0 4px 12px rgba(239, 68, 68, 0.3);
+  --btn-danger-hover-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+  --btn-info-shadow:     0 4px 12px rgba(100, 116, 139, 0.3);
+  --btn-info-hover-shadow: 0 6px 16px rgba(100, 116, 139, 0.4);
+  --btn-checked-shadow:  0 2px 5px rgba(59, 130, 246, 0.3);
+
+  /* ── Pagination ──────────────────────────────────────────────────────── */
+  --pagination-item-radius: var(--radius-xs);
+
+  /* ── Element Plus CSS Variable 统一覆盖 ──────────────────────────────── */
+  --el-border-radius-base:     var(--radius-md);
+  --el-border-radius-small:    var(--radius-sm);
+  --el-border-radius-round:    var(--radius-full);
+  --el-bg-color:               var(--color-bg-card);
+  --el-fill-color-blank:       var(--color-bg-input);
+  --el-text-color-primary:     var(--color-text-primary);
+  --el-text-color-regular:     var(--color-text-secondary);
+  --el-text-color-secondary:   var(--color-text-muted);
+  --el-border-color:           var(--color-border-strong);
+  --el-border-color-light:     var(--color-border-default);
+  --el-border-color-lighter:   var(--color-border-subtle);
+  --el-mask-color:             var(--color-bg-overlay);
+  --el-dialog-border-radius:   var(--dialog-radius);
+  --el-card-border-radius:     var(--card-radius);
+}
+
+/* ── Dark Mode 组件覆盖 ────────────────────────────────────────────────── */
+html.dark {
+  --header-bg:           rgba(15, 23, 42, 0.8);
+
+  --card-bg:             var(--color-glass-bg);
+  --card-border:         var(--color-glass-border);
+
+  --dialog-bg:           var(--color-glass-bg-strong);
+  --drawer-bg:           var(--color-glass-bg-strong);
+
+  --table-header-bg:     rgba(59, 130, 246, 0.18);
+  --table-header-text:   #dbeafe;
+  --table-row-hover:     rgba(59, 130, 246, 0.14);
+  --table-stripe-bg:     rgba(59, 130, 246, 0.07);
+
+  --input-bg:            rgba(0, 0, 0, 0.3);
+  --input-border:        var(--color-border-strong);
+  --input-focus-ring:    0 0 0 3px rgba(59, 130, 246, 0.2);
+
+  --btn-primary-shadow:  0 4px 12px rgba(59, 130, 246, 0.25);
+  --btn-primary-hover-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+  --btn-danger-shadow:   0 4px 12px rgba(239, 68, 68, 0.25);
+  --btn-danger-hover-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+  --btn-info-shadow:     0 4px 12px rgba(100, 116, 139, 0.25);
+  --btn-info-hover-shadow: 0 6px 16px rgba(100, 116, 139, 0.35);
+  --btn-checked-shadow:  0 2px 5px rgba(59, 130, 246, 0.25);
+}
+
+/* ── 全局自定义滚动条 ────────────────────────────────────────────────── */
+/* 细线滚动条（现代浏览器） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) transparent;
+}
+
+/* Webkit 系浏览器滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-default);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* ── Dialog / Drawer 统一样式 ────────────────────────────────────────── */
+/* Dialog header：底部分隔线 */
+.el-dialog__header {
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 16px;
+  margin-right: 0;
+}
+
+html.dark .el-dialog__header {
+  border-bottom-color: var(--color-border-default);
+}
+
+/* Dialog footer：顶部分隔线 */
+.el-dialog__footer {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 16px;
+}
+
+html.dark .el-dialog__footer {
+  border-top-color: var(--color-border-default);
+}
+
+/* Drawer header 统一 */
+.el-drawer__header {
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 0;
+  padding: 16px 20px;
+}
+
+html.dark .el-drawer__header {
+  border-bottom-color: var(--color-border-default);
+}
+
+/* Drawer footer */
+.el-drawer__footer {
+  border-top: 1px solid var(--color-border-subtle);
+  padding: 12px 20px;
+}
+
+html.dark .el-drawer__footer {
+  border-top-color: var(--color-border-default);
+}
+
+/* ── Form 错误态增强 ─────────────────────────────────────────────────── */
+/* 错误字段左侧红条指示 */
+.el-form-item.is-error .el-input__wrapper,
+.el-form-item.is-error .el-textarea__inner {
+  border-left: 3px solid var(--el-color-danger);
+}
+
+/* 错误抖动动画 */
+.el-form-item.is-error .el-form-item__error {
+  animation: form-error-shake 0.3s ease-in-out;
+}
+
+@keyframes form-error-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-form-item.is-error .el-form-item__error {
+    animation: none;
+  }
+}
