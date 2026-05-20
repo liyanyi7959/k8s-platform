@@ -1,45 +1,25 @@
 <template>
   <section class="clusters-page">
-    <header class="clusters-page-header">
-      <div class="clusters-page-header__main">
-        <h1 class="clusters-page-header__title">集群管理</h1>
-        <p class="clusters-page-header__desc">
-          导入、查看并进入 Kubernetes 集群，集中管理状态、版本与节点规模。
-        </p>
-      </div>
-
-      <div class="clusters-page-header__actions">
-        <el-button class="clusters-page-header__primary" type="primary" size="default" @click="openImport">
-          <el-icon><Upload /></el-icon>
-          <span>导入集群</span>
-        </el-button>
-      </div>
-    </header>
-
-    <div class="clusters-summary-grid" aria-label="集群概览">
-      <article class="summary-card">
-        <span class="summary-card__label">筛选结果</span>
-        <strong class="summary-card__value">{{ total }}</strong>
-        <span class="summary-card__note">当前条件下的可见集群数</span>
-      </article>
-      <article class="summary-card">
-        <span class="summary-card__label">本页正常</span>
-        <strong class="summary-card__value">{{ visibleStatusSummary.active }}</strong>
-        <span class="summary-card__note">健康检查通过或当前在线</span>
-      </article>
-      <article class="summary-card">
-        <span class="summary-card__label">需关注</span>
-        <strong class="summary-card__value">{{ visibleAttentionCount }}</strong>
-        <span class="summary-card__note">降级、禁用或处理中集群</span>
-      </article>
-      <article class="summary-card">
-        <span class="summary-card__label">本页节点</span>
-        <strong class="summary-card__value">{{ visibleNodeCount }}</strong>
-        <span class="summary-card__note">已探测到的节点总数</span>
-      </article>
-    </div>
-
     <section class="clusters-panel clusters-panel--filters" aria-label="集群筛选条件">
+      <div class="clusters-overview" aria-label="集群概览">
+        <div class="clusters-overview__item">
+          <span class="clusters-overview__label">可见集群</span>
+          <strong class="clusters-overview__value">{{ total }}</strong>
+        </div>
+        <div class="clusters-overview__item">
+          <span class="clusters-overview__label">正常</span>
+          <strong class="clusters-overview__value">{{ visibleStatusSummary.active }}</strong>
+        </div>
+        <div class="clusters-overview__item">
+          <span class="clusters-overview__label">需关注</span>
+          <strong class="clusters-overview__value">{{ visibleAttentionCount }}</strong>
+        </div>
+        <div class="clusters-overview__item">
+          <span class="clusters-overview__label">节点总数</span>
+          <strong class="clusters-overview__value">{{ visibleNodeCount }}</strong>
+        </div>
+      </div>
+
       <div class="clusters-filters">
         <div class="clusters-filters__fields">
           <el-input
@@ -69,6 +49,10 @@
         </div>
 
         <div class="clusters-filters__actions">
+          <el-button type="primary" size="default" @click="openImport">
+            <el-icon><Upload /></el-icon>
+            <span>导入集群</span>
+          </el-button>
           <el-button type="primary" size="default" @click="onSearch">
             <el-icon><Search /></el-icon>
             <span>查询</span>
@@ -267,7 +251,7 @@ const {
   open: openContextMenu,
   close: closeClusterContextMenu,
   bumpViewport: bumpContextMenuViewport
-} = useContextMenu<clustersApi.ClusterItem>({ width: 228, height: 228 })
+} = useContextMenu<clustersApi.ClusterItem>({ width: 228, height: 266 })
 
 const canOpenK8s = computed(() => {
   const perms = userStore.permissions ?? []
@@ -651,87 +635,6 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
-.clusters-page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.clusters-page-header__main {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.clusters-page-header__title {
-  margin: 0;
-  color: var(--color-text-title, rgba(15, 23, 42, 0.92));
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1.1;
-}
-
-.clusters-page-header__desc {
-  margin: 0;
-  color: var(--color-text-secondary, #475569);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.clusters-page-header__actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.clusters-page-header__primary.el-button {
-  min-width: 120px;
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 12px;
-}
-
-.clusters-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.summary-card {
-  display: flex;
-  min-height: 118px;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px 20px;
-  border: 1px solid var(--color-border-default, rgba(15, 23, 42, 0.08));
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-}
-
-.summary-card__label {
-  color: var(--color-text-secondary, #475569);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.summary-card__value {
-  color: var(--color-text-title, rgba(15, 23, 42, 0.92));
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.summary-card__note {
-  margin-top: auto;
-  color: var(--color-text-muted, #94a3b8);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .clusters-panel {
   border: 1px solid var(--color-border-default, rgba(15, 23, 42, 0.08));
   border-radius: 16px;
@@ -741,6 +644,38 @@ onBeforeUnmount(() => {
 
 .clusters-panel--filters {
   padding: 16px 18px;
+}
+
+.clusters-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.clusters-overview__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-subtle, rgba(15, 23, 42, 0.06));
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.82);
+}
+
+.clusters-overview__label {
+  color: var(--color-text-secondary, #64748b);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.clusters-overview__value {
+  color: var(--color-text-title, rgba(15, 23, 42, 0.92));
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .clusters-filters {
@@ -771,8 +706,8 @@ onBeforeUnmount(() => {
 }
 
 .clusters-filter--search {
-  min-width: 260px;
-  flex: 1 1 360px;
+  min-width: 220px;
+  flex: 0 1 280px;
 }
 
 :deep(.clusters-filter .el-input__wrapper),
@@ -877,16 +812,18 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-:global(html.dark) .summary-card,
 :global(html.dark) .clusters-panel {
   border-color: rgba(148, 163, 184, 0.16);
   background: rgba(15, 23, 42, 0.9);
   box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
 }
 
-:global(html.dark) .clusters-page-header__desc,
-:global(html.dark) .summary-card__label,
-:global(html.dark) .summary-card__note,
+:global(html.dark) .clusters-overview__item {
+  border-color: rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.72);
+}
+
+:global(html.dark) .clusters-overview__label,
 :global(html.dark) .table-summary__meta {
   color: var(--color-text-muted, #7c8aa0);
 }
@@ -903,17 +840,12 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 960px) {
-  .clusters-page-header,
   .clusters-filters {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .clusters-page-header__actions {
-    justify-content: flex-start;
-  }
-
-  .clusters-summary-grid {
+  .clusters-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -923,17 +855,12 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 640px) {
-  .clusters-page-header__title {
-    font-size: 24px;
-  }
-
-  .clusters-summary-grid {
+  .clusters-overview {
     grid-template-columns: 1fr;
   }
 
   .clusters-filter,
-  .clusters-filter--search,
-  .clusters-page-header__primary.el-button {
+  .clusters-filter--search {
     width: 100%;
     min-width: 0;
   }

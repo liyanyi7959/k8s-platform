@@ -1,14 +1,7 @@
 <template>
   <header class="top-bar">
-    <!-- 左侧：Hamburger + 面包屑 -->
+    <!-- 左侧：面包屑 -->
     <div class="top-bar-left">
-      <button class="hamburger-btn" @click="toggleFromTopBar" :title="panelOpen ? '收起侧栏' : '展开侧栏'">
-        <el-icon :size="18">
-          <Fold v-if="panelOpen" />
-          <Expand v-else />
-        </el-icon>
-      </button>
-
       <nav class="breadcrumb">
         <span class="breadcrumb-item breadcrumb-root" @click="router.push('/')">
           <el-icon :size="14"><HomeFilled /></el-icon>
@@ -27,15 +20,8 @@
       </nav>
     </div>
 
-    <!-- 右侧：搜索 + 操作按钮 + 用户 -->
+    <!-- 右侧：操作按钮 + 用户 -->
     <div class="top-bar-right">
-      <!-- 搜索触发器 -->
-      <button class="action-btn search-trigger" @click="openSearch" title="搜索 ⌘K">
-        <el-icon :size="16"><Search /></el-icon>
-        <span class="search-label hidden lg:inline">搜索...</span>
-        <kbd class="search-kbd hidden lg:inline">⌘K</kbd>
-      </button>
-
       <!-- 通知 -->
       <el-dropdown trigger="click">
         <button class="action-btn">
@@ -84,22 +70,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/app/store/user'
 import { useMenu } from '@/app/composables/useMenu'
-import { useSidebarState } from '@/app/composables/useSidebarState'
 import { useTheme } from '@/app/composables/useTheme'
 import {
-  HomeFilled, Search, Bell, Moon, Sunny, Monitor,
-  Fold, Expand, ArrowDown, SwitchButton
+  HomeFilled, Bell, Moon, Sunny, Monitor,
+  ArrowDown, SwitchButton
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const { activeGroup } = useMenu()
-const { panelOpen, toggleFromTopBar } = useSidebarState()
 const { theme, themeLabel, toggleTheme } = useTheme()
 
 const messageCount = ref(0)
@@ -114,27 +98,6 @@ const themeIcon = computed(() => {
   return Moon
 })
 
-/* ── 搜索 ─────────────────────────────────────────────────────────────── */
-function openSearch() {
-  // TODO: Phase D — open CommandPalette
-  // For now, trigger Ctrl+K / Cmd+K
-}
-
-/* Ctrl/Cmd + K 快捷键 */
-function onKeyDown(e: KeyboardEvent) {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    e.preventDefault()
-    openSearch()
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', onKeyDown)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeyDown)
-})
-
 /* ── 用户菜单 ─────────────────────────────────────────────────────────── */
 async function onUserCommand(cmd: string) {
   if (cmd === 'logout') {
@@ -146,74 +109,43 @@ async function onUserCommand(cmd: string) {
 
 <style scoped>
 .top-bar {
-  height: 52px;
-  min-height: 52px;
+  height: 60px;
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  background: var(--color-bg-card, #fff);
-  border: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.7));
-  border-radius: 14px;
+  padding: 0 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.7));
+  border-radius: 0;
   z-index: 50;
-  gap: 16px;
+  gap: 20px;
   flex-shrink: 0;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
 }
 
 html.dark .top-bar {
-  background: var(--color-bg-card, #1e293b);
+  background: transparent;
   border-color: rgba(51, 65, 85, 0.6);
-  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.24);
+  box-shadow: none;
 }
 
 /* ── Left section ──────────────────────────────────────────────────────── */
 .top-bar-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
-}
-
-.hamburger-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.7));
-  background: var(--color-bg-card, #fff);
-  border-radius: 10px;
-  cursor: pointer;
-  color: var(--color-text-secondary, #64748b);
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-
-.hamburger-btn:hover {
-  background: var(--color-bg-hover, #f8fafc);
-  color: var(--color-text-primary, #0f172a);
-  border-color: rgba(148, 163, 184, 0.28);
-}
-
-html.dark .hamburger-btn {
-  background: rgba(15, 23, 42, 0.86);
-  border-color: rgba(148, 163, 184, 0.16);
-}
-
-html.dark .hamburger-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: #e2e8f0;
-  border-color: rgba(148, 163, 184, 0.22);
 }
 
 /* ── Breadcrumb ────────────────────────────────────────────────────────── */
 .breadcrumb {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  min-height: 36px;
+  min-height: 34px;
   padding: 0;
   overflow: hidden;
   font-size: 13px;
@@ -241,18 +173,17 @@ html.dark .breadcrumb-item:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
-  border: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.7));
-  background: var(--color-bg-card, #fff);
+  border: none;
+  background: var(--color-bg-hover, #f8fafc);
   color: var(--color-accent-primary, #2563eb);
   flex-shrink: 0;
 }
 
 html.dark .breadcrumb-root {
-  border-color: rgba(148, 163, 184, 0.18);
-  background: rgba(15, 23, 42, 0.88);
+  background: rgba(255, 255, 255, 0.06);
   color: #bfdbfe;
 }
 
@@ -284,14 +215,14 @@ html.dark .breadcrumb-current {
 
 /* ── Action buttons ────────────────────────────────────────────────────── */
 .action-btn {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.7));
-  background: var(--color-bg-card, #fff);
-  border-radius: 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
   cursor: pointer;
   color: var(--color-text-secondary, #64748b);
   transition: all 0.15s;
@@ -301,71 +232,21 @@ html.dark .breadcrumb-current {
 .action-btn:hover {
   background: var(--color-bg-hover, #f8fafc);
   color: var(--color-text-primary, #0f172a);
-  border-color: rgba(148, 163, 184, 0.28);
 }
 
 html.dark .action-btn {
-  background: rgba(15, 23, 42, 0.86);
-  border-color: rgba(148, 163, 184, 0.16);
+  background: transparent;
 }
 
 html.dark .action-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: #e2e8f0;
-  border-color: rgba(148, 163, 184, 0.22);
-}
-
-/* ── Search trigger ────────────────────────────────────────────────────── */
-.search-trigger {
-  width: auto;
-  gap: 8px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.7));
-  border-radius: 12px;
-  height: 36px;
-  background: var(--color-bg-input, #f8fafc);
-  box-shadow: none;
-}
-
-.search-trigger:hover {
-  border-color: rgba(148, 163, 184, 0.28);
-}
-
-html.dark .search-trigger {
-  border-color: rgba(148, 163, 184, 0.16);
-  background: rgba(15, 23, 42, 0.92);
-}
-
-html.dark .search-trigger:hover {
-  border-color: rgba(148, 163, 184, 0.22);
-}
-
-.search-label {
-  font-size: 13px;
-  color: var(--color-text-muted, #94a3b8);
-}
-
-.search-kbd {
-  font-size: 11px;
-  font-family: 'Inter', system-ui, sans-serif;
-  color: var(--color-text-muted, #94a3b8);
-  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
-  padding: 1px 5px;
-  border-radius: 4px;
-  border: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.6));
-  font-weight: 600;
-  line-height: 1;
-}
-
-html.dark .search-kbd {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(100, 116, 139, 0.3);
+  color: #e2e8f0;
 }
 
 /* ── Divider ───────────────────────────────────────────────────────────── */
 .top-divider {
   width: 1px;
-  height: 20px;
+  height: 16px;
   background: var(--color-border-subtle, rgba(226, 232, 240, 0.6));
   margin: 0 4px;
   flex-shrink: 0;
@@ -380,10 +261,10 @@ html.dark .top-divider {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px 4px 4px;
-  border: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.7));
-  background: var(--color-bg-card, #fff);
-  border-radius: 12px;
+  padding: 2px 6px 2px 2px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
@@ -391,30 +272,33 @@ html.dark .top-divider {
 
 .user-btn:hover {
   background: var(--color-bg-hover, #f8fafc);
-  border-color: rgba(148, 163, 184, 0.28);
 }
 
 html.dark .user-btn {
-  background: rgba(15, 23, 42, 0.86);
-  border-color: rgba(148, 163, 184, 0.16);
+  background: transparent;
 }
 
 html.dark .user-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .user-avatar-mini {
-  width: 26px;
-  height: 26px;
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(37, 99, 235, 0.12);
+  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #2563eb;
   font-weight: 700;
   font-size: 12px;
   flex-shrink: 0;
+}
+
+html.dark .user-avatar-mini {
+  background: rgba(96, 165, 250, 0.18);
+  color: #bfdbfe;
 }
 
 .user-name-text {

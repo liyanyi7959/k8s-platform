@@ -932,45 +932,46 @@ defineExpose({
 
 <style scoped>
 .table-topbar {
-  @apply mb-1 flex items-center justify-between gap-3;
-  position: sticky;
-  top: 0;
-  z-index: 6;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  padding: 6px 8px;
+  @apply mb-0 flex flex-wrap items-center justify-between gap-3;
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0 0 10px;
 }
 
 .table-topbar-left,
 .table-topbar-right {
   @apply flex min-w-0 items-center gap-2;
+  flex-wrap: wrap;
 }
 
 :global(html.dark) .table-topbar {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: transparent;
+  border: none;
 }
 
 .tool-btn {
-  @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/70 bg-white/70 text-slate-700 backdrop-blur-xl transition;
+  @apply inline-flex h-8 w-8 items-center justify-center rounded-md border-0 bg-slate-100 text-slate-600 transition;
 }
 
 .tool-btn:hover {
-  @apply bg-white text-slate-900;
+  @apply bg-slate-200 text-slate-900;
+  border-color: transparent;
 }
 
 :global(html.dark) .tool-btn {
-  @apply border-slate-600/30 bg-slate-900/40 text-slate-200;
+  @apply bg-slate-800 text-slate-200;
 }
 
 :global(html.dark) .tool-btn:hover {
-  @apply bg-slate-900/60 text-slate-50;
+  @apply bg-slate-700 text-slate-50;
+  border-color: transparent;
 }
 
 .columns-panel {
-  @apply w-[260px] p-3;
+  @apply w-[240px] p-3;
 }
 
 .columns-panel-actions {
@@ -982,11 +983,13 @@ defineExpose({
 }
 
 .pager {
-  @apply mt-2 flex justify-center text-xs;
+  @apply mt-1.5 flex justify-center text-xs;
 }
 
 .pager :deep(.el-pagination) {
   font-size: 12px;
+  gap: 4px;
+  align-items: center;
 }
 
 .pager :deep(.el-pagination__jump) {
@@ -994,25 +997,27 @@ defineExpose({
 }
 
 .pager :deep(.el-pagination__jump .el-input) {
-  width: 48px;
+  width: 42px;
 }
 
 .pager :deep(.el-pagination__jump .el-input__wrapper) {
   padding: 0 6px;
+  border-radius: 6px;
 }
 
 .pager :deep(.el-pagination__jump .el-input__inner) {
-  height: 22px;
-  line-height: 22px;
+  height: 20px;
+  line-height: 20px;
   font-size: 12px;
 }
 
 .fullscreen {
-  @apply fixed inset-0 z-[9999] flex flex-col overflow-hidden bg-white/85 p-4 backdrop-blur-xl;
+  @apply fixed inset-0 z-[9999] flex flex-col overflow-hidden p-4;
+  background: rgba(255, 255, 255, 0.92);
 }
 
 :global(html.dark) .fullscreen {
-  @apply bg-slate-950/85;
+  background: rgba(2, 6, 23, 0.88);
 }
 
 .fullscreen-table-wrap {
@@ -1067,7 +1072,7 @@ defineExpose({
 }
 
 .enhanced-table-empty-state :deep(.empty-state) {
-  padding: 24px 16px;
+  padding: 28px 18px;
   border: none;
   background: transparent;
 }

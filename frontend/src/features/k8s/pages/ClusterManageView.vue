@@ -39,13 +39,12 @@
 
     <main class="k8s-main">
       <el-card class="page-card">
-        <div v-if="current?.resource !== 'permissionaudits' && current?.resource !== 'topology'" class="srv-query-bar">
-          <!-- 资源标识 -->
-          <div v-if="current?.resource" class="qb-resource-meta">
-            <span :class="['resource-badge', resourceBadgeClass]">{{ toolbarResourceText }}</span>
+        <div v-if="showQueryBar" class="srv-query-bar k8s-query-bar">
+          <div v-if="current?.resource !== 'dashboard'" class="qb-search">
+            <el-icon class="qb-search-icon"><Search /></el-icon>
+            <el-input v-model="keywordInput" class="qb-keyword" size="default" placeholder="搜索关键字…" clearable />
           </div>
 
-          <!-- 筛选区 -->
           <div v-if="showNamespaceSelect" class="qb-filters">
             <el-select
               :model-value="namespace"
@@ -67,11 +66,6 @@
 
           <div v-if="current?.resource === 'workloads'" class="qb-filters">
             <el-input v-model="workloadLabelSelector" class="qb-input qb-input--label" size="default" placeholder="标签 app=nginx" clearable />
-          </div>
-
-          <div v-if="current?.resource !== 'dashboard'" class="qb-search">
-            <el-icon class="qb-search-icon"><Search /></el-icon>
-            <el-input v-model="keywordInput" class="qb-keyword" size="default" placeholder="搜索关键字…" clearable />
           </div>
 
           <!-- 操作区 -->
@@ -975,7 +969,6 @@ import {
   getListRowSearchText,
   getNamespaceFilter,
   getPodRowKey,
-  getResourceBadgeClass,
   getRowNamespace,
   getWorkloadAvailable,
   getWorkloadDesired,
@@ -1519,10 +1512,24 @@ const toolbarResourceText = computed(() => {
   return r
 })
 
-const resourceBadgeClass = computed(() => {
-  const r = current.value?.resource
-  if (!r) return 'resource-badge--default'
-  return getResourceBadgeClass(r)
+const showQueryBar = computed(() => (
+  current.value?.resource !== 'dashboard' &&
+  current.value?.resource !== 'permissionaudits' &&
+  current.value?.resource !== 'topology'
+))
+const currentPanelTitle = computed(() => {
+  const resource = current.value?.resource
+  if (!resource || resource === 'dashboard') return '集群概览'
+  return String(current.value?.label ?? '资源管理')
+})
+const currentPanelDescription = computed(() => {
+  const resource = current.value?.resource
+  if (!resource || resource === 'dashboard') return '查看集群健康、容量、工作负载与近期告警。'
+  if (resource === 'pods') return '查看 Pod 生命周期、日志、终端与 YAML 信息。'
+  if (resource === 'workloads') return '统一管理 Deployment、StatefulSet 与 DaemonSet 等工作负载。'
+  if (resource === 'permissionaudits') return '检查权限风险、异常主体与敏感操作暴露。'
+  if (resource === 'topology') return '查看资源之间的网络、存储与依赖关系。'
+  return `查看 ${String(current.value?.label ?? '当前资源')} 列表、筛选条件与明细操作。`
 })
 
 const selectedPodRows = ref<any[]>([])
@@ -3565,6 +3572,13 @@ onBeforeUnmount(() => {
 .k8s-main {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.k8s-query-bar {
+  margin-bottom: 14px;
 }
 
 .page-card {
@@ -3775,88 +3789,8 @@ onBeforeUnmount(() => {
 /* 查询栏样式由 enterprise.css 全局提供 (.srv-query-bar / .qb-*) */
 
 /* K8s 资源管理专有 */
-.qb-resource-meta {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
 .qb-select--ns {
-  width: 180px;
-}
-
-.resource-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0 10px 0 8px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--resource-badge-color, rgba(59, 130, 246, 0.75)) 20%, transparent);
-  background: color-mix(in srgb, var(--resource-badge-color, rgba(59, 130, 246, 0.75)) 14%, transparent);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--app-title);
-  height: 28px;
-  letter-spacing: 0.01em;
-}
-
-.resource-badge::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--resource-badge-color, rgba(59, 130, 246, 0.75));
-  flex-shrink: 0;
-}
-
-
-:global(html.dark) .resource-badge {
-  background: color-mix(in srgb, var(--resource-badge-color, rgba(59, 130, 246, 0.75)) 14%, transparent);
-  color: var(--app-title);
-}
-
-.resource-badge--default {
-  --resource-badge-color: rgba(59, 130, 246, 0.78);
-}
-
-.resource-badge--pods {
-  --resource-badge-color: rgba(34, 211, 238, 0.9);
-}
-
-.resource-badge--workloads {
-  --resource-badge-color: rgba(59, 130, 246, 0.9);
-}
-
-.resource-badge--services {
-  --resource-badge-color: rgba(16, 185, 129, 0.9);
-}
-
-.resource-badge--ingress {
-  --resource-badge-color: rgba(168, 85, 247, 0.9);
-}
-
-.resource-badge--config {
-  --resource-badge-color: rgba(245, 158, 11, 0.9);
-}
-
-.resource-badge--storage {
-  --resource-badge-color: rgba(20, 184, 166, 0.9);
-}
-
-.resource-badge--nodes {
-  --resource-badge-color: rgba(99, 102, 241, 0.9);
-}
-
-.resource-badge--namespaces {
-  --resource-badge-color: rgba(239, 68, 68, 0.85);
-}
-
-.resource-badge--events {
-  --resource-badge-color: rgba(148, 163, 184, 0.95);
-}
-
-.resource-badge--jobs {
-  --resource-badge-color: rgba(244, 63, 94, 0.85);
+  width: 224px;
 }
 
 /* namespace select tags 溢出处理 */
@@ -3873,7 +3807,7 @@ onBeforeUnmount(() => {
 }
 
 .qb-select--ns :deep(.el-tag) {
-  max-width: 120px;
+  max-width: 152px;
 }
 
 .qb-select--ns :deep(.el-tag__content) {

@@ -194,13 +194,14 @@ function getWarningEventCount(row: any): number {
 
 .event-warning-badge {
   display: inline-flex;
-  min-width: 20px;
-  height: 20px;
+  min-width: 22px;
+  height: 22px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 0 6px;
-  background: rgba(220, 38, 38, 0.12);
+  padding: 0 7px;
+  border: 1px solid rgba(248, 113, 113, 0.18);
+  background: rgba(248, 250, 252, 0.94);
   color: #b91c1c;
   font-size: 12px;
   font-weight: 700;
@@ -212,16 +213,16 @@ function getWarningEventCount(row: any): number {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(248, 113, 113, 0.24);
-  background: linear-gradient(135deg, rgba(255, 241, 242, 0.96), rgba(255, 247, 237, 0.96));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(248, 250, 252, 0.94);
 }
 
 .pods-batchbar__meta {
   font-size: 13px;
   font-weight: 600;
-  color: #7f1d1d;
+  color: #334155;
 }
 
 .pods-phasebar {
@@ -232,86 +233,95 @@ function getWarningEventCount(row: any): number {
 
 .pods-phasebar__item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 92px;
+  padding: 14px 16px;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.94);
   color: #0f172a;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.pods-phasebar__item::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--phase-tone, rgba(148, 163, 184, 0.7));
 }
 
 .pods-phasebar__item:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  border-color: rgba(59, 130, 246, 0.14);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
 }
 
 .pods-phasebar__item.is-active {
-  border-color: rgba(59, 130, 246, 0.42);
-  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.14);
+  border-color: rgba(59, 130, 246, 0.28);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
 }
 
 .pods-phasebar__item--running {
-  background: linear-gradient(135deg, rgba(220, 252, 231, 0.95), rgba(240, 253, 244, 0.96));
+  --phase-tone: #059669;
 }
 
 .pods-phasebar__item--pending {
-  background: linear-gradient(135deg, rgba(254, 249, 195, 0.95), rgba(254, 252, 232, 0.96));
+  --phase-tone: #d97706;
 }
 
 .pods-phasebar__item--failed {
-  background: linear-gradient(135deg, rgba(254, 226, 226, 0.95), rgba(254, 242, 242, 0.96));
+  --phase-tone: #dc2626;
 }
 
 .pods-phasebar__item--completed {
-  background: linear-gradient(135deg, rgba(219, 234, 254, 0.95), rgba(239, 246, 255, 0.96));
+  --phase-tone: #64748b;
 }
 
 .pods-phasebar__label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
 }
 
 .pods-phasebar__value {
-  font-size: 24px;
+  font-size: 28px;
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 :global(html.dark) .pods-phasebar__item {
   border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.88);
   color: #e2e8f0;
 }
 
 :global(html.dark) .pods-batchbar {
-  border-color: rgba(248, 113, 113, 0.18);
-  background: linear-gradient(135deg, rgba(69, 10, 10, 0.7), rgba(120, 53, 15, 0.54));
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.72);
 }
 
 :global(html.dark) .pods-batchbar__meta {
-  color: #fecaca;
+  color: #cbd5e1;
 }
 
-:global(html.dark) .pods-phasebar__item--running {
-  background: linear-gradient(135deg, rgba(21, 128, 61, 0.32), rgba(20, 83, 45, 0.4));
+:global(html.dark) .pods-phasebar__label {
+  color: #94a3b8;
 }
 
-:global(html.dark) .pods-phasebar__item--pending {
-  background: linear-gradient(135deg, rgba(161, 98, 7, 0.3), rgba(120, 53, 15, 0.38));
-}
-
-:global(html.dark) .pods-phasebar__item--failed {
-  background: linear-gradient(135deg, rgba(153, 27, 27, 0.32), rgba(127, 29, 29, 0.4));
-}
-
-:global(html.dark) .pods-phasebar__item--completed {
-  background: linear-gradient(135deg, rgba(30, 64, 175, 0.32), rgba(30, 41, 59, 0.42));
+:global(html.dark) .pods-phasebar__value {
+  color: #f8fafc;
 }
 
 :global(html.dark) .event-warning-badge {
-  background: rgba(248, 113, 113, 0.18);
+  border-color: rgba(248, 113, 113, 0.18);
+  background: rgba(127, 29, 29, 0.24);
   color: #fecaca;
 }
 

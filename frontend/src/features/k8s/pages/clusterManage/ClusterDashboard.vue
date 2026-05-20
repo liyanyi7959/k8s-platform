@@ -20,25 +20,35 @@
     <template v-else>
         <!-- ──── Header ──── -->
         <header class="kd-header">
-          <div class="kd-header__left">
-            <h2 class="kd-header__title">{{ clusterOverview?.cluster?.name ?? '集群概览' }}</h2>
-            <span class="kd-status" :class="statusClass">{{ clusterOverview?.cluster?.status ?? '-' }}</span>
-          </div>
-          <div class="kd-header__center">
+          <div class="kd-header__info">
+            <div class="kd-header__title-row">
+              <h2 class="kd-header__title">{{ clusterOverview?.cluster?.name ?? '集群概览' }}</h2>
+              <span class="kd-status" :class="statusClass">{{ clusterOverview?.cluster?.status ?? '-' }}</span>
+            </div>
             <div class="kd-header__metas">
               <div v-if="dashboardLastUpdatedAt" class="kd-meta">
                 <el-icon :size="13"><Clock /></el-icon>
-                <span>{{ new Date(dashboardLastUpdatedAt).toLocaleTimeString() }}</span>
+                <span>更新于 {{ new Date(dashboardLastUpdatedAt).toLocaleTimeString() }}</span>
               </div>
               <div v-if="dashboardNamespacesTotal != null" class="kd-meta">
                 <el-icon :size="13"><Box /></el-icon>
-                <span>{{ dashboardNamespacesTotal }} NS</span>
+                <span>{{ dashboardNamespacesTotal }} 个命名空间</span>
               </div>
               <div class="kd-meta">
                 <el-icon :size="13"><Monitor /></el-icon>
                 <span>Ready {{ dashboardReadyText }}</span>
               </div>
+              <div class="kd-meta">
+                <el-icon :size="13"><Connection /></el-icon>
+                <span>Pending Pods {{ pendingPods }}</span>
+              </div>
+              <div class="kd-meta">
+                <el-icon :size="13"><WarningFilled /></el-icon>
+                <span>告警 {{ recentAlertEvents.length }}</span>
+              </div>
             </div>
+          </div>
+          <div class="kd-header__actions">
             <div class="kd-header__controls">
               <el-switch
                 :model-value="dashboardAutoRefresh"
@@ -63,20 +73,20 @@
                 <el-icon :size="14"><RefreshRight /></el-icon>立即刷新
               </button>
             </div>
-          </div>
-          <div class="kd-header__right">
-            <div class="kd-score" :class="healthTier">
-              <svg viewBox="0 0 44 44" class="kd-score__ring">
-                <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="3" opacity="0.1" />
-                <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="3"
-                  stroke-linecap="round" :stroke-dasharray="`${healthArc} 999`"
-                  transform="rotate(-90 22 22)" class="kd-score__arc" />
-              </svg>
-              <span class="kd-score__num">{{ dashboardHealthScore }}</span>
-            </div>
-            <div class="kd-score__info">
-              <span class="kd-score__label">健康评分</span>
-              <span class="kd-score__hint" :class="healthTier">{{ healthHint }}</span>
+            <div class="kd-header__right">
+              <div class="kd-score" :class="healthTier">
+                <svg viewBox="0 0 44 44" class="kd-score__ring">
+                  <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="3" opacity="0.1" />
+                  <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" :stroke-dasharray="`${healthArc} 999`"
+                    transform="rotate(-90 22 22)" class="kd-score__arc" />
+                </svg>
+                <span class="kd-score__num">{{ dashboardHealthScore }}</span>
+              </div>
+              <div class="kd-score__info">
+                <span class="kd-score__label">健康评分</span>
+                <span class="kd-score__hint" :class="healthTier">{{ healthHint }}</span>
+              </div>
             </div>
           </div>
         </header>
@@ -906,15 +916,22 @@ onBeforeUnmount(() => { disposeCharts() })
   font-size: 12px; font-weight: 700; transition: opacity .15s;
 }
 .kd-btn:hover { opacity: .85; }
-.kd-btn--primary { background: var(--c-cyan); color: #fff; }
+.kd-btn--primary { background: #2563eb; color: #fff; }
 
 /* ═══════════════ HEADER ═══════════════ */
 .kd-header {
-  display: flex; align-items: center; gap: 14px;
-  padding: 12px 18px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  padding: 14px 16px;
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--r);
 }
-.kd-header__left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.kd-header__info {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+}
+.kd-header__title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .kd-header__title { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
 
 .kd-status {
@@ -925,17 +942,28 @@ onBeforeUnmount(() => { disposeCharts() })
 .kd-status--warn { background: color-mix(in srgb, var(--c-amber) 12%, transparent); color: var(--c-amber); }
 .kd-status--bad  { background: color-mix(in srgb, var(--c-red) 12%, transparent);   color: var(--c-red); }
 
-.kd-header__center { flex: 1; min-width: 0; }
-.kd-header__metas { display: flex; gap: 16px; justify-content: center; }
+.kd-header__metas { display: flex; flex-wrap: wrap; gap: 8px; }
 .kd-meta {
-  display: flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg2);
   font-size: 11.5px; font-weight: 600; color: var(--fg2);
 }
-.kd-header__controls {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  margin-top: 10px;
+.kd-header__actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
 }
-.kd-refresh-select { width: 96px; }
+.kd-header__controls {
+  display: flex; align-items: center; gap: 8px;
+}
+.kd-refresh-select { width: 88px; }
 
 .kd-header__right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .kd-score { position: relative; width: 48px; height: 48px; }
@@ -952,7 +980,8 @@ onBeforeUnmount(() => { disposeCharts() })
 .kd--warn { color: var(--c-amber); }
 .kd--bad  { color: var(--c-red); }
 .kd-btn--ghost {
-  background: color-mix(in srgb, var(--fg2) 8%, transparent);
+  background: var(--bg2);
+  border: 1px solid var(--border);
   color: var(--fg);
 }
 
@@ -1010,11 +1039,11 @@ onBeforeUnmount(() => { disposeCharts() })
   cursor: pointer; user-select: none;
   transition: border-color .15s, box-shadow .15s;
   position: relative;
-  border-bottom: 2px solid var(--_a, var(--c-cyan));
+  box-shadow: none;
 }
 .kd-kpi-card:hover {
-  border-color: color-mix(in srgb, var(--_a, var(--c-cyan)) 30%, var(--border));
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--_a, var(--c-cyan)) 10%, transparent);
+  border-color: color-mix(in srgb, var(--_a, var(--c-cyan)) 20%, var(--border));
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.05);
 }
 .kd-kpi-card--cyan   { --_a: var(--c-cyan); }
 .kd-kpi-card--blue   { --_a: var(--c-blue); }
@@ -1024,8 +1053,8 @@ onBeforeUnmount(() => { disposeCharts() })
 .kd-kpi-card__icon {
   width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  background: color-mix(in srgb, var(--_a, var(--c-cyan)) 10%, transparent);
-  color: var(--_a);
+  background: color-mix(in srgb, var(--_a, var(--c-cyan)) 8%, var(--bg2));
+  color: color-mix(in srgb, var(--_a, var(--c-cyan)) 52%, var(--fg));
 }
 .kd-kpi-card__body {
   display: flex; flex-direction: column; flex: 1; min-width: 0;
@@ -1035,10 +1064,10 @@ onBeforeUnmount(() => { disposeCharts() })
 }
 .kd-kpi-card__value {
   font-size: 22px; font-weight: 900; letter-spacing: -.5px; line-height: 1.15;
-  color: var(--_a);
+  color: var(--fg);
 }
 .kd-kpi-card__sub {
-  position: absolute; right: 14px; bottom: 6px;
+  margin-top: 6px;
   font-size: 10px; color: var(--fg2); white-space: nowrap;
 }
 .kd-kpi-card__arrow {
@@ -1074,7 +1103,8 @@ onBeforeUnmount(() => { disposeCharts() })
 .kd-chart-card__badge {
   font-size: 11px; font-weight: 700; color: var(--fg2);
   padding: 2px 10px; border-radius: 10px;
-  background: color-mix(in srgb, var(--fg2) 6%, transparent);
+  background: var(--bg2);
+  border: 1px solid var(--border);
 }
 .kd-chart-card__canvas {
   flex: 1; min-height: 220px; width: 100%;
@@ -1099,7 +1129,8 @@ onBeforeUnmount(() => { disposeCharts() })
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 22px; height: 22px; padding: 0 7px;
   border-radius: 11px; font-size: 11.5px; font-weight: 800;
-  background: color-mix(in srgb, var(--c-red) 10%, transparent); color: var(--c-red);
+  background: var(--bg2); color: var(--fg);
+  border: 1px solid var(--border);
 }
 .kd-fpods__list { display: flex; flex-direction: column; gap: 0; }
 .kd-fpod {
@@ -1128,10 +1159,11 @@ onBeforeUnmount(() => { disposeCharts() })
 }
 .kd-fpod__reason {
   font-size: 11.5px; font-weight: 700; padding: 2px 10px; border-radius: 4px;
-  background: color-mix(in srgb, var(--c-red) 8%, transparent);
-  color: #b91c1c; white-space: nowrap;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--fg2); white-space: nowrap;
 }
-:global(html.dark) .kd-fpod__reason { color: #fca5a5; }
+:global(html.dark) .kd-fpod__reason { color: #cbd5e1; }
 
 /* ═══════════════ ALERTS ═══════════════ */
 .kd-alerts {
@@ -1153,7 +1185,8 @@ onBeforeUnmount(() => { disposeCharts() })
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 22px; height: 22px; padding: 0 7px;
   border-radius: 11px; font-size: 11.5px; font-weight: 800;
-  background: color-mix(in srgb, var(--c-red) 10%, transparent); color: var(--c-red);
+  background: var(--bg2); color: var(--fg);
+  border: 1px solid var(--border);
 }
 .kd-alerts__tags { display: flex; gap: 10px; }
 
@@ -1161,17 +1194,18 @@ onBeforeUnmount(() => { disposeCharts() })
 .kd-atag {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 12px;
+  border: 1px solid var(--border);
 }
 .kd-atag__dot {
   display: inline-block; width: 7px; height: 7px; border-radius: 50%;
 }
 .kd-atag--crit {
-  background: color-mix(in srgb, var(--c-red) 10%, transparent);
+  background: var(--bg2);
   color: #b91c1c;
 }
 .kd-atag--crit .kd-atag__dot { background: #dc2626; }
 .kd-atag--warn {
-  background: color-mix(in srgb, var(--c-amber) 10%, transparent);
+  background: var(--bg2);
   color: #b45309;
 }
 .kd-atag--warn .kd-atag__dot { background: #d97706; }
@@ -1411,6 +1445,7 @@ onBeforeUnmount(() => { disposeCharts() })
   .kd-chart-card--wide { grid-column: span 2; }
 }
 @media (max-width: 900px) {
+  .kd-header__actions { width: 100%; justify-content: space-between; }
   .kd-header__controls { justify-content: flex-start; flex-wrap: wrap; }
   .kd-charts-grid { grid-template-columns: 1fr; }
   .kd-chart-card--wide { grid-column: span 1; }
@@ -1419,7 +1454,8 @@ onBeforeUnmount(() => { disposeCharts() })
   .kd { --g: 10px; }
   .kd-kpi-grid { grid-template-columns: 1fr 1fr; }
   .kd-header { flex-wrap: wrap; }
-  .kd-header__center { display: none; }
+  .kd-header__actions { justify-content: flex-start; }
+  .kd-header__right { width: 100%; }
   .kd-focus-grid { grid-template-columns: 1fr; }
   .kd-charts-grid { grid-template-columns: 1fr; }
   .kd-chart-card--wide { grid-column: span 1; }

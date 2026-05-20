@@ -1,47 +1,32 @@
 <template>
   <div class="empty-state" :class="`empty-state--${type}`">
-    <div class="empty-state-illustration">
-      <!-- 通用空状态 SVG 插画 -->
+    <div class="empty-state-illustration" aria-hidden="true">
       <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" class="empty-state-svg">
-        <!-- 底部椭圆阴影 -->
-        <ellipse cx="100" cy="140" rx="70" ry="10" :fill="colors.shadow" />
+        <ellipse cx="100" cy="136" rx="54" ry="9" :fill="colors.shadow" />
 
-        <!-- 主体矩形（文件/盒子） -->
-        <rect x="55" y="40" width="90" height="80" rx="8" :fill="colors.cardBg" :stroke="colors.cardBorder" stroke-width="1.5" />
+        <path d="M68 32h44l18 18v62c0 7.732-6.268 14-14 14H68c-7.732 0-14-6.268-14-14V46c0-7.732 6.268-14 14-14Z" :fill="colors.panelFill" :stroke="colors.panelStroke" stroke-width="1.5" />
+        <path d="M112 32v18h18" :stroke="colors.panelStroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        <rect x="70" y="56" width="44" height="6" rx="3" :fill="colors.lineStrong" />
+        <rect x="70" y="72" width="32" height="6" rx="3" :fill="colors.lineSoft" />
+        <rect x="70" y="88" width="40" height="6" rx="3" :fill="colors.lineSoft" />
 
-        <!-- 装饰线条 -->
-        <rect x="72" y="62" width="56" height="5" rx="2.5" :fill="colors.line1" />
-        <rect x="72" y="76" width="40" height="5" rx="2.5" :fill="colors.line2" />
-        <rect x="72" y="90" width="48" height="5" rx="2.5" :fill="colors.line2" />
-
-        <!-- 右上角装饰图标 -->
-        <circle v-if="type === 'empty'" cx="135" cy="45" r="16" :fill="colors.accent" opacity="0.15" />
-        <template v-if="type === 'empty'">
-          <line x1="130" y1="45" x2="140" y2="45" :stroke="colors.accent" stroke-width="2" stroke-linecap="round" />
-          <line x1="135" y1="40" x2="135" y2="50" :stroke="colors.accent" stroke-width="2" stroke-linecap="round" />
-        </template>
-
-        <template v-if="type === 'no-data'">
-          <circle cx="135" cy="45" r="16" :fill="colors.accent" opacity="0.15" />
-          <path d="M128 45h14M135 38v14" :stroke="colors.accent" stroke-width="2" stroke-linecap="round" opacity="0.4" />
-          <line x1="128" y1="45" x2="142" y2="45" :stroke="colors.accent" stroke-width="2.5" stroke-linecap="round" />
-        </template>
-
-        <template v-if="type === 'no-result'">
-          <circle cx="135" cy="42" r="12" :stroke="colors.accent" stroke-width="2" fill="none" />
-          <line x1="144" y1="50" x2="150" y2="56" :stroke="colors.accent" stroke-width="2" stroke-linecap="round" />
-        </template>
+        <circle cx="140" cy="96" r="20" :fill="colors.badgeFill" :stroke="colors.badgeStroke" stroke-width="1.5" />
 
         <template v-if="type === 'error'">
-          <circle cx="135" cy="45" r="16" fill="rgba(239,68,68,0.12)" />
-          <line x1="130" y1="40" x2="140" y2="50" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
-          <line x1="140" y1="40" x2="130" y2="50" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />
+          <line x1="140" y1="86" x2="140" y2="98" :stroke="colors.badgeIcon" stroke-width="2.4" stroke-linecap="round" />
+          <circle cx="140" cy="104" r="1.8" :fill="colors.badgeIcon" />
+        </template>
+        <template v-else-if="type === 'no-result'">
+          <circle cx="137" cy="93" r="7.5" :stroke="colors.badgeIcon" stroke-width="2" fill="none" />
+          <line x1="142.5" y1="98.5" x2="149" y2="105" :stroke="colors.badgeIcon" stroke-width="2" stroke-linecap="round" />
+        </template>
+        <template v-else>
+          <line x1="132" y1="96" x2="148" y2="96" :stroke="colors.badgeIcon" stroke-width="2.4" stroke-linecap="round" />
         </template>
 
-        <!-- 左边小装饰 -->
-        <circle cx="50" cy="65" r="4" :fill="colors.dot1" opacity="0.4" />
-        <circle cx="44" cy="85" r="3" :fill="colors.dot2" opacity="0.3" />
-        <circle cx="156" cy="90" r="3.5" :fill="colors.dot1" opacity="0.35" />
+        <circle cx="52" cy="64" r="3" :fill="colors.dot" />
+        <circle cx="156" cy="60" r="2.5" :fill="colors.dot" />
+        <circle cx="46" cy="92" r="2.5" :fill="colors.dot" />
       </svg>
     </div>
 
@@ -77,55 +62,32 @@ const defaultDesc = computed(() => {
   }
 })
 
-const isArtV2 = computed(() => typeof document !== 'undefined' && document.body.classList.contains('art-v2-shell'))
-
 const colors = computed(() => {
   const dark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
-  if (isArtV2.value) {
-    if (dark) {
-      return {
-        shadow:     'rgba(2,6,23,0.28)',
-        cardBg:     'rgba(15,23,42,0.94)',
-        cardBorder: 'rgba(148,163,184,0.18)',
-        line1:      'rgba(96,165,250,0.26)',
-        line2:      'rgba(148,163,184,0.14)',
-        accent:     '#60a5fa',
-        dot1:       '#60a5fa',
-        dot2:       '#22d3ee',
-      }
-    }
-    return {
-      shadow:     'rgba(15,23,42,0.08)',
-      cardBg:     'rgba(255,255,255,0.98)',
-      cardBorder: 'rgba(148,163,184,0.14)',
-      line1:      'rgba(59,130,246,0.18)',
-      line2:      'rgba(148,163,184,0.1)',
-      accent:     '#3b82f6',
-      dot1:       '#3b82f6',
-      dot2:       '#06b6d4',
-    }
-  }
+  const isError = props.type === 'error'
   if (dark) {
     return {
-      shadow:     'rgba(0,0,0,0.2)',
-      cardBg:     '#1e293b',
-      cardBorder: 'rgba(148,163,184,0.15)',
-      line1:      'rgba(148,163,184,0.25)',
-      line2:      'rgba(148,163,184,0.12)',
-      accent:     '#818cf8',
-      dot1:       '#818cf8',
-      dot2:       '#22d3ee',
+      shadow: 'rgba(2, 6, 23, 0.28)',
+      panelFill: 'rgba(15, 23, 42, 0.92)',
+      panelStroke: 'rgba(148, 163, 184, 0.2)',
+      lineStrong: 'rgba(226, 232, 240, 0.18)',
+      lineSoft: 'rgba(148, 163, 184, 0.16)',
+      badgeFill: isError ? 'rgba(127, 29, 29, 0.36)' : 'rgba(30, 41, 59, 0.94)',
+      badgeStroke: isError ? 'rgba(252, 165, 165, 0.28)' : 'rgba(148, 163, 184, 0.22)',
+      badgeIcon: isError ? '#fca5a5' : '#cbd5e1',
+      dot: 'rgba(148, 163, 184, 0.32)',
     }
   }
   return {
-    shadow:     'rgba(2,6,23,0.06)',
-    cardBg:     '#ffffff',
-    cardBorder: 'rgba(2,6,23,0.08)',
-    line1:      'rgba(2,6,23,0.12)',
-    line2:      'rgba(2,6,23,0.06)',
-    accent:     '#6366f1',
-    dot1:       '#6366f1',
-    dot2:       '#06b6d4',
+    shadow: 'rgba(15, 23, 42, 0.08)',
+    panelFill: '#ffffff',
+    panelStroke: 'rgba(148, 163, 184, 0.18)',
+    lineStrong: 'rgba(15, 23, 42, 0.12)',
+    lineSoft: 'rgba(148, 163, 184, 0.16)',
+    badgeFill: isError ? 'rgba(254, 242, 242, 0.96)' : 'rgba(248, 250, 252, 0.98)',
+    badgeStroke: isError ? 'rgba(248, 113, 113, 0.22)' : 'rgba(148, 163, 184, 0.18)',
+    badgeIcon: isError ? '#dc2626' : '#475569',
+    dot: 'rgba(148, 163, 184, 0.28)',
   }
 })
 </script>
@@ -135,19 +97,20 @@ const colors = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   padding: 32px 16px;
-  max-width: 360px;
+  max-width: 380px;
   margin: 0 auto;
 }
 
 .empty-state-illustration {
   position: relative;
+  width: 164px;
 }
 
 .empty-state-svg {
-  width: 160px;
-  height: 128px;
+  width: 164px;
+  height: 132px;
 }
 
 .empty-state-text {
@@ -165,9 +128,12 @@ const colors = computed(() => {
   font-size: 13px;
   color: var(--color-text-muted);
   line-height: 1.6;
+  max-width: 24em;
 }
 
 .empty-state-action {
   margin-top: 4px;
+  display: flex;
+  justify-content: center;
 }
 </style>
