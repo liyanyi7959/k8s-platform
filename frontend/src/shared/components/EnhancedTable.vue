@@ -115,16 +115,7 @@
       <slot />
 
       <template #empty>
-        <div class="enhanced-table-empty">
-          <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="enhanced-table-empty-svg">
-            <ellipse cx="80" cy="108" rx="52" ry="7" fill="currentColor" opacity="0.04" />
-            <rect x="40" y="24" width="80" height="68" rx="6" fill="currentColor" opacity="0.03" stroke="currentColor" stroke-opacity="0.08" stroke-width="1" />
-            <rect x="56" y="44" width="48" height="4" rx="2" fill="currentColor" opacity="0.08" />
-            <rect x="56" y="56" width="34" height="4" rx="2" fill="currentColor" opacity="0.06" />
-            <rect x="56" y="68" width="42" height="4" rx="2" fill="currentColor" opacity="0.06" />
-          </svg>
-          <span class="enhanced-table-empty-text">暂无数据</span>
-        </div>
+        <EmptyState class="enhanced-table-empty-state" type="no-data" description="暂无数据" />
       </template>
     </el-table>
 
@@ -259,16 +250,7 @@
           <slot />
 
           <template #empty>
-            <div class="enhanced-table-empty">
-              <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="enhanced-table-empty-svg">
-                <ellipse cx="80" cy="108" rx="52" ry="7" fill="currentColor" opacity="0.04" />
-                <rect x="40" y="24" width="80" height="68" rx="6" fill="currentColor" opacity="0.03" stroke="currentColor" stroke-opacity="0.08" stroke-width="1" />
-                <rect x="56" y="44" width="48" height="4" rx="2" fill="currentColor" opacity="0.08" />
-                <rect x="56" y="56" width="34" height="4" rx="2" fill="currentColor" opacity="0.06" />
-                <rect x="56" y="68" width="42" height="4" rx="2" fill="currentColor" opacity="0.06" />
-              </svg>
-              <span class="enhanced-table-empty-text">暂无数据</span>
-            </div>
+            <EmptyState class="enhanced-table-empty-state" type="no-data" description="暂无数据" />
           </template>
         </el-table>
       </div>
@@ -292,6 +274,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Check, CircleClose, FullScreen, Operation, RefreshRight, Setting } from '@element-plus/icons-vue'
+import EmptyState from '@/shared/components/EmptyState.vue'
 
 export type TableSize = 'large' | 'default' | 'small'
 
@@ -1079,27 +1062,22 @@ defineExpose({
 }
 
 /* ── 空状态 ── */
-.enhanced-table-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  user-select: none;
-  color: var(--color-text-muted, #94a3b8);
+.enhanced-table-empty-state {
+  margin: 4px 0;
 }
 
-.enhanced-table-empty-svg {
-  width: 120px;
-  height: 90px;
-  margin-bottom: 12px;
-  color: var(--color-text-muted, #94a3b8);
+.enhanced-table-empty-state :deep(.empty-state) {
+  padding: 24px 16px;
+  border: none;
+  background: transparent;
 }
 
-.enhanced-table-empty-text {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-muted, #94a3b8);
-  letter-spacing: 0.02em;
+.enhanced-table-empty-state :deep(.empty-state-svg) {
+  width: 132px;
+  height: 104px;
+}
+
+.enhanced-table-empty-state :deep(.empty-state-action) {
+  margin-top: 8px;
 }
 </style>

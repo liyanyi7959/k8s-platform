@@ -50,7 +50,6 @@
           <div v-if="activeGroup?.key === 'k8s'" class="cluster-shortcuts">
             <div class="section-title-row">
               <span class="section-title">集群快捷入口</span>
-              <span v-if="shortcuts.length" class="section-count">{{ shortcuts.length }}</span>
             </div>
 
             <div v-if="shortcuts.length" class="shortcut-list">
@@ -175,53 +174,55 @@ onUnmounted(() => {
 <style scoped>
 /* ── 主题变量 — Light（默认） ─────────────────────────────────────────── */
 .side-panel {
-  --panel-bg:            var(--color-bg-sidebar, #f5f7fa);
-  --panel-border:        var(--color-border-default, rgba(0, 0, 0, 0.06));
-  --panel-title-color:   var(--color-text-primary, #0f172a);
-  --panel-pin-color:     var(--color-text-muted, #94a3b8);
-  --panel-pin-hover:     var(--color-text-primary, #0f172a);
-  --panel-pin-hover-bg:  var(--color-bg-hover, rgba(0, 0, 0, 0.04));
-  --panel-item-color:    var(--color-text-secondary, #475569);
+  --panel-bg: var(--color-bg-sidebar, #f5f7fa);
+  --panel-border: var(--color-border-default, rgba(0, 0, 0, 0.06));
+  --panel-title-color: var(--color-text-primary, #0f172a);
+  --panel-pin-color: var(--color-text-muted, #94a3b8);
+  --panel-pin-hover: var(--color-text-primary, #0f172a);
+  --panel-pin-hover-bg: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+  --panel-item-color: var(--color-text-secondary, #475569);
   --panel-item-hover-bg: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
   --panel-item-hover-color: var(--color-text-primary, #0f172a);
-  --panel-item-active-bg:   rgba(59, 130, 246, 0.1);
+  --panel-item-active-bg: rgba(59, 130, 246, 0.1);
   --panel-item-active-color: #2563eb;
   --panel-item-active-hover: rgba(59, 130, 246, 0.15);
   --panel-icon-active-color: #2563eb;
-  --panel-desc-color:    var(--color-text-muted, #94a3b8);
-  --panel-desc-active:   rgba(37, 99, 235, 0.62);
-  --panel-hint-bg:       rgba(251, 191, 36, 0.08);
-  --panel-hint-border:   rgba(251, 191, 36, 0.25);
-  --panel-hint-title:    #d97706;
-  --panel-hint-desc:     var(--color-text-secondary, #475569);
+  --panel-desc-color: var(--color-text-muted, #94a3b8);
+  --panel-desc-active: rgba(37, 99, 235, 0.62);
+  --panel-hint-bg: rgba(251, 191, 36, 0.08);
+  --panel-hint-border: rgba(251, 191, 36, 0.25);
+  --panel-hint-title: #d97706;
+  --panel-hint-desc: var(--color-text-secondary, #475569);
 }
 
 /* ── 主题变量 — Dark ─────────────────────────────────────────────────── */
 :global(html.dark) .side-panel {
-  --panel-bg:            var(--color-bg-sidebar, #111827);
-  --panel-border:        rgba(255, 255, 255, 0.06);
-  --panel-title-color:   rgba(226, 232, 240, 0.9);
-  --panel-pin-color:     rgba(148, 163, 184, 0.6);
-  --panel-pin-hover:     #e2e8f0;
-  --panel-pin-hover-bg:  rgba(255, 255, 255, 0.08);
-  --panel-item-color:    rgba(203, 213, 225, 0.8);
+  --panel-bg: var(--color-bg-sidebar, #111827);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --panel-title-color: rgba(226, 232, 240, 0.9);
+  --panel-pin-color: rgba(148, 163, 184, 0.6);
+  --panel-pin-hover: #e2e8f0;
+  --panel-pin-hover-bg: rgba(255, 255, 255, 0.08);
+  --panel-item-color: rgba(203, 213, 225, 0.8);
   --panel-item-hover-bg: rgba(255, 255, 255, 0.06);
   --panel-item-hover-color: #e2e8f0;
-  --panel-item-active-bg:   rgba(59, 130, 246, 0.18);
+  --panel-item-active-bg: rgba(59, 130, 246, 0.18);
   --panel-item-active-color: #93c5fd;
   --panel-item-active-hover: rgba(59, 130, 246, 0.24);
   --panel-icon-active-color: #60a5fa;
-  --panel-desc-color:    rgba(148, 163, 184, 0.5);
-  --panel-desc-active:   rgba(147, 197, 253, 0.68);
-  --panel-hint-bg:       rgba(251, 191, 36, 0.1);
-  --panel-hint-border:   rgba(251, 191, 36, 0.2);
-  --panel-hint-title:    #fbbf24;
-  --panel-hint-desc:     rgba(226, 232, 240, 0.6);
+  --panel-desc-color: rgba(148, 163, 184, 0.5);
+  --panel-desc-active: rgba(147, 197, 253, 0.68);
+  --panel-hint-bg: rgba(251, 191, 36, 0.1);
+  --panel-hint-border: rgba(251, 191, 36, 0.2);
+  --panel-hint-title: #fbbf24;
+  --panel-hint-desc: rgba(226, 232, 240, 0.6);
 }
 
 .side-panel {
   width: 200px;
   min-width: 200px;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background: var(--panel-bg);
@@ -230,15 +231,15 @@ onUnmounted(() => {
   overflow: hidden;
   flex-shrink: 0;
   transition: background 0.25s ease, border-color 0.25s ease;
+  position: relative;
 }
 
 /* ── Slide transition ──────────────────────────────────────────────────── */
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.2s ease;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
 }
+
 .panel-slide-enter-from,
 .panel-slide-leave-to {
   width: 0;
@@ -248,23 +249,28 @@ onUnmounted(() => {
 
 /* ── Header ────────────────────────────────────────────────────────────── */
 .panel-header {
-  height: 48px;
+  height: 56px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 0 16px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--panel-border);
 }
+
 .panel-title {
-  font-size: 13px;
-  font-weight: 600;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--panel-title-color);
   letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .pin-btn {
   width: 24px;
   height: 24px;
@@ -279,6 +285,7 @@ onUnmounted(() => {
   transition: all 0.15s;
   flex-shrink: 0;
 }
+
 .pin-btn:hover {
   color: var(--panel-pin-hover);
   background: var(--panel-pin-hover-bg);
@@ -288,58 +295,68 @@ onUnmounted(() => {
 .cluster-hint {
   margin: 12px 12px 0;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--panel-hint-bg);
   border: 1px solid var(--panel-hint-border);
 }
+
 .hint-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--panel-hint-title);
 }
+
 .hint-desc {
   font-size: 12px;
   color: var(--panel-hint-desc);
   margin-top: 4px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 /* ── Scroll ────────────────────────────────────────────────────────────── */
 .panel-scroll {
+  position: relative;
+  z-index: 1;
   flex: 1;
   min-height: 0;
 }
 
 /* ── Menu ──────────────────────────────────────────────────────────────── */
 .panel-menu {
-  padding: 8px;
+  min-height: 100%;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
 }
 
 .menu-item {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 10px 12px;
-  border: none;
+  padding: 12px;
+  border: 1px solid transparent;
   background: transparent;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   text-align: left;
   color: var(--panel-item-color);
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
 }
+
 .menu-item:hover {
   background: var(--panel-item-hover-bg);
   color: var(--panel-item-hover-color);
+  border-color: rgba(148, 163, 184, 0.18);
 }
+
 .menu-item--active {
+  border-color: rgba(59, 130, 246, 0.18);
   background: var(--panel-item-active-bg);
   color: var(--panel-item-active-color);
 }
+
 .menu-item--active:hover {
   background: var(--panel-item-active-hover);
 }
@@ -350,6 +367,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   opacity: 0.7;
 }
+
 .menu-item--active .menu-item-icon {
   opacity: 1;
   color: var(--panel-icon-active-color);
@@ -360,38 +378,43 @@ onUnmounted(() => {
   flex-direction: column;
   min-width: 0;
 }
+
 .menu-item-title {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
 }
+
 .menu-item-desc {
   font-size: 11px;
   color: var(--panel-desc-color);
   margin-top: 2px;
-  line-height: 1.3;
+  line-height: 1.45;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .menu-item--active .menu-item-desc {
   color: var(--panel-desc-active);
 }
 
 .cluster-shortcuts {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--panel-border);
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.56);
 }
 
 .section-title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 8px 8px;
+  justify-content: flex-start;
+  padding: 0 0 8px;
   gap: 8px;
 }
 
@@ -404,19 +427,6 @@ onUnmounted(() => {
   color: var(--panel-title-color);
 }
 
-.section-count {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--panel-item-active-color);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 20px;
-  text-align: center;
-}
-
 .shortcut-list {
   display: flex;
   flex-direction: column;
@@ -426,14 +436,17 @@ onUnmounted(() => {
 .shortcut-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  border-radius: 8px;
-  transition: background 0.15s ease;
+  gap: 8px;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition: all 0.15s ease;
 }
 
 .shortcut-row:hover,
 .shortcut-row--active {
   background: var(--panel-item-active-bg);
+  border-color: rgba(59, 130, 246, 0.14);
 }
 
 .shortcut-open {
@@ -484,7 +497,7 @@ onUnmounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .shortcut-meta {
@@ -501,7 +514,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: var(--panel-pin-color);
   cursor: pointer;
@@ -521,12 +534,18 @@ onUnmounted(() => {
 }
 
 .shortcut-empty {
-  margin: 0 8px;
+  margin: 0;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px dashed var(--panel-border);
+  background: rgba(255, 255, 255, 0.44);
   color: var(--panel-desc-color);
   font-size: 12px;
   line-height: 1.5;
+}
+
+:global(html.dark) .cluster-shortcuts,
+:global(html.dark) .shortcut-empty {
+  background: rgba(15, 23, 42, 0.34);
 }
 </style>

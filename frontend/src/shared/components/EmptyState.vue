@@ -77,8 +77,34 @@ const defaultDesc = computed(() => {
   }
 })
 
+const isArtV2 = computed(() => typeof document !== 'undefined' && document.body.classList.contains('art-v2-shell'))
+
 const colors = computed(() => {
   const dark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  if (isArtV2.value) {
+    if (dark) {
+      return {
+        shadow:     'rgba(2,6,23,0.28)',
+        cardBg:     'rgba(15,23,42,0.94)',
+        cardBorder: 'rgba(148,163,184,0.18)',
+        line1:      'rgba(96,165,250,0.26)',
+        line2:      'rgba(148,163,184,0.14)',
+        accent:     '#60a5fa',
+        dot1:       '#60a5fa',
+        dot2:       '#22d3ee',
+      }
+    }
+    return {
+      shadow:     'rgba(15,23,42,0.08)',
+      cardBg:     'rgba(255,255,255,0.98)',
+      cardBorder: 'rgba(148,163,184,0.14)',
+      line1:      'rgba(59,130,246,0.18)',
+      line2:      'rgba(148,163,184,0.1)',
+      accent:     '#3b82f6',
+      dot1:       '#3b82f6',
+      dot2:       '#06b6d4',
+    }
+  }
   if (dark) {
     return {
       shadow:     'rgba(0,0,0,0.2)',
@@ -109,8 +135,14 @@ const colors = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   padding: 32px 16px;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.empty-state-illustration {
+  position: relative;
 }
 
 .empty-state-svg {
@@ -132,6 +164,7 @@ const colors = computed(() => {
 .empty-state-desc {
   font-size: 13px;
   color: var(--color-text-muted);
+  line-height: 1.6;
 }
 
 .empty-state-action {

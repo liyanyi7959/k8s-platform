@@ -2487,35 +2487,35 @@ onMounted(async () => {
 
 <style scoped>
 .topology-page {
-  --topology-page-bg: linear-gradient(180deg, rgba(248, 250, 252, 0.88) 0%, rgba(241, 245, 249, 0.98) 100%);
-  --topology-surface-bg: rgba(255, 255, 255, 0.9);
-  --topology-surface-border: rgba(148, 163, 184, 0.18);
-  --topology-surface-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
-  --topology-panel-bg: rgba(255, 255, 255, 0.86);
-  --topology-panel-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-  --topology-toolbar-bg: rgba(255, 255, 255, 0.85);
+  --topology-page-bg: transparent;
+  --topology-surface-bg: var(--color-bg-card);
+  --topology-surface-border: var(--color-border-default);
+  --topology-surface-shadow: var(--shadow-card);
+  --topology-panel-bg: var(--color-bg-card);
+  --topology-panel-shadow: var(--shadow-card);
+  --topology-toolbar-bg: rgba(255, 255, 255, 0.94);
   --topology-toolbar-border: rgba(148, 163, 184, 0.2);
-  --topology-toolbar-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --topology-toolbar-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   --topology-text-primary: var(--color-text-primary);
   --topology-text-secondary: var(--color-text-secondary);
   min-height: 100%;
-  padding: 16px;
+  padding: 0;
   background: var(--topology-page-bg);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 :global(html.dark) .topology-page {
-  --topology-page-bg: linear-gradient(180deg, rgba(2, 6, 23, 0.34) 0%, rgba(15, 23, 42, 0.74) 100%);
-  --topology-surface-bg: rgba(15, 23, 42, 0.82);
+  --topology-page-bg: transparent;
+  --topology-surface-bg: rgba(15, 23, 42, 0.9);
   --topology-surface-border: rgba(148, 163, 184, 0.18);
-  --topology-surface-shadow: 0 20px 40px rgba(2, 6, 23, 0.24), inset 0 1px 0 rgba(148, 163, 184, 0.06);
-  --topology-panel-bg: rgba(15, 23, 42, 0.88);
-  --topology-panel-shadow: 0 24px 60px rgba(2, 6, 23, 0.3);
-  --topology-toolbar-bg: rgba(15, 23, 42, 0.88);
+  --topology-surface-shadow: 0 14px 34px rgba(2, 6, 23, 0.28), inset 0 1px 0 rgba(148, 163, 184, 0.04);
+  --topology-panel-bg: rgba(15, 23, 42, 0.92);
+  --topology-panel-shadow: 0 16px 36px rgba(2, 6, 23, 0.3);
+  --topology-toolbar-bg: rgba(15, 23, 42, 0.92);
   --topology-toolbar-border: rgba(148, 163, 184, 0.18);
-  --topology-toolbar-shadow: 0 14px 36px rgba(2, 6, 23, 0.28);
+  --topology-toolbar-shadow: 0 10px 24px rgba(2, 6, 23, 0.28);
 }
 
 .topology-page--embedded {
@@ -2529,7 +2529,7 @@ onMounted(async () => {
 .topology-stage {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
   min-height: 0;
   min-width: 0;
 }
@@ -2543,7 +2543,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 6px 8px;
   min-width: 0;
 }
 
@@ -2553,17 +2553,27 @@ onMounted(async () => {
 
 .topology-toolbar__summary {
   color: var(--topology-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.08);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.2;
+}
+
+:global(html.dark) .topology-toolbar__summary {
+  background: rgba(148, 163, 184, 0.12);
 }
 
 .topology-control-card {
   border: 1px solid var(--topology-surface-border);
-  border-radius: 8px;
+  border-radius: 14px;
   background: var(--topology-surface-bg);
   box-shadow: var(--topology-surface-shadow);
-  padding: 8px 12px;
+  padding: 12px 14px;
 }
 
 .topology-console-head {
@@ -2571,14 +2581,14 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .topology-console-head__main {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px 12px;
   min-width: 0;
   flex: 1 1 0%;
 }
@@ -2586,7 +2596,7 @@ onMounted(async () => {
 .topology-console-head__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
   flex-shrink: 0;
@@ -2594,41 +2604,47 @@ onMounted(async () => {
 
 .topology-control-head__title {
   color: var(--topology-text-primary);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .topology-filter-combo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+:global(html.dark) .topology-filter-combo {
+  border-top-color: rgba(148, 163, 184, 0.14);
 }
 
 .topology-filter-combo__selects {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex: 1 1 0%;
   min-width: 0;
   flex-wrap: wrap;
 }
 
 .topology-combo-select {
-  min-width: 100px;
+  min-width: 120px;
   flex: 1 1 0%;
-  max-width: 180px;
+  max-width: 170px;
 }
 
 .topology-combo-select--resource {
-  min-width: 220px;
-  max-width: 320px;
+  min-width: 200px;
+  max-width: 260px;
 }
 
 .topology-filter-combo__prefs {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
   flex-wrap: wrap;
 }
@@ -2636,8 +2652,17 @@ onMounted(async () => {
 .topology-toggle-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--topology-toolbar-border);
+  background: rgba(248, 250, 252, 0.9);
   white-space: nowrap;
+}
+
+:global(html.dark) .topology-toggle-item {
+  background: rgba(15, 23, 42, 0.9);
 }
 
 .topology-toggle-item__text {
@@ -2648,10 +2673,10 @@ onMounted(async () => {
 
 .topology-panel {
   border: 1px solid var(--topology-surface-border);
-  border-radius: 8px;
+  border-radius: 14px;
   background: var(--topology-panel-bg);
   box-shadow: var(--topology-panel-shadow);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(10px);
   overflow: hidden;
 }
 
@@ -2666,16 +2691,16 @@ onMounted(async () => {
 
 .topology-overlay-toolbar {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 12px;
+  right: 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 4px 6px;
   background: var(--topology-toolbar-bg);
   backdrop-filter: blur(10px);
   border: 1px solid var(--topology-toolbar-border);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: var(--topology-toolbar-shadow);
   z-index: 10;
 }
@@ -2684,8 +2709,8 @@ onMounted(async () => {
   width: 100%;
   min-width: 0;
   flex: 1 1 auto;
-  min-height: var(--topology-panel-height, clamp(420px, calc(100vh - 260px), 680px));
-  height: var(--topology-panel-height, clamp(420px, calc(100vh - 260px), 680px));
+  min-height: var(--topology-panel-height, clamp(400px, calc(100vh - 240px), 640px));
+  height: var(--topology-panel-height, clamp(400px, calc(100vh - 240px), 640px));
 }
 
 .topology-page--embedded .topology-panel--main {
@@ -2700,10 +2725,42 @@ onMounted(async () => {
   gap: 8px;
 }
 
+.topology-console-head__actions :deep(.el-button),
+.topology-overlay-toolbar :deep(.el-button) {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+}
+
+.topology-filter-combo :deep(.el-select__wrapper),
+.topology-filter-combo :deep(.el-input__wrapper) {
+  min-height: 36px;
+  border-radius: 10px;
+}
+
+.topology-filter-combo__prefs :deep(.el-radio-group) {
+  padding: 2px;
+  border-radius: 10px;
+  border: 1px solid var(--topology-toolbar-border);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.topology-filter-combo__prefs :deep(.el-radio-button__inner) {
+  min-width: 54px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+:global(html.dark) .topology-filter-combo__prefs :deep(.el-radio-group) {
+  background: rgba(15, 23, 42, 0.9);
+}
+
 @media (max-width: 980px) {
   .topology-panel--main {
-    min-height: clamp(380px, calc(100vh - 280px), 640px);
-    height: clamp(380px, calc(100vh - 280px), 640px);
+    min-height: clamp(360px, calc(100vh - 260px), 600px);
+    height: clamp(360px, calc(100vh - 260px), 600px);
   }
 
   .topology-console-head {

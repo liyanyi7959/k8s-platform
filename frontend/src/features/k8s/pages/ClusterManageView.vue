@@ -3328,23 +3328,21 @@ onBeforeUnmount(() => {
   height: 100%;
   min-height: 0;
   width: 100%;
-  gap: 12px;
-  padding: 12px;
-  background: var(--color-bg-page, #f8fafc);
-}
-:global(html.dark) .k8s-shell {
-  background: var(--color-bg-page, #0f172a);
+  gap: 10px;
+  padding: 0;
+  background: transparent;
 }
 
 .k8s-aside {
   display: flex;
-  width: 236px;
+  width: 228px;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 12px;
-  border: 1px solid var(--color-border-subtle);
-  background: var(--color-bg-card);
-  backdrop-filter: blur(20px);
+  border-radius: 14px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-glass-bg-strong);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
   --k8s-tree-item-height: 34px;
   --k8s-tree-arrow-size: 14px;
   --k8s-tree-icon-box: 18px;
@@ -3352,7 +3350,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 :global(html.dark) .k8s-aside {
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.88);
   border-color: var(--color-border-default);
 }
 
@@ -3361,7 +3359,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--color-border-subtle);
 }
 :global(html.dark) .aside-head {
@@ -3377,21 +3375,21 @@ onBeforeUnmount(() => {
 
 .aside-back-btn {
   display: inline-flex;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-input);
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .aside-back-btn:hover {
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(59, 130, 246, 0.1);
   color: var(--color-accent-primary);
 }
 
@@ -3400,7 +3398,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--color-text-primary);
   padding-left: 2px;
@@ -3409,7 +3407,7 @@ onBeforeUnmount(() => {
 .aside-body {
   flex: 1;
   min-height: 0;
-  padding: 6px;
+  padding: 8px;
 }
 
 .tree-node {
@@ -3484,23 +3482,23 @@ onBeforeUnmount(() => {
 /* sidebar tree item styling */
 .k8s-aside :deep(.el-tree-node__content) {
   min-height: var(--k8s-tree-item-height);
-  border-radius: 6px;
+  border-radius: 8px;
   margin: 0;
-  padding-left: 6px !important;
+  padding-left: 8px !important;
   display: flex;
   align-items: center;
   transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .k8s-aside :deep(.el-tree > .el-tree-node > .el-tree-node__content) {
-  margin: 2px 0;
-  border-radius: 8px;
-  background: rgba(59, 130, 246, 0.045);
+  margin: 2px 0 4px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.038);
 }
 
 .k8s-aside :deep(.el-tree-node__children) {
-  margin: 0 0 4px 12px;
-  padding-left: 8px;
+  margin: 0 0 6px 10px;
+  padding-left: 10px;
   border-left: 1px solid rgba(148, 163, 184, 0.18);
 }
 
@@ -3548,8 +3546,8 @@ onBeforeUnmount(() => {
 .tree-node--folder.tree-node--active {
   min-height: calc(var(--k8s-tree-item-height) - 4px);
   padding: 0 8px;
-  border-radius: 999px;
-  background: rgba(59, 130, 246, 0.09);
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.08);
 }
 
 :global(html.dark) .tree-node--folder.tree-node--active {
@@ -3574,9 +3572,10 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 12px;
-  border-color: var(--color-border-subtle);
-  box-shadow: none;
+  border-radius: 16px;
+  border-color: var(--color-border-default);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
 }
 
 .page-card :deep(> .el-card__body) {
@@ -3584,7 +3583,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow: auto;
   overflow-x: hidden;
-  padding: 16px;
+  padding: 14px;
 }
 
 .page-card :deep(> .el-card__header) {
@@ -3746,8 +3745,8 @@ onBeforeUnmount(() => {
 }
 
 .columns-panel {
-  width: 260px;
-  padding: 12px;
+  width: 236px;
+  padding: 10px;
 }
 
 .columns-panel-empty {
@@ -3770,7 +3769,7 @@ onBeforeUnmount(() => {
 .columns-panel-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* 查询栏样式由 enterprise.css 全局提供 (.srv-query-bar / .qb-*) */
@@ -3789,15 +3788,15 @@ onBeforeUnmount(() => {
 .resource-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px 4px 8px;
+  gap: 5px;
+  padding: 0 10px 0 8px;
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--resource-badge-color, rgba(59, 130, 246, 0.75)) 20%, transparent);
   background: color-mix(in srgb, var(--resource-badge-color, rgba(59, 130, 246, 0.75)) 14%, transparent);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--app-title);
-  height: 32px;
+  height: 28px;
   letter-spacing: 0.01em;
 }
 

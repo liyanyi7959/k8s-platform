@@ -1,65 +1,95 @@
 <template>
-  
-    <el-card class="page-card">
-      <div class="srv-query-bar">
-        <!-- 搜索区 -->
-        <div class="qb-search">
-          <el-icon class="qb-search-icon"><Search /></el-icon>
+  <section class="clusters-page">
+    <header class="clusters-page-header">
+      <div class="clusters-page-header__main">
+        <h1 class="clusters-page-header__title">集群管理</h1>
+        <p class="clusters-page-header__desc">
+          导入、查看并进入 Kubernetes 集群，集中管理状态、版本与节点规模。
+        </p>
+      </div>
+
+      <div class="clusters-page-header__actions">
+        <el-button class="clusters-page-header__primary" type="primary" size="default" @click="openImport">
+          <el-icon><Upload /></el-icon>
+          <span>导入集群</span>
+        </el-button>
+      </div>
+    </header>
+
+    <div class="clusters-summary-grid" aria-label="集群概览">
+      <article class="summary-card">
+        <span class="summary-card__label">筛选结果</span>
+        <strong class="summary-card__value">{{ total }}</strong>
+        <span class="summary-card__note">当前条件下的可见集群数</span>
+      </article>
+      <article class="summary-card">
+        <span class="summary-card__label">本页正常</span>
+        <strong class="summary-card__value">{{ visibleStatusSummary.active }}</strong>
+        <span class="summary-card__note">健康检查通过或当前在线</span>
+      </article>
+      <article class="summary-card">
+        <span class="summary-card__label">需关注</span>
+        <strong class="summary-card__value">{{ visibleAttentionCount }}</strong>
+        <span class="summary-card__note">降级、禁用或处理中集群</span>
+      </article>
+      <article class="summary-card">
+        <span class="summary-card__label">本页节点</span>
+        <strong class="summary-card__value">{{ visibleNodeCount }}</strong>
+        <span class="summary-card__note">已探测到的节点总数</span>
+      </article>
+    </div>
+
+    <section class="clusters-panel clusters-panel--filters" aria-label="集群筛选条件">
+      <div class="clusters-filters">
+        <div class="clusters-filters__fields">
           <el-input
             v-model="query.keyword"
-            class="qb-keyword"
+            class="clusters-filter clusters-filter--search"
             size="default"
-            placeholder="搜索集群名称…"
+            placeholder="搜索集群名称"
             clearable
             @keyup.enter="onSearch"
-          />
-        </div>
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
 
-        <!-- 筛选区 -->
-        <div class="qb-filters">
-          <el-select v-model="query.status" class="qb-select" size="default" clearable placeholder="状态">
+          <el-select v-model="query.status" class="clusters-filter" size="default" clearable placeholder="状态">
             <el-option label="正常" value="active" />
             <el-option label="已禁用" value="disabled" />
             <el-option label="创建中" value="creating" />
             <el-option label="降级" value="degraded" />
             <el-option label="删除中" value="deleting" />
           </el-select>
-          <el-select v-model="query.type" class="qb-select" size="default" clearable placeholder="类型">
+          <el-select v-model="query.type" class="clusters-filter" size="default" clearable placeholder="类型">
             <el-option label="导入" value="imported" />
             <el-option label="创建" value="created" />
           </el-select>
         </div>
 
-        <!-- 操作区 -->
-        <div class="qb-actions">
-          <el-tooltip content="查询" placement="top" :show-after="300">
-            <el-button class="qb-btn" size="default" @click="onSearch">
-              <el-icon><Search /></el-icon>
-            </el-button>
-          </el-tooltip>
-          <el-tooltip content="重置" placement="top" :show-after="300">
-            <el-button class="qb-btn" size="default" @click="onResetFilters">
+        <div class="clusters-filters__actions">
+          <el-button type="primary" size="default" @click="onSearch">
+            <el-icon><Search /></el-icon>
+            <span>查询</span>
+          </el-button>
+          <el-button size="default" @click="onResetFilters">
               <el-icon><RefreshRight /></el-icon>
-            </el-button>
-          </el-tooltip>
-          <el-tooltip content="导入集群" placement="top" :show-after="300">
-            <el-button class="qb-btn" size="default" @click="openImport">
-              <el-icon><Upload /></el-icon>
-            </el-button>
-          </el-tooltip>
-          <el-tooltip content="批量检查" placement="top" :show-after="300">
-            <el-button class="qb-btn" type="warning" size="default" :disabled="selectedCount === 0" :loading="bulkHealthLoading" @click="bulkHealth">
+            <span>重置</span>
+          </el-button>
+          <el-button size="default" :disabled="selectedCount === 0" :loading="bulkHealthLoading" @click="bulkHealth">
               <el-icon><CircleCheck /></el-icon>
-            </el-button>
-          </el-tooltip>
-          <el-tooltip v-if="selectedCount > 0" content="清空选择" placement="top" :show-after="300">
-            <el-button class="qb-btn" size="default" @click="clearSelection">
+            <span>批量检查</span>
+          </el-button>
+          <el-button v-if="selectedCount > 0" size="default" @click="clearSelection">
               <el-icon><CircleClose /></el-icon>
+              <span>清空选择</span>
             </el-button>
-          </el-tooltip>
         </div>
       </div>
+    </section>
 
+    <el-card class="page-card page-card--clusters">
       <EnhancedTable
         ref="tableUiRef"
         v-model:page="page"
@@ -79,6 +109,14 @@
         @selection-change="onSelectionChange"
         @row-contextmenu="onRowContextMenu"
       >
+        <template #topbar-left="{ selectedCount: tableSelectedCount }">
+          <div class="table-summary">
+            <span class="table-summary__title">集群列表</span>
+            <span class="table-summary__meta">共 {{ total }} 个集群</span>
+            <span v-if="tableSelectedCount > 0" class="table-summary__badge">已选 {{ tableSelectedCount }}</span>
+          </div>
+        </template>
+
         <template #cell-name="{ row }">
           <el-button
             v-if="canOpenK8s"
@@ -196,6 +234,7 @@
       </div>
     </Teleport>
 
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -249,6 +288,44 @@ const order = ref<'asc' | 'desc' | undefined>(undefined)
 const tableUiRef = ref<InstanceType<typeof EnhancedTable> | null>(null)
 const selectedRows = ref<clustersApi.ClusterItem[]>([])
 const selectedCount = computed(() => selectedRows.value.length)
+const visibleStatusSummary = computed(() => {
+  const summary = {
+    active: 0,
+    degraded: 0,
+    disabled: 0,
+    creating: 0,
+    deleting: 0,
+  }
+
+  for (const item of list.value) {
+    switch (item.status) {
+      case 'active':
+        summary.active += 1
+        break
+      case 'degraded':
+        summary.degraded += 1
+        break
+      case 'disabled':
+        summary.disabled += 1
+        break
+      case 'creating':
+        summary.creating += 1
+        break
+      case 'deleting':
+        summary.deleting += 1
+        break
+    }
+  }
+
+  return summary
+})
+const visibleAttentionCount = computed(() => (
+  visibleStatusSummary.value.degraded +
+  visibleStatusSummary.value.disabled +
+  visibleStatusSummary.value.creating +
+  visibleStatusSummary.value.deleting
+))
+const visibleNodeCount = computed(() => list.value.reduce((sum, item) => sum + (item.node_count ?? 0), 0))
 
 const healthChecking = reactive<Record<string, boolean>>({})
 const bulkHealthLoading = ref(false)
@@ -568,12 +645,176 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* 查询栏样式由 enterprise.css 全局提供 (.srv-query-bar / .qb-*) */
+.clusters-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-/* 操作区按钮：图标模式 */
-.qb-actions .qb-btn.el-button {
-  width: 34px;
-  padding: 0;
+.clusters-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.clusters-page-header__main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clusters-page-header__title {
+  margin: 0;
+  color: var(--color-text-title, rgba(15, 23, 42, 0.92));
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.clusters-page-header__desc {
+  margin: 0;
+  color: var(--color-text-secondary, #475569);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.clusters-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.clusters-page-header__primary.el-button {
+  min-width: 120px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 12px;
+}
+
+.clusters-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summary-card {
+  display: flex;
+  min-height: 118px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-border-default, rgba(15, 23, 42, 0.08));
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.summary-card__label {
+  color: var(--color-text-secondary, #475569);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.summary-card__value {
+  color: var(--color-text-title, rgba(15, 23, 42, 0.92));
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.summary-card__note {
+  margin-top: auto;
+  color: var(--color-text-muted, #94a3b8);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.clusters-panel {
+  border: 1px solid var(--color-border-default, rgba(15, 23, 42, 0.08));
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.clusters-panel--filters {
+  padding: 16px 18px;
+}
+
+.clusters-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.clusters-filters__fields {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.clusters-filters__actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.clusters-filter {
+  width: 148px;
+}
+
+.clusters-filter--search {
+  min-width: 260px;
+  flex: 1 1 360px;
+}
+
+:deep(.clusters-filter .el-input__wrapper),
+:deep(.clusters-filter .el-select__wrapper) {
+  min-height: 40px;
+  border-radius: 12px;
+}
+
+.page-card--clusters {
+  position: relative;
+}
+
+.table-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.table-summary__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-title, rgba(15, 23, 42, 0.92));
+}
+
+.table-summary__meta {
+  color: var(--color-text-muted, #94a3b8);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.table-summary__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .k8s-act-btn .cluster-enter-icon {
@@ -595,11 +836,12 @@ onBeforeUnmount(() => {
   position: fixed;
   z-index: 1991;
   width: 228px;
-  padding: 6px;
-  border-radius: 8px;
+  padding: 8px;
+  border-radius: 14px;
   border: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.9));
-  background: var(--color-bg-card, #fff);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+  background: var(--color-glass-bg-strong, rgba(255, 255, 255, 0.96));
+  box-shadow: var(--shadow-dropdown, 0 18px 48px rgba(15, 23, 42, 0.18));
+  backdrop-filter: blur(16px);
 }
 
 .cluster-context-item {
@@ -607,10 +849,10 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   width: 100%;
-  height: 34px;
+  height: 38px;
   padding: 0 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   background: transparent;
   color: var(--color-text-secondary, #475569);
   font-size: 13px;
@@ -635,9 +877,65 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
+:global(html.dark) .summary-card,
+:global(html.dark) .clusters-panel {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
+}
+
+:global(html.dark) .clusters-page-header__desc,
+:global(html.dark) .summary-card__label,
+:global(html.dark) .summary-card__note,
+:global(html.dark) .table-summary__meta {
+  color: var(--color-text-muted, #7c8aa0);
+}
+
+:global(html.dark) .table-summary__badge {
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+}
+
 :global(html.dark) .cluster-context-menu {
   border-color: rgba(148, 163, 184, 0.18);
   background: rgba(15, 23, 42, 0.98);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.36);
+}
+
+@media (max-width: 960px) {
+  .clusters-page-header,
+  .clusters-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .clusters-page-header__actions {
+    justify-content: flex-start;
+  }
+
+  .clusters-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .clusters-filters__actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .clusters-page-header__title {
+    font-size: 24px;
+  }
+
+  .clusters-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .clusters-filter,
+  .clusters-filter--search,
+  .clusters-page-header__primary.el-button {
+    width: 100%;
+    min-width: 0;
+  }
 }
 </style>

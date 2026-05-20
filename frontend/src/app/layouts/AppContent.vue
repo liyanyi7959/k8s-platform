@@ -1,7 +1,7 @@
 <template>
   <main
     ref="mainEl"
-    :class="['min-h-0 flex-1 overflow-y-auto overflow-x-hidden', full ? 'p-0' : 'p-4 md:px-6 md:py-6']"
+    :class="['min-h-0 flex-1 overflow-y-auto overflow-x-hidden', full ? 'p-0' : 'px-3 py-3 md:px-4 md:py-4 xl:px-5 xl:py-4']"
   >
     <div :class="full ? 'h-full w-full' : 'content-constrained w-full'">
       <slot />
@@ -26,7 +26,7 @@ watch(() => route.path, () => {
 
 <style scoped>
 .content-constrained {
-  max-width: var(--content-max-width, 1600px);
+  max-width: var(--content-max-width, 1440px);
   margin-inline: auto;
 }
 </style>
