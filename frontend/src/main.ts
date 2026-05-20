@@ -17,6 +17,7 @@ import '@/styles/k8s-edit.css'
 import '@/styles/k8s-panel.css'
 import '@/styles/global-overrides.css'
 import '@/styles/enterprise.css'       /* 企业级统一组件规范 — 最后加载以覆盖 */
+import '@/styles/art-design-v2.css'    /* V2: AppShell scoped visual refresh */
 
 import { router } from '@/app/router'
 import App from '@/App.vue'

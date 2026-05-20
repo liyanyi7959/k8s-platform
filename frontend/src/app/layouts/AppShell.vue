@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import SideRail from './sidebar/SideRail.vue'
 import SidePanel from './sidebar/SidePanel.vue'
@@ -35,6 +35,14 @@ const { isPanelVisible } = useSidebarState()
 const isStandalone = computed(() => Boolean(route.meta?.standalone))
 const isFullContent = computed(() => isStandalone.value || Boolean(route.meta?.fullContent))
 const panelHostCollapsed = computed(() => isStandalone.value || !hasSidebarItems.value || !isPanelVisible.value)
+
+onMounted(() => {
+  document.body.classList.add('art-v2-shell')
+})
+
+onBeforeUnmount(() => {
+  document.body.classList.remove('art-v2-shell')
+})
 </script>
 
 <style scoped>
