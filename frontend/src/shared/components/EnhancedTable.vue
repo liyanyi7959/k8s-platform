@@ -1066,53 +1066,16 @@ defineExpose({
   width: 100% !important;
 }
 
-.enhanced-table :deep(.el-table) {
-  --el-table-border-color: rgba(148, 163, 184, 0.2);
-  --el-table-header-bg-color: rgba(248, 250, 252, 0.96);
-  --el-table-row-hover-bg-color: rgba(59, 130, 246, 0.06);
-}
-
 .enhanced-table :deep(.el-table--border),
 .enhanced-table :deep(.el-table--group) {
   border-radius: 12px;
   overflow: hidden;
 }
 
-.enhanced-table :deep(.el-table__body tr.el-table__row td.el-table__cell) {
-  background: rgba(255, 255, 255, 0.96);
-  transition: background-color 0.18s ease;
-}
-
-.enhanced-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
-  background: rgba(248, 250, 252, 0.96);
-}
-
-.enhanced-table :deep(.el-table__body tr.el-table__row:hover td.el-table__cell) {
-  background: rgba(59, 130, 246, 0.08) !important;
-}
-
 .enhanced-table :deep(.k8s-act-group) {
   width: 100%;
   justify-content: center;
   flex-wrap: nowrap;
-}
-
-:global(html.dark) .enhanced-table :deep(.el-table) {
-  --el-table-border-color: rgba(71, 85, 105, 0.42);
-  --el-table-header-bg-color: rgba(15, 23, 42, 0.94);
-  --el-table-row-hover-bg-color: rgba(59, 130, 246, 0.18);
-}
-
-:global(html.dark) .enhanced-table :deep(.el-table__body tr.el-table__row td.el-table__cell) {
-  background: rgba(15, 23, 42, 0.9);
-}
-
-:global(html.dark) .enhanced-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
-  background: rgba(30, 41, 59, 0.9);
-}
-
-:global(html.dark) .enhanced-table :deep(.el-table__body tr.el-table__row:hover td.el-table__cell) {
-  background: rgba(51, 65, 85, 0.9) !important;
 }
 
 /* ── 空状态 ── */

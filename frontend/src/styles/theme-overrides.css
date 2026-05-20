@@ -133,20 +133,9 @@ html.dark .el-table {
 
 /* ── Table — transparent bg & fixed-column mask ──────────────────────── */
 .el-table {
-  background-color: transparent;
-  --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: var(--table-header-bg);
-  --el-table-row-hover-bg-color: var(--table-row-hover);
-  --el-table-border-color: rgba(59, 130, 246, 0.12);
-  --el-fill-color-lighter: var(--table-stripe-bg, #f1f5f9);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--table-shadow);
-}
-.el-table th.el-table__cell {
-  font-weight: 700;
-  color: var(--table-header-text, #0f172a) !important;
-  font-size: 13px;
 }
 /* 固定列需要不透明背景遮住滚动内容 — EP 使用 !important 设背景 */
 .el-table .el-table__cell.is-fixed-left,
@@ -154,7 +143,6 @@ html.dark .el-table {
 .el-table .el-table-fixed-column--left,
 .el-table .el-table-fixed-column--right {
   background-color: var(--color-bg-card) !important; /* EP 固定列用 !important 设背景色 */
-  --el-table-tr-bg-color: var(--color-bg-card);
 }
 
 /* ── Pagination ──────────────────────────────────────────────────────── */

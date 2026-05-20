@@ -1035,9 +1035,44 @@ function openRbacDialog() {
 
 <style scoped>
 .permission-audit-panel {
+  --permission-metric-border: var(--color-border-subtle);
+  --permission-metric-bg: linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+  --permission-metric-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  --permission-baseline-bg: rgba(248, 250, 252, 0.82);
+  --permission-risk-critical-bg: rgba(239, 68, 68, 0.12);
+  --permission-risk-critical-color: #b91c1c;
+  --permission-risk-medium-bg: rgba(245, 158, 11, 0.14);
+  --permission-risk-medium-color: #b45309;
+  --permission-risk-low-bg: rgba(34, 197, 94, 0.12);
+  --permission-risk-low-color: #15803d;
+  --permission-summary-chip-bg: rgba(59, 130, 246, 0.08);
+  --permission-summary-chip-color: #475569;
+  --permission-summary-chip-high-bg: rgba(249, 115, 22, 0.1);
+  --permission-summary-chip-high-color: #c2410c;
+  --permission-summary-chip-critical-bg: rgba(239, 68, 68, 0.1);
+  --permission-summary-chip-critical-color: #b91c1c;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+:global(html.dark) .permission-audit-panel {
+  --permission-metric-border: rgba(148, 163, 184, 0.18);
+  --permission-metric-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.82) 100%);
+  --permission-metric-shadow: 0 20px 40px rgba(2, 6, 23, 0.24), inset 0 1px 0 rgba(148, 163, 184, 0.06);
+  --permission-baseline-bg: rgba(15, 23, 42, 0.56);
+  --permission-risk-critical-bg: rgba(239, 68, 68, 0.18);
+  --permission-risk-critical-color: #fca5a5;
+  --permission-risk-medium-bg: rgba(245, 158, 11, 0.18);
+  --permission-risk-medium-color: #fcd34d;
+  --permission-risk-low-bg: rgba(34, 197, 94, 0.18);
+  --permission-risk-low-color: #86efac;
+  --permission-summary-chip-bg: rgba(59, 130, 246, 0.18);
+  --permission-summary-chip-color: #cbd5e1;
+  --permission-summary-chip-high-bg: rgba(249, 115, 22, 0.2);
+  --permission-summary-chip-high-color: #fdba74;
+  --permission-summary-chip-critical-bg: rgba(239, 68, 68, 0.2);
+  --permission-summary-chip-critical-color: #fca5a5;
 }
 
 .permission-audit-toolbar {
@@ -1067,11 +1102,12 @@ function openRbacDialog() {
   align-items: center;
   justify-content: center;
   min-height: 72px;
-  border: 1px dashed var(--el-border-color);
+  border: 1px dashed var(--permission-metric-border);
   border-radius: 12px;
   color: var(--el-text-color-secondary);
   font-size: 13px;
   padding: 12px;
+  background: var(--permission-baseline-bg);
 }
 
 .compare-tabs {
@@ -1117,10 +1153,11 @@ function openRbacDialog() {
 
 .summary-kpi,
 .mini-stat {
-  border: 1px solid var(--el-border-color-light);
+  border: 1px solid var(--permission-metric-border);
   border-radius: 12px;
   padding: 14px 16px;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+  background: var(--permission-metric-bg);
+  box-shadow: var(--permission-metric-shadow);
 }
 
 .summary-kpi-label,
@@ -1156,6 +1193,7 @@ function openRbacDialog() {
 
 .risk-chip {
   padding: 8px 12px;
+  border: 1px solid transparent;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
@@ -1163,18 +1201,18 @@ function openRbacDialog() {
 
 .risk-chip--critical,
 .risk-chip--high {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
+  background: var(--permission-risk-critical-bg);
+  color: var(--permission-risk-critical-color);
 }
 
 .risk-chip--medium {
-  background: rgba(245, 158, 11, 0.14);
-  color: #b45309;
+  background: var(--permission-risk-medium-bg);
+  color: var(--permission-risk-medium-color);
 }
 
 .risk-chip--low {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
+  background: var(--permission-risk-low-bg);
+  color: var(--permission-risk-low-color);
 }
 
 .summary-inline {
@@ -1189,20 +1227,20 @@ function openRbacDialog() {
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.08);
-  color: #475569;
+  background: var(--permission-summary-chip-bg);
+  color: var(--permission-summary-chip-color);
   font-size: 12px;
   font-weight: 600;
 }
 
 .summary-chip--high {
-  background: rgba(249, 115, 22, 0.1);
-  color: #c2410c;
+  background: var(--permission-summary-chip-high-bg);
+  color: var(--permission-summary-chip-high-color);
 }
 
 .summary-chip--critical {
-  background: rgba(239, 68, 68, 0.1);
-  color: #b91c1c;
+  background: var(--permission-summary-chip-critical-bg);
+  color: var(--permission-summary-chip-critical-color);
 }
 
 .audit-title-cell {

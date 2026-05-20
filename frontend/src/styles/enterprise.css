@@ -1200,7 +1200,23 @@ html.dark .el-message-box__btns {
 }
 
 .el-table {
+  --table-surface-bg: rgba(255, 255, 255, 0.96);
+  --table-surface-alt-bg: var(--table-stripe-bg, #eff6ff);
+  --table-surface-hover-bg: var(--table-row-hover, rgba(59, 130, 246, 0.1));
+  --table-surface-header-bg: var(--table-header-bg, #dbeafe);
+  --table-surface-fixed-bg: var(--table-surface-bg);
+  --el-table-bg-color: var(--table-surface-bg);
+  --el-table-tr-bg-color: var(--table-surface-bg);
+  --el-table-expanded-cell-bg-color: var(--table-surface-bg);
+  --el-table-header-bg-color: var(--table-surface-header-bg);
+  --el-table-row-hover-bg-color: var(--table-surface-hover-bg);
+  --el-table-current-row-bg-color: rgba(59, 130, 246, 0.09);
+  --el-table-border-color: rgba(148, 163, 184, 0.2);
+  --el-table-text-color: var(--color-text-secondary);
+  --el-table-header-text-color: var(--table-header-text, #1d4ed8);
+  --el-fill-color-lighter: var(--table-surface-alt-bg);
   color: var(--color-text-secondary);
+  background: var(--table-surface-bg);
 }
 
 .el-table__body-wrapper,
@@ -1208,22 +1224,58 @@ html.dark .el-message-box__btns {
 .el-table__fixed-right,
 .el-table__fixed-left .el-table__fixed-body-wrapper,
 .el-table__fixed-right .el-table__fixed-body-wrapper {
-  background: var(--color-bg-card);
+  background: var(--table-surface-bg);
 }
 
-.el-table__body tr > td.el-table__cell {
+.el-table td.el-table__cell {
+  border-bottom-color: rgba(0, 0, 0, 0.07);
   color: var(--color-text-secondary);
 }
 
-.el-table__body tr:hover > td.el-table__cell {
+.el-table__body tr > td.el-table__cell,
+.el-table__fixed-body-wrapper tr > td.el-table__cell {
+  color: var(--color-text-secondary);
+}
+
+.el-table--striped .el-table__body tr.el-table__row--striped > td.el-table__cell,
+.el-table--striped .el-table__fixed-body-wrapper tr.el-table__row--striped > td.el-table__cell {
+  background: var(--table-surface-alt-bg);
+}
+
+.el-table__body tr:hover > td.el-table__cell,
+.el-table__fixed-body-wrapper tr:hover > td.el-table__cell {
   color: var(--color-text-primary);
 }
 
+.el-table__body-wrapper tr td.el-table-fixed-column--left,
+.el-table__body-wrapper tr td.el-table-fixed-column--right,
+.el-table__body-wrapper tr th.el-table-fixed-column--left,
+.el-table__body-wrapper tr th.el-table-fixed-column--right,
+.el-table__footer-wrapper tr td.el-table-fixed-column--left,
+.el-table__footer-wrapper tr td.el-table-fixed-column--right,
+.el-table__footer-wrapper tr th.el-table-fixed-column--left,
+.el-table__footer-wrapper tr th.el-table-fixed-column--right,
+.el-table__header-wrapper tr td.el-table-fixed-column--left,
+.el-table__header-wrapper tr td.el-table-fixed-column--right,
+.el-table__header-wrapper tr th.el-table-fixed-column--left,
+.el-table__header-wrapper tr th.el-table-fixed-column--right,
+.el-table__body-wrapper tr td.el-table__fixed-right-patch,
+.el-table__body-wrapper tr th.el-table__fixed-right-patch,
+.el-table__footer-wrapper tr td.el-table__fixed-right-patch,
+.el-table__footer-wrapper tr th.el-table__fixed-right-patch,
+.el-table__header-wrapper tr td.el-table__fixed-right-patch,
+.el-table__header-wrapper tr th.el-table__fixed-right-patch {
+  background: var(--table-surface-fixed-bg) !important;
+}
+
 html.dark .el-table {
-  --el-table-tr-bg-color: rgba(15, 23, 42, 0.94);
-  --el-table-header-bg-color: rgba(30, 64, 175, 0.26);
-  --el-table-row-hover-bg-color: rgba(59, 130, 246, 0.2);
-  --el-fill-color-lighter: rgba(30, 41, 59, 0.82);
+  --table-surface-bg: rgba(15, 23, 42, 0.94);
+  --table-surface-alt-bg: rgba(30, 41, 59, 0.82);
+  --table-surface-hover-bg: rgba(30, 64, 175, 0.24);
+  --table-surface-header-bg: rgba(30, 64, 175, 0.26);
+  --table-surface-fixed-bg: rgba(15, 23, 42, 0.94);
+  --el-table-current-row-bg-color: rgba(59, 130, 246, 0.13);
+  --el-table-border-color: rgba(71, 85, 105, 0.42);
   color: rgba(203, 213, 225, 0.92);
   background: rgba(15, 23, 42, 0.94);
 }
@@ -1233,17 +1285,23 @@ html.dark .el-table__fixed-left,
 html.dark .el-table__fixed-right,
 html.dark .el-table__fixed-left .el-table__fixed-body-wrapper,
 html.dark .el-table__fixed-right .el-table__fixed-body-wrapper {
-  background: rgba(15, 23, 42, 0.94);
+  background: var(--table-surface-bg);
 }
 
 html.dark .el-table th.el-table__cell {
   color: rgba(219, 234, 254, 0.95) !important;
 }
 
-html.dark .el-table__body tr > td.el-table__cell {
+html.dark .el-table td.el-table__cell {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+html.dark .el-table__body tr > td.el-table__cell,
+html.dark .el-table__fixed-body-wrapper tr > td.el-table__cell {
   color: rgba(203, 213, 225, 0.92);
 }
 
-html.dark .el-table__body tr:hover > td.el-table__cell {
+html.dark .el-table__body tr:hover > td.el-table__cell,
+html.dark .el-table__fixed-body-wrapper tr:hover > td.el-table__cell {
   color: rgba(241, 245, 249, 0.98);
 }

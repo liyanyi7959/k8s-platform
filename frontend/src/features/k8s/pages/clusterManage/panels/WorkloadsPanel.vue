@@ -123,8 +123,17 @@
     </template>
     </EnhancedTable>
 
-    <el-dialog v-model="imageDialogVisible" title="更新镜像" width="560px" destroy-on-close class="workload-image-dialog" @closed="resetImageDialog">
-      <el-form label-width="88px" @submit.prevent>
+    <el-dialog
+      v-model="imageDialogVisible"
+      title="更新镜像"
+      width="640px"
+      destroy-on-close
+      align-center
+      :close-on-click-modal="false"
+      class="workload-image-dialog"
+      @closed="resetImageDialog"
+    >
+      <el-form class="image-dialog-form" label-width="92px" @submit.prevent>
         <el-form-item label="工作负载">
           <div class="image-dialog-target">
             <el-tag size="small" effect="plain">{{ imageDialog.kind }}</el-tag>
@@ -142,7 +151,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="当前镜像">
-          <div class="image-dialog-current">{{ imageDialog.currentImage || '-' }}</div>
+          <div class="image-dialog-current mono">{{ imageDialog.currentImage || '-' }}</div>
         </el-form-item>
         <el-form-item label="镜像仓库">
           <el-input :model-value="imageDialog.repository" readonly />
@@ -151,15 +160,17 @@
           <el-input v-model="imageDialog.newTag" placeholder="例如 1.27.1 或 stable" clearable />
         </el-form-item>
         <el-form-item label="更新预览">
-          <div class="image-dialog-preview">{{ nextImagePreview || '-' }}</div>
+          <div class="image-dialog-preview mono">{{ nextImagePreview || '-' }}</div>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="imageDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="imageDialogSubmitting" :disabled="!nextImagePreview" @click="submitImageUpdate">
-          确认更新
-        </el-button>
+        <div class="image-dialog-footer">
+          <el-button @click="imageDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="imageDialogSubmitting" :disabled="!nextImagePreview" @click="submitImageUpdate">
+            确认更新
+          </el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -653,11 +664,77 @@ function getRolloutPauseIcon(row: any) {
   line-height: 1;
 }
 
+:global(.workload-image-dialog) {
+  --image-dialog-field-bg: rgba(248, 250, 252, 0.92);
+  --image-dialog-field-border: rgba(148, 163, 184, 0.24);
+  --image-dialog-emphasis-bg: rgba(59, 130, 246, 0.06);
+  --image-dialog-emphasis-border: rgba(59, 130, 246, 0.18);
+}
+
+:global(html.dark .workload-image-dialog) {
+  --image-dialog-field-bg: rgba(15, 23, 42, 0.72);
+  --image-dialog-field-border: rgba(148, 163, 184, 0.2);
+  --image-dialog-emphasis-bg: rgba(37, 99, 235, 0.14);
+  --image-dialog-emphasis-border: rgba(96, 165, 250, 0.22);
+}
+
+:global(.workload-image-dialog .el-dialog__body) {
+  padding-top: 20px;
+  padding-bottom: 18px;
+}
+
+:global(.workload-image-dialog .el-form-item) {
+  margin-bottom: 18px;
+}
+
+:global(.workload-image-dialog .el-form-item:last-child) {
+  margin-bottom: 0;
+}
+
+:global(.workload-image-dialog .el-form-item__label) {
+  color: var(--color-text-secondary);
+  font-weight: 800;
+}
+
+:global(.workload-image-dialog .el-input__wrapper),
+:global(.workload-image-dialog .el-select__wrapper) {
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--image-dialog-field-border) !important;
+  background: var(--image-dialog-field-bg);
+  box-shadow: none !important;
+}
+
+:global(.workload-image-dialog .el-input__wrapper.is-focus),
+:global(.workload-image-dialog .el-select__wrapper.is-focused) {
+  border-color: rgba(59, 130, 246, 0.52) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+}
+
+.image-dialog-form {
+  max-width: 100%;
+}
+
 .image-dialog-target {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--image-dialog-emphasis-border);
+  border-radius: 8px;
+  background: var(--image-dialog-emphasis-bg);
   color: var(--el-text-color-primary);
+  font-weight: 700;
+  min-width: 0;
+}
+
+.image-dialog-target span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .image-dialog-option {
@@ -680,12 +757,32 @@ function getRolloutPauseIcon(row: any) {
 .image-dialog-current,
 .image-dialog-preview {
   width: 100%;
+  min-height: 40px;
   padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--el-fill-color-light);
+  border-radius: 8px;
+  border: 1px solid var(--image-dialog-field-border);
+  background: var(--image-dialog-field-bg);
   color: var(--el-text-color-primary);
   line-height: 1.5;
   word-break: break-all;
+}
+
+.image-dialog-preview {
+  border-color: var(--image-dialog-emphasis-border);
+  background: var(--image-dialog-emphasis-bg);
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.image-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+:global(html.dark) .image-dialog-option__meta {
+  color: rgba(148, 163, 184, 0.9);
 }
 
 :global(html.dark) .event-warning-badge {
