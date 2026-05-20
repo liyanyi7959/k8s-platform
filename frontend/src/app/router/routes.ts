@@ -7,6 +7,7 @@ export interface AppRouteMeta {
   icon?: string
   hideInMenu?: boolean
   standalone?: boolean
+  fullContent?: boolean
 }
 
 declare module 'vue-router' {
@@ -44,7 +45,7 @@ export const routes: RouteRecordRaw[] = [
           requiresAuth: true,
           perm: ['cluster:read', 'k8s:read', 'k8s:rbac_read', 'k8s:permission_audit'],
           hideInMenu: true,
-          standalone: true
+          fullContent: true
         }
       },
       {

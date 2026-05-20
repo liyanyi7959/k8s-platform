@@ -28,6 +28,30 @@
           <el-icon class="rail-icon"><component :is="group.icon" /></el-icon>
         </button>
       </el-tooltip>
+
+      <div v-if="canShowShortcuts && shortcuts.length > 0" class="rail-divider" />
+
+      <el-tooltip
+        v-for="shortcut in canShowShortcuts ? shortcuts : []"
+        :key="shortcut.id"
+        :content="shortcut.name"
+        placement="right"
+        :show-after="300"
+      >
+        <button
+          :class="[
+            'rail-cluster',
+            isShortcutActive(shortcut.id) ? 'rail-cluster--active' : '',
+            shortcut.status ? `rail-cluster-status--${shortcut.status}` : ''
+          ]"
+          type="button"
+          @click="openShortcut(shortcut)"
+          @contextmenu.prevent="removeShortcut(shortcut.id)"
+        >
+          <span class="rail-cluster-dot" />
+          <span class="rail-cluster-text">{{ shortcutInitial(shortcut.name) }}</span>
+        </button>
+      </el-tooltip>
     </div>
 
     <!-- 底部占位 -->
@@ -36,14 +60,20 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useMenu, type NavGroup } from '@/app/composables/useMenu'
 import { useSidebarState } from '@/app/composables/useSidebarState'
+import { getClusterUnavailableMessage, useClusterShortcuts, type ClusterShortcut } from '@/app/composables/useClusterShortcuts'
+import { notifyError } from '@/shared/utils/notify'
 import logoUrl from '@/assets/images/logo.svg'
 
+const route = useRoute()
 const router = useRouter()
 const { railGroups, activeGroupKey } = useMenu()
 const { onRailHoverEnter, onRailHoverLeave } = useSidebarState()
+const { shortcuts, unpinCluster: removeShortcut } = useClusterShortcuts()
+const canShowShortcuts = computed(() => railGroups.value.some((group) => group.key === 'k8s'))
 
 function onRailClick(group: NavGroup) {
   if (!group.children || group.children.length === 0) {
@@ -61,6 +91,24 @@ function onItemHover(_group: NavGroup) {
 
 function onItemLeave() {
   onRailHoverLeave()
+}
+
+function shortcutInitial(name: string) {
+  const text = String(name ?? '').trim()
+  return text ? text.slice(0, 1).toUpperCase() : 'K'
+}
+
+function isShortcutActive(id: number) {
+  return route.name === 'K8sClusterManage' && String(route.params.clusterId ?? '') === String(id)
+}
+
+async function openShortcut(shortcut: ClusterShortcut) {
+  const msg = getClusterUnavailableMessage(shortcut.status)
+  if (msg) {
+    notifyError(msg)
+    return
+  }
+  await router.push({ name: 'K8sClusterManage', params: { clusterId: String(shortcut.id) } })
 }
 </script>
 
@@ -134,6 +182,13 @@ function onItemLeave() {
   overflow-x: hidden;
 }
 
+.rail-divider {
+  width: 24px;
+  height: 1px;
+  margin: 8px 0 4px;
+  background: var(--rail-border);
+}
+
 .rail-item {
   position: relative;
   width: 40px;
@@ -176,6 +231,71 @@ function onItemLeave() {
 /* ── Icon ──────────────────────────────────────────────────────────────── */
 .rail-icon {
   font-size: 20px;
+}
+
+.rail-cluster {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.56);
+  color: var(--rail-icon-hover);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.rail-cluster:hover {
+  border-color: rgba(59, 130, 246, 0.26);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--rail-active-color);
+}
+
+.rail-cluster--active {
+  border-color: rgba(59, 130, 246, 0.34);
+  background: var(--rail-active-bg);
+  color: var(--rail-active-color);
+}
+
+.rail-cluster-text {
+  max-width: 20px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.rail-cluster-dot {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 1px solid var(--rail-bg);
+  background: #94a3b8;
+}
+
+.rail-cluster-status--active .rail-cluster-dot {
+  background: #22c55e;
+}
+
+.rail-cluster-status--degraded .rail-cluster-dot,
+.rail-cluster-status--creating .rail-cluster-dot {
+  background: #f59e0b;
+}
+
+.rail-cluster-status--disabled .rail-cluster-dot,
+.rail-cluster-status--deleting .rail-cluster-dot {
+  background: #ef4444;
+}
+
+:global(html.dark) .rail-cluster {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* ── Bottom ─────────────────────────────────────────────────────────────── */

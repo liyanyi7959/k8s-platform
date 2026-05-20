@@ -11,7 +11,7 @@
         <TopBar />
       </div>
 
-      <AppContent class="min-h-0 flex-1" :full="isStandalone">
+      <AppContent class="min-h-0 flex-1" :full="isFullContent">
         <RouterView />
       </AppContent>
     </div>
@@ -33,6 +33,7 @@ const { hasSidebarItems } = useMenu()
 const { isPanelVisible } = useSidebarState()
 
 const isStandalone = computed(() => Boolean(route.meta?.standalone))
+const isFullContent = computed(() => isStandalone.value || Boolean(route.meta?.fullContent))
 const panelHostCollapsed = computed(() => isStandalone.value || !hasSidebarItems.value || !isPanelVisible.value)
 </script>
 

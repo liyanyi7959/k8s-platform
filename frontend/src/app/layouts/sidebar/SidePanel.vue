@@ -17,7 +17,7 @@
 
       <!-- 集群提示 (资源管理分组特有) -->
       <div
-        v-if="activeGroup?.key === 'resource' && clustersTotal !== null && !hasClusters"
+        v-if="activeGroup?.key === 'k8s' && clustersTotal !== null && !hasClusters"
         class="cluster-hint"
       >
         <div class="hint-title">先创建集群</div>
@@ -46,6 +46,35 @@
               <span v-if="item.desc" class="menu-item-desc">{{ item.desc }}</span>
             </div>
           </button>
+
+          <div v-if="activeGroup?.key === 'k8s'" class="cluster-shortcuts">
+            <div class="section-title-row">
+              <span class="section-title">集群快捷入口</span>
+              <span v-if="shortcuts.length" class="section-count">{{ shortcuts.length }}</span>
+            </div>
+
+            <div v-if="shortcuts.length" class="shortcut-list">
+              <div
+                v-for="shortcut in shortcuts"
+                :key="shortcut.id"
+                :class="['shortcut-row', isShortcutActive(shortcut.id) ? 'shortcut-row--active' : '']"
+                @contextmenu.prevent="removeShortcut(shortcut.id)"
+              >
+                <button class="shortcut-open" type="button" @click="openShortcut(shortcut)">
+                  <span :class="['shortcut-status', shortcut.status ? `shortcut-status--${shortcut.status}` : '']" />
+                  <span class="shortcut-name">{{ shortcut.name }}</span>
+                  <span v-if="shortcut.nodeCount != null" class="shortcut-meta">{{ shortcut.nodeCount }} 节点</span>
+                </button>
+                <button class="shortcut-remove" type="button" title="移除快捷入口" @click="removeShortcut(shortcut.id)">
+                  <el-icon><Close /></el-icon>
+                </button>
+              </div>
+            </div>
+
+            <div v-else class="shortcut-empty">
+              在集群列表右键集群，或点击星标固定到这里。
+            </div>
+          </div>
         </div>
       </el-scrollbar>
     </aside>
@@ -57,6 +86,9 @@ import { computed, onMounted, onUnmounted, ref, defineComponent, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMenu } from '@/app/composables/useMenu'
 import { useSidebarState } from '@/app/composables/useSidebarState'
+import { Close } from '@element-plus/icons-vue'
+import { getClusterUnavailableMessage, useClusterShortcuts, type ClusterShortcut } from '@/app/composables/useClusterShortcuts'
+import { notifyError } from '@/shared/utils/notify'
 import * as clustersApi from '@/features/clusters/api/clusters'
 
 /* 简易 Pin / Unpin 图标 */
@@ -92,11 +124,25 @@ const route = useRoute()
 const router = useRouter()
 const { activeGroup, sidebarItems } = useMenu()
 const { isPanelVisible, pinned, togglePin } = useSidebarState()
+const { shortcuts, unpinCluster: removeShortcut } = useClusterShortcuts()
 
 const hasItems = computed(() => sidebarItems.value.length > 0)
 
 function isActive(path: string): boolean {
   return route.path === path || route.path.startsWith(path + '/')
+}
+
+function isShortcutActive(id: number) {
+  return route.name === 'K8sClusterManage' && String(route.params.clusterId ?? '') === String(id)
+}
+
+async function openShortcut(shortcut: ClusterShortcut) {
+  const msg = getClusterUnavailableMessage(shortcut.status)
+  if (msg) {
+    notifyError(msg)
+    return
+  }
+  await router.push({ name: 'K8sClusterManage', params: { clusterId: String(shortcut.id) } })
 }
 
 /* ── 集群数量检测（资源管理分组） ──────────────────────────────────────── */
@@ -333,5 +379,154 @@ onUnmounted(() => {
 }
 .menu-item--active .menu-item-desc {
   color: var(--panel-desc-active);
+}
+
+.cluster-shortcuts {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 8px;
+  gap: 8px;
+}
+
+.section-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--panel-title-color);
+}
+
+.section-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--panel-item-active-color);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.shortcut-row:hover,
+.shortcut-row--active {
+  background: var(--panel-item-active-bg);
+}
+
+.shortcut-open {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  color: var(--panel-item-color);
+  cursor: pointer;
+  text-align: left;
+}
+
+.shortcut-row:hover .shortcut-open,
+.shortcut-row--active .shortcut-open {
+  color: var(--panel-item-active-color);
+}
+
+.shortcut-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+.shortcut-status--active {
+  background: #22c55e;
+}
+
+.shortcut-status--degraded,
+.shortcut-status--creating {
+  background: #f59e0b;
+}
+
+.shortcut-status--disabled,
+.shortcut-status--deleting {
+  background: #ef4444;
+}
+
+.shortcut-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.shortcut-meta {
+  flex-shrink: 0;
+  color: var(--panel-desc-color);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.shortcut-remove {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--panel-pin-color);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.shortcut-row:hover .shortcut-remove,
+.shortcut-row--active .shortcut-remove {
+  opacity: 1;
+}
+
+.shortcut-remove:hover {
+  background: rgba(239, 68, 68, 0.09);
+  color: #ef4444;
+}
+
+.shortcut-empty {
+  margin: 0 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--panel-border);
+  color: var(--panel-desc-color);
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

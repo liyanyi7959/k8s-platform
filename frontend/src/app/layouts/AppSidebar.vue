@@ -7,7 +7,7 @@
     ]"
   >
     <div
-      v-if="!collapsed && activeGroup?.key === 'resource' && clustersTotal !== null && !hasClusters"
+      v-if="!collapsed && activeGroup?.key === 'k8s' && clustersTotal !== null && !hasClusters"
       class="rounded-2xl border border-amber-300/30 bg-amber-50/70 p-3 text-slate-900 mx-3 mt-3 mb-2"
     >
       <div class="text-sm font-bold">先创建集群</div>

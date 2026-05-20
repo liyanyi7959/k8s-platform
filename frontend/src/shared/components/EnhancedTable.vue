@@ -84,6 +84,7 @@
       @selection-change="onSelectionChange"
       @sort-change="onSortChange"
       @header-dragend="onHeaderDragEnd"
+      @row-contextmenu="onRowContextMenu"
     >
       <el-table-column v-if="selectable" type="selection" width="44" />
       <el-table-column v-if="showIndex" type="index" width="54" label="#" />
@@ -227,6 +228,7 @@
           @selection-change="onSelectionChange"
           @sort-change="onSortChange"
           @header-dragend="onHeaderDragEnd"
+          @row-contextmenu="onRowContextMenu"
         >
           <el-table-column v-if="selectable" type="selection" width="44" />
           <el-table-column v-if="showIndex" type="index" width="54" label="#" />
@@ -365,6 +367,7 @@ const emit = defineEmits<{
   (e: 'refresh'): void
   (e: 'selection-change', rows: any[]): void
   (e: 'sort-change', v: { prop?: string; order?: 'ascending' | 'descending' | null }): void
+  (e: 'row-contextmenu', row: any, event: MouseEvent): void
   (e: 'update:page', v: number): void
   (e: 'update:pageSize', v: number): void
   (e: 'update:size', v: TableSize): void
@@ -573,6 +576,10 @@ function onSelectionChange(rows: any[]) {
 
 function onSortChange(v: unknown) {
   emit('sort-change', v as { prop?: string; order?: 'ascending' | 'descending' | null })
+}
+
+function onRowContextMenu(row: any, _column: unknown, event: MouseEvent) {
+  emit('row-contextmenu', row, event)
 }
 
 function onCurrentPageChange(v: number) {

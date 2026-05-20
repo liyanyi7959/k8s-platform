@@ -2,7 +2,12 @@
   <div class="k8s-shell">
     <aside class="k8s-aside">
       <div class="aside-head">
-        <div class="aside-title">{{ clusterTitle }}</div>
+        <div class="aside-title-wrap">
+          <button class="aside-back-btn" type="button" title="返回集群管理" @click="router.push('/clusters')">
+            <el-icon><ArrowLeft /></el-icon>
+          </button>
+          <div class="aside-title">{{ clusterTitle }}</div>
+        </div>
         <el-button size="small" :icon="RefreshRight" :loading="loadingTree" @click="refreshAll">刷新</el-button>
       </div>
 
@@ -913,6 +918,7 @@ import {
   Expand,
   Fold,
   Folder,
+  ArrowLeft,
   Link,
   Monitor,
   Moon,
@@ -3362,7 +3368,35 @@ onBeforeUnmount(() => {
   border-bottom-color: var(--color-border-default);
 }
 
+.aside-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.aside-back-btn {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.aside-back-btn:hover {
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--color-accent-primary);
+}
+
 .aside-title {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -77,9 +77,18 @@
         @refresh="load"
         @sort-change="onSortChange"
         @selection-change="onSelectionChange"
+        @row-contextmenu="onRowContextMenu"
       >
         <template #cell-name="{ row }">
-          <el-button v-if="canOpenK8s" link type="primary" @click="openCluster(row)">{{ row.name }}</el-button>
+          <el-button
+            v-if="canOpenK8s"
+            link
+            type="primary"
+            @click="openCluster(row)"
+            @contextmenu.prevent.stop="openClusterContextMenu($event, row)"
+          >
+            {{ row.name }}
+          </el-button>
           <span v-else>{{ row.name }}</span>
         </template>
 
@@ -104,6 +113,11 @@
             </el-tooltip>
             <el-tooltip v-if="canOpenK8s" content="进入 K8s 管理" placement="top" :show-after="400">
               <button class="k8s-act-btn k8s-act-btn--info" @click="openCluster(row)"><K8sClusterIcon class="cluster-enter-icon" /></button>
+            </el-tooltip>
+            <el-tooltip v-if="canOpenK8s" :content="isClusterPinned(row.id) ? '取消左侧快捷入口' : '固定到左侧快捷入口'" placement="top" :show-after="400">
+              <button class="k8s-act-btn k8s-act-btn--warn" @click="toggleClusterShortcut(row)">
+                <el-icon><StarFilled v-if="isClusterPinned(row.id)" /><Star v-else /></el-icon>
+              </button>
             </el-tooltip>
             <el-tooltip content="编辑" placement="top" :show-after="400">
               <button class="k8s-act-btn k8s-act-btn--edit" :disabled="row.status === 'creating' || row.status === 'deleting'" @click="openEdit(row)"><el-icon><EditPen /></el-icon></button>
@@ -146,23 +160,75 @@
       </template>
     </el-dialog>
 
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible"
+        class="cluster-context-backdrop"
+        @click="closeClusterContextMenu"
+        @contextmenu.prevent="closeClusterContextMenu"
+      />
+      <div
+        v-if="contextMenuVisible && contextMenuData"
+        class="cluster-context-menu"
+        :style="contextMenuStyle"
+        @click.stop
+      >
+        <button class="cluster-context-item" type="button" @click="openContextCluster">
+          <K8sClusterIcon class="cluster-context-icon" />
+          <span>进入 K8s 管理</span>
+        </button>
+        <button class="cluster-context-item" type="button" @click="toggleContextShortcut">
+          <el-icon><StarFilled v-if="isClusterPinned(contextMenuData.id)" /><Star v-else /></el-icon>
+          <span>{{ isClusterPinned(contextMenuData.id) ? '取消左侧快捷入口' : '固定到左侧快捷入口' }}</span>
+        </button>
+        <button class="cluster-context-item" type="button" @click="healthContextCluster">
+          <el-icon><CircleCheck /></el-icon>
+          <span>健康检查</span>
+        </button>
+        <button class="cluster-context-item" type="button" @click="editContextCluster">
+          <el-icon><EditPen /></el-icon>
+          <span>编辑集群</span>
+        </button>
+        <button class="cluster-context-item cluster-context-item--danger" type="button" @click="deleteContextCluster">
+          <el-icon><Delete /></el-icon>
+          <span>删除集群</span>
+        </button>
+      </div>
+    </Teleport>
+
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/app/store/user'
 import { ElMessageBox } from 'element-plus'
-import { CircleCheck, CircleClose, Delete, EditPen, RefreshRight, Search, Upload } from '@element-plus/icons-vue'
+import { CircleCheck, CircleClose, Delete, EditPen, RefreshRight, Search, Star, StarFilled, Upload } from '@element-plus/icons-vue'
 import * as clustersApi from '@/features/clusters/api/clusters'
+import { getClusterUnavailableMessage, useClusterShortcuts } from '@/app/composables/useClusterShortcuts'
 import { K8sClusterIcon } from '@/shared/icons/appIcons'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 import type { ApiError } from '@/shared/utils/error'
+import { useContextMenu } from '@/shared/utils/contextMenu'
 import EnhancedTable from '@/shared/components/EnhancedTable.vue'
 import type { EnhancedColumn } from '@/shared/components/EnhancedTable.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+const {
+  isPinned: isClusterPinned,
+  toggleCluster: toggleClusterPin,
+  unpinCluster,
+  syncShortcutsFromClusters
+} = useClusterShortcuts()
+const {
+  visible: contextMenuVisible,
+  data: contextMenuData,
+  style: contextMenuStyle,
+  open: openContextMenu,
+  close: closeClusterContextMenu,
+  bumpViewport: bumpContextMenuViewport
+} = useContextMenu<clustersApi.ClusterItem>({ width: 228, height: 228 })
 
 const canOpenK8s = computed(() => {
   const perms = userStore.permissions ?? []
@@ -222,6 +288,7 @@ async function load() {
     })
     list.value = data.list
     total.value = data.total
+    syncShortcutsFromClusters(data.list)
   } catch (e) {
     const err = e as ApiError
     notifyError(err.requestId ? `${err.message} (request_id=${err.requestId})` : err.message)
@@ -327,17 +394,58 @@ async function openCluster(row: clustersApi.ClusterItem) {
     notifyError(msg)
     return
   }
-  const href = router.resolve({ name: 'K8sClusterManage', params: { clusterId: row.id } }).href
-  window.open(href, '_blank', 'noopener,noreferrer')
+  await router.push({ name: 'K8sClusterManage', params: { clusterId: String(row.id) } })
 }
 
 function clusterBlockedMessage(status: clustersApi.ClusterItem['status']): string | null {
-  if (status === 'active') return null
-  if (status === 'disabled') return '集群不可用：已禁用'
-  if (status === 'degraded') return '集群异常：健康检查失败'
-  if (status === 'creating') return '集群正在创建中，暂不可进入'
-  if (status === 'deleting') return '集群正在删除中，暂不可进入'
-  return '集群不可用'
+  return getClusterUnavailableMessage(status)
+}
+
+function toggleClusterShortcut(row: clustersApi.ClusterItem) {
+  const pinned = toggleClusterPin(row)
+  notifySuccess(pinned ? `已固定到左侧快捷入口：${row.name}` : `已从左侧快捷入口移除：${row.name}`)
+}
+
+function openClusterContextMenu(event: MouseEvent, row: clustersApi.ClusterItem) {
+  openContextMenu(event, row)
+}
+
+function onRowContextMenu(row: clustersApi.ClusterItem, event: MouseEvent) {
+  openClusterContextMenu(event, row)
+}
+
+async function openContextCluster() {
+  const row = contextMenuData.value
+  closeClusterContextMenu()
+  if (row) await openCluster(row)
+}
+
+function toggleContextShortcut() {
+  const row = contextMenuData.value
+  closeClusterContextMenu()
+  if (row) toggleClusterShortcut(row)
+}
+
+function healthContextCluster() {
+  const row = contextMenuData.value
+  closeClusterContextMenu()
+  if (row) void onHealth(row.id)
+}
+
+function editContextCluster() {
+  const row = contextMenuData.value
+  closeClusterContextMenu()
+  if (row) openEdit(row)
+}
+
+function deleteContextCluster() {
+  const row = contextMenuData.value
+  closeClusterContextMenu()
+  if (row) void onDelete(row)
+}
+
+function onContextMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') closeClusterContextMenu()
 }
 
 function updateClusterStatusByHealth(id: number, apiOk: boolean) {
@@ -417,6 +525,7 @@ async function onDelete(row: clustersApi.ClusterItem) {
   try {
     await ElMessageBox.confirm(`确认删除集群：${row.name}？`, '提示', { type: 'warning' })
     await clustersApi.deleteCluster(row.id)
+    unpinCluster(row.id)
     notifySuccess('已删除')
     await load()
     window.dispatchEvent(new Event('k8s-platform:clusters-changed'))
@@ -448,6 +557,13 @@ async function onHealth(id: number) {
 
 onMounted(() => {
   void load()
+  window.addEventListener('resize', bumpContextMenuViewport)
+  window.addEventListener('keydown', onContextMenuKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', bumpContextMenuViewport)
+  window.removeEventListener('keydown', onContextMenuKeydown)
 })
 </script>
 
@@ -466,5 +582,62 @@ onMounted(() => {
   display: block;
   transform: scale(1.04);
   transform-origin: center;
+}
+
+.cluster-context-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1990;
+  background: transparent;
+}
+
+.cluster-context-menu {
+  position: fixed;
+  z-index: 1991;
+  width: 228px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.9));
+  background: var(--color-bg-card, #fff);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+}
+
+.cluster-context-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary, #475569);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cluster-context-item:hover {
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--color-accent-primary, #2563eb);
+}
+
+.cluster-context-item--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
+
+.cluster-context-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+:global(html.dark) .cluster-context-menu {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.36);
 }
 </style>
