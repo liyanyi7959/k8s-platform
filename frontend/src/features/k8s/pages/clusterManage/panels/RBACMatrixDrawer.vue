@@ -672,6 +672,23 @@ function downloadYaml() {
   --rbac-warning-text: #fcd34d;
 }
 
+:global(html.dark) .rbac-shell {
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.82) 0%, rgba(15, 23, 42, 0.96) 100%);
+}
+
+:global(html.dark) .control-bar,
+:global(html.dark) .matrix-card,
+:global(html.dark) .legend-card {
+  background: rgba(15, 23, 42, 0.84);
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.24), inset 0 1px 0 rgba(148, 163, 184, 0.06);
+}
+
+:global(html.dark) .matrix-scroll {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.16);
+}
+
 .rbac-main {
   min-width: 0;
   padding: 10px 12px 14px;
@@ -1367,5 +1384,53 @@ function downloadYaml() {
     width: 44px;
     min-width: 44px;
   }
+}
+
+/* ── Dark mode direct overrides (fallback for CSS-variable cascade issues) ── */
+:global(html.dark) .th-res,
+:global(html.dark) .th-grp {
+  background: rgba(15, 23, 42, 0.98);
+  color: #cbd5e1;
+}
+
+:global(html.dark) .th-verb--read {
+  background: rgba(37, 99, 235, 0.16);
+  color: #93c5fd;
+}
+
+:global(html.dark) .th-verb--write {
+  background: rgba(22, 163, 74, 0.16);
+  color: #86efac;
+}
+
+:global(html.dark) .th-verb--delete {
+  background: rgba(225, 29, 72, 0.18);
+  color: #fda4af;
+}
+
+:global(html.dark) .perm-row:not(.perm-row--alt) .td-sticky-col {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+:global(html.dark) .perm-row--alt td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+:global(html.dark) .perm-row--alt .td-sticky-col {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+:global(html.dark) .api-code {
+  background: rgba(79, 70, 229, 0.18);
+  color: #c7d2fe;
+}
+
+:global(html.dark) .td-verb--na {
+  background: rgba(15, 23, 42, 0.98);
+}
+
+:global(html.dark) .verb-toggle--off {
+  background: rgba(15, 23, 42, 0.82);
+  border-color: rgba(148, 163, 184, 0.26);
 }
 </style>

@@ -651,8 +651,8 @@ defineExpose({
 :global(html.dark) .topology-vue-flow {
   background-color: #0f172a;
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
 }
 
 :global(html.dark) .topology-vue-flow__minimap {

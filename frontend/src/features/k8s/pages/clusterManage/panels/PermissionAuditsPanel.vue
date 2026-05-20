@@ -1160,6 +1160,13 @@ function openRbacDialog() {
   box-shadow: var(--permission-metric-shadow);
 }
 
+:global(html.dark) .summary-kpi,
+:global(html.dark) .mini-stat {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.82) 100%);
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.24), inset 0 1px 0 rgba(148, 163, 184, 0.06);
+}
+
 .summary-kpi-label,
 .mini-stat span {
   display: block;
@@ -1393,5 +1400,42 @@ function openRbacDialog() {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* ── Dark mode direct overrides (fallback for CSS-variable cascade issues) ── */
+:global(html.dark) .compare-baseline {
+  background: rgba(15, 23, 42, 0.56);
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+:global(html.dark) .risk-chip--critical,
+:global(html.dark) .risk-chip--high {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+}
+
+:global(html.dark) .risk-chip--medium {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+}
+
+:global(html.dark) .risk-chip--low {
+  background: rgba(34, 197, 94, 0.18);
+  color: #86efac;
+}
+
+:global(html.dark) .summary-chip {
+  background: rgba(59, 130, 246, 0.18);
+  color: #cbd5e1;
+}
+
+:global(html.dark) .summary-chip--high {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fdba74;
+}
+
+:global(html.dark) .summary-chip--critical {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
 }
 </style>

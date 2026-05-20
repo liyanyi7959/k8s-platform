@@ -2751,4 +2751,27 @@ onMounted(async () => {
     flex-wrap: wrap;
   }
 }
+
+/* Dark mode direct overrides — bypasses CSS variable cascade issue */
+:global(html.dark) .topology-page {
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.34) 0%, rgba(15, 23, 42, 0.74) 100%);
+}
+
+:global(html.dark) .topology-panel {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.3);
+}
+
+:global(html.dark) .topology-control-card {
+  background: rgba(15, 23, 42, 0.82);
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.24), inset 0 1px 0 rgba(148, 163, 184, 0.06);
+}
+
+:global(html.dark) .topology-overlay-toolbar {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 14px 36px rgba(2, 6, 23, 0.28);
+}
 </style>
