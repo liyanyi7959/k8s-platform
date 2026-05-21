@@ -993,6 +993,142 @@ body.art-v2-shell .cluster-context-item {
   border-radius: 12px;
 }
 
+body.art-v2-shell .clusters-page .clusters-panel--filters {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.94) 100%);
+}
+
+body.art-v2-shell .clusters-page .clusters-overview {
+  border-color: rgba(226, 232, 240, 0.92);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.84));
+}
+
+body.art-v2-shell .clusters-page .clusters-overview__item {
+  border-color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+body.art-v2-shell .clusters-page .clusters-overview__label {
+  color: #64748b;
+}
+
+body.art-v2-shell .clusters-page .clusters-overview__hint {
+  color: #94a3b8;
+}
+
+body.art-v2-shell .clusters-page .clusters-overview__item--total .clusters-overview__value {
+  color: #2563eb;
+}
+
+body.art-v2-shell .clusters-page .clusters-overview__item--ok .clusters-overview__value {
+  color: #059669;
+}
+
+body.art-v2-shell .clusters-page .clusters-overview__item--warn .clusters-overview__value {
+  color: #d97706;
+}
+
+body.art-v2-shell .clusters-page .clusters-overview__item--nodes .clusters-overview__value {
+  color: #334155;
+}
+
+html.dark body.art-v2-shell .clusters-page .clusters-panel--filters {
+  border-color: rgba(51, 65, 85, 0.78);
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(15, 23, 42, 0.9) 100%);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.28);
+}
+
+html.dark body.art-v2-shell .clusters-page .clusters-overview {
+  border-color: rgba(51, 65, 85, 0.78);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.72));
+}
+
+html.dark body.art-v2-shell .clusters-page .clusters-overview__item {
+  border-color: rgba(51, 65, 85, 0.72);
+  background: rgba(15, 23, 42, 0.88);
+  box-shadow:
+    inset 0 1px 0 rgba(148, 163, 184, 0.05),
+    0 12px 26px rgba(2, 6, 23, 0.18);
+}
+
+html.dark body.art-v2-shell .clusters-page .clusters-overview__label,
+html.dark body.art-v2-shell .clusters-page .clusters-overview__hint {
+  color: #94a3b8;
+}
+
+html.dark body.art-v2-shell .clusters-page .clusters-overview__item--total .clusters-overview__value {
+  color: #93c5fd;
+}
+
+html.dark body.art-v2-shell .clusters-page .clusters-overview__item--ok .clusters-overview__value {
+  color: #6ee7b7;
+}
+
+html.dark body.art-v2-shell .clusters-page .clusters-overview__item--warn .clusters-overview__value {
+  color: #fcd34d;
+}
+
+html.dark body.art-v2-shell .clusters-page .clusters-overview__item--nodes .clusters-overview__value {
+  color: #cbd5e1;
+}
+
+body.art-v2-shell .k8s-act-btn.k8s-act-btn--pinned {
+  color: #eab308;
+  border-color: rgba(234, 179, 8, 0.34);
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.16), rgba(234, 179, 8, 0.1));
+  box-shadow: 0 8px 18px rgba(234, 179, 8, 0.16);
+}
+
+body.art-v2-shell .k8s-act-btn.k8s-act-btn--pinned .el-icon {
+  color: inherit;
+}
+
+body.art-v2-shell .k8s-act-btn.k8s-act-btn--pinned:hover {
+  color: #ca8a04;
+  border-color: rgba(234, 179, 8, 0.42);
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.22), rgba(234, 179, 8, 0.16));
+  box-shadow: 0 12px 22px rgba(234, 179, 8, 0.2);
+}
+
+body.art-v2-shell .cluster-context-item.cluster-context-item--active {
+  color: #ca8a04;
+  background: rgba(250, 204, 21, 0.14);
+}
+
+body.art-v2-shell .cluster-context-item.cluster-context-item--active .el-icon {
+  color: inherit;
+}
+
+body.art-v2-shell .cluster-context-item.cluster-context-item--active:hover {
+  color: #a16207;
+  background: rgba(250, 204, 21, 0.18);
+}
+
+html.dark body.art-v2-shell .k8s-act-btn.k8s-act-btn--pinned {
+  color: #facc15;
+  border-color: rgba(250, 204, 21, 0.32);
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.16), rgba(234, 179, 8, 0.14));
+  box-shadow: 0 10px 20px rgba(234, 179, 8, 0.16);
+}
+
+html.dark body.art-v2-shell .k8s-act-btn.k8s-act-btn--pinned:hover {
+  color: #fde047;
+  border-color: rgba(250, 204, 21, 0.4);
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.22), rgba(234, 179, 8, 0.18));
+}
+
+html.dark body.art-v2-shell .cluster-context-item.cluster-context-item--active {
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.16);
+}
+
+html.dark body.art-v2-shell .cluster-context-item.cluster-context-item--active:hover {
+  color: #fde047;
+  background: rgba(250, 204, 21, 0.2);
+}
+
 body.art-v2-shell .summary-kpi,
 body.art-v2-shell .mini-stat,
 body.art-v2-shell .core-stat {

@@ -2,20 +2,32 @@
   <section class="clusters-page">
     <section class="clusters-panel clusters-panel--filters" aria-label="集群筛选条件">
       <div class="clusters-overview" aria-label="集群概览">
-        <div class="clusters-overview__item">
-          <span class="clusters-overview__label">可见集群</span>
+        <div class="clusters-overview__item clusters-overview__item--total">
+          <div class="clusters-overview__meta">
+            <span class="clusters-overview__label">可见集群</span>
+            <span class="clusters-overview__hint">当前筛选结果</span>
+          </div>
           <strong class="clusters-overview__value">{{ total }}</strong>
         </div>
-        <div class="clusters-overview__item">
-          <span class="clusters-overview__label">正常</span>
+        <div class="clusters-overview__item clusters-overview__item--ok">
+          <div class="clusters-overview__meta">
+            <span class="clusters-overview__label">正常</span>
+            <span class="clusters-overview__hint">在线且健康</span>
+          </div>
           <strong class="clusters-overview__value">{{ visibleStatusSummary.active }}</strong>
         </div>
-        <div class="clusters-overview__item">
-          <span class="clusters-overview__label">需关注</span>
+        <div class="clusters-overview__item clusters-overview__item--warn">
+          <div class="clusters-overview__meta">
+            <span class="clusters-overview__label">需关注</span>
+            <span class="clusters-overview__hint">降级或处理中</span>
+          </div>
           <strong class="clusters-overview__value">{{ visibleAttentionCount }}</strong>
         </div>
-        <div class="clusters-overview__item">
-          <span class="clusters-overview__label">节点总数</span>
+        <div class="clusters-overview__item clusters-overview__item--nodes">
+          <div class="clusters-overview__meta">
+            <span class="clusters-overview__label">节点总数</span>
+            <span class="clusters-overview__hint">当前可见资源</span>
+          </div>
           <strong class="clusters-overview__value">{{ visibleNodeCount }}</strong>
         </div>
       </div>
@@ -137,7 +149,7 @@
               <button class="k8s-act-btn k8s-act-btn--info" @click="openCluster(row)"><K8sClusterIcon class="cluster-enter-icon" /></button>
             </el-tooltip>
             <el-tooltip v-if="canOpenK8s" :content="isClusterPinned(row.id) ? '取消左侧快捷入口' : '固定到左侧快捷入口'" placement="top" :show-after="400">
-              <button class="k8s-act-btn k8s-act-btn--warn" @click="toggleClusterShortcut(row)">
+              <button :class="['k8s-act-btn', 'k8s-act-btn--warn', isClusterPinned(row.id) ? 'k8s-act-btn--pinned' : '']" @click="toggleClusterShortcut(row)">
                 <el-icon><StarFilled v-if="isClusterPinned(row.id)" /><Star v-else /></el-icon>
               </button>
             </el-tooltip>
@@ -199,7 +211,7 @@
           <K8sClusterIcon class="cluster-context-icon" />
           <span>进入 K8s 管理</span>
         </button>
-        <button class="cluster-context-item" type="button" @click="toggleContextShortcut">
+        <button :class="['cluster-context-item', isClusterPinned(contextMenuData.id) ? 'cluster-context-item--active' : '']" type="button" @click="toggleContextShortcut">
           <el-icon><StarFilled v-if="isClusterPinned(contextMenuData.id)" /><Star v-else /></el-icon>
           <span>{{ isClusterPinned(contextMenuData.id) ? '取消左侧快捷入口' : '固定到左侧快捷入口' }}</span>
         </button>
@@ -651,18 +663,67 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 14px;
+  padding: 4px;
+  border: 1px solid var(--color-border-subtle, rgba(15, 23, 42, 0.06));
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.72));
 }
 
 .clusters-overview__item {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 56px;
-  padding: 0 14px;
-  border: 1px solid var(--color-border-subtle, rgba(15, 23, 42, 0.06));
+  min-height: 68px;
+  padding: 12px 16px 12px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 12px;
-  background: rgba(248, 250, 252, 0.82);
+  background: rgba(255, 255, 255, 0.94);
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.clusters-overview__item::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 999px 999px 0;
+  background: var(--overview-accent, #94a3b8);
+}
+
+.clusters-overview__item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at right top, color-mix(in srgb, var(--overview-accent, #94a3b8) 10%, transparent), transparent 48%);
+  pointer-events: none;
+}
+
+.clusters-overview__item--total {
+  --overview-accent: #2563eb;
+}
+
+.clusters-overview__item--ok {
+  --overview-accent: #10b981;
+}
+
+.clusters-overview__item--warn {
+  --overview-accent: #f59e0b;
+}
+
+.clusters-overview__item--nodes {
+  --overview-accent: #64748b;
+}
+
+.clusters-overview__meta {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .clusters-overview__label {
@@ -671,11 +732,34 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
+.clusters-overview__hint {
+  color: var(--color-text-muted, #94a3b8);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .clusters-overview__value {
   color: var(--color-text-title, rgba(15, 23, 42, 0.92));
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
   line-height: 1;
+}
+
+.clusters-overview__item--total .clusters-overview__value {
+  color: #1d4ed8;
+}
+
+.clusters-overview__item--ok .clusters-overview__value {
+  color: #047857;
+}
+
+.clusters-overview__item--warn .clusters-overview__value {
+  color: #b45309;
+}
+
+.clusters-overview__item--nodes .clusters-overview__value {
+  color: #334155;
 }
 
 .clusters-filters {
@@ -760,6 +844,18 @@ onBeforeUnmount(() => {
   transform-origin: center;
 }
 
+.k8s-act-btn--pinned {
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.26);
+  background: rgba(245, 158, 11, 0.14);
+  box-shadow: 0 8px 18px rgba(245, 158, 11, 0.14);
+}
+
+.k8s-act-btn--pinned:hover {
+  background: rgba(245, 158, 11, 0.18);
+  box-shadow: 0 12px 22px rgba(245, 158, 11, 0.18);
+}
+
 .cluster-context-backdrop {
   position: fixed;
   inset: 0;
@@ -801,6 +897,16 @@ onBeforeUnmount(() => {
   color: var(--color-accent-primary, #2563eb);
 }
 
+.cluster-context-item--active {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.cluster-context-item--active:hover {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
 .cluster-context-item--danger:hover {
   background: rgba(239, 68, 68, 0.08);
   color: #ef4444;
@@ -818,19 +924,54 @@ onBeforeUnmount(() => {
   box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
 }
 
+:global(html.dark) .clusters-overview {
+  border-color: rgba(148, 163, 184, 0.14);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(15, 23, 42, 0.58));
+}
+
 :global(html.dark) .clusters-overview__item {
   border-color: rgba(148, 163, 184, 0.14);
-  background: rgba(15, 23, 42, 0.72);
+  background: rgba(15, 23, 42, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 :global(html.dark) .clusters-overview__label,
+:global(html.dark) .clusters-overview__hint,
 :global(html.dark) .table-summary__meta {
   color: var(--color-text-muted, #7c8aa0);
+}
+
+:global(html.dark) .clusters-overview__item--total .clusters-overview__value {
+  color: #93c5fd;
+}
+
+:global(html.dark) .clusters-overview__item--ok .clusters-overview__value {
+  color: #6ee7b7;
+}
+
+:global(html.dark) .clusters-overview__item--warn .clusters-overview__value {
+  color: #fcd34d;
+}
+
+:global(html.dark) .clusters-overview__item--nodes .clusters-overview__value {
+  color: #cbd5e1;
 }
 
 :global(html.dark) .table-summary__badge {
   background: rgba(59, 130, 246, 0.2);
   color: #bfdbfe;
+}
+
+:global(html.dark) .k8s-act-btn--pinned {
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.18);
+  box-shadow: 0 10px 20px rgba(245, 158, 11, 0.14);
+}
+
+:global(html.dark) .cluster-context-item--active {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
 }
 
 :global(html.dark) .cluster-context-menu {
