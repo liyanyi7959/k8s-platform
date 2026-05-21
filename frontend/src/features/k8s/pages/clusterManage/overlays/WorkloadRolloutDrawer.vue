@@ -106,7 +106,14 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 
 import * as k8sApi from '@/features/k8s/api/k8s'
 import type { RolloutRevision } from '@/features/k8s/api/workload'
-import { formatTs, getWorkloadAvailable, getWorkloadDesired } from '@/features/k8s/pages/ClusterManageView.utils'
+import {
+  formatTs,
+  getWorkloadAvailable,
+  getWorkloadCurrentReplicas,
+  getWorkloadDesired,
+  getWorkloadProgressText,
+  isWorkloadProgressing
+} from '@/features/k8s/pages/ClusterManageView.utils'
 
 type RolloutTarget = {
   kind: string
@@ -140,17 +147,21 @@ const targetLabel = computed(() => {
 
 const desiredReplicas = computed(() => getWorkloadDesired(currentRow.value))
 const availableReplicas = computed(() => getWorkloadAvailable(currentRow.value))
+const currentReplicas = computed(() => getWorkloadCurrentReplicas(currentRow.value))
 const updatedReplicas = computed(() => Number(currentRow.value?.status?.updatedReplicas ?? availableReplicas.value))
 const progressPercent = computed(() => {
   if (!currentRow.value) return 0
-  if (desiredReplicas.value <= 0) return 100
-  const raw = Math.round((updatedReplicas.value / desiredReplicas.value) * 100)
-  return Math.max(0, Math.min(100, raw))
+  if (!isWorkloadProgressing(currentRow.value)) return 100
+  if (desiredReplicas.value <= 0) return 99
+  const updatedRatio = Math.max(0, Math.min(1, updatedReplicas.value / desiredReplicas.value))
+  const availableRatio = Math.max(0, Math.min(1, availableReplicas.value / desiredReplicas.value))
+  const raw = Math.round(((updatedRatio + availableRatio) / 2) * 100)
+  return Math.max(5, Math.min(99, raw))
 })
 const rolloutDone = computed(() => {
   if (!currentRow.value) return false
   if (desiredReplicas.value <= 0) return true
-  return updatedReplicas.value >= desiredReplicas.value && availableReplicas.value >= desiredReplicas.value
+  return !isWorkloadProgressing(currentRow.value) && updatedReplicas.value >= desiredReplicas.value && availableReplicas.value >= desiredReplicas.value
 })
 const readyText = computed(() => `${availableReplicas.value}/${desiredReplicas.value}`)
 const updatedText = computed(() => `${updatedReplicas.value}/${desiredReplicas.value}`)
@@ -161,6 +172,11 @@ const currentRevisionText = computed(() => {
 const progressDescription = computed(() => {
   if (!target.value.kind) return '等待选择工作负载'
   if (!currentRow.value) return '正在同步当前工作负载状态'
+  const progressText = getWorkloadProgressText(currentRow.value)
+  const currentPodsText = currentReplicas.value > desiredReplicas.value && desiredReplicas.value > 0
+    ? `，当前 Pod ${currentReplicas.value}/${desiredReplicas.value}`
+    : ''
+  if (progressText) return `${progressText}，已更新 ${updatedText.value}，可用 ${readyText.value}${currentPodsText}`
   return `已更新 ${updatedText.value}，可用 ${readyText.value}`
 })
 

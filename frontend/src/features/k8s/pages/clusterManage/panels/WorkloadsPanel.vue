@@ -26,6 +26,9 @@
     <template #cell-name="{ row }">
       <div class="k8s-name-cell">
         <span class="k8s-name">{{ String(row?.metadata?.name ?? '-') }}</span>
+        <el-tag v-if="isProgressingRow(row)" size="small" type="warning" effect="plain" class="workload-progress-tag">
+          {{ getProgressText(row) }}
+        </el-tag>
         <el-tooltip v-if="getWarningEventCount(row) > 0" :content="`关联 Warning 事件 ${getWarningEventCount(row)} 条`" placement="top">
           <span class="event-warning-badge">{{ getWarningEventCount(row) }}</span>
         </el-tooltip>
@@ -184,7 +187,15 @@ import * as k8sApi from '@/features/k8s/api/k8s'
 import EnhancedTable from '@/shared/components/EnhancedTable.vue'
 import type { EnhancedColumn } from '@/shared/components/EnhancedTable.vue'
 import type { WorkloadKind } from '@/features/k8s/pages/ClusterManageView.types'
-import { getCreationAgeText, getWorkloadAvailable, getWorkloadDesired, nsColorIndex, getReadyNumClass } from '@/features/k8s/pages/ClusterManageView.utils'
+import {
+  getCreationAgeText,
+  getWorkloadAvailable,
+  getWorkloadDesired,
+  getWorkloadProgressText,
+  isWorkloadProgressing,
+  nsColorIndex,
+  getReadyNumClass
+} from '@/features/k8s/pages/ClusterManageView.utils'
 
 const props = defineProps<{
   data: any[]
@@ -320,6 +331,14 @@ function getNamespaceValue(row: any): string {
 function getWarningEventCount(row: any): number {
   const count = Number(props.getWarningEventCount(row) ?? 0)
   return Number.isFinite(count) && count > 0 ? Math.trunc(count) : 0
+}
+
+function isProgressingRow(row: any): boolean {
+  return isWorkloadProgressing(row)
+}
+
+function getProgressText(row: any): string {
+  return getWorkloadProgressText(row)
 }
 
 function getWorkloadRowKey(row: any): string {
@@ -645,8 +664,14 @@ function getRolloutPauseIcon(row: any) {
 .k8s-name-cell {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
+}
+
+.workload-progress-tag {
+  margin: 0;
+  flex: none;
 }
 
 .event-warning-badge {

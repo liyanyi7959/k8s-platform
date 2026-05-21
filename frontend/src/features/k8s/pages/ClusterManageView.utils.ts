@@ -776,6 +776,60 @@ export function getWorkloadReadyText(row: unknown): string {
   return `${ready}/${desired}`
 }
 
+export function getWorkloadCurrentReplicas(row: unknown): number {
+  const raw = row as any
+  const kind = String(raw?.kind ?? '')
+  if (kind === 'DaemonSet') {
+    return Number(raw?.status?.currentNumberScheduled ?? raw?.status?.numberAvailable ?? 0)
+  }
+  return Number(raw?.status?.replicas ?? raw?.status?.currentReplicas ?? 0)
+}
+
+export function isWorkloadProgressing(row: unknown): boolean {
+  const raw = row as any
+  if (!raw || typeof raw !== 'object') return false
+
+  const kind = String(raw?.kind ?? '')
+  const desired = Math.max(0, getWorkloadDesired(raw))
+  const available = Math.max(0, getWorkloadAvailable(raw))
+  const current = Math.max(0, getWorkloadCurrentReplicas(raw))
+  const updated = Math.max(0, Number(raw?.status?.updatedReplicas ?? 0))
+  const unavailable = Math.max(0, Number(raw?.status?.unavailableReplicas ?? 0))
+  const observedGeneration = Math.max(0, Number(raw?.status?.observedGeneration ?? 0))
+  const generation = Math.max(0, Number(raw?.metadata?.generation ?? 0))
+
+  if (kind === 'DaemonSet') {
+    const desiredScheduled = Math.max(0, Number(raw?.status?.desiredNumberScheduled ?? 0))
+    const updatedScheduled = Math.max(0, Number(raw?.status?.updatedNumberScheduled ?? current))
+    const readyScheduled = Math.max(0, Number(raw?.status?.numberReady ?? available))
+    return observedGeneration < generation || updatedScheduled < desiredScheduled || readyScheduled < desiredScheduled
+  }
+
+  return observedGeneration < generation || current > desired || updated < desired || available < desired || unavailable > 0
+}
+
+export function getWorkloadProgressText(row: unknown): string {
+  const raw = row as any
+  if (!raw || typeof raw !== 'object') return ''
+  if (!isWorkloadProgressing(raw)) return ''
+
+  const kind = String(raw?.kind ?? '')
+  const desired = Math.max(0, getWorkloadDesired(raw))
+  const available = Math.max(0, getWorkloadAvailable(raw))
+  const current = Math.max(0, getWorkloadCurrentReplicas(raw))
+  const updated = Math.max(0, Number(raw?.status?.updatedReplicas ?? 0))
+
+  if (kind === 'DaemonSet') {
+    const desiredScheduled = Math.max(0, Number(raw?.status?.desiredNumberScheduled ?? 0))
+    const readyScheduled = Math.max(0, Number(raw?.status?.numberReady ?? 0))
+    return `滚动中 ${readyScheduled}/${desiredScheduled}`
+  }
+  if (current > desired && desired > 0) return `滚动中 ${current}/${desired} Pods`
+  if (updated < desired && desired > 0) return `更新中 ${updated}/${desired}`
+  if (available < desired && desired > 0) return `可用 ${available}/${desired}`
+  return '同步中'
+}
+
 export function getListRowSearchText(row: K8sLikeObject, resource: ResourceKey | undefined): string {
   if (!row || typeof row !== 'object') return ''
   const meta = row?.metadata ?? {}

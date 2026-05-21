@@ -996,6 +996,7 @@ import {
   getWorkloadAvailable,
   getWorkloadDesired,
   getWorkloadReadyText,
+  isWorkloadProgressing,
   isNamespacedResource,
   normalizeNamespaceSelection,
   readStorageJson,
@@ -2113,12 +2114,60 @@ watch(
 
 let loadCurrentSeq = 0
 let loadCurrentTimer: number | null = null
+const WORKLOAD_PROGRESS_REFRESH_DELAY_MS = 800
+const WORKLOAD_PROGRESS_REFRESH_INTERVAL_MS = 1500
+const WORKLOAD_PROGRESS_REFRESH_MIN_ROUNDS = 6
+const WORKLOAD_PROGRESS_REFRESH_MAX_ROUNDS = 14
+let workloadProgressRefreshTimer: number | null = null
+let workloadProgressRefreshCount = 0
+
 function scheduleLoadCurrent() {
   if (loadCurrentTimer != null) window.clearTimeout(loadCurrentTimer)
   loadCurrentTimer = window.setTimeout(() => {
     loadCurrentTimer = null
     void loadCurrent()
   }, 80)
+}
+
+function stopWorkloadProgressRefresh() {
+  if (workloadProgressRefreshTimer != null) {
+    window.clearTimeout(workloadProgressRefreshTimer)
+    workloadProgressRefreshTimer = null
+  }
+  workloadProgressRefreshCount = 0
+}
+
+function scheduleWorkloadProgressRefresh() {
+  stopWorkloadProgressRefresh()
+  workloadProgressRefreshTimer = window.setTimeout(() => {
+    workloadProgressRefreshTimer = null
+    void runWorkloadProgressRefresh()
+  }, WORKLOAD_PROGRESS_REFRESH_DELAY_MS)
+}
+
+async function runWorkloadProgressRefresh() {
+  if (!clusterId.value || current.value?.resource !== 'workloads') {
+    stopWorkloadProgressRefresh()
+    return
+  }
+
+  workloadProgressRefreshCount += 1
+  await loadCurrent()
+
+  const hasProgressingWorkload = list.value.some((row) => isWorkloadProgressing(row))
+  if (!hasProgressingWorkload && workloadProgressRefreshCount >= WORKLOAD_PROGRESS_REFRESH_MIN_ROUNDS) {
+    stopWorkloadProgressRefresh()
+    return
+  }
+  if (workloadProgressRefreshCount >= WORKLOAD_PROGRESS_REFRESH_MAX_ROUNDS) {
+    stopWorkloadProgressRefresh()
+    return
+  }
+
+  workloadProgressRefreshTimer = window.setTimeout(() => {
+    workloadProgressRefreshTimer = null
+    void runWorkloadProgressRefresh()
+  }, WORKLOAD_PROGRESS_REFRESH_INTERVAL_MS)
 }
 
 async function loadCurrent() {
@@ -2554,6 +2603,9 @@ watch(currentResource, (value) => {
   if (value !== 'pods' && podPhaseQuickFilter.value) {
     podPhaseQuickFilter.value = ''
   }
+  if (value !== 'workloads') {
+    stopWorkloadProgressRefresh()
+  }
 })
 
 async function bulkDeletePods(rowsInput: any[] = selectedPodRows.value, options: { force?: boolean } = {}) {
@@ -2848,8 +2900,7 @@ async function restartWorkloadRow(row: any) {
     )
     await k8sApi.restartWorkload(clusterId.value, req)
     notifySuccess('已提交重启')
-    // 自动刷新列表以跟踪状态变化
-    setTimeout(() => void loadCurrent(), 1500)
+    scheduleWorkloadProgressRefresh()
   } catch (e) {
     if (e === 'cancel') return
     const err = e as ApiError
@@ -2896,7 +2947,7 @@ async function restartSelectedWorkloads(rows: any[]) {
     notifyError(`已提交 ${succeeded} 个工作负载重启，失败 ${failed.length} 个`)
   }
 
-  setTimeout(() => void loadCurrent(), 1500)
+  scheduleWorkloadProgressRefresh()
 }
 
 async function updateWorkloadImage(payload: { kind: string; namespace: string; name: string; container: string; image: string }) {
@@ -2904,7 +2955,7 @@ async function updateWorkloadImage(payload: { kind: string; namespace: string; n
   try {
     await k8sApi.updateWorkloadImage(clusterId.value, payload)
     notifySuccess(`已提交 ${payload.name} 镜像更新`)
-    setTimeout(() => void loadCurrent(), 1500)
+    scheduleWorkloadProgressRefresh()
   } catch (e) {
     const err = e as ApiError
     notifyError(err.requestId ? `${err.message} (request_id=${err.requestId})` : err.message)
@@ -2931,7 +2982,7 @@ async function toggleWorkloadPaused(row: any) {
   try {
     await k8sApi.updateWorkloadPaused(clusterId.value, { kind: 'Deployment', namespace, name, paused })
     notifySuccess(paused ? '已暂停 Rollout' : '已恢复 Rollout')
-    setTimeout(() => void loadCurrent(), 1200)
+    scheduleWorkloadProgressRefresh()
   } catch (e) {
     const err = e as ApiError
     notifyError(err.requestId ? `${err.message} (request_id=${err.requestId})` : err.message)
@@ -3400,6 +3451,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  stopWorkloadProgressRefresh()
   stopTimers()
 })
 </script>
