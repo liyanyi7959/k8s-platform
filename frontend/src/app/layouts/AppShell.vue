@@ -1,6 +1,6 @@
 <template>
   <div :class="['app-shell', isStandalone ? 'app-shell--standalone' : '']">
-    <SideRail />
+    <AppSidebar />
 
     <div class="shell-main">
       <div :class="['shell-topbar-host', isStandalone ? 'shell-topbar-host--collapsed' : '']">
@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
-import SideRail from './sidebar/SideRail.vue'
+import AppSidebar from './sidebar/AppSidebar.vue'
 import TopBar from './TopBar.vue'
 import AppContent from './AppContent.vue'
 
@@ -56,8 +56,8 @@ html.dark .app-shell {
 }
 
 .shell-topbar-host {
-  height: 48px;
-  min-height: 48px;
+  height: 60px;
+  min-height: 60px;
   overflow: hidden;
   flex-shrink: 0;
   transition:

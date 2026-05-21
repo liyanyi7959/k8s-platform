@@ -32,11 +32,19 @@ func New(d Deps) (*gin.Engine, error) {
 	// ── 基础依赖（供当前仍在使用的 K8S 能力复用） ──
 	taskStore := service.NewTaskStore(d.DB)
 
+	// ── 审计服务 ──
+	var auditSvc *service.AuditService
+	if d.DB != nil {
+		auditSvc = service.NewAuditService(d.DB)
+	}
+
 	// ── DB 依赖模块 ──
 	var clusterManageCtl *controller.ClusterManageController
 	var k8sCtl *controller.K8sController
 	var dashboardCtl *controller.DashboardController
 	var permissionAuditCtl *controller.K8sPermissionAuditController
+	var auditCtl *controller.AuditController
+	var userCtl *controller.UserController
 
 	if d.DB != nil {
 		clusterReg := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
@@ -49,6 +57,8 @@ func New(d Deps) (*gin.Engine, error) {
 		dashboardCtl = controller.NewDashboardController(dashboardSvc)
 		permissionAuditSvc := service.NewK8sPermissionAuditService(d.DB, taskStore, clusterReg, k8sSvc, d.CacheStore, d.EncryptionKey)
 		permissionAuditCtl = controller.NewK8sPermissionAuditController(permissionAuditSvc)
+		auditCtl = controller.NewAuditController(auditSvc)
+		userCtl = controller.NewUserController(d.RbacSvc)
 	}
 
 	// ── 健康检查 ──
@@ -57,7 +67,7 @@ func New(d Deps) (*gin.Engine, error) {
 	})
 
 	// ── 路由注册 ──
-	registerRoutes(r, d, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl)
+	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl)
 
 	return r, nil
 }
@@ -65,10 +75,13 @@ func New(d Deps) (*gin.Engine, error) {
 //nolint:funlen // 路由注册表天然是长函数，按业务域分段组织
 func registerRoutes(
 	r *gin.Engine, d Deps,
+	auditSvc *service.AuditService,
 	clusterManageCtl *controller.ClusterManageController,
 	k8sCtl *controller.K8sController,
 	dashboardCtl *controller.DashboardController,
 	permissionAuditCtl *controller.K8sPermissionAuditController,
+	auditCtl *controller.AuditController,
+	userCtl *controller.UserController,
 ) {
 	api := r.Group("/api/v1")
 
@@ -81,6 +94,11 @@ func registerRoutes(
 	authed := api.Group("")
 	authed.Use(middleware.AuthRequiredWithRBAC(d.JWTMgr, d.RbacSvc))
 
+	// ── 审计中间件（仅对写操作生效） ──
+	if auditSvc != nil {
+		authed.Use(middleware.AuditLogger(auditSvc))
+	}
+
 	authed.POST("/auth/change-password", d.AuthCtl.ChangePassword)
 
 	registerClusterRoutes(authed, d, clusterManageCtl)
@@ -88,6 +106,8 @@ func registerRoutes(
 	registerPermissionAuditRoutes(authed, permissionAuditCtl)
 	registerK8sRoutes(authed, d, k8sCtl)
 	registerWebSocketRoutes(authed, k8sCtl)
+	registerAuditRoutes(authed, auditCtl)
+	registerUserRoutes(authed, userCtl)
 }
 
 func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sPermissionAuditController) {
@@ -190,6 +210,7 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	k8s.PATCH("/clusters/:id/workloads/restart", writePerm, ctl.RestartWorkload)
 	k8s.PATCH("/clusters/:id/workloads/image", writePerm, ctl.UpdateImage)
 	k8s.PATCH("/clusters/:id/workloads/rollout-pause", writePerm, ctl.UpdateWorkloadPaused)
+	k8s.POST("/clusters/:id/workloads/deployments", writePerm, ctl.CreateDeployment)
 	k8s.PATCH("/clusters/:id/workloads/deployments/edit", writePerm, ctl.EditDeployment)
 	k8s.PATCH("/clusters/:id/workloads/statefulsets/edit", writePerm, ctl.EditStatefulSet)
 	k8s.PATCH("/clusters/:id/workloads/daemonsets/edit", writePerm, ctl.EditDaemonSet)
@@ -205,12 +226,14 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 
 	// Service
 	k8s.GET("/clusters/:id/services", readPerm, middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.ListServices)
+	k8s.POST("/clusters/:id/services", writePerm, ctl.CreateService)
 	k8s.PATCH("/clusters/:id/services/edit", writePerm, ctl.EditService)
 	k8s.DELETE("/clusters/:id/services/:ns/:name", writePerm, ctl.DeleteService)
 	k8s.GET("/clusters/:id/services/:ns/:name/yaml", readPerm, ctl.GetServiceYAML)
 
 	// Ingress
 	k8s.GET("/clusters/:id/ingresses", readPerm, middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.ListIngresses)
+	k8s.POST("/clusters/:id/ingresses", writePerm, ctl.CreateIngress)
 	k8s.PATCH("/clusters/:id/ingresses/edit", writePerm, ctl.EditIngress)
 	k8s.DELETE("/clusters/:id/ingresses/:ns/:name", writePerm, ctl.DeleteIngress)
 	k8s.GET("/clusters/:id/ingresses/:ns/:name/yaml", readPerm, ctl.GetIngressYAML)
@@ -438,4 +461,35 @@ func registerWebSocketRoutes(authed *gin.RouterGroup, k8sCtl *controller.K8sCont
 		ws.GET("/pod-log", middleware.RequirePerm("k8s:read"), k8sCtl.PodLogWS)
 		ws.GET("/pod-exec", middleware.RequirePerm("k8s:exec"), k8sCtl.PodExecWS)
 	}
+}
+
+func registerAuditRoutes(authed *gin.RouterGroup, ctl *controller.AuditController) {
+	if ctl == nil {
+		return
+	}
+	authed.GET("/audit-logs", middleware.RequirePerm("user:read"), ctl.List)
+}
+
+func registerUserRoutes(authed *gin.RouterGroup, ctl *controller.UserController) {
+	if ctl == nil {
+		return
+	}
+	read := middleware.RequirePerm("user:read")
+	write := middleware.RequirePerm("user:write")
+
+	// 用户管理
+	authed.GET("/users", read, ctl.ListUsers)
+	authed.POST("/users", write, ctl.CreateUser)
+	authed.PUT("/users/:id", write, ctl.UpdateUser)
+	authed.DELETE("/users/:id", write, ctl.DeleteUser)
+	authed.POST("/users/:id/reset-password", write, ctl.ResetPassword)
+
+	// 角色管理
+	authed.GET("/roles", read, ctl.ListRoles)
+	authed.POST("/roles", write, ctl.CreateRole)
+	authed.PUT("/roles/:id", write, ctl.UpdateRole)
+	authed.DELETE("/roles/:id", write, ctl.DeleteRole)
+
+	// 权限点列表
+	authed.GET("/permissions", read, ctl.ListPermissions)
 }

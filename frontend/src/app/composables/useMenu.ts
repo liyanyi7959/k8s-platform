@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useUserStore } from '@/app/store/user'
-import { K8sClusterIcon } from '@/shared/icons/appIcons'
+import { K8sClusterIcon, SystemSettingsIcon, AuditLogIcon, UserManageIcon, RoleManageIcon } from '@/shared/icons/appIcons'
 
 export interface MenuItem {
   title: string
@@ -48,6 +48,17 @@ export function useMenu() {
           perm: 'cluster:read'
         }
       ]
+    },
+    {
+      key: 'system',
+      title: '系统管理',
+      icon: SystemSettingsIcon,
+      path: '/system/audit-logs',
+      children: [
+        { title: '操作审计', path: '/system/audit-logs', icon: AuditLogIcon, perm: 'user:read' },
+        { title: '用户管理', path: '/system/users', icon: UserManageIcon, perm: 'user:write' },
+        { title: '角色管理', path: '/system/roles', icon: RoleManageIcon, perm: 'user:write' }
+      ]
     }
   ]
 
@@ -64,6 +75,9 @@ export function useMenu() {
     const path = route.path
     if (path.startsWith('/clusters') || path.startsWith('/k8s')) {
       return visibleGroups.value.find((group) => group.key === 'k8s')
+    }
+    if (path.startsWith('/system')) {
+      return visibleGroups.value.find((group) => group.key === 'system')
     }
     return visibleGroups.value[0]
   })

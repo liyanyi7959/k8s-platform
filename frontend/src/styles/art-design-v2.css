@@ -156,14 +156,17 @@ body.art-v2-shell .top-bar {
   margin-right: 0;
   padding: 0 20px;
   border: none;
-  border-bottom: 1px solid var(--color-border-default);
+  border-bottom: none;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
 }
 
-body.art-v2-shell .top-bar-left,
+body.art-v2-shell .top-bar-left {
+  gap: 12px;
+}
+
 body.art-v2-shell .top-bar-right {
   gap: 8px;
 }

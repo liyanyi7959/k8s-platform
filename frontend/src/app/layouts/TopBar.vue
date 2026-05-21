@@ -2,6 +2,18 @@
   <header class="top-bar">
     <!-- 左侧：面包屑 -->
     <div class="top-bar-left">
+      <button
+        :class="['sidebar-toggle-btn', collapsed ? 'sidebar-toggle-btn--collapsed' : '']"
+        :title="collapsed ? '展开侧栏' : '收起侧栏'"
+        @click="toggleCollapse"
+      >
+        <span class="sidebar-toggle-icon" aria-hidden="true">
+          <span class="sidebar-toggle-line sidebar-toggle-line--top" />
+          <span class="sidebar-toggle-line sidebar-toggle-line--middle" />
+          <span class="sidebar-toggle-line sidebar-toggle-line--bottom" />
+        </span>
+      </button>
+
       <nav class="breadcrumb">
         <span class="breadcrumb-item breadcrumb-root" @click="router.push('/')">
           <el-icon :size="14"><HomeFilled /></el-icon>
@@ -74,6 +86,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/app/store/user'
 import { useMenu } from '@/app/composables/useMenu'
+import { useSidebarState } from '@/app/composables/useSidebarState'
 import { useTheme } from '@/app/composables/useTheme'
 import {
   HomeFilled, Bell, Moon, Sunny, Monitor,
@@ -84,6 +97,7 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const { activeGroup } = useMenu()
+const { collapsed, toggleCollapse } = useSidebarState()
 const { theme, themeLabel, toggleTheme } = useTheme()
 
 const messageCount = ref(0)
@@ -117,7 +131,6 @@ async function onUserCommand(cmd: string) {
   padding: 0 20px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--color-border-subtle, rgba(226, 232, 240, 0.7));
   border-radius: 0;
   z-index: 50;
   gap: 20px;
@@ -127,7 +140,6 @@ async function onUserCommand(cmd: string) {
 
 html.dark .top-bar {
   background: transparent;
-  border-color: rgba(51, 65, 85, 0.6);
   box-shadow: none;
 }
 
@@ -135,8 +147,90 @@ html.dark .top-bar {
 .top-bar-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
+}
+
+.sidebar-toggle-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--color-text-secondary, #64748b);
+  transition: background 0.18s ease, color 0.18s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--color-bg-hover, #f8fafc);
+  color: var(--color-text-primary, #0f172a);
+}
+
+html.dark .sidebar-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+.sidebar-toggle-icon {
+  position: relative;
+  width: 18px;
+  height: 14px;
+  display: block;
+}
+
+.sidebar-toggle-line {
+  position: absolute;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transform-origin: center;
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease;
+}
+
+.sidebar-toggle-line--top {
+  top: 0;
+  width: 18px;
+}
+
+.sidebar-toggle-line--middle {
+  top: 6px;
+  width: 12px;
+}
+
+.sidebar-toggle-line--bottom {
+  top: 12px;
+  width: 18px;
+}
+
+.sidebar-toggle-btn:hover .sidebar-toggle-line--middle {
+  width: 18px;
+}
+
+.sidebar-toggle-btn--collapsed .sidebar-toggle-line--top {
+  top: 6px;
+  width: 10px;
+  transform: translateX(8px) rotate(45deg);
+}
+
+.sidebar-toggle-btn--collapsed .sidebar-toggle-line--middle {
+  width: 16px;
+  transform: translateX(1px);
+}
+
+.sidebar-toggle-btn--collapsed .sidebar-toggle-line--bottom {
+  top: 6px;
+  width: 10px;
+  transform: translateX(8px) rotate(-45deg);
 }
 
 /* ── Breadcrumb ────────────────────────────────────────────────────────── */

@@ -1,6 +1,11 @@
 <template>
   <transition name="panel-slide">
-    <aside v-show="isPanelVisible && hasItems" class="side-panel">
+    <aside
+      v-show="isPanelVisible && hasItems"
+      class="side-panel"
+      @mouseenter="onRailHoverEnter"
+      @mouseleave="onRailHoverLeave"
+    >
       <!-- 面板 Header -->
       <div class="panel-header">
         <span class="panel-title">{{ activeGroup?.title ?? '' }}</span>
@@ -122,8 +127,15 @@ const unpinIcon = defineComponent({
 const route = useRoute()
 const router = useRouter()
 const { activeGroup, sidebarItems } = useMenu()
-const { isPanelVisible, pinned, togglePin } = useSidebarState()
+const { collapsed } = useSidebarState()
 const { shortcuts, unpinCluster: removeShortcut } = useClusterShortcuts()
+
+/* Legacy compat — these are no longer used but template may reference them */
+const isPanelVisible = computed(() => !collapsed.value)
+const pinned = ref(true)
+function togglePin() { /* no-op */ }
+function onRailHoverEnter() { /* no-op */ }
+function onRailHoverLeave() { /* no-op */ }
 
 const hasItems = computed(() => sidebarItems.value.length > 0)
 

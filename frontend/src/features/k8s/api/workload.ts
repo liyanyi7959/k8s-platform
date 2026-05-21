@@ -197,3 +197,26 @@ export async function editWorkloadYaml(
   const resp = (await http.patch(`/api/v1/clusters/${clusterId}/workloads/yaml/edit`, req)) as ApiResponse<{ ok: boolean }>
   return resp.data
 }
+
+// ── 创建 Deployment ──
+
+export interface CreateDeploymentContainer {
+  name: string
+  image: string
+  cpu?: string
+  memory?: string
+  command?: string
+}
+
+export interface CreateDeploymentRequest {
+  namespace: string
+  name: string
+  replicas: number
+  containers: CreateDeploymentContainer[]
+  labels?: Record<string, string>
+}
+
+export async function createDeployment(clusterId: number, req: CreateDeploymentRequest): Promise<{ ok: boolean }> {
+  const resp = (await http.post(`/api/v1/clusters/${clusterId}/workloads/deployments`, req)) as ApiResponse<{ ok: boolean }>
+  return resp.data
+}

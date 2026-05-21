@@ -891,6 +891,29 @@
     @toggle-editor-theme="toggleEditorTheme"
     @saved="loadCurrent"
   />
+
+  <!-- 资源创建对话框 -->
+  <CreateDeploymentDialog
+    v-model="showCreateDeployment"
+    :cluster-id="clusterId"
+    :namespaces="namespaces"
+    :default-namespace="defaultCreatePVCNamespace"
+    @created="onResourceCreated"
+  />
+  <CreateServiceDialog
+    v-model="showCreateService"
+    :cluster-id="clusterId"
+    :namespaces="namespaces"
+    :default-namespace="defaultCreatePVCNamespace"
+    @created="onResourceCreated"
+  />
+  <CreateIngressDialog
+    v-model="showCreateIngress"
+    :cluster-id="clusterId"
+    :namespaces="namespaces"
+    :default-namespace="defaultCreatePVCNamespace"
+    @created="onResourceCreated"
+  />
 </template>
 
 <script setup lang="ts">
@@ -985,6 +1008,9 @@ import {
 const ClusterManageWorkbenches = defineAsyncComponent(() => import('./clusterManage/overlays/ClusterManageWorkbenches.vue'))
 const ClusterManageDetailsHost = defineAsyncComponent(() => import('./clusterManage/overlays/ClusterManageDetailsHost.vue'))
 const ClusterManageResourceEditors = defineAsyncComponent(() => import('./clusterManage/overlays/ClusterManageResourceEditors.vue'))
+const CreateDeploymentDialog = defineAsyncComponent(() => import('./clusterManage/overlays/CreateDeploymentDialog.vue'))
+const CreateServiceDialog = defineAsyncComponent(() => import('./clusterManage/overlays/CreateServiceDialog.vue'))
+const CreateIngressDialog = defineAsyncComponent(() => import('./clusterManage/overlays/CreateIngressDialog.vue'))
 const ClusterDashboard = defineAsyncComponent(() => import('./clusterManage/ClusterDashboard.vue'))
 const ClusterScopedResourcesPanel = defineAsyncComponent(() => import('./clusterManage/panels/ClusterScopedResourcesPanel.vue'))
 const ClusterRolesPanel = defineAsyncComponent(() => import('./clusterManage/panels/ClusterRolesPanel.vue'))
@@ -1527,6 +1553,24 @@ const primaryCreateAction = computed<null | { label: string; onClick: () => void
       onClick: openCreatePVC
     }
   }
+  if (resource === 'workloads' && canWriteK8s.value) {
+    return {
+      label: '创建 Deployment',
+      onClick: () => { showCreateDeployment.value = true }
+    }
+  }
+  if (resource === 'services' && canWriteK8s.value) {
+    return {
+      label: '创建 Service',
+      onClick: () => { showCreateService.value = true }
+    }
+  }
+  if (resource === 'ingresses' && canWriteK8s.value) {
+    return {
+      label: '创建 Ingress',
+      onClick: () => { showCreateIngress.value = true }
+    }
+  }
   return null
 })
 
@@ -1584,6 +1628,15 @@ const defaultCreatePVCNamespace = computed(() => {
   if (namespaces.value.includes('default')) return 'default'
   return namespaces.value[0] || ''
 })
+
+// ─── 资源创建对话框 ───
+const showCreateDeployment = ref(false)
+const showCreateService = ref(false)
+const showCreateIngress = ref(false)
+
+function onResourceCreated() {
+  loadCurrent()
+}
 
 function onPodSelectionChange(rows: any[]) {
   selectedPodRows.value = Array.isArray(rows) ? rows : []

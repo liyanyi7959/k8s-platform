@@ -63,7 +63,6 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMenu, type NavGroup } from '@/app/composables/useMenu'
-import { useSidebarState } from '@/app/composables/useSidebarState'
 import { getClusterUnavailableMessage, useClusterShortcuts, type ClusterShortcut } from '@/app/composables/useClusterShortcuts'
 import { notifyError } from '@/shared/utils/notify'
 import logoUrl from '@/assets/images/logo.svg'
@@ -71,7 +70,6 @@ import logoUrl from '@/assets/images/logo.svg'
 const route = useRoute()
 const router = useRouter()
 const { railGroups, activeGroupKey } = useMenu()
-const { onRailHoverEnter, onRailHoverLeave } = useSidebarState()
 const { shortcuts, unpinCluster: removeShortcut } = useClusterShortcuts()
 const canShowShortcuts = computed(() => railGroups.value.some((group) => group.key === 'k8s'))
 
@@ -80,17 +78,17 @@ function onRailClick(group: NavGroup) {
     // 无子菜单 — 直接导航
     if (group.path) router.push(group.path)
   } else {
-    // 有子菜单 — 导航到该分组默认路径
+    // 有子菜单 — 导航并打开/固定面板
     if (group.path) router.push(group.path)
   }
 }
 
 function onItemHover(_group: NavGroup) {
-  onRailHoverEnter()
+  // no-op (legacy)
 }
 
 function onItemLeave() {
-  onRailHoverLeave()
+  // no-op (legacy)
 }
 
 function shortcutInitial(name: string) {

@@ -1,0 +1,179 @@
+package middleware
+
+import (
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+
+	"k8s-platform-backend/internal/service"
+)
+
+// AuditLogger 写操作审计中间件。
+// 仅对 POST/PUT/PATCH/DELETE 请求生效，自动从路由信息中提取资源和动作。
+func AuditLogger(auditSvc *service.AuditService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		method := c.Request.Method
+		if method == "GET" || method == "HEAD" || method == "OPTIONS" {
+			c.Next()
+			return
+		}
+
+		c.Next()
+
+		// 请求处理完毕后记录审计日志
+		path := c.Request.URL.Path
+		status := c.Writer.Status()
+
+		userID := uint64(0)
+		username := ""
+		if v, ok := c.Get("user_id"); ok {
+			switch id := v.(type) {
+			case int64:
+				userID = uint64(id)
+			case uint64:
+				userID = id
+			case float64:
+				userID = uint64(id)
+			}
+		}
+		if v, ok := c.Get("username"); ok {
+			if s, ok := v.(string); ok {
+				username = s
+			}
+		}
+
+		rid := ""
+		if v, ok := c.Get("request_id"); ok {
+			if s, ok := v.(string); ok {
+				rid = s
+			}
+		}
+
+		action := inferAction(method, path)
+		resource, resourceName, clusterID, namespace := parsePath(path)
+
+		entry := service.AuditEntry{
+			UserID:       userID,
+			Username:     username,
+			Action:       action,
+			Resource:     resource,
+			ResourceName: resourceName,
+			ClusterID:    clusterID,
+			Namespace:    namespace,
+			Path:         path,
+			StatusCode:   status,
+			ClientIP:     c.ClientIP(),
+			RequestID:    rid,
+		}
+
+		// 异步写入，不阻塞响应
+		go auditSvc.Record(c.Request.Context(), entry)
+	}
+}
+
+func inferAction(method, path string) string {
+	lower := strings.ToLower(path)
+	switch method {
+	case "DELETE":
+		return "delete"
+	case "POST":
+		// 判断特殊操作
+		if strings.Contains(lower, "/exec") {
+			return "exec"
+		}
+		if strings.Contains(lower, "/drain") {
+			return "drain"
+		}
+		if strings.Contains(lower, "/cordon") || strings.Contains(lower, "/uncordon") {
+			return "cordon"
+		}
+		if strings.Contains(lower, "/scale") {
+			return "scale"
+		}
+		if strings.Contains(lower, "/restart") {
+			return "restart"
+		}
+		if strings.Contains(lower, "/rollout") {
+			return "rollout"
+		}
+		if strings.Contains(lower, "/login") || strings.Contains(lower, "/logout") {
+			return "auth"
+		}
+		return "create"
+	case "PUT", "PATCH":
+		return "update"
+	default:
+		return method
+	}
+}
+
+// clusterResourcePattern 匹配 /api/v1/clusters/:id/... 路径
+var clusterResourcePattern = regexp.MustCompile(
+	`/api/v1/clusters/(\d+)/([^/]+)(?:/([^/]+))?(?:/([^/]+))?(?:/([^/]+))?`,
+)
+
+// topLevelPattern 匹配 /api/v1/resource/... 路径
+var topLevelPattern = regexp.MustCompile(
+	`/api/v1/([^/]+)(?:/([^/]+))?`,
+)
+
+func parsePath(path string) (resource, resourceName string, clusterID uint64, namespace string) {
+	if m := clusterResourcePattern.FindStringSubmatch(path); m != nil {
+		clusterID, _ = strconv.ParseUint(m[1], 10, 64)
+		resource = singularize(m[2])
+
+		// /clusters/:id/:resource/:ns/:name 或 /clusters/:id/:resource/:name
+		switch {
+		case m[5] != "":
+			// 5 段: /clusters/1/pods/ns/name/action
+			namespace = m[3]
+			resourceName = m[4]
+		case m[4] != "":
+			// 4 段: /clusters/1/pods/ns/name
+			namespace = m[3]
+			resourceName = m[4]
+		case m[3] != "":
+			// 3 段: /clusters/1/namespaces/name
+			resourceName = m[3]
+		}
+		return
+	}
+
+	if m := topLevelPattern.FindStringSubmatch(path); m != nil {
+		resource = singularize(m[1])
+		if m[2] != "" {
+			resourceName = m[2]
+		}
+		return
+	}
+	return
+}
+
+func singularize(s string) string {
+	s = strings.TrimRight(s, "/")
+	mapping := map[string]string{
+		"clusters":     "cluster",
+		"namespaces":   "namespace",
+		"pods":         "pod",
+		"deployments":  "deployment",
+		"services":     "service",
+		"ingresses":    "ingress",
+		"configmaps":   "configmap",
+		"secrets":      "secret",
+		"nodes":        "node",
+		"statefulsets": "statefulset",
+		"daemonsets":   "daemonset",
+		"jobs":         "job",
+		"cronjobs":     "cronjob",
+		"pvcs":         "pvc",
+		"pvs":          "pv",
+		"users":        "user",
+		"roles":        "role",
+	}
+	if v, ok := mapping[s]; ok {
+		return v
+	}
+	return s
+}

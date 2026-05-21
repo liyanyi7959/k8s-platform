@@ -53,6 +53,24 @@ export const routes: RouteRecordRaw[] = [
         name: 'K8sResourceTopology',
         component: () => import('@/features/k8s/pages/ResourceTopologyView.vue'),
         meta: { title: '资源关系图', requiresAuth: true, perm: ['cluster:read', 'k8s:read'], hideInMenu: true }
+      },
+      {
+        path: 'system/audit-logs',
+        name: 'AuditLogs',
+        component: () => import('@/features/system/pages/AuditLogView.vue'),
+        meta: { title: '操作审计', requiresAuth: true, perm: 'user:read' }
+      },
+      {
+        path: 'system/users',
+        name: 'UserManage',
+        component: () => import('@/features/system/pages/UserManageView.vue'),
+        meta: { title: '用户管理', requiresAuth: true, perm: 'user:write' }
+      },
+      {
+        path: 'system/roles',
+        name: 'RoleManage',
+        component: () => import('@/features/system/pages/RoleManageView.vue'),
+        meta: { title: '角色管理', requiresAuth: true, perm: 'user:write' }
       }
     ]
   }

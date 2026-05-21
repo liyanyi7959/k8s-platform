@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id       BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  username      VARCHAR(80)  NOT NULL DEFAULT '',
+  action        VARCHAR(16)  NOT NULL DEFAULT '',
+  resource      VARCHAR(64)  NOT NULL DEFAULT '',
+  resource_name VARCHAR(255) NOT NULL DEFAULT '',
+  cluster_id    BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  namespace     VARCHAR(255) NOT NULL DEFAULT '',
+  path          VARCHAR(512) NOT NULL DEFAULT '',
+  status_code   INT          NOT NULL DEFAULT 0,
+  detail        TEXT,
+  client_ip     VARCHAR(45)  NOT NULL DEFAULT '',
+  request_id    VARCHAR(64)  NOT NULL DEFAULT '',
+  created_at    DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  INDEX idx_audit_user      (user_id, created_at),
+  INDEX idx_audit_resource  (resource, created_at),
+  INDEX idx_audit_cluster   (cluster_id, created_at),
+  INDEX idx_audit_created   (created_at)
+);

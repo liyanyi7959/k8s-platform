@@ -29,6 +29,8 @@ func BuiltinPermissions() map[string]string {
 		"k8s:rbac_read":        "K8s RBAC 查看",
 		"k8s:rbac_write":       "K8s RBAC 管理",
 		"k8s:permission_audit": "K8s 最小权限分析",
+		"user:read":            "用户/审计查看",
+		"user:write":           "用户/角色管理",
 	}
 }
 
