@@ -1,13 +1,6 @@
 <template>
   <div class="audit-log-view">
     <div class="audit-card">
-      <div class="audit-card-header">
-        <div class="header-left">
-          <h3 class="audit-title">操作审计日志</h3>
-          <span class="audit-subtitle">记录系统所有写操作，帮助追溯变更来源</span>
-        </div>
-      </div>
-
       <div class="audit-toolbar">
         <div class="toolbar-filters">
           <el-input v-model="filter.username" placeholder="用户名" clearable class="filter-input" :prefix-icon="User" @keyup.enter="fetchData" />
@@ -43,39 +36,41 @@
         </div>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" class="audit-table" :header-cell-style="{ background: 'var(--table-header-bg, #f7f9fc)', color: 'var(--table-header-text, #64748b)' }">
-        <el-table-column prop="created_at" label="时间" width="170" :formatter="fmtTime" />
-        <el-table-column prop="username" label="用户" width="100">
-          <template #default="{ row }">
-            <span class="cell-user">{{ row.username }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="action" label="动作" width="90">
-          <template #default="{ row }">
-            <span :class="['action-badge', `action-badge--${actionClass(row.action)}`]">{{ actionLabel(row.action) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="resource" label="资源类型" width="120">
-          <template #default="{ row }">
-            <span class="cell-resource">{{ row.resource }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="resource_name" label="资源名" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="namespace" label="命名空间" width="120" show-overflow-tooltip />
-        <el-table-column prop="cluster_id" label="集群" width="70" align="center" />
-        <el-table-column prop="status_code" label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <span :class="['status-dot', row.status_code >= 400 ? 'status-dot--error' : 'status-dot--ok']"></span>
-            <span class="status-text">{{ row.status_code }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="client_ip" label="来源IP" width="130" />
-        <el-table-column prop="request_id" label="请求ID" width="140" show-overflow-tooltip>
-          <template #default="{ row }">
-            <span class="cell-mono">{{ row.request_id?.slice(0, 8) }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="audit-table-wrap">
+        <el-table :data="tableData" v-loading="loading" class="audit-table" :header-cell-style="{ background: 'var(--table-header-bg, #f7f9fc)', color: 'var(--table-header-text, #64748b)' }">
+          <el-table-column prop="created_at" label="时间" width="170" :formatter="fmtTime" />
+          <el-table-column prop="username" label="用户" width="100">
+            <template #default="{ row }">
+              <span class="cell-user">{{ row.username }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="action" label="动作" width="90">
+            <template #default="{ row }">
+              <span :class="['action-badge', `action-badge--${actionClass(row.action)}`]">{{ actionLabel(row.action) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="resource" label="资源类型" width="120">
+            <template #default="{ row }">
+              <span class="cell-resource">{{ row.resource }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="resource_name" label="资源名" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="namespace" label="命名空间" width="120" show-overflow-tooltip />
+          <el-table-column prop="cluster_id" label="集群" width="70" align="center" />
+          <el-table-column prop="status_code" label="状态" width="80" align="center">
+            <template #default="{ row }">
+              <span :class="['status-dot', row.status_code >= 400 ? 'status-dot--error' : 'status-dot--ok']"></span>
+              <span class="status-text">{{ row.status_code }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="client_ip" label="来源IP" width="130" />
+          <el-table-column prop="request_id" label="请求ID" width="140" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span class="cell-mono">{{ row.request_id?.slice(0, 8) }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
       <div class="audit-footer">
         <span class="total-hint">共 {{ total }} 条记录</span>
@@ -184,29 +179,8 @@ onMounted(fetchData)
   flex-direction: column;
   overflow: hidden;
 }
-.audit-card-header {
-  padding: 20px 22px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.audit-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--color-text-primary, #111827);
-  margin: 0;
-}
-.audit-subtitle {
-  font-size: 13px;
-  color: var(--color-text-muted, #94a3b8);
-}
 .audit-toolbar {
-  padding: 16px 22px;
+  padding: 18px 20px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -232,8 +206,11 @@ onMounted(fetchData)
 .filter-date {
   max-width: 320px;
 }
+.audit-table-wrap {
+  padding: 0 16px;
+}
 .audit-table {
-  border-radius: 0;
+  width: 100%;
 }
 .cell-user {
   font-weight: 600;
@@ -297,11 +274,10 @@ onMounted(fetchData)
   color: var(--color-text-secondary, #4b5563);
 }
 .audit-footer {
-  padding: 14px 22px;
+  padding: 14px 20px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid var(--color-border-subtle, rgba(15, 23, 42, 0.06));
 }
 .total-hint {
   font-size: 13px;

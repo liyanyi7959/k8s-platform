@@ -8,9 +8,8 @@
         @click="toggleCollapse"
       >
         <span class="sidebar-toggle-icon" aria-hidden="true">
-          <span class="sidebar-toggle-line sidebar-toggle-line--top" />
-          <span class="sidebar-toggle-line sidebar-toggle-line--middle" />
-          <span class="sidebar-toggle-line sidebar-toggle-line--bottom" />
+          <span class="sidebar-toggle-pane sidebar-toggle-pane--side" />
+          <span class="sidebar-toggle-pane sidebar-toggle-pane--content" />
         </span>
       </button>
 
@@ -37,9 +36,11 @@
       <!-- 通知 -->
       <el-dropdown trigger="click">
         <button class="action-btn">
-          <el-badge :value="messageCount" :hidden="messageCount <= 0" is-dot>
-            <el-icon :size="16"><Bell /></el-icon>
-          </el-badge>
+          <span class="action-icon-shell">
+            <el-badge class="action-icon-badge" :value="messageCount" :hidden="messageCount <= 0" is-dot>
+              <el-icon class="action-icon action-icon--notice"><Bell /></el-icon>
+            </el-badge>
+          </span>
         </button>
         <template #dropdown>
           <el-dropdown-menu>
@@ -51,7 +52,9 @@
       <!-- 主题切换 -->
       <el-tooltip :content="themeLabel" placement="bottom" :show-after="400">
         <button class="action-btn" @click="toggleTheme">
-          <el-icon :size="16"><component :is="themeIcon" /></el-icon>
+          <span class="action-icon-shell">
+            <el-icon class="action-icon action-icon--theme"><component :is="themeIcon" /></el-icon>
+          </span>
         </button>
       </el-tooltip>
 
@@ -152,85 +155,99 @@ html.dark .top-bar {
 }
 
 .sidebar-toggle-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  background: transparent;
-  border-radius: 10px;
+  border: 1px solid var(--color-border-default, rgba(15, 23, 42, 0.08));
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 12px;
   cursor: pointer;
   color: var(--color-text-secondary, #64748b);
-  transition: background 0.18s ease, color 0.18s ease;
+  line-height: 0;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
   flex-shrink: 0;
 }
 
 .sidebar-toggle-btn:hover {
   background: var(--color-bg-hover, #f8fafc);
+  border-color: rgba(59, 130, 246, 0.18);
   color: var(--color-text-primary, #0f172a);
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.12);
+}
+
+html.dark .sidebar-toggle-btn {
+  background: rgba(15, 23, 42, 0.28);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 html.dark .sidebar-toggle-btn:hover {
   background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(96, 165, 250, 0.2);
   color: #e2e8f0;
+  box-shadow: none;
 }
 
 .sidebar-toggle-icon {
   position: relative;
   width: 18px;
-  height: 14px;
+  height: 18px;
   display: block;
 }
 
-.sidebar-toggle-line {
+.sidebar-toggle-pane {
   position: absolute;
-  left: 0;
-  height: 2px;
-  border-radius: 999px;
-  background: currentColor;
-  transform-origin: center;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 4px;
   transition:
     transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    left 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    right 0.28s cubic-bezier(0.4, 0, 0.2, 1),
     width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    top 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.18s ease;
+    opacity 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.sidebar-toggle-line--top {
-  top: 0;
-  width: 18px;
+.sidebar-toggle-pane--side {
+  left: 1px;
+  width: 5px;
+  background: currentColor;
+  opacity: 0.92;
 }
 
-.sidebar-toggle-line--middle {
-  top: 6px;
-  width: 12px;
+.sidebar-toggle-pane--content {
+  right: 1px;
+  width: 9px;
+  border: 1.8px solid currentColor;
+  background: transparent;
+  opacity: 0.82;
 }
 
-.sidebar-toggle-line--bottom {
-  top: 12px;
-  width: 18px;
+.sidebar-toggle-btn:hover .sidebar-toggle-pane--side {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
 }
 
-.sidebar-toggle-btn:hover .sidebar-toggle-line--middle {
-  width: 18px;
-}
-
-.sidebar-toggle-btn--collapsed .sidebar-toggle-line--top {
-  top: 6px;
-  width: 10px;
-  transform: translateX(8px) rotate(45deg);
-}
-
-.sidebar-toggle-btn--collapsed .sidebar-toggle-line--middle {
-  width: 16px;
+.sidebar-toggle-btn:hover .sidebar-toggle-pane--content {
   transform: translateX(1px);
 }
 
-.sidebar-toggle-btn--collapsed .sidebar-toggle-line--bottom {
-  top: 6px;
-  width: 10px;
-  transform: translateX(8px) rotate(-45deg);
+.sidebar-toggle-btn--collapsed .sidebar-toggle-pane--side {
+  width: 3px;
+  opacity: 0.68;
+}
+
+.sidebar-toggle-btn--collapsed .sidebar-toggle-pane--content {
+  width: 11px;
+  opacity: 0.92;
 }
 
 /* ── Breadcrumb ────────────────────────────────────────────────────────── */
@@ -307,6 +324,11 @@ html.dark .breadcrumb-current {
   flex-shrink: 0;
 }
 
+.top-bar-right > *:not(.top-divider) {
+  display: flex;
+  align-items: center;
+}
+
 /* ── Action buttons ────────────────────────────────────────────────────── */
 .action-btn {
   width: 34px;
@@ -319,6 +341,7 @@ html.dark .breadcrumb-current {
   border-radius: 8px;
   cursor: pointer;
   color: var(--color-text-secondary, #64748b);
+  line-height: 0;
   transition: all 0.15s;
   flex-shrink: 0;
 }
@@ -335,6 +358,59 @@ html.dark .action-btn {
 html.dark .action-btn:hover {
   background: rgba(255, 255, 255, 0.06);
   color: #e2e8f0;
+}
+
+.action-icon-shell {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.action-icon-badge {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.action-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.action-icon--notice {
+  transform: translateY(-0.5px);
+}
+
+.action-icon--theme {
+  transform: translateY(-0.5px);
+}
+
+.action-icon :deep(svg) {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.action-btn :deep(.el-badge) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.action-btn :deep(.el-badge__content.is-dot) {
+  top: 2px;
+  right: 2px;
 }
 
 /* ── Divider ───────────────────────────────────────────────────────────── */

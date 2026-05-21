@@ -267,7 +267,6 @@ async function openShortcut(shortcut: ClusterShortcut) {
   display: flex;
   flex-direction: column;
   background: var(--sb-bg);
-  border-right: 1px solid var(--sb-border);
   z-index: 60;
   overflow: hidden;
   flex-shrink: 0;

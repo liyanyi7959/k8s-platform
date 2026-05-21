@@ -245,7 +245,7 @@ body.art-v2-shell .rail-logo {
   height: 60px;
 }
 
-body.art-v2-shell .logo-img {
+body.art-v2-shell .rail-logo .logo-img {
   width: 34px;
   height: 34px;
   padding: 6px;
@@ -255,7 +255,7 @@ body.art-v2-shell .logo-img {
   box-shadow: none;
 }
 
-html.dark body.art-v2-shell .logo-img {
+html.dark body.art-v2-shell .rail-logo .logo-img {
   background: rgba(15, 23, 42, 0.98);
   box-shadow: none;
 }

@@ -1,58 +1,61 @@
 <template>
   <div class="user-manage-view">
     <div class="user-card">
-      <div class="page-header">
-        <h3 class="page-title">用户管理</h3>
-        <el-button type="primary" @click="openCreate">新建用户</el-button>
+      <div class="filter-bar">
+        <div class="filter-bar__fields">
+          <el-input v-model="keyword" placeholder="搜索用户名" clearable class="w-input-sm" @keyup.enter="fetchData" />
+          <el-select v-model="statusFilter" placeholder="状态" clearable class="w-input-sm" @change="fetchData">
+            <el-option label="启用" value="active" />
+            <el-option label="禁用" value="disabled" />
+          </el-select>
+        </div>
+
+        <div class="filter-bar__actions">
+          <el-button @click="fetchData">查询</el-button>
+          <el-button type="primary" @click="openCreate">新建用户</el-button>
+        </div>
       </div>
 
-      <div class="filter-bar">
-        <el-input v-model="keyword" placeholder="搜索用户名" clearable class="w-input-sm" @keyup.enter="fetchData" />
-        <el-select v-model="statusFilter" placeholder="状态" clearable class="w-input-sm" @change="fetchData">
-        <el-option label="启用" value="active" />
-        <el-option label="禁用" value="disabled" />
-      </el-select>
-      <el-button @click="fetchData">查询</el-button>
-    </div>
-
-    <el-table :data="tableData" v-loading="loading" stripe border>
-      <el-table-column prop="id" label="ID" width="60" />
-      <el-table-column prop="username" label="用户名" width="160" />
-      <el-table-column prop="status" label="状态" width="90">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 'active' ? 'success' : 'danger'" size="small">
-            {{ row.status === 'active' ? '启用' : '禁用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="roles" label="角色" min-width="180">
-        <template #default="{ row }">
-          <el-tag v-for="r in row.roles" :key="r" size="small" class="mr-1">{{ r }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="created_at" label="创建时间" width="170" />
-      <el-table-column label="操作" width="240" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="openEdit(row)">编辑</el-button>
-          <el-button size="small" type="warning" @click="handleResetPwd(row)">重置密码</el-button>
-          <el-popconfirm title="确定删除?" @confirm="handleDelete(row.id)">
-            <template #reference>
-              <el-button size="small" type="danger">删除</el-button>
+      <div class="table-wrap">
+        <el-table :data="tableData" v-loading="loading" class="page-table" stripe border>
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="username" label="用户名" width="160" />
+          <el-table-column prop="status" label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 'active' ? 'success' : 'danger'" size="small">
+                {{ row.status === 'active' ? '启用' : '禁用' }}
+              </el-tag>
             </template>
-          </el-popconfirm>
-        </template>
-      </el-table-column>
-    </el-table>
+          </el-table-column>
+          <el-table-column prop="roles" label="角色" min-width="180">
+            <template #default="{ row }">
+              <el-tag v-for="r in row.roles" :key="r" size="small" class="mr-1">{{ r }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="created_at" label="创建时间" width="170" />
+          <el-table-column label="操作" width="240" fixed="right">
+            <template #default="{ row }">
+              <el-button size="small" @click="openEdit(row)">编辑</el-button>
+              <el-button size="small" type="warning" @click="handleResetPwd(row)">重置密码</el-button>
+              <el-popconfirm title="确定删除?" @confirm="handleDelete(row.id)">
+                <template #reference>
+                  <el-button size="small" type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
-    <div class="pagination-wrap">
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :total="total"
-        layout="total, prev, pager, next"
-        @current-change="fetchData"
-      />
-    </div>
+      <div class="pagination-wrap">
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="pageSize"
+          :total="total"
+          layout="total, prev, pager, next"
+          @current-change="fetchData"
+        />
+      </div>
     </div><!-- /user-card -->
 
     <!-- 新建/编辑对话框 -->
@@ -230,23 +233,23 @@ onMounted(() => {
   box-shadow: var(--shadow-card, 0 1px 3px rgba(15, 23, 42, 0.05));
   overflow: hidden;
 }
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 22px;
-  border-bottom: 1px solid var(--color-border-subtle, rgba(15, 23, 42, 0.06));
-}
-.page-title {
-  font-size: 17px;
-  font-weight: 700;
-  margin: 0;
-  color: var(--color-text-primary, #111827);
-}
 .filter-bar {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 18px 20px 14px;
+}
+.filter-bar__fields {
+  display: flex;
   gap: 10px;
-  padding: 14px 22px;
+  flex-wrap: wrap;
+}
+.filter-bar__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .w-input-sm {
   width: 160px;
@@ -257,10 +260,15 @@ onMounted(() => {
 .mr-1 {
   margin-right: 4px;
 }
+.table-wrap {
+  padding: 0 16px;
+}
+.page-table {
+  width: 100%;
+}
 .pagination-wrap {
-  padding: 14px 22px;
+  padding: 14px 20px 18px;
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid var(--color-border-subtle, rgba(15, 23, 42, 0.06));
 }
 </style>
