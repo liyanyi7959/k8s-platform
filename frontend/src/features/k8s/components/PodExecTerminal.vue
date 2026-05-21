@@ -156,7 +156,7 @@ async function connect() {
     try {
       const session = await k8sApi.createPodExecSession(props.clusterId, props.namespace, props.pod, {
         container: props.container || undefined,
-        command: props.command && props.command.length ? props.command : ['/bin/sh'],
+        command: props.command && props.command.length ? props.command : ['/bin/bash'],
         tty: true
       })
 

@@ -23,6 +23,7 @@
     v-model="execVisible"
     title="PodShell"
     size="70%"
+    destroy-on-close
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     :before-close="beforeCloseExec"
@@ -122,7 +123,7 @@ function toggleTerminalTheme() {
 
 const execCommandArgs = computed(() => {
   const value = execCommand.value.trim().split(/\s+/).filter(Boolean)
-  return value.length ? value : ['sh']
+  return value.length ? value : ['bash']
 })
 
 const execMeta = computed(() => {
@@ -197,7 +198,7 @@ function openPodExec(row: PodRow, container?: string) {
   execTarget.value = { ns, name }
   execContainers.value = (row?.spec?.containers ?? []).map((item) => String(item?.name ?? '')).filter(Boolean)
   execContainer.value = container && execContainers.value.includes(container) ? container : execContainers.value[0] ?? ''
-  execCommand.value = 'sh'
+  execCommand.value = 'bash'
   execVisible.value = true
   void nextTick().then(() => {
     clearTerminal()
