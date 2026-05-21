@@ -10,13 +10,39 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"k8s.io/client-go/tools/remotecommand"
 
+	"k8s-platform-backend/internal/service"
 	"k8s-platform-backend/pkg/resp"
 )
+
+func websocketCloseReason(err error, fallback string) string {
+	message := strings.TrimSpace(fallback)
+	if userMessage, ok := service.UserMessage(err); ok && strings.TrimSpace(userMessage) != "" {
+		message = strings.TrimSpace(userMessage)
+	} else if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = strings.TrimSpace(err.Error())
+	}
+	if message == "" {
+		return ""
+	}
+	const maxBytes = 120
+	if len(message) <= maxBytes {
+		return message
+	}
+	for len(message) > maxBytes {
+		_, size := utf8.DecodeLastRuneInString(message)
+		if size <= 0 {
+			break
+		}
+		message = message[:len(message)-size]
+	}
+	return strings.TrimSpace(message)
+}
 
 // ──────────────────────────────────────────────────────────
 //  Pod Exec WebSocket 接口
@@ -201,6 +227,6 @@ func (kc *K8sController) PodExecWS(c *gin.Context) {
 	if err != nil && !errors.Is(err, context.Canceled) {
 		// 将错误发给前端，但不再中断后续 defer 清理流程。
 		_ = writeBin(3, []byte(err.Error()))
-		closeSocket(websocket.CloseInternalServerErr, "exec failed")
+		closeSocket(websocket.CloseInternalServerErr, websocketCloseReason(err, "exec failed"))
 	}
 }

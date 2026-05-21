@@ -123,35 +123,12 @@
 
       <el-tab-pane label="YAML配置" name="yaml">
         <div class="k8s-tab-pane">
-          <div class="k8s-pane-toolbar">
-            <el-space :size="8">
-              <el-tooltip content="复制" placement="top">
-                <el-button size="small" :icon="CopyDocument" circle :disabled="!yamlViewText" @click="copyText(yamlViewText)" />
-              </el-tooltip>
-              <el-tooltip content="搜索" placement="top">
-                <el-button size="small" :icon="Search" circle :disabled="!yamlViewText" @click="yamlViewerRef?.openSearch()" />
-              </el-tooltip>
-              <el-tooltip content="折叠全部" placement="top">
-                <el-button size="small" :icon="Fold" circle :disabled="!yamlViewText" @click="yamlViewerRef?.foldAll()" />
-              </el-tooltip>
-              <el-tooltip content="展开全部" placement="top">
-                <el-button size="small" :icon="Expand" circle :disabled="!yamlViewText" @click="yamlViewerRef?.unfoldAll()" />
-              </el-tooltip>
-              <el-switch v-model="yamlWrap" inline-prompt active-text="换行" inactive-text="单行" />
-              <el-switch v-model="yamlLineNumbers" inline-prompt active-text="行号" inactive-text="无行号" />
-              <el-tooltip content="刷新" placement="top">
-                <el-button size="small" :icon="RefreshRight" circle :loading="yamlLoading" @click="loadYaml" />
-              </el-tooltip>
-            </el-space>
-          </div>
-          <CodeMirrorViewer
-            ref="yamlViewerRef"
+          <K8sYamlPanel
+            :meta="`cluster=${props.clusterId}  ${detailNamespace}/${detailName}`"
             :text="yamlViewText"
-            language="yaml"
-            :wrap="yamlWrap"
-            :line-numbers="yamlLineNumbers"
+            :loading="yamlLoading"
             height="60vh"
-            class="k8s-detail-box"
+            @refresh="loadYaml"
           />
         </div>
       </el-tab-pane>
@@ -162,6 +139,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { RefreshRight, CopyDocument, Search, Fold, Expand } from '@element-plus/icons-vue'
+import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import WorkloadDetailDrawerShell from '@/features/k8s/components/WorkloadDetailDrawerShell.vue'
 import CodeMirrorViewer from '@/shared/components/CodeMirrorViewer.vue'
 import EmptyState from '@/shared/components/EmptyState.vue'

@@ -184,17 +184,13 @@
 
       <el-tab-pane label="YAML配置" name="yaml">
         <div class="k8s-tab-pane">
-          <div class="k8s-pane-toolbar">
-            <el-space :size="8">
-              <el-tooltip content="复制" placement="top">
-                <el-button size="small" :icon="CopyDocument" circle :disabled="!yamlViewText" @click="copyText(yamlViewText)" />
-              </el-tooltip>
-              <el-tooltip content="刷新" placement="top">
-                <el-button size="small" :icon="RefreshRight" circle :loading="yamlLoading" @click="loadYaml" />
-              </el-tooltip>
-            </el-space>
-          </div>
-          <pre class="k8s-detail-box">{{ yamlViewText }}</pre>
+          <K8sYamlPanel
+            :meta="`cluster=${props.clusterId}  ${nodeName}`"
+            :text="yamlViewText"
+            :loading="yamlLoading"
+            height="60vh"
+            @refresh="loadYaml"
+          />
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -205,6 +201,7 @@
 import { CopyDocument, RefreshRight } from '@element-plus/icons-vue'
 import { computed, ref, watch } from 'vue'
 import * as k8sApi from '@/features/k8s/api/k8s'
+import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import { getCreationAgeText } from '@/features/k8s/pages/ClusterManageView.utils'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 import type { ApiError } from '@/shared/utils/error'

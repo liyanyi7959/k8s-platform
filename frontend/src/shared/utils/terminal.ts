@@ -13,6 +13,15 @@ function normalizeBaseUrl(input: string): string {
 	}
 }
 
+function resolveDevTerminalBaseUrl(): string {
+	const proxyTarget = normalizeBaseUrl(import.meta.env.VITE_PROXY_TARGET ?? '')
+	if (proxyTarget) return proxyTarget
+
+	const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
+	const hostname = String(window.location.hostname ?? '').trim() || 'localhost'
+	return `${protocol}//${hostname}:8080`
+}
+
 export function resolveTerminalBaseUrl(): string {
 	const runtime = normalizeBaseUrl(localStorage.getItem('k8s_platform_api_base') ?? '')
 	if (runtime) return runtime
@@ -20,8 +29,11 @@ export function resolveTerminalBaseUrl(): string {
 	const envBase = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL ?? '')
 	if (envBase) return envBase
 
-	// 默认走当前页面同源地址，让 Vite dev server 的 /api WebSocket 代理接管转发。
-	// 这样可以避免前端 HTTP 走代理成功、终端 WS 却被强制直连 8080 导致连接失败。
+	// 开发环境下 PodShell / PodLog 的 WebSocket 直连后端，绕过 Vite 的 WS 代理。
+	// 这里已经确认 REST 创建 session 正常，而 5173 的代理链路会导致建链失败。
+	if (import.meta.env.DEV) return resolveDevTerminalBaseUrl()
+
+	// 非开发环境保持同源，交由网关或反向代理处理。
 	return window.location.origin
 }
 

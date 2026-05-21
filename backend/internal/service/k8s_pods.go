@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -378,7 +379,7 @@ func buildPodLogOptions(container string, follow bool, tailLines int64) *corev1.
 
 func buildPodExecOptions(container *string, command []string, tty bool, stdin io.Reader, stdout io.Writer, stderr io.Writer) *corev1.PodExecOptions {
 	if len(command) == 0 {
-		command = []string{"sh"}
+		command = []string{"/bin/sh"}
 	}
 	options := &corev1.PodExecOptions{
 		Container: "",
@@ -392,6 +393,47 @@ func buildPodExecOptions(container *string, command []string, tty bool, stdin io
 		options.Container = strings.TrimSpace(*container)
 	}
 	return options
+}
+
+func isExecCommandNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	lower := strings.ToLower(strings.TrimSpace(err.Error()))
+	return strings.Contains(lower, "executable file not found") || strings.Contains(lower, "no such file or directory")
+}
+
+func podExecCommandCandidates(command []string) [][]string {
+	trimmed := make([]string, 0, len(command))
+	for _, item := range command {
+		value := strings.TrimSpace(item)
+		if value != "" {
+			trimmed = append(trimmed, value)
+		}
+	}
+	if len(trimmed) == 0 {
+		trimmed = []string{"/bin/sh"}
+	}
+	if len(trimmed) != 1 {
+		return [][]string{trimmed}
+	}
+
+	first := trimmed[0]
+	commonShells := []string{first, "/bin/sh", "sh", "/bin/bash", "bash", "/bin/ash", "ash"}
+	seen := make(map[string]struct{}, len(commonShells))
+	candidates := make([][]string, 0, len(commonShells))
+	for _, shell := range commonShells {
+		shell = strings.TrimSpace(shell)
+		if shell == "" {
+			continue
+		}
+		if _, ok := seen[shell]; ok {
+			continue
+		}
+		seen[shell] = struct{}{}
+		candidates = append(candidates, []string{shell})
+	}
+	return candidates
 }
 
 func normalizePodExecError(err error, pod *corev1.Pod, command []string) error {
@@ -474,7 +516,7 @@ func (s *K8sService) PodExec(
 		return ErrInvalidParams
 	}
 	if len(command) == 0 {
-		command = []string{"sh"}
+		command = []string{"/bin/sh"}
 	}
 
 	cfg, err := s.restConfig(ctx, clusterID)
@@ -490,32 +532,50 @@ func (s *K8sService) PodExec(
 		return normalizeK8sErr(getErr)
 	}
 
-	opts := buildPodExecOptions(container, command, tty, stdin, stdout, stderr)
+	streamCfg := rest.CopyConfig(cfg)
+	streamCfg.Timeout = 0
 	streamStderr := stderr
 	if tty {
 		streamStderr = nil
 	}
 
-	req := cs.CoreV1().RESTClient().
-		Post().
-		Resource("pods").
-		Name(name).
-		Namespace(ns).
-		SubResource("exec")
+	candidates := podExecCommandCandidates(command)
+	var lastErr error
+	for idx, candidate := range candidates {
+		opts := buildPodExecOptions(container, candidate, tty, stdin, stdout, stderr)
 
-	req.VersionedParams(opts, scheme.ParameterCodec)
-	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
-	if err != nil {
-		return normalizePodExecError(err, podObj, command)
+		req := cs.CoreV1().RESTClient().
+			Post().
+			Resource("pods").
+			Name(name).
+			Namespace(ns).
+			SubResource("exec")
+
+		req.VersionedParams(opts, scheme.ParameterCodec)
+		exec, execErr := remotecommand.NewSPDYExecutor(streamCfg, "POST", req.URL())
+		if execErr != nil {
+			return normalizePodExecError(execErr, podObj, candidate)
+		}
+
+		execErr = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
+			Stdin:             stdin,
+			Stdout:            stdout,
+			Stderr:            streamStderr,
+			Tty:               tty,
+			TerminalSizeQueue: resizeQueue,
+		})
+		if execErr == nil {
+			return nil
+		}
+
+		lastErr = normalizePodExecError(execErr, podObj, candidate)
+		if idx < len(candidates)-1 && isExecCommandNotFoundError(execErr) {
+			continue
+		}
+		return lastErr
 	}
-	if err := exec.StreamWithContext(ctx, remotecommand.StreamOptions{
-		Stdin:             stdin,
-		Stdout:            stdout,
-		Stderr:            streamStderr,
-		Tty:               tty,
-		TerminalSizeQueue: resizeQueue,
-	}); err != nil {
-		return normalizePodExecError(err, podObj, command)
+	if lastErr != nil {
+		return lastErr
 	}
 	return nil
 }

@@ -1,9 +1,5 @@
 <template>
   <div class="pvcs-panel">
-    <div v-if="props.canWrite" class="pvcs-toolbar">
-      <el-button type="primary" size="small" @click="createVisible = true">创建 PVC</el-button>
-    </div>
-
     <EnhancedTable
       ref="tableRef"
       :data="data"
@@ -111,18 +107,18 @@ const emit = defineEmits<{
 
 const tableRef = ref<any>(null)
 const createVisible = ref(false)
-defineExpose({ getTable: () => tableRef.value })
+
+function openCreate() {
+  if (!props.canWrite) return
+  createVisible.value = true
+}
+
+defineExpose({ getTable: () => tableRef.value, openCreate })
 </script>
 
 <style scoped>
 .pvcs-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.pvcs-toolbar {
-  display: flex;
-  justify-content: flex-end;
 }
 </style>

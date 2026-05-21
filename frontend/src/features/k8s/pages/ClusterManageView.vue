@@ -70,7 +70,7 @@
 
           <!-- 操作区 -->
           <div class="qb-actions">
-            <el-button v-if="current?.resource === 'namespaces' && canWriteK8s" class="qb-btn qb-btn--primary" type="primary" size="default" :disabled="!clusterId" :icon="Plus" @click="openCreateNamespace">创建</el-button>
+            <el-button v-if="primaryCreateAction" class="qb-btn qb-btn--primary" type="primary" size="default" :disabled="!clusterId" :icon="Plus" @click="primaryCreateAction.onClick">{{ primaryCreateAction.label }}</el-button>
             <el-button class="qb-btn" size="default" :disabled="!clusterId || !current" :loading="current?.resource === 'dashboard' ? loadingDashboard : loadingList" :icon="RefreshRight" @click="loadCurrent" />
             <el-dropdown
               v-if="showColumnPickerBtn"
@@ -1512,6 +1512,24 @@ const toolbarResourceText = computed(() => {
   return r
 })
 
+const primaryCreateAction = computed<null | { label: string; onClick: () => void }>(() => {
+  const resource = current.value?.resource
+  if (!clusterId.value) return null
+  if (resource === 'namespaces' && canWriteK8s.value) {
+    return {
+      label: '创建',
+      onClick: openCreateNamespace
+    }
+  }
+  if (resource === 'pvcs' && canWriteK8s.value) {
+    return {
+      label: '创建 PVC',
+      onClick: openCreatePVC
+    }
+  }
+  return null
+})
+
 const showQueryBar = computed(() => (
   current.value?.resource !== 'dashboard' &&
   current.value?.resource !== 'permissionaudits' &&
@@ -2887,6 +2905,10 @@ function openYaml(meta: string, loader: () => Promise<{ text: string }>, saver?:
 
 function openCreateNamespace() {
   runOverlayWhenReady('workbenches', () => workbenchesRef.value, (target) => target.openCreateNamespace())
+}
+
+function openCreatePVC() {
+  pvcsPanelRef.value?.openCreate?.()
 }
 
 function openServiceDetail(row: any) {

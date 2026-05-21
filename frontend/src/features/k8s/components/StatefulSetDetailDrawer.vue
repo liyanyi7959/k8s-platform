@@ -181,7 +181,7 @@
                         <el-button size="small" :icon="Document" circle @click="emit('pod-log', row._raw)" />
                       </el-tooltip>
                       <el-tooltip content="终端" placement="top">
-                        <el-button size="small" :icon="Monitor" circle @click="emit('pod-exec', row._raw)" />
+                        <el-button size="small" :icon="Link" circle @click="emit('pod-exec', row._raw)" />
                       </el-tooltip>
                     </el-space>
                   </template>
@@ -241,18 +241,13 @@
 
         <el-tab-pane label="YAML配置" name="yaml">
           <div class="k8s-tab-pane">
-            <div class="k8s-pane-toolbar">
-              <el-space :size="8">
-                <el-tooltip content="复制" placement="top">
-                  <el-button size="small" :icon="CopyDocument" circle :disabled="!yamlViewText" @click="copyText(yamlViewText)" />
-                </el-tooltip>
-                <el-tag v-if="yamlLoading" size="small" type="info" effect="light">加载中</el-tag>
-                <el-tooltip content="刷新" placement="top">
-                  <el-button size="small" :icon="RefreshRight" circle :loading="yamlLoading" @click="loadYaml" />
-                </el-tooltip>
-              </el-space>
-            </div>
-            <pre class="k8s-detail-box">{{ yamlViewText }}</pre>
+            <K8sYamlPanel
+              :meta="`${wlKind}: ${wlNamespace}/${wlName}`"
+              :text="yamlViewText"
+              :loading="yamlLoading"
+              height="60vh"
+              @refresh="loadYaml"
+            />
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -260,11 +255,12 @@
 </template>
 
 <script setup lang="ts">
-import { CopyDocument, RefreshRight, Document, Monitor } from '@element-plus/icons-vue'
+import { CopyDocument, RefreshRight, Document, Link } from '@element-plus/icons-vue'
 import { computed, ref, watch } from 'vue'
 import * as k8sApi from '@/features/k8s/api/k8s'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 import type { ApiError } from '@/shared/utils/error'
+import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import WorkloadDetailDrawerShell from './WorkloadDetailDrawerShell.vue'
 
 function normalizeMultilineText(input: string): string {

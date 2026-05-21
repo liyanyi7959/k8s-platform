@@ -42,7 +42,32 @@
       </div>
     </template>
     <template #cell-message="{ row }">
-      <span :class="['events-message', isWarningRow(row) ? 'events-message--warning' : '']">{{ String(row?.message ?? '-') }}</span>
+      <el-popover
+        v-if="shouldUseMessagePopover(row)"
+        placement="top-start"
+        :width="520"
+        trigger="hover"
+        :show-after="180"
+        popper-class="events-message-popper"
+      >
+        <template #reference>
+          <button type="button" :class="['events-message-trigger', isWarningRow(row) ? 'events-message-trigger--warning' : '']">
+            <span :class="['events-message', 'events-message--truncate', isWarningRow(row) ? 'events-message--warning' : '']">{{ getMessageText(row) }}</span>
+            <span class="events-message__more">展开</span>
+          </button>
+        </template>
+
+        <div class="events-message-card">
+          <div class="events-message-card__meta">
+            <span>{{ getInvolvedKind(row) }}</span>
+            <span>{{ getInvolvedName(row) }}</span>
+            <span v-if="Number(row?.count ?? 0) > 1">累计 {{ Number(row?.count ?? 0) }} 次</span>
+          </div>
+          <div :class="['events-message-card__body', isWarningRow(row) ? 'events-message-card__body--warning' : '']">{{ getMessageText(row) }}</div>
+        </div>
+      </el-popover>
+
+      <span v-else :class="['events-message', isWarningRow(row) ? 'events-message--warning' : '']">{{ getMessageText(row) }}</span>
     </template>
   </EnhancedTable>
 </template>
@@ -58,7 +83,7 @@ const columns: EnhancedColumn[] = [
   { key: 'reason', label: 'Reason', prop: 'reason', width: 160, sortable: 'custom', defaultVisible: true },
   { key: 'namespace', label: 'Namespace', prop: 'involvedObject.namespace', width: 160, sortable: 'custom', defaultVisible: true },
   { key: 'object', label: 'Object', prop: 'involvedObject.name', minWidth: 220, sortable: 'custom', defaultVisible: true },
-  { key: 'message', label: 'Message', prop: 'message', minWidth: 360, defaultVisible: true },
+  { key: 'message', label: 'Message', prop: 'message', minWidth: 360, overflowTooltip: false, defaultVisible: true },
   { key: 'count', label: 'Count', prop: 'count', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: false }
 ]
 
@@ -117,6 +142,16 @@ function getLastTimestamp(row: any): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
+function getMessageText(row: any): string {
+  const value = String(row?.message ?? '').trim()
+  return value || '-'
+}
+
+function shouldUseMessagePopover(row: any): boolean {
+  const message = getMessageText(row)
+  return message.length > 96 || message.includes('\n')
+}
+
 function isWarningRow(row: any): boolean {
   return String(row?.type ?? '').trim().toLowerCase() === 'warning'
 }
@@ -148,11 +183,65 @@ function getRowClassName({ row }: { row: any; rowIndex: number }): string {
   color: var(--el-text-color-regular);
 }
 
+.events-message-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.events-message--truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.events-message__more {
+  flex: none;
+  color: var(--el-color-primary);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.events-message-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.events-message-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.events-message-card__body {
+  color: var(--el-text-color-primary);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .events-time--warning,
 .events-reason--warning,
 .events-message--warning {
   color: #b91c1c;
   font-weight: 600;
+}
+
+.events-message-card__body--warning {
+  color: #991b1b;
 }
 
 .events-object {
@@ -187,5 +276,15 @@ function getRowClassName({ row }: { row: any; rowIndex: number }): string {
 :global(html.dark) .events-reason--warning,
 :global(html.dark) .events-message--warning {
   color: #fecaca;
+}
+
+:global(html.dark) .events-message__more {
+  color: #93c5fd;
+}
+
+:global(.events-message-popper.el-popover) {
+  max-width: min(560px, calc(100vw - 56px));
+  padding: 14px 16px;
+  border-radius: 16px;
 }
 </style>

@@ -12,7 +12,7 @@ import 'xterm/css/xterm.css'
 import * as k8sApi from '@/features/k8s/api/k8s'
 import { notifyError } from '@/shared/utils/notify'
 import type { ApiError } from '@/shared/utils/error'
-import { buildTerminalWebSocketUrl, getTerminalTheme, type TerminalUiTheme } from '@/shared/utils/terminal'
+import { buildTerminalWebSocketUrl, resolveTerminalBaseUrl, getTerminalTheme, type TerminalUiTheme } from '@/shared/utils/terminal'
 
 const props = withDefaults(defineProps<{
   clusterId: number
@@ -44,6 +44,7 @@ const connecting = ref(false)
 const connected = ref(false)
 let connectPromise: Promise<void> | null = null
 let receivedTerminalError = false
+let receivedSocketError = false
 
 // Terminal Theme Configuration
 function initTerminal() {
@@ -92,15 +93,18 @@ function initTerminal() {
 }
 
 function buildPodExecWsUrl(raw: string): string | null {
-  let u: URL
   const v = String(raw ?? '').trim()
-  if (/^wss?:\/\//.test(v)) u = new URL(v)
-  else if (/^https?:\/\//.test(v)) {
+  if (!v) return null
+
+  let u: URL
+  if (/^wss?:\/\//.test(v)) {
+    u = new URL(v)
+  } else if (/^https?:\/\//.test(v)) {
     u = new URL(v)
     u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:'
-    return buildTerminalWebSocketUrl(u.pathname, Object.fromEntries(u.searchParams.entries()))
   } else {
-    return buildTerminalWebSocketUrl(v.startsWith('/') ? v : `/${v}`)
+    // 相对路径（可能含 ?query），用 URL 构造器正确分离 path 与 query
+    u = new URL(v.startsWith('/') ? v : `/${v}`, resolveTerminalBaseUrl())
   }
 
   return buildTerminalWebSocketUrl(u.pathname, Object.fromEntries(u.searchParams.entries()))
@@ -144,6 +148,7 @@ async function connect() {
   disconnect()
   setStatus({ connecting: true })
   receivedTerminalError = false
+  receivedSocketError = false
   term?.write('Connecting...\r\n')
   const seq = wsSeq
 
@@ -151,7 +156,7 @@ async function connect() {
     try {
       const session = await k8sApi.createPodExecSession(props.clusterId, props.namespace, props.pod, {
         container: props.container || undefined,
-        command: props.command && props.command.length ? props.command : ['sh'],
+        command: props.command && props.command.length ? props.command : ['/bin/sh'],
         tty: true
       })
 
@@ -203,9 +208,18 @@ async function connect() {
             ws = null
           }
           if (wsSeq === seq) {
-			if (!receivedTerminalError && ev.code !== 1000) {
-				term?.write(`\r\nConnection closed (code=${ev.code}).\r\n`)
-			}
+            const reason = String(ev.reason ?? '').trim()
+            if (!receivedTerminalError && ev.code !== 1000) {
+              if (reason) {
+                receivedTerminalError = true
+                term?.write(`\r\nError: ${reason}\r\n`)
+              } else if (receivedSocketError) {
+                term?.write('\r\nConnection error.\r\n')
+                term?.write(`Connection closed (code=${ev.code}).\r\n`)
+              } else {
+                term?.write(`\r\nConnection closed (code=${ev.code}).\r\n`)
+              }
+            }
             setStatus({ connected: false, connecting: false })
           }
           finish()
@@ -213,10 +227,9 @@ async function connect() {
 
         currentWs.onerror = () => {
           if (wsSeq === seq && ws === currentWs) {
-            term?.write('\r\nConnection error.\r\n')
+            receivedSocketError = true
             setStatus({ connected: false, connecting: false })
           }
-          finish()
         }
 
         const decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder() : null
@@ -233,7 +246,7 @@ async function connect() {
             if (u8.length >= 2 && (u8[0] === 1 || u8[0] === 2)) {
               term?.write(decoder ? decoder.decode(u8.slice(1)) : String.fromCharCode(...u8.slice(1)))
             } else if (u8.length >= 2 && u8[0] === 3) {
-				receivedTerminalError = true
+    				receivedTerminalError = true
               term?.write(`\r\nError: ${decoder ? decoder.decode(u8.slice(1)) : String.fromCharCode(...u8.slice(1))}\r\n`)
             } else {
               handlePayload(decoder ? decoder.decode(u8) : String.fromCharCode(...u8))
@@ -244,6 +257,7 @@ async function connect() {
     } catch (e) {
       if (wsSeq !== seq) return
       const err = e as ApiError
+      receivedTerminalError = true
       term?.write(`\r\nError: ${err.message}\r\n`)
       notifyError(err.message)
       setStatus({ connected: false, connecting: false })

@@ -160,39 +160,12 @@
 
       <el-tab-pane label="YAML配置" name="yaml">
         <div class="k8s-tab-pane">
-          <div class="k8s-pane-toolbar">
-            <el-space :size="8" wrap>
-              <el-tooltip content="复制" placement="top">
-                <el-button size="small" :icon="CopyDocument" circle :disabled="!yamlViewText" @click="copyText(yamlViewText)" />
-              </el-tooltip>
-              <el-tooltip content="搜索" placement="top">
-                <el-button size="small" :icon="Search" circle :disabled="!yamlViewText" @click="yamlViewerRef?.openSearch()" />
-              </el-tooltip>
-              <el-tooltip content="折叠全部" placement="top">
-                <el-button size="small" :icon="Fold" circle :disabled="!yamlViewText" @click="yamlViewerRef?.foldAll()" />
-              </el-tooltip>
-              <el-tooltip content="展开全部" placement="top">
-                <el-button size="small" :icon="Expand" circle :disabled="!yamlViewText" @click="yamlViewerRef?.unfoldAll()" />
-              </el-tooltip>
-              <el-switch v-model="yamlWrap" inline-prompt active-text="换行" inactive-text="单行" />
-              <el-switch v-model="yamlLineNumbers" inline-prompt active-text="行号" inactive-text="无行号" />
-              <el-tooltip :content="props.editorThemeEffectiveDark ? '浅色' : '深色'" placement="top">
-                <el-button size="small" :icon="props.editorThemeEffectiveDark ? Sunny : Moon" circle @click="emit('toggle-editor-theme')" />
-              </el-tooltip>
-              <el-tooltip content="刷新" placement="top">
-                <el-button size="small" :icon="RefreshRight" circle :loading="yamlLoading" @click="loadYaml" />
-              </el-tooltip>
-            </el-space>
-          </div>
-          <CodeMirrorViewer
-            ref="yamlViewerRef"
+          <K8sYamlPanel
+            :meta="`cluster=${props.clusterId}  ${detailNamespace}/${detailName}`"
             :text="yamlViewText"
-            language="yaml"
-            :theme="props.editorTheme"
-            :wrap="yamlWrap"
-            :line-numbers="yamlLineNumbers"
+            :loading="yamlLoading"
             height="100%"
-            class="k8s-detail-box k8s-detail-box--fill"
+            @refresh="loadYaml"
           />
         </div>
       </el-tab-pane>
@@ -205,6 +178,7 @@ import { computed, ref, watch } from 'vue'
 import { CopyDocument, Expand, Fold, Moon, RefreshRight, Search, Sunny } from '@element-plus/icons-vue'
 import * as k8sApi from '@/features/k8s/api/k8s'
 import WorkloadDetailDrawerShell from '@/features/k8s/components/WorkloadDetailDrawerShell.vue'
+import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import CodeMirrorViewer from '@/shared/components/CodeMirrorViewer.vue'
 import { notifyError } from '@/shared/utils/notify'
 import type { ApiError } from '@/shared/utils/error'

@@ -21,8 +21,8 @@ func TestBuildPodExecOptions_DisablesStderrWhenTTY(t *testing.T) {
 	if options.Stderr {
 		t.Fatal("expected stderr disabled when tty is enabled")
 	}
-	if len(options.Command) != 1 || options.Command[0] != "sh" {
-		t.Fatalf("expected default command sh, got %#v", options.Command)
+	if len(options.Command) != 1 || options.Command[0] != "/bin/sh" {
+		t.Fatalf("expected default command /bin/sh, got %#v", options.Command)
 	}
 	if !options.Stdin || !options.Stdout {
 		t.Fatal("expected stdin/stdout enabled")
@@ -78,6 +78,31 @@ func TestNormalizePodExecError_CommandMissing(t *testing.T) {
 	}
 	if !containsAll(msg, []string{"sh", "/bin/sh", "bash"}) {
 		t.Fatalf("unexpected message: %q", msg)
+	}
+}
+
+func TestPodExecCommandCandidates_FallbackShells(t *testing.T) {
+	candidates := podExecCommandCandidates([]string{"sh"})
+	got := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		if len(candidate) != 1 {
+			t.Fatalf("unexpected candidate: %#v", candidate)
+		}
+		got = append(got, candidate[0])
+	}
+
+	if !containsAll(strings.Join(got, ","), []string{"sh", "/bin/sh", "bash", "/bin/bash", "ash", "/bin/ash"}) {
+		t.Fatalf("unexpected candidates: %#v", got)
+	}
+}
+
+func TestPodExecCommandCandidates_PreservesExplicitCommand(t *testing.T) {
+	candidates := podExecCommandCandidates([]string{"ls", "-al"})
+	if len(candidates) != 1 {
+		t.Fatalf("expected single explicit candidate, got %#v", candidates)
+	}
+	if len(candidates[0]) != 2 || candidates[0][0] != "ls" || candidates[0][1] != "-al" {
+		t.Fatalf("unexpected explicit candidate: %#v", candidates)
 	}
 }
 
