@@ -11,7 +11,7 @@ import (
 // 资源表单创建
 // ──────────────────────────────────────────────────────────
 
-type createDeploymentReq struct {
+type createWorkloadReq struct {
 	Namespace  string                              `json:"namespace"`
 	Name       string                              `json:"name"`
 	Replicas   int32                               `json:"replicas"`
@@ -19,19 +19,65 @@ type createDeploymentReq struct {
 	Labels     map[string]string                   `json:"labels"`
 }
 
-// CreateDeployment 通过表单创建 Deployment。
-func (kc *K8sController) CreateDeployment(c *gin.Context) {
+func bindCreateWorkload(c *gin.Context) (uint64, createWorkloadReq, bool) {
 	id, ok := parseClusterID(c)
 	if !ok {
 		resp.Fail(c, 4000, "invalid params")
-		return
+		return 0, createWorkloadReq{}, false
 	}
-	var req createDeploymentReq
+	var req createWorkloadReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "invalid params")
+		return 0, createWorkloadReq{}, false
+	}
+	return id, req, true
+}
+
+// CreateDeployment 通过表单创建 Deployment。
+func (kc *K8sController) CreateDeployment(c *gin.Context) {
+	id, req, ok := bindCreateWorkload(c)
+	if !ok {
 		return
 	}
 	if err := kc.svc.CreateDeployment(c.Request.Context(), id, service.CreateDeploymentInput{
+		Namespace:  req.Namespace,
+		Name:       req.Name,
+		Replicas:   req.Replicas,
+		Containers: req.Containers,
+		Labels:     req.Labels,
+	}); err != nil {
+		kc.writeServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"ok": true})
+}
+
+// CreateStatefulSet 通过表单创建 StatefulSet。
+func (kc *K8sController) CreateStatefulSet(c *gin.Context) {
+	id, req, ok := bindCreateWorkload(c)
+	if !ok {
+		return
+	}
+	if err := kc.svc.CreateStatefulSet(c.Request.Context(), id, service.CreateDeploymentInput{
+		Namespace:  req.Namespace,
+		Name:       req.Name,
+		Replicas:   req.Replicas,
+		Containers: req.Containers,
+		Labels:     req.Labels,
+	}); err != nil {
+		kc.writeServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"ok": true})
+}
+
+// CreateDaemonSet 通过表单创建 DaemonSet。
+func (kc *K8sController) CreateDaemonSet(c *gin.Context) {
+	id, req, ok := bindCreateWorkload(c)
+	if !ok {
+		return
+	}
+	if err := kc.svc.CreateDaemonSet(c.Request.Context(), id, service.CreateDeploymentInput{
 		Namespace:  req.Namespace,
 		Name:       req.Name,
 		Replicas:   req.Replicas,

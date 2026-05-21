@@ -898,6 +898,7 @@
     :cluster-id="clusterId"
     :namespaces="namespaces"
     :default-namespace="defaultCreatePVCNamespace"
+    :kind="workloadKind"
     @created="onResourceCreated"
   />
   <CreateServiceDialog
@@ -1556,7 +1557,7 @@ const primaryCreateAction = computed<null | { label: string; onClick: () => void
   }
   if (resource === 'workloads' && canWriteK8s.value) {
     return {
-      label: '创建 Deployment',
+      label: `创建 ${workloadKind.value}`,
       onClick: () => { showCreateDeployment.value = true }
     }
   }

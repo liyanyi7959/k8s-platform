@@ -211,6 +211,8 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	k8s.PATCH("/clusters/:id/workloads/image", writePerm, ctl.UpdateImage)
 	k8s.PATCH("/clusters/:id/workloads/rollout-pause", writePerm, ctl.UpdateWorkloadPaused)
 	k8s.POST("/clusters/:id/workloads/deployments", writePerm, ctl.CreateDeployment)
+	k8s.POST("/clusters/:id/workloads/statefulsets", writePerm, ctl.CreateStatefulSet)
+	k8s.POST("/clusters/:id/workloads/daemonsets", writePerm, ctl.CreateDaemonSet)
 	k8s.PATCH("/clusters/:id/workloads/deployments/edit", writePerm, ctl.EditDeployment)
 	k8s.PATCH("/clusters/:id/workloads/statefulsets/edit", writePerm, ctl.EditStatefulSet)
 	k8s.PATCH("/clusters/:id/workloads/daemonsets/edit", writePerm, ctl.EditDaemonSet)

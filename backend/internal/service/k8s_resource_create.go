@@ -33,16 +33,11 @@ type CreateDeploymentInput struct {
 	Labels     map[string]string           `json:"labels"`
 }
 
-func (s *K8sService) CreateDeployment(ctx context.Context, clusterID uint64, input CreateDeploymentInput) error {
-	cs, err := s.typedClient(ctx, clusterID)
-	if err != nil {
-		return err
-	}
-
+func buildCreateWorkloadSpec(input CreateDeploymentInput) (string, string, int32, map[string]string, []corev1.Container, error) {
 	namespace := strings.TrimSpace(input.Namespace)
 	name := strings.TrimSpace(input.Name)
 	if namespace == "" || name == "" || len(input.Containers) == 0 {
-		return ErrInvalidParams
+		return "", "", 0, nil, nil, ErrInvalidParams
 	}
 
 	replicas := input.Replicas
@@ -50,9 +45,13 @@ func (s *K8sService) CreateDeployment(ctx context.Context, clusterID uint64, inp
 		replicas = 1
 	}
 
-	labels := input.Labels
-	if labels == nil {
-		labels = map[string]string{}
+	labels := map[string]string{}
+	for key, value := range input.Labels {
+		trimmedKey := strings.TrimSpace(key)
+		if trimmedKey == "" {
+			continue
+		}
+		labels[trimmedKey] = strings.TrimSpace(value)
 	}
 	labels["app"] = name
 
@@ -61,7 +60,7 @@ func (s *K8sService) CreateDeployment(ctx context.Context, clusterID uint64, inp
 		cName := strings.TrimSpace(c.Name)
 		cImage := strings.TrimSpace(c.Image)
 		if cName == "" || cImage == "" {
-			return ErrWithMessage(ErrInvalidParams, "容器名和镜像不能为空")
+			return "", "", 0, nil, nil, ErrWithMessage(ErrInvalidParams, "容器名和镜像不能为空")
 		}
 		container := corev1.Container{
 			Name:  cName,
@@ -74,7 +73,7 @@ func (s *K8sService) CreateDeployment(ctx context.Context, clusterID uint64, inp
 		if cpu := strings.TrimSpace(c.CPU); cpu != "" {
 			q, err := apiresource.ParseQuantity(cpu)
 			if err != nil {
-				return ErrWithMessage(ErrInvalidParams, "CPU 格式无效")
+				return "", "", 0, nil, nil, ErrWithMessage(ErrInvalidParams, "CPU 格式无效")
 			}
 			resources.Requests[corev1.ResourceCPU] = q
 			resources.Limits[corev1.ResourceCPU] = q
@@ -82,7 +81,7 @@ func (s *K8sService) CreateDeployment(ctx context.Context, clusterID uint64, inp
 		if mem := strings.TrimSpace(c.Memory); mem != "" {
 			q, err := apiresource.ParseQuantity(mem)
 			if err != nil {
-				return ErrWithMessage(ErrInvalidParams, "内存格式无效")
+				return "", "", 0, nil, nil, ErrWithMessage(ErrInvalidParams, "内存格式无效")
 			}
 			resources.Requests[corev1.ResourceMemory] = q
 			resources.Limits[corev1.ResourceMemory] = q
@@ -94,6 +93,20 @@ func (s *K8sService) CreateDeployment(ctx context.Context, clusterID uint64, inp
 			container.Command = strings.Fields(cmd)
 		}
 		containers = append(containers, container)
+	}
+
+	return namespace, name, replicas, labels, containers, nil
+}
+
+func (s *K8sService) CreateDeployment(ctx context.Context, clusterID uint64, input CreateDeploymentInput) error {
+	cs, err := s.typedClient(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+
+	namespace, name, replicas, labels, containers, err := buildCreateWorkloadSpec(input)
+	if err != nil {
+		return err
 	}
 
 	deployment := &appsv1.Deployment{
@@ -119,6 +132,80 @@ func (s *K8sService) CreateDeployment(ctx context.Context, clusterID uint64, inp
 	}
 
 	_, err = cs.AppsV1().Deployments(namespace).Create(ctx, deployment, metav1.CreateOptions{})
+	return normalizeK8sErr(err)
+}
+
+func (s *K8sService) CreateStatefulSet(ctx context.Context, clusterID uint64, input CreateDeploymentInput) error {
+	cs, err := s.typedClient(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+
+	namespace, name, replicas, labels, containers, err := buildCreateWorkloadSpec(input)
+	if err != nil {
+		return err
+	}
+
+	statefulSet := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Spec: appsv1.StatefulSetSpec{
+			ServiceName: name,
+			Replicas:    &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": name},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: containers,
+				},
+			},
+		},
+	}
+
+	_, err = cs.AppsV1().StatefulSets(namespace).Create(ctx, statefulSet, metav1.CreateOptions{})
+	return normalizeK8sErr(err)
+}
+
+func (s *K8sService) CreateDaemonSet(ctx context.Context, clusterID uint64, input CreateDeploymentInput) error {
+	cs, err := s.typedClient(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+
+	namespace, name, _, labels, containers, err := buildCreateWorkloadSpec(input)
+	if err != nil {
+		return err
+	}
+
+	daemonSet := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": name},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: containers,
+				},
+			},
+		},
+	}
+
+	_, err = cs.AppsV1().DaemonSets(namespace).Create(ctx, daemonSet, metav1.CreateOptions{})
 	return normalizeK8sErr(err)
 }
 

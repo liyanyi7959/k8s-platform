@@ -198,9 +198,9 @@ export async function editWorkloadYaml(
   return resp.data
 }
 
-// ── 创建 Deployment ──
+// ── 创建工作负载 ──
 
-export interface CreateDeploymentContainer {
+export interface CreateWorkloadContainer {
   name: string
   image: string
   cpu?: string
@@ -208,15 +208,28 @@ export interface CreateDeploymentContainer {
   command?: string
 }
 
-export interface CreateDeploymentRequest {
+export interface CreateWorkloadRequest {
   namespace: string
   name: string
   replicas: number
-  containers: CreateDeploymentContainer[]
+  containers: CreateWorkloadContainer[]
   labels?: Record<string, string>
 }
 
-export async function createDeployment(clusterId: number, req: CreateDeploymentRequest): Promise<{ ok: boolean }> {
+export type CreateDeploymentContainer = CreateWorkloadContainer
+export type CreateDeploymentRequest = CreateWorkloadRequest
+
+export async function createDeployment(clusterId: number, req: CreateWorkloadRequest): Promise<{ ok: boolean }> {
   const resp = (await http.post(`/api/v1/clusters/${clusterId}/workloads/deployments`, req)) as ApiResponse<{ ok: boolean }>
   return resp.data
+}
+
+export async function createStatefulSet(clusterId: number, req: CreateWorkloadRequest): Promise<{ ok: boolean }> {
+	const resp = (await http.post(`/api/v1/clusters/${clusterId}/workloads/statefulsets`, req)) as ApiResponse<{ ok: boolean }>
+	return resp.data
+}
+
+export async function createDaemonSet(clusterId: number, req: CreateWorkloadRequest): Promise<{ ok: boolean }> {
+	const resp = (await http.post(`/api/v1/clusters/${clusterId}/workloads/daemonsets`, req)) as ApiResponse<{ ok: boolean }>
+	return resp.data
 }

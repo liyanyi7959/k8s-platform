@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="modelValue" title="创建 Deployment" width="640px" destroy-on-close @close="emit('update:modelValue', false)">
+  <el-dialog :model-value="modelValue" :title="dialogTitle" width="640px" destroy-on-close @close="emit('update:modelValue', false)">
     <el-form label-width="92px" @submit.prevent>
       <el-form-item label="命名空间" required>
         <el-select v-model="form.namespace" placeholder="选择命名空间" style="width: 100%" filterable>
@@ -7,9 +7,9 @@
         </el-select>
       </el-form-item>
       <el-form-item label="名称" required>
-        <el-input v-model="form.name" placeholder="例如 nginx-deploy" clearable />
+        <el-input v-model="form.name" :placeholder="namePlaceholder" clearable />
       </el-form-item>
-      <el-form-item label="副本数">
+      <el-form-item v-if="showReplicas" label="副本数">
         <el-input-number v-model="form.replicas" :min="1" :max="100" />
       </el-form-item>
 
@@ -53,15 +53,18 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { Plus, Close } from '@element-plus/icons-vue'
-import { createDeployment } from '@/features/k8s/api/workload'
+import { createDaemonSet, createDeployment, createStatefulSet } from '@/features/k8s/api/workload'
 import type { ApiError } from '@/shared/utils/error'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
+
+type WorkloadKind = 'Deployment' | 'StatefulSet' | 'DaemonSet'
 
 const props = defineProps<{
   modelValue: boolean
   clusterId: number
   namespaces: string[]
   defaultNamespace?: string
+  kind?: WorkloadKind
 }>()
 
 const emit = defineEmits<{
@@ -70,6 +73,14 @@ const emit = defineEmits<{
 }>()
 
 const submitting = ref(false)
+const resolvedKind = computed<WorkloadKind>(() => props.kind ?? 'Deployment')
+const dialogTitle = computed(() => `创建 ${resolvedKind.value}`)
+const showReplicas = computed(() => resolvedKind.value !== 'DaemonSet')
+const namePlaceholder = computed(() => {
+  if (resolvedKind.value === 'StatefulSet') return '例如 nginx-sts'
+  if (resolvedKind.value === 'DaemonSet') return '例如 nginx-ds'
+  return '例如 nginx-deploy'
+})
 
 function makeContainer() {
   return { name: '', image: '', cpu: '', memory: '' }
@@ -107,18 +118,25 @@ async function submit() {
   if (submitDisabled.value) return
   submitting.value = true
   try {
-    await createDeployment(props.clusterId, {
+    const payload = {
       namespace: form.namespace.trim(),
       name: form.name.trim(),
-      replicas: form.replicas,
+      replicas: showReplicas.value ? form.replicas : 1,
       containers: form.containers.map(c => ({
         name: c.name.trim(),
         image: c.image.trim(),
         cpu: c.cpu.trim() || undefined,
         memory: c.memory.trim() || undefined,
       })),
-    })
-    notifySuccess('Deployment 已创建')
+    }
+    if (resolvedKind.value === 'StatefulSet') {
+      await createStatefulSet(props.clusterId, payload)
+    } else if (resolvedKind.value === 'DaemonSet') {
+      await createDaemonSet(props.clusterId, payload)
+    } else {
+      await createDeployment(props.clusterId, payload)
+    }
+    notifySuccess(`${resolvedKind.value} 已创建`)
     emit('update:modelValue', false)
     emit('created')
   } catch (error) {
