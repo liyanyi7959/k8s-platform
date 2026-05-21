@@ -95,25 +95,35 @@ const colors = computed(() => {
 <style scoped>
 .empty-state {
   display: flex;
+  width: 100%;
+  min-height: 220px;
+  box-sizing: border-box;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 16px;
-  padding: 32px 16px;
-  max-width: 380px;
-  margin: 0 auto;
+  padding: 44px 24px;
+}
+
+.empty-state--no-data {
+  min-height: 240px;
 }
 
 .empty-state-illustration {
   position: relative;
-  width: 164px;
+  width: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-state-svg {
-  width: 164px;
-  height: 132px;
+  width: 180px;
+  height: 144px;
 }
 
 .empty-state-text {
+  max-width: 30rem;
   text-align: center;
 }
 
@@ -127,8 +137,8 @@ const colors = computed(() => {
 .empty-state-desc {
   font-size: 13px;
   color: var(--color-text-muted);
-  line-height: 1.6;
-  max-width: 24em;
+  line-height: 1.65;
+  max-width: 28em;
 }
 
 .empty-state-action {

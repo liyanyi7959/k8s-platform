@@ -1068,18 +1068,22 @@ defineExpose({
 
 /* ── 空状态 ── */
 .enhanced-table-empty-state {
-  margin: 4px 0;
+  width: 100%;
+  margin: 0;
 }
 
 .enhanced-table-empty-state :deep(.empty-state) {
-  padding: 28px 18px;
+  width: 100%;
+  max-width: none;
+  min-height: 260px;
+  padding: 52px 24px 48px;
   border: none;
   background: transparent;
 }
 
 .enhanced-table-empty-state :deep(.empty-state-svg) {
-  width: 132px;
-  height: 104px;
+  width: 168px;
+  height: 134px;
 }
 
 .enhanced-table-empty-state :deep(.empty-state-action) {

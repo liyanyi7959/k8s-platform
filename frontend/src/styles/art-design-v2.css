@@ -601,17 +601,17 @@ body.art-v2-shell .el-result {
 
 body.art-v2-shell .srv-query-bar {
   gap: 12px;
-  margin-bottom: 12px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--color-border-default);
-  background: var(--color-bg-card);
-  box-shadow: var(--shadow-card);
+  margin-bottom: 10px;
+  padding: 0 0 10px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 html.dark body.art-v2-shell .srv-query-bar {
-  background: var(--color-bg-card);
-  box-shadow: var(--shadow-card);
+  background: transparent;
+  box-shadow: none;
 }
 
 body.art-v2-shell .qb-search {
@@ -815,17 +815,25 @@ body.art-v2-shell .enhanced-table .el-table--group {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
 }
 
+body.art-v2-shell .enhanced-table .el-table__empty-block {
+  min-height: 280px;
+}
+
+body.art-v2-shell .enhanced-table .el-table__empty-text {
+  width: 100%;
+}
+
 body.art-v2-shell .enhanced-table-empty,
 body.art-v2-shell .el-empty {
-  padding: 48px 20px;
-  border-radius: 14px;
-  border: 1px dashed var(--color-border-default);
-  background: rgba(248, 250, 252, 0.76);
+  padding: 56px 16px 52px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
 }
 
 html.dark body.art-v2-shell .enhanced-table-empty,
 html.dark body.art-v2-shell .el-empty {
-  background: rgba(15, 23, 42, 0.68);
+  background: transparent;
 }
 
 body.art-v2-shell .enhanced-table-empty-svg,
@@ -842,14 +850,24 @@ body.art-v2-shell .empty-state-desc {
 }
 
 body.art-v2-shell .empty-state {
-  padding: 40px 20px;
-  border-radius: 14px;
-  border: 1px dashed var(--color-border-default);
-  background: rgba(248, 250, 252, 0.76);
+  width: 100%;
+  padding: 52px 16px 48px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
 }
 
 html.dark body.art-v2-shell .empty-state {
-  background: rgba(15, 23, 42, 0.68);
+  background: transparent;
+}
+
+body.art-v2-shell .empty-state-illustration {
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08), transparent 72%);
+}
+
+html.dark body.art-v2-shell .empty-state-illustration {
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.14), transparent 72%);
 }
 
 body.art-v2-shell .empty-state-title {
