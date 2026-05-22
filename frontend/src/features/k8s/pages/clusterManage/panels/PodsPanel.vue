@@ -2,13 +2,13 @@
   <div class="pods-panel">
     <div v-if="selectedRows.length > 0" class="pods-batchbar">
       <div class="pods-batchbar__meta">已选 {{ selectedRows.length }} 个 Pod</div>
-      <el-space wrap>
-        <el-button size="small" type="primary" plain @click="props.openMultiPodLogs(selectedRows)">聚合日志</el-button>
+      <div class="pods-batchbar__actions">
+        <el-button size="small" class="pods-batchbar__action pods-batchbar__action--logs" @click="props.openMultiPodLogs(selectedRows)">聚合日志</el-button>
         <template v-if="props.canWrite">
-          <el-button size="small" type="danger" @click="props.bulkDeletePods(selectedRows)">删除选中</el-button>
-          <el-button size="small" type="warning" plain @click="props.bulkDeletePods(selectedRows, { force: true })">强制删除</el-button>
+          <el-button size="small" class="pods-batchbar__action pods-batchbar__action--danger" @click="props.bulkDeletePods(selectedRows)">删除选中</el-button>
+          <el-button size="small" class="pods-batchbar__action pods-batchbar__action--warning" @click="props.bulkDeletePods(selectedRows, { force: true })">强制删除</el-button>
         </template>
-      </el-space>
+      </div>
     </div>
 
     <div class="pods-phasebar">
@@ -229,6 +229,64 @@ function getWarningEventCount(row: any): number {
   color: #334155;
 }
 
+.pods-batchbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pods-batchbar__action {
+  --el-button-bg-color: rgba(255, 255, 255, 0.96);
+  --el-button-border-color: rgba(148, 163, 184, 0.24);
+  --el-button-text-color: #334155;
+  --el-button-hover-bg-color: #fff;
+  --el-button-hover-border-color: rgba(100, 116, 139, 0.28);
+  --el-button-hover-text-color: #0f172a;
+  --el-button-active-bg-color: rgba(248, 250, 252, 0.98);
+  --el-button-active-border-color: rgba(100, 116, 139, 0.32);
+  --el-button-active-text-color: #0f172a;
+  --el-button-disabled-bg-color: rgba(255, 255, 255, 0.68);
+  --el-button-disabled-border-color: rgba(148, 163, 184, 0.16);
+  --el-button-disabled-text-color: #94a3b8;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.pods-batchbar__action--logs {
+  --el-button-border-color: rgba(59, 130, 246, 0.2);
+  --el-button-text-color: #2563eb;
+  --el-button-hover-bg-color: rgba(239, 246, 255, 0.96);
+  --el-button-hover-border-color: rgba(59, 130, 246, 0.28);
+  --el-button-hover-text-color: #1d4ed8;
+  --el-button-active-bg-color: rgba(219, 234, 254, 0.9);
+  --el-button-active-border-color: rgba(37, 99, 235, 0.34);
+  --el-button-active-text-color: #1e40af;
+}
+
+.pods-batchbar__action--danger {
+  --el-button-border-color: rgba(248, 113, 113, 0.24);
+  --el-button-text-color: #dc2626;
+  --el-button-hover-bg-color: rgba(254, 242, 242, 0.96);
+  --el-button-hover-border-color: rgba(248, 113, 113, 0.32);
+  --el-button-hover-text-color: #b91c1c;
+  --el-button-active-bg-color: rgba(254, 226, 226, 0.92);
+  --el-button-active-border-color: rgba(239, 68, 68, 0.34);
+  --el-button-active-text-color: #991b1b;
+}
+
+.pods-batchbar__action--warning {
+  --el-button-border-color: rgba(251, 191, 36, 0.28);
+  --el-button-text-color: #d97706;
+  --el-button-hover-bg-color: rgba(255, 247, 237, 0.96);
+  --el-button-hover-border-color: rgba(245, 158, 11, 0.34);
+  --el-button-hover-text-color: #b45309;
+  --el-button-active-bg-color: rgba(254, 243, 199, 0.92);
+  --el-button-active-border-color: rgba(217, 119, 6, 0.34);
+  --el-button-active-text-color: #92400e;
+}
+
 .pods-phasebar {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -315,6 +373,54 @@ function getWarningEventCount(row: any): number {
   color: #cbd5e1;
 }
 
+:global(html.dark) .pods-batchbar__action {
+  --el-button-bg-color: rgba(15, 23, 42, 0.82);
+  --el-button-border-color: rgba(148, 163, 184, 0.18);
+  --el-button-text-color: rgba(226, 232, 240, 0.92);
+  --el-button-hover-bg-color: rgba(30, 41, 59, 0.92);
+  --el-button-hover-border-color: rgba(148, 163, 184, 0.28);
+  --el-button-hover-text-color: #f8fafc;
+  --el-button-active-bg-color: rgba(30, 41, 59, 0.96);
+  --el-button-active-border-color: rgba(148, 163, 184, 0.34);
+  --el-button-active-text-color: #f8fafc;
+  --el-button-disabled-bg-color: rgba(15, 23, 42, 0.58);
+  --el-button-disabled-border-color: rgba(148, 163, 184, 0.12);
+  --el-button-disabled-text-color: rgba(148, 163, 184, 0.78);
+}
+
+:global(html.dark) .pods-batchbar__action--logs {
+  --el-button-border-color: rgba(96, 165, 250, 0.26);
+  --el-button-text-color: rgba(147, 197, 253, 0.96);
+  --el-button-hover-bg-color: rgba(30, 41, 59, 0.96);
+  --el-button-hover-border-color: rgba(96, 165, 250, 0.38);
+  --el-button-hover-text-color: #dbeafe;
+  --el-button-active-bg-color: rgba(37, 99, 235, 0.16);
+  --el-button-active-border-color: rgba(96, 165, 250, 0.42);
+  --el-button-active-text-color: #eff6ff;
+}
+
+:global(html.dark) .pods-batchbar__action--danger {
+  --el-button-border-color: rgba(248, 113, 113, 0.26);
+  --el-button-text-color: rgba(252, 165, 165, 0.96);
+  --el-button-hover-bg-color: rgba(69, 10, 10, 0.38);
+  --el-button-hover-border-color: rgba(248, 113, 113, 0.4);
+  --el-button-hover-text-color: #fecaca;
+  --el-button-active-bg-color: rgba(127, 29, 29, 0.42);
+  --el-button-active-border-color: rgba(248, 113, 113, 0.44);
+  --el-button-active-text-color: #fee2e2;
+}
+
+:global(html.dark) .pods-batchbar__action--warning {
+  --el-button-border-color: rgba(251, 191, 36, 0.28);
+  --el-button-text-color: rgba(253, 224, 71, 0.96);
+  --el-button-hover-bg-color: rgba(120, 53, 15, 0.34);
+  --el-button-hover-border-color: rgba(251, 191, 36, 0.4);
+  --el-button-hover-text-color: #fde68a;
+  --el-button-active-bg-color: rgba(146, 64, 14, 0.42);
+  --el-button-active-border-color: rgba(251, 191, 36, 0.44);
+  --el-button-active-text-color: #fef3c7;
+}
+
 :global(html.dark) .pods-phasebar__label {
   color: #94a3b8;
 }
@@ -330,6 +436,15 @@ function getWarningEventCount(row: any): number {
 }
 
 @media (max-width: 960px) {
+  .pods-batchbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pods-batchbar__actions {
+    justify-content: flex-start;
+  }
+
   .pods-phasebar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

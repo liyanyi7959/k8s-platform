@@ -1131,6 +1131,7 @@ export function buildTree(icons: {
     kind: 'folder',
     iconUrl: icons.k8sIconDeploymentUrl,
     children: [
+      { id: 'workloads:pods', label: 'Pods', kind: 'view', resource: 'pods', perm: 'k8s:read', namespaced: true, iconUrl: icons.k8sIconPodUrl },
       {
         id: 'workloads:deployments',
         label: 'Deployments',
@@ -1163,8 +1164,7 @@ export function buildTree(icons: {
       },
       { id: 'workloads:replicasets', label: 'ReplicaSets', kind: 'view', resource: 'replicasets', perm: 'k8s:read', namespaced: true, iconUrl: icons.k8sIconGroupUrl },
       { id: 'workloads:pdbs', label: 'PDBs', kind: 'view', resource: 'pdbs', perm: 'k8s:read', namespaced: true, iconUrl: icons.k8sIconDeploymentUrl },
-      { id: 'workloads:hpas', label: 'HPAs', kind: 'view', resource: 'hpas', perm: 'k8s:read', namespaced: true, iconUrl: icons.k8sIconDeploymentUrl },
-      { id: 'workloads:pods', label: 'Pods', kind: 'view', resource: 'pods', perm: 'k8s:read', namespaced: true, iconUrl: icons.k8sIconPodUrl }
+      { id: 'workloads:hpas', label: 'HPAs', kind: 'view', resource: 'hpas', perm: 'k8s:read', namespaced: true, iconUrl: icons.k8sIconDeploymentUrl }
     ]
   }
 
