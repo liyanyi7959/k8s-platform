@@ -98,7 +98,7 @@
       class="manifest-records__drawer"
       size="74%"
       destroy-on-close
-      :close-on-click-modal="false"
+      :close-on-click-modal="true"
     >
       <template #header>
         <div class="manifest-records__detail-header">
@@ -133,7 +133,7 @@
           class="manifest-records__detail-alert"
         />
 
-        <el-tabs v-model="detailTab">
+        <el-tabs v-model="detailTab" class="manifest-records__detail-tabs">
           <el-tab-pane label="执行结果" name="result">
             <el-empty v-if="!detail?.result_items?.length" :description="detail?.status === 'failed' ? '本次执行在生成资源明细前失败。' : '本次记录暂无资源结果明细。'" />
             <div v-else class="table-wrap manifest-records__detail-table">
@@ -158,16 +158,18 @@
           </el-tab-pane>
 
           <el-tab-pane label="YAML 回看" name="yaml">
-            <K8sYamlPanel
-              :text="detail?.yaml_content || ''"
-              :meta="detailYamlMeta"
-              :loading="detailLoading"
-              :saving="false"
-              :read-only="true"
-              :refreshable="false"
-              :saveable="false"
-              height="calc(100vh - 328px)"
-            />
+            <div class="manifest-records__yaml-pane">
+              <K8sYamlPanel
+                :text="detail?.yaml_content || ''"
+                :meta="detailYamlMeta"
+                :loading="detailLoading"
+                :saving="false"
+                :read-only="true"
+                :refreshable="false"
+                :saveable="false"
+                height="100%"
+              />
+            </div>
           </el-tab-pane>
         </el-tabs>
       </div>
@@ -517,11 +519,45 @@ defineExpose({ reload: fetchData })
   display: flex;
   flex-direction: column;
   gap: 16px;
-  min-height: calc(100vh - 180px);
+  min-height: 0;
+  height: 100%;
+}
+
+.manifest-records__drawer :deep(.el-drawer__body) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.manifest-records__detail-tabs {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.manifest-records__detail-tabs :deep(.el-tabs__header) {
+  flex: 0 0 auto;
+  margin-bottom: 12px;
+}
+
+.manifest-records__detail-tabs :deep(.el-tabs__content) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.manifest-records__detail-tabs :deep(.el-tab-pane) {
+  height: 100%;
+  min-height: 0;
 }
 
 .manifest-records__detail-alert {
   margin-top: 4px;
+}
+
+.manifest-records__yaml-pane {
+  height: 100%;
+  min-height: 0;
 }
 
 .manifest-records__detail-table {

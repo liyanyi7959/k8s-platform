@@ -54,7 +54,7 @@
       :read-only="readOnly"
       :yaml-assist="yamlAssist"
       :height="height"
-      class="k8s-detail-box k8s-detail-box--fill"
+      class="yaml-panel__editor k8s-detail-box k8s-detail-box--fill"
       @update:text="(value) => emit('update:text', value)"
     />
   </div>
@@ -240,6 +240,25 @@ async function copy() {
 
 .yaml-toolbar__actions {
   margin-left: auto;
+}
+
+.yaml-panel :deep(.yaml-panel__editor.k8s-detail-box) {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.yaml-panel :deep(.yaml-panel__editor .cm-host) {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.yaml-panel :deep(.yaml-panel__editor .cm-editor) {
+  width: 100%;
 }
 
 .meta {
