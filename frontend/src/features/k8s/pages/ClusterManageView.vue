@@ -154,6 +154,7 @@
           v-else-if="current?.resource === 'manifestapply'"
           ref="manifestApplyRecordsPanelRef"
           :cluster-id="clusterId"
+          :show-tools="showListTableTools"
           @open-deploy="openManifestApplyWithPreset"
         />
 

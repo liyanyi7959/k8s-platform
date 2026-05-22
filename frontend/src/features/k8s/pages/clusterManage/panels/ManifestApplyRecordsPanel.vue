@@ -1,113 +1,97 @@
 <template>
   <div class="manifest-records-view">
-    <div class="manifest-records-card">
-      <div class="filter-bar">
-        <div class="filter-bar__fields">
-          <el-input
-            v-model="keyword"
-            placeholder="搜索入口、结果摘要、执行人"
-            clearable
-            class="manifest-records__field manifest-records__field--keyword"
-            @keyup.enter="fetchData"
-          />
-          <el-select v-model="statusFilter" placeholder="状态" clearable class="manifest-records__field" @change="fetchData">
-            <el-option label="成功" value="success" />
-            <el-option label="失败" value="failed" />
-            <el-option label="执行中" value="running" />
-          </el-select>
-          <el-select v-model="modeFilter" placeholder="执行方式" clearable class="manifest-records__field" @change="fetchData">
-            <el-option label="Apply" value="apply" />
-            <el-option label="DryRun" value="dry_run" />
-          </el-select>
-          <el-input
-            v-model="defaultNamespace"
-            placeholder="默认命名空间"
-            clearable
-            class="manifest-records__field"
-            @keyup.enter="fetchData"
-          />
-        </div>
-
-        <div class="filter-bar__actions">
-          <el-button :icon="Search" @click="fetchData">查询</el-button>
-          <el-button :icon="RefreshRight" @click="resetFilters">重置</el-button>
-          <el-button type="primary" :icon="Upload" @click="openDeploy">通过 YAML 部署</el-button>
-        </div>
+    <div class="filter-bar">
+      <div class="filter-bar__fields">
+        <el-input
+          v-model="keyword"
+          placeholder="搜索入口、结果摘要、执行人"
+          clearable
+          class="manifest-records__field manifest-records__field--keyword"
+          @keyup.enter="fetchData"
+        />
+        <el-select v-model="statusFilter" placeholder="状态" clearable class="manifest-records__field" @change="fetchData">
+          <el-option label="成功" value="success" />
+          <el-option label="失败" value="failed" />
+          <el-option label="执行中" value="running" />
+        </el-select>
+        <el-select v-model="modeFilter" placeholder="执行方式" clearable class="manifest-records__field" @change="fetchData">
+          <el-option label="Apply" value="apply" />
+          <el-option label="DryRun" value="dry_run" />
+        </el-select>
+        <el-input
+          v-model="defaultNamespace"
+          placeholder="默认命名空间"
+          clearable
+          class="manifest-records__field"
+          @keyup.enter="fetchData"
+        />
       </div>
 
-      <div class="manifest-records__overview">
-        <div class="manifest-records__metric">
-          <span>当前页记录</span>
-          <strong>{{ tableData.length }}</strong>
-        </div>
-        <div class="manifest-records__metric">
-          <span>成功</span>
-          <strong>{{ successCount }}</strong>
-        </div>
-        <div class="manifest-records__metric">
-          <span>DryRun</span>
-          <strong>{{ dryRunCount }}</strong>
-        </div>
+      <div class="filter-bar__actions">
+        <el-button :icon="Search" @click="fetchData">查询</el-button>
+        <el-button :icon="RefreshRight" @click="resetFilters">重置</el-button>
+        <el-button type="primary" :icon="Upload" @click="openDeploy">通过 YAML 部署</el-button>
       </div>
-
-      <EnhancedTable
-        v-model:page="page"
-        v-model:page-size="pageSize"
-        :data="tableData"
-        :columns="columns"
-        :loading="loading"
-        :total="total"
-        :persist-key="persistKey"
-        row-key="id"
-        pagination
-        pagination-layout="total, sizes, prev, pager, next"
-        @refresh="fetchData"
-      >
-        <template #topbar-left>
-          <div class="manifest-records__table-summary">
-            <span class="manifest-records__table-title">部署记录</span>
-            <span class="manifest-records__table-meta">默认仅展示核心字段，其余字段可在右上角列设置中开启</span>
-          </div>
-        </template>
-
-        <template #cell-mode="{ row }">
-          <el-tag size="small" :type="row.dry_run ? 'warning' : 'success'">{{ row.dry_run ? 'DryRun' : 'Apply' }}</el-tag>
-        </template>
-
-        <template #cell-status="{ row }">
-          <el-tag size="small" :type="statusTagType(row.status)">{{ statusText(row.status) }}</el-tag>
-        </template>
-
-        <template #cell-source="{ row }">
-          <div class="manifest-records__source-title">{{ row.source_label || '通用 YAML 示例' }}</div>
-          <div class="manifest-records__source-sub">{{ formatSourceHint(row) }}</div>
-        </template>
-
-        <template #cell-default_namespace="{ row }">
-          <span>{{ row.default_namespace || '按清单原值' }}</span>
-        </template>
-
-        <template #cell-summary="{ row }">
-          <div class="manifest-records__summary" :class="row.status === 'failed' ? 'is-error' : ''">{{ resultSummary(row) }}</div>
-          <div class="manifest-records__summary-sub">资源数 {{ row.result_count || 0 }}</div>
-        </template>
-
-        <template #cell-created_by_name="{ row }">
-          <span>{{ row.created_by_name || '-' }}</span>
-        </template>
-
-        <template #cell-created_at="{ row }">
-          <span>{{ formatDateTime(row.created_at) }}</span>
-        </template>
-
-        <template #cell-actions="{ row }">
-          <div class="k8s-act-group manifest-records__actions">
-            <ActionIconButton :icon="View" tooltip="查看详情" @click="openDetail(row)" />
-            <ActionIconButton :icon="Upload" tooltip="再次部署" variant="success" :loading="reapplyLoadingId === row.id" @click="openDeployFromRow(row)" />
-          </div>
-        </template>
-      </EnhancedTable>
     </div>
+
+    <EnhancedTable
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :data="tableData"
+      :columns="columns"
+      :loading="loading"
+      :total="total"
+      :persist-key="persistKey"
+      :show-tools="showTools"
+      row-key="id"
+      size="small"
+      stripe
+      border
+      pagination
+      pagination-layout="total, sizes, prev, pager, next"
+      @refresh="fetchData"
+    >
+      <template #cell-mode="{ row }">
+        <el-tag size="small" :type="row.dry_run ? 'warning' : 'success'">{{ row.dry_run ? 'DryRun' : 'Apply' }}</el-tag>
+      </template>
+
+      <template #cell-status="{ row }">
+        <el-tag size="small" :type="statusTagType(row.status)">{{ statusText(row.status) }}</el-tag>
+      </template>
+
+      <template #cell-source="{ row }">
+        <div class="manifest-records__source-line" :title="`${row.source_label || '通用 YAML 示例'} · ${formatSourceHint(row)}`">
+          <span class="manifest-records__source-title">{{ row.source_label || '通用 YAML 示例' }}</span>
+          <span class="manifest-records__source-chip">{{ formatSourceHint(row) }}</span>
+        </div>
+      </template>
+
+      <template #cell-default_namespace="{ row }">
+        <span>{{ row.default_namespace || '按清单原值' }}</span>
+      </template>
+
+      <template #cell-summary="{ row }">
+        <div class="manifest-records__summary-line" :title="resultSummary(row)">
+          <span class="manifest-records__summary" :class="row.status === 'failed' ? 'is-error' : ''">{{ resultSummary(row) }}</span>
+          <span class="manifest-records__summary-chip">资源 {{ row.result_count || 0 }}</span>
+        </div>
+      </template>
+
+      <template #cell-created_by_name="{ row }">
+        <span>{{ row.created_by_name || '-' }}</span>
+      </template>
+
+      <template #cell-created_at="{ row }">
+        <span>{{ formatDateTime(row.created_at) }}</span>
+      </template>
+
+      <template #cell-actions="{ row }">
+        <div class="k8s-act-group manifest-records__actions">
+          <ActionIconButton :icon="View" tooltip="查看详情" @click="openDetail(row)" />
+          <ActionIconButton :icon="Upload" tooltip="再次部署" variant="success" :loading="reapplyLoadingId === row.id" @click="openDeployFromRow(row)" />
+        </div>
+      </template>
+    </EnhancedTable>
 
     <el-drawer
       v-model="detailVisible"
@@ -217,6 +201,7 @@ type ManifestApplyOpenOptions = {
 
 const props = defineProps<{
   clusterId: number
+  showTools?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -242,19 +227,16 @@ const reapplyLoadingId = ref<number>(0)
 const persistKey = computed(() => `k8s:cluster_manage:v2:${props.clusterId}:manifest-apply-records`)
 
 const columns = computed<EnhancedColumn[]>(() => [
-  { key: 'source', label: '部署入口', minWidth: 220, overflowTooltip: false },
+  { key: 'source', label: '部署入口', minWidth: 260, overflowTooltip: false },
   { key: 'status', label: '状态', width: 90, align: 'center' },
   { key: 'mode', label: '执行方式', width: 96, align: 'center' },
-  { key: 'summary', label: '执行结果', minWidth: 260, overflowTooltip: false },
+  { key: 'summary', label: '执行结果', minWidth: 360, overflowTooltip: false },
   { key: 'created_at', label: '执行时间', width: 168 },
   { key: 'id', label: '记录ID', prop: 'id', width: 90, align: 'center', defaultVisible: false },
   { key: 'default_namespace', label: '默认命名空间', prop: 'default_namespace', minWidth: 150, defaultVisible: false },
   { key: 'created_by_name', label: '执行人', prop: 'created_by_name', width: 120, defaultVisible: false },
   { key: 'actions', label: '操作', width: 106, fixed: 'right', disableToggle: true, overflowTooltip: false }
 ])
-
-const successCount = computed(() => tableData.value.filter((item) => item.status === 'success').length)
-const dryRunCount = computed(() => tableData.value.filter((item) => item.dry_run).length)
 
 const detailYamlMeta = computed(() => {
   if (!detail.value) return ''
@@ -407,89 +389,46 @@ defineExpose({ reload: fetchData })
 
 <style scoped>
 .manifest-records-view {
-  min-height: 100%;
-}
-
-.manifest-records-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+  min-height: 100%;
 }
 
 .filter-bar {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .filter-bar__fields {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .filter-bar__actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
 }
 
 .manifest-records__field {
-  width: 160px;
+  width: auto;
+  min-width: 120px;
+  flex: 0 1 132px;
 }
 
 .manifest-records__field--keyword {
-  width: 260px;
-}
-
-.manifest-records__overview {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.manifest-records__metric {
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  border-radius: 14px;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.92));
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.manifest-records__metric span {
-  font-size: 12px;
-  color: var(--app-muted);
-}
-
-.manifest-records__metric strong {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--app-text);
-}
-
-.manifest-records__table-summary {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.manifest-records__table-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--app-text);
-}
-
-.manifest-records__table-meta {
-  font-size: 12px;
-  color: var(--app-muted);
+  width: auto;
+  min-width: 220px;
+  flex: 1 1 240px;
 }
 
 .table-wrap {
@@ -500,12 +439,16 @@ defineExpose({ reload: fetchData })
   width: 100%;
 }
 
-.pagination-wrap {
+.manifest-records__source-line,
+.manifest-records__summary-line {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .manifest-records__source-title {
+  min-width: 0;
   font-weight: 600;
   color: var(--app-text);
   white-space: nowrap;
@@ -513,22 +456,25 @@ defineExpose({ reload: fetchData })
   text-overflow: ellipsis;
 }
 
-.manifest-records__source-sub,
-.manifest-records__summary-sub {
-  margin-top: 4px;
-  font-size: 12px;
+.manifest-records__source-chip,
+.manifest-records__summary-chip {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(241, 245, 249, 0.95);
   color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .manifest-records__summary {
+  min-width: 0;
+  flex: 1 1 auto;
   color: var(--app-text);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .manifest-records__summary.is-error {
@@ -582,34 +528,44 @@ defineExpose({ reload: fetchData })
   padding-bottom: 4px;
 }
 
-@media (max-width: 1280px) {
-  .manifest-records__overview {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 900px) {
+  .filter-bar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
   .manifest-records__field,
   .manifest-records__field--keyword {
     width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
   }
 
   .filter-bar__fields,
   .filter-bar__actions {
     width: 100%;
-  }
-
-  .manifest-records__overview {
-    grid-template-columns: 1fr;
+    flex-wrap: wrap;
   }
 
   .manifest-records__detail-header {
     flex-direction: column;
   }
+
+  .manifest-records__source-line,
+  .manifest-records__summary-line {
+    gap: 8px;
+  }
+
+  .manifest-records__source-chip,
+  .manifest-records__summary-chip {
+    max-width: 42%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
-:global(html.dark) .manifest-records__metric {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.82));
-  border-color: rgba(148, 163, 184, 0.18);
+:global(html.dark) .manifest-records__source-chip,
+:global(html.dark) .manifest-records__summary-chip {
+  background: rgba(30, 41, 59, 0.88);
 }
 </style>
