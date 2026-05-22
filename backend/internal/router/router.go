@@ -49,10 +49,11 @@ func New(d Deps) (*gin.Engine, error) {
 	if d.DB != nil {
 		clusterReg := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
 		k8sSvc := service.NewK8sService(clusterReg, d.CacheStore, d.CacheTTL, d.K8sInsecureTLS)
+		manifestApplySvc := service.NewManifestApplyRecordService(d.DB, k8sSvc)
 		clusterManageCtl = controller.NewClusterManageController(clusterReg, k8sSvc)
 		execSessions := service.NewExecSessionStore(0)
 		logSessions := service.NewPodLogSessionStore(0)
-		k8sCtl = controller.NewK8sController(k8sSvc, execSessions, logSessions)
+		k8sCtl = controller.NewK8sController(k8sSvc, manifestApplySvc, execSessions, logSessions)
 		dashboardSvc := service.NewDashboardService(d.DB, clusterReg, k8sSvc, d.CacheStore)
 		dashboardCtl = controller.NewDashboardController(dashboardSvc)
 		permissionAuditSvc := service.NewK8sPermissionAuditService(d.DB, taskStore, clusterReg, k8sSvc, d.CacheStore, d.EncryptionKey)
@@ -203,6 +204,9 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	k8s.POST("/clusters/:id/pods/:ns/:pod/logs/session", readPerm, ctl.CreatePodLogSession)
 	k8s.DELETE("/clusters/:id/pods/:ns/:pod", writePerm, ctl.DeletePod)
 	k8s.POST("/clusters/:id/pods/:ns/:pod/exec", execPerm, ctl.CreatePodExecSession)
+	k8s.GET("/clusters/:id/manifests/records", writePerm, ctl.ListManifestRecords)
+	k8s.GET("/clusters/:id/manifests/records/:recordId", writePerm, ctl.GetManifestRecord)
+	k8s.POST("/clusters/:id/manifests/apply", writePerm, ctl.ApplyManifest)
 
 	// Workload
 	k8s.GET("/clusters/:id/workloads", readPerm, ctl.ListWorkloads)

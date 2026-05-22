@@ -68,6 +68,7 @@
           <!-- 操作区 -->
           <div class="qb-actions">
             <el-button v-if="primaryCreateAction" class="qb-btn qb-btn--primary" type="primary" size="default" :disabled="!clusterId" :icon="Plus" @click="primaryCreateAction.onClick">{{ primaryCreateAction.label }}</el-button>
+            <el-button v-if="clusterId && canWriteK8s" class="qb-btn" size="default" :disabled="!clusterId" :icon="Edit" @click="openManifestApply">YAML 部署</el-button>
             <el-button class="qb-btn" size="default" :disabled="!clusterId || !current" :loading="current?.resource === 'dashboard' ? loadingDashboard : loadingList" :icon="RefreshRight" @click="loadCurrent" />
             <el-dropdown
               v-if="showColumnPickerBtn"
@@ -143,6 +144,13 @@
           @navigate-resource="handlePermissionAuditNavigation"
         />
 
+        <ManifestApplyRecordsPanel
+          v-else-if="current?.resource === 'manifestapply'"
+          ref="manifestApplyRecordsPanelRef"
+          :cluster-id="clusterId"
+          @open-deploy="openManifestApplyWithPreset"
+        />
+
         <NamespacesPanel
           v-else-if="current?.resource === 'namespaces'"
           ref="namespacesPanelRef"
@@ -187,6 +195,7 @@
           :get-pod-age="getPodAge"
           :open-pod-detail="openPodDetail"
           :open-pod-logs="openPodLogs"
+          :open-multi-pod-logs="openMultiPodLogs"
           :open-pod-exec="openPodExec"
           :open-pod-yaml="openPodYaml"
           :delete-pod-row="deletePodRow"
@@ -852,6 +861,7 @@
     :editor-theme="editorTheme"
     :editor-theme-effective-dark="editorThemeEffectiveDark"
     @toggle-editor-theme="toggleEditorTheme"
+    @manifest-recorded="handleManifestRecordChanged"
     @namespace-created="refreshAll"
   />
 
@@ -977,6 +987,7 @@ import k8sIconSecretUrl from '@/assets/images/k8s/secret.svg'
 import k8sIconStatefulSetUrl from '@/assets/images/k8s/sts.svg'
 import k8sIconServiceUrl from '@/assets/images/k8s/svc.svg'
 import type { K8sLikeObject, ResourceKey, SortOrder, TreeNode, WorkloadKind } from './ClusterManageView.types'
+import { buildManifestApplyPreset } from './clusterManage/manifestApplyTemplates'
 import {
   buildStorageKey,
   buildTree,
@@ -1020,6 +1031,7 @@ const HPAsPanel = defineAsyncComponent(() => import('./clusterManage/panels/HPAs
 const IngressClassesPanel = defineAsyncComponent(() => import('./clusterManage/panels/IngressClassesPanel.vue'))
 const IngressesPanel = defineAsyncComponent(() => import('./clusterManage/panels/IngressesPanel.vue'))
 const JobsPanel = defineAsyncComponent(() => import('./clusterManage/panels/JobsPanel.vue'))
+const ManifestApplyRecordsPanel = defineAsyncComponent(() => import('./clusterManage/panels/ManifestApplyRecordsPanel.vue'))
 const NamespacedGovernancePanel = defineAsyncComponent(() => import('./clusterManage/panels/NamespacedGovernancePanel.vue'))
 const NamespacesPanel = defineAsyncComponent(() => import('./clusterManage/panels/NamespacesPanel.vue'))
 const NodesPanel = defineAsyncComponent(() => import('./clusterManage/panels/NodesPanel.vue'))
@@ -1065,7 +1077,20 @@ type ClusterManageDetailsHostExpose = {
   openStatefulSetDetail: (row: any) => void
 }
 
+type ManifestApplyOpenOptions = {
+  defaultNamespace?: string
+  initialYaml?: string
+  sourceLabel?: string
+  sourceResource?: string
+  workloadKind?: string
+}
+
+type ManifestApplyRecordsPanelExpose = {
+  reload?: () => Promise<void> | void
+}
+
 const detailsHostRef = ref<ClusterManageDetailsHostExpose | null>(null)
+const manifestApplyRecordsPanelRef = ref<ManifestApplyRecordsPanelExpose | null>(null)
 const workbenchesRef = ref<InstanceType<typeof ClusterManageWorkbenchesComponent> | null>(null)
 const resourceEditorsRef = ref<InstanceType<typeof ClusterManageResourceEditorsComponent> | null>(null)
 const overlayLoaded = reactive({
@@ -1574,6 +1599,7 @@ const primaryCreateAction = computed<null | { label: string; onClick: () => void
 
 const showQueryBar = computed(() => (
   current.value?.resource !== 'dashboard' &&
+  current.value?.resource !== 'manifestapply' &&
   current.value?.resource !== 'permissionaudits' &&
   current.value?.resource !== 'topology'
 ))
@@ -1585,6 +1611,7 @@ const currentPanelTitle = computed(() => {
 const currentPanelDescription = computed(() => {
   const resource = current.value?.resource
   if (!resource || resource === 'dashboard') return '查看集群健康、容量、工作负载与近期告警。'
+  if (resource === 'manifestapply') return '通过任意 YAML 或上传文件统一执行 Apply，不区分资源 Kind。'
   if (resource === 'pods') return '查看 Pod 生命周期、日志、终端与 YAML 信息。'
   if (resource === 'workloads') return '统一管理 Deployment、StatefulSet 与 DaemonSet 等工作负载。'
   if (resource === 'permissionaudits') return '检查权限风险、异常主体与敏感操作暴露。'
@@ -2172,6 +2199,10 @@ async function loadCurrent() {
   if (current.value.resource === 'dashboard') {
     resetWarningEventSummary()
     await loadDashboard()
+    return
+  }
+  if (current.value.resource === 'manifestapply') {
+    list.value = []
     return
   }
 
@@ -3008,6 +3039,39 @@ function openCreateNamespace() {
   runOverlayWhenReady('workbenches', () => workbenchesRef.value, (target) => target.openCreateNamespace())
 }
 
+function openManifestApplyWithPreset(options: ManifestApplyOpenOptions = {}) {
+  runOverlayWhenReady('workbenches', () => workbenchesRef.value, (target) => target.openManifestApply(options))
+}
+
+function openManifestApply() {
+  openManifestApplyWithPreset(buildCurrentManifestApplyPreset())
+}
+
+function openGenericManifestApply() {
+  openManifestApplyWithPreset(buildManifestApplyPreset({
+    resource: 'manifestapply',
+    namespace: getManifestApplyDefaultNamespace() || undefined
+  }))
+}
+
+function handleManifestRecordChanged() {
+  if (current.value?.resource !== 'manifestapply') return
+  void manifestApplyRecordsPanelRef.value?.reload?.()
+}
+
+function getManifestApplyDefaultNamespace(): string {
+  const selected = Array.isArray(namespace.value) ? namespace.value.filter((item) => item && item !== ALL_NAMESPACE) : []
+  return selected.length === 1 ? selected[0] : ''
+}
+
+function buildCurrentManifestApplyPreset() {
+  return buildManifestApplyPreset({
+    resource: current.value?.resource,
+    workloadKind: current.value?.resource === 'workloads' ? (current.value?.workloadKind ?? workloadKind.value) : undefined,
+    namespace: getManifestApplyDefaultNamespace() || undefined
+  })
+}
+
 function openCreatePVC() {
   pvcsPanelRef.value?.openCreate?.()
 }
@@ -3277,6 +3341,25 @@ function openPodExec(row: any) {
 
 function openPodLogs(row: any) {
   runOverlayWhenReady('workbenches', () => workbenchesRef.value, (target) => target.openPodLogs(row))
+}
+
+function openMultiPodLogs(rows: any[]) {
+  const targetMap = new Map<string, { ns: string; name: string; containers: string[] }>()
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const ns = String(getRowNamespace(row) ?? '').trim()
+    const name = String(row?.metadata?.name ?? '').trim()
+    if (!ns || !name) continue
+    const containers = Array.isArray(row?.spec?.containers)
+      ? row.spec.containers.map((item: any) => String(item?.name ?? '').trim()).filter(Boolean)
+      : []
+    targetMap.set(`${ns}/${name}`, { ns, name, containers })
+  }
+  const targets = Array.from(targetMap.values())
+  if (targets.length === 0) {
+    notifyError('请先选择至少一个 Pod')
+    return
+  }
+  runOverlayWhenReady('workbenches', () => workbenchesRef.value, (target) => target.openMultiPodLogs(targets))
 }
 
 function openEditJob(row: any) {
@@ -3694,6 +3777,65 @@ onBeforeUnmount(() => {
   border-color: var(--color-border-default);
   background: var(--color-bg-card);
   box-shadow: var(--shadow-card);
+}
+
+.manifest-launchpad {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+.manifest-launchpad__card {
+  width: min(780px, 100%);
+  padding: 28px 30px;
+  border-radius: 24px;
+  border: 1px solid rgba(59, 130, 246, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.94));
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.08);
+}
+
+.manifest-launchpad__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.manifest-launchpad__title {
+  margin-top: 10px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.manifest-launchpad__desc {
+  margin: 14px 0 20px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #475569;
+}
+
+:global(html.dark) .manifest-launchpad__card {
+  border-color: rgba(59, 130, 246, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.16), transparent 32%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.92));
+  box-shadow: 0 28px 60px rgba(2, 6, 23, 0.28);
+}
+
+:global(html.dark) .manifest-launchpad__title {
+  color: #e2e8f0;
+}
+
+:global(html.dark) .manifest-launchpad__desc {
+  color: #94a3b8;
 }
 
 .page-card :deep(> .el-card__body) {

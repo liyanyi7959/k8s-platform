@@ -1097,6 +1097,15 @@ export function buildTree(icons: {
     children: [{ id: 'dashboard:overview', label: '概览', kind: 'view', resource: 'dashboard', perm: 'k8s:read', iconUrl: icons.k8sLogoUrl }]
   }
 
+  const manifestApply: TreeNode = {
+    id: 'tools:manifest-apply',
+    label: 'YAML 部署',
+    kind: 'view',
+    resource: 'manifestapply',
+    perm: 'k8s:write',
+    iconUrl: icons.k8sLogoUrl
+  }
+
   const audit: TreeNode = {
     id: 'group:audit',
     label: '治理分析',
@@ -1261,7 +1270,7 @@ export function buildTree(icons: {
     children: [{ id: 'misc:events', label: 'Events', kind: 'view', resource: 'events', perm: 'k8s:read', namespaced: true, iconUrl: icons.k8sIconGroupUrl }]
   }
 
-  return [dashboard, workloads, jobs, network, storage, config, auth, cluster, misc, extensions, audit]
+  return [dashboard, manifestApply, workloads, jobs, network, storage, config, auth, cluster, misc, extensions, audit]
 }
 
 // ── Namespace 彩色标签系统 ─────────────────────────────────────────────

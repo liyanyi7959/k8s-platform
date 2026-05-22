@@ -1,10 +1,13 @@
 <template>
   <div class="pods-panel">
-    <div v-if="props.canWrite && selectedRows.length > 0" class="pods-batchbar">
+    <div v-if="selectedRows.length > 0" class="pods-batchbar">
       <div class="pods-batchbar__meta">已选 {{ selectedRows.length }} 个 Pod</div>
       <el-space wrap>
-        <el-button size="small" type="danger" @click="props.bulkDeletePods(selectedRows)">删除选中</el-button>
-        <el-button size="small" type="warning" plain @click="props.bulkDeletePods(selectedRows, { force: true })">强制删除</el-button>
+        <el-button size="small" type="primary" plain @click="props.openMultiPodLogs(selectedRows)">聚合日志</el-button>
+        <template v-if="props.canWrite">
+          <el-button size="small" type="danger" @click="props.bulkDeletePods(selectedRows)">删除选中</el-button>
+          <el-button size="small" type="warning" plain @click="props.bulkDeletePods(selectedRows, { force: true })">强制删除</el-button>
+        </template>
       </el-space>
     </div>
 
@@ -118,6 +121,7 @@ const props = defineProps<{
   getPodAge: (row: any) => string
   openPodDetail: (row: any) => void
   openPodLogs: (row: any) => void
+  openMultiPodLogs: (rows: any[]) => void
   openPodExec: (row: any) => void
   openPodYaml: (row: any) => void
   deletePodRow: (row: any) => void

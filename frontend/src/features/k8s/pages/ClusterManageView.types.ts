@@ -2,6 +2,7 @@ export type WorkloadKind = 'Deployment' | 'StatefulSet' | 'DaemonSet'
 
 export type ResourceKey =
   | 'dashboard'
+  | 'manifestapply'
   | 'permissionaudits'
   | 'topology'
   | 'nodes'

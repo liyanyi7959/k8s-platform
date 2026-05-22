@@ -70,6 +70,8 @@
   </el-drawer>
 
   <PodLogDrawer ref="podLogDrawerRef" :cluster-id="props.clusterId" />
+  <MultiPodLogDrawer ref="multiPodLogDrawerRef" :cluster-id="props.clusterId" />
+  <ManifestApplyDrawer ref="manifestApplyDrawerRef" :cluster-id="props.clusterId" @recorded="emit('manifest-recorded')" />
 </template>
 
 <script setup lang="ts">
@@ -78,6 +80,8 @@ import { Delete, Link, Moon, Plus, RefreshRight, Sunny } from '@element-plus/ico
 
 import * as k8sApi from '@/features/k8s/api/k8s'
 import PodExecTerminal from '@/features/k8s/components/PodExecTerminal.vue'
+import ManifestApplyDrawer from '@/features/k8s/pages/clusterManage/overlays/ManifestApplyDrawer.vue'
+import MultiPodLogDrawer from '@/features/k8s/pages/clusterManage/overlays/MultiPodLogDrawer.vue'
 import PodLogDrawer from '@/features/k8s/pages/clusterManage/overlays/PodLogDrawer.vue'
 import { getRowNamespace } from '@/features/k8s/pages/ClusterManageView.utils'
 import { PowerSwitchIcon } from '@/shared/icons/appIcons'
@@ -93,11 +97,19 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'toggle-editor-theme'): void
   (e: 'namespace-created'): void
+  (e: 'manifest-recorded'): void
 }>()
 
 type TerminalTheme = 'dark' | 'light'
 type PodRow = { metadata?: { name?: unknown; namespace?: unknown }; spec?: { containers?: Array<{ name?: unknown }> } }
-type LogsTarget = { ns: string; name: string; container?: string }
+type LogsTarget = { ns: string; name: string; container?: string; containers?: string[] }
+type ManifestApplyOpenOptions = {
+  defaultNamespace?: string
+  initialYaml?: string
+  sourceLabel?: string
+  sourceResource?: string
+  workloadKind?: string
+}
 
 const TERMINAL_THEME_KEY = 'k8s-platform:pod-exec-terminal-theme'
 const terminalTheme = ref<TerminalTheme>((localStorage.getItem(TERMINAL_THEME_KEY) as TerminalTheme) || 'dark')
@@ -115,6 +127,8 @@ const terminalConnected = ref(false)
 const terminalConnecting = ref(false)
 const podExecTerminalRef = ref<InstanceType<typeof PodExecTerminal> | null>(null)
 const podLogDrawerRef = ref<InstanceType<typeof PodLogDrawer> | null>(null)
+const multiPodLogDrawerRef = ref<InstanceType<typeof MultiPodLogDrawer> | null>(null)
+const manifestApplyDrawerRef = ref<InstanceType<typeof ManifestApplyDrawer> | null>(null)
 
 function toggleTerminalTheme() {
   terminalTheme.value = terminalTheme.value === 'dark' ? 'light' : 'dark'
@@ -221,11 +235,21 @@ function openPodLogsTarget(target: LogsTarget) {
   podLogDrawerRef.value?.open({ ...target, containers })
 }
 
+function openMultiPodLogs(targets: LogsTarget[]) {
+  multiPodLogDrawerRef.value?.open(targets)
+}
+
+function openManifestApply(options: ManifestApplyOpenOptions = {}) {
+  manifestApplyDrawerRef.value?.open(options)
+}
+
 defineExpose({
   openCreateNamespace,
   openPodExec,
   openPodLogs,
-  openPodLogsTarget
+  openPodLogsTarget,
+  openMultiPodLogs,
+  openManifestApply
 })
 </script>
 
