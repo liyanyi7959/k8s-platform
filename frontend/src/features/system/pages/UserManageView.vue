@@ -34,15 +34,24 @@
             </template>
           </el-table-column>
           <el-table-column prop="created_at" label="创建时间" width="170" />
-          <el-table-column label="操作" width="240" fixed="right">
+          <el-table-column label="操作" width="148" fixed="right">
             <template #default="{ row }">
-              <el-button size="small" @click="openEdit(row)">编辑</el-button>
-              <el-button size="small" type="warning" @click="handleResetPwd(row)">重置密码</el-button>
-              <el-popconfirm title="确定删除?" @confirm="handleDelete(row.id)">
-                <template #reference>
-                  <el-button size="small" type="danger" :disabled="row.username === 'admin'">删除</el-button>
-                </template>
-              </el-popconfirm>
+              <div class="k8s-act-group">
+                <ActionIconButton :icon="EditPen" tooltip="编辑用户" variant="edit" @click="openEdit(row)" />
+                <ActionIconButton :icon="RefreshRight" tooltip="重置密码" variant="warn" @click="handleResetPwd(row)" />
+                <el-popconfirm title="确定删除该用户？" @confirm="handleDelete(row.id)">
+                  <template #reference>
+                    <button
+                      type="button"
+                      class="k8s-act-btn k8s-act-btn--danger"
+                      :disabled="row.username === 'admin'"
+                      aria-label="删除用户"
+                    >
+                      <el-icon><Delete /></el-icon>
+                    </button>
+                  </template>
+                </el-popconfirm>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -104,6 +113,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Delete, EditPen, RefreshRight } from '@element-plus/icons-vue'
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import {
   getUsers, createUser, updateUser, deleteUser, resetPassword,
   getRoles,

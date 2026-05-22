@@ -96,9 +96,11 @@
               <el-table-column prop="kind" label="Kind" width="140" />
               <el-table-column prop="name" label="名称" min-width="220" show-overflow-tooltip />
               <el-table-column prop="summary" label="摘要" min-width="280" show-overflow-tooltip />
-              <el-table-column label="操作" width="120" align="center" header-align="center">
+              <el-table-column label="操作" width="72" align="center" header-align="center">
                 <template #default="{ row: r }">
-                  <el-button size="small" type="primary" plain @click="onOpenRelated(r)">打开</el-button>
+                  <div class="k8s-act-group">
+                    <ActionIconButton :icon="View" tooltip="查看资源" @click="onOpenRelated(r)" />
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -138,12 +140,13 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { RefreshRight, CopyDocument, Search, Fold, Expand } from '@element-plus/icons-vue'
+import { RefreshRight, CopyDocument, Search, Fold, Expand, View } from '@element-plus/icons-vue'
 import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import WorkloadDetailDrawerShell from '@/features/k8s/components/WorkloadDetailDrawerShell.vue'
 import CodeMirrorViewer from '@/shared/components/CodeMirrorViewer.vue'
 import EmptyState from '@/shared/components/EmptyState.vue'
 import * as k8sApi from '@/features/k8s/api/k8s'
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import { notifyError } from '@/shared/utils/notify'
 import type { ApiError } from '@/shared/utils/error'
 import type { ContainerVm, EventRow, RelatedRow } from '../../ClusterManageView.utils'

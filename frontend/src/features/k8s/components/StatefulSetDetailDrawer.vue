@@ -174,16 +174,12 @@
                 <el-table-column prop="restarts" label="Restarts" width="90" align="center" header-align="center" />
                 <el-table-column prop="node" label="Node" min-width="180" show-overflow-tooltip />
                 <el-table-column prop="age" label="Age" width="90" align="center" header-align="center" />
-                <el-table-column label="操作" width="140" align="center" header-align="center" fixed="right">
+                <el-table-column label="操作" width="96" align="center" header-align="center" fixed="right">
                   <template #default="{ row }">
-                    <el-space :size="4">
-                      <el-tooltip content="查看日志" placement="top">
-                        <el-button size="small" :icon="Document" circle @click="emit('pod-log', row._raw)" />
-                      </el-tooltip>
-                      <el-tooltip content="终端" placement="top">
-                        <el-button size="small" :icon="Link" circle @click="emit('pod-exec', row._raw)" />
-                      </el-tooltip>
-                    </el-space>
+                    <div class="k8s-act-group">
+                      <ActionIconButton :icon="Document" tooltip="查看日志" @click="emit('pod-log', row._raw)" />
+                      <ActionIconButton :icon="Link" tooltip="打开终端" variant="success" @click="emit('pod-exec', row._raw)" />
+                    </div>
                   </template>
                 </el-table-column>
               </el-table>
@@ -260,6 +256,7 @@ import { computed, ref, watch } from 'vue'
 import * as k8sApi from '@/features/k8s/api/k8s'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 import type { ApiError } from '@/shared/utils/error'
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import WorkloadDetailDrawerShell from './WorkloadDetailDrawerShell.vue'
 

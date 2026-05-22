@@ -379,10 +379,12 @@
             <el-table-column prop="namespace" label="命名空间" width="150" show-overflow-tooltip />
             <el-table-column prop="name" label="名称" min-width="180" show-overflow-tooltip />
             <el-table-column prop="summary" label="摘要" min-width="320" show-overflow-tooltip />
-            <el-table-column label="操作" width="100" align="center">
+            <el-table-column label="操作" width="92" align="center">
               <template #default="{ row }">
-                <el-button link type="primary" @click="openFinding(row)">详情</el-button>
-                <el-button link type="success" @click="navigateFinding(row)">跳转</el-button>
+                <div class="k8s-act-group">
+                  <ActionIconButton :icon="View" tooltip="查看详情" @click="openFinding(row)" />
+                  <ActionIconButton :icon="Link" tooltip="跳转资源" variant="success" @click="navigateFinding(row)" />
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -481,7 +483,8 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { CloseBold, Connection, Document, Plus, RefreshRight, Search, Switch, View } from '@element-plus/icons-vue'
+import { CloseBold, Connection, Document, Link, Plus, RefreshRight, Search, Switch, View } from '@element-plus/icons-vue'
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import EmptyState from '@/shared/components/EmptyState.vue'
 import EnhancedTable from '@/shared/components/EnhancedTable.vue'
 import type { EnhancedColumn } from '@/shared/components/EnhancedTable.vue'

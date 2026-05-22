@@ -207,9 +207,11 @@
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="120" align="right" header-align="right">
+                <el-table-column label="操作" width="72" align="right" header-align="right">
                   <template #default="{ row }">
-                    <el-button size="small" text type="primary" :icon="View" class="pod-detail-action-btn" @click="emitOpenRelated(row)">详情</el-button>
+                    <div class="k8s-act-group">
+                      <ActionIconButton :icon="View" tooltip="查看详情" @click="emitOpenRelated(row)" />
+                    </div>
                   </template>
                 </el-table-column>
               </el-table>
@@ -382,6 +384,7 @@ import { Check, Close, CopyDocument, RefreshRight, View } from '@element-plus/ic
 import * as k8sApi from '@/features/k8s/api/k8s'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 import EmptyState from '@/shared/components/EmptyState.vue'
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import WorkloadDetailDrawerShell from './WorkloadDetailDrawerShell.vue'
 import type { ApiError } from '@/shared/utils/error'

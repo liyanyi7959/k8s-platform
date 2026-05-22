@@ -79,17 +79,16 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="138" align="center">
+          <el-table-column label="操作" width="84" align="center">
             <template #default="scope">
-              <el-button
+              <ActionIconButton
                 v-if="!scope.row.is_current"
-                size="small"
-                type="warning"
+                :icon="RefreshLeft"
+                tooltip="回滚到此版本"
+                variant="warn"
                 :loading="rollingRevision === scope.row.revision"
                 @click="confirmRollback(scope.row)"
-              >
-                回滚到此版本
-              </el-button>
+              />
               <span v-else class="muted-text">-</span>
             </template>
           </el-table-column>
@@ -101,9 +100,10 @@
 
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { RefreshRight } from '@element-plus/icons-vue'
+import { RefreshLeft, RefreshRight } from '@element-plus/icons-vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import * as k8sApi from '@/features/k8s/api/k8s'
 import type { RolloutRevision } from '@/features/k8s/api/workload'
 import {

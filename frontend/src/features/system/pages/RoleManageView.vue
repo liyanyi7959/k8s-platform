@@ -50,14 +50,23 @@
             </template>
           </el-table-column>
           <el-table-column prop="created_at" label="创建时间" width="170" />
-          <el-table-column label="操作" width="180" fixed="right">
+          <el-table-column label="操作" width="108" fixed="right">
             <template #default="{ row }">
-              <el-button size="small" @click="openEdit(row)">编辑</el-button>
-              <el-popconfirm title="确定删除该角色?" @confirm="handleDelete(row)">
-                <template #reference>
-                  <el-button size="small" type="danger" :disabled="row.builtin">删除</el-button>
-                </template>
-              </el-popconfirm>
+              <div class="k8s-act-group">
+                <ActionIconButton :icon="EditPen" tooltip="编辑角色" variant="edit" @click="openEdit(row)" />
+                <el-popconfirm title="确定删除该角色？" @confirm="handleDelete(row)">
+                  <template #reference>
+                    <button
+                      type="button"
+                      class="k8s-act-btn k8s-act-btn--danger"
+                      :disabled="row.builtin"
+                      aria-label="删除角色"
+                    >
+                      <el-icon><Delete /></el-icon>
+                    </button>
+                  </template>
+                </el-popconfirm>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -196,7 +205,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Delete, EditPen } from '@element-plus/icons-vue'
 
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import { listClusters, type ClusterItem } from '@/features/clusters/api/clusters'
 import { listNamespaces } from '@/features/k8s/api/namespace'
 
