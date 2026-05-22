@@ -1098,7 +1098,6 @@ html.dark .el-dialog__footer {
 .el-dialog__headerbtn,
 .el-drawer__close-btn,
 .el-message-box__headerbtn {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1113,6 +1112,17 @@ html.dark .el-dialog__footer {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
   font-size: 0;
+}
+
+.el-dialog__headerbtn,
+.el-message-box__headerbtn {
+  position: absolute;
+}
+
+.el-drawer__close-btn {
+  position: static;
+  flex: 0 0 auto;
+  align-self: flex-start;
 }
 
 .el-dialog__headerbtn > *,
