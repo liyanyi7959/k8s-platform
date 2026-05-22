@@ -13,20 +13,26 @@
           ref="treeRef"
           :data="tree"
           node-key="id"
+          draggable
+          :allow-drag="allowTreeNodeDrag"
+          :allow-drop="allowTreeNodeDrop"
           :expand-on-click-node="true"
           :highlight-current="false"
           default-expand-all
+          @node-drop="onTreeNodeDrop"
           @node-click="onTreeNodeClick"
         >
-          <template #default="{ data }">
+          <template #default="{ data, node }">
             <span :class="[
               'tree-node',
               data.kind === 'folder' ? 'tree-node--folder' : 'tree-node--leaf',
+              node.level === 1 && data.kind === 'folder' ? 'tree-node--draggable' : '',
               current?.id === data.id ? 'tree-node--active' : ''
             ]">
               <img v-if="data.iconUrl" :src="data.iconUrl" :class="['tree-icon-img', data.kind === 'folder' ? 'tree-icon-img--folder' : 'tree-icon-img--leaf']" alt="">
               <el-icon v-else :class="['tree-icon', data.kind === 'folder' ? 'tree-icon--folder' : 'tree-icon--leaf']"><component :is="data.kind === 'folder' ? Collection : Document" /></el-icon>
               <span class="tree-label">{{ data.label }}</span>
+              <el-icon v-if="node.level === 1 && data.kind === 'folder'" class="tree-drag-handle"><Operation /></el-icon>
             </span>
           </template>
         </el-tree>
@@ -946,6 +952,7 @@ import {
   Link,
   Monitor,
   Moon,
+  Operation,
   Platform,
   Plus,
   RefreshRight,
@@ -1169,8 +1176,14 @@ const canRevealSecret = computed(() => userStore.permissions.includes('k8s:secre
 const canWriteRbac = computed(() => userStore.permissions.includes('k8s:rbac_write'))
 
 const STORAGE_PREFIX = 'k8s:cluster_manage'
+const TREE_ROOT_ORDER_STORAGE_SUFFIX = 'tree_root_order'
 function storageKey(suffix: string): string {
   return buildStorageKey(STORAGE_PREFIX, clusterId.value, suffix)
+}
+
+type TreeDragNode = {
+  level?: number
+  data?: TreeNode
 }
 
 const clusterId = computed(() => {
@@ -1891,7 +1904,7 @@ async function refreshAll() {
     // Build tree (local, zero network) + kick off current view load immediately
     try {
       await resourceSupportPromise
-      tree.value = filterTreeByResourceSupport(filterTreeByPerms(buildTree({
+      tree.value = applyPersistedRootTreeOrder(filterTreeByResourceSupport(filterTreeByPerms(buildTree({
         k8sLogoUrl,
         k8sIconCmUrl,
         k8sIconCronJobUrl,
@@ -1909,7 +1922,8 @@ async function refreshAll() {
         k8sIconSecretUrl,
         k8sIconStatefulSetUrl,
         k8sIconServiceUrl
-      }), userStore.permissions ?? []), resourceSupport.value)
+      }), userStore.permissions ?? []), resourceSupport.value))
+      persistRootTreeOrder(tree.value)
       await nextTick()
       autoSelectDefault() // triggers loadCurrent (fire-and-forget → dashboard or resource)
     } catch (e) {
@@ -1993,6 +2007,54 @@ function autoSelectDefault() {
     applyPersistedViewState(fallback)
     void loadCurrent()
   }
+}
+
+function readPersistedRootTreeOrder(): string[] {
+  const raw = readStorageJson<unknown>(storageKey(TREE_ROOT_ORDER_STORAGE_SUFFIX))
+  if (!Array.isArray(raw)) return []
+  return raw.map((item) => String(item ?? '').trim()).filter(Boolean)
+}
+
+function applyPersistedRootTreeOrder(nodes: TreeNode[]): TreeNode[] {
+  const persisted = readPersistedRootTreeOrder()
+  if (persisted.length === 0) return nodes
+
+  const lookup = new Map(nodes.map((node) => [node.id, node]))
+  const ordered: TreeNode[] = []
+
+  for (const id of persisted) {
+    const hit = lookup.get(id)
+    if (!hit) continue
+    ordered.push(hit)
+    lookup.delete(id)
+  }
+
+  for (const node of nodes) {
+    if (lookup.has(node.id)) ordered.push(node)
+  }
+
+  return ordered
+}
+
+function persistRootTreeOrder(nodes: TreeNode[]) {
+  writeStorageJson(storageKey(TREE_ROOT_ORDER_STORAGE_SUFFIX), nodes.map((node) => node.id))
+}
+
+function isRootFolderDragNode(node: TreeDragNode | null | undefined): boolean {
+  return node?.level === 1 && node?.data?.kind === 'folder'
+}
+
+function allowTreeNodeDrag(node: TreeDragNode): boolean {
+  return isRootFolderDragNode(node)
+}
+
+function allowTreeNodeDrop(draggingNode: TreeDragNode, dropNode: TreeDragNode, type: 'prev' | 'next' | 'inner'): boolean {
+  return isRootFolderDragNode(draggingNode) && isRootFolderDragNode(dropNode) && type !== 'inner'
+}
+
+function onTreeNodeDrop() {
+  tree.value = [...tree.value]
+  persistRootTreeOrder(tree.value)
 }
 
 function onTreeNodeClick(node: TreeNode) {
@@ -3624,6 +3686,10 @@ onBeforeUnmount(() => {
   color: var(--color-text-primary);
 }
 
+.tree-node--draggable {
+  cursor: grab;
+}
+
 .tree-node--leaf {
   color: var(--color-text-secondary);
 }
@@ -3671,6 +3737,17 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.2;
+}
+
+.tree-drag-handle {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  opacity: 0.72;
+}
+
+.tree-node--draggable:active {
+  cursor: grabbing;
 }
 
 /* sidebar tree item styling */
@@ -3725,6 +3802,10 @@ onBeforeUnmount(() => {
 
 .k8s-aside :deep(.el-tree-node__content:hover) {
   background: rgba(59, 130, 246, 0.06);
+}
+
+.k8s-aside :deep(.el-tree-node.is-dragging > .el-tree-node__content) {
+  opacity: 0.72;
 }
 
 .tree-node--active {

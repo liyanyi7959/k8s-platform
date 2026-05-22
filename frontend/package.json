@@ -11,9 +11,11 @@
     "lint": "eslint . --ext .ts,.tsx,.vue --max-warnings=0"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.2",
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/lang-yaml": "^6.1.2",
     "@codemirror/language": "^6.11.3",
+    "@codemirror/lint": "^6.9.6",
     "@codemirror/merge": "^6.5.2",
     "@codemirror/search": "^6.5.6",
     "@codemirror/theme-one-dark": "^6.1.2",
@@ -33,7 +35,8 @@
     "vue": "^3.4.15",
     "vue-router": "^4.2.5",
     "xterm": "^5.3.0",
-    "xterm-addon-fit": "^0.8.0"
+    "xterm-addon-fit": "^0.8.0",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

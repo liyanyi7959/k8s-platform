@@ -13,6 +13,7 @@ import { yaml } from '@codemirror/lang-yaml'
 import { json } from '@codemirror/lang-json'
 import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark'
 import { MergeView } from '@codemirror/merge'
+import { buildK8sYamlAssistExtensions, type K8sYamlAssistContext } from '@/shared/components/codeMirrorYamlAssist'
 
 const emit = defineEmits<{
   (e: 'update:text', v: string): void
@@ -24,13 +25,14 @@ const props = withDefaults(
     compareText?: string | null
     showDiff?: boolean
     language?: 'yaml' | 'json' | 'text' | 'log'
+    yamlAssist?: K8sYamlAssistContext | null
     theme?: 'auto' | 'light' | 'dark'
     readOnly?: boolean
     wrap?: boolean
     lineNumbers?: boolean
     height?: string
   }>(),
-  { language: 'text', showDiff: false, compareText: null, theme: 'auto', readOnly: true, wrap: true, lineNumbers: true, height: '100%' }
+  { language: 'text', showDiff: false, compareText: null, yamlAssist: null, theme: 'auto', readOnly: true, wrap: true, lineNumbers: true, height: '100%' }
 )
 
 const hostEl = ref<HTMLElement | null>(null)
@@ -42,6 +44,7 @@ const langCompartment = new Compartment()
 const wrapCompartment = new Compartment()
 const roCompartment = new Compartment()
 const themeCompartment = new Compartment()
+const yamlAssistCompartment = new Compartment()
 
 const hostStyle = computed(() => ({ height: props.height }))
 
@@ -181,6 +184,11 @@ function buildWrapExt() {
   return props.wrap ? EditorView.lineWrapping : []
 }
 
+function buildYamlAssistExt() {
+  if (props.language !== 'yaml') return []
+  return buildK8sYamlAssistExtensions(props.yamlAssist ?? undefined)
+}
+
 function getActiveView(): EditorView | null {
   if (mergeView) return mergeView.b
   return view
@@ -209,6 +217,7 @@ function buildExtensions() {
   return [
     ...buildBaseExtensions(),
     langCompartment.of(languageExtension(props.language)),
+    yamlAssistCompartment.of(buildYamlAssistExt()),
     wrapCompartment.of(buildWrapExt()),
     roCompartment.of(buildReadOnlyExt()),
     themeCompartment.of(buildTheme())
@@ -274,6 +283,11 @@ function reconfigureLanguage() {
 function reconfigureWrap() {
   if (!view) return
   view.dispatch({ effects: wrapCompartment.reconfigure(buildWrapExt()) })
+}
+
+function reconfigureYamlAssist() {
+  if (!view) return
+  view.dispatch({ effects: yamlAssistCompartment.reconfigure(buildYamlAssistExt()) })
 }
 
 function reconfigureReadOnly() {
@@ -346,6 +360,7 @@ watch(
       return
     }
     reconfigureLanguage()
+    reconfigureYamlAssist()
   }
 )
 watch(
@@ -400,6 +415,14 @@ watch(
     if (mergeView) rebuild()
     else reconfigureTheme()
     setupThemeObserver()
+  }
+)
+
+watch(
+  () => [props.language, props.yamlAssist?.defaultNamespace, props.yamlAssist?.sourceResource, props.yamlAssist?.workloadKind],
+  () => {
+    if (mergeView) rebuild()
+    else reconfigureYamlAssist()
   }
 )
 </script>

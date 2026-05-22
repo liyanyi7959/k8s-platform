@@ -22,6 +22,7 @@
         <K8sYamlPanel
           :text="yamlText"
           :meta="editorMeta"
+          :yaml-assist="yamlAssist"
           :loading="false"
           :saving="submitting"
           :read-only="false"
@@ -123,6 +124,12 @@ const editorMeta = computed(() => {
   if (sourceMeta) meta.push(`template=${sourceMeta}`)
   return meta.join('  ')
 })
+
+const yamlAssist = computed(() => ({
+  defaultNamespace: defaultNamespace.value.trim() || undefined,
+  sourceResource: sourceResource.value.trim() || undefined,
+  workloadKind: workloadKind.value.trim() || undefined
+}))
 
 function open(options: ManifestApplyOpenOptions = {}) {
   visible.value = true

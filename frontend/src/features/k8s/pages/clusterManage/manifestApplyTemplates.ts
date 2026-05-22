@@ -6,6 +6,8 @@ export type ManifestTemplatePreset = {
   defaultNamespace?: string
   initialYaml: string
   sourceLabel: string
+  sourceResource?: ManifestTemplateResource
+  workloadKind?: WorkloadKind
 }
 
 type TemplateContext = {
@@ -158,6 +160,8 @@ export function buildManifestApplyPreset(input: TemplateContext): ManifestTempla
   return {
     defaultNamespace,
     initialYaml: result.initialYaml,
-    sourceLabel: result.sourceLabel
+    sourceLabel: result.sourceLabel,
+    sourceResource: input.resource,
+    workloadKind: input.workloadKind
   }
 }

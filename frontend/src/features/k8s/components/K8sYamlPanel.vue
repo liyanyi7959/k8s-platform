@@ -1,13 +1,28 @@
 <template>
   <div class="yaml-panel">
     <div class="yaml-toolbar">
-      <el-space wrap>
+      <div class="yaml-toolbar__left">
         <div v-if="meta" class="meta">{{ meta }}</div>
+        <div class="yaml-toolbar__status">
+          <el-tag size="small" effect="plain">{{ docStatusText }}</el-tag>
+          <el-tag size="small" effect="plain" :type="issueTagType">{{ issueStatusText }}</el-tag>
+          <el-tag size="small" effect="plain">{{ associationText }}</el-tag>
+          <el-tag v-if="assistHintText" size="small" effect="plain" type="info">{{ assistHintText }}</el-tag>
+        </div>
+      </div>
+
+      <el-space wrap class="yaml-toolbar__actions">
         <el-tooltip content="复制" placement="top">
           <el-button :disabled="!hasText" :icon="CopyDocument" circle @click="copy" />
         </el-tooltip>
         <el-tooltip content="搜索" placement="top">
           <el-button :disabled="!hasText" :icon="Search" circle @click="openSearch" />
+        </el-tooltip>
+        <el-tooltip v-if="editable" content="格式化" placement="top">
+          <el-button :disabled="!hasText" :icon="EditPen" circle @click="formatYaml" />
+        </el-tooltip>
+        <el-tooltip v-if="editable" content="智能修正" placement="top">
+          <el-button :disabled="!hasText" :icon="MagicStick" circle @click="applySmartFix" />
         </el-tooltip>
         <el-tooltip content="折叠全部" placement="top">
           <el-button :disabled="!hasText" :icon="Fold" circle @click="foldAll" />
@@ -37,6 +52,7 @@
       :wrap="wrap"
       :line-numbers="lineNumbers"
       :read-only="readOnly"
+      :yaml-assist="yamlAssist"
       :height="height"
       class="k8s-detail-box k8s-detail-box--fill"
       @update:text="(value) => emit('update:text', value)"
@@ -45,9 +61,10 @@
 </template>
 
 <script setup lang="ts">
-import { Check, CopyDocument, Expand, Fold, Moon, RefreshRight, Search, Sunny } from '@element-plus/icons-vue'
+import { Check, CopyDocument, EditPen, Expand, Fold, MagicStick, Moon, RefreshRight, Search, Sunny } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import CodeMirrorViewer from '@/shared/components/CodeMirrorViewer.vue'
+import { analyzeK8sYamlSummary, formatK8sYaml, smartFixK8sYaml, type K8sYamlAssistContext } from '@/shared/components/codeMirrorYamlAssist'
 import { copyToClipboard } from '@/shared/utils/text'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 
@@ -63,6 +80,7 @@ const props = withDefaults(
     readOnly?: boolean
     refreshable?: boolean
     saveable?: boolean
+    yamlAssist?: K8sYamlAssistContext | null
   }>(),
   {
     meta: '',
@@ -71,7 +89,8 @@ const props = withDefaults(
     height: '100%',
     readOnly: true,
     refreshable: true,
-    saveable: false
+    saveable: false,
+    yamlAssist: null
   }
 )
 
@@ -95,6 +114,25 @@ const viewerRef = ref<{ openSearch: () => void; foldAll: () => void; unfoldAll: 
 const editorTheme = ref<EditorTheme>(getStoredTheme())
 
 const hasText = computed(() => Boolean(String(props.text ?? '').trim()))
+const editable = computed(() => !props.readOnly)
+const yamlSummary = computed(() => analyzeK8sYamlSummary(props.text, props.yamlAssist ?? undefined))
+const docStatusText = computed(() => (hasText.value ? `文档 ${yamlSummary.value.docsCount}` : '空清单'))
+const issueStatusText = computed(() => {
+  if (!hasText.value) return '待校验'
+  return yamlSummary.value.issueCount > 0 ? `诊断 ${yamlSummary.value.issueCount}` : '已通过基础检查'
+})
+const issueTagType = computed<'info' | 'success' | 'warning'>(() => {
+  if (!hasText.value) return 'info'
+  return yamlSummary.value.issueCount > 0 ? 'warning' : 'success'
+})
+const associationText = computed(() => {
+  if (!hasText.value) return yamlSummary.value.association
+  if (yamlSummary.value.docsCount > 1 && yamlSummary.value.kinds.length > 1) {
+    return `多资源 ${yamlSummary.value.kinds.length} 种`
+  }
+  return yamlSummary.value.association
+})
+const assistHintText = computed(() => yamlSummary.value.hints.join(' · '))
 const editorThemeEffectiveDark = computed(() => {
   if (editorTheme.value === 'dark') return true
   if (editorTheme.value === 'light') return false
@@ -118,6 +156,38 @@ function foldAll() {
 
 function unfoldAll() {
   viewerRef.value?.unfoldAll()
+}
+
+function formatYaml() {
+  if (!editable.value || !hasText.value) return
+  const formatted = formatK8sYaml(props.text)
+  if (formatted.error) {
+    notifyError(formatted.error)
+    return
+  }
+  if (!formatted.changed) {
+    notifySuccess('当前 YAML 已是规范格式')
+    return
+  }
+  emit('update:text', formatted.text)
+  notifySuccess('YAML 已格式化')
+}
+
+function applySmartFix() {
+  if (!editable.value || !hasText.value) return
+  const fixed = smartFixK8sYaml(props.text, props.yamlAssist ?? undefined)
+  if (fixed.changed) {
+    emit('update:text', fixed.text)
+  }
+  if (fixed.error) {
+    notifyError(fixed.error)
+    return
+  }
+  if (fixed.changed) {
+    notifySuccess(fixed.notes.slice(0, 2).join('；') || '已完成智能修正')
+    return
+  }
+  notifySuccess('当前 YAML 暂无可自动修正项')
 }
 
 async function copy() {
@@ -145,11 +215,31 @@ async function copy() {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid rgba(2, 6, 23, 0.06);
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+}
+
+.yaml-toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.yaml-toolbar__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.yaml-toolbar__actions {
+  margin-left: auto;
 }
 
 .meta {
