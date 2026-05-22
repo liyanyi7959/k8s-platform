@@ -30,7 +30,7 @@
       <div class="filter-bar__actions">
         <el-button :icon="Search" @click="fetchData">查询</el-button>
         <el-button :icon="RefreshRight" @click="resetFilters">重置</el-button>
-        <el-button type="primary" :icon="Upload" @click="openDeploy">通过 YAML 部署</el-button>
+        <el-button :icon="Upload" @click="openDeploy">通过 YAML 部署</el-button>
       </div>
     </div>
 
@@ -102,14 +102,23 @@
     >
       <template #header>
         <div class="manifest-records__detail-header">
-          <div>
+          <div class="manifest-records__detail-main">
             <div class="manifest-records__detail-title">部署记录 #{{ detail?.id || '-' }}</div>
             <div class="manifest-records__detail-sub">{{ detail?.source_label || '通用 YAML 示例' }}</div>
           </div>
           <div class="manifest-records__detail-actions">
-            <el-tag size="small" :type="detail?.dry_run ? 'warning' : 'success'">{{ detail?.dry_run ? 'DryRun' : 'Apply' }}</el-tag>
-            <el-tag size="small" :type="statusTagType(detail?.status || '')">{{ statusText(detail?.status || '') }}</el-tag>
-            <el-button type="primary" :icon="Upload" :loading="reapplyLoadingId === detail?.id" @click="openDeployFromDetail">再次部署</el-button>
+            <div class="manifest-records__detail-statuses">
+              <el-tag size="small" :type="detail?.dry_run ? 'warning' : 'success'">{{ detail?.dry_run ? 'DryRun' : 'Apply' }}</el-tag>
+              <el-tag size="small" :type="statusTagType(detail?.status || '')">{{ statusText(detail?.status || '') }}</el-tag>
+            </div>
+            <el-button
+              :icon="Upload"
+              :loading="reapplyLoadingId === detail?.id"
+              class="manifest-records__detail-reapply"
+              @click="openDeployFromDetail"
+            >
+              再次部署
+            </el-button>
           </div>
         </div>
       </template>
@@ -491,14 +500,27 @@ defineExpose({ reload: fetchData })
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  width: 100%;
+  gap: 20px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.manifest-records__drawer :deep(.el-drawer__header) {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.manifest-records__detail-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .manifest-records__detail-title {
   font-size: 18px;
   font-weight: 700;
   color: var(--app-text);
+  line-height: 1.2;
 }
 
 .manifest-records__detail-sub {
@@ -510,9 +532,23 @@ defineExpose({ reload: fetchData })
 .manifest-records__detail-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex: 0 0 auto;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.manifest-records__detail-statuses {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.manifest-records__detail-reapply {
+  flex: 0 0 auto;
 }
 
 .manifest-records__detail-body {
@@ -585,6 +621,12 @@ defineExpose({ reload: fetchData })
 
   .manifest-records__detail-header {
     flex-direction: column;
+  }
+
+  .manifest-records__detail-actions {
+    width: 100%;
+    justify-content: flex-start;
+    padding-right: 0;
   }
 
   .manifest-records__source-line,

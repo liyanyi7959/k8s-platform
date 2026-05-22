@@ -2,9 +2,19 @@
   <el-drawer v-model="visible" class="manifest-apply-drawer" size="82%" destroy-on-close>
     <template #header>
       <div class="manifest-apply-drawer__header">
-        <div>
+        <div class="manifest-apply-drawer__heading">
           <div class="manifest-apply-drawer__title">Manifest 工作台</div>
-          <div class="manifest-apply-drawer__sub">支持多文档 YAML 直接创建或更新资源，适合临时清单、厂商安装清单和 CRD 实例投递。</div>
+          <el-tooltip placement="bottom-start" :show-after="180">
+            <template #content>
+              <div class="manifest-apply-drawer__tip">
+                支持多文档 YAML 直接创建或更新资源。<br />
+                适合临时清单、厂商安装清单和 CRD 实例投递。
+              </div>
+            </template>
+            <button type="button" class="manifest-apply-drawer__hint" aria-label="查看工作台说明">
+              <el-icon><QuestionFilled /></el-icon>
+            </button>
+          </el-tooltip>
         </div>
         <div class="manifest-apply-drawer__actions">
           <input ref="fileInputRef" class="manifest-apply-drawer__file-input" type="file" accept=".yaml,.yml,text/yaml,application/yaml,application/x-yaml" @change="onFileSelected" />
@@ -12,7 +22,7 @@
           <el-switch v-model="dryRun" inline-prompt active-text="DryRun" inactive-text="Apply" />
           <el-button :icon="FolderOpened" @click="triggerFilePick">上传 YAML</el-button>
           <el-button :icon="Delete" :disabled="!yamlText.trim()" @click="resetEditor">清空</el-button>
-          <el-button type="primary" :loading="submitting" :icon="Upload" @click="submit">{{ dryRun ? '执行 Dry Run' : '执行 Apply' }}</el-button>
+          <el-button :loading="submitting" :icon="Upload" @click="submit">{{ dryRun ? '执行 Dry Run' : '执行 Apply' }}</el-button>
         </div>
       </div>
     </template>
@@ -80,7 +90,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Delete, FolderOpened, Upload } from '@element-plus/icons-vue'
+import { Delete, FolderOpened, QuestionFilled, Upload } from '@element-plus/icons-vue'
 
 import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import { applyManifest, type ManifestApplyResultItem } from '@/features/k8s/api/manifest'
@@ -224,32 +234,68 @@ async function submit() {
 <style scoped>
 .manifest-apply-drawer__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  width: 100%;
+  gap: 18px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.manifest-apply-drawer__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .manifest-apply-drawer__title {
   font-size: 18px;
   font-weight: 700;
   color: var(--app-text);
+  white-space: nowrap;
 }
 
-.manifest-apply-drawer__sub {
-  margin-top: 4px;
-  max-width: 760px;
-  font-size: 13px;
-  line-height: 1.6;
+.manifest-apply-drawer__hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.92);
   color: var(--app-muted);
+  cursor: help;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.manifest-apply-drawer__hint:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: #fff;
+  color: var(--el-color-primary);
+}
+
+.manifest-apply-drawer__hint:focus-visible {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.manifest-apply-drawer__tip {
+  max-width: 320px;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .manifest-apply-drawer__actions {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .manifest-apply-drawer__file-input {
@@ -257,7 +303,16 @@ async function submit() {
 }
 
 .manifest-apply-drawer__namespace {
-  width: 220px;
+  width: 210px;
+  flex: 0 0 210px;
+}
+
+.manifest-apply-drawer__actions :deep(.el-button) {
+  white-space: nowrap;
+}
+
+.manifest-apply-drawer__actions :deep(.el-switch) {
+  flex: 0 0 auto;
 }
 
 .manifest-apply-drawer__body {
@@ -344,9 +399,32 @@ async function submit() {
   background: linear-gradient(180deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.92));
 }
 
+:global(html.dark) .manifest-apply-drawer__hint {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.82);
+  color: rgba(226, 232, 240, 0.84);
+}
+
+:global(html.dark) .manifest-apply-drawer__hint:hover {
+  border-color: rgba(96, 165, 250, 0.4);
+  background: rgba(30, 41, 59, 0.94);
+  color: rgba(191, 219, 254, 0.96);
+}
+
 @media (max-width: 1280px) {
   .manifest-apply-drawer__body {
     grid-template-columns: 1fr;
+  }
+
+  .manifest-apply-drawer__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .manifest-apply-drawer__actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 }
 </style>

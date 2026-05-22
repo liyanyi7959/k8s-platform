@@ -1088,23 +1088,85 @@ html.dark .el-dialog__footer {
 .el-dialog__headerbtn {
   top: 14px;
   right: 18px;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: rgba(15, 23, 42, 0.04);
 }
 
-.el-dialog__headerbtn:hover {
-  background: rgba(59, 130, 246, 0.1);
-  transform: none;
+.el-message-box__headerbtn {
+  top: 10px;
+  right: 12px;
 }
 
-html.dark .el-dialog__headerbtn {
-  background: rgba(148, 163, 184, 0.1);
+.el-dialog__headerbtn,
+.el-drawer__close-btn,
+.el-message-box__headerbtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(248, 250, 252, 0.94);
+  color: rgba(15, 23, 42, 0.72);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  font-size: 0;
 }
 
-html.dark .el-dialog__headerbtn:hover {
-  background: rgba(96, 165, 250, 0.18);
+.el-dialog__headerbtn > *,
+.el-drawer__close-btn > *,
+.el-message-box__headerbtn > * {
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.el-dialog__headerbtn::before,
+.el-drawer__close-btn::before,
+.el-message-box__headerbtn::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7l10 10M17 7L7 17'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7l10 10M17 7L7 17'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.el-dialog__headerbtn:hover,
+.el-drawer__close-btn:hover,
+.el-message-box__headerbtn:hover {
+  border-color: rgba(59, 130, 246, 0.32);
+  background: #fff;
+  color: var(--el-color-primary);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.el-dialog__headerbtn:focus-visible,
+.el-drawer__close-btn:focus-visible,
+.el-message-box__headerbtn:focus-visible {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.42);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+html.dark .el-dialog__headerbtn,
+html.dark .el-drawer__close-btn,
+html.dark .el-message-box__headerbtn {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.82);
+  color: rgba(226, 232, 240, 0.9);
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.22);
+}
+
+html.dark .el-dialog__headerbtn:hover,
+html.dark .el-drawer__close-btn:hover,
+html.dark .el-message-box__headerbtn:hover {
+  border-color: rgba(96, 165, 250, 0.42);
+  background: rgba(30, 41, 59, 0.94);
+  color: rgba(191, 219, 254, 0.96);
 }
 
 .el-message-box {
@@ -1127,22 +1189,6 @@ html.dark .el-dialog__headerbtn:hover {
   font-size: 16px;
   font-weight: 800;
   line-height: 1.35;
-}
-
-.el-message-box__headerbtn {
-  top: 10px;
-  right: 12px;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-}
-
-.el-message-box__headerbtn:hover {
-  background: rgba(59, 130, 246, 0.1);
-}
-
-html.dark .el-message-box__headerbtn:hover {
-  background: rgba(96, 165, 250, 0.18);
 }
 
 .el-message-box__content {
