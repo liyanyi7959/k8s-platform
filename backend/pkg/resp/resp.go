@@ -30,6 +30,7 @@ type Result struct {
 // OK 返回成功响应。
 func OK[T any](c *gin.Context, data T) {
 	c.Set("resp_code", 0)
+	c.Set("resp_message", "ok")
 	c.JSON(http.StatusOK, ApiResponse[T]{Code: 0, Message: "ok", Data: data})
 }
 
@@ -44,5 +45,6 @@ func Fail(c *gin.Context, code int, msg string) {
 		msg = "内部错误"
 	}
 	c.Set("resp_code", code)
+	c.Set("resp_message", msg)
 	c.JSON(http.StatusOK, ApiResponse[any]{Code: code, Message: msg, Data: nil})
 }

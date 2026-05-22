@@ -64,3 +64,13 @@ type RolePermission struct {
 }
 
 func (RolePermission) TableName() string { return "role_permissions" }
+
+type RoleNamespaceScope struct {
+	// RoleNamespaceScope 记录角色在某个集群下可访问的具体命名空间范围。
+	RoleID    uint64    `gorm:"column:role_id;primaryKey"`
+	ClusterID uint64    `gorm:"column:cluster_id;primaryKey"`
+	Namespace string    `gorm:"column:namespace;primaryKey"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+}
+
+func (RoleNamespaceScope) TableName() string { return "role_namespace_scopes" }

@@ -85,11 +85,15 @@ func main() {
 	defer func() { _ = cacheStore.Close() }()
 
 	rbacSvc := service.NewRbacService(gdb, cacheStore, 15*time.Minute)
+	auditSvc := service.NewAuditService(gdb)
 	// 内置初始化：首次启动自动创建管理员用户/角色/权限点，确保系统可登录可用。
 	if err := service.EnsureBuiltinRBAC(gdb, cfg.Auth.AdminUsername, cfg.Auth.AdminPassword); err != nil {
 		zap.L().Fatal("ensure_builtin_rbac_failed", zap.Error(err))
 	}
-	authCtl := controller.NewAuthController(jwtMgr, rbacSvc, cfg.ParsedTokenTTL())
+	if err := rbacSvc.InvalidateRoleUsersPerms(context.Background(), "admin"); err != nil {
+		zap.L().Warn("invalidate_builtin_rbac_cache_failed", zap.Error(err))
+	}
+	authCtl := controller.NewAuthController(jwtMgr, rbacSvc, auditSvc, cfg.ParsedTokenTTL())
 
 	r, err := router.New(router.Deps{
 		DB:             gdb,

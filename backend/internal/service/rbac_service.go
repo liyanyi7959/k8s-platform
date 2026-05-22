@@ -163,6 +163,31 @@ func (s *RbacService) userRolesPermsCacheKey(userID uint64) string {
 	return fmt.Sprintf("rbac:v1:user:%d:roles_perms", userID)
 }
 
+func (s *RbacService) InvalidateRoleUsersPerms(ctx context.Context, roleName string) error {
+	if s == nil || s.db == nil {
+		return nil
+	}
+	name := strings.TrimSpace(roleName)
+	if name == "" {
+		return nil
+	}
+
+	var role model.Role
+	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND name = ?", name).First(&role).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+
+	userIDs, err := s.listActiveUserIDsByRole(s.db.WithContext(ctx), role.ID)
+	if err != nil {
+		return err
+	}
+	s.invalidateUserRolesPermsBatch(ctx, userIDs)
+	return nil
+}
+
 func (s *RbacService) invalidateUserRolesPerms(ctx context.Context, userID uint64) {
 	if userID == 0 || s.cache == nil || !s.cache.Enabled() {
 		return

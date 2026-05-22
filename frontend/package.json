@@ -27,6 +27,7 @@
     "element-plus": "^2.5.1",
     "grid-layout-plus": "^1.1.1",
     "html-to-image": "^1.11.13",
+    "mermaid": "^11.15.0",
     "pinia": "^2.1.7",
     "qs": "^6.11.2",
     "vue": "^3.4.15",

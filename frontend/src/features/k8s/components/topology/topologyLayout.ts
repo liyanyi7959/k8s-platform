@@ -294,6 +294,151 @@ function laneGapBetween(
   return baseGap + trafficGap
 }
 
+type PositionedNodeBox = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function layoutClearance(density: TopologyLayoutDensity) {
+  if (density === 'compact') return 16
+  if (density === 'spacious') return 30
+  return 22
+}
+
+function boxCenter(box: PositionedNodeBox) {
+  return {
+    x: box.x + box.width / 2,
+    y: box.y + box.height / 2
+  }
+}
+
+function boxesOverlap(boxA: PositionedNodeBox, boxB: PositionedNodeBox, padding = 0) {
+  return (
+    boxA.x < boxB.x + boxB.width + padding &&
+    boxA.x + boxA.width + padding > boxB.x &&
+    boxA.y < boxB.y + boxB.height + padding &&
+    boxA.y + boxA.height + padding > boxB.y
+  )
+}
+
+function resolveNodeCollisions(boxes: Map<string, PositionedNodeBox>, density: TopologyLayoutDensity) {
+  const entries = [...boxes.entries()]
+  const gap = layoutClearance(density)
+
+  for (let pass = 0; pass < 3; pass += 1) {
+    let moved = false
+
+    for (let i = 0; i < entries.length; i += 1) {
+      const [, boxA] = entries[i]
+      for (let j = i + 1; j < entries.length; j += 1) {
+        const [, boxB] = entries[j]
+        if (!boxesOverlap(boxA, boxB, gap)) continue
+
+        const overlapX = Math.min(boxA.x + boxA.width, boxB.x + boxB.width) - Math.max(boxA.x, boxB.x)
+        const overlapY = Math.min(boxA.y + boxA.height, boxB.y + boxB.height) - Math.max(boxA.y, boxB.y)
+        if (overlapX <= 0 || overlapY <= 0) continue
+
+        const centerA = boxCenter(boxA)
+        const centerB = boxCenter(boxB)
+
+        if (overlapX < overlapY) {
+          const delta = Math.ceil((overlapX + gap) / 2)
+          if (centerA.x <= centerB.x) {
+            boxA.x -= delta
+            boxB.x += delta
+          } else {
+            boxA.x += delta
+            boxB.x -= delta
+          }
+        } else {
+          const delta = Math.ceil((overlapY + gap) / 2)
+          if (centerA.y <= centerB.y) {
+            boxA.y -= delta
+            boxB.y += delta
+          } else {
+            boxA.y += delta
+            boxB.y -= delta
+          }
+        }
+
+        moved = true
+      }
+    }
+
+    if (!moved) break
+  }
+}
+
+function edgeCorridorShift(source: PositionedNodeBox, target: PositionedNodeBox, candidate: PositionedNodeBox, density: TopologyLayoutDensity) {
+  const clearance = layoutClearance(density) + 8
+  const sourceCenter = boxCenter(source)
+  const targetCenter = boxCenter(target)
+  const candidateCenter = boxCenter(candidate)
+  const horizontalFlow = Math.abs(targetCenter.x - sourceCenter.x) >= Math.abs(targetCenter.y - sourceCenter.y)
+
+  if (horizontalFlow) {
+    const minX = Math.min(sourceCenter.x, targetCenter.x)
+    const maxX = Math.max(sourceCenter.x, targetCenter.x)
+    if (candidate.x >= maxX || candidate.x + candidate.width <= minX) return null
+
+    const lineY = (sourceCenter.y + targetCenter.y) / 2
+    const limit = candidate.height / 2 + clearance
+    const distance = Math.abs(candidateCenter.y - lineY)
+    if (distance >= limit) return null
+
+    return {
+      x: 0,
+      y: Math.ceil(limit - distance) + (candidateCenter.y <= lineY ? -clearance : clearance)
+    }
+  }
+
+  const minY = Math.min(sourceCenter.y, targetCenter.y)
+  const maxY = Math.max(sourceCenter.y, targetCenter.y)
+  if (candidate.y >= maxY || candidate.y + candidate.height <= minY) return null
+
+  const lineX = (sourceCenter.x + targetCenter.x) / 2
+  const limit = candidate.width / 2 + clearance
+  const distance = Math.abs(candidateCenter.x - lineX)
+  if (distance >= limit) return null
+
+  return {
+    x: Math.ceil(limit - distance) + (candidateCenter.x <= lineX ? -clearance : clearance),
+    y: 0
+  }
+}
+
+function relieveEdgeOverlaps(boxes: Map<string, PositionedNodeBox>, edges: Array<Pick<LayoutEdge, 'source' | 'target'>>, density: TopologyLayoutDensity) {
+  for (let pass = 0; pass < 2; pass += 1) {
+    let moved = false
+
+    edges.forEach((edge) => {
+      const source = boxes.get(edge.source)
+      const target = boxes.get(edge.target)
+      if (!source || !target) return
+
+      boxes.forEach((candidate, nodeId) => {
+        if (nodeId === edge.source || nodeId === edge.target) return
+        const shift = edgeCorridorShift(source, target, candidate, density)
+        if (!shift) return
+        candidate.x += shift.x
+        candidate.y += shift.y
+        moved = true
+      })
+    })
+
+    if (!moved) break
+    resolveNodeCollisions(boxes, density)
+  }
+}
+
+function stabilizeNodeLayout(boxes: Map<string, PositionedNodeBox>, edges: Array<Pick<LayoutEdge, 'source' | 'target'>>, density: TopologyLayoutDensity) {
+  resolveNodeCollisions(boxes, density)
+  relieveEdgeOverlaps(boxes, edges, density)
+  resolveNodeCollisions(boxes, density)
+}
+
 export function applyTopologyAutoLayout<
   TNode extends LayoutNode,
   TEdge extends LayoutEdge,
@@ -318,25 +463,42 @@ export function applyTopologyAutoLayout<
 
   // Determine how many distinct ranks (x-columns) dagre produced
   const xPositions = new Set([...dagreOrder.values()].map((pos) => Math.round(pos.x / 40)))
-  const useFullDagre = !options.namespaceScope && graph.nodes.length <= 84 && (xPositions.size >= 3 || (graph.nodes.length <= 28 && xPositions.size >= 2))
+  const edgeDensity = graph.edges.length / Math.max(1, graph.nodes.length)
+  const useFullDagre = !options.namespaceScope && graph.nodes.length <= 64 && edgeDensity <= 2.6 && (xPositions.size >= 4 || (graph.nodes.length <= 24 && xPositions.size >= 2))
 
   if (useFullDagre) {
     // Use dagre positions directly for proper tree layout
     const profile = densityProfiles[density]
-    const minX = Math.min(...[...dagreOrder.values()].map((p) => p.x))
-    const minY = Math.min(...[...dagreOrder.values()].map((p) => p.y))
+    const rawPositions = new Map<string, PositionedNodeBox>()
+
+    graph.nodes.forEach((node) => {
+      const pos = dagreOrder.get(node.id)
+      const size = nodeMetrics.get(node.id)
+      if (!pos || !size) return
+      rawPositions.set(node.id, {
+        x: Math.round(pos.x),
+        y: Math.round(pos.y),
+        width: size.width,
+        height: size.height
+      })
+    })
+
+    stabilizeNodeLayout(rawPositions, graph.edges, density)
+
+    const minX = Math.min(...[...rawPositions.values()].map((p) => p.x))
+    const minY = Math.min(...[...rawPositions.values()].map((p) => p.y))
 
     return {
       ...graph,
       nodes: graph.nodes.map((node) => {
-        const pos = dagreOrder.get(node.id)
+        const positioned = rawPositions.get(node.id)
         const size = nodeMetrics.get(node.id)
-        if (!pos || !size) return node
+        if (!positioned || !size) return node
         return {
           ...node,
           position: {
-            x: Math.round(pos.x - minX + profile.margin),
-            y: Math.round(pos.y - minY + profile.margin)
+            x: Math.round(positioned.x - minX + profile.margin),
+            y: Math.round(positioned.y - minY + profile.margin)
           },
           data: {
             ...node.data,
@@ -459,6 +621,8 @@ export function applyTopologyAutoLayout<
       })
     })
   })
+
+  stabilizeNodeLayout(rawPositions, graph.edges, density)
 
   const minX = Math.min(...[...rawPositions.values()].map((value) => value.x), 0)
   const minY = Math.min(...[...rawPositions.values()].map((value) => value.y), 0)

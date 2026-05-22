@@ -7,10 +7,12 @@
         :title="collapsed ? '展开侧栏' : '收起侧栏'"
         @click="toggleCollapse"
       >
-        <span class="sidebar-toggle-icon" aria-hidden="true">
-          <span class="sidebar-toggle-pane sidebar-toggle-pane--side" />
-          <span class="sidebar-toggle-pane sidebar-toggle-pane--content" />
-        </span>
+        <svg class="sidebar-toggle-glyph" viewBox="0 0 1024 1024" aria-hidden="true">
+          <path
+            class="sidebar-toggle-glyph__path"
+            d="M106.24 535.893L271.787 651.52c20.053 14.08 45.653 0 45.653-22.613V395.093c0-5.973-2.133-11.946-5.547-17.066-9.386-12.374-27.306-14.934-40.106-5.547L106.24 488.107c-14.08 11.093-14.08 33.706 0 47.786z m23.04-322.56h785.067c18.773 0 34.133-15.36 34.133-34.133s-15.36-34.133-34.133-34.133H129.28c-18.773 0-34.133 15.36-34.133 34.133s15.36 34.133 34.133 34.133z m0 665.6h785.067c18.773 0 34.133-15.36 34.133-34.133s-15.36-34.133-34.133-34.133H129.28c-18.773 0-34.133 15.36-34.133 34.133s15.36 34.133 34.133 34.133zM419.413 435.2h494.934c18.773 0 34.133-15.36 34.133-34.133s-15.36-34.134-34.133-34.134H419.413c-18.773 0-34.133 15.36-34.133 34.134s15.36 34.133 34.133 34.133z m0 221.867h495.36c18.774 0 34.134-15.36 34.134-34.134s-15.36-34.133-34.134-34.133h-495.36c-18.773 0-34.133 15.36-34.133 34.133v0.427c0 18.347 15.36 33.707 34.133 33.707z"
+          />
+        </svg>
       </button>
 
       <nav class="breadcrumb">
@@ -31,7 +33,6 @@
       </nav>
     </div>
 
-    <!-- 右侧：操作按钮 + 用户 -->
     <div class="top-bar-right">
       <!-- 通知 -->
       <el-dropdown trigger="click">
@@ -196,58 +197,28 @@ html.dark .sidebar-toggle-btn:hover {
   box-shadow: none;
 }
 
-.sidebar-toggle-icon {
-  position: relative;
-  width: 18px;
-  height: 18px;
+.sidebar-toggle-glyph {
+  width: 19px;
+  height: 19px;
   display: block;
+  fill: currentColor;
+  transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sidebar-toggle-pane {
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  border-radius: 4px;
-  transition:
-    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    left 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    right 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.18s ease,
-    box-shadow 0.18s ease;
+.sidebar-toggle-glyph__path {
+  fill: currentColor;
 }
 
-.sidebar-toggle-pane--side {
-  left: 1px;
-  width: 5px;
-  background: currentColor;
-  opacity: 0.92;
+.sidebar-toggle-btn:hover .sidebar-toggle-glyph {
+  transform: scale(1.03);
 }
 
-.sidebar-toggle-pane--content {
-  right: 1px;
-  width: 9px;
-  border: 1.8px solid currentColor;
-  background: transparent;
-  opacity: 0.82;
+.sidebar-toggle-btn--collapsed .sidebar-toggle-glyph {
+  transform: scaleX(-1);
 }
 
-.sidebar-toggle-btn:hover .sidebar-toggle-pane--side {
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
-}
-
-.sidebar-toggle-btn:hover .sidebar-toggle-pane--content {
-  transform: translateX(1px);
-}
-
-.sidebar-toggle-btn--collapsed .sidebar-toggle-pane--side {
-  width: 3px;
-  opacity: 0.68;
-}
-
-.sidebar-toggle-btn--collapsed .sidebar-toggle-pane--content {
-  width: 11px;
-  opacity: 0.92;
+.sidebar-toggle-btn--collapsed:hover .sidebar-toggle-glyph {
+  transform: scaleX(-1) scale(1.03);
 }
 
 /* ── Breadcrumb ────────────────────────────────────────────────────────── */

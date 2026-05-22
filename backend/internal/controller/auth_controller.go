@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -16,16 +17,18 @@ type AuthController struct {
 	jwtMgr *auth.Manager
 	// rbacSvc 负责用户校验、查询角色与权限点、修改密码等业务逻辑。
 	rbacSvc *service.RbacService
+	// auditSvc 负责记录登录/退出等认证类审计日志。
+	auditSvc *service.AuditService
 	// tokenTTL 为 access token 的有效期（由配置注入）。
 	tokenTTL time.Duration
 }
 
-func NewAuthController(jwtMgr *auth.Manager, rbacSvc *service.RbacService, tokenTTL time.Duration) *AuthController {
+func NewAuthController(jwtMgr *auth.Manager, rbacSvc *service.RbacService, auditSvc *service.AuditService, tokenTTL time.Duration) *AuthController {
 	// NewAuthController 通过依赖注入方式组装鉴权控制器，避免使用包级全局变量。
 	if tokenTTL <= 0 {
 		tokenTTL = 7 * 24 * time.Hour
 	}
-	return &AuthController{jwtMgr: jwtMgr, rbacSvc: rbacSvc, tokenTTL: tokenTTL}
+	return &AuthController{jwtMgr: jwtMgr, rbacSvc: rbacSvc, auditSvc: auditSvc, tokenTTL: tokenTTL}
 }
 
 type loginReq struct {
@@ -45,6 +48,36 @@ type LoginResp struct {
 	AccessToken string    `json:"access_token"`
 	ExpiresIn   int       `json:"expires_in"`
 	User        LoginUser `json:"user"`
+}
+
+func (ac *AuthController) recordAuthAudit(c *gin.Context, userID uint64, username, resourceName string, code int, detail string) {
+	if ac == nil || ac.auditSvc == nil {
+		return
+	}
+	path := c.Request.URL.Path
+	clientIP := c.ClientIP()
+	rid := ""
+	if v, ok := c.Get("request_id"); ok {
+		if s, ok := v.(string); ok {
+			rid = s
+		}
+	}
+	auditCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	go func() {
+		defer cancel()
+		ac.auditSvc.Record(auditCtx, service.AuditEntry{
+			UserID:       userID,
+			Username:     username,
+			Action:       "auth",
+			Resource:     "session",
+			ResourceName: resourceName,
+			Path:         path,
+			StatusCode:   code,
+			Detail:       detail,
+			ClientIP:     clientIP,
+			RequestID:    rid,
+		})
+	}()
 }
 
 // @Summary 账号密码登录
@@ -86,14 +119,19 @@ func (ac *AuthController) Login(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case service.ErrInvalidParams:
+			ac.recordAuthAudit(c, 0, username, "login", 4000, "参数错误")
 			resp.Fail(c, 4000, "参数错误")
 		case service.ErrAuthUserNotFound:
+			ac.recordAuthAudit(c, 0, username, "login", 4000, "用户不存在")
 			resp.Fail(c, 4000, "用户不存在")
 		case service.ErrAuthUserDisabled:
+			ac.recordAuthAudit(c, 0, username, "login", 4000, "账号已被禁用")
 			resp.Fail(c, 4000, "账号已被禁用")
 		case service.ErrAuthPasswordIncorrect:
+			ac.recordAuthAudit(c, 0, username, "login", 4000, "密码不正确")
 			resp.Fail(c, 4000, "密码不正确")
 		default:
+			ac.recordAuthAudit(c, 0, username, "login", 5000, "内部错误")
 			resp.Fail(c, 5000, "内部错误")
 		}
 		return
@@ -107,9 +145,11 @@ func (ac *AuthController) Login(c *gin.Context) {
 		Perms:    u.Perms,
 	}, ac.tokenTTL)
 	if err != nil {
+		ac.recordAuthAudit(c, uint64(u.ID), u.Username, "login", 5000, "签发令牌失败")
 		resp.Fail(c, 5000, "内部错误")
 		return
 	}
+	ac.recordAuthAudit(c, uint64(u.ID), u.Username, "login", 0, "登录成功")
 
 	resp.OK(c, gin.H{
 		"access_token": token,
@@ -180,6 +220,19 @@ func (ac *AuthController) Me(c *gin.Context) {
 // @Router /auth/logout [post]
 func (ac *AuthController) Logout(c *gin.Context) {
 	// Logout 当前为无状态接口（JWT 无服务端会话）；前端清理 token 即可。
+	userID := uint64(0)
+	username := ""
+	authHeader := c.GetHeader("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") && ac.jwtMgr != nil {
+		token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+		if token != "" {
+			if claims, err := ac.jwtMgr.ParseToken(token); err == nil && claims != nil {
+				userID = uint64(claims.UserID)
+				username = claims.Username
+			}
+		}
+	}
+	ac.recordAuthAudit(c, userID, username, "logout", 0, "退出登录")
 	resp.OK(c, gin.H{})
 }
 

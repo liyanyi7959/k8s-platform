@@ -17,68 +17,91 @@
           </div>
           <div class="topology-console-head__actions">
             <el-button size="small" :icon="Document" @click="syntaxVisible = true">Mermaid</el-button>
-            <el-button size="small" :icon="RefreshRight" :loading="loading" @click="loadTopology">刷新</el-button>
+            <el-button size="small" :icon="RefreshRight" :loading="loading" @click="loadTopology({ force: true })">刷新</el-button>
             <el-button size="small" @click="resetQuery">重置</el-button>
             <el-button size="small" type="primary" :loading="loading" @click="loadTopology">生成关系图</el-button>
           </div>
         </div>
 
         <div class="topology-filter-combo">
-          <div class="topology-filter-combo__selects">
-            <el-select v-if="!props.fixedClusterId" v-model="clusterId" placeholder="集群" class="topology-combo-select" filterable>
-              <el-option v-for="item in clusters" :key="item.id" :label="item.name" :value="item.id" />
-            </el-select>
-            <el-select v-model="mode" placeholder="模板" class="topology-combo-select">
-              <el-option v-for="item in modeOptions" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
-            <el-select v-if="requiresNamespace" v-model="namespace" placeholder="命名空间" class="topology-combo-select" filterable clearable>
-              <el-option v-for="item in namespaces" :key="item" :label="item" :value="item" />
-            </el-select>
-            <el-select v-if="supportsNamespaceScope" v-model="scope" placeholder="视角" class="topology-combo-select">
-              <el-option label="单资源" value="resource" />
-              <el-option label="命名空间" value="namespace" />
-            </el-select>
-            <el-select
-              v-if="requiresResourceSelection"
-              v-model="resourceName"
-              :placeholder="resourceSelectPlaceholder"
-              class="topology-combo-select topology-combo-select--resource"
-              filterable
-              clearable
-              default-first-option
-              :loading="resourceOptionsLoading"
-              no-data-text="暂无可选资源"
-            >
-              <el-option v-for="item in resourceOptions" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
-            <el-select v-model="graphViewMode" placeholder="图谱模式" class="topology-combo-select">
-              <el-option v-for="item in graphViewModeOptions" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
+          <div class="topology-filter-group topology-filter-group--primary">
+            <div class="topology-filter-combo__selects">
+              <el-select v-if="!props.fixedClusterId" v-model="clusterId" placeholder="集群" class="topology-combo-select" filterable>
+                <el-option v-for="item in clusters" :key="item.id" :label="item.name" :value="item.id" />
+              </el-select>
+              <el-select v-model="mode" placeholder="资源类型" class="topology-combo-select">
+                <el-option v-for="item in modeOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+              <el-select v-if="requiresNamespace" v-model="namespace" placeholder="命名空间" class="topology-combo-select" filterable clearable>
+                <el-option v-for="item in namespaces" :key="item" :label="item" :value="item" />
+              </el-select>
+              <el-select v-if="supportsNamespaceScope" v-model="scope" placeholder="视角" class="topology-combo-select">
+                <el-option label="单资源" value="resource" />
+                <el-option label="命名空间" value="namespace" />
+              </el-select>
+              <el-select
+                v-if="requiresResourceSelection"
+                v-model="resourceName"
+                :placeholder="resourceSelectPlaceholder"
+                class="topology-combo-select topology-combo-select--resource"
+                filterable
+                clearable
+                default-first-option
+                :loading="resourceOptionsLoading"
+                no-data-text="暂无可选资源"
+              >
+                <el-option v-for="item in resourceOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+              <el-select v-model="graphViewMode" placeholder="图谱模式" class="topology-combo-select">
+                <el-option v-for="item in graphViewModeOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </div>
           </div>
-          <div class="topology-filter-combo__prefs">
-            <div class="topology-toggle-item">
-              <span class="topology-toggle-item__text">关键资源</span>
-              <el-switch v-model="onlyKeyResources" inline-prompt active-text="开" inactive-text="关" />
+          <div class="topology-filter-group topology-filter-group--prefs">
+            <div class="topology-filter-combo__prefs">
+              <div class="topology-toggle-item">
+                <span class="topology-toggle-item__text">关键资源</span>
+                <el-switch v-model="onlyKeyResources" inline-prompt active-text="开" inactive-text="关" />
+              </div>
             </div>
-            <div class="topology-toggle-item">
-              <span class="topology-toggle-item__text">小地图</span>
-              <el-switch v-model="minimapVisible" inline-prompt active-text="开" inactive-text="关" />
-            </div>
-            <el-radio-group v-model="layoutDensity" size="small">
-              <el-radio-button v-for="item in layoutDensityOptions" :key="item.value" :label="item.value">{{ item.label }}</el-radio-button>
-            </el-radio-group>
           </div>
         </div>
       </section>
 
       <section ref="canvasPanelRef" :style="canvasPanelStyle" class="topology-panel topology-panel--canvas topology-panel--main">
         <div class="topology-overlay-toolbar">
-          <el-button size="small" :disabled="visibleGraphMeta.nodes === 0" @click="zoomOut">缩小</el-button>
-          <el-button size="small" :disabled="visibleGraphMeta.nodes === 0" @click="fitView">适应视图</el-button>
-          <el-button size="small" :disabled="visibleGraphMeta.nodes === 0" @click="zoomIn">放大</el-button>
-          <el-button size="small" :disabled="visibleGraphMeta.nodes === 0" @click="relayoutGraph">一键美化</el-button>
-          <el-button size="small" :icon="Download" :disabled="visibleGraphMeta.nodes === 0" @click="exportPng">导出 PNG</el-button>
-          <el-button size="small" :icon="FullScreen" :disabled="visibleGraphMeta.nodes === 0" @click="toggleFullscreen">全屏</el-button>
+          <div class="topology-overlay-toolbar__group">
+            <el-tooltip content="缩小" placement="top">
+              <el-button class="topology-tool-btn" size="small" circle :icon="Minus" :disabled="visibleGraphMeta.nodes === 0" aria-label="缩小" @click="zoomOut" />
+            </el-tooltip>
+            <el-tooltip content="适应视图" placement="top">
+              <el-button class="topology-tool-btn" size="small" circle :icon="Aim" :disabled="visibleGraphMeta.nodes === 0" aria-label="适应视图" @click="fitView" />
+            </el-tooltip>
+            <el-tooltip content="放大" placement="top">
+              <el-button class="topology-tool-btn" size="small" circle :icon="Plus" :disabled="visibleGraphMeta.nodes === 0" aria-label="放大" @click="zoomIn" />
+            </el-tooltip>
+            <el-tooltip content="一键美化" placement="top">
+              <el-button class="topology-tool-btn" size="small" circle :icon="MagicStick" :disabled="visibleGraphMeta.nodes === 0" aria-label="一键美化" @click="relayoutGraph" />
+            </el-tooltip>
+          </div>
+          <div class="topology-overlay-toolbar__group">
+            <el-tooltip :content="minimapVisible ? '隐藏小地图' : '显示小地图'" placement="top">
+              <el-button
+                :class="['topology-tool-btn', { 'topology-tool-btn--active': minimapVisible }]"
+                size="small"
+                circle
+                :icon="Operation"
+                aria-label="切换小地图"
+                @click="minimapVisible = !minimapVisible"
+              />
+            </el-tooltip>
+            <el-tooltip content="导出 PNG" placement="top">
+              <el-button class="topology-tool-btn" size="small" circle :icon="Download" :disabled="visibleGraphMeta.nodes === 0" aria-label="导出 PNG" @click="exportPng" />
+            </el-tooltip>
+            <el-tooltip content="全屏" placement="top">
+              <el-button class="topology-tool-btn" size="small" circle :icon="FullScreen" :disabled="visibleGraphMeta.nodes === 0" aria-label="全屏" @click="toggleFullscreen" />
+            </el-tooltip>
+          </div>
         </div>
 
         <EmptyState v-if="!loading && visibleGraphMeta.nodes === 0" type="no-data" description="当前没有可展示的关系数据；可直接生成命名空间视图，或切换单资源后搜索并选择资源" />
@@ -99,7 +122,21 @@
       <div class="topology-syntax-actions">
         <el-button :icon="CopyDocument" :disabled="visibleGraphMeta.nodes === 0" @click="copyMermaid">复制</el-button>
       </div>
-      <CodeMirrorViewer :text="mermaidPreviewText" language="text" height="78vh" />
+      <div
+        v-if="mermaidRendering"
+        class="topology-mermaid-preview topology-mermaid-preview--pending"
+      >
+        正在渲染 Mermaid 预览...
+      </div>
+      <div
+        v-else-if="mermaidRenderError"
+        class="topology-mermaid-preview topology-mermaid-preview--error"
+      >
+        {{ mermaidRenderError }}
+      </div>
+      <div v-else class="topology-mermaid-preview">
+        <div class="topology-mermaid-preview__canvas" v-html="mermaidRenderedSvg"></div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -107,7 +144,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { CopyDocument, Document, Download, FullScreen, RefreshRight } from '@element-plus/icons-vue'
+import { Aim, CopyDocument, Document, Download, FullScreen, MagicStick, Minus, Operation, Plus, RefreshRight } from '@element-plus/icons-vue'
 import * as clustersApi from '@/features/clusters/api/clusters'
 import * as k8sApi from '@/features/k8s/api/k8s'
 import type TopologyFlowCanvasComponent from '@/features/k8s/components/topology/TopologyFlowCanvas.vue'
@@ -116,7 +153,6 @@ import { applyTopologyAutoLayout } from '@/features/k8s/components/topology/topo
 import type { TopologyLayoutDensity, TopologyLayoutStrategy } from '@/features/k8s/components/topology/topologyLayout'
 import { toPng } from 'html-to-image'
 import EmptyState from '@/shared/components/EmptyState.vue'
-import CodeMirrorViewer from '@/shared/components/CodeMirrorViewer.vue'
 import { matchLabels, podUsesPvc } from '@/features/k8s/pages/ClusterManageView.utils'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 import type { ApiError } from '@/shared/utils/error'
@@ -170,12 +206,13 @@ const canvasPanelRef = ref<HTMLDivElement | null>(null)
 function defaultScopeForMode(mode: TopologyMode): TopologyScope {
   return mode === 'namespace' ? 'namespace' : 'resource'
 }
+const defaultMode: TopologyMode = 'pod'
 const loading = ref(false)
 const clusters = ref<clustersApi.ClusterItem[]>([])
 const namespaces = ref<string[]>([])
 const clusterId = ref<number | undefined>(undefined)
-const mode = ref<TopologyMode>('service')
-const scope = ref<TopologyScope>(defaultScopeForMode('service'))
+const mode = ref<TopologyMode>(defaultMode)
+const scope = ref<TopologyScope>(defaultScopeForMode(defaultMode))
 const graphViewMode = ref<GraphViewMode>('analysis')
 const layoutDensity = ref<TopologyLayoutDensity>('balanced')
 const minimapVisible = ref(true)
@@ -185,20 +222,38 @@ const resourceOptions = ref<ResourceOption[]>([])
 const resourceOptionsLoading = ref(false)
 const currentGraph = ref<TopologyGraph>({ nodes: [], edges: [], mermaid: '' })
 const syntaxVisible = ref(false)
+const mermaidRenderedSvg = ref('')
+const mermaidRendering = ref(false)
+const mermaidRenderError = ref('')
+let mermaidRenderVersion = 0
 watch(syntaxVisible, (val) => {
   if (val) {
-    const { nodes, edges } = visibleGraph.value
-    mermaidPreviewText.value = buildMermaid(nodes, edges) || 'graph LR\n  A[等待生成关系图]'
+    mermaidPreviewText.value = buildVisibleMermaidText()
+    void renderMermaidPreview(mermaidPreviewText.value)
+    return
   }
+  mermaidRenderVersion += 1
+  mermaidRendering.value = false
+  mermaidRenderedSvg.value = ''
+  mermaidRenderError.value = ''
 })
 const onlyKeyResources = ref(false)
 let resourceOptionsRequestId = 0
 const resourceOptionsCache = new Map<string, ResourceOption[]>()
+const TOPOLOGY_DATA_CACHE_TTL_MS = 15_000
+type TopologyListResult = { list: any[] }
+type TopologyListCacheEntry = {
+  expiresAt: number
+  value?: TopologyListResult
+  promise?: Promise<TopologyListResult>
+}
+const topologyDataCache = new Map<string, TopologyListCacheEntry>()
+let topologyForceRefresh = false
 
 const modeOptions = [
+  { label: 'Pod', value: 'pod' },
   { label: 'Service', value: 'service' },
   { label: 'PVC', value: 'pvc' },
-  { label: 'Pod', value: 'pod' },
   { label: 'Node', value: 'node' },
   { label: 'Ingress', value: 'ingress' },
   { label: 'Config', value: 'config' },
@@ -214,12 +269,6 @@ const graphViewModeOptions = [
   { label: '架构视图', value: 'architecture' },
   { label: '分析视图', value: 'analysis' },
   { label: '异常视图', value: 'anomaly' }
-] as const
-
-const layoutDensityOptions = [
-  { label: '紧凑布局', value: 'compact' },
-  { label: '均衡布局', value: 'balanced' },
-  { label: '舒展布局', value: 'spacious' }
 ] as const
 
 const layoutMap: Record<string, number[]> = {
@@ -332,7 +381,7 @@ const visibleGraph = computed<TopologyGraph>(() => {
     })
   }
   const lanes = (currentGraph.value.lanes || []).filter((lane) => nodes.some((node) => node.data.group === lane.key))
-  return { nodes, edges, mermaid: buildMermaid(nodes, edges), lanes }
+  return { nodes, edges, mermaid: currentGraph.value.mermaid, lanes }
 })
 const visibleGraphMeta = computed<GraphMeta>(() => ({ nodes: visibleGraph.value.nodes.length, edges: visibleGraph.value.edges.length }))
 const canvasPanelStyle = computed<Record<string, string> | undefined>(() => {
@@ -356,19 +405,117 @@ const canvasPanelStyle = computed<Record<string, string> | undefined>(() => {
 // mermaid 文本惰性生成：只在弹窗打开时才计算
 const mermaidPreviewText = ref('graph LR\n  A[等待生成关系图]')
 
+function buildVisibleMermaidText() {
+  const { nodes, edges } = visibleGraph.value
+  return buildMermaid(nodes, edges) || 'graph LR\n  A[等待生成关系图]'
+}
+
+async function renderMermaidPreview(source: string) {
+  const version = ++mermaidRenderVersion
+  mermaidRendering.value = true
+  mermaidRenderError.value = ''
+  mermaidRenderedSvg.value = ''
+
+  try {
+    const mermaidModule = await import('mermaid')
+    const mermaid = mermaidModule.default
+
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'loose',
+      theme: isDark() ? 'dark' : 'default',
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+      },
+    })
+
+    const renderId = `topology-mermaid-${Date.now()}-${version}`
+    const { svg } = await mermaid.render(renderId, source)
+    if (version !== mermaidRenderVersion) return
+    mermaidRenderedSvg.value = svg
+  } catch (error) {
+    if (version !== mermaidRenderVersion) return
+    const message = String((error as Error)?.message || error || '未知错误')
+    mermaidRenderError.value = `Mermaid 预览渲染失败：${message}`
+  } finally {
+    if (version === mermaidRenderVersion) mermaidRendering.value = false
+  }
+}
+
 function isDark() {
   return document.documentElement.classList.contains('dark')
 }
 
+function topologyCacheKey(cluster: number, resource: string, namespace = '*') {
+  return `${cluster}:${resource}:${namespace}`
+}
+
+async function getTopologyCachedList(cacheKey: string, loader: () => Promise<TopologyListResult>): Promise<TopologyListResult> {
+  if (topologyForceRefresh) topologyDataCache.delete(cacheKey)
+
+  const now = Date.now()
+  const cached = topologyDataCache.get(cacheKey)
+  if (cached?.value && cached.expiresAt > now) return cached.value
+  if (cached?.promise) return cached.promise
+
+  const promise = loader()
+    .then((result) => {
+      topologyDataCache.set(cacheKey, {
+        expiresAt: Date.now() + TOPOLOGY_DATA_CACHE_TTL_MS,
+        value: result
+      })
+      return result
+    })
+    .catch((error) => {
+      topologyDataCache.delete(cacheKey)
+      throw error
+    })
+
+  topologyDataCache.set(cacheKey, {
+    expiresAt: now + TOPOLOGY_DATA_CACHE_TTL_MS,
+    promise
+  })
+
+  return promise
+}
+
 function buildMermaid(nodes: TopologyNode[], edges: TopologyEdge[]) {
   const lines = ['graph LR']
-  for (const node of nodes) {
-    const label = String((node.data as any)?.title ?? node.id).replace(/"/g, '\\"')
-    lines.push(`  ${node.id}["${label}"]`)
-  }
+  const mermaidNodeIds = new Map<string, string>()
+
+  nodes.forEach((node, index) => {
+    const mermaidId = `n${index}`
+    mermaidNodeIds.set(node.id, mermaidId)
+
+    const label = String((node.data as any)?.title ?? node.id)
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"')
+      .replace(/\r?\n+/g, '<br/>')
+
+    lines.push(`  ${mermaidId}["${label}"]`)
+  })
+
   for (const edge of edges) {
-    const label = String((edge.label ?? '')).trim()
-    lines.push(label ? `  ${edge.source} -->|${label}| ${edge.target}` : `  ${edge.source} --> ${edge.target}`)
+    const sourceId = mermaidNodeIds.get(edge.source)
+    const targetId = mermaidNodeIds.get(edge.target)
+    if (!sourceId || !targetId) continue
+
+    const label = String(edge.label ?? '')
+      .trim()
+      .replace(/\r?\n+/g, ' ')
+      .replace(/\(/g, '（')
+      .replace(/\)/g, '）')
+      .replace(/\[/g, '【')
+      .replace(/\]/g, '】')
+      .replace(/\{/g, '｛')
+      .replace(/\}/g, '｝')
+      .replace(/</g, '＜')
+      .replace(/>/g, '＞')
+      .replace(/\|/g, '｜')
+      .replace(/"/g, "'")
+
+    lines.push(label ? `  ${sourceId} -->|${label}| ${targetId}` : `  ${sourceId} --> ${targetId}`)
   }
   return lines.join('\n')
 }
@@ -1021,27 +1168,23 @@ async function buildNamespacePVCTopology(cluster: number, ns: string): Promise<T
 }
 
 async function buildPodTopology(cluster: number, ns: string, name: string): Promise<TopologyGraph> {
-  const [pods, replicaSets, workloads, services, endpoints, endpointSlices, ingresses, events, networkPolicies, pvcs, pvs, storageClasses, volumeAttachments, configMaps, secrets, serviceAccounts, roleBindings, clusterRoleBindings, roles, clusterRoles] = await Promise.all([
-    k8sApi.listPods(cluster, { namespace: ns }),
-    k8sApi.listReplicaSets(cluster, { namespace: ns }),
-    k8sApi.listWorkloads(cluster, { namespace: ns }),
-    k8sApi.listServices(cluster, { namespace: ns }),
-    k8sApi.listEndpoints(cluster, { namespace: ns }),
-    k8sApi.listEndpointSlices(cluster, { namespace: ns }),
-    k8sApi.listIngresses(cluster, { namespace: ns }),
-    k8sApi.listEvents(cluster, { namespace: ns }),
-    k8sApi.listNetworkPolicies(cluster, { namespace: ns }),
-    k8sApi.listPVCs(cluster, { namespace: ns }),
-    k8sApi.listPVs(cluster, {}),
-    k8sApi.listStorageClasses(cluster, {}),
-    k8sApi.listVolumeAttachments(cluster, {}),
-    k8sApi.listConfigMaps(cluster, { namespace: ns }),
-    k8sApi.listSecrets(cluster, { namespace: ns }),
-    k8sApi.listServiceAccounts(cluster, { namespace: ns }),
-    k8sApi.listRoleBindings(cluster, { namespace: ns }),
-    k8sApi.listClusterRoleBindings(cluster, {}),
-    k8sApi.listRoles(cluster, { namespace: ns }),
-    k8sApi.listClusterRoles(cluster, {})
+  const [pods, replicaSets, workloads, services, endpoints, endpointSlices, ingresses, events, networkPolicies, pvcs, pvs, storageClasses, volumeAttachments, configMaps, secrets, roleBindings] = await Promise.all([
+    getTopologyCachedList(topologyCacheKey(cluster, 'pods', ns), () => k8sApi.listPods(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'replicasets', ns), () => k8sApi.listReplicaSets(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'workloads', ns), () => k8sApi.listWorkloads(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'services', ns), () => k8sApi.listServices(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'endpoints', ns), () => k8sApi.listEndpoints(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'endpointslices', ns), () => k8sApi.listEndpointSlices(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'ingresses', ns), () => k8sApi.listIngresses(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'events', ns), () => k8sApi.listEvents(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'networkpolicies', ns), () => k8sApi.listNetworkPolicies(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'pvcs', ns), () => k8sApi.listPVCs(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'pvs'), () => k8sApi.listPVs(cluster, {})),
+    getTopologyCachedList(topologyCacheKey(cluster, 'storageclasses'), () => k8sApi.listStorageClasses(cluster, {})),
+    getTopologyCachedList(topologyCacheKey(cluster, 'volumeattachments'), () => k8sApi.listVolumeAttachments(cluster, {})),
+    getTopologyCachedList(topologyCacheKey(cluster, 'configmaps', ns), () => k8sApi.listConfigMaps(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'secrets', ns), () => k8sApi.listSecrets(cluster, { namespace: ns })),
+    getTopologyCachedList(topologyCacheKey(cluster, 'rolebindings', ns), () => k8sApi.listRoleBindings(cluster, { namespace: ns }))
   ])
   const pod = (pods.list || []).find((it: any) => String(it?.metadata?.name ?? '') === name)
   if (!pod) throw new Error(`未找到 Pod ${ns}/${name}`)
@@ -1104,46 +1247,28 @@ async function buildPodTopology(cluster: number, ns: string, name: string): Prom
   }
 
   const serviceAccountName = String(pod?.spec?.serviceAccountName ?? 'default').trim()
-  const serviceAccount = (serviceAccounts.list || []).find((it: any) => String(it?.metadata?.name ?? '') === serviceAccountName)
-  if (serviceAccount) {
-    const localBindings = takeByDepth((roleBindings.list || []).filter((it: any) => Array.isArray(it?.subjects) && it.subjects.some((s: any) => String(s?.kind ?? '') === 'ServiceAccount' && String(s?.name ?? '') === serviceAccountName && String(s?.namespace ?? ns) === ns)))
-    const globalBindings = takeByDepth((clusterRoleBindings.list || []).filter((it: any) => Array.isArray(it?.subjects) && it.subjects.some((s: any) => String(s?.kind ?? '') === 'ServiceAccount' && String(s?.name ?? '') === serviceAccountName && String(s?.namespace ?? '') === ns)))
-    nodes.push(createNode('sa', lane.identityX, 620, 'ServiceAccount', serviceAccountName, `bindings=${localBindings.length + globalBindings.length}`, ns, 'network', 'ServiceAccount', ns, serviceAccountName, 'identity', {
-      ...getServiceAccountSeverity(localBindings, globalBindings),
-      emphasis: 'primary'
+  const localBindings = takeByDepth((roleBindings.list || []).filter((it: any) => Array.isArray(it?.subjects) && it.subjects.some((s: any) => String(s?.kind ?? '') === 'ServiceAccount' && String(s?.name ?? '') === serviceAccountName && String(s?.namespace ?? ns) === ns)))
+  nodes.push(createNode('sa', lane.identityX, 620, 'ServiceAccount', serviceAccountName, `bindings=${localBindings.length}`, ns, 'network', 'ServiceAccount', ns, serviceAccountName, 'identity', {
+    ...getServiceAccountSeverity(localBindings, []),
+    emphasis: 'primary',
+    tooltip: [`${ns}/${serviceAccountName}`, `localBindings=${localBindings.length}`].join('\n')
+  }))
+  edges.push(createEdge('sa-pod', 'sa', 'pod', 'identity', 'binds'))
+  localBindings.forEach((it: any, idx: number) => {
+    const rbId = `rb-${idx}`
+    const roleRefName = String(it?.roleRef?.name ?? '-')
+    const roleRefKind = String(it?.roleRef?.kind ?? 'Role').trim() || 'Role'
+    const roleTargetNamespace = roleRefKind === 'ClusterRole' ? undefined : ns
+    const roleScopeText = roleRefKind === 'ClusterRole' ? 'cluster scope' : ns
+    nodes.push(createNode(rbId, lane.identityX - 320, 920 + idx * 120, 'RoleBinding', String(it?.metadata?.name ?? '-'), `roleRef=${roleRefKind}/${roleRefName}`, ns, 'network', 'RoleBinding', ns, String(it?.metadata?.name ?? '-'), 'identity'))
+    edges.push(createEdge(`sa-rb-${idx}`, 'sa', rbId, 'bound', 'binds'))
+    const roleId = `role-${idx}`
+    nodes.push(createNode(roleId, lane.identityX, 920 + idx * 120, roleRefKind, roleRefName, '按引用解析', roleScopeText, 'network', roleRefKind, roleTargetNamespace, roleRefName, 'identity', {
+      severity: roleRefName.toLowerCase() === 'cluster-admin' ? 'error' : 'normal',
+      statusText: roleRefName.toLowerCase() === 'cluster-admin' ? '高权限引用' : 'roleRef'
     }))
-    edges.push(createEdge('sa-pod', 'sa', 'pod', 'identity', 'binds'))
-    localBindings.forEach((it: any, idx: number) => {
-      const rbId = `rb-${idx}`
-      const roleRefName = String(it?.roleRef?.name ?? '-')
-        nodes.push(createNode(rbId, lane.identityX - 320, 920 + idx * 120, 'RoleBinding', String(it?.metadata?.name ?? '-'), `roleRef=${roleRefName}`, ns, 'network', 'RoleBinding', ns, String(it?.metadata?.name ?? '-'), 'identity'))
-      edges.push(createEdge(`sa-rb-${idx}`, 'sa', rbId, 'bound', 'binds'))
-      const role = (roles.list || []).find((r: any) => String(r?.metadata?.name ?? '') === roleRefName)
-      if (role) {
-        const roleId = `role-${idx}`
-          nodes.push(createNode(roleId, lane.identityX, 920 + idx * 120, 'Role', roleRefName, `rules=${Array.isArray(role?.rules) ? role.rules.length : 0}`, ns, 'network', 'Role', ns, roleRefName, 'identity'))
-        edges.push(createEdge(`rb-role-${idx}`, rbId, roleId, 'ref', 'references'))
-      }
-    })
-    globalBindings.forEach((it: any, idx: number) => {
-      const crbId = `crb-${idx}`
-      const roleRefName = String(it?.roleRef?.name ?? '-')
-        nodes.push(createNode(crbId, lane.identityX - 320, 1280 + idx * 120, 'ClusterRoleBinding', String(it?.metadata?.name ?? '-'), `roleRef=${roleRefName}`, 'cluster scope', 'network', 'ClusterRoleBinding', undefined, String(it?.metadata?.name ?? '-'), 'identity', {
-        severity: roleRefName.toLowerCase() === 'cluster-admin' ? 'error' : 'normal',
-        statusText: roleRefName.toLowerCase() === 'cluster-admin' ? 'cluster-admin' : 'cluster role'
-      }))
-      edges.push(createEdge(`sa-crb-${idx}`, 'sa', crbId, 'bound', 'binds'))
-      const clusterRole = (clusterRoles.list || []).find((r: any) => String(r?.metadata?.name ?? '') === roleRefName)
-      if (clusterRole) {
-        const crId = `cr-${idx}`
-          nodes.push(createNode(crId, lane.identityX, 1280 + idx * 120, 'ClusterRole', roleRefName, `rules=${Array.isArray(clusterRole?.rules) ? clusterRole.rules.length : 0}`, 'cluster scope', 'network', 'ClusterRole', undefined, roleRefName, 'identity', {
-          severity: roleRefName.toLowerCase() === 'cluster-admin' ? 'error' : 'normal',
-          statusText: roleRefName.toLowerCase() === 'cluster-admin' ? '全局高权限' : 'cluster role'
-        }))
-        edges.push(createEdge(`crb-cr-${idx}`, crbId, crId, 'ref', 'references'))
-      }
-    })
-  }
+    edges.push(createEdge(`rb-role-${idx}`, rbId, roleId, 'ref', 'references'))
+  })
 
   const podServiceLinks = takeByDepth(collectPodServiceLinks(services.list || [], endpoints.list || [], endpointSlices.list || [], pods.list || [], pod))
   podServiceLinks.forEach((link, idx: number) => {
@@ -2273,7 +2398,7 @@ function syncQuery() {
   })
 }
 
-async function loadTopology() {
+async function loadTopology(options: { force?: boolean } = {}) {
   if (!clusterId.value || (requiresNamespace.value && !namespace.value)) {
     notifyError('请先选择集群与命名空间')
     return
@@ -2288,6 +2413,7 @@ async function loadTopology() {
     }
   }
   loading.value = true
+  topologyForceRefresh = !!options.force
   try {
     type BuilderFn = (cluster: number, ns: string, name: string) => Promise<TopologyGraph>
     const builderMap: Record<string, BuilderFn | [BuilderFn, BuilderFn]> = {
@@ -2320,13 +2446,14 @@ async function loadTopology() {
     notifyError(err?.message || String((e as Error)?.message || e))
     currentGraph.value = { nodes: [], edges: [], mermaid: '' }
   } finally {
+    topologyForceRefresh = false
     loading.value = false
   }
 }
 
 function resetQuery() {
-  mode.value = 'service'
-  scope.value = defaultScopeForMode('service')
+  mode.value = defaultMode
+  scope.value = defaultScopeForMode(defaultMode)
   namespace.value = namespaces.value.includes('default') ? 'default' : (namespaces.value[0] ?? '')
   resourceName.value = ''
   currentGraph.value = { nodes: [], edges: [], mermaid: '' }
@@ -2424,7 +2551,7 @@ async function toggleFullscreen() {
 
 async function copyMermaid() {
   try {
-    await navigator.clipboard.writeText(visibleGraph.value.mermaid)
+    await navigator.clipboard.writeText(buildVisibleMermaidText())
     notifySuccess('Mermaid 文本已复制')
   } catch {
     notifyError('复制失败')
@@ -2438,6 +2565,7 @@ watch(clusterId, async () => {
   }
   // 切换集群时清空资源选项缓存，避免显示旧集群的资源
   resourceOptionsCache.clear()
+  topologyDataCache.clear()
   await loadNamespaces()
   await loadResourceOptions()
   syncQuery()
@@ -2600,6 +2728,10 @@ onMounted(async () => {
   flex-wrap: wrap;
   justify-content: flex-end;
   flex-shrink: 0;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .topology-control-head__title {
@@ -2609,16 +2741,30 @@ onMounted(async () => {
 }
 
 .topology-filter-combo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding-top: 10px;
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.86));
 }
 
 :global(html.dark) .topology-filter-combo {
-  border-top-color: rgba(148, 163, 184, 0.14);
+  border-color: rgba(148, 163, 184, 0.18);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.76));
+}
+
+.topology-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  justify-content: center;
+}
+
+.topology-filter-group--prefs {
+  align-items: flex-end;
 }
 
 .topology-filter-combo__selects {
@@ -2631,14 +2777,15 @@ onMounted(async () => {
 }
 
 .topology-combo-select {
-  min-width: 120px;
-  flex: 1 1 0%;
-  max-width: 170px;
+  min-width: 132px;
+  flex: 1 1 148px;
+  max-width: 188px;
 }
 
 .topology-combo-select--resource {
-  min-width: 200px;
-  max-width: 260px;
+  min-width: 220px;
+  max-width: 320px;
+  flex-basis: 240px;
 }
 
 .topology-filter-combo__prefs {
@@ -2647,22 +2794,26 @@ onMounted(async () => {
   gap: 8px;
   flex-shrink: 0;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .topology-toggle-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 10px;
-  border: 1px solid var(--topology-toolbar-border);
-  background: rgba(248, 250, 252, 0.9);
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
   white-space: nowrap;
 }
 
 :global(html.dark) .topology-toggle-item {
-  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.88);
+  box-shadow: none;
 }
 
 .topology-toggle-item__text {
@@ -2691,18 +2842,34 @@ onMounted(async () => {
 
 .topology-overlay-toolbar {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  right: 14px;
+  bottom: 14px;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 6px;
+  padding: 6px;
   background: var(--topology-toolbar-bg);
   backdrop-filter: blur(10px);
   border: 1px solid var(--topology-toolbar-border);
-  border-radius: 10px;
+  border-radius: 14px;
   box-shadow: var(--topology-toolbar-shadow);
   z-index: 10;
+}
+
+.topology-overlay-toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topology-overlay-toolbar__group + .topology-overlay-toolbar__group {
+  padding-left: 6px;
+  margin-left: 2px;
+  border-left: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+:global(html.dark) .topology-overlay-toolbar__group + .topology-overlay-toolbar__group {
+  border-left-color: rgba(148, 163, 184, 0.14);
 }
 
 .topology-panel--main {
@@ -2723,38 +2890,149 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 10px;
 }
 
-.topology-console-head__actions :deep(.el-button),
-.topology-overlay-toolbar :deep(.el-button) {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 8px;
+.topology-mermaid-preview {
+  min-height: 78vh;
+  max-height: 78vh;
+  overflow: auto;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.9));
+}
+
+.topology-mermaid-preview--pending,
+.topology-mermaid-preview--error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--topology-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.topology-mermaid-preview--error {
+  color: #dc2626;
+}
+
+.topology-mermaid-preview__canvas {
+  display: flex;
+  justify-content: center;
+  min-width: max-content;
+}
+
+.topology-mermaid-preview__canvas :deep(svg) {
+  max-width: none;
+  height: auto;
+}
+
+:global(html.dark) .topology-mermaid-preview {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.82));
+}
+
+:global(html.dark) .topology-mermaid-preview--error {
+  color: #fda4af;
+}
+
+.topology-console-head__actions :deep(.el-button) {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+}
+
+.topology-tool-btn {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 10px;
+  border-color: transparent;
+  background: rgba(248, 250, 252, 0.92);
+  color: var(--topology-text-secondary);
+  box-shadow: none;
+}
+
+.topology-tool-btn:hover,
+.topology-tool-btn:focus-visible {
+  border-color: transparent;
+  background: rgba(226, 232, 240, 0.96);
+  color: var(--topology-text-primary);
+}
+
+.topology-tool-btn--active,
+.topology-tool-btn--active:hover,
+.topology-tool-btn--active:focus-visible {
+  border-color: transparent;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.96), rgba(37, 99, 235, 0.94));
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+}
+
+.topology-overlay-toolbar :deep(.el-button.is-disabled) {
+  background: rgba(248, 250, 252, 0.72);
+  border-color: transparent;
+}
+
+.topology-overlay-toolbar :deep(.el-button [class*='el-icon']) {
+  font-size: 14px;
 }
 
 .topology-filter-combo :deep(.el-select__wrapper),
 .topology-filter-combo :deep(.el-input__wrapper) {
-  min-height: 36px;
-  border-radius: 10px;
+  min-height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14);
+  transition: box-shadow 0.18s ease, background 0.18s ease, transform 0.18s ease;
 }
 
-.topology-filter-combo__prefs :deep(.el-radio-group) {
-  padding: 2px;
-  border-radius: 10px;
-  border: 1px solid var(--topology-toolbar-border);
-  background: rgba(248, 250, 252, 0.9);
+.topology-filter-combo :deep(.el-select__wrapper:hover),
+.topology-filter-combo :deep(.el-input__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.3);
 }
 
-.topology-filter-combo__prefs :deep(.el-radio-button__inner) {
-  min-width: 54px;
-  height: 30px;
-  border: none;
-  border-radius: 8px;
-  box-shadow: none;
+.topology-filter-combo :deep(.el-select__wrapper.is-focused),
+.topology-filter-combo :deep(.el-input__wrapper.is-focus),
+.topology-filter-combo :deep(.el-input__wrapper:focus-within) {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.42), 0 10px 22px rgba(59, 130, 246, 0.08);
+  transform: translateY(-1px);
 }
 
-:global(html.dark) .topology-filter-combo__prefs :deep(.el-radio-group) {
-  background: rgba(15, 23, 42, 0.9);
+:global(html.dark) .topology-filter-combo :deep(.el-select__wrapper),
+:global(html.dark) .topology-filter-combo :deep(.el-input__wrapper) {
+  background: rgba(15, 23, 42, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16);
+}
+
+:global(html.dark) .topology-tool-btn {
+  background: rgba(15, 23, 42, 0.84);
+  color: rgba(226, 232, 240, 0.84);
+}
+
+:global(html.dark) .topology-tool-btn:hover,
+:global(html.dark) .topology-tool-btn:focus-visible {
+  background: rgba(30, 41, 59, 0.96);
+  color: #fff;
+}
+
+:global(html.dark) .topology-overlay-toolbar :deep(.el-button.is-disabled) {
+  background: rgba(15, 23, 42, 0.62);
+}
+
+:global(html.dark) .topology-filter-combo :deep(.el-select__wrapper:hover),
+:global(html.dark) .topology-filter-combo :deep(.el-input__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.3);
+}
+
+:global(html.dark) .topology-filter-combo :deep(.el-select__wrapper.is-focused),
+:global(html.dark) .topology-filter-combo :deep(.el-input__wrapper.is-focus),
+:global(html.dark) .topology-filter-combo :deep(.el-input__wrapper:focus-within) {
+  background: rgba(15, 23, 42, 0.96);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.4), 0 10px 24px rgba(2, 6, 23, 0.24);
 }
 
 @media (max-width: 980px) {
@@ -2768,14 +3046,19 @@ onMounted(async () => {
     align-items: stretch;
   }
 
-  .topology-filter-combo {
-    flex-direction: column;
+  .topology-console-head__actions,
+  .topology-filter-group--prefs {
     align-items: stretch;
+  }
+
+  .topology-filter-combo {
+    grid-template-columns: 1fr;
   }
 
   .topology-filter-combo__selects,
   .topology-filter-combo__prefs {
     flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .topology-combo-select {
@@ -2799,10 +3082,10 @@ onMounted(async () => {
   }
 
   .topology-overlay-toolbar {
-    top: auto;
     bottom: 14px;
-    right: 50%;
-    transform: translateX(50%);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
     width: auto;
     justify-content: center;
     flex-wrap: wrap;

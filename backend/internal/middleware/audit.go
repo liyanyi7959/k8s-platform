@@ -1,9 +1,11 @@
 package middleware
 
 import (
+	"context"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -25,6 +27,28 @@ func AuditLogger(auditSvc *service.AuditService) gin.HandlerFunc {
 		// 请求处理完毕后记录审计日志
 		path := c.Request.URL.Path
 		status := c.Writer.Status()
+		if v, ok := c.Get("resp_code"); ok {
+			switch code := v.(type) {
+			case int:
+				status = code
+			case int32:
+				status = int(code)
+			case int64:
+				status = int(code)
+			case uint:
+				status = int(code)
+			case uint32:
+				status = int(code)
+			case uint64:
+				status = int(code)
+			}
+		}
+		detail := ""
+		if v, ok := c.Get("resp_message"); ok {
+			if s, ok := v.(string); ok {
+				detail = s
+			}
+		}
 
 		userID := uint64(0)
 		username := ""
@@ -64,12 +88,17 @@ func AuditLogger(auditSvc *service.AuditService) gin.HandlerFunc {
 			Namespace:    namespace,
 			Path:         path,
 			StatusCode:   status,
+			Detail:       detail,
 			ClientIP:     c.ClientIP(),
 			RequestID:    rid,
 		}
 
-		// 异步写入，不阻塞响应
-		go auditSvc.Record(c.Request.Context(), entry)
+		// 审计日志属于后台补充记录，不应受请求取消影响。
+		auditCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		go func() {
+			defer cancel()
+			auditSvc.Record(auditCtx, entry)
+		}()
 	}
 }
 
@@ -98,7 +127,7 @@ func inferAction(method, path string) string {
 		if strings.Contains(lower, "/rollout") {
 			return "rollout"
 		}
-		if strings.Contains(lower, "/login") || strings.Contains(lower, "/logout") {
+		if strings.Contains(lower, "/login") || strings.Contains(lower, "/logout") || strings.Contains(lower, "/change-password") || strings.Contains(lower, "/reset-password") {
 			return "auth"
 		}
 		return "create"

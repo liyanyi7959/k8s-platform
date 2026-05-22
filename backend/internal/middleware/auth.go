@@ -86,8 +86,10 @@ func AuthRequiredWithRBAC(mgr *auth.Manager, rbacSvc *service.RbacService) gin.H
 
 		// 兼容写入：
 		// - user_id：方便部分 handler 直接取用户 ID
+		// - username：供审计与展示场景直接读取用户名
 		// - auth_claims：提供更完整的 Claims（用户名、角色、权限点等）
 		c.Set("user_id", claims.UserID)
+		c.Set("username", claims.Username)
 		c.Set("auth_claims", claims)
 		c.Next()
 	}

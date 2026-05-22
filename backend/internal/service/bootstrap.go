@@ -16,24 +16,6 @@ import (
 	"k8s-platform-backend/internal/model"
 )
 
-// BuiltinPermissions 返回系统预置权限点列表。
-// 权限点是"后端授权"的最小单位：路由中间件会校验 token 中是否包含对应 code。
-func BuiltinPermissions() map[string]string {
-	return map[string]string{
-		"cluster:read":         "集群查看",
-		"cluster:create":       "集群创建",
-		"k8s:read":             "K8s 资源查看",
-		"k8s:write":            "K8s 资源管理",
-		"k8s:exec":             "K8s Pod 终端",
-		"k8s:secret_reveal":    "K8s Secret 明文查看",
-		"k8s:rbac_read":        "K8s RBAC 查看",
-		"k8s:rbac_write":       "K8s RBAC 管理",
-		"k8s:permission_audit": "K8s 最小权限分析",
-		"user:read":            "用户/审计查看",
-		"user:write":           "用户/角色管理",
-	}
-}
-
 // EnsureBuiltinRBAC 初始化最小可用 RBAC 数据：
 //   - 预置权限点（permissions）
 //   - 预置 admin 角色并绑定上述权限点
@@ -57,10 +39,10 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 		password = "admin"
 	}
 
-	requiredPerms := BuiltinPermissions()
-	allCodes := make([]string, 0, len(requiredPerms))
-	for k := range requiredPerms {
-		allCodes = append(allCodes, k)
+	permissionCatalog := BuiltinPermissionCatalog()
+	allCodes := make([]string, 0, len(permissionCatalog))
+	for _, item := range permissionCatalog {
+		allCodes = append(allCodes, item.Code)
 	}
 
 	return gdb.Transaction(func(tx *gorm.DB) error {
@@ -74,12 +56,21 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 		for _, p := range existing {
 			existingMap[p.Code] = p
 		}
-		for code, desc := range requiredPerms {
-			if _, ok := existingMap[code]; ok {
+		for _, item := range permissionCatalog {
+			d := item.Description
+			if existing, ok := existingMap[item.Code]; ok {
+				currentDesc := ""
+				if existing.Desc != nil {
+					currentDesc = strings.TrimSpace(*existing.Desc)
+				}
+				if currentDesc != d {
+					if err := tx.Model(&model.Permission{}).Where("id = ?", existing.ID).Update("desc", &d).Error; err != nil {
+						return err
+					}
+				}
 				continue
 			}
-			d := desc
-			if err := tx.Create(&model.Permission{Code: code, Desc: &d}).Error; err != nil {
+			if err := tx.Create(&model.Permission{Code: item.Code, Desc: &d}).Error; err != nil {
 				return err
 			}
 		}

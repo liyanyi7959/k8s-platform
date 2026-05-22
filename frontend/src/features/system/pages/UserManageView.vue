@@ -30,6 +30,7 @@
           <el-table-column prop="roles" label="角色" min-width="180">
             <template #default="{ row }">
               <el-tag v-for="r in row.roles" :key="r" size="small" class="mr-1">{{ r }}</el-tag>
+              <span v-if="row.roles.length === 0" class="cell-empty">未分配</span>
             </template>
           </el-table-column>
           <el-table-column prop="created_at" label="创建时间" width="170" />
@@ -39,7 +40,7 @@
               <el-button size="small" type="warning" @click="handleResetPwd(row)">重置密码</el-button>
               <el-popconfirm title="确定删除?" @confirm="handleDelete(row.id)">
                 <template #reference>
-                  <el-button size="small" type="danger">删除</el-button>
+                  <el-button size="small" type="danger" :disabled="row.username === 'admin'">删除</el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -131,17 +132,16 @@ const newPassword = ref('')
 async function fetchData() {
   loading.value = true
   try {
-    const res = await getUsers({ page: page.value, page_size: pageSize.value, keyword: keyword.value, status: statusFilter.value })
-    tableData.value = res.data.data?.items ?? []
-    total.value = res.data.data?.total ?? 0
+    const result = await getUsers({ page: page.value, page_size: pageSize.value, keyword: keyword.value, status: statusFilter.value })
+    tableData.value = result.items ?? []
+    total.value = result.total ?? 0
   } finally {
     loading.value = false
   }
 }
 
 async function fetchRoles() {
-  const res = await getRoles()
-  roleOptions.value = res.data.data ?? []
+  roleOptions.value = await getRoles()
 }
 
 function openCreate() {
@@ -177,18 +177,22 @@ async function handleSubmit() {
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
-    fetchData()
-  } catch {
-    ElMessage.error('操作失败')
+    await fetchData()
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '操作失败'))
   } finally {
     submitting.value = false
   }
 }
 
 async function handleDelete(id: number) {
-  await deleteUser(id)
-  ElMessage.success('已删除')
-  fetchData()
+  try {
+    await deleteUser(id)
+    ElMessage.success('已删除')
+    await fetchData()
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '删除失败'))
+  }
 }
 
 function handleResetPwd(row: UserItem) {
@@ -207,11 +211,15 @@ async function confirmResetPwd() {
     await resetPassword(resetPwdUserId.value, newPassword.value)
     ElMessage.success('密码已重置')
     resetPwdVisible.value = false
-  } catch {
-    ElMessage.error('重置失败')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '重置失败'))
   } finally {
     submitting.value = false
   }
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback
 }
 
 onMounted(() => {
@@ -259,6 +267,10 @@ onMounted(() => {
 }
 .mr-1 {
   margin-right: 4px;
+}
+.cell-empty {
+  font-size: 12px;
+  color: var(--color-text-muted, #94a3b8);
 }
 .table-wrap {
   padding: 0 16px;

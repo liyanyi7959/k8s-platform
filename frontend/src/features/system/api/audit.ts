@@ -1,6 +1,11 @@
 import { http } from '@/shared/http/http'
 import type { ApiResponse } from '@/shared/types/api'
 
+async function unwrap<T>(request: Promise<unknown>): Promise<T> {
+  const resp = (await request) as ApiResponse<T>
+  return resp.data
+}
+
 export interface AuditLog {
   id: number
   user_id: number
@@ -35,6 +40,5 @@ export interface AuditLogListResult {
 }
 
 export async function getAuditLogs(params: AuditLogListParams = {}): Promise<AuditLogListResult> {
-  const resp = (await http.get('/api/v1/audit-logs', { params })) as ApiResponse<AuditLogListResult>
-  return resp.data
+  return unwrap<AuditLogListResult>(http.get('/api/v1/audit-logs', { params }))
 }

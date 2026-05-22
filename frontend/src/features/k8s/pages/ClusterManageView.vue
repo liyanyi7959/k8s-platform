@@ -3,9 +3,6 @@
     <aside class="k8s-aside">
       <div class="aside-head">
         <div class="aside-title-wrap">
-          <button class="aside-back-btn" type="button" title="返回集群管理" @click="router.push('/clusters')">
-            <el-icon><ArrowLeft /></el-icon>
-          </button>
           <div class="aside-title">{{ clusterTitle }}</div>
         </div>
         <el-button size="small" :icon="RefreshRight" :loading="loadingTree" @click="refreshAll">刷新</el-button>
@@ -936,7 +933,6 @@ import {
   Expand,
   Fold,
   Folder,
-  ArrowLeft,
   Link,
   Monitor,
   Moon,
@@ -3506,26 +3502,6 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.aside-back-btn {
-  display: inline-flex;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  background: var(--color-bg-input);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.aside-back-btn:hover {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--color-accent-primary);
 }
 
 .aside-title {

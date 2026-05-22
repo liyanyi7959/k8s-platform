@@ -5,16 +5,7 @@
         <div class="toolbar-filters">
           <el-input v-model="filter.username" placeholder="用户名" clearable class="filter-input" :prefix-icon="User" @keyup.enter="fetchData" />
           <el-select v-model="filter.action" placeholder="全部动作" clearable class="filter-select">
-            <el-option label="创建" value="create" />
-            <el-option label="更新" value="update" />
-            <el-option label="删除" value="delete" />
-            <el-option label="执行" value="exec" />
-            <el-option label="伸缩" value="scale" />
-            <el-option label="重启" value="restart" />
-            <el-option label="回滚" value="rollout" />
-            <el-option label="驱逐" value="drain" />
-            <el-option label="封锁" value="cordon" />
-            <el-option label="认证" value="auth" />
+            <el-option v-for="item in actionOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
           <el-input v-model="filter.resource" placeholder="资源类型" clearable class="filter-input" @keyup.enter="fetchData" />
           <el-date-picker
@@ -41,7 +32,7 @@
           <el-table-column prop="created_at" label="时间" width="170" :formatter="fmtTime" />
           <el-table-column prop="username" label="用户" width="100">
             <template #default="{ row }">
-              <span class="cell-user">{{ row.username }}</span>
+              <span class="cell-user">{{ row.username || '-' }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="action" label="动作" width="90">
@@ -51,16 +42,22 @@
           </el-table-column>
           <el-table-column prop="resource" label="资源类型" width="120">
             <template #default="{ row }">
-              <span class="cell-resource">{{ row.resource }}</span>
+              <span :class="['cell-resource', `cell-resource--${resourceClass(row.resource)}`]">{{ row.resource || '-' }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="resource_name" label="资源名" min-width="160" show-overflow-tooltip />
           <el-table-column prop="namespace" label="命名空间" width="120" show-overflow-tooltip />
           <el-table-column prop="cluster_id" label="集群" width="70" align="center" />
-          <el-table-column prop="status_code" label="状态" width="80" align="center">
+          <el-table-column prop="status_code" label="结果" width="110" align="center">
             <template #default="{ row }">
-              <span :class="['status-dot', row.status_code >= 400 ? 'status-dot--error' : 'status-dot--ok']"></span>
-              <span class="status-text">{{ row.status_code }}</span>
+              <span :class="['result-pill', isAuditSuccess(row.status_code) ? 'result-pill--ok' : 'result-pill--error']">
+                {{ resultLabel(row.status_code) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="detail" label="详情" min-width="160" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span class="detail-text">{{ row.detail || row.path || '-' }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="client_ip" label="来源IP" width="130" />
@@ -91,6 +88,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { Search, User } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { getAuditLogs, type AuditLog } from '@/features/system/api/audit'
 
 const loading = ref(false)
@@ -105,6 +103,19 @@ const filter = reactive({
   resource: '',
   timeRange: null as [string, string] | null
 })
+
+const actionOptions = [
+  { label: '创建', value: 'create' },
+  { label: '更新', value: 'update' },
+  { label: '删除', value: 'delete' },
+  { label: '执行', value: 'exec' },
+  { label: '伸缩', value: 'scale' },
+  { label: '重启', value: 'restart' },
+  { label: '回滚', value: 'rollout' },
+  { label: '驱逐', value: 'drain' },
+  { label: '封锁', value: 'cordon' },
+  { label: '认证', value: 'auth' }
+] as const
 
 function resetFilter() {
   filter.username = ''
@@ -129,9 +140,10 @@ async function fetchData() {
     })
     tableData.value = result.items ?? []
     total.value = result.total ?? 0
-  } catch {
+  } catch (error) {
     tableData.value = []
     total.value = 0
+    ElMessage.error(getErrorMessage(error, '审计日志加载失败'))
   } finally {
     loading.value = false
   }
@@ -154,11 +166,55 @@ function actionLabel(action: string) {
 
 function actionClass(action: string): string {
   switch (action) {
-    case 'create': return 'success'
-    case 'update': case 'scale': case 'restart': case 'rollout': return 'warning'
-    case 'delete': case 'drain': case 'cordon': return 'danger'
-    default: return 'info'
+    case 'create': return 'create'
+    case 'update': return 'update'
+    case 'delete': return 'delete'
+    case 'exec': return 'exec'
+    case 'scale': return 'scale'
+    case 'restart': return 'restart'
+    case 'rollout': return 'rollout'
+    case 'drain': return 'drain'
+    case 'cordon': return 'cordon'
+    case 'auth': return 'auth'
+    default: return 'unknown'
   }
+}
+
+function resourceClass(resource: string): string {
+  switch (resource) {
+    case 'user':
+    case 'role':
+    case 'permission':
+      return 'system'
+    case 'cluster':
+      return 'cluster'
+    case 'pod':
+    case 'deployment':
+    case 'statefulset':
+    case 'daemonset':
+    case 'service':
+    case 'namespace':
+      return 'workload'
+    case 'session':
+      return 'auth'
+    default:
+      return 'default'
+  }
+}
+
+function isAuditSuccess(code: number) {
+  return code === 0 || (code >= 200 && code < 300)
+}
+
+function resultLabel(code: number) {
+  if (isAuditSuccess(code)) {
+    return '成功'
+  }
+  return `失败 ${code}`
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback
 }
 
 onMounted(fetchData)
@@ -219,10 +275,26 @@ onMounted(fetchData)
 .cell-resource {
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
   background: var(--color-bg-muted, #f8fafc);
   color: var(--color-text-secondary, #4b5563);
+}
+.cell-resource--system {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+.cell-resource--cluster {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+.cell-resource--workload {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+.cell-resource--auth {
+  background: rgba(20, 184, 166, 0.14);
+  color: #0f766e;
 }
 .cell-mono {
   font-family: "SF Mono", "Fira Code", monospace;
@@ -231,46 +303,75 @@ onMounted(fetchData)
 }
 .action-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.6;
+  line-height: 1.4;
 }
-.action-badge--success {
+.action-badge--create {
   background: rgba(16, 185, 129, 0.1);
   color: #059669;
 }
-.action-badge--warning {
-  background: rgba(245, 158, 11, 0.1);
-  color: #d97706;
+.action-badge--update {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
 }
-.action-badge--danger {
+.action-badge--delete {
   background: rgba(239, 68, 68, 0.1);
   color: #dc2626;
 }
-.action-badge--info {
-  background: rgba(59, 130, 246, 0.1);
-  color: #2563eb;
+.action-badge--exec {
+  background: rgba(168, 85, 247, 0.12);
+  color: #7c3aed;
 }
-.status-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  margin-right: 5px;
-  vertical-align: middle;
+.action-badge--scale {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
 }
-.status-dot--ok {
-  background: #10b981;
-  box-shadow: 0 0 4px rgba(16, 185, 129, 0.4);
+.action-badge--restart {
+  background: rgba(249, 115, 22, 0.14);
+  color: #c2410c;
 }
-.status-dot--error {
-  background: #ef4444;
-  box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+.action-badge--rollout {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4338ca;
 }
-.status-text {
+.action-badge--drain {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+.action-badge--cordon {
+  background: rgba(71, 85, 105, 0.12);
+  color: #334155;
+}
+.action-badge--auth {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
+}
+.action-badge--unknown {
+  background: rgba(148, 163, 184, 0.16);
+  color: #64748b;
+}
+.result-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 4px 10px;
+  border-radius: 999px;
   font-size: 12px;
+  font-weight: 600;
+}
+.result-pill--ok {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+.result-pill--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+.detail-text {
   color: var(--color-text-secondary, #4b5563);
 }
 .audit-footer {

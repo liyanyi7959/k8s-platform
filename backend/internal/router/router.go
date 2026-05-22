@@ -170,6 +170,8 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	k8s := authed.Group("")
 	readPerm := middleware.RequirePerm("k8s:read")
 	writePerm := middleware.RequirePerm("k8s:write")
+	namespaceReadPerm := middleware.RequireAnyPerm("namespace:read", "k8s:read")
+	namespaceWritePerm := middleware.RequireAnyPerm("namespace:write", "k8s:write")
 	secretRevealPerm := middleware.RequirePerm("k8s:secret_reveal")
 	rbacReadPerm := middleware.RequirePerm("k8s:rbac_read")
 	rbacWritePerm := middleware.RequirePerm("k8s:rbac_write")
@@ -177,11 +179,11 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	resourceSupportReadPerm := middleware.RequireAnyPerm("k8s:read", "k8s:rbac_read")
 
 	// Namespace
-	k8s.GET("/clusters/:id/namespaces", readPerm, middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.ListNamespaces)
-	k8s.POST("/clusters/:id/namespaces", writePerm, ctl.CreateNamespace)
-	k8s.DELETE("/clusters/:id/namespaces/:ns", writePerm, ctl.DeleteNamespace)
-	k8s.GET("/clusters/:id/namespaces/:ns/yaml", readPerm, ctl.GetNamespaceYAML)
-	k8s.GET("/clusters/:id/namespaces/:ns/resources-summary", readPerm, ctl.GetNamespaceResourcesSummary)
+	k8s.GET("/clusters/:id/namespaces", namespaceReadPerm, middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.ListNamespaces)
+	k8s.POST("/clusters/:id/namespaces", namespaceWritePerm, ctl.CreateNamespace)
+	k8s.DELETE("/clusters/:id/namespaces/:ns", namespaceWritePerm, ctl.DeleteNamespace)
+	k8s.GET("/clusters/:id/namespaces/:ns/yaml", namespaceReadPerm, ctl.GetNamespaceYAML)
+	k8s.GET("/clusters/:id/namespaces/:ns/resources-summary", namespaceReadPerm, ctl.GetNamespaceResourcesSummary)
 
 	// Node
 	k8s.GET("/clusters/:id/nodes", readPerm, middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.ListNodes)
