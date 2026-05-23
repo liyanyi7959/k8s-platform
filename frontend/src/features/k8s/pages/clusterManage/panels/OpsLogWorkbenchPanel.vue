@@ -161,7 +161,9 @@ const workbenchTargets = computed<PodTarget[]>(() => {
     })
     .filter((item) => item.ns && item.name)
 })
+const availablePodKeySignature = computed(() => podRows.value.map((row) => getPodRowKey(row)).join('|'))
 const workbenchTargetSignature = computed(() => workbenchTargets.value.map((item) => `${item.ns}/${item.name}`).join('|'))
+const workbenchRefreshSignature = computed(() => `${selectedServicePortKey.value}::${workbenchTargetSignature.value}`)
 const showSummary = computed(() => loadingResources.value || Boolean(selectedNamespace.value) || Boolean(selectedServicePortKey.value) || selectedPodKeys.value.length > 0)
 const selectedServiceSummary = computed(() => {
   if (!selectedNamespace.value) return '先选择命名空间，再筛选 Service 端口。'
@@ -174,7 +176,13 @@ const selectedServiceSummary = computed(() => {
 })
 const selectedPodsSummary = computed(() => {
   if (selectedPodKeys.value.length === 0) return '当前未选择 Pod，下面日志区域会保持空态。'
-  return `当前日志视图已选择 ${selectedPodKeys.value.length} 个 Pod。`
+  if (workbenchTargets.value.length === 0) {
+    return `当前保留了 ${selectedPodKeys.value.length} 个 Pod 选择，但这些 Pod 不在当前可用列表中，请刷新入口或重新选择。`
+  }
+  if (workbenchTargets.value.length !== selectedPodKeys.value.length) {
+    return `当前日志视图已接入 ${workbenchTargets.value.length} 个 Pod，另有 ${selectedPodKeys.value.length - workbenchTargets.value.length} 个选择已失效。`
+  }
+  return `当前日志视图已选择 ${workbenchTargets.value.length} 个 Pod。`
 })
 
 watch(() => props.namespaces.join('|'), () => {
@@ -207,7 +215,18 @@ watch(selectedServicePortKey, () => {
   selectedPodKeys.value = option.matchedPodKeys.slice()
 })
 
-watch(workbenchTargetSignature, () => {
+watch(availablePodKeySignature, () => {
+  if (selectedPodKeys.value.length === 0) return
+  const availableKeys = new Set(podRows.value.map((row) => getPodRowKey(row)))
+  const nextKeys = selectedPodKeys.value.filter((key) => availableKeys.has(key))
+  if (nextKeys.length === selectedPodKeys.value.length) return
+  selectedPodKeys.value = nextKeys
+  if (nextKeys.length === 0) {
+    selectedServicePortKey.value = ''
+  }
+})
+
+watch(workbenchRefreshSignature, () => {
   void nextTick(() => {
     if (workbenchTargets.value.length > 0) {
       workbenchRef.value?.open(workbenchTargets.value)
@@ -262,8 +281,6 @@ async function loadNamespaceResources() {
     podRows.value = Array.isArray(podsResp.list) ? podsResp.list : []
   } catch (error) {
     if (seq !== loadSeq) return
-    serviceRows.value = []
-    podRows.value = []
     const err = error as ApiError
     notifyError(err.requestId ? `${err.message} (request_id=${err.requestId})` : (err.message || '加载日志入口失败'))
   } finally {
