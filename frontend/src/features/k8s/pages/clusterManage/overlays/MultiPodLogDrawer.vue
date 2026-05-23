@@ -15,16 +15,12 @@
           <div class="multi-pod-log__meta">{{ headerMeta }}</div>
         </div>
         <el-space wrap>
-          <el-select v-model="layoutMode" class="multi-pod-log__layout">
-            <el-option v-for="item in layoutOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-          <el-select v-model="tailLines" class="multi-pod-log__tail" @change="restartAll">
+          <el-select v-model="tailLines" class="multi-pod-log__tail" @change="restartCurrentSource">
             <el-option v-for="count in tailLineOptions" :key="count" :label="`尾部 ${count} 行`" :value="count" />
           </el-select>
-          <el-switch v-model="liveMode" inline-prompt active-text="实时" inactive-text="快照" @change="restartAll" />
+          <el-switch v-model="liveMode" inline-prompt active-text="实时" inactive-text="快照" @change="restartCurrentSource" />
           <el-switch v-model="autoScroll" inline-prompt active-text="自动滚动" inactive-text="手动" />
-          <el-button @click="resetLayout">重排布局</el-button>
-          <el-button :icon="RefreshRight" :loading="hasConnectingSources" @click="restartAll">刷新全部</el-button>
+          <el-button :icon="RefreshRight" :loading="isActiveSourceBusy" @click="restartCurrentSource">刷新当前</el-button>
           <el-button :icon="Delete" :disabled="!hasBufferedLogs" @click="clearLogs">清空全部</el-button>
           <el-button :icon="CopyDocument" :disabled="!fullText.trim()" @click="copyAll">复制全部</el-button>
           <el-button :icon="Download" :disabled="!fullText.trim()" @click="downloadAll">下载 .txt</el-button>
@@ -35,108 +31,75 @@
       <div class="multi-pod-log__statusbar">
         <div class="multi-pod-log__statusbar-main">
           <el-tag size="small" :type="statusTagType(summaryTone)" :class="['multi-pod-log__status-tag', `multi-pod-log__status-tag--${summaryTone}`]">{{ statusSummary }}</el-tag>
-          <span>{{ layoutSummary }}</span>
+          <span class="multi-pod-log__statusbar-hint">{{ navigationHint }}</span>
         </div>
-        <span>当前缓存 {{ totalBufferedLineCount }} 行，每窗最多 {{ MAX_LOG_LINES_PER_SOURCE }} 行</span>
+        <span class="multi-pod-log__statusbar-meta">{{ totalBufferedLineCount }} 行</span>
       </div>
 
-      <div class="multi-pod-log__body">
-        <aside class="multi-pod-log__sources" :style="{ width: `${sidebarWidth}px` }">
-          <div class="multi-pod-log__sources-head">
-            <span>日志源</span>
-            <el-tag size="small" type="info">{{ sources.length }} 个</el-tag>
-          </div>
-          <div class="multi-pod-log__sources-hint">点击左侧卡片可定位对应日志窗，拖拽中缝可调整侧栏宽度。</div>
-          <el-scrollbar class="multi-pod-log__sources-scroll">
-            <div class="multi-pod-log__sources-list">
-              <article
+      <div v-if="sources.length === 0" class="multi-pod-log__empty">
+        <el-empty description="请选择 Pod 后再打开日志工作台" />
+      </div>
+
+      <div v-else class="multi-pod-log__body">
+        <section class="multi-pod-log__tabs-card">
+          <div class="multi-pod-log__tabs-scroll">
+            <div class="multi-pod-log__tabs">
+              <button
                 v-for="source in sources"
                 :key="source.id"
-                :class="['multi-pod-log__source-item', focusedSourceId === source.id ? 'multi-pod-log__source-item--active' : '']"
-                @click="focusPanel(source.id)"
+                type="button"
+                :class="['multi-pod-log__tab', activeSourceId === source.id ? 'multi-pod-log__tab--active' : '']"
+                :title="`${source.ns}/${source.name} · ${source.status}`"
+                @click="activateSource(source.id)"
               >
-                <div class="multi-pod-log__source-main">
-                  <div class="multi-pod-log__source-name">{{ source.ns }}/{{ source.name }}</div>
-                  <el-tag size="small" :type="statusTagType(statusTone(source.status))" :class="['multi-pod-log__status-tag', `multi-pod-log__status-tag--${statusTone(source.status)}`]">{{ source.status }}</el-tag>
-                </div>
-                <div class="multi-pod-log__source-meta">
-                  <span>{{ source.container ? `容器 ${source.container}` : '默认容器' }}</span>
-                  <span>已缓存 {{ getBufferedLineCount(source) }} 行</span>
-                </div>
-              </article>
+                <span :class="['multi-pod-log__tab-dot', `multi-pod-log__tab-dot--${statusTone(source.status)}`]"></span>
+                <span class="multi-pod-log__tab-title">{{ source.name }}</span>
+                <span class="multi-pod-log__tab-ns">{{ source.ns }}</span>
+              </button>
             </div>
-          </el-scrollbar>
-        </aside>
-
-        <div class="multi-pod-log__sidebar-resizer" @mousedown.prevent="startSidebarResize" />
-
-        <section class="multi-pod-log__workspace-wrap">
-          <div v-if="sources.length === 0" class="multi-pod-log__empty">
-            <el-empty description="请选择 Pod 后再打开日志工作台" />
           </div>
-          <div v-else ref="workspaceScrollRef" class="multi-pod-log__workspace-scroll">
-            <div class="multi-pod-log__workspace">
-              <article
-                v-for="source in sources"
-                :key="source.id"
-                :ref="(el) => setPanelRef(source.id, el as HTMLElement | null)"
-                :class="['multi-pod-log__panel', focusedSourceId === source.id ? 'multi-pod-log__panel--focused' : '']"
-                :style="panelStyle(source)"
-                @click="focusedSourceId = source.id"
-              >
-                <div class="multi-pod-log__panel-head">
-                  <div class="multi-pod-log__panel-title-wrap">
-                    <div class="multi-pod-log__panel-title">{{ source.name }}</div>
-                    <div class="multi-pod-log__panel-meta">{{ source.ns }}</div>
-                  </div>
-                  <div class="multi-pod-log__panel-toolbar">
-                    <el-select
-                      v-if="source.containers.length > 0"
-                      v-model="source.container"
-                      size="small"
-                      class="multi-pod-log__panel-container"
-                      :disabled="source.containers.length <= 1"
-                      @change="restartSource(source)"
-                    >
-                      <el-option v-for="container in source.containers" :key="container" :label="container" :value="container" />
-                    </el-select>
-                    <span v-else class="multi-pod-log__panel-container-label">默认容器</span>
-                    <el-tooltip content="刷新当前窗口" placement="top" :show-after="250">
-                      <el-button size="small" text :icon="RefreshRight" @click.stop="restartSource(source)" />
-                    </el-tooltip>
-                    <el-tooltip content="复制当前窗口" placement="top" :show-after="250">
-                      <el-button size="small" text :icon="CopyDocument" @click.stop="copySource(source)" />
-                    </el-tooltip>
-                    <el-tooltip content="清空当前窗口" placement="top" :show-after="250">
-                      <el-button size="small" text :icon="Delete" @click.stop="clearSourceLogs(source)" />
-                    </el-tooltip>
-                  </div>
-                </div>
+        </section>
 
-                <div class="multi-pod-log__panel-status">
-                  <el-tag size="small" :type="statusTagType(statusTone(source.status))" :class="['multi-pod-log__status-tag', `multi-pod-log__status-tag--${statusTone(source.status)}`]">{{ source.status }}</el-tag>
-                  <span>{{ getBufferedLineCount(source) }} 行</span>
-                </div>
-
-                <div
-                  :ref="(el) => setViewportRef(source.id, el as HTMLElement | null)"
-                  class="multi-pod-log__panel-viewport"
-                >
-                  <div v-if="getBufferedLineCount(source) === 0" class="multi-pod-log__panel-empty">
-                    {{ source.connecting ? (liveMode ? '正在接入实时日志…' : '正在加载日志快照…') : '当前窗口暂无日志内容' }}
-                  </div>
-                  <div v-else class="multi-pod-log__panel-lines">
-                    <div v-for="(line, index) in getDisplayLines(source)" :key="`${source.id}:${index}`" class="multi-pod-log__panel-line">
-                      <span class="multi-pod-log__panel-line-no">{{ index + 1 }}</span>
-                      <span class="multi-pod-log__panel-line-text">{{ line || ' ' }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="multi-pod-log__panel-footer">拖拽右下角可调整窗口大小</div>
-                <div class="multi-pod-log__panel-resizer" @mousedown.stop.prevent="startPanelResize(source, $event)" />
-              </article>
+        <section v-if="activeSource" class="multi-pod-log__viewer">
+          <div class="multi-pod-log__viewer-head">
+            <div class="multi-pod-log__viewer-summary">
+              <div class="multi-pod-log__viewer-title">{{ activeSource.name }}</div>
+              <span class="multi-pod-log__viewer-divider">/</span>
+              <span class="multi-pod-log__viewer-namespace">{{ activeSource.ns }}</span>
+              <el-tag size="small" :type="statusTagType(activeSourceTone)" :class="['multi-pod-log__status-tag', `multi-pod-log__status-tag--${activeSourceTone}`]">{{ activeSource.status }}</el-tag>
+              <span class="multi-pod-log__viewer-count">{{ activeLineCount }} 行</span>
             </div>
+            <div class="multi-pod-log__viewer-toolbar">
+              <el-select
+                v-if="activeSource.containers.length > 0"
+                v-model="activeSource.container"
+                size="small"
+                class="multi-pod-log__viewer-container"
+                :disabled="activeSource.containers.length <= 1"
+                @change="restartSource(activeSource)"
+              >
+                <el-option v-for="container in activeSource.containers" :key="container" :label="container" :value="container" />
+              </el-select>
+              <span v-else class="multi-pod-log__viewer-container-label">默认容器</span>
+              <el-button size="small" :icon="RefreshRight" @click="restartSource(activeSource)">刷新当前</el-button>
+              <el-button size="small" :icon="CopyDocument" :disabled="!activeSourceText.trim()" @click="copySource(activeSource)">复制当前</el-button>
+              <el-button size="small" :icon="Delete" :disabled="activeLineCount === 0" @click="clearSourceLogs(activeSource)">清空当前</el-button>
+            </div>
+          </div>
+
+          <div ref="activeViewportRef" class="multi-pod-log__viewer-viewport" @scroll="onActiveViewportScroll">
+            <div v-if="activeLines.length === 0" class="multi-pod-log__viewer-empty">
+              {{ activeSource.connecting ? (liveMode ? '正在接入实时日志…' : '正在加载日志快照…') : '当前 Pod 暂无日志内容' }}
+            </div>
+            <template v-else>
+              <div class="multi-pod-log__viewer-spacer" :style="{ height: `${activeTotalHeight}px` }"></div>
+              <div class="multi-pod-log__viewer-visible" :style="{ transform: `translateY(${activeOffsetTop}px)` }">
+                <div v-for="item in visibleActiveLines" :key="`${activeSource.id}:${item.number}`" class="multi-pod-log__viewer-line">
+                  <span class="multi-pod-log__viewer-line-no">{{ item.number }}</span>
+                  <span class="multi-pod-log__viewer-line-text">{{ item.text || ' ' }}</span>
+                </div>
+              </div>
+            </template>
           </div>
         </section>
       </div>
@@ -169,7 +132,7 @@ type PodLogFrame = {
   message?: string
 }
 
-type LayoutMode = 'auto' | 'columns-2' | 'columns-3' | 'stack'
+type StatusTone = 'neutral' | 'active' | 'warning' | 'danger'
 
 type LogSource = {
   id: string
@@ -183,81 +146,71 @@ type LogSource = {
   lines: string[]
   ws: WebSocket | null
   seq: number
-  width: number
-  height: number
-  manualSize: boolean
 }
 
 const MAX_LOG_LINES_PER_SOURCE = 3000
-const PANEL_GAP = 12
-const PANEL_MIN_WIDTH = 360
-const PANEL_MIN_HEIGHT = 240
-const PANEL_MAX_HEIGHT = 760
-const SIDEBAR_MIN_WIDTH = 236
-const SIDEBAR_MAX_WIDTH = 420
+const LINE_HEIGHT = 22
+const OVERSCAN = 16
 const tailLineOptions = [100, 200, 500, 1000, 2000]
-const layoutOptions: Array<{ label: string; value: LayoutMode }> = [
-  { label: '自适应', value: 'auto' },
-  { label: '双列并排', value: 'columns-2' },
-  { label: '三列并排', value: 'columns-3' },
-  { label: '纵向堆叠', value: 'stack' }
-]
 
 const visible = ref(false)
 const liveMode = ref(true)
 const autoScroll = ref(true)
 const tailLines = ref(200)
-const layoutMode = ref<LayoutMode>('auto')
 const sources = ref<LogSource[]>([])
-const focusedSourceId = ref('')
-const sidebarWidth = ref(276)
-const workspaceScrollRef = ref<HTMLElement | null>(null)
-const workspaceWidth = ref(0)
+const activeSourceId = ref('')
+const activeViewportRef = ref<HTMLElement | null>(null)
+const activeScrollTop = ref(0)
+const activeViewportHeight = ref(0)
 
-const panelRefs = new Map<string, HTMLElement>()
-const viewportRefs = new Map<string, HTMLElement>()
-let workspaceObserver: ResizeObserver | null = null
-let cleanupDragListeners: (() => void) | null = null
+let activeViewportObserver: ResizeObserver | null = null
+
+const activeSource = computed<LogSource | null>(() => {
+  if (sources.value.length === 0) return null
+  return sources.value.find((source) => source.id === activeSourceId.value) ?? sources.value[0] ?? null
+})
 
 const headerMeta = computed(() => {
   if (sources.value.length === 0) return '-'
   const modeText = liveMode.value ? '实时模式' : '快照模式'
-  return `${sources.value.length} 个 Pod · 独立分屏工作台 · ${modeText}`
+  return `${sources.value.length} 个 Pod · 顶部切换 · ${modeText}`
 })
 
 const hasConnectingSources = computed(() => sources.value.some((source) => source.connecting))
 const failedSourceCount = computed(() => sources.value.filter((source) => /失败|异常/.test(source.status)).length)
 const totalBufferedLineCount = computed(() => sources.value.reduce((sum, source) => sum + getBufferedLineCount(source), 0))
 const hasBufferedLogs = computed(() => totalBufferedLineCount.value > 0)
-const summaryTone = computed(() => {
+const isActiveSourceBusy = computed(() => Boolean(activeSource.value?.connecting))
+const summaryTone = computed<StatusTone>(() => {
   if (hasConnectingSources.value) return 'warning'
   if (failedSourceCount.value > 0) return 'danger'
   if (sources.value.length === 0) return 'neutral'
   return 'active'
 })
-const resolvedColumnCount = computed(() => {
-  const count = sources.value.length
-  const width = workspaceWidth.value || 1280
-  if (layoutMode.value === 'stack') return 1
-  if (layoutMode.value === 'columns-2') return width < 860 ? 1 : 2
-  if (layoutMode.value === 'columns-3') {
-    if (width < 860) return 1
-    if (width < 1360) return 2
-    return 3
-  }
-  if (count <= 1) return 1
-  if (width < 860) return 1
-  if (count === 2) return 2
-  return width >= 1480 ? 3 : 2
+const navigationHint = computed(() => {
+  return sources.value.length > 1 ? '点击上方 Pod 切换' : '单 Pod 宽视图'
 })
-const layoutSummary = computed(() => `${layoutLabel(layoutMode.value)} · 当前 ${resolvedColumnCount.value} 列 · 可拖拽中缝和窗体右下角调整尺寸`)
 const statusSummary = computed(() => {
-  if (sources.value.length === 0) return '未选择日志源'
+  if (sources.value.length === 0) return '未选择'
   const activeCount = sources.value.filter((source) => /实时中|快照中|已加载|已结束/.test(source.status)).length
-  if (hasConnectingSources.value) return `正在连接 ${activeCount}/${sources.value.length}`
-  if (failedSourceCount.value > 0) return `${activeCount}/${sources.value.length} 个窗口可用，${failedSourceCount.value} 个窗口异常`
-  return liveMode.value ? `${activeCount}/${sources.value.length} 个窗口实时跟随` : `${activeCount}/${sources.value.length} 个窗口快照已加载`
+  if (hasConnectingSources.value) return `连接 ${activeCount}/${sources.value.length}`
+  if (failedSourceCount.value > 0) return `${activeCount}/${sources.value.length} 可用 · ${failedSourceCount.value} 异常`
+  return liveMode.value ? `${activeCount}/${sources.value.length} 实时` : `${activeCount}/${sources.value.length} 快照`
 })
+const activeSourceTone = computed<StatusTone>(() => (activeSource.value ? statusTone(activeSource.value.status) : 'neutral'))
+const activeLines = computed(() => (activeSource.value ? getDisplayLines(activeSource.value) : []))
+const activeLineCount = computed(() => (activeSource.value ? getBufferedLineCount(activeSource.value) : 0))
+const activeSourceText = computed(() => (activeSource.value ? getSourceText(activeSource.value) : ''))
+const activeTotalHeight = computed(() => activeLineCount.value * LINE_HEIGHT)
+const activeStartIndex = computed(() => Math.max(0, Math.floor(activeScrollTop.value / LINE_HEIGHT) - OVERSCAN))
+const activeVisibleCount = computed(() => Math.ceil((activeViewportHeight.value || 0) / LINE_HEIGHT) + OVERSCAN * 2)
+const visibleActiveLines = computed(() => {
+  return activeLines.value.slice(activeStartIndex.value, activeStartIndex.value + activeVisibleCount.value).map((text, index) => ({
+    number: activeStartIndex.value + index + 1,
+    text
+  }))
+})
+const activeOffsetTop = computed(() => activeStartIndex.value * LINE_HEIGHT)
 const fullText = computed(() => {
   return sources.value
     .map((source) => {
@@ -271,12 +224,12 @@ const fullText = computed(() => {
 
 function open(nextTargets: MultiPodLogTarget[]) {
   sources.value = normalizeTargets(nextTargets)
-  focusedSourceId.value = sources.value[0]?.id ?? ''
+  ensureActiveSource()
   visible.value = true
   void nextTick(async () => {
-    initWorkspaceObserver()
-    resetLayout()
-    await restartAll()
+    initActiveViewportObserver()
+    await restartCurrentSource()
+    scrollActiveSourceToBottom()
   })
 }
 
@@ -285,6 +238,16 @@ function close() {
 }
 
 defineExpose({ open, close })
+
+function ensureActiveSource() {
+  if (sources.value.length === 0) {
+    activeSourceId.value = ''
+    return
+  }
+  if (!sources.value.some((source) => source.id === activeSourceId.value)) {
+    activeSourceId.value = sources.value[0].id
+  }
+}
 
 function normalizeTargets(nextTargets: MultiPodLogTarget[]): LogSource[] {
   const map = new Map<string, LogSource>()
@@ -307,38 +270,33 @@ function normalizeTargets(nextTargets: MultiPodLogTarget[]): LogSource[] {
       remainder: '',
       lines: [],
       ws: null,
-      seq: 0,
-      width: PANEL_MIN_WIDTH,
-      height: 320,
-      manualSize: false
+      seq: 0
     })
   }
   return Array.from(map.values())
 }
 
-function layoutLabel(value: LayoutMode): string {
-  return layoutOptions.find((item) => item.value === value)?.label ?? '自适应'
+function activateSource(id: string) {
+  if (activeSourceId.value === id) return
+  activeSourceId.value = id
+  void ensureActiveSourceSession(false)
 }
 
 function sourceLabel(source: Pick<LogSource, 'ns' | 'name' | 'container'>) {
   return source.container ? `${source.ns}/${source.name} · ${source.container}` : `${source.ns}/${source.name}`
 }
 
-function statusTone(status: string): 'neutral' | 'active' | 'warning' | 'danger' {
+function statusTone(status: string): StatusTone {
   if (/失败|异常/.test(status)) return 'danger'
   if (/连接中|加载中|快照中/.test(status)) return 'warning'
   if (/实时中|已加载|已结束/.test(status)) return 'active'
   return 'neutral'
 }
 
-function statusTagType(tone: ReturnType<typeof statusTone>): 'info' | 'warning' | 'danger' {
+function statusTagType(tone: StatusTone): 'info' | 'warning' | 'danger' {
   if (tone === 'danger') return 'danger'
   if (tone === 'warning') return 'warning'
   return 'info'
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value))
 }
 
 function getBufferedLineCount(source: LogSource): number {
@@ -353,128 +311,67 @@ function getSourceText(source: LogSource): string {
   return getDisplayLines(source).join('\n')
 }
 
-function setPanelRef(id: string, el: HTMLElement | null) {
-  if (el) panelRefs.set(id, el)
-  else panelRefs.delete(id)
+function hasSourceBuffer(source: LogSource): boolean {
+  return source.lines.length > 0 || Boolean(source.remainder)
 }
 
-function setViewportRef(id: string, el: HTMLElement | null) {
-  if (el) viewportRefs.set(id, el)
-  else viewportRefs.delete(id)
-}
-
-function focusPanel(id: string) {
-  focusedSourceId.value = id
-  void nextTick(() => {
-    panelRefs.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
-  })
-}
-
-function initWorkspaceObserver() {
-  if (!workspaceScrollRef.value) return
-  workspaceWidth.value = workspaceScrollRef.value.clientWidth
-  if (workspaceObserver || typeof ResizeObserver === 'undefined') return
-  workspaceObserver = new ResizeObserver(() => {
-    workspaceWidth.value = workspaceScrollRef.value?.clientWidth ?? 0
-  })
-  workspaceObserver.observe(workspaceScrollRef.value)
-}
-
-function destroyWorkspaceObserver() {
-  workspaceObserver?.disconnect()
-  workspaceObserver = null
-}
-
-function destroyDragListeners() {
-  cleanupDragListeners?.()
-}
-
-function withWindowDrag(onMove: (event: MouseEvent) => void) {
-  destroyDragListeners()
-  const handleMove = (event: MouseEvent) => onMove(event)
-  const handleUp = () => destroyDragListeners()
-  window.addEventListener('mousemove', handleMove)
-  window.addEventListener('mouseup', handleUp, { once: true })
-  cleanupDragListeners = () => {
-    window.removeEventListener('mousemove', handleMove)
-    window.removeEventListener('mouseup', handleUp)
-    cleanupDragListeners = null
-  }
-}
-
-function getDefaultPanelWidth(columns = resolvedColumnCount.value): number {
-  const available = Math.max(PANEL_MIN_WIDTH, (workspaceWidth.value || 1280) - PANEL_GAP * Math.max(0, columns - 1))
-  return Math.max(PANEL_MIN_WIDTH, Math.floor(available / columns))
-}
-
-function getDefaultPanelHeight(columns = resolvedColumnCount.value): number {
-  if (columns <= 1) return 420
-  if (columns === 2) return 340
-  return 300
-}
-
-function maxPanelWidth(): number {
-  return Math.max(PANEL_MIN_WIDTH, (workspaceWidth.value || 1280) - 24)
-}
-
-function normalizePanelSize(source: LogSource) {
-  source.width = clamp(source.width || getDefaultPanelWidth(), PANEL_MIN_WIDTH, maxPanelWidth())
-  source.height = clamp(source.height || getDefaultPanelHeight(), PANEL_MIN_HEIGHT, PANEL_MAX_HEIGHT)
-}
-
-function applyLayoutPreset(force = true) {
-  const width = getDefaultPanelWidth()
-  const height = getDefaultPanelHeight()
+function closeInactiveSources(activeID: string) {
   sources.value.forEach((source) => {
-    if (!force && source.manualSize) {
-      normalizePanelSize(source)
+    if (source.id === activeID) return
+    const wasBusy = source.connecting || Boolean(source.ws)
+    source.seq += 1
+    closeSourceSocket(source, 'inactive')
+    source.connecting = false
+    if (!wasBusy) return
+    source.status = hasSourceBuffer(source) && liveMode.value ? '已暂停' : hasSourceBuffer(source) ? '已加载' : '未连接'
+  })
+}
+
+async function ensureActiveSourceSession(force = false) {
+  if (!visible.value || !props.clusterId) return
+  ensureActiveSource()
+  const source = activeSource.value
+  if (!source) return
+  closeInactiveSources(source.id)
+  if (!force) {
+    if (liveMode.value && (source.connecting || Boolean(source.ws))) {
+      scrollActiveSourceToBottom(source.id)
       return
     }
-    source.width = width
-    source.height = height
-    source.manualSize = false
-  })
-}
-
-function resetLayout() {
-  applyLayoutPreset(true)
-}
-
-function panelStyle(source: LogSource) {
-  return {
-    width: `${clamp(source.width || getDefaultPanelWidth(), PANEL_MIN_WIDTH, maxPanelWidth())}px`,
-    height: `${clamp(source.height || getDefaultPanelHeight(), PANEL_MIN_HEIGHT, PANEL_MAX_HEIGHT)}px`
+    if (!liveMode.value && !source.connecting && hasSourceBuffer(source)) {
+      scrollActiveSourceToBottom(source.id)
+      return
+    }
   }
+  await startSource(source)
 }
 
-function startSidebarResize(event: MouseEvent) {
-  if (window.innerWidth <= 1080) return
-  const startX = event.clientX
-  const startWidth = sidebarWidth.value
-  withWindowDrag((moveEvent) => {
-    const maxWidth = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, window.innerWidth * 0.36))
-    sidebarWidth.value = clamp(startWidth + (moveEvent.clientX - startX), SIDEBAR_MIN_WIDTH, maxWidth)
-  })
+function onActiveViewportScroll() {
+  activeScrollTop.value = activeViewportRef.value?.scrollTop ?? 0
 }
 
-function startPanelResize(source: LogSource, event: MouseEvent) {
-  focusedSourceId.value = source.id
-  const startX = event.clientX
-  const startY = event.clientY
-  const startWidth = source.width || getDefaultPanelWidth()
-  const startHeight = source.height || getDefaultPanelHeight()
-  withWindowDrag((moveEvent) => {
-    source.manualSize = true
-    source.width = clamp(startWidth + (moveEvent.clientX - startX), PANEL_MIN_WIDTH, maxPanelWidth())
-    source.height = clamp(startHeight + (moveEvent.clientY - startY), PANEL_MIN_HEIGHT, PANEL_MAX_HEIGHT)
+function initActiveViewportObserver() {
+  if (!activeViewportRef.value) return
+  activeViewportHeight.value = activeViewportRef.value.clientHeight
+  if (activeViewportObserver || typeof ResizeObserver === 'undefined') return
+  activeViewportObserver = new ResizeObserver(() => {
+    activeViewportHeight.value = activeViewportRef.value?.clientHeight ?? 0
   })
+  activeViewportObserver.observe(activeViewportRef.value)
+}
+
+function destroyActiveViewportObserver() {
+  activeViewportObserver?.disconnect()
+  activeViewportObserver = null
 }
 
 function clearSourceLogs(source: LogSource) {
   source.lines = []
   source.remainder = ''
-  const viewport = viewportRefs.get(source.id)
-  if (viewport) viewport.scrollTop = 0
+  if (activeSourceId.value === source.id && activeViewportRef.value) {
+    activeViewportRef.value.scrollTop = 0
+    activeScrollTop.value = 0
+  }
 }
 
 function clearLogs() {
@@ -508,12 +405,12 @@ function downloadAll() {
   downloadBlob(`pod_log_workbench_${sanitizeFileName(String(props.clusterId))}_${timestamp}.txt`, new Blob([fullText.value], { type: 'text/plain;charset=utf-8' }))
 }
 
-function scrollPanelToBottom(sourceId: string) {
-  if (!autoScroll.value) return
+function scrollActiveSourceToBottom(sourceId = activeSourceId.value) {
+  if (!autoScroll.value || !sourceId || sourceId !== activeSourceId.value) return
   void nextTick(() => {
-    const viewport = viewportRefs.get(sourceId)
-    if (!viewport) return
-    viewport.scrollTop = viewport.scrollHeight
+    if (!activeViewportRef.value) return
+    activeViewportRef.value.scrollTop = activeViewportRef.value.scrollHeight
+    activeScrollTop.value = activeViewportRef.value.scrollTop
   })
 }
 
@@ -525,7 +422,9 @@ function trimSourceLines(lines: string[]): string[] {
 function appendLines(source: LogSource, lines: string[]) {
   if (lines.length === 0) return
   source.lines = trimSourceLines(source.lines.concat(lines))
-  scrollPanelToBottom(source.id)
+  if (source.id === activeSourceId.value) {
+    scrollActiveSourceToBottom(source.id)
+  }
 }
 
 function appendChunk(source: LogSource, chunk: string) {
@@ -655,6 +554,7 @@ async function startSource(source: LogSource) {
       }
     }
   } catch (error) {
+    if (source.seq !== seq || !visible.value) return
     source.connecting = false
     source.status = '连接失败'
     const err = error as ApiError
@@ -663,57 +563,51 @@ async function startSource(source: LogSource) {
   }
 }
 
-async function restartSource(source: LogSource) {
-  if (!visible.value || !props.clusterId) return
+async function restartSource(source: LogSource | null) {
+  if (!visible.value || !props.clusterId || !source) return
   await startSource(source)
 }
 
-async function restartAll() {
+async function restartCurrentSource() {
   if (!visible.value || !props.clusterId || sources.value.length === 0) return
-  closeAllSockets('restart')
-  clearLogs()
-  await Promise.all(sources.value.map((source) => startSource(source)))
+  await ensureActiveSourceSession(true)
 }
 
 function handleClosed() {
   closeAllSockets('drawer_closed')
-  destroyWorkspaceObserver()
-  destroyDragListeners()
+  destroyActiveViewportObserver()
   clearLogs()
   sources.value = []
-  focusedSourceId.value = ''
-  panelRefs.clear()
-  viewportRefs.clear()
+  activeSourceId.value = ''
+  activeViewportRef.value = null
+  activeScrollTop.value = 0
+  activeViewportHeight.value = 0
 }
 
 watch(visible, (value) => {
   if (!value) return
   void nextTick(() => {
-    initWorkspaceObserver()
-    applyLayoutPreset(false)
-    sources.value.forEach((source) => scrollPanelToBottom(source.id))
+    initActiveViewportObserver()
+    activeScrollTop.value = activeViewportRef.value?.scrollTop ?? 0
+    if (autoScroll.value) scrollActiveSourceToBottom()
   })
 })
 
 watch(autoScroll, (value) => {
-  if (!value) return
-  sources.value.forEach((source) => scrollPanelToBottom(source.id))
+  if (value) scrollActiveSourceToBottom()
 })
 
-watch(layoutMode, () => {
-  if (!visible.value) return
-  resetLayout()
-})
-
-watch(workspaceWidth, (value, oldValue) => {
-  if (!visible.value || value === oldValue) return
-  applyLayoutPreset(false)
+watch(activeSourceId, () => {
+  void nextTick(() => {
+    initActiveViewportObserver()
+    activeScrollTop.value = activeViewportRef.value?.scrollTop ?? 0
+    if (autoScroll.value) scrollActiveSourceToBottom()
+  })
 })
 
 onBeforeUnmount(() => {
   closeAllSockets('component_unmount')
-  destroyWorkspaceObserver()
-  destroyDragListeners()
+  destroyActiveViewportObserver()
 })
 </script>
 
@@ -725,7 +619,7 @@ onBeforeUnmount(() => {
 .multi-pod-log__shell {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   height: 100%;
   padding: 16px 18px 18px;
   background:
@@ -762,10 +656,6 @@ onBeforeUnmount(() => {
   font-size: 13px;
 }
 
-.multi-pod-log__layout {
-  width: 136px;
-}
-
 .multi-pod-log__tail {
   width: 128px;
 }
@@ -774,17 +664,22 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0 4px;
-  color: #475569;
-  font-size: 13px;
+  gap: 10px;
+  padding: 0 2px;
+  color: #64748b;
+  font-size: 12px;
 }
 
 .multi-pod-log__statusbar-main {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
+}
+
+.multi-pod-log__statusbar-hint,
+.multi-pod-log__statusbar-meta {
+  white-space: nowrap;
 }
 
 .multi-pod-log__status-tag {
@@ -811,190 +706,144 @@ onBeforeUnmount(() => {
   background: rgba(248, 113, 113, 0.16);
 }
 
-.multi-pod-log__body {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-}
-
-.multi-pod-log__sources,
-.multi-pod-log__workspace-wrap {
-  min-height: 0;
-}
-
-.multi-pod-log__sources {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-  padding: 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.84);
-  backdrop-filter: blur(8px);
-}
-
-.multi-pod-log__sources-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.multi-pod-log__sources-hint {
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.multi-pod-log__sources-scroll {
-  flex: 1;
-  min-height: 0;
-}
-
-.multi-pod-log__sources-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.multi-pod-log__source-item {
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.92));
-  cursor: pointer;
-  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.multi-pod-log__source-item:hover {
-  transform: translateY(-1px);
-  border-color: rgba(59, 130, 246, 0.26);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
-}
-
-.multi-pod-log__source-item--active {
-  border-color: rgba(37, 99, 235, 0.32);
-  background: linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(226, 232, 240, 0.92));
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.12);
-}
-
-.multi-pod-log__source-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.multi-pod-log__source-name {
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #0f172a;
-  word-break: break-all;
-}
-
-.multi-pod-log__source-meta {
-  margin-top: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.multi-pod-log__sidebar-resizer {
-  flex: 0 0 12px;
-  position: relative;
-  cursor: col-resize;
-}
-
-.multi-pod-log__sidebar-resizer::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 10px;
-  bottom: 10px;
-  width: 2px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.42), rgba(148, 163, 184, 0.08));
-  transform: translateX(-50%);
-}
-
-.multi-pod-log__workspace-wrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  border-radius: 18px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(248, 250, 252, 0.78);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 24px 60px rgba(15, 23, 42, 0.08);
-}
-
-.multi-pod-log__workspace-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 8px;
-}
-
-.multi-pod-log__workspace {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 12px;
-  min-width: 0;
-}
-
 .multi-pod-log__empty {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.78);
 }
 
-.multi-pod-log__panel {
-  position: relative;
-  flex: 0 0 auto;
-  min-width: 0;
+.multi-pod-log__body {
+  flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: 10px;
+}
+
+.multi-pod-log__tabs-card,
+.multi-pod-log__viewer {
+  min-height: 0;
   border-radius: 18px;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(8px);
 }
 
-.multi-pod-log__panel--focused {
-  border-color: rgba(37, 99, 235, 0.32);
-  box-shadow: 0 20px 46px rgba(37, 99, 235, 0.12);
+.multi-pod-log__tabs-card {
+  padding: 8px 10px;
 }
 
-.multi-pod-log__panel-head {
+.multi-pod-log__tabs-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.multi-pod-log__tabs {
   display: flex;
-  align-items: flex-start;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.multi-pod-log__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  appearance: none;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(248, 250, 252, 0.92);
+  border-radius: 999px;
+  padding: 7px 12px;
+  width: auto;
+  max-width: 320px;
+  flex: 0 0 auto;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.multi-pod-log__tab:hover {
+  border-color: rgba(59, 130, 246, 0.26);
+  background: rgba(239, 246, 255, 0.74);
+}
+
+.multi-pod-log__tab--active {
+  border-color: rgba(37, 99, 235, 0.32);
+  background: rgba(219, 234, 254, 0.88);
+}
+
+.multi-pod-log__tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  background: rgba(148, 163, 184, 0.72);
+}
+
+.multi-pod-log__tab-dot--neutral {
+  background: rgba(148, 163, 184, 0.72);
+}
+
+.multi-pod-log__tab-dot--active {
+  background: rgba(14, 165, 233, 0.96);
+}
+
+.multi-pod-log__tab-dot--warning {
+  background: rgba(245, 158, 11, 0.96);
+}
+
+.multi-pod-log__tab-dot--danger {
+  background: rgba(239, 68, 68, 0.96);
+}
+
+.multi-pod-log__tab-title {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi-pod-log__tab-ns {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.multi-pod-log__viewer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.multi-pod-log__viewer-head {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px 10px;
+  gap: 10px;
+  padding: 8px 12px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.16);
 }
 
-.multi-pod-log__panel-title-wrap {
+.multi-pod-log__viewer-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
   min-width: 0;
 }
 
-.multi-pod-log__panel-title {
-  font-size: 14px;
+.multi-pod-log__viewer-title {
+  min-width: 0;
+  font-size: 15px;
   font-weight: 800;
   color: #0f172a;
   overflow: hidden;
@@ -1002,44 +851,34 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.multi-pod-log__panel-meta {
-  margin-top: 4px;
+.multi-pod-log__viewer-divider,
+.multi-pod-log__viewer-namespace,
+.multi-pod-log__viewer-count {
   color: #64748b;
   font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.multi-pod-log__panel-toolbar {
+.multi-pod-log__viewer-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
-.multi-pod-log__panel-container {
-  width: 140px;
+.multi-pod-log__viewer-container {
+  width: 168px;
 }
 
-.multi-pod-log__panel-container-label {
+.multi-pod-log__viewer-container-label {
   color: #64748b;
   font-size: 12px;
   font-weight: 600;
   padding: 0 6px;
 }
 
-.multi-pod-log__panel-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 14px;
-  background: rgba(248, 250, 252, 0.92);
-  color: #64748b;
-  font-size: 12px;
-}
-
-.multi-pod-log__panel-viewport {
+.multi-pod-log__viewer-viewport {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -1052,7 +891,7 @@ onBeforeUnmount(() => {
     radial-gradient(circle at top left, rgba(14, 165, 233, 0.14), transparent 24%);
 }
 
-.multi-pod-log__panel-empty {
+.multi-pod-log__viewer-empty {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1062,12 +901,23 @@ onBeforeUnmount(() => {
   font-size: 13px;
 }
 
-.multi-pod-log__panel-lines {
+.multi-pod-log__viewer-lines {
   display: flex;
   flex-direction: column;
 }
 
-.multi-pod-log__panel-line {
+.multi-pod-log__viewer-spacer {
+  width: 100%;
+}
+
+.multi-pod-log__viewer-visible {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+}
+
+.multi-pod-log__viewer-line {
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
   gap: 12px;
@@ -1077,48 +927,19 @@ onBeforeUnmount(() => {
   white-space: pre-wrap;
 }
 
-.multi-pod-log__panel-line:nth-child(2n) {
+.multi-pod-log__viewer-line:nth-child(2n) {
   background: rgba(255, 255, 255, 0.02);
 }
 
-.multi-pod-log__panel-line-no {
+.multi-pod-log__viewer-line-no {
   color: #64748b;
   text-align: right;
   user-select: none;
 }
 
-.multi-pod-log__panel-line-text {
+.multi-pod-log__viewer-line-text {
   min-width: 0;
   word-break: break-word;
-}
-
-.multi-pod-log__panel-footer {
-  padding: 7px 14px 8px;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
-  color: #64748b;
-  font-size: 11px;
-  background: rgba(248, 250, 252, 0.92);
-}
-
-.multi-pod-log__panel-resizer {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 18px;
-  height: 18px;
-  cursor: nwse-resize;
-}
-
-.multi-pod-log__panel-resizer::before {
-  content: '';
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 10px;
-  height: 10px;
-  border-right: 2px solid rgba(148, 163, 184, 0.72);
-  border-bottom: 2px solid rgba(148, 163, 184, 0.72);
-  border-bottom-right-radius: 3px;
 }
 
 @media (max-width: 1280px) {
@@ -1132,42 +953,24 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 1080px) {
-  .multi-pod-log__body {
+@media (max-width: 900px) {
+  .multi-pod-log__viewer-head,
+  .multi-pod-log__viewer-summary {
     flex-direction: column;
+    align-items: flex-start;
   }
 
-  .multi-pod-log__sources {
-    width: 100% !important;
-    max-height: 260px;
-  }
-
-  .multi-pod-log__sidebar-resizer {
-    display: none;
-  }
-
-  .multi-pod-log__panel {
-    width: 100% !important;
-    min-width: 0;
-  }
-
-  .multi-pod-log__panel-resizer {
-    display: none;
+  .multi-pod-log__tab {
+    max-width: 240px;
   }
 }
 
 @media (max-width: 720px) {
-  .multi-pod-log__panel-head {
-    flex-direction: column;
-  }
-
-  .multi-pod-log__panel-toolbar {
+  .multi-pod-log__viewer-toolbar {
     width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
   }
 
-  .multi-pod-log__panel-container {
+  .multi-pod-log__viewer-container {
     width: 100%;
   }
 }

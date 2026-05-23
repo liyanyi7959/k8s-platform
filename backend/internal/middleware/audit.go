@@ -17,7 +17,8 @@ import (
 func AuditLogger(auditSvc *service.AuditService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		method := c.Request.Method
-		if method == "GET" || method == "HEAD" || method == "OPTIONS" {
+		path := c.Request.URL.Path
+		if !shouldAuditRequest(method, path) {
 			c.Next()
 			return
 		}
@@ -25,7 +26,6 @@ func AuditLogger(auditSvc *service.AuditService) gin.HandlerFunc {
 		c.Next()
 
 		// 请求处理完毕后记录审计日志
-		path := c.Request.URL.Path
 		status := c.Writer.Status()
 		if v, ok := c.Get("resp_code"); ok {
 			switch code := v.(type) {
@@ -100,6 +100,20 @@ func AuditLogger(auditSvc *service.AuditService) gin.HandlerFunc {
 			auditSvc.Record(auditCtx, entry)
 		}()
 	}
+}
+
+func shouldAuditRequest(method, path string) bool {
+	switch method {
+	case "GET", "HEAD", "OPTIONS":
+		return false
+	case "POST":
+		lowerPath := strings.ToLower(strings.TrimSpace(path))
+		if strings.HasSuffix(lowerPath, "/logs/session") {
+			// 日志会话只是查看日志前的只读握手，不应误记为“创建 Pod”。
+			return false
+		}
+	}
+	return true
 }
 
 func inferAction(method, path string) string {

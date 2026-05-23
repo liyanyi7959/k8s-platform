@@ -37,12 +37,12 @@
           </el-table-column>
           <el-table-column prop="action" label="动作" width="90">
             <template #default="{ row }">
-              <span :class="['action-badge', `action-badge--${actionClass(row.action)}`]">{{ actionLabel(row.action) }}</span>
+              <span :class="['action-badge', `action-badge--${displayActionClass(row)}`]">{{ displayActionLabel(row) }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="resource" label="资源类型" width="120">
             <template #default="{ row }">
-              <span :class="['cell-resource', `cell-resource--${resourceClass(row.resource)}`]">{{ row.resource || '-' }}</span>
+              <span :class="['cell-resource', `cell-resource--${displayResourceClass(row)}`]">{{ displayResourceLabel(row) }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="resource_name" label="资源名" min-width="160" show-overflow-tooltip />
@@ -164,6 +164,17 @@ function actionLabel(action: string) {
   return actionMap[action] || action
 }
 
+function isPodLogSessionAudit(row: AuditLog) {
+  return /\/api\/v1\/clusters\/\d+\/pods\/[^/]+\/[^/]+\/logs\/session$/i.test(row.path || '')
+}
+
+function displayActionLabel(row: AuditLog) {
+  if (isPodLogSessionAudit(row)) {
+    return '日志'
+  }
+  return actionLabel(row.action)
+}
+
 function actionClass(action: string): string {
   switch (action) {
     case 'create': return 'create'
@@ -178,6 +189,13 @@ function actionClass(action: string): string {
     case 'auth': return 'auth'
     default: return 'unknown'
   }
+}
+
+function displayActionClass(row: AuditLog) {
+  if (isPodLogSessionAudit(row)) {
+    return 'log'
+  }
+  return actionClass(row.action)
 }
 
 function resourceClass(resource: string): string {
@@ -200,6 +218,20 @@ function resourceClass(resource: string): string {
     default:
       return 'default'
   }
+}
+
+function displayResourceLabel(row: AuditLog) {
+  if (isPodLogSessionAudit(row)) {
+    return 'pod日志'
+  }
+  return row.resource || '-'
+}
+
+function displayResourceClass(row: AuditLog) {
+  if (isPodLogSessionAudit(row)) {
+    return 'log'
+  }
+  return resourceClass(row.resource)
 }
 
 function isAuditSuccess(code: number) {
@@ -296,6 +328,10 @@ onMounted(fetchData)
   background: rgba(20, 184, 166, 0.14);
   color: #0f766e;
 }
+.cell-resource--log {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0369a1;
+}
 .cell-mono {
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 12px;
@@ -348,6 +384,10 @@ onMounted(fetchData)
 .action-badge--auth {
   background: rgba(20, 184, 166, 0.12);
   color: #0f766e;
+}
+.action-badge--log {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0369a1;
 }
 .action-badge--unknown {
   background: rgba(148, 163, 184, 0.16);

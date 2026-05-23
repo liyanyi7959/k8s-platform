@@ -336,7 +336,13 @@ func sortPods(pods []*corev1.Pod, sortBy, order string) {
 // PodLogStream 获取 Pod 日志流。
 // follow=true 时返回持续输出的流；tailLines<=0 时默认取最近 200 行。
 func (s *K8sService) PodLogStream(ctx context.Context, clusterID uint64, namespace, pod string, container string, follow bool, tailLines int64) (io.ReadCloser, error) {
-	cs, err := s.typedClient(ctx, clusterID)
+	cfg, err := s.restConfig(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	streamCfg := rest.CopyConfig(cfg)
+	streamCfg.Timeout = 0
+	cs, err := kubernetes.NewForConfig(streamCfg)
 	if err != nil {
 		return nil, err
 	}
