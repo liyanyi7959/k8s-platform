@@ -61,7 +61,6 @@
               @dragend="onTabDragEnd"
               @contextmenu.prevent="openTabContextMenu($event, source.id)"
             >
-              <span :class="['multi-pod-log__tab-dot', `multi-pod-log__tab-dot--${statusTone(source.status)}`]"></span>
               <span class="multi-pod-log__tab-title">{{ source.name }}</span>
             </button>
           </div>
@@ -228,7 +227,10 @@ const headerMeta = computed(() => {
   return `${sources.value.length} 个 Pod · ${navigationText} · ${modeText}`
 })
 const showHeaderMeta = computed(() => !props.compact || sources.value.length > 0)
-const showStatusBar = computed(() => !props.compact || sources.value.length > 0)
+const showStatusBar = computed(() => {
+  if (props.compact && props.navigationMode === 'top') return false
+  return !props.compact || sources.value.length > 0
+})
 
 const hasConnectingSources = computed(() => sources.value.some((source) => source.connecting))
 const failedSourceCount = computed(() => sources.value.filter((source) => /失败|异常/.test(source.status)).length)
@@ -974,41 +976,39 @@ onBeforeUnmount(() => {
 .multi-pod-log__tab {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   appearance: none;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(248, 250, 252, 0.92);
-  border-radius: 999px;
-  padding: 7px 13px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  padding: 4px 8px;
   width: auto;
   max-width: 240px;
   flex: 0 0 auto;
   cursor: grab;
   user-select: none;
-  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  transition: background-color 0.18s ease, transform 0.18s ease;
 }
 
 .multi-pod-log__body--wrap-tabs .multi-pod-log__tab {
   width: 100%;
   max-width: none;
-  border-radius: 14px;
-  padding: 6px 10px;
+  border-radius: 12px;
+  padding: 4px 8px;
 }
 
 .multi-pod-log__body--side .multi-pod-log__tab {
   width: 100%;
   max-width: none;
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 .multi-pod-log__tab:hover {
-  border-color: rgba(59, 130, 246, 0.26);
-  background: rgba(239, 246, 255, 0.74);
+  background: rgba(248, 250, 252, 0.96);
 }
 
 .multi-pod-log__tab--active {
-  border-color: rgba(37, 99, 235, 0.32);
-  background: rgba(219, 234, 254, 0.88);
+  background: rgba(239, 246, 255, 0.9);
 }
 
 .multi-pod-log__tab--dragging {
@@ -1018,38 +1018,13 @@ onBeforeUnmount(() => {
 }
 
 .multi-pod-log__tab--drag-over {
-  border-color: rgba(14, 165, 233, 0.52);
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.14);
-}
-
-.multi-pod-log__tab-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  flex: 0 0 auto;
-  background: rgba(148, 163, 184, 0.72);
-}
-
-.multi-pod-log__tab-dot--neutral {
-  background: rgba(148, 163, 184, 0.72);
-}
-
-.multi-pod-log__tab-dot--active {
-  background: rgba(14, 165, 233, 0.96);
-}
-
-.multi-pod-log__tab-dot--warning {
-  background: rgba(245, 158, 11, 0.96);
-}
-
-.multi-pod-log__tab-dot--danger {
-  background: rgba(239, 68, 68, 0.96);
+  background: rgba(224, 242, 254, 0.92);
 }
 
 .multi-pod-log__tab-title {
   min-width: 0;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   color: #0f172a;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1158,6 +1133,10 @@ onBeforeUnmount(() => {
 
 .multi-pod-log__shell--compact .multi-pod-log__viewer-title {
   font-size: 14px;
+}
+
+.multi-pod-log__shell--compact .multi-pod-log__viewer-title {
+  font-weight: 600;
 }
 
 .multi-pod-log__viewer-divider,
