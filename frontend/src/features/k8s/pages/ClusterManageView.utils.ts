@@ -1109,6 +1109,14 @@ export function buildTree(icons: {
     iconUrl: icons.k8sIconGroupUrl,
     children: [
       {
+        id: 'tools:log-workbench',
+        label: '日志工作台',
+        kind: 'view',
+        resource: 'logworkbench',
+        perm: 'k8s:read',
+        iconUrl: icons.k8sIconPodUrl
+      },
+      {
         id: 'tools:manifest-apply',
         label: 'YAML 部署',
         kind: 'view',

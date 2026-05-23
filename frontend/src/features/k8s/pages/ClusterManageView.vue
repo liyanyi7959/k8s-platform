@@ -161,6 +161,12 @@
           @navigate-resource="handlePermissionAuditNavigation"
         />
 
+        <OpsLogWorkbenchPanel
+          v-else-if="current?.resource === 'logworkbench'"
+          :cluster-id="clusterId"
+          :namespaces="namespaces"
+        />
+
         <ManifestApplyRecordsPanel
           v-else-if="current?.resource === 'manifestapply'"
           ref="manifestApplyRecordsPanelRef"
@@ -1064,6 +1070,7 @@ const ManifestApplyRecordsPanel = defineAsyncComponent(() => import('./clusterMa
 const NamespacedGovernancePanel = defineAsyncComponent(() => import('./clusterManage/panels/NamespacedGovernancePanel.vue'))
 const NamespacesPanel = defineAsyncComponent(() => import('./clusterManage/panels/NamespacesPanel.vue'))
 const NodesPanel = defineAsyncComponent(() => import('./clusterManage/panels/NodesPanel.vue'))
+const OpsLogWorkbenchPanel = defineAsyncComponent(() => import('./clusterManage/panels/OpsLogWorkbenchPanel.vue'))
 const PDBsPanel = defineAsyncComponent(() => import('./clusterManage/panels/PDBsPanel.vue'))
 const PodMetricsPanel = defineAsyncComponent(() => import('./clusterManage/panels/PodMetricsPanel.vue'))
 const PodPhaseSummaryBar = defineAsyncComponent(() => import('./clusterManage/PodPhaseSummaryBar.vue'))
@@ -1654,6 +1661,7 @@ const primaryCreateAction = computed<null | { label: string; onClick: () => void
 
 const showQueryBar = computed(() => (
   current.value?.resource !== 'dashboard' &&
+  current.value?.resource !== 'logworkbench' &&
   current.value?.resource !== 'manifestapply' &&
   current.value?.resource !== 'permissionaudits' &&
   current.value?.resource !== 'topology'
@@ -1666,6 +1674,7 @@ const currentPanelTitle = computed(() => {
 const currentPanelDescription = computed(() => {
   const resource = current.value?.resource
   if (!resource || resource === 'dashboard') return '查看集群健康、容量、工作负载与近期告警。'
+  if (resource === 'logworkbench') return '按命名空间筛选 Service 端口与 Pod，并在同页直接切换查看日志。'
   if (resource === 'manifestapply') return '通过任意 YAML 或上传文件统一执行 Apply，不区分资源 Kind。'
   if (resource === 'pods') return '查看 Pod 生命周期、日志、终端与 YAML 信息。'
   if (resource === 'workloads') return '统一管理 Deployment、StatefulSet 与 DaemonSet 等工作负载。'
@@ -2318,7 +2327,7 @@ async function loadCurrent() {
     await loadDashboard()
     return
   }
-  if (current.value.resource === 'manifestapply') {
+  if (current.value.resource === 'manifestapply' || current.value.resource === 'logworkbench') {
     list.value = []
     return
   }
