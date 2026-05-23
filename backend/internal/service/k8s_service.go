@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"crypto/x509"
@@ -41,6 +42,9 @@ type K8sService struct {
 	cache       CacheStore
 	podTTL      time.Duration
 	insecureTLS bool
+
+	apiResourcesMu       sync.Mutex
+	apiResourcesInFlight map[string]*apiResourcesFlight
 }
 
 const k8sRequestTimeout = 60 * time.Second
@@ -461,25 +465,189 @@ func isMissingAPIResourceErr(err error) bool {
 		strings.Contains(lower, "no matches for kind")
 }
 
-func (s *K8sService) supportsGVR(ctx context.Context, clusterID uint64, gvr schema.GroupVersionResource) (bool, error) {
+type apiResourcesCachePayload struct {
+	Missing   bool     `json:"missing,omitempty"`
+	Resources []string `json:"resources,omitempty"`
+}
+
+type apiResourcesFlight struct {
+	done      chan struct{}
+	resources map[string]struct{}
+	ok        bool
+	err       error
+}
+
+func cloneStringSet(src map[string]struct{}) map[string]struct{} {
+	if len(src) == 0 {
+		if src == nil {
+			return nil
+		}
+		return map[string]struct{}{}
+	}
+	dst := make(map[string]struct{}, len(src))
+	for key := range src {
+		dst[key] = struct{}{}
+	}
+	return dst
+}
+
+func clampTTL(v, minTTL, maxTTL time.Duration) time.Duration {
+	if v <= 0 {
+		v = minTTL
+	}
+	if v < minTTL {
+		return minTTL
+	}
+	if maxTTL > 0 && v > maxTTL {
+		return maxTTL
+	}
+	return v
+}
+
+func (s *K8sService) apiResourceSupportBaseTTL() time.Duration {
+	if s == nil || s.podTTL <= 0 {
+		return 20 * time.Second
+	}
+	return s.podTTL
+}
+
+func (s *K8sService) apiResourcesCacheTTL(gv schema.GroupVersion) time.Duration {
+	base := s.apiResourceSupportBaseTTL()
+	switch gv.Group {
+	case "metrics.k8s.io":
+		return clampTTL(base/2, 5*time.Second, 15*time.Second)
+	case "snapshot.storage.k8s.io":
+		return clampTTL(base*2, 30*time.Second, 2*time.Minute)
+	default:
+		return clampTTL(base*6, 2*time.Minute, 10*time.Minute)
+	}
+}
+
+func (s *K8sService) apiResourcesCacheKey(clusterID uint64, gv schema.GroupVersion) string {
+	group := strings.TrimSpace(gv.Group)
+	if group == "" {
+		group = "_core"
+	}
+	version := strings.TrimSpace(gv.Version)
+	return fmt.Sprintf("k8s:apiresources:v2:cluster:%d:%s:%s", clusterID, group, version)
+}
+
+func (s *K8sService) apiResourcesForGroupVersion(ctx context.Context, clusterID uint64, gv schema.GroupVersion) (resources map[string]struct{}, ok bool, err error) {
+	cacheEnabled := s != nil && s.cache != nil && s.cache.Enabled() && clusterID > 0
+	cacheKey := ""
+	if cacheEnabled {
+		cacheKey = s.apiResourcesCacheKey(clusterID, gv)
+		rctx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+		b, ok, err := s.cache.Get(rctx, cacheKey)
+		cancel()
+		if err == nil && ok && len(b) > 0 {
+			var payload apiResourcesCachePayload
+			if json.Unmarshal(b, &payload) == nil {
+				if payload.Missing {
+					return nil, false, nil
+				}
+				resources = make(map[string]struct{}, len(payload.Resources))
+				for _, name := range payload.Resources {
+					resourceName := strings.TrimSpace(name)
+					if resourceName == "" {
+						continue
+					}
+					resources[resourceName] = struct{}{}
+				}
+				return resources, true, nil
+			}
+		}
+	}
+
+	flightKey := cacheKey
+	if strings.TrimSpace(flightKey) == "" {
+		flightKey = s.apiResourcesCacheKey(clusterID, gv)
+	}
+	var flight *apiResourcesFlight
+	if s != nil {
+		s.apiResourcesMu.Lock()
+		if s.apiResourcesInFlight == nil {
+			s.apiResourcesInFlight = make(map[string]*apiResourcesFlight)
+		}
+		if existing := s.apiResourcesInFlight[flightKey]; existing != nil {
+			s.apiResourcesMu.Unlock()
+			select {
+			case <-existing.done:
+				return cloneStringSet(existing.resources), existing.ok, existing.err
+			case <-ctx.Done():
+				return nil, false, ctx.Err()
+			}
+		}
+		flight = &apiResourcesFlight{done: make(chan struct{})}
+		s.apiResourcesInFlight[flightKey] = flight
+		s.apiResourcesMu.Unlock()
+		defer func() {
+			flight.resources = cloneStringSet(resources)
+			flight.ok = ok
+			flight.err = err
+			close(flight.done)
+			s.apiResourcesMu.Lock()
+			delete(s.apiResourcesInFlight, flightKey)
+			s.apiResourcesMu.Unlock()
+		}()
+	}
+
 	dc, err := s.discoveryClient(ctx, clusterID)
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
-	gv := schema.GroupVersion{Group: gvr.Group, Version: gvr.Version}
 	list, err := dc.ServerResourcesForGroupVersion(gv.String())
 	if err != nil {
 		if isMissingAPIResourceErr(err) {
-			return false, nil
+			if cacheEnabled && cacheKey != "" {
+				payload := apiResourcesCachePayload{Missing: true}
+				if b, marshalErr := json.Marshal(payload); marshalErr == nil {
+					wctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+					_ = s.cache.Set(wctx, cacheKey, b, s.apiResourcesCacheTTL(gv))
+					cancel()
+				}
+			}
+			return nil, false, nil
 		}
-		return false, normalizeK8sErr(err)
+		return nil, false, normalizeK8sErr(err)
 	}
+
+	resources = make(map[string]struct{}, len(list.APIResources))
+	resourceNames := make([]string, 0, len(list.APIResources))
 	for _, item := range list.APIResources {
-		if item.Name == gvr.Resource {
-			return true, nil
+		name := strings.TrimSpace(item.Name)
+		if name == "" {
+			continue
+		}
+		if _, exists := resources[name]; exists {
+			continue
+		}
+		resources[name] = struct{}{}
+		resourceNames = append(resourceNames, name)
+	}
+	sort.Strings(resourceNames)
+	if cacheEnabled && cacheKey != "" {
+		payload := apiResourcesCachePayload{Resources: resourceNames}
+		if b, marshalErr := json.Marshal(payload); marshalErr == nil {
+			wctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+			_ = s.cache.Set(wctx, cacheKey, b, s.apiResourcesCacheTTL(gv))
+			cancel()
 		}
 	}
-	return false, nil
+	return resources, true, nil
+}
+
+func (s *K8sService) supportsGVR(ctx context.Context, clusterID uint64, gvr schema.GroupVersionResource) (bool, error) {
+	gv := schema.GroupVersion{Group: gvr.Group, Version: gvr.Version}
+	resources, ok, err := s.apiResourcesForGroupVersion(ctx, clusterID, gv)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, nil
+	}
+	_, exists := resources[gvr.Resource]
+	return exists, nil
 }
 
 func (s *K8sService) SupportsCompatibleGVR(ctx context.Context, clusterID uint64, gvr schema.GroupVersionResource) (bool, error) {

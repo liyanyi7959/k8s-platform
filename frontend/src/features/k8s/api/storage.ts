@@ -4,6 +4,7 @@ import type { ApiResponse } from '@/shared/types/api'
 
 export type K8sResourceSupport = {
   replicasets?: boolean
+  podmetrics?: boolean
   clusterroles?: boolean
   endpoints?: boolean
   endpointslices?: boolean

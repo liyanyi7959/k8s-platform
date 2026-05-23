@@ -11,6 +11,7 @@ export type ResourceKey =
   | 'pdbs'
   | 'hpas'
   | 'pods'
+  | 'podmetrics'
   | 'replicasets'
   | 'jobs'
   | 'cronjobs'

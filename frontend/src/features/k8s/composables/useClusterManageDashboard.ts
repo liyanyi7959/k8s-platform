@@ -231,8 +231,8 @@ export function useClusterManageDashboard(opts: { clusterId: ComputedRef<number>
     loadingDashboard.value = true
     try {
       // Fire overview first; events are secondary.
-      const overviewPromise = dashboardApi.getClusterOverview(clusterId.value)
-      const eventsPromise = k8sApi.listEvents(clusterId.value, { sort_by: 'lastTimestamp', order: 'desc' }).catch(() => ({ list: [] as any[] }))
+      const overviewPromise = dashboardApi.getClusterOverview(targetClusterId)
+      const eventsPromise = k8sApi.listEvents(targetClusterId, { sort_by: 'lastTimestamp', order: 'desc' }).catch(() => ({ list: [] as any[] }))
 
       // Render overview as soon as it arrives (don't wait for events)
       const overview = await overviewPromise

@@ -1,7 +1,10 @@
 package controller
 
 import (
+	"context"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -20,6 +23,7 @@ type createPVCReq struct {
 
 type K8sResourceSupportResp struct {
 	ReplicaSets                     *bool `json:"replicasets,omitempty"`
+	PodMetrics                      *bool `json:"podmetrics,omitempty"`
 	ClusterRoles                    *bool `json:"clusterroles,omitempty"`
 	Endpoints                       *bool `json:"endpoints,omitempty"`
 	EndpointSlices                  *bool `json:"endpointslices,omitempty"`
@@ -41,6 +45,9 @@ type K8sResourceSupportResp struct {
 func boolPtr(v bool) *bool {
 	return &v
 }
+
+const resourceSupportProbeConcurrency = 4
+const resourceSupportProbeTimeout = 12 * time.Second
 
 // ──────────────────────────────────────────────────────────
 //  PVC 相关接口
@@ -369,12 +376,14 @@ func (kc *K8sController) DeleteStorageClass(c *gin.Context) {
 // ──────────────────────────────────────────────────────────
 
 func (kc *K8sController) buildResourceSupportResp(c *gin.Context, id uint64) (K8sResourceSupportResp, error) {
-	ctx := c.Request.Context()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), resourceSupportProbeTimeout)
+	defer cancel()
 	checks := []struct {
 		set func(*K8sResourceSupportResp, *bool)
 		gvr schema.GroupVersionResource
 	}{
 		{func(resp *K8sResourceSupportResp, ok *bool) { resp.ReplicaSets = ok }, gvrReplicaSets()},
+		{func(resp *K8sResourceSupportResp, ok *bool) { resp.PodMetrics = ok }, gvrPodMetrics()},
 		{func(resp *K8sResourceSupportResp, ok *bool) { resp.ClusterRoles = ok }, gvrClusterRoles()},
 		{func(resp *K8sResourceSupportResp, ok *bool) { resp.Endpoints = ok }, gvrEndpoints()},
 		{func(resp *K8sResourceSupportResp, ok *bool) { resp.EndpointSlices = ok }, gvrEndpointSlices()},
@@ -393,13 +402,34 @@ func (kc *K8sController) buildResourceSupportResp(c *gin.Context, id uint64) (K8
 		{func(resp *K8sResourceSupportResp, ok *bool) { resp.VolumeSnapshotContents = ok }, gvrVolumeSnapshotContents()},
 	}
 
+	results := make([]*bool, len(checks))
+	concurrency := resourceSupportProbeConcurrency
+	if concurrency <= 0 || concurrency > len(checks) {
+		concurrency = len(checks)
+	}
+	sem := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
+	for idx, item := range checks {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(idx int, item struct {
+			set func(*K8sResourceSupportResp, *bool)
+			gvr schema.GroupVersionResource
+		}) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			ok, err := kc.svc.SupportsCompatibleGVR(ctx, id, item.gvr)
+			if err != nil {
+				return
+			}
+			results[idx] = boolPtr(ok)
+		}(idx, item)
+	}
+	wg.Wait()
+
 	var out K8sResourceSupportResp
-	for _, item := range checks {
-		ok, err := kc.svc.SupportsCompatibleGVR(ctx, id, item.gvr)
-		if err != nil {
-			continue
-		}
-		item.set(&out, boolPtr(ok))
+	for idx, item := range checks {
+		item.set(&out, results[idx])
 	}
 	return out, nil
 }

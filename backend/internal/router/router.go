@@ -199,6 +199,7 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 
 	// Pod
 	k8s.GET("/clusters/:id/pods", readPerm, ctl.ListPods)
+	k8s.GET("/clusters/:id/podmetrics", readPerm, ctl.ListPodMetrics)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/yaml", readPerm, ctl.GetPodYAML)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/logs", readPerm, ctl.GetPodLogs)
 	k8s.POST("/clusters/:id/pods/:ns/:pod/logs/session", readPerm, ctl.CreatePodLogSession)
@@ -364,8 +365,8 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	k8s.PATCH("/clusters/:id/csistoragecapacities/edit", writePerm, ctl.EditCSIStorageCapacity)
 	k8s.DELETE("/clusters/:id/csistoragecapacities/:ns/:name", writePerm, ctl.DeleteCSIStorageCapacity)
 	k8s.GET("/clusters/:id/csistoragecapacities/:ns/:name/yaml", readPerm, ctl.GetCSIStorageCapacityYAML)
-	k8s.GET("/clusters/:id/resource-support", resourceSupportReadPerm, middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.GetResourceSupport)
-	k8s.GET("/clusters/:id/storage-snapshot-support", resourceSupportReadPerm, middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.GetStorageSnapshotSupport)
+	k8s.GET("/clusters/:id/resource-support", resourceSupportReadPerm, ctl.GetResourceSupport)
+	k8s.GET("/clusters/:id/storage-snapshot-support", resourceSupportReadPerm, ctl.GetStorageSnapshotSupport)
 
 	// VolumeAttachment
 	k8s.GET("/clusters/:id/volumeattachments", readPerm, middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.ListVolumeAttachments)

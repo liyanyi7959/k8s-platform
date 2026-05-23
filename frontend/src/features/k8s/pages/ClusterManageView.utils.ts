@@ -25,7 +25,10 @@ export function filterTreeByResourceSupport(nodes: TreeNode[], support: Partial<
   const visit = (items: TreeNode[]): TreeNode[] => {
     return items.flatMap((item) => {
       if (item.kind === 'view') {
-        if (item.resource && support[item.resource] === false) return []
+        if (item.resource && support[item.resource] === false) {
+          if (item.resource === 'podmetrics') return [item]
+          return []
+        }
         return [item]
       }
       const children = visit(item.children ?? [])
@@ -735,7 +738,7 @@ export function getRowNamespace(row: K8sLikeObject): string | null {
 }
 
 export function getResourceBadgeClass(r: ResourceKey): string {
-  if (r === 'pods') return 'resource-badge--pods'
+  if (r === 'pods' || r === 'podmetrics') return 'resource-badge--pods'
   if (r === 'workloads' || r === 'replicasets') return 'resource-badge--workloads'
   if (r === 'pdbs') return 'resource-badge--workloads'
   if (r === 'hpas') return 'resource-badge--workloads'
@@ -845,6 +848,7 @@ export function getListRowSearchText(row: K8sLikeObject, resource: ResourceKey |
   const hostIP = status?.hostIP != null ? String(status.hostIP) : ''
 
   if (resource === 'pods') return `${ns} ${name} ${phase} ${node} ${podIP} ${hostIP}`.toLowerCase()
+  if (resource === 'podmetrics') return String((row as any)?.__search ?? `${ns} ${name}`).toLowerCase()
   if (resource === 'workloads') return `${kind} ${ns} ${name}`.toLowerCase()
   if (resource === 'replicasets') return `${ns} ${name} ${status?.replicas ?? ''} ${status?.readyReplicas ?? ''}`.toLowerCase()
   if (resource === 'jobs') {
@@ -989,6 +993,7 @@ export function isNamespacedResource(r: ResourceKey): boolean {
     r === 'pdbs' ||
     r === 'hpas' ||
     r === 'pods' ||
+      r === 'podmetrics' ||
       r === 'replicasets' ||
       r === 'jobs' ||
       r === 'cronjobs' ||
@@ -1132,6 +1137,7 @@ export function buildTree(icons: {
     iconUrl: icons.k8sIconDeploymentUrl,
     children: [
       { id: 'workloads:pods', label: 'Pods', kind: 'view', resource: 'pods', perm: 'k8s:read', namespaced: true, iconUrl: icons.k8sIconPodUrl },
+      { id: 'workloads:podmetrics', label: 'PodMetrics', kind: 'view', resource: 'podmetrics', perm: 'k8s:read', namespaced: true, iconUrl: icons.k8sIconPodUrl },
       {
         id: 'workloads:deployments',
         label: 'Deployments',

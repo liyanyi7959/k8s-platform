@@ -27,11 +27,15 @@
               'tree-node',
               data.kind === 'folder' ? 'tree-node--folder' : 'tree-node--leaf',
               node.level === 1 && data.kind === 'folder' ? 'tree-node--draggable' : '',
-              current?.id === data.id ? 'tree-node--active' : ''
+              current?.id === data.id ? 'tree-node--active' : '',
+              isPodMetricsTreeHintVisible(data) ? 'tree-node--hinted' : ''
             ]">
               <img v-if="data.iconUrl" :src="data.iconUrl" :class="['tree-icon-img', data.kind === 'folder' ? 'tree-icon-img--folder' : 'tree-icon-img--leaf']" alt="">
               <el-icon v-else :class="['tree-icon', data.kind === 'folder' ? 'tree-icon--folder' : 'tree-icon--leaf']"><component :is="data.kind === 'folder' ? Collection : Document" /></el-icon>
               <span class="tree-label">{{ data.label }}</span>
+              <el-tooltip v-if="isPodMetricsTreeHintVisible(data)" content="当前集群未启用 Metrics API，可点击查看部署命令" placement="top">
+                <span class="tree-state-badge">未启用</span>
+              </el-tooltip>
               <el-icon v-if="node.level === 1 && data.kind === 'folder'" class="tree-drag-handle"><Operation /></el-icon>
             </span>
           </template>
@@ -42,6 +46,13 @@
 
     <main class="k8s-main">
       <el-card class="page-card">
+        <PodPhaseSummaryBar
+          v-if="current?.resource === 'pods'"
+          :summary="podPhaseSummary"
+          :active-filter="podPhaseQuickFilter"
+          @change="onPodPhaseQuickFilterChange"
+        />
+
         <div v-if="showQueryBar" class="srv-query-bar k8s-query-bar">
           <div v-if="current?.resource !== 'dashboard'" class="qb-search">
             <el-icon class="qb-search-icon"><Search /></el-icon>
@@ -167,6 +178,7 @@
           :show-tools="showListTableTools"
           :open-yaml="openNamespaceYaml"
           :on-deleted="refreshAll"
+          :open-summary-resource-page="openNamespaceSummaryResourcePage"
           @sort-change="onSortChange"
         />
 
@@ -191,8 +203,6 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:pods`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
-          :pod-phase-summary="podPhaseSummary"
-          :active-phase-filter="podPhaseQuickFilter"
           :get-warning-event-count="getPodWarningEventCount"
           :get-pod-row-key="getPodRowKey"
           :get-pod-phase-tag-type="getPodPhaseTagType"
@@ -209,7 +219,17 @@
           :bulk-delete-pods="bulkDeletePods"
           @sort-change="onSortChange"
           @selection-change="onPodSelectionChange"
-          @phase-filter-change="onPodPhaseQuickFilterChange"
+        />
+
+        <PodMetricsPanel
+          v-else-if="current?.resource === 'podmetrics'"
+          ref="podMetricsPanelRef"
+          :data="pagedList"
+          :persist-key="`k8s:cluster_manage:v2:${clusterId}:podmetrics`"
+          :show-tools="showListTableTools"
+          :open-pod-detail="openPodMetricsPodDetail"
+          :unsupported="isPodMetricsUnsupported"
+          @sort-change="onSortChange"
         />
 
         <WorkloadsPanel
@@ -1005,6 +1025,7 @@ import {
   formatAgeMs,
   getCreationAgeMs,
   getCreationAgeText,
+  getHttpStatus,
   getListRowSearchText,
   getNamespaceFilter,
   getPodRowKey,
@@ -1044,6 +1065,8 @@ const NamespacedGovernancePanel = defineAsyncComponent(() => import('./clusterMa
 const NamespacesPanel = defineAsyncComponent(() => import('./clusterManage/panels/NamespacesPanel.vue'))
 const NodesPanel = defineAsyncComponent(() => import('./clusterManage/panels/NodesPanel.vue'))
 const PDBsPanel = defineAsyncComponent(() => import('./clusterManage/panels/PDBsPanel.vue'))
+const PodMetricsPanel = defineAsyncComponent(() => import('./clusterManage/panels/PodMetricsPanel.vue'))
+const PodPhaseSummaryBar = defineAsyncComponent(() => import('./clusterManage/PodPhaseSummaryBar.vue'))
 const PodsPanel = defineAsyncComponent(() => import('./clusterManage/panels/PodsPanel.vue'))
 const PermissionAuditsPanel = defineAsyncComponent(() => import('./clusterManage/panels/PermissionAuditsPanel.vue'))
 const PvcsPanel = defineAsyncComponent(() => import('./clusterManage/panels/PvcsPanel.vue'))
@@ -1127,6 +1150,7 @@ function runOverlayWhenReady<T>(
 const namespacesPanelRef = ref<any>(null)
 const nodesPanelRef = ref<any>(null)
 const podsPanelRef = ref<any>(null)
+const podMetricsPanelRef = ref<any>(null)
 const replicaSetsPanelRef = ref<any>(null)
 const workloadsPanelRef = ref<any>(null)
 const pdbsPanelRef = ref<any>(null)
@@ -1424,6 +1448,23 @@ const {
 
 const activeTableColumns = ref<EnhancedColumn[]>([])
 const activeColumnVisible = reactive<Record<string, boolean>>({})
+const podMetricsUnsupported = ref(false)
+const isPodMetricsUnsupported = computed(() => resourceSupport.value.podmetrics === false || podMetricsUnsupported.value)
+
+function isMissingPodMetricsApiError(error: unknown): boolean {
+  const status = getHttpStatus(error)
+  if (status === 404) return true
+  const message = String((error as ApiError | undefined)?.message ?? '').toLowerCase()
+  return (
+    message.includes('requested resource') ||
+    message.includes("doesn't have a resource type") ||
+    message.includes('no matches for kind')
+  )
+}
+
+function isPodMetricsTreeHintVisible(node: TreeNode): boolean {
+  return node.kind === 'view' && node.resource === 'podmetrics' && isPodMetricsUnsupported.value
+}
 
 function getActiveEnhancedTable(): any | null {
   const r = current.value?.resource
@@ -1431,6 +1472,7 @@ function getActiveEnhancedTable(): any | null {
   if (r === 'namespaces') return namespacesPanelRef.value?.getTable?.() ?? null
   if (r === 'nodes') return nodesPanelRef.value?.getTable?.() ?? null
   if (r === 'pods') return podsPanelRef.value?.getTable?.() ?? null
+  if (r === 'podmetrics') return podMetricsPanelRef.value?.getTable?.() ?? null
   if (r === 'replicasets') return replicaSetsPanelRef.value?.getTable?.() ?? null
   if (r === 'workloads') return workloadsPanelRef.value?.getTable?.() ?? null
   if (r === 'pdbs') return pdbsPanelRef.value?.getTable?.() ?? null
@@ -1577,7 +1619,6 @@ const toolbarResourceText = computed(() => {
 
 const primaryCreateAction = computed<null | { label: string; onClick: () => void }>(() => {
   const resource = current.value?.resource
-  if (!clusterId.value) return null
   if (resource === 'namespaces' && canWriteK8s.value) {
     return {
       label: '创建',
@@ -1873,6 +1914,7 @@ let refreshAllPromise: Promise<void> | null = null
 async function refreshAll() {
   if (!clusterId.value) return
   if (refreshAllPromise) return await refreshAllPromise
+  const targetClusterId = clusterId.value
 
   refreshAllPromise = (async () => {
     loadingTree.value = true
@@ -1880,7 +1922,7 @@ async function refreshAll() {
 
     // Fire cluster detail fetch in background — header info, NOT needed by tree or dashboard
     const clusterDetailPromise = canReadClusterMeta.value
-      ? clustersApi.getCluster(clusterId.value).then(
+      ? clustersApi.getCluster(targetClusterId).then(
           (d) => { clusterDetail.value = d },
           (e) => {
             const err = e as ApiError
@@ -1890,7 +1932,7 @@ async function refreshAll() {
       : Promise.resolve()
 
     const resourceSupportPromise = (userStore.permissions.includes('k8s:read') || userStore.permissions.includes('k8s:rbac_read'))
-      ? k8sApi.getResourceSupport(clusterId.value).then(
+      ? k8sApi.getResourceSupport(targetClusterId).then(
           (data) => {
             resourceSupport.value = data
           },
@@ -1935,7 +1977,8 @@ async function refreshAll() {
     // Sidebar namespaces — runs concurrently with clusterDetail + loadCurrent
     if (canLoadNamespaceOptions.value) {
       try {
-        const data = await k8sApi.listNamespaces(clusterId.value)
+        const data = await k8sApi.listNamespaces(targetClusterId)
+        if (targetClusterId !== clusterId.value) return
         namespaces.value = data.list.map((it) => it.metadata.name)
         setDashboardNamespaceSnapshot(namespaces.value)
         const persistedNs = readStorageJson<unknown>(storageKey('namespace'))
@@ -2084,6 +2127,17 @@ function onDashboardNavigate(treeNodeId: string) {
     treeRef.value?.setCurrentKey?.(node.id)
     onTreeNodeClick(node)
   }
+}
+
+function openNamespaceSummaryResourcePage(payload: { treeNodeId: string; namespace: string }) {
+  const treeNodeId = String(payload.treeNodeId ?? '').trim()
+  const namespaceText = String(payload.namespace ?? '').trim()
+  if (!treeNodeId || !namespaceText) return
+  namespace.value = [namespaceText]
+  keywordInput.value = ''
+  keyword.value = ''
+  page.value = 1
+  onDashboardNavigate(treeNodeId)
 }
 
 function permissionAuditFindingNodeId(payload: { kind?: string; namespace?: string }): string | null {
@@ -2270,6 +2324,7 @@ async function loadCurrent() {
   }
 
   const seq = ++loadCurrentSeq
+  const resource = current.value.resource
   loadingList.value = true
   try {
     const nsFilter = getNamespaceFilter(namespace.value, ALL_NAMESPACE)
@@ -2281,7 +2336,7 @@ async function loadCurrent() {
       return sortItemsByPath(results.flat(), sortBy.value, order.value)
     }
 
-    const resource = current.value.resource
+    podMetricsUnsupported.value = false
     if (resource === 'permissionaudits') {
       list.value = []
       return
@@ -2311,6 +2366,28 @@ async function loadCurrent() {
         if (seq !== loadCurrentSeq) return
         list.value = sortItemsByPath(merged, sortBy.value, order.value)
         clearPodSelection()
+      },
+      podmetrics: async () => {
+        const backendSortable = sortBy.value === 'metadata.name' || sortBy.value === 'metadata.namespace' || sortBy.value === 'timestamp'
+        let merged: any[] = []
+        try {
+          merged = await listByNamespaces(async (ns) => {
+            const data = await k8sApi.listPodMetrics(clusterId.value, {
+              namespace: ns,
+              sort_by: backendSortable ? sortBy.value : undefined,
+              order: backendSortable ? order.value : undefined
+            })
+            return (data.list ?? []).map((it: any) => decoratePodMetricsRow(it))
+          })
+          resourceSupport.value = { ...resourceSupport.value, podmetrics: true }
+        } catch (error) {
+          if (!isMissingPodMetricsApiError(error)) throw error
+          podMetricsUnsupported.value = true
+          resourceSupport.value = { ...resourceSupport.value, podmetrics: false }
+          merged = []
+        }
+        if (seq !== loadCurrentSeq) return
+        list.value = sortItemsByPath(merged, sortBy.value, order.value)
       },
       workloads: async () => {
         const merged = await listByNamespaces(async (ns) => {
@@ -2603,6 +2680,10 @@ async function loadCurrent() {
       list.value = []
       resetWarningEventSummary()
     }
+    if (resource === 'podmetrics' && isMissingPodMetricsApiError(e)) {
+      if (seq === loadCurrentSeq) podMetricsUnsupported.value = true
+      return
+    }
     const err = e as ApiError
     notifyError(err.requestId ? `${err.message} (request_id=${err.requestId})` : err.message)
   } finally {
@@ -2666,6 +2747,26 @@ function decoratePodRow(row: any) {
   const podIP = String(row?.status?.podIP ?? '')
   const hostIP = String(row?.status?.hostIP ?? '')
   row.__search = `${ns} ${name} ${phase} ${node} ${podIP} ${hostIP}`.toLowerCase()
+  return row
+}
+
+function decoratePodMetricsRow(row: any) {
+  if (!row || typeof row !== 'object') return row
+  const ns = getRowNamespace(row) ?? ''
+  const name = String(row?.metadata?.name ?? '')
+  const windowText = String(row?.window ?? '')
+  const timestampText = String(row?.timestamp ?? '')
+  const containers = Array.isArray(row?.containers) ? row.containers : []
+  const containerText = containers
+    .map((container: any) => {
+      const containerName = String(container?.name ?? '')
+      const cpu = String(container?.usage?.cpu ?? '')
+      const memory = String(container?.usage?.memory ?? '')
+      return `${containerName} ${cpu} ${memory}`.trim()
+    })
+    .filter(Boolean)
+    .join(' ')
+  row.__search = `${ns} ${name} ${windowText} ${timestampText} ${containerText}`.toLowerCase()
   return row
 }
 
@@ -3539,6 +3640,25 @@ function openPodDetail(row: any) {
   detailsHostRef.value?.openPodDetail(decoratePodRow(row))
 }
 
+async function openPodMetricsPodDetail(row: any) {
+  if (!clusterId.value) return
+  const ns = getRowNamespace(row)
+  const name = String(row?.metadata?.name ?? '').trim()
+  if (!ns || !name) return
+  try {
+    const data = await k8sApi.listPods(clusterId.value, { namespace: ns })
+    const target = (Array.isArray(data.list) ? data.list : []).find((item: any) => String(item?.metadata?.name ?? '').trim() === name)
+    if (!target) {
+      notifyError(`未找到对应 Pod：${ns}/${name}`)
+      return
+    }
+    openPodDetail(target)
+  } catch (error) {
+    const err = error as ApiError
+    notifyError(err.requestId ? `${err.message} (request_id=${err.requestId})` : err.message)
+  }
+}
+
 function openNodeDetail(row: any) {
   if (!clusterId.value) return
   const name = String(row?.metadata?.name ?? '')
@@ -3734,10 +3854,40 @@ onBeforeUnmount(() => {
 }
 
 .tree-label {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.2;
+}
+
+.tree-node--hinted:not(.tree-node--active) {
+  color: #92400e;
+}
+
+.tree-state-badge {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+:global(html.dark) .tree-node--hinted:not(.tree-node--active) {
+  color: rgba(253, 224, 71, 0.92);
+}
+
+:global(html.dark) .tree-state-badge {
+  border-color: rgba(250, 204, 21, 0.24);
+  background: rgba(250, 204, 21, 0.14);
+  color: rgba(254, 240, 138, 0.96);
 }
 
 .tree-drag-handle {

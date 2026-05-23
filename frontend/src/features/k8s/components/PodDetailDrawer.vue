@@ -171,12 +171,77 @@
         <el-tab-pane label="资源使用" name="resources">
           <div class="k8s-tab-pane">
             <el-card shadow="never" class="k8s-section-card k8s-accent-card">
-              <template #header><div class="k8s-section-title">资源配置</div></template>
+              <template #header>
+                <div class="k8s-section-title-row">
+                  <div class="k8s-section-title">实时资源指标</div>
+                  <div class="k8s-section-actions">
+                    <el-space :size="8">
+                      <el-tag v-if="podMetricsLoading" size="small" type="info" effect="light">加载中</el-tag>
+                      <el-tag v-else-if="podMetricsUnsupported" size="small" type="warning" effect="light">未启用 Metrics API</el-tag>
+                      <el-tag v-else-if="podMetricsRow" size="small" type="success" effect="light">最近采样 {{ podMetricsAgeText }}</el-tag>
+                      <el-tag v-else size="small" type="info" effect="light">暂无指标</el-tag>
+                      <el-tooltip content="刷新实时指标" placement="top">
+                        <el-button size="small" :icon="RefreshRight" circle :loading="podMetricsLoading" @click="loadPodMetrics(true)" />
+                      </el-tooltip>
+                    </el-space>
+                  </div>
+                </div>
+              </template>
+
+              <el-skeleton v-if="podMetricsLoading && !podMetricsRow && !podMetricsUnsupported" :rows="4" animated />
+              <template v-else-if="podMetricsRow">
+                <div class="k8s-summary-grid pod-metrics-summary-grid">
+                  <div class="k8s-kv k8s-kv--info">
+                    <div class="k8s-k">总 CPU:</div>
+                    <div class="k8s-v pod-metrics-summary__value">{{ formatPodCpu(podMetricsRow) }}</div>
+                  </div>
+                  <div class="k8s-kv k8s-kv--info">
+                    <div class="k8s-k">总内存:</div>
+                    <div class="k8s-v pod-metrics-summary__value">{{ formatPodMemory(podMetricsRow) }}</div>
+                  </div>
+                  <div class="k8s-kv k8s-kv--info">
+                    <div class="k8s-k">统计周期:</div>
+                    <div class="k8s-v">{{ podMetricsWindowText }}</div>
+                  </div>
+                  <div class="k8s-kv k8s-kv--info">
+                    <div class="k8s-k">采样时间:</div>
+                    <div class="k8s-v">{{ podMetricsTimestampText }}</div>
+                  </div>
+                </div>
+              </template>
+              <EmptyState
+                v-else
+                type="no-data"
+                :description="podMetricsUnsupported ? '当前集群未启用 Metrics API，暂无实时资源指标。' : '当前 Pod 暂无实时资源指标'"
+              />
+              <MetricsApiInstallHint
+                v-if="podMetricsUnsupported"
+                class="pod-metrics-install-hint"
+                description="当前集群未启用 Metrics API，Pod 实时资源使用暂不可用。可以先参考下方命令部署 metrics-server，然后刷新当前详情页。"
+              />
+            </el-card>
+
+            <el-card shadow="never" class="k8s-section-card k8s-accent-card">
+              <template #header><div class="k8s-section-title">资源总览对照</div></template>
               <el-table :data="resourceSummaryRows" stripe size="small" class="k8s-detail-table">
                 <el-table-column prop="type" label="资源类型" width="140" />
                 <el-table-column prop="requests" label="Requests（请求）" width="220" />
                 <el-table-column prop="limits" label="Limits（限制）" width="220" />
+                <el-table-column prop="usage" label="Current Usage（实时）" width="180" />
                 <el-table-column prop="note" label="备注" min-width="220" />
+              </el-table>
+            </el-card>
+
+            <el-card shadow="never" class="k8s-section-card k8s-accent-card">
+              <template #header><div class="k8s-section-title">容器级资源对照</div></template>
+              <el-table :data="containerResourceCompareRows" stripe size="small" class="k8s-detail-table pod-metrics-compare-table">
+                <el-table-column prop="name" label="容器" min-width="180" />
+                <el-table-column prop="cpuRequests" label="CPU Requests" width="130" />
+                <el-table-column prop="cpuLimits" label="CPU Limits" width="130" />
+                <el-table-column prop="cpuUsage" label="CPU Usage" width="130" />
+                <el-table-column prop="memRequests" label="Memory Requests" width="150" />
+                <el-table-column prop="memLimits" label="Memory Limits" width="150" />
+                <el-table-column prop="memUsage" label="Memory Usage" width="150" />
               </el-table>
             </el-card>
           </div>
@@ -382,12 +447,23 @@
 import { computed, ref, watch } from 'vue'
 import { Check, Close, CopyDocument, RefreshRight, View } from '@element-plus/icons-vue'
 import * as k8sApi from '@/features/k8s/api/k8s'
+import MetricsApiInstallHint from '@/features/k8s/components/MetricsApiInstallHint.vue'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 import EmptyState from '@/shared/components/EmptyState.vue'
 import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import WorkloadDetailDrawerShell from './WorkloadDetailDrawerShell.vue'
 import type { ApiError } from '@/shared/utils/error'
+import { getHttpStatus } from '@/features/k8s/pages/ClusterManageView.utils'
+import {
+  formatBytes,
+  formatMillicores,
+  formatPodCpu,
+  formatPodMemory,
+  getMetricContainers,
+  parseCpuMillicores,
+  parseMemoryBytes
+} from '@/features/k8s/utils/podMetrics'
 import k8sIconCmUrl from '@/assets/images/k8s/cm.svg'
 import k8sIconCronJobUrl from '@/assets/images/k8s/cronjob.svg'
 import k8sIconDeploymentUrl from '@/assets/images/k8s/deploy.svg'
@@ -822,6 +898,16 @@ type ContainerResourceRow = {
   ephemeralLimits: string
 }
 
+type ContainerResourceCompareRow = {
+  name: string
+  cpuRequests: string
+  cpuLimits: string
+  cpuUsage: string
+  memRequests: string
+  memLimits: string
+  memUsage: string
+}
+
 function getResVal(obj: any, key: string): string {
   if (!obj || typeof obj !== 'object') return '-'
   const v = obj[key]
@@ -856,7 +942,7 @@ const containerResourceRows = computed<ContainerResourceRow[]>(() => {
     .filter(Boolean) as ContainerResourceRow[]
 })
 
-type ResourceSummaryRow = { type: string; requests: string; limits: string; note: string }
+type ResourceSummaryRow = { type: string; requests: string; limits: string; usage: string; note: string }
 function collectResByContainer(resourceKey: string): { requests: string; limits: string } {
   const containers: any[] = Array.isArray(podRow.value?.spec?.containers) ? podRow.value.spec.containers : []
   const initContainers: any[] = Array.isArray(podRow.value?.spec?.initContainers) ? podRow.value.spec.initContainers : []
@@ -883,11 +969,120 @@ const resourceSummaryRows = computed<ResourceSummaryRow[]>(() => {
   const mem = collectResByContainer('memory')
   const eph = collectResByContainer('ephemeral-storage')
   return [
-    { type: 'CPU', requests: cpu.requests, limits: cpu.limits, note: '按容器展示（仅资源配置）' },
-    { type: 'Memory', requests: mem.requests, limits: mem.limits, note: '按容器展示（仅资源配置）' },
-    { type: 'Ephemeral', requests: eph.requests, limits: eph.limits, note: '按容器展示（仅资源配置）' }
+    { type: 'CPU', requests: cpu.requests, limits: cpu.limits, usage: getResourceUsageText('cpu'), note: '实时 usage 来自 PodMetrics' },
+    { type: 'Memory', requests: mem.requests, limits: mem.limits, usage: getResourceUsageText('memory'), note: '实时 usage 来自 PodMetrics' },
+    { type: 'Ephemeral', requests: eph.requests, limits: eph.limits, usage: '-', note: 'Metrics API 不提供 ephemeral-storage usage' }
   ]
 })
+
+const podMetricsLoading = ref(false)
+const podMetricsRow = ref<any | null>(null)
+const podMetricsLoadedKey = ref('')
+const podMetricsUnsupported = ref(false)
+
+const podMetricContainerRows = computed(() => {
+  return getMetricContainers(podMetricsRow.value).map((container: any) => ({
+    name: String(container?.name ?? '-'),
+    cpu: formatMillicores(parseCpuMillicores(container?.usage?.cpu)),
+    memory: formatBytes(parseMemoryBytes(container?.usage?.memory))
+  }))
+})
+
+const podMetricContainerMap = computed(() => {
+  const out = new Map<string, { cpu: string; memory: string }>()
+  for (const row of podMetricContainerRows.value) {
+    const name = String(row?.name ?? '').trim()
+    if (!name) continue
+    out.set(name, { cpu: String(row.cpu ?? '-'), memory: String(row.memory ?? '-') })
+  }
+  return out
+})
+
+const containerResourceCompareRows = computed<ContainerResourceCompareRow[]>(() => {
+  return containerResourceRows.value.map((row) => {
+    const usage = podMetricContainerMap.value.get(String(row.name ?? '').trim())
+    return {
+      name: row.name,
+      cpuRequests: row.cpuRequests,
+      cpuLimits: row.cpuLimits,
+      cpuUsage: usage?.cpu ?? getUsageFallbackText(),
+      memRequests: row.memRequests,
+      memLimits: row.memLimits,
+      memUsage: usage?.memory ?? getUsageFallbackText()
+    }
+  })
+})
+
+const podMetricsTimestampText = computed(() => formatTs(podMetricsRow.value?.timestamp))
+const podMetricsWindowText = computed(() => String(podMetricsRow.value?.window ?? '-'))
+const podMetricsAgeText = computed(() => {
+  const ts = new Date(String(podMetricsRow.value?.timestamp ?? '')).getTime()
+  if (!Number.isFinite(ts)) return '-'
+  return formatAgeMs(Math.max(0, Date.now() - ts))
+})
+
+function getPodMetricsKey(): string {
+  const ns = podNamespace.value.trim()
+  const name = podName.value.trim()
+  return ns && name ? `${ns}/${name}` : ''
+}
+
+function getUsageFallbackText(): string {
+  if (podMetricsLoading.value && !podMetricsRow.value) return '加载中'
+  if (podMetricsUnsupported.value) return 'N/A'
+  return '-'
+}
+
+function getResourceUsageText(resource: 'cpu' | 'memory'): string {
+  if (!podMetricsRow.value) return getUsageFallbackText()
+  return resource === 'cpu' ? formatPodCpu(podMetricsRow.value) : formatPodMemory(podMetricsRow.value)
+}
+
+function resetPodMetricsState() {
+  podMetricsLoading.value = false
+  podMetricsRow.value = null
+  podMetricsLoadedKey.value = ''
+  podMetricsUnsupported.value = false
+}
+
+async function loadPodMetrics(force = false) {
+  if (!props.clusterId || !podRow.value) return
+  const ns = getRowNamespace(podRow.value)
+  const name = String(podRow.value?.metadata?.name ?? '').trim()
+  if (!ns || !name) return
+
+  const key = `${ns}/${name}`
+  if (podMetricsLoading.value && !force) return
+  if (!force && podMetricsLoadedKey.value === key) return
+
+  podMetricsLoading.value = true
+  try {
+    const data = await k8sApi.listPodMetrics(props.clusterId, { namespace: ns })
+    const list = Array.isArray(data.list) ? data.list : []
+    podMetricsRow.value = list.find((item: any) => String(item?.metadata?.name ?? '').trim() === name) ?? null
+    podMetricsUnsupported.value = false
+    podMetricsLoadedKey.value = key
+  } catch (e) {
+    const err = e as ApiError
+    const status = getHttpStatus(e)
+    const lowerMessage = String(err?.message ?? '').toLowerCase()
+    if (
+      status === 404 ||
+      lowerMessage.includes('requested resource') ||
+      lowerMessage.includes("doesn't have a resource type") ||
+      lowerMessage.includes('no matches for kind')
+    ) {
+      podMetricsRow.value = null
+      podMetricsUnsupported.value = true
+      podMetricsLoadedKey.value = key
+      return
+    }
+    podMetricsLoadedKey.value = ''
+    notifyError(err.requestId ? `${err.message} (request_id=${err.requestId})` : err.message)
+  } finally {
+    podMetricsLoading.value = false
+  }
+}
 
 const podPortsText = computed(() => {
   const containers: any[] = Array.isArray(podRow.value?.spec?.containers) ? podRow.value.spec.containers : []
@@ -1587,6 +1782,7 @@ async function refresh() {
     const found = (data.list ?? []).find((it: any) => String(it?.metadata?.name ?? '') === name)
     if (found) podRow.value = found
     if (tab.value === 'events') await loadEvents()
+    if (tab.value === 'resources') await loadPodMetrics(true)
     if (tab.value === 'related') {
       if (services.value.length === 0) await loadServices()
       await loadRelated()
@@ -1613,6 +1809,7 @@ function open(row: any) {
   yamlText.value = ''
   nodeInfo.value = null
   activeContainer.value = ''
+  resetPodMetricsState()
 }
 
 watch(
@@ -1620,6 +1817,7 @@ watch(
   ([v, t]) => {
     if (!v) return
     if (t === 'events' && events.value.length === 0) void loadEvents()
+    if (t === 'resources' && getPodMetricsKey() && podMetricsLoadedKey.value !== getPodMetricsKey()) void loadPodMetrics()
     if (t === 'related') {
       if (services.value.length === 0) void loadServices()
       if (ingressItemsRef.value.length === 0 && pvcItemsRef.value.length === 0 && pvItemsRef.value.length === 0) void loadRelated()
@@ -1643,6 +1841,7 @@ watch(
     yamlText.value = ''
     nodeInfo.value = null
     activeContainer.value = ''
+    resetPodMetricsState()
   }
 )
 
@@ -2167,6 +2366,23 @@ defineExpose({ open })
 .pod-chip.pod-kv-tone-5 {
   border-color: rgba(148, 163, 184, 0.22);
   background: rgba(148, 163, 184, 0.1);
+}
+
+.pod-metrics-summary-grid {
+  margin-bottom: 12px;
+}
+
+.pod-metrics-summary__value {
+  color: #0f4aa1;
+  font-weight: 700;
+}
+
+.pod-metrics-install-hint {
+  margin-top: 14px;
+}
+
+.pod-metrics-compare-table :deep(.cell) {
+  word-break: break-word;
 }
 
 :global(html.dark) .pod-chip.pod-kv-tone-0 {

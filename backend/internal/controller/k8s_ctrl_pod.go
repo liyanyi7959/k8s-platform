@@ -57,6 +57,26 @@ func (kc *K8sController) ListPods(c *gin.Context) {
 	resp.OK(c, gin.H{"list": list})
 }
 
+// ListPodMetrics 获取 PodMetrics 列表。
+// 可选 query：namespace（为空表示 all namespaces）、sort_by、order。
+// @Summary PodMetrics 列表
+// @Description 获取指定集群 PodMetrics 列表（可按 namespace 过滤）
+// @Tags K8s 资源接口
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "集群ID" example(1001)
+// @Param namespace query string false "命名空间（不填表示全部）"
+// @Param sort_by query string false "排序字段"
+// @Param order query string false "排序方向" example(desc)
+// @Success 200 {object} resp.Result{data=K8sListResp} "查询成功"
+// @Failure 400 {object} resp.Result "参数错误"
+// @Failure 500 {object} resp.Result "内部错误"
+// @Router /clusters/{id}/podmetrics [get]
+func (kc *K8sController) ListPodMetrics(c *gin.Context) {
+	listNamespacedResource(c, kc, gvrPodMetrics())
+}
+
 // GetPodYAML 获取指定 Pod 的 YAML。
 // @Summary 获取 Pod YAML
 // @Description 获取指定 Pod 的 YAML 文本

@@ -3,25 +3,12 @@
     <div v-if="selectedRows.length > 0" class="pods-batchbar">
       <div class="pods-batchbar__meta">已选 {{ selectedRows.length }} 个 Pod</div>
       <div class="pods-batchbar__actions">
-        <el-button size="small" class="pods-batchbar__action pods-batchbar__action--logs" @click="props.openMultiPodLogs(selectedRows)">聚合日志</el-button>
+        <el-button size="small" class="pods-batchbar__action pods-batchbar__action--logs" @click="props.openMultiPodLogs(selectedRows)">日志工作台</el-button>
         <template v-if="props.canWrite">
           <el-button size="small" class="pods-batchbar__action pods-batchbar__action--danger" @click="props.bulkDeletePods(selectedRows)">删除选中</el-button>
           <el-button size="small" class="pods-batchbar__action pods-batchbar__action--warning" @click="props.bulkDeletePods(selectedRows, { force: true })">强制删除</el-button>
         </template>
       </div>
-    </div>
-
-    <div class="pods-phasebar">
-      <button
-        v-for="item in phaseCards"
-        :key="item.key"
-        type="button"
-        :class="['pods-phasebar__item', `pods-phasebar__item--${item.tone}`, props.activePhaseFilter === item.key ? 'is-active' : '']"
-        @click="togglePhaseFilter(item.key)"
-      >
-        <span class="pods-phasebar__label">{{ item.label }}</span>
-        <strong class="pods-phasebar__value">{{ item.count }}</strong>
-      </button>
     </div>
 
     <EnhancedTable
@@ -87,12 +74,10 @@
 
 <script setup lang="ts">
 import { Collection, Delete, Document, Link, View } from '@element-plus/icons-vue'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import EnhancedTable from '@/shared/components/EnhancedTable.vue'
 import type { EnhancedColumn } from '@/shared/components/EnhancedTable.vue'
 import { nsColorIndex, getRestartsClass, getReadyNumClass } from '@/features/k8s/pages/ClusterManageView.utils'
-
-type PodPhaseQuickFilter = '' | 'Running' | 'Pending' | 'Failed' | 'Completed'
 
 const columns: EnhancedColumn[] = [
   { key: 'namespace', label: 'Namespace', prop: 'metadata.namespace', width: 160, sortable: 'custom', defaultVisible: true },
@@ -110,8 +95,6 @@ const props = defineProps<{
   persistKey: string
   showTools: boolean
   canWrite: boolean
-  podPhaseSummary: Record<Exclude<PodPhaseQuickFilter, ''>, number>
-  activePhaseFilter: PodPhaseQuickFilter
   getWarningEventCount: (row: any) => number
   getPodRowKey: (row: any) => string
   getPodPhaseTagType: (row: any) => string
@@ -131,25 +114,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'sort-change', v: any): void
   (e: 'selection-change', rows: any[]): void
-  (e: 'phase-filter-change', value: PodPhaseQuickFilter): void
 }>()
 
 const tableRef = ref<any>(null)
 const selectedRows = ref<any[]>([])
-const phaseCards = computed(() => [
-  { key: 'Running' as const, label: 'Running', count: props.podPhaseSummary.Running ?? 0, tone: 'running' },
-  { key: 'Pending' as const, label: 'Pending', count: props.podPhaseSummary.Pending ?? 0, tone: 'pending' },
-  { key: 'Failed' as const, label: 'Failed', count: props.podPhaseSummary.Failed ?? 0, tone: 'failed' },
-  { key: 'Completed' as const, label: 'Completed', count: props.podPhaseSummary.Completed ?? 0, tone: 'completed' }
-])
 
 function clearSelection() {
   selectedRows.value = []
   tableRef.value?.clearSelection?.()
-}
-
-function togglePhaseFilter(value: PodPhaseQuickFilter) {
-  emit('phase-filter-change', props.activePhaseFilter === value ? '' : value)
 }
 
 function onSelectionChange(rows: any[]) {
@@ -287,83 +259,6 @@ function getWarningEventCount(row: any): number {
   --el-button-active-text-color: #92400e;
 }
 
-.pods-phasebar {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.pods-phasebar__item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 10px;
-  min-height: 92px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(255, 255, 255, 0.94);
-  color: #0f172a;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-}
-
-.pods-phasebar__item::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  height: 3px;
-  background: var(--phase-tone, rgba(148, 163, 184, 0.7));
-}
-
-.pods-phasebar__item:hover {
-  transform: translateY(-1px);
-  border-color: rgba(59, 130, 246, 0.14);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
-}
-
-.pods-phasebar__item.is-active {
-  border-color: rgba(59, 130, 246, 0.28);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
-}
-
-.pods-phasebar__item--running {
-  --phase-tone: #059669;
-}
-
-.pods-phasebar__item--pending {
-  --phase-tone: #d97706;
-}
-
-.pods-phasebar__item--failed {
-  --phase-tone: #dc2626;
-}
-
-.pods-phasebar__item--completed {
-  --phase-tone: #64748b;
-}
-
-.pods-phasebar__label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #64748b;
-}
-
-.pods-phasebar__value {
-  font-size: 28px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-:global(html.dark) .pods-phasebar__item {
-  border-color: rgba(148, 163, 184, 0.16);
-  background: rgba(15, 23, 42, 0.88);
-  color: #e2e8f0;
-}
-
 :global(html.dark) .pods-batchbar {
   border-color: rgba(148, 163, 184, 0.18);
   background: rgba(15, 23, 42, 0.72);
@@ -376,14 +271,6 @@ function getWarningEventCount(row: any): number {
 :global(html.dark) .pods-batchbar__action {
   --el-button-bg-color: rgba(15, 23, 42, 0.82);
   --el-button-border-color: rgba(148, 163, 184, 0.18);
-  --el-button-text-color: rgba(226, 232, 240, 0.92);
-  --el-button-hover-bg-color: rgba(30, 41, 59, 0.92);
-  --el-button-hover-border-color: rgba(148, 163, 184, 0.28);
-  --el-button-hover-text-color: #f8fafc;
-  --el-button-active-bg-color: rgba(30, 41, 59, 0.96);
-  --el-button-active-border-color: rgba(148, 163, 184, 0.34);
-  --el-button-active-text-color: #f8fafc;
-  --el-button-disabled-bg-color: rgba(15, 23, 42, 0.58);
   --el-button-disabled-border-color: rgba(148, 163, 184, 0.12);
   --el-button-disabled-text-color: rgba(148, 163, 184, 0.78);
 }
@@ -443,10 +330,6 @@ function getWarningEventCount(row: any): number {
 
   .pods-batchbar__actions {
     justify-content: flex-start;
-  }
-
-  .pods-phasebar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

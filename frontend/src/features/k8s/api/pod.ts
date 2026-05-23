@@ -11,6 +11,15 @@ export async function listPods(
   return resp.data
 }
 
+export async function listPodMetrics(
+  clusterId: number,
+  params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {},
+  options: { signal?: AbortSignal } = {}
+): Promise<{ list: any[] }> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/podmetrics`, { params, signal: options.signal })) as ApiResponse<{ list: any[] }>
+  return resp.data
+}
+
 export async function getPodYaml(
   clusterId: number,
   ns: string,

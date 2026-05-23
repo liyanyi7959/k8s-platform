@@ -124,7 +124,7 @@ func (kc *K8sController) DeleteNamespace(c *gin.Context) {
 
 // GetNamespaceResourcesSummary 获取命名空间资源摘要。
 // @Summary 获取 Namespace 资源摘要
-// @Description 并发统计命名空间下常见资源数量，用于删除前风险确认
+// @Description 并发统计命名空间下已发现的 namespaced 资源数量，并忽略默认生成的系统对象，用于删除前风险确认
 // @Tags K8s 资源接口
 // @Security BearerAuth
 // @Accept json

@@ -1,4 +1,4 @@
-﻿package controller
+package controller
 
 import (
 	"fmt"
@@ -247,6 +247,9 @@ func gvrNodes() schema.GroupVersionResource {
 }
 func gvrPods() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+}
+func gvrPodMetrics() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: "metrics.k8s.io", Version: "v1beta1", Resource: "pods"}
 }
 func gvrReplicaSets() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
