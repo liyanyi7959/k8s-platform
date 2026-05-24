@@ -11,6 +11,7 @@ type OpenYaml = (meta: string, loader: YamlLoader, saver?: YamlSaver) => void
 export function useClusterManageYamlActions(options: {
   clusterId: Ref<number>
   workloadKind: ComputedRef<WorkloadKind>
+  canWriteK8s: ComputedRef<boolean>
   openYaml: OpenYaml
   loadCurrent: () => Promise<void>
 }) {
@@ -234,13 +235,16 @@ export function useClusterManageYamlActions(options: {
     const meta = getClusterNsName(row)
     if (!meta) return
     const kind = String(row?.kind ?? options.workloadKind.value)
+    const saver = options.canWriteK8s.value
+      ? async (text: string) => {
+          await k8sApi.editWorkloadYaml(meta.cluster, { kind, namespace: meta.namespace, yaml: text })
+          await options.loadCurrent()
+        }
+      : undefined
     options.openYaml(
       `Edit ${kind}: ${meta.namespace}/${meta.name}`,
       () => k8sApi.getWorkloadYaml(meta.cluster, { kind, namespace: meta.namespace, name: meta.name }),
-      async (text) => {
-        await k8sApi.editWorkloadYaml(meta.cluster, { kind, namespace: meta.namespace, yaml: text })
-        await options.loadCurrent()
-      }
+      saver
     )
   }
 

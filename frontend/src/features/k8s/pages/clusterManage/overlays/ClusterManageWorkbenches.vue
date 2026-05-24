@@ -10,7 +10,7 @@
         <el-button @click="createNamespaceVisible = false">取消</el-button>
         <el-button
           type="primary"
-          :disabled="!props.clusterId || !createNamespaceName.trim()"
+          :disabled="!props.canWriteNamespaces || !props.clusterId || !createNamespaceName.trim()"
           :loading="creatingNamespace"
           :icon="Plus"
           @click="doCreateNamespace"
@@ -90,6 +90,8 @@ import { notifyError, notifySuccess } from '@/shared/utils/notify'
 
 const props = defineProps<{
   clusterId: number
+  canWriteK8s: boolean
+  canWriteNamespaces: boolean
   editorTheme: 'auto' | 'light' | 'dark'
   editorThemeEffectiveDark: boolean
 }>()
@@ -182,11 +184,13 @@ function sendTerminalCtrlC() {
 }
 
 function openCreateNamespace() {
+  if (!props.canWriteNamespaces) return
   createNamespaceName.value = ''
   createNamespaceVisible.value = true
 }
 
 async function doCreateNamespace() {
+  if (!props.canWriteNamespaces) return
   if (!props.clusterId) return
   const name = createNamespaceName.value.trim()
   if (!name) return
@@ -240,6 +244,7 @@ function openMultiPodLogs(targets: LogsTarget[]) {
 }
 
 function openManifestApply(options: ManifestApplyOpenOptions = {}) {
+  if (!props.canWriteK8s) return
   manifestApplyDrawerRef.value?.open(options)
 }
 

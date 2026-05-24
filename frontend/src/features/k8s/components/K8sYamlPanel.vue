@@ -4,6 +4,7 @@
       <div class="yaml-toolbar__left">
         <div v-if="meta" class="meta">{{ meta }}</div>
         <div class="yaml-toolbar__status">
+          <el-tag size="small" effect="plain" :type="modeTagType">{{ modeText }}</el-tag>
           <el-tag size="small" effect="plain">{{ docStatusText }}</el-tag>
           <el-tag size="small" effect="plain" :type="issueTagType">{{ issueStatusText }}</el-tag>
           <el-tag size="small" effect="plain">{{ associationText }}</el-tag>
@@ -115,6 +116,8 @@ const editorTheme = ref<EditorTheme>(getStoredTheme())
 
 const hasText = computed(() => Boolean(String(props.text ?? '').trim()))
 const editable = computed(() => !props.readOnly)
+const modeText = computed(() => (editable.value ? '可编辑 YAML' : '只读 YAML'))
+const modeTagType = computed<'success' | 'info'>(() => (editable.value ? 'success' : 'info'))
 const yamlSummary = computed(() => analyzeK8sYamlSummary(props.text, props.yamlAssist ?? undefined))
 const docStatusText = computed(() => (hasText.value ? `文档 ${yamlSummary.value.docsCount}` : '空清单'))
 const issueStatusText = computed(() => {

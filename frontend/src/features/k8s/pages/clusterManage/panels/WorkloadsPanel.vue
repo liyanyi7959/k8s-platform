@@ -116,7 +116,7 @@
         <el-tooltip v-if="!isDaemonSetRow(row)" content="版本历史" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openWorkloadRollout(row)"><el-icon><Clock /></el-icon></button>
         </el-tooltip>
-          <el-tooltip content="YAML" placement="top" :show-after="300">
+        <el-tooltip :content="props.canWrite ? '编辑 YAML' : 'YAML'" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openWorkloadYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
         <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">

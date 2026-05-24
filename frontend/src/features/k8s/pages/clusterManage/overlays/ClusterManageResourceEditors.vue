@@ -75,7 +75,7 @@
 
       <div class="edit-drawer-footer">
         <el-button @click="jobEditVisible = false">取消</el-button>
-        <el-button type="primary" :loading="jobEditSaving" @click="saveEditJob">保存</el-button>
+        <el-button type="primary" :loading="jobEditSaving" :disabled="!props.canWriteK8s" @click="saveEditJob">保存</el-button>
       </div>
     </el-form>
   </el-drawer>
@@ -174,7 +174,7 @@
 
       <div class="edit-drawer-footer">
         <el-button @click="cronJobEditVisible = false">取消</el-button>
-        <el-button type="primary" :loading="cronJobEditSaving" :disabled="!cronJobEditSchedule.trim()" @click="saveEditCronJob">保存</el-button>
+        <el-button type="primary" :loading="cronJobEditSaving" :disabled="!props.canWriteK8s || !cronJobEditSchedule.trim()" @click="saveEditCronJob">保存</el-button>
       </div>
     </el-form>
   </el-drawer>
@@ -319,7 +319,7 @@
 
       <div class="edit-drawer-footer">
         <el-button @click="serviceEditVisible = false">取消</el-button>
-        <el-button type="primary" :loading="serviceEditSaving" :disabled="!isServiceEditChanged" @click="saveEditService">保存</el-button>
+        <el-button type="primary" :loading="serviceEditSaving" :disabled="!props.canWriteK8s || !isServiceEditChanged" @click="saveEditService">保存</el-button>
       </div>
     </el-form>
   </el-drawer>
@@ -427,7 +427,7 @@
 
       <div class="edit-drawer-footer">
         <el-button @click="ingressEditVisible = false">取消</el-button>
-        <el-button type="primary" :loading="ingressEditSaving" :disabled="!isIngressEditChanged" @click="saveEditIngress">保存</el-button>
+        <el-button type="primary" :loading="ingressEditSaving" :disabled="!props.canWriteK8s || !isIngressEditChanged" @click="saveEditIngress">保存</el-button>
       </div>
     </el-form>
   </el-drawer>
@@ -535,7 +535,7 @@
 
       <div class="edit-drawer-footer">
         <el-button @click="ingressClassEditVisible = false">取消</el-button>
-        <el-button type="primary" :loading="ingressClassEditSaving" :disabled="!isIngressClassEditChanged || !ingressClassEditController.trim()" @click="saveEditIngressClass">
+        <el-button type="primary" :loading="ingressClassEditSaving" :disabled="!props.canWriteK8s || !isIngressClassEditChanged || !ingressClassEditController.trim()" @click="saveEditIngressClass">
           保存
         </el-button>
       </div>
@@ -703,7 +703,7 @@
 
       <div class="edit-drawer-footer">
         <el-button @click="configMapEditVisible = false">取消</el-button>
-        <el-button type="primary" :loading="configMapEditSaving" :disabled="!isConfigMapEditChanged" @click="saveEditConfigMap">保存</el-button>
+        <el-button type="primary" :loading="configMapEditSaving" :disabled="!props.canWriteK8s || !isConfigMapEditChanged" @click="saveEditConfigMap">保存</el-button>
       </div>
     </el-form>
   </el-drawer>
@@ -872,7 +872,7 @@
 
       <div class="edit-drawer-footer">
         <el-button @click="secretEditVisible = false">取消</el-button>
-        <el-button type="primary" :loading="secretEditSaving" :disabled="!isSecretEditChanged" @click="saveEditSecret">保存</el-button>
+        <el-button type="primary" :loading="secretEditSaving" :disabled="!props.canWriteK8s || !isSecretEditChanged" @click="saveEditSecret">保存</el-button>
       </div>
     </el-form>
   </el-drawer>
@@ -891,6 +891,7 @@ import { notifyError, notifySuccess } from '@/shared/utils/notify'
 const props = defineProps<{
   clusterId: number
   clusterName: string
+  canWriteK8s: boolean
   editorTheme: 'auto' | 'light' | 'dark'
   editorThemeEffectiveDark: boolean
 }>()
@@ -1100,6 +1101,7 @@ const isJobTtlChanged = computed(() => normalizeIntOrNull(jobEditTtlSecondsAfter
 const isJobEditChanged = computed(() => isJobLabelsChanged.value || isJobParallelismChanged.value || isJobCompletionsChanged.value || isJobBackoffLimitChanged.value || isJobTtlChanged.value)
 
 function openEditJob(row: any) {
+  if (!props.canWriteK8s) return
   const namespace = getRowNamespace(row)
   if (!props.clusterId || !namespace) return
   const name = String(row?.metadata?.name ?? '')
@@ -1122,6 +1124,7 @@ function openEditJob(row: any) {
 }
 
 async function saveEditJob() {
+  if (!props.canWriteK8s) return
   if (!props.clusterId || !jobEditNamespace.value || !jobEditName.value) return
   try {
     jobEditSaving.value = true
@@ -1183,6 +1186,7 @@ const isCronJobFailedHistoryChanged = computed(() => normalizeIntOrNull(cronJobE
 const isCronJobEditChanged = computed(() => isCronJobLabelsChanged.value || isCronJobScheduleChanged.value || cronJobEditSuspend.value !== cronJobEditOrig.value.suspend || isCronJobConcurrencyPolicyChanged.value || isCronJobSuccessHistoryChanged.value || isCronJobFailedHistoryChanged.value)
 
 function openEditCronJob(row: any) {
+  if (!props.canWriteK8s) return
   const namespace = getRowNamespace(row)
   if (!props.clusterId || !namespace) return
   const name = String(row?.metadata?.name ?? '')
@@ -1207,6 +1211,7 @@ function openEditCronJob(row: any) {
 }
 
 async function saveEditCronJob() {
+  if (!props.canWriteK8s) return
   if (!props.clusterId || !cronJobEditNamespace.value || !cronJobEditName.value) return
   try {
     cronJobEditSaving.value = true
@@ -1292,6 +1297,7 @@ function foldServiceEditSelectorAll() { serviceEditSelectorViewerRef.value?.fold
 function unfoldServiceEditSelectorAll() { serviceEditSelectorViewerRef.value?.unfoldAll() }
 
 function openEditService(row: any) {
+  if (!props.canWriteK8s) return
   const namespace = getRowNamespace(row)
   if (!props.clusterId || !namespace) return
   const name = String(row?.metadata?.name ?? '')
@@ -1320,6 +1326,7 @@ function openEditService(row: any) {
 }
 
 async function saveEditService() {
+  if (!props.canWriteK8s) return
   if (!props.clusterId || !serviceEditNamespace.value || !serviceEditName.value) return
   try {
     serviceEditSaving.value = true
@@ -1397,6 +1404,7 @@ function foldIngressEditAnnotationsAll() { ingressEditAnnotationsViewerRef.value
 function unfoldIngressEditAnnotationsAll() { ingressEditAnnotationsViewerRef.value?.unfoldAll() }
 
 function openEditIngress(row: any) {
+  if (!props.canWriteK8s) return
   const namespace = getRowNamespace(row)
   if (!props.clusterId || !namespace) return
   const name = String(row?.metadata?.name ?? '')
@@ -1421,6 +1429,7 @@ function openEditIngress(row: any) {
 }
 
 async function saveEditIngress() {
+  if (!props.canWriteK8s) return
   if (!props.clusterId || !ingressEditNamespace.value || !ingressEditName.value) return
   try {
     ingressEditSaving.value = true
@@ -1497,6 +1506,7 @@ function foldIngressClassEditAnnotationsAll() { ingressClassEditAnnotationsViewe
 function unfoldIngressClassEditAnnotationsAll() { ingressClassEditAnnotationsViewerRef.value?.unfoldAll() }
 
 function openEditIngressClass(row: any) {
+  if (!props.canWriteK8s) return
   if (!props.clusterId) return
   const name = String(row?.metadata?.name ?? '')
   if (!name) return
@@ -1524,6 +1534,7 @@ function openEditIngressClass(row: any) {
 }
 
 async function saveEditIngressClass() {
+  if (!props.canWriteK8s) return
   if (!props.clusterId || !ingressClassEditName.value) return
   try {
     ingressClassEditSaving.value = true
@@ -1680,6 +1691,7 @@ function applyConfigMapEditDataKeyDraft(): boolean {
 }
 
 function openEditConfigMap(row: any) {
+  if (!props.canWriteK8s) return
   const namespace = getRowNamespace(row)
   if (!props.clusterId || !namespace) return
   const name = String(row?.metadata?.name ?? '')
@@ -1703,6 +1715,7 @@ function openEditConfigMap(row: any) {
 }
 
 async function saveEditConfigMap() {
+  if (!props.canWriteK8s) return
   if (!props.clusterId || !configMapEditNamespace.value || !configMapEditName.value) return
   try {
     if (!applyConfigMapEditDataKeyDraft()) return
@@ -1876,6 +1889,7 @@ function applySecretEditDataKeyDraft(): boolean {
 }
 
 async function openEditSecret(row: any) {
+  if (!props.canWriteK8s) return
   const namespace = getRowNamespace(row)
   if (!props.clusterId || !namespace) return
   const name = String(row?.metadata?.name ?? '')
@@ -1912,6 +1926,7 @@ async function openEditSecret(row: any) {
 }
 
 async function saveEditSecret() {
+  if (!props.canWriteK8s) return
   if (!props.clusterId || !secretEditNamespace.value || !secretEditName.value) return
   try {
     if (!applySecretEditDataKeyDraft()) return

@@ -1,12 +1,13 @@
 <template>
   <K8sScaleDialog v-if="loaded.scaleDialog" ref="scaleDialogRef" :cluster-id="props.clusterId" :cluster-name="props.clusterName" @scaled="emit('refresh-list')" />
 
-  <DeploymentEditDrawer v-if="loaded.deploymentEdit" ref="deploymentEditDrawerRef" :cluster-id="props.clusterId" :cluster-name="props.clusterName" @saved="emit('refresh-list')" />
+  <DeploymentEditDrawer v-if="loaded.deploymentEdit" ref="deploymentEditDrawerRef" :cluster-id="props.clusterId" :cluster-name="props.clusterName" :can-write-k8s="props.canWriteK8s" @saved="emit('refresh-list')" />
   <DeploymentEditDrawer
     v-if="loaded.statefulSetEdit"
     ref="statefulSetEditDrawerRef"
     :cluster-id="props.clusterId"
     :cluster-name="props.clusterName"
+    :can-write-k8s="props.canWriteK8s"
     workload-kind="StatefulSet"
     @saved="emit('refresh-list')"
   />
@@ -15,6 +16,7 @@
     ref="daemonSetEditDrawerRef"
     :cluster-id="props.clusterId"
     :cluster-name="props.clusterName"
+    :can-write-k8s="props.canWriteK8s"
     workload-kind="DaemonSet"
     @saved="emit('refresh-list')"
   />
@@ -173,6 +175,42 @@
     @open-related-pod="emit('open-related-pod', $event)"
     @refresh-list="emit('refresh-list')"
   />
+  <EndpointsDetailDrawer
+    v-if="loaded.endpointsDetail"
+    ref="endpointsDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <EndpointSliceDetailDrawer
+    v-if="loaded.endpointSliceDetail"
+    ref="endpointSliceDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <VolumeSnapshotDetailDrawer
+    v-if="loaded.volumeSnapshotDetail"
+    ref="volumeSnapshotDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <LeaseDetailDrawer
+    v-if="loaded.leaseDetail"
+    ref="leaseDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
   <RbacRoleDetailDrawer
     v-if="loaded.rbacRoleDetail"
     ref="rbacRoleDetailRef"
@@ -309,6 +347,10 @@ import type ConfigMapDetailDrawerComponent from '../details/ConfigMapDetailDrawe
 import type ServiceAccountDetailDrawerComponent from '../details/ServiceAccountDetailDrawer.vue'
 import type ResourceQuotaDetailDrawerComponent from '../details/ResourceQuotaDetailDrawer.vue'
 import type NetworkPolicyDetailDrawerComponent from '../details/NetworkPolicyDetailDrawer.vue'
+import type EndpointsDetailDrawerComponent from '../details/EndpointsDetailDrawer.vue'
+import type EndpointSliceDetailDrawerComponent from '../details/EndpointSliceDetailDrawer.vue'
+import type VolumeSnapshotDetailDrawerComponent from '../details/VolumeSnapshotDetailDrawer.vue'
+import type LeaseDetailDrawerComponent from '../details/LeaseDetailDrawer.vue'
 import type RbacRoleDetailDrawerComponent from '../details/RbacRoleDetailDrawer.vue'
 import type RbacBindingDetailDrawerComponent from '../details/RbacBindingDetailDrawer.vue'
 import type HPADetailDrawerComponent from '../details/HPADetailDrawer.vue'
@@ -341,6 +383,10 @@ const ConfigMapDetailDrawer = defineAsyncComponent(() => import('../details/Conf
 const ServiceAccountDetailDrawer = defineAsyncComponent(() => import('../details/ServiceAccountDetailDrawer.vue'))
 const ResourceQuotaDetailDrawer = defineAsyncComponent(() => import('../details/ResourceQuotaDetailDrawer.vue'))
 const NetworkPolicyDetailDrawer = defineAsyncComponent(() => import('../details/NetworkPolicyDetailDrawer.vue'))
+const EndpointsDetailDrawer = defineAsyncComponent(() => import('../details/EndpointsDetailDrawer.vue'))
+const EndpointSliceDetailDrawer = defineAsyncComponent(() => import('../details/EndpointSliceDetailDrawer.vue'))
+const VolumeSnapshotDetailDrawer = defineAsyncComponent(() => import('../details/VolumeSnapshotDetailDrawer.vue'))
+const LeaseDetailDrawer = defineAsyncComponent(() => import('../details/LeaseDetailDrawer.vue'))
 const RbacRoleDetailDrawer = defineAsyncComponent(() => import('../details/RbacRoleDetailDrawer.vue'))
 const RbacBindingDetailDrawer = defineAsyncComponent(() => import('../details/RbacBindingDetailDrawer.vue'))
 const HPADetailDrawer = defineAsyncComponent(() => import('../details/HPADetailDrawer.vue'))
@@ -375,6 +421,10 @@ type LazyKey =
   | 'serviceAccountDetail'
   | 'resourceQuotaDetail'
   | 'networkPolicyDetail'
+  | 'endpointsDetail'
+  | 'endpointSliceDetail'
+  | 'volumeSnapshotDetail'
+  | 'leaseDetail'
   | 'rbacRoleDetail'
   | 'rbacBindingDetail'
   | 'hpaDetail'
@@ -390,6 +440,7 @@ type LazyKey =
 const props = defineProps<{
   clusterId: number
   clusterName: string
+  canWriteK8s: boolean
   editorTheme: EditorTheme
   editorThemeEffectiveDark: boolean
   list: any[]
@@ -435,6 +486,10 @@ const loaded = reactive<Record<LazyKey, boolean>>({
   serviceAccountDetail: false,
   resourceQuotaDetail: false,
   networkPolicyDetail: false,
+  endpointsDetail: false,
+  endpointSliceDetail: false,
+  volumeSnapshotDetail: false,
+  leaseDetail: false,
   rbacRoleDetail: false,
   rbacBindingDetail: false,
   hpaDetail: false,
@@ -471,6 +526,10 @@ const configMapDetailRef = ref<InstanceType<typeof ConfigMapDetailDrawerComponen
 const serviceAccountDetailRef = ref<InstanceType<typeof ServiceAccountDetailDrawerComponent> | null>(null)
 const resourceQuotaDetailRef = ref<InstanceType<typeof ResourceQuotaDetailDrawerComponent> | null>(null)
 const networkPolicyDetailRef = ref<InstanceType<typeof NetworkPolicyDetailDrawerComponent> | null>(null)
+const endpointsDetailRef = ref<InstanceType<typeof EndpointsDetailDrawerComponent> | null>(null)
+const endpointSliceDetailRef = ref<InstanceType<typeof EndpointSliceDetailDrawerComponent> | null>(null)
+const volumeSnapshotDetailRef = ref<InstanceType<typeof VolumeSnapshotDetailDrawerComponent> | null>(null)
+const leaseDetailRef = ref<InstanceType<typeof LeaseDetailDrawerComponent> | null>(null)
 const rbacRoleDetailRef = ref<InstanceType<typeof RbacRoleDetailDrawerComponent> | null>(null)
 const rbacBindingDetailRef = ref<InstanceType<typeof RbacBindingDetailDrawerComponent> | null>(null)
 const hpaDetailRef = ref<InstanceType<typeof HPADetailDrawerComponent> | null>(null)
@@ -497,6 +556,7 @@ function runWhenReady<T>(key: LazyKey, getter: () => T | null | undefined, runne
 }
 
 function openScale(payload: { kind: string; namespace: string; name: string }, desired: number, available: number) {
+  if (!props.canWriteK8s) return
   runWhenReady('scaleDialog', () => scaleDialogRef.value, (target) => target.open(payload, desired, available))
 }
 
@@ -505,14 +565,17 @@ function forwardOpenYaml(meta: string, loader: YamlLoader, saver?: YamlSaver) {
 }
 
 function openEditDeployment(row: any) {
+  if (!props.canWriteK8s) return
   runWhenReady('deploymentEdit', () => deploymentEditDrawerRef.value, (target) => target.open(row))
 }
 
 function openEditDaemonSet(row: any) {
+  if (!props.canWriteK8s) return
   runWhenReady('daemonSetEdit', () => daemonSetEditDrawerRef.value, (target) => target.open(row))
 }
 
 function openEditStatefulSet(row: any) {
+  if (!props.canWriteK8s) return
   runWhenReady('statefulSetEdit', () => statefulSetEditDrawerRef.value, (target) => target.open(row))
 }
 
@@ -521,6 +584,7 @@ function openYaml(meta: string, loader: YamlLoader, saver?: YamlSaver) {
 }
 
 function openWorkloadRollout(payload: { kind: string; namespace: string; name: string }) {
+  if (!props.canWriteK8s) return
   runWhenReady('workloadRollout', () => workloadRolloutRef.value, (target) => target.open(payload))
 }
 
@@ -590,6 +654,22 @@ function openResourceQuotaDetail(row: any) {
 
 function openNetworkPolicyDetail(row: any) {
   runWhenReady('networkPolicyDetail', () => networkPolicyDetailRef.value, (target) => target.open(row))
+}
+
+function openEndpointsDetail(row: any) {
+  runWhenReady('endpointsDetail', () => endpointsDetailRef.value, (target) => target.open(row))
+}
+
+function openEndpointSliceDetail(row: any) {
+  runWhenReady('endpointSliceDetail', () => endpointSliceDetailRef.value, (target) => target.open(row))
+}
+
+function openVolumeSnapshotDetail(row: any) {
+  runWhenReady('volumeSnapshotDetail', () => volumeSnapshotDetailRef.value, (target) => target.open(row))
+}
+
+function openLeaseDetail(row: any) {
+  runWhenReady('leaseDetail', () => leaseDetailRef.value, (target) => target.open(row))
 }
 
 function openRoleDetail(row: any) {
@@ -668,6 +748,10 @@ defineExpose({
   openServiceAccountDetail,
   openResourceQuotaDetail,
   openNetworkPolicyDetail,
+  openEndpointsDetail,
+  openEndpointSliceDetail,
+  openVolumeSnapshotDetail,
+  openLeaseDetail,
   openRoleDetail,
   openClusterRoleDetail,
   openRoleBindingDetail,

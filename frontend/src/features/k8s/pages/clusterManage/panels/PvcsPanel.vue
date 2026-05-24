@@ -44,6 +44,9 @@
         <el-tooltip content="YAML" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openPVCYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
+        <el-tooltip v-if="props.canWrite" content="扩容" placement="top" :show-after="300">
+          <button class="k8s-act-btn k8s-act-btn--edit" @click="openResize(row)"><el-icon><Edit /></el-icon></button>
+        </el-tooltip>
         <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--danger" @click="props.deletePVCRow(row)"><el-icon><Delete /></el-icon></button>
         </el-tooltip>
@@ -58,13 +61,15 @@
       :default-namespace="props.defaultNamespace"
       @created="props.onCreated"
     />
+    <ResizePvcDialog v-model="resizeVisible" :cluster-id="props.clusterId" :row="resizeTarget" @saved="props.onCreated" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { Delete, Document, View } from '@element-plus/icons-vue'
+import { Delete, Document, Edit, View } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import CreatePvcDialog from '@/features/k8s/pages/clusterManage/overlays/CreatePvcDialog.vue'
+import ResizePvcDialog from '@/features/k8s/pages/clusterManage/overlays/ResizePvcDialog.vue'
 import EnhancedTable from '@/shared/components/EnhancedTable.vue'
 import type { EnhancedColumn } from '@/shared/components/EnhancedTable.vue'
 import { getCreationAgeText, getNamespacedRowKey, nsColorIndex } from '@/features/k8s/pages/ClusterManageView.utils'
@@ -80,7 +85,7 @@ const columns: EnhancedColumn[] = [
   { key: 'volume', label: 'Volume', prop: 'spec.volumeName', minWidth: 200, sortable: 'custom', defaultVisible: true },
   { key: 'volumeMode', label: 'VolumeMode', prop: 'spec.volumeMode', width: 130, sortable: 'custom', defaultVisible: true },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
-  { key: 'actions', label: '操作', width: 128, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
+  { key: 'actions', label: '操作', width: 160, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
 ]
 
 function formatAccessModes(modes: any): string {
@@ -114,10 +119,18 @@ const emit = defineEmits<{
 
 const tableRef = ref<any>(null)
 const createVisible = ref(false)
+const resizeVisible = ref(false)
+const resizeTarget = ref<any>(null)
 
 function openCreate() {
   if (!props.canWrite) return
   createVisible.value = true
+}
+
+function openResize(row: any) {
+  if (!props.canWrite) return
+  resizeTarget.value = row
+  resizeVisible.value = true
 }
 
 defineExpose({ getTable: () => tableRef.value, openCreate })

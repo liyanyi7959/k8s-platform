@@ -32,6 +32,7 @@ type ManifestApplyExecuteRequest struct {
 	YAML             string
 	DefaultNamespace string
 	DryRun           bool
+	CreateOnly       bool
 	SourceLabel      string
 	SourceResource   string
 	WorkloadKind     string
@@ -121,6 +122,7 @@ func (s *ManifestApplyRecordService) Execute(ctx context.Context, req ManifestAp
 	items, applyErr := s.k8sSvc.ApplyManifestYAML(ctx, req.ClusterID, req.YAML, ManifestApplyOptions{
 		DefaultNamespace: req.DefaultNamespace,
 		DryRun:           req.DryRun,
+		CreateOnly:       req.CreateOnly,
 	})
 	if applyErr != nil {
 		update := map[string]any{

@@ -707,7 +707,7 @@
     </el-form>
     <div class="edit-drawer-footer">
       <el-button :disabled="editSaving" @click="closeEditDeployment">取消</el-button>
-      <el-button type="primary" :loading="editSaving" @click="saveEditDeployment">保存</el-button>
+      <el-button type="primary" :loading="editSaving" :disabled="!props.canWriteK8s" @click="saveEditDeployment">保存</el-button>
     </div>
   </el-drawer>
 </template>
@@ -720,6 +720,7 @@ import { useDeploymentEdit } from '@/features/k8s/composables/useDeploymentEdit'
 const props = defineProps<{
   clusterId?: number
   clusterName?: string
+  canWriteK8s: boolean
   workloadKind?: 'Deployment' | 'StatefulSet' | 'DaemonSet'
 }>()
 
@@ -855,9 +856,9 @@ const {
   editActiveContainer,
   editTarget,
   containerKey,
-  openEditDeployment,
+  openEditDeployment: openEditDeploymentInner,
   closeEditDeployment,
-  saveEditDeployment,
+  saveEditDeployment: saveEditDeploymentInner,
   isEditChanged,
   isMetaChanged,
   isLabelsChanged,
@@ -887,6 +888,16 @@ const {
   workloadKind: workloadKind.value,
   onSaved: async () => emit('saved')
 })
+
+function openEditDeployment(row: any) {
+  if (!props.canWriteK8s) return
+  openEditDeploymentInner(row)
+}
+
+async function saveEditDeployment() {
+  if (!props.canWriteK8s) return
+  await saveEditDeploymentInner()
+}
 
 watch(
   () => editForm.value,

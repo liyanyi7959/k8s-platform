@@ -78,6 +78,27 @@
     <template v-if="showEndpointSliceColumns" #cell-endpointsCount="{ row }">
       <span class="k8s-num">{{ getEndpointSliceCount(row) }}</span>
     </template>
+    <template v-if="showReplicaSetColumns" #cell-desired="{ row }">
+      <span class="k8s-num">{{ getReplicaSetDesired(row) }}</span>
+    </template>
+    <template v-if="showReplicaSetColumns" #cell-readyReplicas="{ row }">
+      <span class="k8s-num">{{ getReplicaSetReady(row) }}</span>
+    </template>
+    <template v-if="showReplicaSetColumns" #cell-availableReplicas="{ row }">
+      <span class="k8s-num">{{ getReplicaSetAvailable(row) }}</span>
+    </template>
+    <template v-if="showVolumeSnapshotColumns" #cell-readyToUse="{ row }">
+      <span :class="['k8s-status', getVolumeSnapshotReady(row) ? 'k8s-status--ok' : 'k8s-status--warn']">{{ getVolumeSnapshotReadyText(row) }}</span>
+    </template>
+    <template v-if="showVolumeSnapshotColumns" #cell-sourcePvc="{ row }">
+      <span class="k8s-age" :title="getVolumeSnapshotSourcePvcText(row)">{{ getVolumeSnapshotSourcePvcText(row) }}</span>
+    </template>
+    <template v-if="showVolumeSnapshotColumns" #cell-snapshotClass="{ row }">
+      <span class="k8s-age" :title="getVolumeSnapshotClassText(row)">{{ getVolumeSnapshotClassText(row) }}</span>
+    </template>
+    <template v-if="showVolumeSnapshotColumns" #cell-boundContent="{ row }">
+      <span class="k8s-age" :title="getVolumeSnapshotContentText(row)">{{ getVolumeSnapshotContentText(row) }}</span>
+    </template>
     <template v-if="showResourceQuotaColumns" #cell-quotaResources="{ row }">
       <span class="k8s-age" :title="getResourceQuotaKeysText(row)">{{ getResourceQuotaKeysCount(row) }} 项</span>
     </template>
@@ -137,7 +158,7 @@ type ResourceQuotaDetail = {
   percent: number | null
 }
 
-type GovernanceResourceKind = 'networkpolicies' | 'endpoints' | 'endpointslices' | 'resourcequotas' | 'limitranges'
+type GovernanceResourceKind = 'networkpolicies' | 'endpoints' | 'endpointslices' | 'replicasets' | 'volumesnapshots' | 'resourcequotas' | 'limitranges'
 
 const props = defineProps<{
   data: any[]
@@ -156,9 +177,19 @@ const props = defineProps<{
 const showNetworkPolicyColumns = computed(() => props.resourceKind === 'networkpolicies')
 const showEndpointsColumns = computed(() => props.resourceKind === 'endpoints')
 const showEndpointSliceColumns = computed(() => props.resourceKind === 'endpointslices')
+const showReplicaSetColumns = computed(() => props.resourceKind === 'replicasets')
+const showVolumeSnapshotColumns = computed(() => props.resourceKind === 'volumesnapshots')
 const showResourceQuotaColumns = computed(() => props.resourceKind === 'resourcequotas')
 const showLimitRangeColumns = computed(() => props.resourceKind === 'limitranges')
-const showStructuredSummary = computed(() => !(showNetworkPolicyColumns.value || showEndpointsColumns.value || showEndpointSliceColumns.value || showResourceQuotaColumns.value || showLimitRangeColumns.value))
+const showStructuredSummary = computed(() => !(
+  showNetworkPolicyColumns.value ||
+  showEndpointsColumns.value ||
+  showEndpointSliceColumns.value ||
+  showReplicaSetColumns.value ||
+  showVolumeSnapshotColumns.value ||
+  showResourceQuotaColumns.value ||
+  showLimitRangeColumns.value
+))
 
 const columns = computed<EnhancedColumn[]>(() => {
   const base: EnhancedColumn[] = [
@@ -187,6 +218,21 @@ const columns = computed<EnhancedColumn[]>(() => {
       { key: 'addressType', label: 'AddressType', width: 130, align: 'center', headerAlign: 'center', defaultVisible: true },
       { key: 'endpointsCount', label: 'Endpoints', width: 110, align: 'center', headerAlign: 'center', defaultVisible: true },
       { key: 'ports', label: 'Ports', width: 90, align: 'center', headerAlign: 'center', defaultVisible: true }
+    )
+  }
+  if (showReplicaSetColumns.value) {
+    base.push(
+      { key: 'desired', label: 'Desired', width: 96, align: 'center', headerAlign: 'center', defaultVisible: true },
+      { key: 'readyReplicas', label: 'Ready', width: 96, align: 'center', headerAlign: 'center', defaultVisible: true },
+      { key: 'availableReplicas', label: 'Available', width: 110, align: 'center', headerAlign: 'center', defaultVisible: true }
+    )
+  }
+  if (showVolumeSnapshotColumns.value) {
+    base.push(
+      { key: 'readyToUse', label: 'Ready', width: 96, align: 'center', headerAlign: 'center', defaultVisible: true },
+      { key: 'sourcePvc', label: 'Source PVC', minWidth: 180, defaultVisible: true },
+      { key: 'snapshotClass', label: 'Class', minWidth: 180, defaultVisible: true },
+      { key: 'boundContent', label: 'Bound Content', minWidth: 220, defaultVisible: true }
     )
   }
   if (props.showResourceQuotaUsage) {
@@ -279,6 +325,44 @@ function getAddressTypeText(row: any): string {
 
 function getEndpointSliceCount(row: any): number {
   return Array.isArray(row?.endpoints) ? row.endpoints.length : 0
+}
+
+function getReplicaSetDesired(row: any): number {
+  const desired = row?.spec?.replicas ?? row?.status?.replicas
+  return Number.isFinite(Number(desired)) ? Number(desired) : 0
+}
+
+function getReplicaSetReady(row: any): number {
+  const ready = row?.status?.readyReplicas
+  return Number.isFinite(Number(ready)) ? Number(ready) : 0
+}
+
+function getReplicaSetAvailable(row: any): number {
+  const available = row?.status?.availableReplicas
+  return Number.isFinite(Number(available)) ? Number(available) : 0
+}
+
+function getVolumeSnapshotReady(row: any): boolean | null {
+  if (typeof row?.status?.readyToUse === 'boolean') return row.status.readyToUse
+  return null
+}
+
+function getVolumeSnapshotReadyText(row: any): string {
+  const ready = getVolumeSnapshotReady(row)
+  if (ready == null) return '-'
+  return ready ? 'yes' : 'no'
+}
+
+function getVolumeSnapshotSourcePvcText(row: any): string {
+  return String(row?.spec?.source?.persistentVolumeClaimName ?? '-').trim() || '-'
+}
+
+function getVolumeSnapshotClassText(row: any): string {
+  return String(row?.spec?.volumeSnapshotClassName ?? '-').trim() || '-'
+}
+
+function getVolumeSnapshotContentText(row: any): string {
+  return String(row?.status?.boundVolumeSnapshotContentName ?? '-').trim() || '-'
 }
 
 function getResourceQuotaHard(row: any): Record<string, unknown> {

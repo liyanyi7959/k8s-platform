@@ -171,6 +171,7 @@
           v-else-if="current?.resource === 'manifestapply'"
           ref="manifestApplyRecordsPanelRef"
           :cluster-id="clusterId"
+          :can-write="canWriteK8s"
           :show-tools="showListTableTools"
           @open-deploy="openManifestApplyWithPreset"
         />
@@ -276,6 +277,7 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:replicasets`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="replicasets"
           :get-summary="getReplicaSetSummary"
           :open-yaml="openReplicaSetYaml"
           :open-edit="openEditReplicaSet"
@@ -352,6 +354,7 @@
           :can-write="canWriteK8s"
           resource-kind="endpoints"
           :get-summary="getEndpointsSummary"
+          :open-detail="openEndpointsDetail"
           :open-yaml="openEndpointsYaml"
           :open-edit="openEditEndpoints"
           :delete-row="deleteEndpointsRow"
@@ -367,6 +370,7 @@
           :can-write="canWriteK8s"
           resource-kind="endpointslices"
           :get-summary="getEndpointSliceSummary"
+          :open-detail="openEndpointSliceDetail"
           :open-yaml="openEndpointSliceYaml"
           :open-edit="openEditEndpointSlice"
           :delete-row="deleteEndpointSliceRow"
@@ -525,6 +529,7 @@
         <PvsPanel
           v-else-if="current?.resource === 'pvs'"
           ref="pvsPanelRef"
+          :cluster-id="clusterId"
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:pvs`"
           :show-tools="showListTableTools"
@@ -533,6 +538,7 @@
           :open-p-v-detail="openPVDetail"
           :open-p-v-yaml="openPVYaml"
           :delete-p-v-row="deletePVRow"
+          :on-saved="loadCurrent"
           @sort-change="onSortChange"
         />
 
@@ -615,7 +621,9 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:volumesnapshots`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="volumesnapshots"
           :get-summary="getVolumeSnapshotSummary"
+          :open-detail="openVolumeSnapshotDetail"
           :open-yaml="openVolumeSnapshotYaml"
           :open-edit="openEditVolumeSnapshot"
           :delete-row="deleteVolumeSnapshotRow"
@@ -875,6 +883,7 @@
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
           :get-summary="getLeaseSummary"
+          :open-detail="openLeaseDetail"
           :open-yaml="openLeaseYaml"
           :open-edit="openEditLease"
           :delete-row="deleteLeaseRow"
@@ -934,6 +943,8 @@
     v-if="overlayLoaded.workbenches"
     ref="workbenchesRef"
     :cluster-id="clusterId"
+    :can-write-k8s="canWriteK8s"
+    :can-write-namespaces="canWriteNamespaces"
     :editor-theme="editorTheme"
     :editor-theme-effective-dark="editorThemeEffectiveDark"
     @toggle-editor-theme="toggleEditorTheme"
@@ -945,6 +956,7 @@
     ref="detailsHostRef"
     :cluster-id="clusterId"
     :cluster-name="clusterName"
+    :can-write-k8s="canWriteK8s"
     :editor-theme="editorTheme"
     :editor-theme-effective-dark="editorThemeEffectiveDark"
     :list="list"
@@ -969,6 +981,7 @@
     ref="resourceEditorsRef"
     :cluster-id="clusterId"
     :cluster-name="clusterName"
+    :can-write-k8s="canWriteK8s"
     :editor-theme="editorTheme"
     :editor-theme-effective-dark="editorThemeEffectiveDark"
     @toggle-editor-theme="toggleEditorTheme"
@@ -994,6 +1007,22 @@
   <CreateIngressDialog
     v-model="showCreateIngress"
     :cluster-id="clusterId"
+    :namespaces="namespaces"
+    :default-namespace="defaultCreatePVCNamespace"
+    @created="onResourceCreated"
+  />
+  <HighFrequencyResourceCreateDialog
+    v-model="showManagedResourceCreate"
+    :cluster-id="clusterId"
+    :resource="managedCreateResource"
+    :namespaces="namespaces"
+    :default-namespace="defaultCreatePVCNamespace"
+    @created="onResourceCreated"
+  />
+  <AdvancedResourceCreateDialog
+    v-model="showAdvancedResourceCreate"
+    :cluster-id="clusterId"
+    :resource="advancedCreateResource"
     :namespaces="namespaces"
     :default-namespace="defaultCreatePVCNamespace"
     @created="onResourceCreated"
@@ -1068,6 +1097,7 @@ import { buildManifestApplyPreset } from './clusterManage/manifestApplyTemplates
 import {
   buildStorageKey,
   buildTree,
+  collectTemplateConfigMapsSecrets,
   computeNextNamespaceSelection,
   filterTreeByPerms,
   filterTreeByResourceSupport,
@@ -1098,6 +1128,8 @@ const ClusterManageResourceEditors = defineAsyncComponent(() => import('./cluste
 const CreateDeploymentDialog = defineAsyncComponent(() => import('./clusterManage/overlays/CreateDeploymentDialog.vue'))
 const CreateServiceDialog = defineAsyncComponent(() => import('./clusterManage/overlays/CreateServiceDialog.vue'))
 const CreateIngressDialog = defineAsyncComponent(() => import('./clusterManage/overlays/CreateIngressDialog.vue'))
+const HighFrequencyResourceCreateDialog = defineAsyncComponent(() => import('./clusterManage/overlays/HighFrequencyResourceCreateDialog.vue'))
+const AdvancedResourceCreateDialog = defineAsyncComponent(() => import('./clusterManage/overlays/AdvancedResourceCreateDialog.vue'))
 const ClusterDashboard = defineAsyncComponent(() => import('./clusterManage/ClusterDashboard.vue'))
 const ClusterScopedResourcesPanel = defineAsyncComponent(() => import('./clusterManage/panels/ClusterScopedResourcesPanel.vue'))
 const ClusterRolesPanel = defineAsyncComponent(() => import('./clusterManage/panels/ClusterRolesPanel.vue'))
@@ -1136,6 +1168,8 @@ const userStore = useUserStore()
 
 type YamlLoader = () => Promise<{ text: string }>
 type YamlSaver = (text: string) => Promise<void>
+type ManagedCreateResource = 'configmaps' | 'secrets' | 'serviceaccounts' | 'hpas' | 'pdbs' | 'networkpolicies' | 'resourcequotas' | 'limitranges'
+type AdvancedCreateResource = 'roles' | 'clusterroles' | 'rolebindings' | 'clusterrolebindings' | 'ingressclasses' | 'storageclasses' | 'customresourcedefinitions'
 type ClusterManageDetailsHostExpose = {
   openScale: (payload: { kind: string; namespace: string; name: string }, desired: number, available: number) => void
   openEditDeployment: (row: any) => void
@@ -1160,6 +1194,10 @@ type ClusterManageDetailsHostExpose = {
   openServiceAccountDetail: (row: any) => void
   openResourceQuotaDetail: (row: any) => void
   openNetworkPolicyDetail: (row: any) => void
+  openEndpointsDetail: (row: any) => void
+  openEndpointSliceDetail: (row: any) => void
+  openVolumeSnapshotDetail: (row: any) => void
+  openLeaseDetail: (row: any) => void
   openRoleDetail: (row: any) => void
   openClusterRoleDetail: (row: any) => void
   openRoleBindingDetail: (row: any) => void
@@ -1417,6 +1455,7 @@ const {
 } = useClusterManageYamlActions({
   clusterId,
   workloadKind,
+  canWriteK8s,
   openYaml,
   loadCurrent
 })
@@ -1726,13 +1765,59 @@ const TEMPLATE_CREATE_LABELS: Partial<Record<ResourceKey, string>> = {
   leases: '创建 Lease'
 }
 
+const MANAGED_FORM_CREATE_RESOURCES = new Set<ManagedCreateResource>([
+  'configmaps',
+  'secrets',
+  'serviceaccounts',
+  'hpas',
+  'pdbs',
+  'networkpolicies',
+  'resourcequotas',
+  'limitranges',
+])
+
+const ADVANCED_FORM_CREATE_RESOURCES = new Set<AdvancedCreateResource>([
+  'roles',
+  'clusterroles',
+  'rolebindings',
+  'clusterrolebindings',
+  'ingressclasses',
+  'storageclasses',
+  'customresourcedefinitions',
+])
+
 const RBAC_TEMPLATE_CREATE_RESOURCES = new Set<ResourceKey>(['roles', 'clusterroles', 'rolebindings', 'clusterrolebindings'])
+const RBAC_ADVANCED_CREATE_RESOURCES = new Set<AdvancedCreateResource>(['roles', 'clusterroles', 'rolebindings', 'clusterrolebindings'])
+
+function isManagedCreateResource(resource: ResourceKey | undefined | null): resource is ManagedCreateResource {
+  return !!resource && MANAGED_FORM_CREATE_RESOURCES.has(resource as ManagedCreateResource)
+}
+
+function isAdvancedCreateResource(resource: ResourceKey | undefined | null): resource is AdvancedCreateResource {
+  return !!resource && ADVANCED_FORM_CREATE_RESOURCES.has(resource as AdvancedCreateResource)
+}
 
 function openTemplateCreate(resource: ResourceKey) {
-  openManifestApplyWithPreset(buildManifestApplyPreset({
-    resource,
-    namespace: isNamespacedResource(resource) ? (getManifestApplyDefaultNamespace() || undefined) : undefined
-  }))
+  openManifestApplyWithPreset(
+    buildManifestApplyPreset({
+      resource,
+      namespace: isNamespacedResource(resource) ? (getManifestApplyDefaultNamespace() || undefined) : undefined
+    }),
+    RBAC_TEMPLATE_CREATE_RESOURCES.has(resource) ? 'rbac' : 'k8s'
+  )
+}
+
+function openManagedResourceCreate(resource: ManagedCreateResource) {
+  if (!canWriteK8s.value) return
+  managedCreateResource.value = resource
+  showManagedResourceCreate.value = true
+}
+
+function openAdvancedResourceCreate(resource: AdvancedCreateResource) {
+  const canCreate = RBAC_ADVANCED_CREATE_RESOURCES.has(resource) ? canWriteRbac.value : canWriteK8s.value
+  if (!canCreate) return
+  advancedCreateResource.value = resource
+  showAdvancedResourceCreate.value = true
 }
 
 const primaryCreateAction = computed<null | { label: string; onClick: () => void }>(() => {
@@ -1765,6 +1850,21 @@ const primaryCreateAction = computed<null | { label: string; onClick: () => void
     return {
       label: '创建 Ingress',
       onClick: () => { showCreateIngress.value = true }
+    }
+  }
+  if (isManagedCreateResource(resource) && canWriteK8s.value) {
+    return {
+      label: TEMPLATE_CREATE_LABELS[resource] || '创建',
+      onClick: () => openManagedResourceCreate(resource)
+    }
+  }
+  if (isAdvancedCreateResource(resource)) {
+    const canCreate = RBAC_ADVANCED_CREATE_RESOURCES.has(resource) ? canWriteRbac.value : canWriteK8s.value
+    if (canCreate) {
+      return {
+        label: TEMPLATE_CREATE_LABELS[resource] || '创建',
+        onClick: () => openAdvancedResourceCreate(resource)
+      }
     }
   }
   if (resource && resource in TEMPLATE_CREATE_LABELS) {
@@ -1843,6 +1943,10 @@ const defaultCreatePVCNamespace = computed(() => {
 const showCreateDeployment = ref(false)
 const showCreateService = ref(false)
 const showCreateIngress = ref(false)
+const showManagedResourceCreate = ref(false)
+const managedCreateResource = ref<ManagedCreateResource>('configmaps')
+const showAdvancedResourceCreate = ref(false)
+const advancedCreateResource = ref<AdvancedCreateResource>('roles')
 
 function onResourceCreated() {
   loadCurrent()
@@ -2416,6 +2520,173 @@ function scheduleWorkloadProgressRefresh() {
   }, WORKLOAD_PROGRESS_REFRESH_DELAY_MS)
 }
 
+function getNamespacedResourceKey(namespace: string, name: string): string {
+  return `${namespace}/${name}`
+}
+
+function getSafeRowNamespace(row: any): string {
+  return String(getRowNamespace(row) ?? '').trim()
+}
+
+function getWorkloadTemplateSpec(row: any): any | null {
+  const kind = String(row?.kind ?? '').trim()
+  const spec = row?.spec ?? null
+  if (spec?.template?.spec) return spec.template.spec
+  if (kind === 'CronJob' && spec?.jobTemplate?.spec?.template?.spec) return spec.jobTemplate.spec.template.spec
+  return null
+}
+
+function hasOwnerReferences(row: any): boolean {
+  const owners: any[] = Array.isArray(row?.metadata?.ownerReferences) ? row.metadata.ownerReferences : []
+  return owners.some((owner) => String(owner?.kind ?? '').trim() && String(owner?.name ?? '').trim())
+}
+
+function setReferenceBucketValue(target: Map<string, Set<string>>, namespace: string, name: string, refKey: string) {
+  if (!namespace || !name || !refKey) return
+  const key = getNamespacedResourceKey(namespace, name)
+  const bucket = target.get(key) ?? new Set<string>()
+  bucket.add(refKey)
+  target.set(key, bucket)
+}
+
+function finalizeReferenceCountMap(target: Map<string, Set<string>>): Map<string, number> {
+  const out = new Map<string, number>()
+  target.forEach((refs, key) => out.set(key, refs.size))
+  return out
+}
+
+function buildServiceEndpointsCountMap(endpoints: any[], endpointSlices: any[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  const sliceBackedKeys = new Set<string>()
+
+  for (const item of endpointSlices) {
+    const namespace = getSafeRowNamespace(item)
+    const serviceName = String(item?.metadata?.labels?.['kubernetes.io/service-name'] ?? '').trim()
+    if (!namespace || !serviceName) continue
+    const key = getNamespacedResourceKey(namespace, serviceName)
+    sliceBackedKeys.add(key)
+    counts.set(key, (counts.get(key) ?? 0) + (Array.isArray(item?.endpoints) ? item.endpoints.length : 0))
+  }
+
+  for (const item of endpoints) {
+    const namespace = getSafeRowNamespace(item)
+    const serviceName = String(item?.metadata?.name ?? '').trim()
+    if (!namespace || !serviceName) continue
+    const key = getNamespacedResourceKey(namespace, serviceName)
+    if (sliceBackedKeys.has(key)) continue
+    const subsets: any[] = Array.isArray(item?.subsets) ? item.subsets : []
+    const total = subsets.reduce((sum, subset) => {
+      const ready = Array.isArray(subset?.addresses) ? subset.addresses.length : 0
+      const notReady = Array.isArray(subset?.notReadyAddresses) ? subset.notReadyAddresses.length : 0
+      return sum + ready + notReady
+    }, 0)
+    counts.set(key, total)
+  }
+
+  return counts
+}
+
+function buildConfigResourceReferenceCountMaps(options: {
+  pods: any[]
+  workloads: any[]
+  jobs: any[]
+  cronJobs: any[]
+  ingresses?: any[]
+  serviceAccounts?: any[]
+}): { configMaps: Map<string, number>; secrets: Map<string, number> } {
+  const configMapRefs = new Map<string, Set<string>>()
+  const secretRefs = new Map<string, Set<string>>()
+
+  const addTemplateRefs = (namespace: string, refKey: string, spec: any | null) => {
+    if (!namespace || !refKey || !spec) return
+    const refs = collectTemplateConfigMapsSecrets(spec)
+    refs.configMaps.forEach((name) => setReferenceBucketValue(configMapRefs, namespace, name, refKey))
+    refs.secrets.forEach((name) => setReferenceBucketValue(secretRefs, namespace, name, refKey))
+  }
+
+  for (const row of options.pods) {
+    const namespace = getSafeRowNamespace(row)
+    const name = String(row?.metadata?.name ?? '').trim()
+    if (!namespace || !name || hasOwnerReferences(row)) continue
+    addTemplateRefs(namespace, `${namespace}:Pod:${name}`, row?.spec ?? null)
+  }
+
+  const addTemplateRows = (rows: any[], fallbackKind: string) => {
+    for (const row of rows) {
+      const namespace = getSafeRowNamespace(row)
+      const name = String(row?.metadata?.name ?? '').trim()
+      const kind = String(row?.kind ?? fallbackKind).trim() || fallbackKind
+      if (!namespace || !name) continue
+      addTemplateRefs(namespace, `${namespace}:${kind}:${name}`, getWorkloadTemplateSpec(row))
+    }
+  }
+
+  addTemplateRows(options.workloads, 'Workload')
+  addTemplateRows(options.jobs, 'Job')
+  addTemplateRows(options.cronJobs, 'CronJob')
+
+  for (const row of options.ingresses ?? []) {
+    const namespace = getSafeRowNamespace(row)
+    const name = String(row?.metadata?.name ?? '').trim()
+    if (!namespace || !name) continue
+    const tls: any[] = Array.isArray(row?.spec?.tls) ? row.spec.tls : []
+    for (const item of tls) {
+      const secretName = String(item?.secretName ?? '').trim()
+      if (!secretName) continue
+      setReferenceBucketValue(secretRefs, namespace, secretName, `${namespace}:Ingress:${name}`)
+    }
+  }
+
+  for (const row of options.serviceAccounts ?? []) {
+    const namespace = getSafeRowNamespace(row)
+    const name = String(row?.metadata?.name ?? '').trim()
+    if (!namespace || !name) continue
+    const secrets: any[] = Array.isArray(row?.secrets) ? row.secrets : []
+    for (const item of secrets) {
+      const secretName = String(item?.name ?? '').trim()
+      if (!secretName) continue
+      setReferenceBucketValue(secretRefs, namespace, secretName, `${namespace}:ServiceAccount:${name}`)
+    }
+    const imagePullSecrets: any[] = Array.isArray(row?.imagePullSecrets) ? row.imagePullSecrets : []
+    for (const item of imagePullSecrets) {
+      const secretName = String(item?.name ?? '').trim()
+      if (!secretName) continue
+      setReferenceBucketValue(secretRefs, namespace, secretName, `${namespace}:ServiceAccount:${name}`)
+    }
+  }
+
+  return {
+    configMaps: finalizeReferenceCountMap(configMapRefs),
+    secrets: finalizeReferenceCountMap(secretRefs)
+  }
+}
+
+function decorateServiceRowsWithEndpoints(services: any[], endpoints: any[], endpointSlices: any[]): any[] {
+  const endpointCounts = buildServiceEndpointsCountMap(endpoints, endpointSlices)
+  return services.map((row) => {
+    const key = getNamespacedResourceKey(getSafeRowNamespace(row), String(row?.metadata?.name ?? '').trim())
+    return { ...row, endpointsCount: endpointCounts.get(key) ?? 0 }
+  })
+}
+
+function decorateConfigMapRowsWithReferences(configMaps: any[], pods: any[], workloads: any[], jobs: any[], cronJobs: any[]): any[] {
+  const referenceCountMaps = buildConfigResourceReferenceCountMaps({ pods, workloads, jobs, cronJobs })
+  return configMaps.map((row) => {
+    const namespace = getSafeRowNamespace(row)
+    const name = String(row?.metadata?.name ?? '').trim()
+    return { ...row, referenceCount: referenceCountMaps.configMaps.get(getNamespacedResourceKey(namespace, name)) ?? 0 }
+  })
+}
+
+function decorateSecretRowsWithReferences(secrets: any[], pods: any[], workloads: any[], jobs: any[], cronJobs: any[], ingresses: any[], serviceAccounts: any[]): any[] {
+  const referenceCountMaps = buildConfigResourceReferenceCountMaps({ pods, workloads, jobs, cronJobs, ingresses, serviceAccounts })
+  return secrets.map((row) => {
+    const namespace = getSafeRowNamespace(row)
+    const name = String(row?.metadata?.name ?? '').trim()
+    return { ...row, referenceCount: referenceCountMaps.secrets.get(getNamespacedResourceKey(namespace, name)) ?? 0 }
+  })
+}
+
 async function runWorkloadProgressRefresh() {
   if (!clusterId.value || current.value?.resource !== 'workloads') {
     stopWorkloadProgressRefresh()
@@ -2550,12 +2821,18 @@ async function loadCurrent() {
         list.value = merged
       },
       services: async () => {
+        const currentSortBy = String(sortBy.value ?? '')
+        const backendSortable = ['metadata.name', 'metadata.namespace', 'spec.type', 'spec.clusterIP', 'metadata.creationTimestamp'].includes(currentSortBy)
         const merged = await listByNamespaces(async (ns) => {
-          const data = await k8sApi.listServices(clusterId.value, { namespace: ns, sort_by: sortBy.value, order: order.value })
-          return data.list
+          const [servicesResp, endpointsResp, endpointSlicesResp] = await Promise.all([
+            k8sApi.listServices(clusterId.value, { namespace: ns, sort_by: backendSortable ? currentSortBy : undefined, order: backendSortable ? order.value : undefined }),
+            k8sApi.listEndpoints(clusterId.value, { namespace: ns }),
+            k8sApi.listEndpointSlices(clusterId.value, { namespace: ns })
+          ])
+          return decorateServiceRowsWithEndpoints(servicesResp.list ?? [], endpointsResp.list ?? [], endpointSlicesResp.list ?? [])
         })
         if (seq !== loadCurrentSeq) return
-        list.value = merged
+        list.value = sortItemsByPath(merged, sortBy.value, order.value)
       },
       endpoints: async () => {
         const merged = await listByNamespaces(async (ns) => {
@@ -2598,20 +2875,52 @@ async function loadCurrent() {
         list.value = merged
       },
       configmaps: async () => {
+        const currentSortBy = String(sortBy.value ?? '')
+        const backendSortable = ['metadata.name', 'metadata.namespace', 'immutable', 'metadata.creationTimestamp'].includes(currentSortBy)
         const merged = await listByNamespaces(async (ns) => {
-          const data = await k8sApi.listConfigMaps(clusterId.value, { namespace: ns, sort_by: sortBy.value, order: order.value })
-          return data.list
+          const [configMapsResp, podsResp, workloadsResp, jobsResp, cronJobsResp] = await Promise.all([
+            k8sApi.listConfigMaps(clusterId.value, { namespace: ns, sort_by: backendSortable ? currentSortBy : undefined, order: backendSortable ? order.value : undefined }),
+            k8sApi.listPods(clusterId.value, { namespace: ns }),
+            k8sApi.listWorkloads(clusterId.value, { namespace: ns }),
+            k8sApi.listJobs(clusterId.value, { namespace: ns }),
+            k8sApi.listCronJobs(clusterId.value, { namespace: ns })
+          ])
+          return decorateConfigMapRowsWithReferences(
+            configMapsResp.list ?? [],
+            podsResp.list ?? [],
+            workloadsResp.list ?? [],
+            jobsResp.list ?? [],
+            cronJobsResp.list ?? []
+          )
         })
         if (seq !== loadCurrentSeq) return
-        list.value = merged
+        list.value = sortItemsByPath(merged, sortBy.value, order.value)
       },
       secrets: async () => {
+        const currentSortBy = String(sortBy.value ?? '')
+        const backendSortable = ['metadata.name', 'metadata.namespace', 'type', 'immutable', 'metadata.creationTimestamp'].includes(currentSortBy)
         const merged = await listByNamespaces(async (ns) => {
-          const data = await k8sApi.listSecrets(clusterId.value, { namespace: ns, sort_by: sortBy.value, order: order.value })
-          return data.list
+          const [secretsResp, podsResp, workloadsResp, jobsResp, cronJobsResp, ingressesResp, serviceAccountsResp] = await Promise.all([
+            k8sApi.listSecrets(clusterId.value, { namespace: ns, sort_by: backendSortable ? currentSortBy : undefined, order: backendSortable ? order.value : undefined }),
+            k8sApi.listPods(clusterId.value, { namespace: ns }),
+            k8sApi.listWorkloads(clusterId.value, { namespace: ns }),
+            k8sApi.listJobs(clusterId.value, { namespace: ns }),
+            k8sApi.listCronJobs(clusterId.value, { namespace: ns }),
+            k8sApi.listIngresses(clusterId.value, { namespace: ns }),
+            k8sApi.listServiceAccounts(clusterId.value, { namespace: ns })
+          ])
+          return decorateSecretRowsWithReferences(
+            secretsResp.list ?? [],
+            podsResp.list ?? [],
+            workloadsResp.list ?? [],
+            jobsResp.list ?? [],
+            cronJobsResp.list ?? [],
+            ingressesResp.list ?? [],
+            serviceAccountsResp.list ?? []
+          )
         })
         if (seq !== loadCurrentSeq) return
-        list.value = merged
+        list.value = sortItemsByPath(merged, sortBy.value, order.value)
       },
       serviceaccounts: async () => {
         const merged = await listByNamespaces(async (ns) => {
@@ -3334,7 +3643,9 @@ function openCreateNamespace() {
   runOverlayWhenReady('workbenches', () => workbenchesRef.value, (target) => target.openCreateNamespace())
 }
 
-function openManifestApplyWithPreset(options: ManifestApplyOpenOptions = {}) {
+function openManifestApplyWithPreset(options: ManifestApplyOpenOptions = {}, requiredPermission: 'k8s' | 'rbac' = 'k8s') {
+  const canOpen = requiredPermission === 'rbac' ? canWriteRbac.value : canWriteK8s.value
+  if (!canOpen) return
   runOverlayWhenReady('workbenches', () => workbenchesRef.value, (target) => target.openManifestApply(options))
 }
 
@@ -3382,6 +3693,22 @@ function openIngressDetail(row: any) {
 
 function openIngressClassDetail(row: any) {
   detailsHostRef.value?.openIngressClassDetail(row)
+}
+
+function openEndpointsDetail(row: any) {
+  detailsHostRef.value?.openEndpointsDetail(row)
+}
+
+function openEndpointSliceDetail(row: any) {
+  detailsHostRef.value?.openEndpointSliceDetail(row)
+}
+
+function openVolumeSnapshotDetail(row: any) {
+  detailsHostRef.value?.openVolumeSnapshotDetail(row)
+}
+
+function openLeaseDetail(row: any) {
+  detailsHostRef.value?.openLeaseDetail(row)
 }
 
 function openCustomResourceDefinitionDetail(row: any) {

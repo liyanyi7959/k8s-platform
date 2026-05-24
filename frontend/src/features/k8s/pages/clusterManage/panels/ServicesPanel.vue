@@ -20,6 +20,9 @@
     <template #cell-ports="{ row }">
       <span class="k8s-num">{{ props.formatPorts(row?.spec?.ports ?? []) }}</span>
     </template>
+    <template #cell-endpointsCount="{ row }">
+      <span class="k8s-num">{{ Number(row?.endpointsCount ?? 0) }}</span>
+    </template>
     <template #cell-externalIp="{ row }">
       <span class="k8s-age" :title="getExternalIpText(row)">{{ getExternalIpText(row) }}</span>
     </template>
@@ -66,6 +69,7 @@ const columns: EnhancedColumn[] = [
   { key: 'clusterIP', label: 'ClusterIP', prop: 'spec.clusterIP', width: 160, sortable: 'custom', defaultVisible: true },
   { key: 'externalIp', label: 'External IP', minWidth: 220, defaultVisible: true },
   { key: 'ports', label: 'Ports', minWidth: 220, defaultVisible: true },
+  { key: 'endpointsCount', label: 'Endpoints', prop: 'endpointsCount', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'sessionAffinity', label: 'Affinity', width: 120, align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'selector', label: 'Selector', minWidth: 220, defaultVisible: false },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },

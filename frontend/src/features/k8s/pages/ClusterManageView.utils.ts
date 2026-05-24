@@ -456,10 +456,18 @@ export function collectTemplateConfigMapsSecrets(spec: any | null): { configMaps
     if (cm) cms.push(cm)
     const sec = String(v?.secret?.secretName ?? '').trim()
     if (sec) secs.push(sec)
+    const projectedSources: any[] = Array.isArray(v?.projected?.sources) ? v.projected.sources : []
+    for (const source of projectedSources) {
+      const projectedCm = String(source?.configMap?.name ?? '').trim()
+      if (projectedCm) cms.push(projectedCm)
+      const projectedSec = String(source?.secret?.name ?? '').trim()
+      if (projectedSec) secs.push(projectedSec)
+    }
   }
   const containers: any[] = Array.isArray(spec?.containers) ? spec.containers : []
   const initContainers: any[] = Array.isArray(spec?.initContainers) ? spec.initContainers : []
-  for (const c of [...initContainers, ...containers]) {
+  const ephemeralContainers: any[] = Array.isArray(spec?.ephemeralContainers) ? spec.ephemeralContainers : []
+  for (const c of [...initContainers, ...containers, ...ephemeralContainers]) {
     const envFrom: any[] = Array.isArray(c?.envFrom) ? c.envFrom : []
     for (const ef of envFrom) {
       const cm = String(ef?.configMapRef?.name ?? '').trim()
@@ -474,6 +482,11 @@ export function collectTemplateConfigMapsSecrets(spec: any | null): { configMaps
       const sec = String(e?.valueFrom?.secretKeyRef?.name ?? '').trim()
       if (sec) secs.push(sec)
     }
+  }
+  const imagePullSecrets: any[] = Array.isArray(spec?.imagePullSecrets) ? spec.imagePullSecrets : []
+  for (const secretRef of imagePullSecrets) {
+    const sec = String(secretRef?.name ?? '').trim()
+    if (sec) secs.push(sec)
   }
   return { configMaps: uniq(cms), secrets: uniq(secs) }
 }

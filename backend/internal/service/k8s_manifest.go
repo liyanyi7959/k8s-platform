@@ -19,6 +19,7 @@ import (
 type ManifestApplyOptions struct {
 	DefaultNamespace string
 	DryRun           bool
+	CreateOnly       bool
 }
 
 type ManifestApplyResultItem struct {
@@ -154,6 +155,9 @@ func (s *K8sService) applyManifestObject(ctx context.Context, client dynamic.Int
 			}
 			resultObj = created
 		} else {
+			if opts.CreateOnly {
+				return ManifestApplyResultItem{}, ErrWithMessage(ErrConflict, fmt.Sprintf("%s %s 已存在，无法重复创建", gvk.Kind, name))
+			}
 			operation = "update"
 			manifestObj.SetResourceVersion(existing.GetResourceVersion())
 			updated, updateErr := resource.Update(ctx, manifestObj, updateOptions)

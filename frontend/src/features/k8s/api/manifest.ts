@@ -6,6 +6,7 @@ export interface ManifestApplyRequest {
   yaml: string
   default_namespace?: string
   dry_run?: boolean
+  create_only?: boolean
   source_label?: string
   source_resource?: string
   workload_kind?: string

@@ -15,6 +15,7 @@ type applyManifestReq struct {
 	YAML             string `json:"yaml" binding:"required"`
 	DefaultNamespace string `json:"default_namespace"`
 	DryRun           bool   `json:"dry_run"`
+	CreateOnly       bool   `json:"create_only"`
 	SourceLabel      string `json:"source_label"`
 	SourceResource   string `json:"source_resource"`
 	WorkloadKind     string `json:"workload_kind"`
@@ -75,6 +76,7 @@ func (kc *K8sController) ApplyManifest(c *gin.Context) {
 		YAML:             req.YAML,
 		DefaultNamespace: req.DefaultNamespace,
 		DryRun:           req.DryRun,
+		CreateOnly:       req.CreateOnly,
 		SourceLabel:      req.SourceLabel,
 		SourceResource:   req.SourceResource,
 		WorkloadKind:     req.WorkloadKind,

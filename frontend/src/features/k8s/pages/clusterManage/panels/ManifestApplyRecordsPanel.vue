@@ -30,7 +30,7 @@
       <div class="filter-bar__actions">
         <el-button :icon="Search" @click="fetchData">查询</el-button>
         <el-button :icon="RefreshRight" @click="resetFilters">重置</el-button>
-        <el-button :icon="Upload" @click="openDeploy">通过 YAML 部署</el-button>
+        <el-button v-if="props.canWrite" :icon="Upload" @click="openDeploy">通过 YAML 部署</el-button>
       </div>
     </div>
 
@@ -88,7 +88,14 @@
       <template #cell-actions="{ row }">
         <div class="k8s-act-group manifest-records__actions">
           <ActionIconButton :icon="View" tooltip="查看详情" @click="openDetail(row)" />
-          <ActionIconButton :icon="Upload" tooltip="再次部署" variant="success" :loading="reapplyLoadingId === row.id" @click="openDeployFromRow(row)" />
+          <ActionIconButton
+            v-if="props.canWrite"
+            :icon="Upload"
+            tooltip="再次部署"
+            variant="success"
+            :loading="reapplyLoadingId === row.id"
+            @click="openDeployFromRow(row)"
+          />
         </div>
       </template>
     </EnhancedTable>
@@ -112,6 +119,7 @@
               <el-tag size="small" :type="statusTagType(detail?.status || '')">{{ statusText(detail?.status || '') }}</el-tag>
             </div>
             <el-button
+              v-if="props.canWrite"
               :icon="Upload"
               :loading="reapplyLoadingId === detail?.id"
               class="manifest-records__detail-reapply"
@@ -212,6 +220,7 @@ type ManifestApplyOpenOptions = {
 
 const props = defineProps<{
   clusterId: number
+  canWrite: boolean
   showTools?: boolean
 }>()
 
@@ -333,6 +342,7 @@ function resetFilters() {
 }
 
 function openDeploy() {
+  if (!props.canWrite) return
   emit('open-deploy', {})
 }
 
@@ -369,6 +379,7 @@ function buildDeployPayload(record: ManifestApplyRecordDetail): ManifestApplyOpe
 }
 
 async function openDeployFromRow(row: ManifestApplyRecord) {
+  if (!props.canWrite) return
   reapplyLoadingId.value = row.id
   try {
     const record = detail.value?.id === row.id ? detail.value : await getManifestApplyRecord(props.clusterId, row.id)
@@ -382,7 +393,7 @@ async function openDeployFromRow(row: ManifestApplyRecord) {
 }
 
 function openDeployFromDetail() {
-  if (!detail.value) return
+  if (!props.canWrite || !detail.value) return
   reapplyLoadingId.value = detail.value.id
   emit('open-deploy', buildDeployPayload(detail.value))
   reapplyLoadingId.value = 0

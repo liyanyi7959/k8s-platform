@@ -31,6 +31,9 @@
     <template #cell-labels="{ row }">
       <span class="k8s-num">{{ getLabelsCount(row) }}</span>
     </template>
+    <template #cell-referenceCount="{ row }">
+      <span class="k8s-num">{{ Number(row?.referenceCount ?? 0) }}</span>
+    </template>
     <template #cell-keys="{ row }">
       <span class="k8s-age">
         {{ props.getDataKeys(row).slice(0, 6).join(', ') }}
@@ -76,6 +79,7 @@ const columns: EnhancedColumn[] = [
   { key: 'type', label: 'Type', prop: 'type', width: 200, sortable: 'custom', defaultVisible: true },
   { key: 'immutable', label: 'Immutable', prop: 'immutable', width: 110, align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'dataKeys', label: '数据摘要', width: 140, defaultVisible: true },
+  { key: 'referenceCount', label: '引用', prop: 'referenceCount', width: 90, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'labels', label: 'Labels', width: 90, align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'keys', label: 'Keys', minWidth: 260, defaultVisible: false },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
