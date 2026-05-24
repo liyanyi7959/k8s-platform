@@ -1289,7 +1289,8 @@ html.dark .el-message-box__btns {
   --table-surface-alt-bg: var(--table-stripe-bg, #eff6ff);
   --table-surface-hover-bg: var(--table-row-hover, rgba(59, 130, 246, 0.1));
   --table-surface-header-bg: var(--table-header-bg, #dbeafe);
-  --table-surface-fixed-bg: var(--table-surface-bg);
+  --table-surface-fixed-bg: #ffffff;
+  --table-surface-fixed-header-bg: var(--table-surface-header-bg);
   --el-table-bg-color: var(--table-surface-bg);
   --el-table-tr-bg-color: var(--table-surface-bg);
   --el-table-expanded-cell-bg-color: var(--table-surface-bg);
@@ -1327,9 +1328,50 @@ html.dark .el-message-box__btns {
   background: var(--table-surface-alt-bg);
 }
 
+.el-table--striped .el-table__body tr.el-table__row--striped > td.el-table-fixed-column--left,
+.el-table--striped .el-table__body tr.el-table__row--striped > td.el-table-fixed-column--right,
+.el-table--striped .el-table__body tr.el-table__row--striped > td.el-table__cell.is-fixed-left,
+.el-table--striped .el-table__body tr.el-table__row--striped > td.el-table__cell.is-fixed-right,
+.el-table--striped .el-table__fixed-body-wrapper tr.el-table__row--striped > td.el-table-fixed-column--left,
+.el-table--striped .el-table__fixed-body-wrapper tr.el-table__row--striped > td.el-table-fixed-column--right,
+.el-table--striped .el-table__fixed-body-wrapper tr.el-table__row--striped > td.el-table__cell.is-fixed-left,
+.el-table--striped .el-table__fixed-body-wrapper tr.el-table__row--striped > td.el-table__cell.is-fixed-right {
+  background: var(--table-surface-alt-bg) !important;
+}
+
 .el-table__body tr:hover > td.el-table__cell,
 .el-table__fixed-body-wrapper tr:hover > td.el-table__cell {
   color: var(--color-text-primary);
+}
+
+.el-table__body tr:hover > td.el-table-fixed-column--left,
+.el-table__body tr:hover > td.el-table-fixed-column--right,
+.el-table__body tr:hover > td.el-table__cell.is-fixed-left,
+.el-table__body tr:hover > td.el-table__cell.is-fixed-right,
+.el-table__body tr.hover-row > td.el-table-fixed-column--left,
+.el-table__body tr.hover-row > td.el-table-fixed-column--right,
+.el-table__body tr.hover-row > td.el-table__cell.is-fixed-left,
+.el-table__body tr.hover-row > td.el-table__cell.is-fixed-right,
+.el-table__fixed-body-wrapper tr:hover > td.el-table-fixed-column--left,
+.el-table__fixed-body-wrapper tr:hover > td.el-table-fixed-column--right,
+.el-table__fixed-body-wrapper tr:hover > td.el-table__cell.is-fixed-left,
+.el-table__fixed-body-wrapper tr:hover > td.el-table__cell.is-fixed-right,
+.el-table__fixed-body-wrapper tr.hover-row > td.el-table-fixed-column--left,
+.el-table__fixed-body-wrapper tr.hover-row > td.el-table-fixed-column--right,
+.el-table__fixed-body-wrapper tr.hover-row > td.el-table__cell.is-fixed-left,
+.el-table__fixed-body-wrapper tr.hover-row > td.el-table__cell.is-fixed-right {
+  background: var(--table-surface-hover-bg) !important;
+}
+
+.el-table__body tr.current-row > td.el-table-fixed-column--left,
+.el-table__body tr.current-row > td.el-table-fixed-column--right,
+.el-table__body tr.current-row > td.el-table__cell.is-fixed-left,
+.el-table__body tr.current-row > td.el-table__cell.is-fixed-right,
+.el-table__fixed-body-wrapper tr.current-row > td.el-table-fixed-column--left,
+.el-table__fixed-body-wrapper tr.current-row > td.el-table-fixed-column--right,
+.el-table__fixed-body-wrapper tr.current-row > td.el-table__cell.is-fixed-left,
+.el-table__fixed-body-wrapper tr.current-row > td.el-table__cell.is-fixed-right {
+  background: var(--el-table-current-row-bg-color) !important;
 }
 
 .el-table__body-wrapper tr td.el-table-fixed-column--left,
@@ -1358,7 +1400,8 @@ html.dark .el-table {
   --table-surface-alt-bg: rgba(30, 41, 59, 0.82);
   --table-surface-hover-bg: rgba(30, 64, 175, 0.24);
   --table-surface-header-bg: rgba(30, 64, 175, 0.26);
-  --table-surface-fixed-bg: rgba(15, 23, 42, 0.94);
+  --table-surface-fixed-bg: #0f172a;
+  --table-surface-fixed-header-bg: var(--table-surface-header-bg);
   --el-table-current-row-bg-color: rgba(59, 130, 246, 0.13);
   --el-table-border-color: rgba(71, 85, 105, 0.42);
   color: rgba(203, 213, 225, 0.92);

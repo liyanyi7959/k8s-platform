@@ -21,16 +21,24 @@ const maskedSecretValue = "***"
 // ===========================================================================
 
 func (s *K8sService) listConfigMapsCached(ctx context.Context, clusterID uint64, namespace string, sortBy, order string) ([]any, error) {
-	entry, err := s.getOrStartObjCache(ctx, clusterID, "configmaps")
-	if err != nil {
-		return nil, err
-	}
-
 	cacheEnabled := s != nil && s.cache != nil && s.cache.Enabled() && s.podTTL > 0 && clusterID > 0
 	if cacheEnabled {
 		if out, ok := s.listConfigMapsFromRedisAll(ctx, clusterID, namespace, sortBy, order); ok {
 			return out, nil
 		}
+	}
+
+	entry, err := s.getOrStartObjCache(ctx, clusterID, "configmaps")
+	if err != nil {
+		items, directErr := s.listConfigMapsDirectConfigMaps(ctx, clusterID, namespace)
+		if directErr != nil {
+			return nil, directErr
+		}
+		if cacheEnabled && strings.TrimSpace(namespace) == "" {
+			s.setConfigMapsAllToRedis(clusterID, items)
+		}
+		sortConfigMaps(items, sortBy, order)
+		return configMapsToAnyList(items), nil
 	}
 
 	if !entry.informer.HasSynced() {
@@ -225,16 +233,25 @@ func (s *K8sService) listConfigMapsDirectConfigMaps(ctx context.Context, cluster
 // ===========================================================================
 
 func (s *K8sService) listSecretsCached(ctx context.Context, clusterID uint64, namespace string, sortBy, order string) ([]any, error) {
-	entry, err := s.getOrStartObjCache(ctx, clusterID, "secrets")
-	if err != nil {
-		return nil, err
-	}
-
 	cacheEnabled := s != nil && s.cache != nil && s.cache.Enabled() && s.podTTL > 0 && clusterID > 0
 	if cacheEnabled {
 		if out, ok := s.listSecretsFromRedisAll(ctx, clusterID, namespace, sortBy, order); ok {
 			return out, nil
 		}
+	}
+
+	entry, err := s.getOrStartObjCache(ctx, clusterID, "secrets")
+	if err != nil {
+		items, directErr := s.listSecretsDirectSecrets(ctx, clusterID, namespace)
+		if directErr != nil {
+			return nil, directErr
+		}
+		maskedItems := maskSecretsForList(items)
+		if cacheEnabled && strings.TrimSpace(namespace) == "" {
+			s.setSecretsAllToRedis(clusterID, maskedItems)
+		}
+		sortSecrets(maskedItems, sortBy, order)
+		return secretsToAnyList(maskedItems), nil
 	}
 
 	if !entry.informer.HasSynced() {
@@ -464,16 +481,24 @@ func (s *K8sService) listSecretsDirectSecrets(ctx context.Context, clusterID uin
 // ===========================================================================
 
 func (s *K8sService) listServiceAccountsCached(ctx context.Context, clusterID uint64, namespace string, sortBy, order string) ([]any, error) {
-	entry, err := s.getOrStartObjCache(ctx, clusterID, "serviceaccounts")
-	if err != nil {
-		return nil, err
-	}
-
 	cacheEnabled := s != nil && s.cache != nil && s.cache.Enabled() && s.podTTL > 0 && clusterID > 0
 	if cacheEnabled {
 		if out, ok := s.listServiceAccountsFromRedisAll(ctx, clusterID, namespace, sortBy, order); ok {
 			return out, nil
 		}
+	}
+
+	entry, err := s.getOrStartObjCache(ctx, clusterID, "serviceaccounts")
+	if err != nil {
+		items, directErr := s.listServiceAccountsDirect(ctx, clusterID, namespace)
+		if directErr != nil {
+			return nil, directErr
+		}
+		if cacheEnabled && strings.TrimSpace(namespace) == "" {
+			s.setServiceAccountsAllToRedis(clusterID, items)
+		}
+		sortServiceAccounts(items, sortBy, order)
+		return serviceAccountsToAnyList(items), nil
 	}
 
 	if !entry.informer.HasSynced() {
@@ -652,16 +677,24 @@ func (s *K8sService) listServiceAccountsDirect(ctx context.Context, clusterID ui
 // ===========================================================================
 
 func (s *K8sService) listHPAsCached(ctx context.Context, clusterID uint64, namespace string, sortBy, order string) ([]any, error) {
-	entry, err := s.getOrStartObjCache(ctx, clusterID, "hpas")
-	if err != nil {
-		return nil, err
-	}
-
 	cacheEnabled := s != nil && s.cache != nil && s.cache.Enabled() && s.podTTL > 0 && clusterID > 0
 	if cacheEnabled {
 		if out, ok := s.listHPAsFromRedisAll(ctx, clusterID, namespace, sortBy, order); ok {
 			return out, nil
 		}
+	}
+
+	entry, err := s.getOrStartObjCache(ctx, clusterID, "hpas")
+	if err != nil {
+		items, directErr := s.listHPAsDirect(ctx, clusterID, namespace)
+		if directErr != nil {
+			return nil, directErr
+		}
+		if cacheEnabled && strings.TrimSpace(namespace) == "" {
+			s.setHPAsAllToRedis(clusterID, items)
+		}
+		sortHPAs(items, sortBy, order)
+		return hpasToAnyList(items), nil
 	}
 
 	if !entry.informer.HasSynced() {

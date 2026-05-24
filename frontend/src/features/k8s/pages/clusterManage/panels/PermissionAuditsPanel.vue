@@ -379,7 +379,7 @@
             <el-table-column prop="namespace" label="命名空间" width="150" show-overflow-tooltip />
             <el-table-column prop="name" label="名称" min-width="180" show-overflow-tooltip />
             <el-table-column prop="summary" label="摘要" min-width="320" show-overflow-tooltip />
-            <el-table-column label="操作" width="92" align="center">
+              <el-table-column label="操作" width="92" align="center" fixed="right">
               <template #default="{ row }">
                 <div class="k8s-act-group">
                   <ActionIconButton :icon="View" tooltip="查看详情" @click="openFinding(row)" />

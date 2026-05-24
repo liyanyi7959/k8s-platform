@@ -1,6 +1,6 @@
 <template>
   <div class="workloads-panel">
-    <div v-if="selectedRows.length > 0" class="workloads-batchbar">
+    <div v-if="props.canWrite && selectedRows.length > 0" class="workloads-batchbar">
       <el-button size="small" type="warning" @click="props.restartSelectedWorkloads(selectedRows)">
         重启选中 {{ selectedRows.length }} 项
       </el-button>
@@ -95,31 +95,31 @@
         <el-tooltip content="详情" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--info" @click="openDetail(row)"><el-icon><View /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="编辑" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="编辑" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--edit" @click="openEdit(row)"><el-icon><EditPen /></el-icon></button>
         </el-tooltip>
-        <el-tooltip v-if="!isDaemonSetRow(row)" content="伸缩" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite && !isDaemonSetRow(row)" content="伸缩" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--success" @click="props.openScale(row)"><el-icon><ScaleToOriginal /></el-icon></button>
         </el-tooltip>
-        <span class="k8s-act-divider" />
-        <el-tooltip content="重启" placement="top" :show-after="300">
+        <span v-if="props.canWrite" class="k8s-act-divider" />
+        <el-tooltip v-if="props.canWrite" content="重启" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--warn" @click="props.restartWorkloadRow(row)"><el-icon><RefreshRight /></el-icon></button>
         </el-tooltip>
-        <el-tooltip v-if="isDeploymentRow(row)" :content="getRolloutPauseTooltip(row)" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite && isDeploymentRow(row)" :content="getRolloutPauseTooltip(row)" placement="top" :show-after="300">
           <button :class="['k8s-act-btn', getRolloutPauseButtonClass(row)]" @click="props.toggleWorkloadPaused(row)">
             <el-icon><component :is="getRolloutPauseIcon(row)" /></el-icon>
           </button>
         </el-tooltip>
-        <el-tooltip content="更新镜像" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="更新镜像" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--edit" @click="openUpdateImageDialog(row)"><el-icon><Upload /></el-icon></button>
         </el-tooltip>
         <el-tooltip v-if="!isDaemonSetRow(row)" content="版本历史" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openWorkloadRollout(row)"><el-icon><Clock /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="YAML" placement="top" :show-after="300">
+          <el-tooltip content="YAML" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openWorkloadYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="删除" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--danger" @click="props.deleteWorkloadRow(row)"><el-icon><Delete /></el-icon></button>
         </el-tooltip>
       </div>
@@ -202,6 +202,7 @@ const props = defineProps<{
   clusterId?: number
   persistKey: string
   showTools: boolean
+  canWrite: boolean
   workloadKind: WorkloadKind
   getReadyText: (row: any) => string
   getWarningEventCount: (row: any) => number

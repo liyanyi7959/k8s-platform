@@ -484,11 +484,19 @@ body.art-v2-shell .el-table .el-table__row:hover > td.el-table__cell {
   background: var(--table-row-hover) !important;
 }
 
-body.art-v2-shell .el-table .el-table__cell.is-fixed-left,
-body.art-v2-shell .el-table .el-table__cell.is-fixed-right,
-body.art-v2-shell .el-table .el-table-fixed-column--left,
-body.art-v2-shell .el-table .el-table-fixed-column--right {
-  background-color: var(--color-bg-card) !important;
+body.art-v2-shell .el-table td.el-table__cell.is-fixed-left,
+body.art-v2-shell .el-table td.el-table__cell.is-fixed-right,
+body.art-v2-shell .el-table td.el-table-fixed-column--left,
+body.art-v2-shell .el-table td.el-table-fixed-column--right {
+  background-color: var(--table-surface-fixed-bg, var(--color-bg-card)) !important;
+}
+
+body.art-v2-shell .el-table th.el-table__cell.is-fixed-left,
+body.art-v2-shell .el-table th.el-table__cell.is-fixed-right,
+body.art-v2-shell .el-table th.el-table-fixed-column--left,
+body.art-v2-shell .el-table th.el-table-fixed-column--right,
+body.art-v2-shell .el-table .el-table__fixed-right-patch {
+  background-color: var(--table-surface-fixed-header-bg, var(--table-surface-header-bg, var(--table-surface-fixed-bg, var(--color-bg-card)))) !important;
 }
 
 body.art-v2-shell .el-tabs__nav-wrap::after {

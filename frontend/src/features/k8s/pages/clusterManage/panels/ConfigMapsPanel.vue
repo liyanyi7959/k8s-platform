@@ -17,8 +17,17 @@
     <template #cell-name="{ row }">
       <span class="k8s-name">{{ String(row?.metadata?.name ?? '-') }}</span>
     </template>
+    <template #cell-immutable="{ row }">
+      <span :class="['k8s-status', row?.immutable ? 'k8s-status--warn' : 'k8s-status--info']">{{ row?.immutable ? 'yes' : 'no' }}</span>
+    </template>
     <template #cell-dataKeys="{ row }">
       <span class="k8s-num">{{ props.getDataKeys(row).length }}</span>
+    </template>
+    <template #cell-binaryKeys="{ row }">
+      <span class="k8s-num">{{ getBinaryKeyCount(row) }}</span>
+    </template>
+    <template #cell-labels="{ row }">
+      <span class="k8s-num">{{ getLabelsCount(row) }}</span>
     </template>
     <template #cell-keys="{ row }">
       <span class="k8s-age">
@@ -34,14 +43,14 @@
         <el-tooltip content="详情" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--info" @click="props.openConfigMapDetail(row)"><el-icon><View /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="编辑" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="编辑" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--edit" @click="props.openEditConfigMap(row)"><el-icon><Edit /></el-icon></button>
         </el-tooltip>
-        <span class="k8s-act-divider" />
+        <span v-if="props.canWrite" class="k8s-act-divider" />
         <el-tooltip content="YAML" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openConfigMapYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="删除" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--danger" @click="props.deleteConfigMapRow(row)"><el-icon><Delete /></el-icon></button>
         </el-tooltip>
       </div>
@@ -59,16 +68,32 @@ import { getCreationAgeText, getNamespacedRowKey, nsColorIndex } from '@/feature
 const columns: EnhancedColumn[] = [
   { key: 'namespace', label: 'Namespace', prop: 'metadata.namespace', width: 160, sortable: 'custom', defaultVisible: true },
   { key: 'name', label: '名称', prop: 'metadata.name', minWidth: 220, sortable: 'custom', defaultVisible: true },
+  { key: 'immutable', label: 'Immutable', prop: 'immutable', width: 110, align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'dataKeys', label: 'Data Keys', width: 140, defaultVisible: true },
+  { key: 'labels', label: 'Labels', width: 90, align: 'center', headerAlign: 'center', defaultVisible: true },
+  { key: 'binaryKeys', label: 'Binary', width: 90, align: 'center', headerAlign: 'center', defaultVisible: false },
   { key: 'keys', label: 'Keys', minWidth: 260, defaultVisible: false },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'actions', label: '操作', width: 160, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
 ]
 
+function getBinaryKeyCount(row: any): number {
+  const binaryData = row?.binaryData
+  if (!binaryData || typeof binaryData !== 'object' || Array.isArray(binaryData)) return 0
+  return Object.keys(binaryData as Record<string, unknown>).length
+}
+
+function getLabelsCount(row: any): number {
+  const labels = row?.metadata?.labels
+  if (!labels || typeof labels !== 'object' || Array.isArray(labels)) return 0
+  return Object.keys(labels as Record<string, unknown>).length
+}
+
 const props = defineProps<{
   data: any[]
   persistKey: string
   showTools: boolean
+  canWrite: boolean
   getDataKeys: (row: any) => string[]
   openConfigMapDetail: (row: any) => void
   openConfigMapYaml: (row: any) => void

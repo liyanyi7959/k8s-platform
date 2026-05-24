@@ -182,6 +182,7 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:namespaces`"
           :show-tools="showListTableTools"
+          :can-write="canWriteNamespaces"
           :open-yaml="openNamespaceYaml"
           :on-deleted="refreshAll"
           :open-summary-resource-page="openNamespaceSummaryResourcePage"
@@ -195,6 +196,7 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:nodes`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
           :get-ready="getReady"
           :open-node-detail="openNodeDetail"
           :open-node-yaml="openNodeYaml"
@@ -209,6 +211,7 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:pods`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          :can-exec="canExecK8s"
           :get-warning-event-count="getPodWarningEventCount"
           :get-pod-row-key="getPodRowKey"
           :get-pod-phase-tag-type="getPodPhaseTagType"
@@ -244,6 +247,7 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:workloads:${workloadKind}`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
           :workload-kind="workloadKind"
           :cluster-id="clusterId"
           :get-ready-text="getReadyText"
@@ -285,6 +289,8 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:hpas`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
+          :open-h-p-a-detail="openHPADetail"
           :open-h-p-a-yaml="openHPAYaml"
           :open-edit-h-p-a="openEditHPA"
           :delete-h-p-a-row="deleteHPARow"
@@ -297,6 +303,8 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:pdbs`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
+          :open-pdb-detail="openPdbDetail"
           :open-pdb-yaml="openPdbYaml"
           :open-edit-pdb="openEditPdb"
           :delete-pdb-row="deletePdbRow"
@@ -309,6 +317,7 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:services`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
           :format-ports="formatPorts"
           :format-selector="formatSelector"
           :open-service-detail="openServiceDetail"
@@ -325,7 +334,9 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:networkpolicies`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="networkpolicies"
           :get-summary="getNetworkPolicySummary"
+          :open-detail="openNetworkPolicyDetail"
           :open-yaml="openNetworkPolicyYaml"
           :open-edit="openEditNetworkPolicy"
           :delete-row="deleteNetworkPolicyRow"
@@ -339,6 +350,7 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:endpoints`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="endpoints"
           :get-summary="getEndpointsSummary"
           :open-yaml="openEndpointsYaml"
           :open-edit="openEditEndpoints"
@@ -353,6 +365,7 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:endpointslices`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="endpointslices"
           :get-summary="getEndpointSliceSummary"
           :open-yaml="openEndpointSliceYaml"
           :open-edit="openEditEndpointSlice"
@@ -366,6 +379,7 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:ingresses`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
           :get-hosts="getHosts"
           :format-rules="formatRules"
           :open-ingress-detail="openIngressDetail"
@@ -381,6 +395,7 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:ingressclasses`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
           :open-ingress-class-detail="openIngressClassDetail"
           :open-ingress-class-yaml="openIngressClassYaml"
           :open-edit-ingress-class="openEditIngressClass"
@@ -394,6 +409,7 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:configmaps`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
           :get-data-keys="getDataKeys"
           :open-config-map-detail="openConfigMapDetail"
           :open-config-map-yaml="openConfigMapYaml"
@@ -408,6 +424,7 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:secrets`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
           :can-reveal-secret="canRevealSecret"
           :get-data-keys="getDataKeys"
           :open-secret-detail="openSecretDetail"
@@ -424,6 +441,8 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:serviceaccounts`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
+          :open-service-account-detail="openServiceAccountDetail"
           :open-service-account-yaml="openServiceAccountYaml"
           :open-edit-service-account="openEditServiceAccount"
           :delete-service-account-row="deleteServiceAccountRow"
@@ -437,6 +456,7 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:roles`"
           :show-tools="showListTableTools"
           :can-write="canWriteRbac"
+          :open-role-detail="openRoleDetail"
           :open-role-yaml="openRoleYaml"
           :open-role-edit="openEditRole"
           :delete-role-row="deleteRoleRow"
@@ -450,6 +470,7 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:clusterroles`"
           :show-tools="showListTableTools"
           :can-write="canWriteRbac"
+          :open-cluster-role-detail="openClusterRoleDetail"
           :open-cluster-role-yaml="openClusterRoleYaml"
           :open-cluster-role-edit="openEditClusterRole"
           :delete-cluster-role-row="deleteClusterRoleRow"
@@ -463,6 +484,7 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:rolebindings`"
           :show-tools="showListTableTools"
           :can-write="canWriteRbac"
+          :open-role-binding-detail="openRoleBindingDetail"
           :open-role-binding-yaml="openRoleBindingYaml"
           :open-role-binding-edit="openEditRoleBinding"
           :delete-role-binding-row="deleteRoleBindingRow"
@@ -476,6 +498,7 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:clusterrolebindings`"
           :show-tools="showListTableTools"
           :can-write="canWriteRbac"
+          :open-cluster-role-binding-detail="openClusterRoleBindingDetail"
           :open-cluster-role-binding-yaml="openClusterRoleBindingYaml"
           :open-cluster-role-binding-edit="openEditClusterRoleBinding"
           :delete-cluster-role-binding-row="deleteClusterRoleBindingRow"
@@ -505,6 +528,7 @@
           :data="pagedList"
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:pvs`"
           :show-tools="showListTableTools"
+          :can-write="canWriteK8s"
           :format-claim-ref="formatClaimRef"
           :open-p-v-detail="openPVDetail"
           :open-p-v-yaml="openPVYaml"
@@ -636,7 +660,9 @@
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
           show-resource-quota-usage
+          resource-kind="resourcequotas"
           :get-summary="getResourceQuotaSummary"
+          :open-detail="openResourceQuotaDetail"
           :open-yaml="openResourceQuotaYaml"
           :open-edit="openEditResourceQuota"
           :delete-row="deleteResourceQuotaRow"
@@ -650,6 +676,7 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:limitranges`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="limitranges"
           :get-summary="getLimitRangeSummary"
           :open-yaml="openLimitRangeYaml"
           :open-edit="openEditLimitRange"
@@ -664,8 +691,10 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:customresourcedefinitions`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="customresourcedefinitions"
           summary-label="组 / 资源"
           :get-summary="getCustomResourceDefinitionSummary"
+          :open-detail="openCustomResourceDefinitionDetail"
           :open-yaml="openCustomResourceDefinitionYaml"
           :open-edit="openEditCustomResourceDefinition"
           :delete-row="deleteCustomResourceDefinitionRow"
@@ -679,8 +708,10 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:apiservices`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="apiservices"
           summary-label="版本 / 后端"
           :get-summary="getAPIServiceSummary"
+          :open-detail="openAPIServiceDetail"
           :open-yaml="openAPIServiceYaml"
           :open-edit="openEditAPIService"
           :delete-row="deleteAPIServiceRow"
@@ -694,8 +725,10 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:priorityclasses`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="priorityclasses"
           summary-label="优先级"
           :get-summary="getPriorityClassSummary"
+          :open-detail="openPriorityClassDetail"
           :open-yaml="openPriorityClassYaml"
           :open-edit="openEditPriorityClass"
           :delete-row="deletePriorityClassRow"
@@ -709,8 +742,10 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:runtimeclasses`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="runtimeclasses"
           summary-label="Handler"
           :get-summary="getRuntimeClassSummary"
+          :open-detail="openRuntimeClassDetail"
           :open-yaml="openRuntimeClassYaml"
           :open-edit="openEditRuntimeClass"
           :delete-row="deleteRuntimeClassRow"
@@ -724,8 +759,10 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:validatingwebhookconfigurations`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="validatingwebhookconfigurations"
           summary-label="Webhook 摘要"
           :get-summary="getWebhookConfigurationSummary"
+          :open-detail="openValidatingWebhookConfigurationDetail"
           :open-yaml="openValidatingWebhookConfigurationYaml"
           :open-edit="openEditValidatingWebhookConfiguration"
           :delete-row="deleteValidatingWebhookConfigurationRow"
@@ -739,8 +776,10 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:mutatingwebhookconfigurations`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="mutatingwebhookconfigurations"
           summary-label="Webhook 摘要"
           :get-summary="getWebhookConfigurationSummary"
+          :open-detail="openMutatingWebhookConfigurationDetail"
           :open-yaml="openMutatingWebhookConfigurationYaml"
           :open-edit="openEditMutatingWebhookConfiguration"
           :delete-row="deleteMutatingWebhookConfigurationRow"
@@ -754,8 +793,10 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:validatingadmissionpolicies`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="validatingadmissionpolicies"
           summary-label="Failure Policy"
           :get-summary="getValidatingAdmissionPolicySummary"
+          :open-detail="openValidatingAdmissionPolicyDetail"
           :open-yaml="openValidatingAdmissionPolicyYaml"
           :open-edit="openEditValidatingAdmissionPolicy"
           :delete-row="deleteValidatingAdmissionPolicyRow"
@@ -769,8 +810,10 @@
           :persist-key="`k8s:cluster_manage:v2:${clusterId}:validatingadmissionpolicybindings`"
           :show-tools="showListTableTools"
           :can-write="canWriteK8s"
+          resource-kind="validatingadmissionpolicybindings"
           summary-label="Policy"
           :get-summary="getValidatingAdmissionPolicyBindingSummary"
+          :open-detail="openValidatingAdmissionPolicyBindingDetail"
           :open-yaml="openValidatingAdmissionPolicyBindingYaml"
           :open-edit="openEditValidatingAdmissionPolicyBinding"
           :delete-row="deleteValidatingAdmissionPolicyBindingRow"
@@ -1103,9 +1146,26 @@ type ClusterManageDetailsHostExpose = {
   openServiceDetail: (row: any) => void
   openIngressDetail: (row: any) => void
   openIngressClassDetail: (row: any) => void
+  openCustomResourceDefinitionDetail: (row: any) => void
+  openAPIServiceDetail: (row: any) => void
+  openPriorityClassDetail: (row: any) => void
+  openRuntimeClassDetail: (row: any) => void
+  openValidatingWebhookConfigurationDetail: (row: any) => void
+  openMutatingWebhookConfigurationDetail: (row: any) => void
+  openValidatingAdmissionPolicyDetail: (row: any) => void
+  openValidatingAdmissionPolicyBindingDetail: (row: any) => void
   openPVCDetail: (row: any) => void
   openPVDetail: (row: any) => void
   openConfigMapDetail: (row: any) => void
+  openServiceAccountDetail: (row: any) => void
+  openResourceQuotaDetail: (row: any) => void
+  openNetworkPolicyDetail: (row: any) => void
+  openRoleDetail: (row: any) => void
+  openClusterRoleDetail: (row: any) => void
+  openRoleBindingDetail: (row: any) => void
+  openClusterRoleBindingDetail: (row: any) => void
+  openHPADetail: (row: any) => void
+  openPdbDetail: (row: any) => void
   openSecretDetail: (row: any) => void
   openJobDetail: (row: any) => void
   openCronJobDetail: (row: any) => void
@@ -1202,8 +1262,10 @@ const clusterRoleBindingsPanelRef = ref<any>(null)
 
 const showListTableTools = true
 const canReadClusterMeta = computed(() => userStore.permissions.includes('cluster:read'))
-const canLoadNamespaceOptions = computed(() => userStore.permissions.includes('k8s:read') || userStore.permissions.includes('k8s:rbac_read'))
+const canLoadNamespaceOptions = computed(() => userStore.permissions.includes('namespace:read') || userStore.permissions.includes('k8s:read') || userStore.permissions.includes('k8s:rbac_read'))
+const canWriteNamespaces = computed(() => userStore.permissions.includes('namespace:write') || userStore.permissions.includes('k8s:write'))
 const canWriteK8s = computed(() => userStore.permissions.includes('k8s:write'))
+const canExecK8s = computed(() => userStore.permissions.includes('k8s:exec'))
 const canRevealSecret = computed(() => userStore.permissions.includes('k8s:secret_reveal'))
 const canWriteRbac = computed(() => userStore.permissions.includes('k8s:rbac_write'))
 
@@ -1624,11 +1686,60 @@ const toolbarResourceText = computed(() => {
   return r
 })
 
+const TEMPLATE_CREATE_LABELS: Partial<Record<ResourceKey, string>> = {
+  pods: '创建 Pod',
+  replicasets: '创建 ReplicaSet',
+  hpas: '创建 HPA',
+  pdbs: '创建 PDB',
+  configmaps: '创建 ConfigMap',
+  secrets: '创建 Secret',
+  serviceaccounts: '创建 ServiceAccount',
+  networkpolicies: '创建 NetworkPolicy',
+  endpoints: '创建 Endpoints',
+  endpointslices: '创建 EndpointSlice',
+  ingressclasses: '创建 IngressClass',
+  roles: '创建 Role',
+  clusterroles: '创建 ClusterRole',
+  rolebindings: '创建 RoleBinding',
+  clusterrolebindings: '创建 ClusterRoleBinding',
+  pvs: '创建 PV',
+  storageclasses: '创建 StorageClass',
+  csidrivers: '创建 CSIDriver',
+  csinodes: '创建 CSINode',
+  csistoragecapacities: '创建 CSIStorageCapacity',
+  volumeattachments: '创建 VolumeAttachment',
+  volumesnapshots: '创建 VolumeSnapshot',
+  volumesnapshotclasses: '创建 VolumeSnapshotClass',
+  volumesnapshotcontents: '创建 VolumeSnapshotContent',
+  resourcequotas: '创建 ResourceQuota',
+  limitranges: '创建 LimitRange',
+  customresourcedefinitions: '创建 CRD',
+  apiservices: '创建 APIService',
+  priorityclasses: '创建 PriorityClass',
+  runtimeclasses: '创建 RuntimeClass',
+  validatingwebhookconfigurations: '创建 ValidatingWebhookConfiguration',
+  mutatingwebhookconfigurations: '创建 MutatingWebhookConfiguration',
+  validatingadmissionpolicies: '创建 ValidatingAdmissionPolicy',
+  validatingadmissionpolicybindings: '创建 ValidatingAdmissionPolicyBinding',
+  jobs: '创建 Job',
+  cronjobs: '创建 CronJob',
+  leases: '创建 Lease'
+}
+
+const RBAC_TEMPLATE_CREATE_RESOURCES = new Set<ResourceKey>(['roles', 'clusterroles', 'rolebindings', 'clusterrolebindings'])
+
+function openTemplateCreate(resource: ResourceKey) {
+  openManifestApplyWithPreset(buildManifestApplyPreset({
+    resource,
+    namespace: isNamespacedResource(resource) ? (getManifestApplyDefaultNamespace() || undefined) : undefined
+  }))
+}
+
 const primaryCreateAction = computed<null | { label: string; onClick: () => void }>(() => {
   const resource = current.value?.resource
-  if (resource === 'namespaces' && canWriteK8s.value) {
+  if (resource === 'namespaces' && canWriteNamespaces.value) {
     return {
-      label: '创建',
+      label: '创建 Namespace',
       onClick: openCreateNamespace
     }
   }
@@ -1654,6 +1765,16 @@ const primaryCreateAction = computed<null | { label: string; onClick: () => void
     return {
       label: '创建 Ingress',
       onClick: () => { showCreateIngress.value = true }
+    }
+  }
+  if (resource && resource in TEMPLATE_CREATE_LABELS) {
+    const templateResource = resource as ResourceKey
+    const canCreate = RBAC_TEMPLATE_CREATE_RESOURCES.has(templateResource) ? canWriteRbac.value : canWriteK8s.value
+    if (canCreate) {
+      return {
+        label: TEMPLATE_CREATE_LABELS[templateResource] || '创建',
+        onClick: () => openTemplateCreate(templateResource)
+      }
     }
   }
   return null
@@ -3209,6 +3330,7 @@ function openYaml(meta: string, loader: () => Promise<{ text: string }>, saver?:
 }
 
 function openCreateNamespace() {
+  if (!canWriteNamespaces.value) return
   runOverlayWhenReady('workbenches', () => workbenchesRef.value, (target) => target.openCreateNamespace())
 }
 
@@ -3246,6 +3368,7 @@ function buildCurrentManifestApplyPreset() {
 }
 
 function openCreatePVC() {
+  if (!canWriteK8s.value) return
   pvcsPanelRef.value?.openCreate?.()
 }
 
@@ -3259,6 +3382,38 @@ function openIngressDetail(row: any) {
 
 function openIngressClassDetail(row: any) {
   detailsHostRef.value?.openIngressClassDetail(row)
+}
+
+function openCustomResourceDefinitionDetail(row: any) {
+  detailsHostRef.value?.openCustomResourceDefinitionDetail(row)
+}
+
+function openAPIServiceDetail(row: any) {
+  detailsHostRef.value?.openAPIServiceDetail(row)
+}
+
+function openPriorityClassDetail(row: any) {
+  detailsHostRef.value?.openPriorityClassDetail(row)
+}
+
+function openRuntimeClassDetail(row: any) {
+  detailsHostRef.value?.openRuntimeClassDetail(row)
+}
+
+function openValidatingWebhookConfigurationDetail(row: any) {
+  detailsHostRef.value?.openValidatingWebhookConfigurationDetail(row)
+}
+
+function openMutatingWebhookConfigurationDetail(row: any) {
+  detailsHostRef.value?.openMutatingWebhookConfigurationDetail(row)
+}
+
+function openValidatingAdmissionPolicyDetail(row: any) {
+  detailsHostRef.value?.openValidatingAdmissionPolicyDetail(row)
+}
+
+function openValidatingAdmissionPolicyBindingDetail(row: any) {
+  detailsHostRef.value?.openValidatingAdmissionPolicyBindingDetail(row)
 }
 
 function openPVCDetail(row: any) {
@@ -3294,6 +3449,42 @@ function openRelatedFromJob(payload: { action: string; kind?: string; name: stri
 
 function openConfigMapDetail(row: any) {
   detailsHostRef.value?.openConfigMapDetail(row)
+}
+
+function openServiceAccountDetail(row: any) {
+  detailsHostRef.value?.openServiceAccountDetail(row)
+}
+
+function openResourceQuotaDetail(row: any) {
+  detailsHostRef.value?.openResourceQuotaDetail(row)
+}
+
+function openNetworkPolicyDetail(row: any) {
+  detailsHostRef.value?.openNetworkPolicyDetail(row)
+}
+
+function openRoleDetail(row: any) {
+  detailsHostRef.value?.openRoleDetail(row)
+}
+
+function openClusterRoleDetail(row: any) {
+  detailsHostRef.value?.openClusterRoleDetail(row)
+}
+
+function openRoleBindingDetail(row: any) {
+  detailsHostRef.value?.openRoleBindingDetail(row)
+}
+
+function openClusterRoleBindingDetail(row: any) {
+  detailsHostRef.value?.openClusterRoleBindingDetail(row)
+}
+
+function openHPADetail(row: any) {
+  detailsHostRef.value?.openHPADetail(row)
+}
+
+function openPdbDetail(row: any) {
+  detailsHostRef.value?.openPdbDetail(row)
 }
 
 function openSecretDetail(row: any) {
@@ -3509,6 +3700,7 @@ async function handleTopologyNavigationQuery() {
 
 
 function openPodExec(row: any) {
+  if (!canExecK8s.value) return
   runOverlayWhenReady('workbenches', () => workbenchesRef.value, (target) => target.openPodExec(row))
 }
 
@@ -4185,29 +4377,29 @@ onBeforeUnmount(() => {
 /* Fixed-left / fixed-right header: use unified token */
 .page-card :deep(.el-table__fixed-left .el-table__header-wrapper),
 .page-card :deep(.el-table__fixed-right .el-table__header-wrapper) {
-  background: var(--table-header-bg, #eef2f7);
+  background: var(--table-surface-fixed-header-bg, var(--table-header-bg, #eef2f7));
 }
 
 :global(html.dark) .page-card :deep(.el-table__fixed-left .el-table__header-wrapper),
 :global(html.dark) .page-card :deep(.el-table__fixed-right .el-table__header-wrapper) {
-  background: var(--table-header-bg, rgba(15, 23, 42, 0.6));
+  background: var(--table-surface-fixed-header-bg, var(--table-header-bg, rgba(15, 23, 42, 0.6)));
 }
 
 /* Fixed-right-patch (corner fill) */
 .page-card :deep(.el-table__fixed-right-patch) {
-  background: var(--table-header-bg, #eef2f7) !important;
+  background: var(--table-surface-fixed-header-bg, var(--table-header-bg, #eef2f7)) !important;
   border-bottom: none !important;
 }
 
 :global(html.dark) .page-card :deep(.el-table__fixed-right-patch) {
-  background: var(--table-header-bg, rgba(15, 23, 42, 0.6)) !important;
+  background: var(--table-surface-fixed-header-bg, var(--table-header-bg, rgba(15, 23, 42, 0.6))) !important;
   border-bottom: none !important;
 }
 
 /* Ensure fixed header cells inherit unified style */
 .page-card :deep(.el-table__fixed-right .el-table__header-wrapper th.el-table__cell),
 .page-card :deep(.el-table__fixed-left .el-table__header-wrapper th.el-table__cell) {
-  background: transparent !important;
+  background: var(--table-surface-fixed-header-bg, var(--table-header-bg, #eef2f7)) !important;
   border-bottom: none !important;
   color: var(--table-header-text, #1e293b) !important;
 }

@@ -25,6 +25,7 @@
     </template>
     <template #cell-actions="{ row }">
       <div class="k8s-act-group">
+        <el-tooltip content="详情" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--info" @click="props.openClusterRoleDetail(row)"><el-icon><View /></el-icon></button></el-tooltip>
         <el-tooltip v-if="props.canWrite" content="编辑" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--edit" @click="props.openClusterRoleEdit(row)"><el-icon><Edit /></el-icon></button></el-tooltip>
         <el-tooltip content="YAML" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--violet" @click="props.openClusterRoleYaml(row)"><el-icon><Document /></el-icon></button></el-tooltip>
         <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--danger" @click="props.deleteClusterRoleRow(row)"><el-icon><Delete /></el-icon></button></el-tooltip>
@@ -34,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { Delete, Document, Edit } from '@element-plus/icons-vue'
+import { Delete, Document, Edit, View } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import EnhancedTable from '@/shared/components/EnhancedTable.vue'
 import type { EnhancedColumn } from '@/shared/components/EnhancedTable.vue'
@@ -45,7 +46,7 @@ const columns: EnhancedColumn[] = [
   { key: 'rules', label: 'Rules', width: 100, align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'summary', label: 'Summary', minWidth: 320, defaultVisible: true },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
-  { key: 'actions', label: '操作', width: 128, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
+  { key: 'actions', label: '操作', width: 160, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
 ]
 
 function getSummary(row: any): string {
@@ -60,7 +61,7 @@ function getSummary(row: any): string {
   return (prefix + head + suffix).trim() || '-'
 }
 
-const props = defineProps<{ data: any[]; persistKey: string; showTools: boolean; canWrite: boolean; openClusterRoleYaml: (row: any) => void; openClusterRoleEdit: (row: any) => void; deleteClusterRoleRow: (row: any) => void }>()
+const props = defineProps<{ data: any[]; persistKey: string; showTools: boolean; canWrite: boolean; openClusterRoleDetail: (row: any) => void; openClusterRoleYaml: (row: any) => void; openClusterRoleEdit: (row: any) => void; deleteClusterRoleRow: (row: any) => void }>()
 const emit = defineEmits<{ (e: 'sort-change', v: any): void }>()
 const tableRef = ref<any>(null)
 defineExpose({ getTable: () => tableRef.value })

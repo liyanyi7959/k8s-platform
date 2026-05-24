@@ -81,7 +81,7 @@
               <el-table-column prop="kind" label="Kind" width="140" />
               <el-table-column prop="name" label="名称" min-width="220" show-overflow-tooltip />
               <el-table-column prop="summary" label="摘要" min-width="280" show-overflow-tooltip />
-              <el-table-column label="操作" width="72" align="center" header-align="center">
+              <el-table-column label="操作" width="72" align="center" header-align="center" fixed="right">
                 <template #default="{ row: r }">
                   <div class="k8s-act-group">
                     <ActionIconButton :icon="View" tooltip="查看资源" @click="onOpenRelated(r)" />

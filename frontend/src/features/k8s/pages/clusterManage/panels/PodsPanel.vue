@@ -45,6 +45,15 @@
     <template #cell-restarts="{ row }">
       <span :class="getRestartsClass(props.getPodRestarts(row))">{{ props.getPodRestarts(row) }}</span>
     </template>
+    <template #cell-podIP="{ row }">
+      <span class="k8s-num">{{ String(row?.status?.podIP ?? '-') }}</span>
+    </template>
+    <template #cell-hostIP="{ row }">
+      <span class="k8s-num">{{ String(row?.status?.hostIP ?? '-') }}</span>
+    </template>
+    <template #cell-owner="{ row }">
+      <span class="k8s-age" :title="getOwnerText(row)">{{ getOwnerText(row) }}</span>
+    </template>
     <template #cell-age="{ row }">
       <span class="k8s-age">{{ props.getPodAge(row) }}</span>
     </template>
@@ -56,14 +65,14 @@
         <el-tooltip content="日志流" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--cyan" @click="props.openPodLogs(row)"><el-icon><Collection /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="Shell" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canExec" content="Shell" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--success" @click="props.openPodExec(row)"><el-icon><Link /></el-icon></button>
         </el-tooltip>
         <span class="k8s-act-divider" />
         <el-tooltip content="YAML" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openPodYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="删除" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--danger" @click="props.deletePodRow(row)"><el-icon><Delete /></el-icon></button>
         </el-tooltip>
       </div>
@@ -85,8 +94,11 @@ const columns: EnhancedColumn[] = [
   { key: 'phase', label: 'Phase', prop: 'status.phase', width: 140, sortable: 'custom', defaultVisible: true },
   { key: 'ready', label: 'READY', width: 110, align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'restarts', label: 'RESTARTS', prop: 'restarts', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
+  { key: 'podIP', label: 'Pod IP', prop: 'status.podIP', width: 150, sortable: 'custom', defaultVisible: true },
+  { key: 'hostIP', label: 'Host IP', prop: 'status.hostIP', width: 150, sortable: 'custom', defaultVisible: true },
   { key: 'age', label: 'AGE', prop: 'ageMs', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'node', label: 'Node', prop: 'spec.nodeName', minWidth: 180, sortable: 'custom', defaultVisible: true },
+  { key: 'owner', label: 'Owner', minWidth: 220, defaultVisible: true },
   { key: 'actions', label: '操作', width: 192, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
 ]
 
@@ -95,6 +107,7 @@ const props = defineProps<{
   persistKey: string
   showTools: boolean
   canWrite: boolean
+  canExec: boolean
   getWarningEventCount: (row: any) => number
   getPodRowKey: (row: any) => string
   getPodPhaseTagType: (row: any) => string
@@ -145,6 +158,21 @@ function getPodReadyClass(row: any): string {
   const current = Number(currentRaw ?? 0)
   const desired = Number(desiredRaw ?? 0)
   return getReadyNumClass(current, desired)
+}
+
+function getOwnerText(row: any): string {
+  const ownerRefs: any[] = Array.isArray(row?.metadata?.ownerReferences) ? row.metadata.ownerReferences : []
+  const parts = ownerRefs
+    .map((item) => {
+      const kind = String(item?.kind ?? '').trim()
+      const name = String(item?.name ?? '').trim()
+      if (!kind && !name) return ''
+      return kind && name ? `${kind}/${name}` : kind || name
+    })
+    .filter(Boolean)
+  if (parts.length === 0) return '-'
+  const head = parts.slice(0, 2).join(', ')
+  return parts.length > 2 ? `${head} +${parts.length - 2}` : head
 }
 
 function getWarningEventCount(row: any): number {

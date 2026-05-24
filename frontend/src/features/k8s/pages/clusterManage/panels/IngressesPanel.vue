@@ -26,6 +26,12 @@
     <template #cell-address="{ row }">
       <span class="k8s-age">{{ getAddress(row) }}</span>
     </template>
+    <template #cell-tls="{ row }">
+      <span class="k8s-num">{{ getTlsCount(row) }}</span>
+    </template>
+    <template #cell-backends="{ row }">
+      <span class="k8s-num">{{ getBackendCount(row) }}</span>
+    </template>
     <template #cell-rules="{ row }">
       <span class="k8s-age">{{ props.formatRules(row) }}</span>
     </template>
@@ -37,14 +43,14 @@
         <el-tooltip content="详情" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--info" @click="props.openIngressDetail(row)"><el-icon><View /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="编辑" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="编辑" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--edit" @click="props.openEditIngress(row)"><el-icon><Edit /></el-icon></button>
         </el-tooltip>
-        <span class="k8s-act-divider" />
+        <span v-if="props.canWrite" class="k8s-act-divider" />
         <el-tooltip content="YAML" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openIngressYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="删除" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--danger" @click="props.deleteIngressRow(row)"><el-icon><Delete /></el-icon></button>
         </el-tooltip>
       </div>
@@ -65,6 +71,8 @@ const columns: EnhancedColumn[] = [
   { key: 'class', label: 'Class', prop: 'spec.ingressClassName', width: 160, sortable: 'custom', defaultVisible: true },
   { key: 'hosts', label: 'Hosts', minWidth: 260, defaultVisible: true },
   { key: 'address', label: 'Address', minWidth: 200, defaultVisible: true },
+  { key: 'tls', label: 'TLS', width: 80, align: 'center', headerAlign: 'center', defaultVisible: true },
+  { key: 'backends', label: 'Backends', width: 100, align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'rules', label: 'Rules', minWidth: 360, defaultVisible: false },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'actions', label: '操作', width: 160, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
@@ -79,10 +87,25 @@ function getAddress(row: any): string {
   return parts.join(', ') || '-'
 }
 
+function getTlsCount(row: any): number {
+  return Array.isArray(row?.spec?.tls) ? row.spec.tls.length : 0
+}
+
+function getBackendCount(row: any): number {
+  let total = row?.spec?.defaultBackend ? 1 : 0
+  const rules: any[] = Array.isArray(row?.spec?.rules) ? row.spec.rules : []
+  for (const rule of rules) {
+    const paths: any[] = Array.isArray(rule?.http?.paths) ? rule.http.paths : []
+    total += paths.length
+  }
+  return total
+}
+
 const props = defineProps<{
   data: any[]
   persistKey: string
   showTools: boolean
+  canWrite: boolean
   getHosts: (row: any) => string[]
   formatRules: (row: any) => string
   openIngressDetail: (row: any) => void

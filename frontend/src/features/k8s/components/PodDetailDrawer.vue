@@ -272,7 +272,7 @@
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="72" align="right" header-align="right">
+                <el-table-column label="操作" width="72" align="right" header-align="right" fixed="right">
                   <template #default="{ row }">
                     <div class="k8s-act-group">
                       <ActionIconButton :icon="View" tooltip="查看详情" @click="emitOpenRelated(row)" />

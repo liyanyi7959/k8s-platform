@@ -23,6 +23,9 @@
     <template #cell-claim="{ row }">
       <span class="k8s-ns">{{ props.formatClaimRef(row) }}</span>
     </template>
+    <template #cell-volumeMode="{ row }">
+      <span class="k8s-age">{{ String(row?.spec?.volumeMode ?? 'Filesystem') }}</span>
+    </template>
     <template #cell-age="{ row }">
       <span class="k8s-age">{{ getCreationAgeText(row) }}</span>
     </template>
@@ -34,7 +37,7 @@
         <el-tooltip content="YAML" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openPVYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="删除" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--danger" @click="props.deletePVRow(row)"><el-icon><Delete /></el-icon></button>
         </el-tooltip>
       </div>
@@ -56,8 +59,9 @@ const columns: EnhancedColumn[] = [
   { key: 'capacity', label: 'Capacity', prop: 'spec.capacity.storage', width: 130, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'reclaim', label: 'Reclaim', prop: 'spec.persistentVolumeReclaimPolicy', width: 130, sortable: 'custom', defaultVisible: true },
   { key: 'claim', label: 'Claim', prop: 'spec.claimRef.name', minWidth: 220, sortable: 'custom', defaultVisible: true },
+  { key: 'accessModes', label: 'AccessModes', minWidth: 170, defaultVisible: true },
+  { key: 'volumeMode', label: 'VolumeMode', prop: 'spec.volumeMode', width: 130, sortable: 'custom', defaultVisible: true },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
-  { key: 'accessModes', label: 'AccessModes', minWidth: 170, defaultVisible: false },
   { key: 'actions', label: '操作', width: 128, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
 ]
 
@@ -76,6 +80,7 @@ const props = defineProps<{
   data: any[]
   persistKey: string
   showTools: boolean
+  canWrite: boolean
   formatClaimRef: (row: any) => string
   openPVDetail: (row: any) => void
   openPVYaml: (row: any) => void

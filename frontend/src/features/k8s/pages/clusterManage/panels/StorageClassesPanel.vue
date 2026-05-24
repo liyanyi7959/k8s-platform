@@ -56,7 +56,7 @@ const columns: EnhancedColumn[] = [
   { key: 'default', label: 'Default', width: 110, align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'bindingMode', label: 'BindingMode', prop: 'volumeBindingMode', width: 160, sortable: 'custom', defaultVisible: false },
-  { key: 'allowExpansion', label: 'Expansion', prop: 'allowVolumeExpansion', width: 130, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: false },
+  { key: 'allowExpansion', label: 'Expansion', prop: 'allowVolumeExpansion', width: 130, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'actions', label: '操作', width: 128, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
 ]
 

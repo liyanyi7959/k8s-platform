@@ -69,6 +69,69 @@
     @refresh-list="emit('refresh-list')"
   />
   <IngressClassDetailDrawer v-if="loaded.ingressClassDetail" ref="ingressClassDetailRef" :cluster-id="props.clusterId" :list="props.list" />
+  <CustomResourceDefinitionDetailDrawer
+    v-if="loaded.customResourceDefinitionDetail"
+    ref="customResourceDefinitionDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <APIServiceDetailDrawer
+    v-if="loaded.apiServiceDetail"
+    ref="apiServiceDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <PriorityClassDetailDrawer
+    v-if="loaded.priorityClassDetail"
+    ref="priorityClassDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <RuntimeClassDetailDrawer
+    v-if="loaded.runtimeClassDetail"
+    ref="runtimeClassDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <WebhookConfigurationDetailDrawer
+    v-if="loaded.webhookConfigurationDetail"
+    ref="webhookConfigurationDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <ValidatingAdmissionPolicyDetailDrawer
+    v-if="loaded.validatingAdmissionPolicyDetail"
+    ref="validatingAdmissionPolicyDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <ValidatingAdmissionPolicyBindingDetailDrawer
+    v-if="loaded.validatingAdmissionPolicyBindingDetail"
+    ref="validatingAdmissionPolicyBindingDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
   <ConfigMapDetailDrawer
     v-if="loaded.configMapDetail"
     ref="configMapDetailRef"
@@ -77,6 +140,73 @@
     :editor-theme-effective-dark="props.editorThemeEffectiveDark"
     :list="props.list"
     @toggle-editor-theme="emit('toggle-editor-theme')"
+    @open-related-pod="emit('open-related-pod', $event)"
+    @refresh-list="emit('refresh-list')"
+  />
+  <ServiceAccountDetailDrawer
+    v-if="loaded.serviceAccountDetail"
+    ref="serviceAccountDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @toggle-editor-theme="emit('toggle-editor-theme')"
+    @open-related-pod="emit('open-related-pod', $event)"
+    @refresh-list="emit('refresh-list')"
+  />
+  <ResourceQuotaDetailDrawer
+    v-if="loaded.resourceQuotaDetail"
+    ref="resourceQuotaDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <NetworkPolicyDetailDrawer
+    v-if="loaded.networkPolicyDetail"
+    ref="networkPolicyDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @open-related-pod="emit('open-related-pod', $event)"
+    @refresh-list="emit('refresh-list')"
+  />
+  <RbacRoleDetailDrawer
+    v-if="loaded.rbacRoleDetail"
+    ref="rbacRoleDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <RbacBindingDetailDrawer
+    v-if="loaded.rbacBindingDetail"
+    ref="rbacBindingDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <HPADetailDrawer
+    v-if="loaded.hpaDetail"
+    ref="hpaDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
+    @refresh-list="emit('refresh-list')"
+  />
+  <PdbDetailDrawer
+    v-if="loaded.pdbDetail"
+    ref="pdbDetailRef"
+    :cluster-id="props.clusterId"
+    :editor-theme="props.editorTheme"
+    :editor-theme-effective-dark="props.editorThemeEffectiveDark"
+    :list="props.list"
     @open-related-pod="emit('open-related-pod', $event)"
     @refresh-list="emit('refresh-list')"
   />
@@ -168,7 +298,21 @@ import type IngressDetailDrawerComponent from '../details/IngressDetailDrawer.vu
 import type PVCDetailDrawerComponent from '../details/PVCDetailDrawer.vue'
 import type PVDetailDrawerComponent from '../details/PVDetailDrawer.vue'
 import type IngressClassDetailDrawerComponent from '../details/IngressClassDetailDrawer.vue'
+import type CustomResourceDefinitionDetailDrawerComponent from '../details/CustomResourceDefinitionDetailDrawer.vue'
+import type APIServiceDetailDrawerComponent from '../details/APIServiceDetailDrawer.vue'
+import type PriorityClassDetailDrawerComponent from '../details/PriorityClassDetailDrawer.vue'
+import type RuntimeClassDetailDrawerComponent from '../details/RuntimeClassDetailDrawer.vue'
+import type WebhookConfigurationDetailDrawerComponent from '../details/WebhookConfigurationDetailDrawer.vue'
+import type ValidatingAdmissionPolicyDetailDrawerComponent from '../details/ValidatingAdmissionPolicyDetailDrawer.vue'
+import type ValidatingAdmissionPolicyBindingDetailDrawerComponent from '../details/ValidatingAdmissionPolicyBindingDetailDrawer.vue'
 import type ConfigMapDetailDrawerComponent from '../details/ConfigMapDetailDrawer.vue'
+import type ServiceAccountDetailDrawerComponent from '../details/ServiceAccountDetailDrawer.vue'
+import type ResourceQuotaDetailDrawerComponent from '../details/ResourceQuotaDetailDrawer.vue'
+import type NetworkPolicyDetailDrawerComponent from '../details/NetworkPolicyDetailDrawer.vue'
+import type RbacRoleDetailDrawerComponent from '../details/RbacRoleDetailDrawer.vue'
+import type RbacBindingDetailDrawerComponent from '../details/RbacBindingDetailDrawer.vue'
+import type HPADetailDrawerComponent from '../details/HPADetailDrawer.vue'
+import type PdbDetailDrawerComponent from '../details/PdbDetailDrawer.vue'
 import type SecretDetailDrawerComponent from '../details/SecretDetailDrawer.vue'
 import type JobDetailDrawerComponent from '../details/JobDetailDrawer.vue'
 import type CronJobDetailDrawerComponent from '../details/CronJobDetailDrawer.vue'
@@ -186,7 +330,21 @@ const IngressDetailDrawer = defineAsyncComponent(() => import('../details/Ingres
 const PVCDetailDrawer = defineAsyncComponent(() => import('../details/PVCDetailDrawer.vue'))
 const PVDetailDrawer = defineAsyncComponent(() => import('../details/PVDetailDrawer.vue'))
 const IngressClassDetailDrawer = defineAsyncComponent(() => import('../details/IngressClassDetailDrawer.vue'))
+const CustomResourceDefinitionDetailDrawer = defineAsyncComponent(() => import('../details/CustomResourceDefinitionDetailDrawer.vue'))
+const APIServiceDetailDrawer = defineAsyncComponent(() => import('../details/APIServiceDetailDrawer.vue'))
+const PriorityClassDetailDrawer = defineAsyncComponent(() => import('../details/PriorityClassDetailDrawer.vue'))
+const RuntimeClassDetailDrawer = defineAsyncComponent(() => import('../details/RuntimeClassDetailDrawer.vue'))
+const WebhookConfigurationDetailDrawer = defineAsyncComponent(() => import('../details/WebhookConfigurationDetailDrawer.vue'))
+const ValidatingAdmissionPolicyDetailDrawer = defineAsyncComponent(() => import('../details/ValidatingAdmissionPolicyDetailDrawer.vue'))
+const ValidatingAdmissionPolicyBindingDetailDrawer = defineAsyncComponent(() => import('../details/ValidatingAdmissionPolicyBindingDetailDrawer.vue'))
 const ConfigMapDetailDrawer = defineAsyncComponent(() => import('../details/ConfigMapDetailDrawer.vue'))
+const ServiceAccountDetailDrawer = defineAsyncComponent(() => import('../details/ServiceAccountDetailDrawer.vue'))
+const ResourceQuotaDetailDrawer = defineAsyncComponent(() => import('../details/ResourceQuotaDetailDrawer.vue'))
+const NetworkPolicyDetailDrawer = defineAsyncComponent(() => import('../details/NetworkPolicyDetailDrawer.vue'))
+const RbacRoleDetailDrawer = defineAsyncComponent(() => import('../details/RbacRoleDetailDrawer.vue'))
+const RbacBindingDetailDrawer = defineAsyncComponent(() => import('../details/RbacBindingDetailDrawer.vue'))
+const HPADetailDrawer = defineAsyncComponent(() => import('../details/HPADetailDrawer.vue'))
+const PdbDetailDrawer = defineAsyncComponent(() => import('../details/PdbDetailDrawer.vue'))
 const SecretDetailDrawer = defineAsyncComponent(() => import('../details/SecretDetailDrawer.vue'))
 const JobDetailDrawer = defineAsyncComponent(() => import('../details/JobDetailDrawer.vue'))
 const CronJobDetailDrawer = defineAsyncComponent(() => import('../details/CronJobDetailDrawer.vue'))
@@ -206,7 +364,21 @@ type LazyKey =
   | 'pvcDetail'
   | 'pvDetail'
   | 'ingressClassDetail'
+  | 'customResourceDefinitionDetail'
+  | 'apiServiceDetail'
+  | 'priorityClassDetail'
+  | 'runtimeClassDetail'
+  | 'webhookConfigurationDetail'
+  | 'validatingAdmissionPolicyDetail'
+  | 'validatingAdmissionPolicyBindingDetail'
   | 'configMapDetail'
+  | 'serviceAccountDetail'
+  | 'resourceQuotaDetail'
+  | 'networkPolicyDetail'
+  | 'rbacRoleDetail'
+  | 'rbacBindingDetail'
+  | 'hpaDetail'
+  | 'pdbDetail'
   | 'secretDetail'
   | 'jobDetail'
   | 'cronJobDetail'
@@ -252,7 +424,21 @@ const loaded = reactive<Record<LazyKey, boolean>>({
   pvcDetail: false,
   pvDetail: false,
   ingressClassDetail: false,
+  customResourceDefinitionDetail: false,
+  apiServiceDetail: false,
+  priorityClassDetail: false,
+  runtimeClassDetail: false,
+  webhookConfigurationDetail: false,
+  validatingAdmissionPolicyDetail: false,
+  validatingAdmissionPolicyBindingDetail: false,
   configMapDetail: false,
+  serviceAccountDetail: false,
+  resourceQuotaDetail: false,
+  networkPolicyDetail: false,
+  rbacRoleDetail: false,
+  rbacBindingDetail: false,
+  hpaDetail: false,
+  pdbDetail: false,
   secretDetail: false,
   jobDetail: false,
   cronJobDetail: false,
@@ -274,7 +460,21 @@ const ingressDetailRef = ref<InstanceType<typeof IngressDetailDrawerComponent> |
 const pvcDetailRef = ref<InstanceType<typeof PVCDetailDrawerComponent> | null>(null)
 const pvDetailRef = ref<InstanceType<typeof PVDetailDrawerComponent> | null>(null)
 const ingressClassDetailRef = ref<InstanceType<typeof IngressClassDetailDrawerComponent> | null>(null)
+const customResourceDefinitionDetailRef = ref<InstanceType<typeof CustomResourceDefinitionDetailDrawerComponent> | null>(null)
+const apiServiceDetailRef = ref<InstanceType<typeof APIServiceDetailDrawerComponent> | null>(null)
+const priorityClassDetailRef = ref<InstanceType<typeof PriorityClassDetailDrawerComponent> | null>(null)
+const runtimeClassDetailRef = ref<InstanceType<typeof RuntimeClassDetailDrawerComponent> | null>(null)
+const webhookConfigurationDetailRef = ref<InstanceType<typeof WebhookConfigurationDetailDrawerComponent> | null>(null)
+const validatingAdmissionPolicyDetailRef = ref<InstanceType<typeof ValidatingAdmissionPolicyDetailDrawerComponent> | null>(null)
+const validatingAdmissionPolicyBindingDetailRef = ref<InstanceType<typeof ValidatingAdmissionPolicyBindingDetailDrawerComponent> | null>(null)
 const configMapDetailRef = ref<InstanceType<typeof ConfigMapDetailDrawerComponent> | null>(null)
+const serviceAccountDetailRef = ref<InstanceType<typeof ServiceAccountDetailDrawerComponent> | null>(null)
+const resourceQuotaDetailRef = ref<InstanceType<typeof ResourceQuotaDetailDrawerComponent> | null>(null)
+const networkPolicyDetailRef = ref<InstanceType<typeof NetworkPolicyDetailDrawerComponent> | null>(null)
+const rbacRoleDetailRef = ref<InstanceType<typeof RbacRoleDetailDrawerComponent> | null>(null)
+const rbacBindingDetailRef = ref<InstanceType<typeof RbacBindingDetailDrawerComponent> | null>(null)
+const hpaDetailRef = ref<InstanceType<typeof HPADetailDrawerComponent> | null>(null)
+const pdbDetailRef = ref<InstanceType<typeof PdbDetailDrawerComponent> | null>(null)
 const secretDetailRef = ref<InstanceType<typeof SecretDetailDrawerComponent> | null>(null)
 const jobDetailRef = ref<InstanceType<typeof JobDetailDrawerComponent> | null>(null)
 const cronJobDetailRef = ref<InstanceType<typeof CronJobDetailDrawerComponent> | null>(null)
@@ -336,6 +536,38 @@ function openIngressClassDetail(row: any) {
   runWhenReady('ingressClassDetail', () => ingressClassDetailRef.value, (target) => target.open(row))
 }
 
+function openCustomResourceDefinitionDetail(row: any) {
+  runWhenReady('customResourceDefinitionDetail', () => customResourceDefinitionDetailRef.value, (target) => target.open(row))
+}
+
+function openAPIServiceDetail(row: any) {
+  runWhenReady('apiServiceDetail', () => apiServiceDetailRef.value, (target) => target.open(row))
+}
+
+function openPriorityClassDetail(row: any) {
+  runWhenReady('priorityClassDetail', () => priorityClassDetailRef.value, (target) => target.open(row))
+}
+
+function openRuntimeClassDetail(row: any) {
+  runWhenReady('runtimeClassDetail', () => runtimeClassDetailRef.value, (target) => target.open(row))
+}
+
+function openValidatingWebhookConfigurationDetail(row: any) {
+  runWhenReady('webhookConfigurationDetail', () => webhookConfigurationDetailRef.value, (target) => target.open(row, 'ValidatingWebhookConfiguration'))
+}
+
+function openMutatingWebhookConfigurationDetail(row: any) {
+  runWhenReady('webhookConfigurationDetail', () => webhookConfigurationDetailRef.value, (target) => target.open(row, 'MutatingWebhookConfiguration'))
+}
+
+function openValidatingAdmissionPolicyDetail(row: any) {
+  runWhenReady('validatingAdmissionPolicyDetail', () => validatingAdmissionPolicyDetailRef.value, (target) => target.open(row))
+}
+
+function openValidatingAdmissionPolicyBindingDetail(row: any) {
+  runWhenReady('validatingAdmissionPolicyBindingDetail', () => validatingAdmissionPolicyBindingDetailRef.value, (target) => target.open(row))
+}
+
 function openPVCDetail(row: any) {
   runWhenReady('pvcDetail', () => pvcDetailRef.value, (target) => target.open(row))
 }
@@ -346,6 +578,42 @@ function openPVDetail(row: any) {
 
 function openConfigMapDetail(row: any) {
   runWhenReady('configMapDetail', () => configMapDetailRef.value, (target) => target.open(row))
+}
+
+function openServiceAccountDetail(row: any) {
+  runWhenReady('serviceAccountDetail', () => serviceAccountDetailRef.value, (target) => target.open(row))
+}
+
+function openResourceQuotaDetail(row: any) {
+  runWhenReady('resourceQuotaDetail', () => resourceQuotaDetailRef.value, (target) => target.open(row))
+}
+
+function openNetworkPolicyDetail(row: any) {
+  runWhenReady('networkPolicyDetail', () => networkPolicyDetailRef.value, (target) => target.open(row))
+}
+
+function openRoleDetail(row: any) {
+  runWhenReady('rbacRoleDetail', () => rbacRoleDetailRef.value, (target) => target.open(row, 'Role'))
+}
+
+function openClusterRoleDetail(row: any) {
+  runWhenReady('rbacRoleDetail', () => rbacRoleDetailRef.value, (target) => target.open(row, 'ClusterRole'))
+}
+
+function openRoleBindingDetail(row: any) {
+  runWhenReady('rbacBindingDetail', () => rbacBindingDetailRef.value, (target) => target.open(row, 'RoleBinding'))
+}
+
+function openClusterRoleBindingDetail(row: any) {
+  runWhenReady('rbacBindingDetail', () => rbacBindingDetailRef.value, (target) => target.open(row, 'ClusterRoleBinding'))
+}
+
+function openHPADetail(row: any) {
+  runWhenReady('hpaDetail', () => hpaDetailRef.value, (target) => target.open(row))
+}
+
+function openPdbDetail(row: any) {
+  runWhenReady('pdbDetail', () => pdbDetailRef.value, (target) => target.open(row))
 }
 
 function openSecretDetail(row: any) {
@@ -386,9 +654,26 @@ defineExpose({
   openServiceDetail,
   openIngressDetail,
   openIngressClassDetail,
+  openCustomResourceDefinitionDetail,
+  openAPIServiceDetail,
+  openPriorityClassDetail,
+  openRuntimeClassDetail,
+  openValidatingWebhookConfigurationDetail,
+  openMutatingWebhookConfigurationDetail,
+  openValidatingAdmissionPolicyDetail,
+  openValidatingAdmissionPolicyBindingDetail,
   openPVCDetail,
   openPVDetail,
   openConfigMapDetail,
+  openServiceAccountDetail,
+  openResourceQuotaDetail,
+  openNetworkPolicyDetail,
+  openRoleDetail,
+  openClusterRoleDetail,
+  openRoleBindingDetail,
+  openClusterRoleBindingDetail,
+  openHPADetail,
+  openPdbDetail,
   openSecretDetail,
   openJobDetail,
   openCronJobDetail,

@@ -20,6 +20,7 @@
     <template #cell-age="{ row }"><span class="k8s-age">{{ getCreationAgeText(row) }}</span></template>
     <template #cell-actions="{ row }">
       <div class="k8s-act-group">
+        <el-tooltip content="详情" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--info" @click="props.openRoleBindingDetail(row)"><el-icon><View /></el-icon></button></el-tooltip>
         <el-tooltip v-if="props.canWrite" content="编辑" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--edit" @click="props.openRoleBindingEdit(row)"><el-icon><Edit /></el-icon></button></el-tooltip>
         <el-tooltip content="YAML" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--violet" @click="props.openRoleBindingYaml(row)"><el-icon><Document /></el-icon></button></el-tooltip>
         <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--danger" @click="props.deleteRoleBindingRow(row)"><el-icon><Delete /></el-icon></button></el-tooltip>
@@ -29,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { Delete, Document, Edit } from '@element-plus/icons-vue'
+import { Delete, Document, Edit, View } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import EnhancedTable from '@/shared/components/EnhancedTable.vue'
 import type { EnhancedColumn } from '@/shared/components/EnhancedTable.vue'
@@ -41,7 +42,7 @@ const columns: EnhancedColumn[] = [
   { key: 'roleRef', label: 'RoleRef', minWidth: 220, defaultVisible: true },
   { key: 'subjects', label: 'Subjects', minWidth: 260, defaultVisible: true },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
-  { key: 'actions', label: '操作', width: 128, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
+  { key: 'actions', label: '操作', width: 160, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
 ]
 
 function getRoleRef(row: any): string {
@@ -61,7 +62,7 @@ function getSubjects(row: any): string {
   return items.length > 2 ? `${text} +${items.length - 2}` : text || '-'
 }
 
-const props = defineProps<{ data: any[]; persistKey: string; showTools: boolean; canWrite: boolean; openRoleBindingYaml: (row: any) => void; openRoleBindingEdit: (row: any) => void; deleteRoleBindingRow: (row: any) => void }>()
+const props = defineProps<{ data: any[]; persistKey: string; showTools: boolean; canWrite: boolean; openRoleBindingDetail: (row: any) => void; openRoleBindingYaml: (row: any) => void; openRoleBindingEdit: (row: any) => void; deleteRoleBindingRow: (row: any) => void }>()
 const emit = defineEmits<{ (e: 'sort-change', v: any): void }>()
 const tableRef = ref<any>(null)
 defineExpose({ getTable: () => tableRef.value })

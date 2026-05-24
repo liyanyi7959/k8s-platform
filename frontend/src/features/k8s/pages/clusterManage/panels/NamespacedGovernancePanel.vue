@@ -48,6 +48,48 @@
     <template #cell-name="{ row }">
       <span class="k8s-name">{{ String(row?.metadata?.name ?? '-') }}</span>
     </template>
+    <template v-if="showNetworkPolicyColumns" #cell-policyTypes="{ row }">
+      <span class="k8s-age">{{ getNetworkPolicyTypesText(row) }}</span>
+    </template>
+    <template v-if="showNetworkPolicyColumns" #cell-selector="{ row }">
+      <span class="k8s-age" :title="getNetworkPolicySelectorText(row)">{{ getNetworkPolicySelectorText(row) }}</span>
+    </template>
+    <template v-if="showNetworkPolicyColumns" #cell-ingressRules="{ row }">
+      <span class="k8s-num">{{ getNetworkPolicyRuleCount(row, 'ingress') }}</span>
+    </template>
+    <template v-if="showNetworkPolicyColumns" #cell-egressRules="{ row }">
+      <span class="k8s-num">{{ getNetworkPolicyRuleCount(row, 'egress') }}</span>
+    </template>
+    <template v-if="showEndpointsColumns || showEndpointSliceColumns" #cell-service="{ row }">
+      <span class="k8s-age" :title="getServiceNameText(row)">{{ getServiceNameText(row) }}</span>
+    </template>
+    <template v-if="showEndpointsColumns" #cell-ready="{ row }">
+      <span class="k8s-num">{{ getEndpointsAddressCount(row, 'addresses') }}</span>
+    </template>
+    <template v-if="showEndpointsColumns" #cell-notReady="{ row }">
+      <span class="k8s-num">{{ getEndpointsAddressCount(row, 'notReadyAddresses') }}</span>
+    </template>
+    <template v-if="showEndpointsColumns || showEndpointSliceColumns" #cell-ports="{ row }">
+      <span class="k8s-num">{{ getPortsCount(row) }}</span>
+    </template>
+    <template v-if="showEndpointSliceColumns" #cell-addressType="{ row }">
+      <span class="k8s-age">{{ getAddressTypeText(row) }}</span>
+    </template>
+    <template v-if="showEndpointSliceColumns" #cell-endpointsCount="{ row }">
+      <span class="k8s-num">{{ getEndpointSliceCount(row) }}</span>
+    </template>
+    <template v-if="showResourceQuotaColumns" #cell-quotaResources="{ row }">
+      <span class="k8s-age" :title="getResourceQuotaKeysText(row)">{{ getResourceQuotaKeysCount(row) }} 项</span>
+    </template>
+    <template v-if="showResourceQuotaColumns" #cell-quotaScopes="{ row }">
+      <span class="k8s-age" :title="getResourceQuotaScopesText(row)">{{ getResourceQuotaScopesText(row) }}</span>
+    </template>
+    <template v-if="showLimitRangeColumns" #cell-limitEntries="{ row }">
+      <span class="k8s-num">{{ getLimitRangeEntriesCount(row) }}</span>
+    </template>
+    <template v-if="showLimitRangeColumns" #cell-limitTypes="{ row }">
+      <span class="k8s-age" :title="getLimitRangeTypesText(row)">{{ getLimitRangeTypesText(row) }}</span>
+    </template>
     <template v-if="showResourceQuotaUsage" #cell-utilization="{ row }">
       <div v-if="getResourceQuotaPeak(row)" class="quota-peak">
         <div class="quota-peak-head">
@@ -71,6 +113,7 @@
     </template>
     <template #cell-actions="{ row }">
       <div class="k8s-act-group">
+        <el-tooltip v-if="props.openDetail" content="详情" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--info" @click="props.openDetail(row)"><el-icon><View /></el-icon></button></el-tooltip>
         <el-tooltip content="YAML" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--violet" @click="openYaml(row)"><el-icon><Document /></el-icon></button></el-tooltip>
         <el-tooltip v-if="canWrite" content="编辑" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--edit" @click="openEdit(row)"><el-icon><Edit /></el-icon></button></el-tooltip>
         <el-tooltip v-if="canWrite" content="删除" placement="top" :show-after="300"><button class="k8s-act-btn k8s-act-btn--danger" @click="deleteRow(row)"><el-icon><Delete /></el-icon></button></el-tooltip>
@@ -80,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { Delete, Document, Edit } from '@element-plus/icons-vue'
+import { Delete, Document, Edit, View } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import EnhancedTable from '@/shared/components/EnhancedTable.vue'
 import type { EnhancedColumn } from '@/shared/components/EnhancedTable.vue'
@@ -94,6 +137,8 @@ type ResourceQuotaDetail = {
   percent: number | null
 }
 
+type GovernanceResourceKind = 'networkpolicies' | 'endpoints' | 'endpointslices' | 'resourcequotas' | 'limitranges'
+
 const props = defineProps<{
   data: any[]
   persistKey: string
@@ -103,28 +148,181 @@ const props = defineProps<{
   openYaml: (row: any) => void
   openEdit: (row: any) => void
   deleteRow: (row: any) => void
+  openDetail?: (row: any) => void
   showResourceQuotaUsage?: boolean
+  resourceKind?: GovernanceResourceKind
 }>()
+
+const showNetworkPolicyColumns = computed(() => props.resourceKind === 'networkpolicies')
+const showEndpointsColumns = computed(() => props.resourceKind === 'endpoints')
+const showEndpointSliceColumns = computed(() => props.resourceKind === 'endpointslices')
+const showResourceQuotaColumns = computed(() => props.resourceKind === 'resourcequotas')
+const showLimitRangeColumns = computed(() => props.resourceKind === 'limitranges')
+const showStructuredSummary = computed(() => !(showNetworkPolicyColumns.value || showEndpointsColumns.value || showEndpointSliceColumns.value || showResourceQuotaColumns.value || showLimitRangeColumns.value))
 
 const columns = computed<EnhancedColumn[]>(() => {
   const base: EnhancedColumn[] = [
     { key: 'namespace', label: 'Namespace', prop: 'metadata.namespace', width: 160, sortable: 'custom', defaultVisible: true },
     { key: 'name', label: '名称', prop: 'metadata.name', minWidth: 220, sortable: 'custom', defaultVisible: true }
   ]
+  if (showNetworkPolicyColumns.value) {
+    base.push(
+      { key: 'policyTypes', label: 'PolicyTypes', minWidth: 160, defaultVisible: true },
+      { key: 'selector', label: 'Pod Selector', minWidth: 220, defaultVisible: true },
+      { key: 'ingressRules', label: 'Ingress', width: 96, align: 'center', headerAlign: 'center', defaultVisible: true },
+      { key: 'egressRules', label: 'Egress', width: 96, align: 'center', headerAlign: 'center', defaultVisible: true }
+    )
+  }
+  if (showEndpointsColumns.value) {
+    base.push(
+      { key: 'service', label: 'Service', minWidth: 200, defaultVisible: true },
+      { key: 'ready', label: 'Ready', width: 96, align: 'center', headerAlign: 'center', defaultVisible: true },
+      { key: 'notReady', label: 'NotReady', width: 110, align: 'center', headerAlign: 'center', defaultVisible: true },
+      { key: 'ports', label: 'Ports', width: 90, align: 'center', headerAlign: 'center', defaultVisible: true }
+    )
+  }
+  if (showEndpointSliceColumns.value) {
+    base.push(
+      { key: 'service', label: 'Service', minWidth: 200, defaultVisible: true },
+      { key: 'addressType', label: 'AddressType', width: 130, align: 'center', headerAlign: 'center', defaultVisible: true },
+      { key: 'endpointsCount', label: 'Endpoints', width: 110, align: 'center', headerAlign: 'center', defaultVisible: true },
+      { key: 'ports', label: 'Ports', width: 90, align: 'center', headerAlign: 'center', defaultVisible: true }
+    )
+  }
   if (props.showResourceQuotaUsage) {
+    if (showResourceQuotaColumns.value) {
+      base.push(
+        { key: 'quotaResources', label: '配额项', width: 100, align: 'center', headerAlign: 'center', defaultVisible: true },
+        { key: 'quotaScopes', label: 'Scopes', minWidth: 180, defaultVisible: true }
+      )
+    }
     base.push({ key: 'utilization', label: '最高使用率', minWidth: 220, defaultVisible: true })
   }
+  if (showLimitRangeColumns.value) {
+    base.push(
+      { key: 'limitEntries', label: 'Entries', width: 96, align: 'center', headerAlign: 'center', defaultVisible: true },
+      { key: 'limitTypes', label: 'Types', minWidth: 220, defaultVisible: true }
+    )
+  }
+  base.push({
+    key: 'summary',
+    label: '摘要',
+    minWidth: props.showResourceQuotaUsage ? 280 : 360,
+    defaultVisible: showStructuredSummary.value
+  })
   base.push(
-    { key: 'summary', label: '摘要', minWidth: props.showResourceQuotaUsage ? 280 : 360, defaultVisible: true },
     { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
-    { key: 'actions', label: '操作', width: 128, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
+    { key: 'actions', label: '操作', width: props.openDetail ? 160 : 128, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
   )
   return base
 })
 
+function formatPreviewList(values: string[], limit = 3): string {
+  const items = values.map((item) => item.trim()).filter(Boolean)
+  if (!items.length) return '-'
+  if (items.length <= limit) return items.join(', ')
+  return `${items.slice(0, limit).join(', ')} +${items.length - limit}`
+}
+
+function formatSelectorText(record: unknown, emptyText = '-'): string {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return emptyText
+  const parts = Object.entries(record as Record<string, unknown>)
+    .map(([key, value]) => `${key}=${String(value ?? '')}`)
+    .filter((item) => !item.endsWith('='))
+  return parts.length ? parts.join(', ') : emptyText
+}
+
+function getNetworkPolicyTypesText(row: any): string {
+  const types = Array.isArray(row?.spec?.policyTypes)
+    ? row.spec.policyTypes.map((item: unknown) => String(item ?? '').trim()).filter(Boolean)
+    : []
+  if (types.length) return types.join(', ')
+  const inferred: string[] = []
+  if (Array.isArray(row?.spec?.ingress)) inferred.push('Ingress')
+  if (Array.isArray(row?.spec?.egress)) inferred.push('Egress')
+  return inferred.length ? inferred.join(', ') : 'Ingress'
+}
+
+function getNetworkPolicySelectorText(row: any): string {
+  return formatSelectorText(row?.spec?.podSelector?.matchLabels, 'all pods')
+}
+
+function getNetworkPolicyRuleCount(row: any, key: 'ingress' | 'egress'): number {
+  return Array.isArray(row?.spec?.[key]) ? row.spec[key].length : 0
+}
+
+function getServiceNameText(row: any): string {
+  const serviceName = String(row?.metadata?.labels?.['kubernetes.io/service-name'] ?? '').trim()
+  if (serviceName) return serviceName
+  if (showEndpointsColumns.value) {
+    return String(row?.metadata?.name ?? '-').trim() || '-'
+  }
+  return '-'
+}
+
+function getEndpointsAddressCount(row: any, key: 'addresses' | 'notReadyAddresses'): number {
+  const subsets = Array.isArray(row?.subsets) ? row.subsets : []
+  return subsets.reduce((sum: number, subset: any) => sum + (Array.isArray(subset?.[key]) ? subset[key].length : 0), 0)
+}
+
+function getPortsCount(row: any): number {
+  if (showEndpointSliceColumns.value) {
+    return Array.isArray(row?.ports) ? row.ports.length : 0
+  }
+  const subsets = Array.isArray(row?.subsets) ? row.subsets : []
+  return subsets.reduce((sum: number, subset: any) => sum + (Array.isArray(subset?.ports) ? subset.ports.length : 0), 0)
+}
+
+function getAddressTypeText(row: any): string {
+  return String(row?.addressType ?? '-').trim() || '-'
+}
+
+function getEndpointSliceCount(row: any): number {
+  return Array.isArray(row?.endpoints) ? row.endpoints.length : 0
+}
+
+function getResourceQuotaHard(row: any): Record<string, unknown> {
+  const hard = row?.status?.hard ?? row?.spec?.hard
+  if (!hard || typeof hard !== 'object' || Array.isArray(hard)) return {}
+  return hard as Record<string, unknown>
+}
+
+function getResourceQuotaKeysCount(row: any): number {
+  return Object.keys(getResourceQuotaHard(row)).length
+}
+
+function getResourceQuotaKeysText(row: any): string {
+  return formatPreviewList(Object.keys(getResourceQuotaHard(row)), 4)
+}
+
+function getResourceQuotaScopesText(row: any): string {
+  const scopes = Array.isArray(row?.spec?.scopes)
+    ? row.spec.scopes.map((item: unknown) => String(item ?? '').trim()).filter(Boolean)
+    : []
+  if (scopes.length) return formatPreviewList(scopes, 3)
+  const expressions = Array.isArray(row?.spec?.scopeSelector?.matchExpressions) ? row.spec.scopeSelector.matchExpressions : []
+  if (expressions.length) return `selector ${expressions.length} 条`
+  return '-'
+}
+
+function getLimitRangeEntries(row: any): any[] {
+  return Array.isArray(row?.spec?.limits) ? row.spec.limits : []
+}
+
+function getLimitRangeEntriesCount(row: any): number {
+  return getLimitRangeEntries(row).length
+}
+
+function getLimitRangeTypesText(row: any): string {
+  const types = Array.from(new Set(getLimitRangeEntries(row)
+    .map((item: any) => String(item?.type ?? '').trim())
+    .filter(Boolean)))
+  return formatPreviewList(types, 3)
+}
+
 function getResourceQuotaDetails(row: any): ResourceQuotaDetail[] {
   if (!props.showResourceQuotaUsage) return []
-  const hard = row?.status?.hard ?? row?.spec?.hard ?? {}
+  const hard = getResourceQuotaHard(row)
   const used = row?.status?.used ?? {}
   return Object.keys(hard)
     .map((key) => {

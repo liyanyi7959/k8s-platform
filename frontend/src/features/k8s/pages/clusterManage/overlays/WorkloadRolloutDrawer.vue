@@ -79,7 +79,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="84" align="center">
+          <el-table-column label="操作" width="84" align="center" fixed="right">
             <template #default="scope">
               <ActionIconButton
                 v-if="!scope.row.is_current"

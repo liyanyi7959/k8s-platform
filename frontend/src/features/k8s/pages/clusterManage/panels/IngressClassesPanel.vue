@@ -28,14 +28,14 @@
         <el-tooltip content="详情" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--info" @click="props.openIngressClassDetail(row)"><el-icon><View /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="编辑" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="编辑" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--edit" @click="props.openEditIngressClass(row)"><el-icon><Edit /></el-icon></button>
         </el-tooltip>
-        <span class="k8s-act-divider" />
+        <span v-if="props.canWrite" class="k8s-act-divider" />
         <el-tooltip content="YAML" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openIngressClassYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="删除" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--danger" @click="props.deleteIngressClassRow(row)"><el-icon><Delete /></el-icon></button>
         </el-tooltip>
       </div>
@@ -86,6 +86,7 @@ const props = defineProps<{
   data: any[]
   persistKey: string
   showTools: boolean
+  canWrite: boolean
   openIngressClassDetail: (row: any) => void
   openIngressClassYaml: (row: any) => void
   openEditIngressClass: (row: any) => void

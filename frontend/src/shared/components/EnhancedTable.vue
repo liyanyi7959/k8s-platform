@@ -365,6 +365,8 @@ const bodyOverflowBeforeFullscreen = ref<string | null>(null)
 const selectedRows = ref<any[]>([])
 const selectedCount = computed(() => selectedRows.value.length)
 const fullscreenTableHeight = ref<number | undefined>(undefined)
+let tableLayoutSyncPending = false
+let tableLayoutSyncQueued = false
 
 const pageModel = computed({
   get: () => props.page ?? 1,
@@ -427,17 +429,18 @@ const visibleColumns = computed(() => props.columns.filter((c) => columnVisible.
 
 const renderedColumns = computed(() => {
   const columns = visibleColumns.value.map((col) => {
+    const appliedWidth = getColumnAppliedWidth(col)
     const normalizedCol: EnhancedColumn = {
       ...col,
+      fixed: col.fixed ?? (col.key === 'actions' ? 'right' : undefined),
       align: col.align ?? (col.key === 'actions' ? 'center' : undefined),
       headerAlign: col.headerAlign ?? (col.key === 'actions' ? 'center' : col.align === 'center' ? 'center' : undefined)
     }
-    const manualWidth = columnWidths.value[col.key]
-    if (!Number.isFinite(manualWidth)) return normalizedCol
+    if (appliedWidth == null) return normalizedCol
     return {
       ...normalizedCol,
-      width: manualWidth,
-      minWidth: manualWidth
+      width: appliedWidth,
+      minWidth: appliedWidth
     }
   })
   return adaptColumnsForViewport(columns, tableViewportWidth.value)
@@ -734,6 +737,11 @@ function updateTableViewportWidth() {
   tableViewportWidth.value = Math.max(0, width)
 }
 
+function isActionsColumn(column: Pick<EnhancedColumn, 'key'> | string | null | undefined): boolean {
+  const key = typeof column === 'string' ? column : column?.key
+  return String(key ?? '').trim().toLowerCase() === 'actions'
+}
+
 function parseColumnWidth(value: number | string | undefined): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   if (typeof value !== 'string') return null
@@ -741,8 +749,39 @@ function parseColumnWidth(value: number | string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function getPersistedColumnWidth(columnKey: string): number | null {
+  const width = Number(columnWidths.value[columnKey])
+  return Number.isFinite(width) && width > 0 ? width : null
+}
+
+function getColumnAppliedWidth(col: EnhancedColumn): number | null {
+  return getPersistedColumnWidth(col.key)
+}
+
+async function syncTableLayout() {
+  if (tableLayoutSyncPending) {
+    tableLayoutSyncQueued = true
+    return
+  }
+
+  tableLayoutSyncPending = true
+  try {
+    await nextTick()
+    updateTableViewportWidth()
+    updateFullscreenTableHeight()
+    await nextTick()
+    doLayout()
+  } finally {
+    tableLayoutSyncPending = false
+    if (tableLayoutSyncQueued) {
+      tableLayoutSyncQueued = false
+      void syncTableLayout()
+    }
+  }
+}
+
 function getColumnBaseWidth(col: EnhancedColumn): number {
-  return parseColumnWidth(col.width) ?? parseColumnWidth(col.minWidth) ?? estimateColumnWidth(col)
+  return getColumnAppliedWidth(col) ?? parseColumnWidth(col.width) ?? parseColumnWidth(col.minWidth) ?? estimateColumnWidth(col)
 }
 
 function getColumnFloorWidth(col: EnhancedColumn): number {
@@ -781,7 +820,16 @@ function adaptColumnsForViewport(columns: EnhancedColumn[], viewportWidth: numbe
   const floorWidths = columns.map((col, index) => Math.min(baseWidths[index], getColumnFloorWidth(col)))
   const totalBase = baseWidths.reduce((sum, width) => sum + width, 0)
 
-  if (totalBase <= available) return columns
+  if (totalBase <= available) {
+    const extraSpace = available - totalBase
+    const expandableWidth = baseWidths.reduce((sum, w, i) => columns[i]?.key === 'actions' ? sum : sum + w, 0)
+    if (expandableWidth <= 0) return columns
+    return columns.map((col, i) => {
+      if (col.key === 'actions') return { ...col, width: baseWidths[i], minWidth: baseWidths[i] }
+      const share = Math.round(extraSpace * baseWidths[i] / expandableWidth)
+      return { ...col, width: baseWidths[i] + share, minWidth: baseWidths[i] + share }
+    })
+  }
 
   const shrinkable = baseWidths.reduce((sum, width, index) => {
     if (columns[index]?.key === 'actions') return sum
@@ -823,17 +871,11 @@ onMounted(() => {
   applyPersistedColumns()
   applyPersistedColumnWidths()
   applyPersistedSize()
-  nextTick(() => {
-    updateTableViewportWidth()
-    updateFullscreenTableHeight()
-    doLayout()
-  })
+  void syncTableLayout()
 })
 
 function onWindowResize() {
-  updateTableViewportWidth()
-  updateFullscreenTableHeight()
-  doLayout()
+  void syncTableLayout()
 }
 
 watch(
@@ -852,10 +894,7 @@ watch(
         bodyOverflowBeforeFullscreen.value = null
       }
     }
-    await nextTick()
-    updateTableViewportWidth()
-    updateFullscreenTableHeight()
-    doLayout()
+    void syncTableLayout()
   },
   { flush: 'post' }
 )
@@ -901,10 +940,7 @@ watch(
 watch(
   () => [props.data?.length, visibleColumns.value.length, tableSize.value, fullscreen.value],
   async () => {
-    await nextTick()
-    updateTableViewportWidth()
-    updateFullscreenTableHeight()
-    doLayout()
+    void syncTableLayout()
   }
 )
 
@@ -1046,14 +1082,6 @@ defineExpose({
   width: 0 !important;
 }
 
-.enhanced-table :deep(.el-table__body) {
-  width: 100% !important;
-}
-
-.enhanced-table :deep(.el-table__header) {
-  width: 100% !important;
-}
-
 .enhanced-table :deep(.el-table--border),
 .enhanced-table :deep(.el-table--group) {
   border-radius: 12px;
@@ -1061,9 +1089,50 @@ defineExpose({
 }
 
 .enhanced-table :deep(.k8s-act-group) {
-  width: 100%;
-  justify-content: center;
   flex-wrap: nowrap;
+  justify-content: center;
+}
+
+/* ── EP 2.13 固定列 (position: sticky) 不透明背景 ── */
+.enhanced-table :deep(.el-table__header-wrapper th.el-table__cell.el-table-fixed-column--right),
+.enhanced-table :deep(.el-table__header-wrapper th.el-table__cell.el-table-fixed-column--left) {
+  background-color: var(--table-surface-fixed-header-bg, var(--table-surface-header-bg, #dbeafe)) !important;
+}
+
+.enhanced-table :deep(.el-table__body-wrapper td.el-table__cell.el-table-fixed-column--right),
+.enhanced-table :deep(.el-table__body-wrapper td.el-table__cell.el-table-fixed-column--left) {
+  background-color: var(--table-surface-fixed-bg, #ffffff) !important;
+}
+
+.enhanced-table :deep(.el-table__body-wrapper tr:hover > td.el-table__cell.el-table-fixed-column--right),
+.enhanced-table :deep(.el-table__body-wrapper tr:hover > td.el-table__cell.el-table-fixed-column--left),
+.enhanced-table :deep(.el-table__body-wrapper tr.hover-row > td.el-table__cell.el-table-fixed-column--right),
+.enhanced-table :deep(.el-table__body-wrapper tr.hover-row > td.el-table__cell.el-table-fixed-column--left) {
+  background: linear-gradient(0deg, var(--table-surface-hover-bg, rgba(59, 130, 246, 0.1)), var(--table-surface-hover-bg, rgba(59, 130, 246, 0.1))),
+              var(--table-surface-fixed-bg, #ffffff) !important;
+}
+
+.enhanced-table :deep(.el-table--striped .el-table__body-wrapper tr.el-table__row--striped > td.el-table__cell.el-table-fixed-column--right),
+.enhanced-table :deep(.el-table--striped .el-table__body-wrapper tr.el-table__row--striped > td.el-table__cell.el-table-fixed-column--left) {
+  background: linear-gradient(0deg, var(--table-surface-alt-bg, #eff6ff), var(--table-surface-alt-bg, #eff6ff)),
+              var(--table-surface-fixed-bg, #ffffff) !important;
+}
+
+.enhanced-table :deep(.el-table__body-wrapper tr.current-row > td.el-table__cell.el-table-fixed-column--right),
+.enhanced-table :deep(.el-table__body-wrapper tr.current-row > td.el-table__cell.el-table-fixed-column--left) {
+  background: linear-gradient(0deg, var(--el-table-current-row-bg-color, rgba(59, 130, 246, 0.09)), var(--el-table-current-row-bg-color, rgba(59, 130, 246, 0.09))),
+              var(--table-surface-fixed-bg, #ffffff) !important;
+}
+
+/* 固定列左侧阴影分隔线 */
+.enhanced-table :deep(td.el-table-fixed-column--right.is-first-column),
+.enhanced-table :deep(th.el-table-fixed-column--right.is-first-column) {
+  box-shadow: -6px 0 12px -10px rgba(15, 23, 42, 0.3);
+}
+
+:global(html.dark) .enhanced-table :deep(td.el-table-fixed-column--right.is-first-column),
+:global(html.dark) .enhanced-table :deep(th.el-table-fixed-column--right.is-first-column) {
+  box-shadow: -8px 0 16px -10px rgba(2, 6, 23, 0.7);
 }
 
 /* ── 空状态 ── */

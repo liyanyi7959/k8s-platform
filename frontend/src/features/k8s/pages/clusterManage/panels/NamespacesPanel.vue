@@ -15,6 +15,12 @@
     <template #cell-name="{ row }">
       <span class="k8s-name">{{ String(row?.metadata?.name ?? '-') }}</span>
     </template>
+    <template #cell-phase="{ row }">
+      <span :class="['k8s-status', getNamespacePhaseClass(row)]">{{ getNamespacePhaseText(row) }}</span>
+    </template>
+    <template #cell-labelsCount="{ row }">
+      <span class="k8s-num">{{ getLabelsCount(row) }}</span>
+    </template>
     <template #cell-age="{ row }">
       <span class="k8s-age">{{ getCreationAgeText(row) }}</span>
     </template>
@@ -23,7 +29,7 @@
         <el-tooltip content="YAML" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="删除" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--danger" @click="openDeleteDialog(row)"><el-icon><Delete /></el-icon></button>
         </el-tooltip>
       </div>
@@ -184,6 +190,8 @@ type SummaryPreviewConfig = {
 
 const columns: EnhancedColumn[] = [
   { key: 'name', label: 'Namespace', prop: 'metadata.name', minWidth: 220, sortable: 'custom', defaultVisible: true },
+  { key: 'phase', label: 'Phase', prop: 'status.phase', width: 120, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
+  { key: 'labelsCount', label: 'Labels', width: 100, align: 'center', headerAlign: 'center', defaultVisible: false },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'actions', label: '操作', width: 96, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
 ]
@@ -193,6 +201,24 @@ const summaryPreviewColumns: EnhancedColumn[] = [
   { key: 'summary', label: '摘要', minWidth: 260, defaultVisible: true },
   { key: 'age', label: 'AGE', width: 120, align: 'center', headerAlign: 'center', defaultVisible: true }
 ]
+
+function getNamespacePhaseText(row: any): string {
+  const value = String(row?.status?.phase ?? '').trim()
+  return value || '-'
+}
+
+function getNamespacePhaseClass(row: any): string {
+  const value = getNamespacePhaseText(row)
+  if (value === 'Active') return 'k8s-status--ok'
+  if (value === 'Terminating') return 'k8s-status--warn'
+  return 'k8s-status--info'
+}
+
+function getLabelsCount(row: any): number {
+  const labels = row?.metadata?.labels
+  if (!labels || typeof labels !== 'object' || Array.isArray(labels)) return 0
+  return Object.keys(labels as Record<string, unknown>).length
+}
 
 function getObjectKeyCount(...records: any[]): number {
   return records.reduce((sum, record) => {
@@ -375,6 +401,7 @@ const props = defineProps<{
   data: any[]
   persistKey: string
   showTools: boolean
+  canWrite: boolean
   openYaml: (row: any) => void
   onDeleted: () => Promise<void>
   openSummaryResourcePage: (payload: { treeNodeId: string; namespace: string; kind: string }) => void
@@ -414,6 +441,7 @@ function canPreviewSummaryItem(item: NamespaceSummaryItem): boolean {
 }
 
 async function openDeleteDialog(row: any) {
+  if (!props.canWrite) return
   const name = String(row?.metadata?.name ?? '').trim()
   if (!props.clusterId || !name) return
   pendingNamespaceName.value = name
@@ -466,7 +494,7 @@ function openSummaryResourcePage() {
 
 async function confirmDeleteNamespace() {
   const namespace = pendingNamespaceName.value.trim()
-  if (!props.clusterId || !namespace || deleteDisabled.value) return
+  if (!props.canWrite || !props.clusterId || !namespace || deleteDisabled.value) return
   deleting.value = true
   try {
     await k8sApi.deleteNamespace(props.clusterId, namespace)

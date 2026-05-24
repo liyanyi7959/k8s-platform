@@ -27,6 +27,12 @@
     <template #cell-capacity="{ row }">
       <span class="k8s-num">{{ formatStorage(row?.status?.capacity?.storage) }}</span>
     </template>
+    <template #cell-volume="{ row }">
+      <span class="k8s-ns">{{ String(row?.spec?.volumeName ?? '-') }}</span>
+    </template>
+    <template #cell-volumeMode="{ row }">
+      <span class="k8s-age">{{ String(row?.spec?.volumeMode ?? 'Filesystem') }}</span>
+    </template>
     <template #cell-age="{ row }">
       <span class="k8s-age">{{ getCreationAgeText(row) }}</span>
     </template>
@@ -38,7 +44,7 @@
         <el-tooltip content="YAML" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--violet" @click="props.openPVCYaml(row)"><el-icon><Document /></el-icon></button>
         </el-tooltip>
-        <el-tooltip content="删除" placement="top" :show-after="300">
+        <el-tooltip v-if="props.canWrite" content="删除" placement="top" :show-after="300">
           <button class="k8s-act-btn k8s-act-btn--danger" @click="props.deletePVCRow(row)"><el-icon><Delete /></el-icon></button>
         </el-tooltip>
       </div>
@@ -70,9 +76,10 @@ const columns: EnhancedColumn[] = [
   { key: 'storageClass', label: 'StorageClass', prop: 'spec.storageClassName', minWidth: 200, sortable: 'custom', defaultVisible: true },
   { key: 'request', label: 'Request', prop: 'spec.resources.requests.storage', width: 130, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
   { key: 'capacity', label: 'Capacity', prop: 'status.capacity.storage', width: 130, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
+  { key: 'accessModes', label: 'AccessModes', minWidth: 170, defaultVisible: true },
+  { key: 'volume', label: 'Volume', prop: 'spec.volumeName', minWidth: 200, sortable: 'custom', defaultVisible: true },
+  { key: 'volumeMode', label: 'VolumeMode', prop: 'spec.volumeMode', width: 130, sortable: 'custom', defaultVisible: true },
   { key: 'age', label: 'AGE', prop: 'metadata.creationTimestamp', width: 110, sortable: 'custom', align: 'center', headerAlign: 'center', defaultVisible: true },
-  { key: 'accessModes', label: 'AccessModes', minWidth: 170, defaultVisible: false },
-  { key: 'volume', label: 'Volume', prop: 'spec.volumeName', minWidth: 200, sortable: 'custom', defaultVisible: false },
   { key: 'actions', label: '操作', width: 128, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false, defaultVisible: true }
 ]
 
