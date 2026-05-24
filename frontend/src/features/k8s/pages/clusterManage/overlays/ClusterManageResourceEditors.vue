@@ -571,19 +571,28 @@
         </template>
 
         <div class="edit-grid4">
-          <div class="edit-kv">
+          <div class="edit-kv edit-kv--compact">
             <div class="edit-k">命名空间</div>
-            <div class="edit-v"><div class="edit-ro mono">{{ configMapEditNamespace }}</div></div>
+            <div class="edit-v"><div class="edit-ro mono" :title="configMapEditNamespace">{{ configMapEditNamespace }}</div></div>
           </div>
-          <div class="edit-kv">
+          <div class="edit-kv edit-kv--compact">
             <div class="edit-k">名称</div>
-            <div class="edit-v"><div class="edit-ro mono">{{ configMapEditName }}</div></div>
+            <div class="edit-v"><div class="edit-ro mono" :title="configMapEditName">{{ configMapEditName }}</div></div>
+          </div>
+          <div class="edit-kv edit-kv--compact edit-kv--metric">
+            <div class="edit-k">Labels</div>
+            <div class="edit-v"><div class="edit-ro">{{ configMapEditLabelsCount }}</div></div>
+          </div>
+          <div class="edit-kv edit-kv--compact edit-kv--metric">
+            <div class="edit-k">Data Keys</div>
+            <div class="edit-v"><div class="edit-ro">{{ configMapEditDataKeys.length }}</div></div>
           </div>
           <div class="edit-kv edit-kv--span4">
             <div class="edit-k">Labels(JSON)</div>
             <div class="edit-v">
               <div class="k8s-pane-toolbar">
                 <el-space :size="8" wrap>
+                  <el-tag size="small" type="info" effect="light">共 {{ configMapEditLabelsCount }} 项</el-tag>
                   <el-tooltip content="搜索" placement="top">
                     <el-button size="small" :icon="Search" circle @click="openConfigMapEditLabelsSearch" />
                   </el-tooltip>
@@ -612,45 +621,81 @@
                 :wrap="configMapEditWrap"
                 :line-numbers="configMapEditLineNumbers"
                 height="220px"
-                class="k8s-detail-box k8s-detail-box--fill"
+                class="edit-codebox k8s-detail-box k8s-detail-box--fill"
               />
             </div>
           </div>
           <div class="edit-kv edit-kv--span4">
-            <div class="edit-k">Data(JSON)</div>
+            <div class="edit-k">Data（按 Key 编辑）</div>
             <div class="edit-v">
-              <div class="k8s-pane-toolbar">
-                <el-space :size="8" wrap>
-                  <el-tooltip content="搜索" placement="top">
-                    <el-button size="small" :icon="Search" circle @click="openConfigMapEditDataSearch" />
-                  </el-tooltip>
-                  <el-tooltip content="折叠全部" placement="top">
-                    <el-button size="small" :icon="Fold" circle @click="foldConfigMapEditDataAll" />
-                  </el-tooltip>
-                  <el-tooltip content="展开全部" placement="top">
-                    <el-button size="small" :icon="Expand" circle @click="unfoldConfigMapEditDataAll" />
-                  </el-tooltip>
-                  <el-switch v-model="configMapEditShowDiff" inline-prompt active-text="Diff" inactive-text="编辑" />
-                  <el-switch v-model="configMapEditWrap" inline-prompt active-text="换行" inactive-text="单行" />
-                  <el-switch v-model="configMapEditLineNumbers" inline-prompt active-text="行号" inactive-text="无行号" />
-                  <el-tooltip :content="props.editorThemeEffectiveDark ? '浅色' : '深色'" placement="top">
-                    <el-button size="small" :icon="props.editorThemeEffectiveDark ? Sunny : Moon" circle @click="emit('toggle-editor-theme')" />
-                  </el-tooltip>
-                </el-space>
+              <div class="configmap-data-editor">
+                <div class="configmap-data-toolbar">
+                  <div class="configmap-data-toolbar__main">
+                    <el-select
+                      v-model="configMapEditActiveDataKey"
+                      size="small"
+                      filterable
+                      placeholder="选择 Key"
+                      class="edit-field configmap-data-select"
+                      :disabled="configMapEditDataKeys.length === 0"
+                      @change="onConfigMapEditDataKeyChange"
+                    >
+                      <el-option v-for="key in configMapEditDataKeys" :key="key" :label="key" :value="key" />
+                    </el-select>
+                    <el-input
+                      v-model="configMapEditActiveDataKeyDraft"
+                      size="small"
+                      class="edit-field configmap-data-key-input"
+                      placeholder="当前 Key 名称"
+                      :disabled="!configMapEditActiveDataKey"
+                    />
+                    <el-button size="small" :disabled="!configMapEditActiveDataKey" @click="applyConfigMapEditDataKeyDraft">应用 Key</el-button>
+                    <el-button size="small" :icon="Plus" @click="addConfigMapEditDataKey">新增 Key</el-button>
+                    <el-tooltip content="删除当前 Key" placement="top">
+                      <el-button size="small" :icon="Delete" circle :disabled="!configMapEditActiveDataKey" @click="removeConfigMapEditDataKey" />
+                    </el-tooltip>
+                    <el-tag size="small" type="info" effect="light">共 {{ configMapEditDataKeys.length }} 个 Key</el-tag>
+                  </div>
+                  <div class="configmap-data-toolbar__actions">
+                    <el-tooltip content="搜索" placement="top">
+                      <el-button size="small" :icon="Search" circle :disabled="!configMapEditActiveDataKey" @click="openConfigMapEditDataSearch" />
+                    </el-tooltip>
+                    <el-tooltip content="折叠全部" placement="top">
+                      <el-button size="small" :icon="Fold" circle :disabled="!configMapEditActiveDataKey" @click="foldConfigMapEditDataAll" />
+                    </el-tooltip>
+                    <el-tooltip content="展开全部" placement="top">
+                      <el-button size="small" :icon="Expand" circle :disabled="!configMapEditActiveDataKey" @click="unfoldConfigMapEditDataAll" />
+                    </el-tooltip>
+                    <el-switch v-model="configMapEditShowDiff" inline-prompt active-text="Diff" inactive-text="编辑" />
+                    <el-switch v-model="configMapEditWrap" inline-prompt active-text="换行" inactive-text="单行" />
+                    <el-switch v-model="configMapEditLineNumbers" inline-prompt active-text="行号" inactive-text="无行号" />
+                    <el-tooltip :content="props.editorThemeEffectiveDark ? '浅色' : '深色'" placement="top">
+                      <el-button size="small" :icon="props.editorThemeEffectiveDark ? Sunny : Moon" circle @click="emit('toggle-editor-theme')" />
+                    </el-tooltip>
+                  </div>
+                </div>
+                <CodeMirrorViewer
+                  v-if="configMapEditActiveDataKey"
+                  ref="configMapEditDataViewerRef"
+                  v-model:text="configMapEditActiveDataValue"
+                  :compare-text="configMapEditActiveDataOriginalValue"
+                  :show-diff="configMapEditShowDiff"
+                  :language="configMapEditActiveDataLanguage"
+                  :theme="props.editorTheme"
+                  :read-only="false"
+                  :wrap="configMapEditWrap"
+                  :line-numbers="configMapEditLineNumbers"
+                  height="360px"
+                  class="edit-codebox k8s-detail-box k8s-detail-box--fill"
+                />
+                <div v-else class="configmap-data-empty">
+                  <div class="configmap-data-empty__body">
+                    <div class="configmap-data-empty__title">暂无 Data Key</div>
+                    <div class="configmap-data-empty__desc">新增一个 Key 后即可像详情页一样直接编辑原始多行内容。</div>
+                    <el-button size="small" type="primary" :icon="Plus" @click="addConfigMapEditDataKey">新增 Key</el-button>
+                  </div>
+                </div>
               </div>
-              <CodeMirrorViewer
-                ref="configMapEditDataViewerRef"
-                v-model:text="configMapEditDataText"
-                :compare-text="configMapEditDataOriginalText"
-                :show-diff="configMapEditShowDiff"
-                language="json"
-                :theme="props.editorTheme"
-                :read-only="false"
-                :wrap="configMapEditWrap"
-                :line-numbers="configMapEditLineNumbers"
-                height="360px"
-                class="k8s-detail-box k8s-detail-box--fill"
-              />
             </div>
           </div>
         </div>
@@ -690,25 +735,30 @@
         </template>
 
         <div class="edit-grid4">
-          <div class="edit-kv">
+          <div class="edit-kv edit-kv--compact">
             <div class="edit-k">命名空间</div>
-            <div class="edit-v"><div class="edit-ro mono">{{ secretEditNamespace }}</div></div>
+            <div class="edit-v"><div class="edit-ro mono" :title="secretEditNamespace">{{ secretEditNamespace }}</div></div>
           </div>
-          <div class="edit-kv">
+          <div class="edit-kv edit-kv--compact">
             <div class="edit-k">名称</div>
-            <div class="edit-v"><div class="edit-ro mono">{{ secretEditName }}</div></div>
+            <div class="edit-v"><div class="edit-ro mono" :title="secretEditName">{{ secretEditName }}</div></div>
           </div>
-          <div class="edit-kv edit-kv--span2">
+          <div class="edit-kv edit-kv--compact">
             <div class="edit-k">Type</div>
             <div class="edit-v">
               <el-input v-model="secretEditType" size="small" class="edit-field" :class="{ 'is-changed': isSecretTypeChanged }" placeholder="Opaque" />
             </div>
+          </div>
+          <div class="edit-kv edit-kv--compact edit-kv--metric">
+            <div class="edit-k">Data Keys</div>
+            <div class="edit-v"><div class="edit-ro">{{ secretEditDataKeys.length }}</div></div>
           </div>
           <div class="edit-kv edit-kv--span4">
             <div class="edit-k">Labels(JSON)</div>
             <div class="edit-v">
               <div class="k8s-pane-toolbar">
                 <el-space :size="8" wrap>
+                  <el-tag size="small" type="info" effect="light">共 {{ secretEditLabelsCount }} 项</el-tag>
                   <el-tooltip content="搜索" placement="top">
                     <el-button size="small" :icon="Search" circle @click="openSecretEditLabelsSearch" />
                   </el-tooltip>
@@ -737,45 +787,84 @@
                 :wrap="secretEditWrap"
                 :line-numbers="secretEditLineNumbers"
                 height="220px"
-                class="k8s-detail-box k8s-detail-box--fill"
+                class="edit-codebox k8s-detail-box k8s-detail-box--fill"
               />
             </div>
           </div>
           <div class="edit-kv edit-kv--span4">
-            <div class="edit-k">Data(JSON)</div>
+            <div class="edit-k">Data（按 Key 编辑）</div>
             <div class="edit-v">
-              <div class="k8s-pane-toolbar">
-                <el-space :size="8" wrap>
-                  <el-tooltip content="搜索" placement="top">
-                    <el-button size="small" :icon="Search" circle @click="openSecretEditDataSearch" />
-                  </el-tooltip>
-                  <el-tooltip content="折叠全部" placement="top">
-                    <el-button size="small" :icon="Fold" circle @click="foldSecretEditDataAll" />
-                  </el-tooltip>
-                  <el-tooltip content="展开全部" placement="top">
-                    <el-button size="small" :icon="Expand" circle @click="unfoldSecretEditDataAll" />
-                  </el-tooltip>
-                  <el-switch v-model="secretEditShowDiff" inline-prompt active-text="Diff" inactive-text="编辑" />
-                  <el-switch v-model="secretEditWrap" inline-prompt active-text="换行" inactive-text="单行" />
-                  <el-switch v-model="secretEditLineNumbers" inline-prompt active-text="行号" inactive-text="无行号" />
-                  <el-tooltip :content="props.editorThemeEffectiveDark ? '浅色' : '深色'" placement="top">
-                    <el-button size="small" :icon="props.editorThemeEffectiveDark ? Sunny : Moon" circle @click="emit('toggle-editor-theme')" />
-                  </el-tooltip>
-                </el-space>
+              <div class="configmap-data-editor">
+                <div class="configmap-data-toolbar">
+                  <div class="configmap-data-toolbar__main">
+                    <el-select
+                      v-model="secretEditActiveDataKey"
+                      size="small"
+                      filterable
+                      placeholder="选择 Key"
+                      class="edit-field configmap-data-select"
+                      :disabled="secretEditDataKeys.length === 0"
+                      @change="onSecretEditDataKeyChange"
+                    >
+                      <el-option v-for="key in secretEditDataKeys" :key="key" :label="key" :value="key" />
+                    </el-select>
+                    <el-input
+                      v-model="secretEditActiveDataKeyDraft"
+                      size="small"
+                      class="edit-field configmap-data-key-input"
+                      placeholder="当前 Key 名称"
+                      :disabled="!secretEditActiveDataKey"
+                    />
+                    <el-button size="small" :disabled="!secretEditActiveDataKey" @click="applySecretEditDataKeyDraft">应用 Key</el-button>
+                    <el-button size="small" :icon="Plus" @click="addSecretEditDataKey">新增 Key</el-button>
+                    <el-tooltip content="删除当前 Key" placement="top">
+                      <el-button size="small" :icon="Delete" circle :disabled="!secretEditActiveDataKey" @click="removeSecretEditDataKey" />
+                    </el-tooltip>
+                    <el-tag size="small" type="info" effect="light">共 {{ secretEditDataKeys.length }} 个 Key</el-tag>
+                  </div>
+                  <div class="configmap-data-toolbar__actions">
+                    <el-switch v-model="secretEditDecode" inline-prompt active-text="解码" inactive-text="base64" />
+                    <el-tag v-if="secretEditDecode" size="small" type="warning" effect="light">敏感信息</el-tag>
+                    <el-tag v-if="secretEditDecodeFallback" size="small" type="info" effect="light">当前值不可解码，已回退 base64</el-tag>
+                    <el-tooltip content="搜索" placement="top">
+                      <el-button size="small" :icon="Search" circle :disabled="!secretEditActiveDataKey" @click="openSecretEditDataSearch" />
+                    </el-tooltip>
+                    <el-tooltip content="折叠全部" placement="top">
+                      <el-button size="small" :icon="Fold" circle :disabled="!secretEditActiveDataKey" @click="foldSecretEditDataAll" />
+                    </el-tooltip>
+                    <el-tooltip content="展开全部" placement="top">
+                      <el-button size="small" :icon="Expand" circle :disabled="!secretEditActiveDataKey" @click="unfoldSecretEditDataAll" />
+                    </el-tooltip>
+                    <el-switch v-model="secretEditShowDiff" inline-prompt active-text="Diff" inactive-text="编辑" />
+                    <el-switch v-model="secretEditWrap" inline-prompt active-text="换行" inactive-text="单行" />
+                    <el-switch v-model="secretEditLineNumbers" inline-prompt active-text="行号" inactive-text="无行号" />
+                    <el-tooltip :content="props.editorThemeEffectiveDark ? '浅色' : '深色'" placement="top">
+                      <el-button size="small" :icon="props.editorThemeEffectiveDark ? Sunny : Moon" circle @click="emit('toggle-editor-theme')" />
+                    </el-tooltip>
+                  </div>
+                </div>
+                <CodeMirrorViewer
+                  v-if="secretEditActiveDataKey"
+                  ref="secretEditDataViewerRef"
+                  v-model:text="secretEditActiveDataValue"
+                  :compare-text="secretEditActiveDataOriginalValue"
+                  :show-diff="secretEditShowDiff"
+                  :language="secretEditActiveDataLanguage"
+                  :theme="props.editorTheme"
+                  :read-only="false"
+                  :wrap="secretEditWrap"
+                  :line-numbers="secretEditLineNumbers"
+                  height="360px"
+                  class="edit-codebox k8s-detail-box k8s-detail-box--fill"
+                />
+                <div v-else class="configmap-data-empty">
+                  <div class="configmap-data-empty__body">
+                    <div class="configmap-data-empty__title">暂无 Data Key</div>
+                    <div class="configmap-data-empty__desc">新增一个 Key 后即可像详情页一样直接编辑原始多行内容。</div>
+                    <el-button size="small" type="primary" :icon="Plus" @click="addSecretEditDataKey">新增 Key</el-button>
+                  </div>
+                </div>
               </div>
-              <CodeMirrorViewer
-                ref="secretEditDataViewerRef"
-                v-model:text="secretEditDataText"
-                :compare-text="secretEditDataOriginalText"
-                :show-diff="secretEditShowDiff"
-                language="json"
-                :theme="props.editorTheme"
-                :read-only="false"
-                :wrap="secretEditWrap"
-                :line-numbers="secretEditLineNumbers"
-                height="360px"
-                class="k8s-detail-box k8s-detail-box--fill"
-              />
             </div>
           </div>
         </div>
@@ -791,10 +880,10 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Expand, Fold, Moon, Search, Sunny } from '@element-plus/icons-vue'
+import { Delete, Expand, Fold, Moon, Plus, Search, Sunny } from '@element-plus/icons-vue'
 
 import * as k8sApi from '@/features/k8s/api/k8s'
-import { getRowNamespace } from '@/features/k8s/pages/ClusterManageView.utils'
+import { decodeBase64Utf8, getRowNamespace } from '@/features/k8s/pages/ClusterManageView.utils'
 import CodeMirrorViewer from '@/shared/components/CodeMirrorViewer.vue'
 import type { ApiError } from '@/shared/utils/error'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
@@ -892,6 +981,84 @@ function buildPatchMap(orig: Record<string, string | null>, next: Record<string,
     if (normalizedOrig !== normalizedNext) out[key] = normalizedNext
   }
   return Object.keys(out).length ? out : undefined
+}
+
+function toNullableStringRecord(record: Record<string, unknown>): Record<string, string | null> {
+  const out: Record<string, string | null> = {}
+  for (const [key, value] of Object.entries(record ?? {})) {
+    const normalizedKey = String(key ?? '').trim()
+    if (!normalizedKey) continue
+    out[normalizedKey] = value == null ? '' : String(value)
+  }
+  return out
+}
+
+function sortRecordKeys(record: Record<string, unknown>): string[] {
+  return Object.keys(record ?? {})
+    .map((key) => String(key ?? '').trim())
+    .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right))
+}
+
+function inferStructuredTextLanguage(text: string): 'json' | 'text' {
+  const raw = String(text ?? '').trim()
+  if (!raw) return 'text'
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed != null && typeof parsed === 'object' ? 'json' : 'text'
+  } catch {
+    return 'text'
+  }
+}
+
+function encodeBase64Utf8(text: string): string {
+  const normalized = String(text ?? '')
+  if (!normalized) return ''
+  if (typeof TextEncoder !== 'undefined') {
+    const bytes = new TextEncoder().encode(normalized)
+    let binary = ''
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i])
+    return btoa(binary)
+  }
+  return btoa(unescape(encodeURIComponent(normalized)))
+}
+
+function tryDecodeBase64Utf8Strict(input: string): { ok: boolean; text: string } {
+  const b64 = String(input ?? '').trim()
+  if (!b64) return { ok: true, text: '' }
+  try {
+    const text = decodeBase64Utf8(b64)
+    return encodeBase64Utf8(text) === b64 ? { ok: true, text } : { ok: false, text: b64 }
+  } catch {
+    return { ok: false, text: b64 }
+  }
+}
+
+function parseStringRecord(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .map(([key, item]) => [String(key ?? '').trim(), String(item ?? '')] as const)
+      .filter(([key]) => Boolean(key))
+  )
+}
+
+function parseSecretRevealText(text: string): { type: string; data: Record<string, string> } {
+  const raw = JSON.parse(String(text ?? '{}')) as Record<string, unknown>
+  const revealData = {
+    ...parseStringRecord(raw?.data),
+    ...parseStringRecord(raw?.stringData)
+  }
+  return {
+    type: String(raw?.type ?? ''),
+    data: revealData
+  }
+}
+
+function encodeSecretPlainDataMap(record: Record<string, string>): Record<string, string | null> {
+  return Object.fromEntries(
+    Object.entries(record ?? {}).map(([key, value]) => [String(key), encodeBase64Utf8(String(value ?? ''))])
+  )
 }
 
 const codeMirrorExpose = {
@@ -1393,15 +1560,48 @@ const configMapEditSaving = ref(false)
 const configMapEditNamespace = ref('')
 const configMapEditName = ref('')
 const configMapEditLabelsText = ref('{}')
-const configMapEditDataText = ref('{}')
 const configMapEditLabelsOriginalText = ref('{}')
-const configMapEditDataOriginalText = ref('{}')
 const configMapEditWrap = ref(true)
 const configMapEditLineNumbers = ref(true)
 const configMapEditShowDiff = ref(false)
 const configMapEditLabelsViewerRef = ref<CodeMirrorExpose | null>(null)
 const configMapEditDataViewerRef = ref<CodeMirrorExpose | null>(null)
 const configMapEditOrig = ref({ labels: {}, data: {} } as { labels: Record<string, string | null>; data: Record<string, string | null> })
+const configMapEditDataMap = ref({} as Record<string, string | null>)
+const configMapEditActiveDataKey = ref('')
+const configMapEditActiveDataKeyDraft = ref('')
+
+const configMapEditDataKeys = computed(() => sortRecordKeys(configMapEditDataMap.value))
+const configMapEditLabelsCount = computed(() => {
+  try {
+    return sortRecordKeys(parseStringOrNullMapText(configMapEditLabelsText.value, 'Labels')).length
+  } catch {
+    return sortRecordKeys(configMapEditOrig.value.labels).length
+  }
+})
+const configMapEditActiveDataOriginalValue = computed(() => {
+  const key = String(configMapEditActiveDataKey.value ?? '').trim()
+  if (!key) return ''
+  const value = configMapEditOrig.value.data?.[key]
+  return value == null ? '' : String(value)
+})
+const configMapEditActiveDataValue = computed({
+  get() {
+    const key = String(configMapEditActiveDataKey.value ?? '').trim()
+    if (!key) return ''
+    const value = configMapEditDataMap.value?.[key]
+    return value == null ? '' : String(value)
+  },
+  set(nextValue: string) {
+    const key = String(configMapEditActiveDataKey.value ?? '').trim()
+    if (!key) return
+    configMapEditDataMap.value = {
+      ...configMapEditDataMap.value,
+      [key]: String(nextValue ?? '')
+    }
+  }
+})
+const configMapEditActiveDataLanguage = computed<'json' | 'text'>(() => inferStructuredTextLanguage(configMapEditActiveDataValue.value))
 
 const isConfigMapLabelsChanged = computed(() => {
   try {
@@ -1410,13 +1610,7 @@ const isConfigMapLabelsChanged = computed(() => {
     return true
   }
 })
-const isConfigMapDataChanged = computed(() => {
-  try {
-    return normalizeNullableRecord(parseStringOrNullMapText(configMapEditDataText.value, 'Data')) !== normalizeNullableRecord(configMapEditOrig.value.data)
-  } catch {
-    return true
-  }
-})
+const isConfigMapDataChanged = computed(() => normalizeNullableRecord(configMapEditDataMap.value) !== normalizeNullableRecord(configMapEditOrig.value.data))
 const isConfigMapEditChanged = computed(() => isConfigMapLabelsChanged.value || isConfigMapDataChanged.value)
 
 function openConfigMapEditLabelsSearch() { configMapEditLabelsViewerRef.value?.openSearch() }
@@ -1426,6 +1620,65 @@ function openConfigMapEditDataSearch() { configMapEditDataViewerRef.value?.openS
 function foldConfigMapEditDataAll() { configMapEditDataViewerRef.value?.foldAll() }
 function unfoldConfigMapEditDataAll() { configMapEditDataViewerRef.value?.unfoldAll() }
 
+function setConfigMapEditActiveDataKey(key: string) {
+  const normalizedKey = String(key ?? '').trim()
+  configMapEditActiveDataKey.value = normalizedKey
+  configMapEditActiveDataKeyDraft.value = normalizedKey
+}
+
+function onConfigMapEditDataKeyChange(key: string) {
+  setConfigMapEditActiveDataKey(key)
+}
+
+function getNextConfigMapEditDataKeyName(): string {
+  const base = 'new-key'
+  if (!Object.prototype.hasOwnProperty.call(configMapEditDataMap.value, base)) return base
+  let index = 2
+  while (Object.prototype.hasOwnProperty.call(configMapEditDataMap.value, `${base}-${index}`)) index += 1
+  return `${base}-${index}`
+}
+
+function addConfigMapEditDataKey() {
+  const key = getNextConfigMapEditDataKeyName()
+  configMapEditDataMap.value = {
+    ...configMapEditDataMap.value,
+    [key]: ''
+  }
+  setConfigMapEditActiveDataKey(key)
+}
+
+function removeConfigMapEditDataKey() {
+  const currentKey = String(configMapEditActiveDataKey.value ?? '').trim()
+  if (!currentKey) return
+  const nextMap = { ...configMapEditDataMap.value }
+  delete nextMap[currentKey]
+  configMapEditDataMap.value = nextMap
+  setConfigMapEditActiveDataKey(sortRecordKeys(nextMap)[0] ?? '')
+}
+
+function applyConfigMapEditDataKeyDraft(): boolean {
+  const currentKey = String(configMapEditActiveDataKey.value ?? '').trim()
+  if (!currentKey) return true
+  const nextKey = String(configMapEditActiveDataKeyDraft.value ?? '').trim()
+  if (!nextKey) {
+    notifyError('Data Key 不能为空')
+    configMapEditActiveDataKeyDraft.value = currentKey
+    return false
+  }
+  if (nextKey === currentKey) return true
+  if (Object.prototype.hasOwnProperty.call(configMapEditDataMap.value, nextKey)) {
+    notifyError(`Data Key 已存在：${nextKey}`)
+    return false
+  }
+  const nextMap = { ...configMapEditDataMap.value }
+  const currentValue = nextMap[currentKey]
+  delete nextMap[currentKey]
+  nextMap[nextKey] = currentValue == null ? '' : String(currentValue)
+  configMapEditDataMap.value = nextMap
+  setConfigMapEditActiveDataKey(nextKey)
+  return true
+}
+
 function openEditConfigMap(row: any) {
   const namespace = getRowNamespace(row)
   if (!props.clusterId || !namespace) return
@@ -1433,16 +1686,18 @@ function openEditConfigMap(row: any) {
   if (!name) return
   const labels = (row?.metadata?.labels ?? {}) as Record<string, unknown>
   const data = (row?.data ?? {}) as Record<string, unknown>
+  const normalizedLabels = toNullableStringRecord(labels)
+  const normalizedData = toNullableStringRecord(data)
   configMapEditOrig.value = {
-    labels: Object.fromEntries(Object.entries(labels).map(([key, value]) => [String(key), value == null ? '' : String(value)])),
-    data: Object.fromEntries(Object.entries(data).map(([key, value]) => [String(key), value == null ? '' : String(value)]))
+    labels: normalizedLabels,
+    data: normalizedData
   }
   configMapEditNamespace.value = namespace
   configMapEditName.value = name
   configMapEditLabelsOriginalText.value = JSON.stringify(labels ?? {}, null, 2)
-  configMapEditDataOriginalText.value = JSON.stringify(data ?? {}, null, 2)
   configMapEditLabelsText.value = configMapEditLabelsOriginalText.value
-  configMapEditDataText.value = configMapEditDataOriginalText.value
+  configMapEditDataMap.value = { ...normalizedData }
+  setConfigMapEditActiveDataKey(sortRecordKeys(normalizedData)[0] ?? '')
   configMapEditShowDiff.value = false
   configMapEditVisible.value = true
 }
@@ -1450,9 +1705,10 @@ function openEditConfigMap(row: any) {
 async function saveEditConfigMap() {
   if (!props.clusterId || !configMapEditNamespace.value || !configMapEditName.value) return
   try {
+    if (!applyConfigMapEditDataKeyDraft()) return
     configMapEditSaving.value = true
     const labels = parseStringOrNullMapText(configMapEditLabelsText.value, 'Labels')
-    const data = parseStringOrNullMapText(configMapEditDataText.value, 'Data')
+    const data = { ...configMapEditDataMap.value }
     const labelsPatch = buildPatchMap(configMapEditOrig.value.labels, labels)
     const dataPatch = buildPatchMap(configMapEditOrig.value.data, data)
     if (!labelsPatch && !dataPatch) {
@@ -1481,15 +1737,66 @@ const secretEditNamespace = ref('')
 const secretEditName = ref('')
 const secretEditType = ref('')
 const secretEditLabelsText = ref('{}')
-const secretEditDataText = ref('{}')
 const secretEditLabelsOriginalText = ref('{}')
-const secretEditDataOriginalText = ref('{}')
 const secretEditWrap = ref(true)
 const secretEditLineNumbers = ref(true)
 const secretEditShowDiff = ref(false)
+const secretEditDecode = ref(true)
 const secretEditLabelsViewerRef = ref<CodeMirrorExpose | null>(null)
 const secretEditDataViewerRef = ref<CodeMirrorExpose | null>(null)
 const secretEditOrig = ref({ type: '', labels: {}, data: {} } as { type: string; labels: Record<string, string | null>; data: Record<string, string | null> })
+const secretEditDataMap = ref({} as Record<string, string | null>)
+const secretEditActiveDataKey = ref('')
+const secretEditActiveDataKeyDraft = ref('')
+
+const secretEditDataKeys = computed(() => sortRecordKeys(secretEditDataMap.value))
+const secretEditLabelsCount = computed(() => {
+  try {
+    return sortRecordKeys(parseStringOrNullMapText(secretEditLabelsText.value, 'Labels')).length
+  } catch {
+    return sortRecordKeys(secretEditOrig.value.labels).length
+  }
+})
+const secretEditActiveDataOriginalRawValue = computed(() => {
+  const key = String(secretEditActiveDataKey.value ?? '').trim()
+  if (!key) return ''
+  const value = secretEditOrig.value.data?.[key]
+  return value == null ? '' : String(value)
+})
+const secretEditActiveDataRawValue = computed(() => {
+  const key = String(secretEditActiveDataKey.value ?? '').trim()
+  if (!key) return ''
+  const value = secretEditDataMap.value?.[key]
+  return value == null ? '' : String(value)
+})
+const secretEditActiveDataOriginalDecoded = computed(() => tryDecodeBase64Utf8Strict(secretEditActiveDataOriginalRawValue.value))
+const secretEditActiveDataDecoded = computed(() => tryDecodeBase64Utf8Strict(secretEditActiveDataRawValue.value))
+const secretEditActiveDataOriginalValue = computed(() => {
+  if (secretEditDecode.value && secretEditActiveDataOriginalDecoded.value.ok) return secretEditActiveDataOriginalDecoded.value.text
+  return secretEditActiveDataOriginalRawValue.value
+})
+const secretEditActiveDataValue = computed({
+  get() {
+    if (secretEditDecode.value && secretEditActiveDataDecoded.value.ok) return secretEditActiveDataDecoded.value.text
+    return secretEditActiveDataRawValue.value
+  },
+  set(nextValue: string) {
+    const key = String(secretEditActiveDataKey.value ?? '').trim()
+    if (!key) return
+    const normalizedValue = String(nextValue ?? '')
+    const nextStoredValue = secretEditDecode.value && secretEditActiveDataDecoded.value.ok ? encodeBase64Utf8(normalizedValue) : normalizedValue
+    secretEditDataMap.value = {
+      ...secretEditDataMap.value,
+      [key]: nextStoredValue
+    }
+  }
+})
+const secretEditActiveDataLanguage = computed<'json' | 'text'>(() => inferStructuredTextLanguage(secretEditActiveDataValue.value))
+const secretEditDecodeFallback = computed(() => {
+  if (!secretEditDecode.value) return false
+  if (!String(secretEditActiveDataKey.value ?? '').trim()) return false
+  return !secretEditActiveDataDecoded.value.ok
+})
 
 const isSecretTypeChanged = computed(() => String(secretEditType.value ?? '').trim() !== String(secretEditOrig.value.type ?? '').trim())
 const isSecretLabelsChanged = computed(() => {
@@ -1499,13 +1806,7 @@ const isSecretLabelsChanged = computed(() => {
     return true
   }
 })
-const isSecretDataChanged = computed(() => {
-  try {
-    return normalizeNullableRecord(parseStringOrNullMapText(secretEditDataText.value, 'Data')) !== normalizeNullableRecord(secretEditOrig.value.data)
-  } catch {
-    return true
-  }
-})
+const isSecretDataChanged = computed(() => normalizeNullableRecord(secretEditDataMap.value) !== normalizeNullableRecord(secretEditOrig.value.data))
 const isSecretEditChanged = computed(() => isSecretTypeChanged.value || isSecretLabelsChanged.value || isSecretDataChanged.value)
 
 function openSecretEditLabelsSearch() { secretEditLabelsViewerRef.value?.openSearch() }
@@ -1515,26 +1816,97 @@ function openSecretEditDataSearch() { secretEditDataViewerRef.value?.openSearch(
 function foldSecretEditDataAll() { secretEditDataViewerRef.value?.foldAll() }
 function unfoldSecretEditDataAll() { secretEditDataViewerRef.value?.unfoldAll() }
 
-function openEditSecret(row: any) {
+function setSecretEditActiveDataKey(key: string) {
+  const normalizedKey = String(key ?? '').trim()
+  secretEditActiveDataKey.value = normalizedKey
+  secretEditActiveDataKeyDraft.value = normalizedKey
+}
+
+function onSecretEditDataKeyChange(key: string) {
+  setSecretEditActiveDataKey(key)
+}
+
+function getNextSecretEditDataKeyName(): string {
+  const base = 'new-key'
+  if (!Object.prototype.hasOwnProperty.call(secretEditDataMap.value, base)) return base
+  let index = 2
+  while (Object.prototype.hasOwnProperty.call(secretEditDataMap.value, `${base}-${index}`)) index += 1
+  return `${base}-${index}`
+}
+
+function addSecretEditDataKey() {
+  const key = getNextSecretEditDataKeyName()
+  secretEditDataMap.value = {
+    ...secretEditDataMap.value,
+    [key]: ''
+  }
+  setSecretEditActiveDataKey(key)
+}
+
+function removeSecretEditDataKey() {
+  const currentKey = String(secretEditActiveDataKey.value ?? '').trim()
+  if (!currentKey) return
+  const nextMap = { ...secretEditDataMap.value }
+  delete nextMap[currentKey]
+  secretEditDataMap.value = nextMap
+  setSecretEditActiveDataKey(sortRecordKeys(nextMap)[0] ?? '')
+}
+
+function applySecretEditDataKeyDraft(): boolean {
+  const currentKey = String(secretEditActiveDataKey.value ?? '').trim()
+  if (!currentKey) return true
+  const nextKey = String(secretEditActiveDataKeyDraft.value ?? '').trim()
+  if (!nextKey) {
+    notifyError('Data Key 不能为空')
+    secretEditActiveDataKeyDraft.value = currentKey
+    return false
+  }
+  if (nextKey === currentKey) return true
+  if (Object.prototype.hasOwnProperty.call(secretEditDataMap.value, nextKey)) {
+    notifyError(`Data Key 已存在：${nextKey}`)
+    return false
+  }
+  const nextMap = { ...secretEditDataMap.value }
+  const currentValue = nextMap[currentKey]
+  delete nextMap[currentKey]
+  nextMap[nextKey] = currentValue == null ? '' : String(currentValue)
+  secretEditDataMap.value = nextMap
+  setSecretEditActiveDataKey(nextKey)
+  return true
+}
+
+async function openEditSecret(row: any) {
   const namespace = getRowNamespace(row)
   if (!props.clusterId || !namespace) return
   const name = String(row?.metadata?.name ?? '')
   if (!name) return
   const labels = (row?.metadata?.labels ?? {}) as Record<string, unknown>
-  const data = (row?.data ?? {}) as Record<string, unknown>
   const type = String(row?.type ?? '').trim()
+  const normalizedLabels = toNullableStringRecord(labels)
+  let normalizedData = toNullableStringRecord((row?.data ?? {}) as Record<string, unknown>)
+  let resolvedType = type
+  try {
+    const reveal = await k8sApi.getSecretReveal(props.clusterId, namespace, name)
+    const parsed = parseSecretRevealText(reveal.text)
+    normalizedData = encodeSecretPlainDataMap(parsed.data)
+    if (String(parsed.type ?? '').trim()) resolvedType = String(parsed.type ?? '').trim()
+  } catch (error) {
+    const err = error as ApiError
+    notifyError(err.requestId ? `获取 Secret 明文失败，Data 将保持脱敏视图 (request_id=${err.requestId})` : '获取 Secret 明文失败，Data 将保持脱敏视图')
+  }
   secretEditOrig.value = {
-    type,
-    labels: Object.fromEntries(Object.entries(labels).map(([key, value]) => [String(key), value == null ? '' : String(value)])),
-    data: Object.fromEntries(Object.entries(data).map(([key, value]) => [String(key), value == null ? '' : String(value)]))
+    type: resolvedType,
+    labels: normalizedLabels,
+    data: normalizedData
   }
   secretEditNamespace.value = namespace
   secretEditName.value = name
-  secretEditType.value = type
+  secretEditType.value = resolvedType
   secretEditLabelsOriginalText.value = JSON.stringify(labels ?? {}, null, 2)
-  secretEditDataOriginalText.value = JSON.stringify(data ?? {}, null, 2)
   secretEditLabelsText.value = secretEditLabelsOriginalText.value
-  secretEditDataText.value = secretEditDataOriginalText.value
+  secretEditDataMap.value = { ...normalizedData }
+  setSecretEditActiveDataKey(sortRecordKeys(normalizedData)[0] ?? '')
+  secretEditDecode.value = true
   secretEditShowDiff.value = false
   secretEditVisible.value = true
 }
@@ -1542,9 +1914,10 @@ function openEditSecret(row: any) {
 async function saveEditSecret() {
   if (!props.clusterId || !secretEditNamespace.value || !secretEditName.value) return
   try {
+    if (!applySecretEditDataKeyDraft()) return
     secretEditSaving.value = true
     const labels = parseStringOrNullMapText(secretEditLabelsText.value, 'Labels')
-    const data = parseStringOrNullMapText(secretEditDataText.value, 'Data')
+    const data = { ...secretEditDataMap.value }
     const labelsPatch = buildPatchMap(secretEditOrig.value.labels, labels)
     const dataPatch = buildPatchMap(secretEditOrig.value.data, data)
     const typeText = String(secretEditType.value ?? '').trim()
@@ -1708,6 +2081,16 @@ defineExpose({
   grid-column: span 2;
 }
 
+.edit-kv--compact {
+  padding: 10px 12px 10px 14px;
+}
+
+.edit-kv--metric .edit-ro {
+  height: auto;
+  line-height: 1.2;
+  font-size: 16px;
+}
+
 .edit-k {
   font-size: 12px;
   font-weight: 800;
@@ -1720,6 +2103,8 @@ defineExpose({
 
 .edit-v {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .edit-ro {
@@ -1757,6 +2142,155 @@ defineExpose({
   padding-top: 14px;
 }
 
+.edit-codebox.k8s-detail-box {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.edit-codebox :deep(.cm-host) {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.edit-codebox :deep(.cm-editor) {
+  width: 100%;
+  min-width: 0;
+}
+
+.edit-codebox :deep(.cm-scroller) {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.edit-codebox :deep(.cm-sizer) {
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.edit-codebox :deep(.cm-content) {
+  width: max-content;
+  min-width: 100%;
+}
+
+.edit-codebox :deep(.cm-lineWrapping) {
+  width: 100%;
+}
+
+.edit-codebox :deep(.cm-mergeView),
+.edit-codebox :deep(.cm-mergeViewEditors) {
+  width: 100%;
+  min-width: 0;
+}
+
+.edit-kv :deep(.k8s-pane-toolbar) {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+}
+
+.edit-kv :deep(.k8s-pane-toolbar .el-space) {
+  width: max-content;
+  min-width: 100%;
+  flex-wrap: nowrap !important;
+}
+
+.configmap-data-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.configmap-data-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.configmap-data-toolbar__main,
+.configmap-data-toolbar__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+}
+
+.configmap-data-toolbar__main {
+  min-width: 0;
+}
+
+.configmap-data-toolbar__actions {
+  max-width: 100%;
+  justify-content: flex-end;
+}
+
+.configmap-data-select {
+  width: 220px;
+  max-width: 100%;
+}
+
+.configmap-data-key-input {
+  width: 260px;
+  max-width: 100%;
+}
+
+.configmap-data-empty {
+  display: flex;
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  background: rgba(248, 250, 252, 0.72);
+}
+
+:global(html.dark) .configmap-data-empty {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(2, 6, 23, 0.28);
+}
+
+.configmap-data-empty__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.configmap-data-empty__title {
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(15, 23, 42, 0.82);
+}
+
+.configmap-data-empty__desc {
+  max-width: 420px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(71, 85, 105, 0.9);
+}
+
+:global(html.dark) .configmap-data-empty__title {
+  color: rgba(226, 232, 240, 0.92);
+}
+
+:global(html.dark) .configmap-data-empty__desc {
+  color: rgba(148, 163, 184, 0.92);
+}
+
 @media (max-width: 1280px) {
   .edit-grid4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1771,6 +2305,17 @@ defineExpose({
   .edit-kv--span2,
   .edit-kv--span4 {
     grid-column: auto;
+  }
+
+  .configmap-data-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .configmap-data-toolbar__main,
+  .configmap-data-toolbar__actions,
+  .configmap-data-select,
+  .configmap-data-key-input {
+    width: 100%;
   }
 }
 </style>

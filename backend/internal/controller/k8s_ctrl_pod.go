@@ -108,7 +108,7 @@ func (kc *K8sController) GetPodYAML(c *gin.Context) {
 }
 
 // GetPodLogs 获取 Pod 日志。
-// query：container（可选）、tail_lines（可选，默认 200）。
+// query：container（可选）、tail_lines（可选，默认 200；传 0 返回全量日志）、previous（可选，传 true 返回上一个实例日志）。
 // @Summary 获取 Pod 日志
 // @Description 获取指定 Pod 日志文本
 // @Tags K8s 资源接口
@@ -119,7 +119,8 @@ func (kc *K8sController) GetPodYAML(c *gin.Context) {
 // @Param ns path string true "命名空间"
 // @Param pod path string true "Pod 名称"
 // @Param container query string false "容器名（不填使用默认）"
-// @Param tail_lines query int false "返回末尾行数" example(200)
+// @Param tail_lines query int false "返回末尾行数，传 0 返回全量日志" example(200)
+// @Param previous query bool false "是否返回上一个容器实例日志" example(false)
 // @Success 200 {object} resp.Result{data=K8sTextResp} "查询成功"
 // @Failure 400 {object} resp.Result "参数错误"
 // @Failure 500 {object} resp.Result "内部错误"
@@ -134,7 +135,8 @@ func (kc *K8sController) GetPodLogs(c *gin.Context) {
 	name := decodePathParam(c.Param("pod"))
 	container := c.Query("container")
 	tail := parseInt(c.Query("tail_lines"), 200)
-	text, err := kc.svc.PodLogs(c.Request.Context(), id, ns, name, container, int64(tail))
+	previous := strings.EqualFold(strings.TrimSpace(c.Query("previous")), "true") || strings.TrimSpace(c.Query("previous")) == "1"
+	text, err := kc.svc.PodLogs(c.Request.Context(), id, ns, name, container, int64(tail), previous)
 	if err != nil {
 		kc.writeServiceErr(c, err)
 		return
@@ -282,7 +284,7 @@ func (kc *K8sController) PodLogWS(c *gin.Context) {
 		}
 	}()
 
-	stream, err := kc.svc.PodLogStream(ctx, sess.ClusterID, sess.Namespace, sess.Pod, derefString(sess.Container), sess.Follow, sess.TailLines)
+	stream, err := kc.svc.PodLogStream(ctx, sess.ClusterID, sess.Namespace, sess.Pod, derefString(sess.Container), sess.Follow, sess.TailLines, false)
 	if err != nil {
 		_ = writeFrame(podLogWSFrame{Type: "error", Message: err.Error()})
 		return

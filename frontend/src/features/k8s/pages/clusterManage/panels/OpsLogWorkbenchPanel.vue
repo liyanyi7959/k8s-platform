@@ -34,7 +34,7 @@
           filterable
           collapse-tags
           collapse-tags-tooltip
-          :max-collapse-tags="2"
+          :max-collapse-tags="1"
           :loading="loadingResources"
           :disabled="!selectedNamespace || podOptions.length === 0"
         >
@@ -43,8 +43,8 @@
       </div>
 
       <div class="ops-log-page__actions">
-        <el-button :icon="RefreshRight" :loading="loadingResources" :disabled="!selectedNamespace" @click="loadNamespaceResources">刷新入口</el-button>
-        <el-button :icon="CircleClose" :disabled="selectedPodKeys.length === 0 && !selectedServicePortKey" @click="clearSelection">清空选择</el-button>
+        <ActionIconButton :icon="RefreshRight" tooltip="刷新当前命名空间入口" size="toolbar" :loading="loadingResources" :disabled="!selectedNamespace" @click="loadNamespaceResources" />
+        <ActionIconButton :icon="CircleClose" tooltip="清空 Service / Pod 选择" size="toolbar" variant="danger" :disabled="selectedPodKeys.length === 0 && !selectedServicePortKey" @click="clearSelection" />
       </div>
     </div>
 
@@ -67,6 +67,7 @@ import { CircleClose, RefreshRight } from '@element-plus/icons-vue'
 import * as k8sApi from '@/features/k8s/api/k8s'
 import { getPodRowKey, getRowNamespace, matchLabels } from '@/features/k8s/pages/ClusterManageView.utils'
 import MultiPodLogWorkbench from '@/features/k8s/pages/clusterManage/overlays/MultiPodLogWorkbench.vue'
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import type { ApiError } from '@/shared/utils/error'
 import { notifyError } from '@/shared/utils/notify'
 
@@ -80,6 +81,7 @@ type PodTarget = {
   name: string
   containers?: string[]
   container?: string
+  crashLoopBackOffContainers?: string[]
 }
 
 type ServicePortOption = {
@@ -156,7 +158,8 @@ const workbenchTargets = computed<PodTarget[]>(() => {
         ns: getRowNamespace(row) ?? '',
         name: String(row?.metadata?.name ?? '').trim(),
         containers,
-        container: containers[0] ?? undefined
+        container: containers[0] ?? undefined,
+        crashLoopBackOffContainers: getCrashLoopBackOffContainers(row)
       }
     })
     .filter((item) => item.ns && item.name)
@@ -246,6 +249,14 @@ function normalizeSelector(input: unknown): Record<string, string> {
     out[label] = text
   }
   return out
+}
+
+function getCrashLoopBackOffContainers(row: any): string[] {
+  const statuses: any[] = Array.isArray(row?.status?.containerStatuses) ? row.status.containerStatuses : []
+  return statuses
+    .filter((status) => String(status?.state?.waiting?.reason ?? '').trim() === 'CrashLoopBackOff')
+    .map((status) => String(status?.name ?? '').trim())
+    .filter(Boolean)
 }
 
 function formatPortLabel(port: any): string {
@@ -339,6 +350,7 @@ function clearSelection() {
 
 .ops-log-page__actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex: 0 0 auto;
 }

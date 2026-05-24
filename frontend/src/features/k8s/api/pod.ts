@@ -36,7 +36,7 @@ export async function getPodLogs(
   clusterId: number,
   ns: string,
   pod: string,
-  params: { container?: string; tail_lines?: number } = {},
+  params: { container?: string; tail_lines?: number; previous?: boolean } = {},
   options: { signal?: AbortSignal } = {}
 ): Promise<{ text: string }> {
   const resp = (await http.get(`/api/v1/clusters/${clusterId}/pods/${encodeURIComponent(ns)}/${encodeURIComponent(pod)}/logs`, {

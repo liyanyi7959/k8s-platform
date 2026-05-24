@@ -5,18 +5,24 @@
         <div class="multi-pod-log__title">{{ props.title }}</div>
         <div v-if="showHeaderMeta" class="multi-pod-log__meta">{{ headerMeta }}</div>
       </div>
-      <el-space wrap>
+      <div class="multi-pod-log__header-tools">
         <el-select v-model="tailLines" class="multi-pod-log__tail" @change="restartCurrentSource">
           <el-option v-for="count in tailLineOptions" :key="count" :label="`尾部 ${count} 行`" :value="count" />
         </el-select>
         <el-switch v-model="liveMode" inline-prompt active-text="实时" inactive-text="快照" @change="restartCurrentSource" />
         <el-switch v-model="autoScroll" inline-prompt active-text="自动滚动" inactive-text="手动" />
-        <el-button :icon="RefreshRight" :loading="isActiveSourceBusy" @click="restartCurrentSource">刷新当前</el-button>
-        <el-button :icon="Delete" :disabled="!hasBufferedLogs" @click="clearLogs">清空全部</el-button>
-        <el-button :icon="CopyDocument" :disabled="!fullText.trim()" @click="copyAll">复制全部</el-button>
-        <el-button :icon="Download" :disabled="!fullText.trim()" @click="downloadAll">下载 .txt</el-button>
-        <el-button v-if="props.showCloseButton" :icon="Close" @click="emit('request-close')">关闭</el-button>
-      </el-space>
+        <div class="multi-pod-log__scope-group">
+          <span class="multi-pod-log__scope-label">全部 Pod</span>
+          <div class="multi-pod-log__icon-actions">
+            <ActionIconButton :icon="Delete" tooltip="清空全部 Pod 日志" size="toolbar" variant="danger" :disabled="!hasBufferedLogs" @click="clearLogs" />
+            <ActionIconButton :icon="CopyDocument" tooltip="复制全部 Pod 当前缓冲日志" size="toolbar" variant="copy" :disabled="!fullText.trim()" @click="copyAll" />
+            <ActionIconButton :icon="Download" tooltip="下载全部 Pod 当前缓冲日志 (.txt)" size="toolbar" variant="success" :disabled="!fullText.trim()" @click="downloadAll" />
+          </div>
+        </div>
+        <div v-if="props.showCloseButton" class="multi-pod-log__icon-actions">
+          <ActionIconButton :icon="Close" tooltip="关闭日志工作台" size="toolbar" variant="danger" @click="emit('request-close')" />
+        </div>
+      </div>
     </div>
 
     <div v-if="showStatusBar" class="multi-pod-log__statusbar">
@@ -88,9 +94,17 @@
               <el-option v-for="container in activeSource.containers" :key="container" :label="container" :value="container" />
             </el-select>
             <span v-else class="multi-pod-log__viewer-container-label">默认容器</span>
-            <el-button size="small" :icon="RefreshRight" @click="restartSource(activeSource)">刷新当前</el-button>
-            <el-button size="small" :icon="CopyDocument" :disabled="!activeSourceText.trim()" @click="copySource(activeSource)">复制当前</el-button>
-            <el-button size="small" :icon="Delete" :disabled="activeLineCount === 0" @click="clearSourceLogs(activeSource)">清空当前</el-button>
+            <div class="multi-pod-log__scope-group multi-pod-log__scope-group--viewer">
+              <span class="multi-pod-log__scope-label">当前 Pod</span>
+              <div class="multi-pod-log__icon-actions">
+                <ActionIconButton :icon="RefreshRight" tooltip="刷新当前 Pod 日志" size="toolbar" :loading="isActiveSourceBusy" @click="restartSource(activeSource)" />
+                <ActionIconButton :icon="CopyDocument" tooltip="复制当前 Pod 当前缓冲日志" size="toolbar" variant="copy" :disabled="!activeSourceText.trim()" @click="copySource(activeSource)" />
+                <ActionIconButton :icon="View" :tooltip="`下载当前滚动范围日志 (${activeViewedLineCount} 行)`" size="toolbar" variant="info" :disabled="activeViewedLineCount === 0" @click="downloadViewedSource(activeSource)" />
+                <ActionIconButton :icon="Download" tooltip="下载当前 Pod 完整日志 (.txt)" size="toolbar" variant="success" :disabled="!props.clusterId" :loading="downloadingSourceId === activeSource.id" @click="downloadSource(activeSource)" />
+                <ActionIconButton v-if="canDownloadPreviousSource" :icon="Clock" tooltip="下载当前 Pod 崩溃前日志 (.txt)" size="toolbar" variant="warn" :disabled="!props.clusterId" :loading="downloadingPreviousSourceId === activeSource.id" @click="downloadPreviousSource(activeSource)" />
+                <ActionIconButton :icon="Delete" tooltip="清空当前 Pod 日志" size="toolbar" variant="danger" :disabled="activeLineCount === 0" @click="clearSourceLogs(activeSource)" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -123,9 +137,10 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { Close, CopyDocument, Delete, Download, RefreshRight } from '@element-plus/icons-vue'
+import { Clock, Close, CopyDocument, Delete, Download, RefreshRight, View } from '@element-plus/icons-vue'
 
 import * as k8sApi from '@/features/k8s/api/k8s'
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import type { ApiError } from '@/shared/utils/error'
 import { notifyError, notifySuccess } from '@/shared/utils/notify'
 import { copyToClipboard, downloadBlob, sanitizeFileName } from '@/shared/utils/text'
@@ -153,6 +168,7 @@ type MultiPodLogTarget = {
   name: string
   container?: string
   containers?: string[]
+  crashLoopBackOffContainers?: string[]
 }
 
 type PodLogFrame = {
@@ -168,10 +184,12 @@ type LogSource = {
   ns: string
   name: string
   containers: string[]
+  crashLoopBackOffContainers: string[]
   container: string
   connecting: boolean
   status: string
   remainder: string
+  pendingReplayLine: string
   lines: string[]
   ws: WebSocket | null
   seq: number
@@ -187,6 +205,8 @@ const autoScroll = ref(true)
 const tailLines = ref(200)
 const sources = ref<LogSource[]>([])
 const activeSourceId = ref('')
+const downloadingSourceId = ref('')
+const downloadingPreviousSourceId = ref('')
 const activeViewportRef = ref<HTMLElement | null>(null)
 const activeScrollTop = ref(0)
 const activeViewportHeight = ref(0)
@@ -257,6 +277,19 @@ const activeSourceTone = computed<StatusTone>(() => (activeSource.value ? status
 const activeLines = computed(() => (activeSource.value ? getDisplayLines(activeSource.value) : []))
 const activeLineCount = computed(() => (activeSource.value ? getBufferedLineCount(activeSource.value) : 0))
 const activeSourceText = computed(() => (activeSource.value ? getSourceText(activeSource.value) : ''))
+const activeViewportLineCount = computed(() => Math.max(1, Math.ceil((activeViewportHeight.value || LINE_HEIGHT) / LINE_HEIGHT)))
+const activeViewedLineCount = computed(() => {
+  if (!activeSource.value || activeLineCount.value === 0) return 0
+  const bottomLine = Math.ceil((activeScrollTop.value + (activeViewportHeight.value || LINE_HEIGHT)) / LINE_HEIGHT)
+  return Math.min(activeLineCount.value, Math.max(activeViewportLineCount.value, bottomLine))
+})
+const activeViewedSourceText = computed(() => activeLines.value.slice(0, activeViewedLineCount.value).join('\n'))
+const canDownloadPreviousSource = computed(() => {
+  if (!activeSource.value) return false
+  if (activeSource.value.crashLoopBackOffContainers.length === 0) return false
+  if (!activeSource.value.container) return activeSource.value.crashLoopBackOffContainers.length > 0
+  return activeSource.value.crashLoopBackOffContainers.includes(activeSource.value.container)
+})
 const activeTotalHeight = computed(() => activeLineCount.value * LINE_HEIGHT)
 const activeStartIndex = computed(() => Math.max(0, Math.floor(activeScrollTop.value / LINE_HEIGHT) - OVERSCAN))
 const activeVisibleCount = computed(() => Math.ceil((activeViewportHeight.value || 0) / LINE_HEIGHT) + OVERSCAN * 2)
@@ -330,6 +363,7 @@ function normalizeTargets(nextTargets: MultiPodLogTarget[]): LogSource[] {
     if (!ns || !name) continue
     const id = `${ns}/${name}`
     const containers = Array.from(new Set((Array.isArray(item?.containers) ? item.containers : []).map((value) => String(value ?? '').trim()).filter(Boolean)))
+    const crashLoopBackOffContainers = Array.from(new Set((Array.isArray(item?.crashLoopBackOffContainers) ? item.crashLoopBackOffContainers : []).map((value) => String(value ?? '').trim()).filter(Boolean)))
     const preferredContainer = String(item?.container ?? '').trim()
     const container = preferredContainer && containers.includes(preferredContainer) ? preferredContainer : containers[0] ?? ''
     map.set(id, {
@@ -337,10 +371,12 @@ function normalizeTargets(nextTargets: MultiPodLogTarget[]): LogSource[] {
       ns,
       name,
       containers,
+      crashLoopBackOffContainers,
       container,
       connecting: false,
       status: '未连接',
       remainder: '',
+      pendingReplayLine: '',
       lines: [],
       ws: null,
       seq: 0
@@ -547,6 +583,7 @@ function destroyActiveViewportObserver() {
 function clearSourceLogs(source: LogSource) {
   source.lines = []
   source.remainder = ''
+  source.pendingReplayLine = ''
   if (activeSourceId.value === source.id && activeViewportRef.value) {
     activeViewportRef.value.scrollTop = 0
     activeScrollTop.value = 0
@@ -581,7 +618,74 @@ async function copySource(source: LogSource) {
 function downloadAll() {
   if (!fullText.value.trim()) return
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-  downloadBlob(`pod_log_workbench_${sanitizeFileName(String(props.clusterId))}_${timestamp}.txt`, new Blob([fullText.value], { type: 'text/plain;charset=utf-8' }))
+  downloadBlob(`pod_logs_all_${sanitizeFileName(String(props.clusterId))}_${timestamp}.txt`, new Blob([fullText.value], { type: 'text/plain;charset=utf-8' }))
+}
+
+function downloadViewedSource(source: LogSource) {
+  if (activeSourceId.value !== source.id) return
+  const text = activeViewedSourceText.value
+  if (!text.trim()) return
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const containerPart = source.container ? `_${sanitizeFileName(source.container)}` : ''
+  const fileName = `pod_log_viewed_${activeViewedLineCount.value}lines_${sanitizeFileName(source.ns)}_${sanitizeFileName(source.name)}${containerPart}_${timestamp}.txt`
+  downloadBlob(fileName, new Blob([text], { type: 'text/plain;charset=utf-8' }))
+}
+
+async function downloadSource(source: LogSource) {
+  if (!props.clusterId || downloadingSourceId.value) return
+  downloadingSourceId.value = source.id
+  try {
+    const result = await k8sApi.getPodLogs(props.clusterId, source.ns, source.name, {
+      container: source.container || undefined,
+      tail_lines: 0
+    })
+    const text = String(result.text || '')
+    if (!text.trim()) {
+      notifyError(`${source.name} 暂无可下载日志`)
+      return
+    }
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const containerPart = source.container ? `_${sanitizeFileName(source.container)}` : ''
+    const fileName = `pod_log_full_${sanitizeFileName(source.ns)}_${sanitizeFileName(source.name)}${containerPart}_${timestamp}.txt`
+    downloadBlob(fileName, new Blob([text], { type: 'text/plain;charset=utf-8' }))
+  } catch (error) {
+    const err = error as ApiError
+    const message = err?.message ? (err.requestId ? `${err.message} (request_id=${err.requestId})` : err.message) : '下载完整日志失败'
+    notifyError(`${source.ns}/${source.name}：${message}`)
+  } finally {
+    if (downloadingSourceId.value === source.id) {
+      downloadingSourceId.value = ''
+    }
+  }
+}
+
+async function downloadPreviousSource(source: LogSource) {
+  if (!props.clusterId || downloadingPreviousSourceId.value) return
+  downloadingPreviousSourceId.value = source.id
+  try {
+    const result = await k8sApi.getPodLogs(props.clusterId, source.ns, source.name, {
+      container: source.container || undefined,
+      tail_lines: 0,
+      previous: true
+    })
+    const text = String(result.text || '')
+    if (!text.trim()) {
+      notifyError(`${source.name} 暂无崩溃前日志`)
+      return
+    }
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const containerPart = source.container ? `_${sanitizeFileName(source.container)}` : ''
+    const fileName = `pod_log_previous_${sanitizeFileName(source.ns)}_${sanitizeFileName(source.name)}${containerPart}_${timestamp}.txt`
+    downloadBlob(fileName, new Blob([text], { type: 'text/plain;charset=utf-8' }))
+  } catch (error) {
+    const err = error as ApiError
+    const message = err?.message ? (err.requestId ? `${err.message} (request_id=${err.requestId})` : err.message) : '下载崩溃前日志失败'
+    notifyError(`${source.ns}/${source.name}：${message}`)
+  } finally {
+    if (downloadingPreviousSourceId.value === source.id) {
+      downloadingPreviousSourceId.value = ''
+    }
+  }
 }
 
 function scrollActiveSourceToBottom(sourceId = activeSourceId.value) {
@@ -598,6 +702,10 @@ function trimSourceLines(lines: string[]): string[] {
   return lines.slice(lines.length - MAX_LOG_LINES_PER_SOURCE)
 }
 
+function normalizeLogText(text: string): string {
+  return String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+}
+
 function appendLines(source: LogSource, lines: string[]) {
   if (lines.length === 0) return
   source.lines = trimSourceLines(source.lines.concat(lines))
@@ -607,7 +715,7 @@ function appendLines(source: LogSource, lines: string[]) {
 }
 
 function appendChunk(source: LogSource, chunk: string) {
-  const normalized = String(chunk || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  const normalized = normalizeLogText(chunk)
   if (!normalized) return
   const combined = `${source.remainder}${normalized}`
   const endsWithNewLine = combined.endsWith('\n')
@@ -619,6 +727,29 @@ function appendChunk(source: LogSource, chunk: string) {
     source.remainder = parts.pop() ?? ''
   }
   appendLines(source, parts)
+}
+
+function hydrateSourceLogs(source: LogSource, text: string) {
+  clearSourceLogs(source)
+  const normalized = normalizeLogText(text)
+  if (!normalized) return
+  appendChunk(source, normalized)
+}
+
+function consumeReplayLine(source: LogSource, chunk: string): string {
+  const normalized = normalizeLogText(chunk)
+  if (!normalized || !source.pendingReplayLine) return normalized
+  if (normalized === source.pendingReplayLine) {
+    source.pendingReplayLine = ''
+    return ''
+  }
+  const replayWithBreak = `${source.pendingReplayLine}\n`
+  if (normalized.startsWith(replayWithBreak)) {
+    source.pendingReplayLine = ''
+    return normalized.slice(replayWithBreak.length)
+  }
+  source.pendingReplayLine = ''
+  return normalized
 }
 
 function flushRemainder(source: LogSource) {
@@ -669,7 +800,7 @@ function handleSourceFrame(source: LogSource, rawData: unknown) {
   }
   const frameType = String(frame?.type || '').toLowerCase()
   if (frameType === 'chunk') {
-    appendChunk(source, String(frame?.data || ''))
+    appendChunk(source, consumeReplayLine(source, String(frame?.data || '')))
     return
   }
   if (frameType === 'eof') {
@@ -694,10 +825,37 @@ async function startSource(source: LogSource) {
   source.status = liveMode.value ? '连接中' : '加载中'
 
   try {
+    if (liveMode.value) {
+      try {
+        const snapshot = await k8sApi.getPodLogs(props.clusterId, source.ns, source.name, {
+          container: source.container || undefined,
+          tail_lines: tailLines.value
+        })
+        if (destroyed || source.seq !== seq) return
+        hydrateSourceLogs(source, snapshot.text)
+        const displayLines = getDisplayLines(source)
+        source.pendingReplayLine = displayLines.length > 0 ? displayLines[displayLines.length - 1] : ''
+      } catch {
+        if (destroyed || source.seq !== seq) return
+        source.pendingReplayLine = ''
+      }
+    } else {
+      const snapshot = await k8sApi.getPodLogs(props.clusterId, source.ns, source.name, {
+        container: source.container || undefined,
+        tail_lines: tailLines.value
+      })
+      if (destroyed || source.seq !== seq) return
+      hydrateSourceLogs(source, snapshot.text)
+      source.connecting = false
+      source.status = '已加载'
+      scrollActiveSourceToBottom(source.id)
+      return
+    }
+
     const session = await k8sApi.createPodLogSession(props.clusterId, source.ns, source.name, {
       container: source.container || undefined,
       follow: liveMode.value,
-      tail_lines: tailLines.value
+      tail_lines: 1
     })
     if (destroyed || source.seq !== seq) return
     const wsUrl = buildPodLogWsUrl(session.ws_url)
@@ -834,6 +992,42 @@ onBeforeUnmount(() => {
 
 .multi-pod-log__tail {
   width: 128px;
+}
+
+.multi-pod-log__header-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.multi-pod-log__shell--compact .multi-pod-log__header-tools {
+  gap: 6px;
+}
+
+.multi-pod-log__scope-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.multi-pod-log__scope-group--viewer {
+  margin-left: 2px;
+}
+
+.multi-pod-log__scope-label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.multi-pod-log__icon-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .multi-pod-log__statusbar {
@@ -1152,6 +1346,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .multi-pod-log__viewer-container {
@@ -1233,6 +1428,11 @@ onBeforeUnmount(() => {
 @media (max-width: 1280px) {
   .multi-pod-log__header {
     flex-direction: column;
+  }
+
+  .multi-pod-log__header-tools {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .multi-pod-log__statusbar {

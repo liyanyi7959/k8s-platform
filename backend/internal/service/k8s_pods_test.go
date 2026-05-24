@@ -49,6 +49,43 @@ func TestBuildPodExecOptions_EnablesStderrWithoutTTY(t *testing.T) {
 	}
 }
 
+func TestBuildPodLogOptions_UsesTailLinesWhenPositive(t *testing.T) {
+	tailLines := int64(120)
+	options := buildPodLogOptions(" app ", true, tailLines, false)
+
+	if options.Container != "app" {
+		t.Fatalf("expected trimmed container, got %q", options.Container)
+	}
+	if !options.Follow {
+		t.Fatal("expected follow enabled")
+	}
+	if options.TailLines == nil || *options.TailLines != tailLines {
+		t.Fatalf("expected tail lines %d, got %#v", tailLines, options.TailLines)
+	}
+}
+
+func TestBuildPodLogOptions_OmitsTailLinesWhenZero(t *testing.T) {
+	options := buildPodLogOptions("", false, 0, false)
+
+	if options.Follow {
+		t.Fatal("expected follow disabled")
+	}
+	if options.TailLines != nil {
+		t.Fatalf("expected nil tail lines for full log request, got %#v", *options.TailLines)
+	}
+}
+
+func TestBuildPodLogOptions_UsesPreviousInstanceWhenRequested(t *testing.T) {
+	options := buildPodLogOptions("worker", false, 200, true)
+
+	if !options.Previous {
+		t.Fatal("expected previous log flag enabled")
+	}
+	if options.Container != "worker" {
+		t.Fatalf("expected worker container, got %q", options.Container)
+	}
+}
+
 func TestNormalizePodExecError_KubeletRefused(t *testing.T) {
 	pod := &corev1.Pod{}
 	pod.Spec.NodeName = "node4"

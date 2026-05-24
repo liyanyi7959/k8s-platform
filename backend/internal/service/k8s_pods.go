@@ -334,8 +334,9 @@ func sortPods(pods []*corev1.Pod, sortBy, order string) {
 // ---------------------------------------------------------------------------
 
 // PodLogStream 获取 Pod 日志流。
-// follow=true 时返回持续输出的流；tailLines<=0 时默认取最近 200 行。
-func (s *K8sService) PodLogStream(ctx context.Context, clusterID uint64, namespace, pod string, container string, follow bool, tailLines int64) (io.ReadCloser, error) {
+// follow=true 时返回持续输出的流；tailLines=0 表示全量日志；tailLines<0 时回退到最近 200 行。
+// previous=true 时返回上一个容器实例的日志。
+func (s *K8sService) PodLogStream(ctx context.Context, clusterID uint64, namespace, pod string, container string, follow bool, tailLines int64, previous bool) (io.ReadCloser, error) {
 	cfg, err := s.restConfig(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -351,7 +352,7 @@ func (s *K8sService) PodLogStream(ctx context.Context, clusterID uint64, namespa
 	if ns == "" || name == "" {
 		return nil, ErrInvalidParams
 	}
-	stream, err := cs.CoreV1().Pods(ns).GetLogs(name, buildPodLogOptions(container, follow, tailLines)).Stream(ctx)
+	stream, err := cs.CoreV1().Pods(ns).GetLogs(name, buildPodLogOptions(container, follow, tailLines, previous)).Stream(ctx)
 	if err != nil {
 		return nil, normalizeK8sErr(err)
 	}
@@ -359,8 +360,8 @@ func (s *K8sService) PodLogStream(ctx context.Context, clusterID uint64, namespa
 }
 
 // PodLogs 获取 Pod 日志。
-func (s *K8sService) PodLogs(ctx context.Context, clusterID uint64, namespace, pod string, container string, tailLines int64) (string, error) {
-	stream, err := s.PodLogStream(ctx, clusterID, namespace, pod, container, false, tailLines)
+func (s *K8sService) PodLogs(ctx context.Context, clusterID uint64, namespace, pod string, container string, tailLines int64, previous bool) (string, error) {
+	stream, err := s.PodLogStream(ctx, clusterID, namespace, pod, container, false, tailLines, previous)
 	if err != nil {
 		return "", err
 	}
@@ -372,15 +373,19 @@ func (s *K8sService) PodLogs(ctx context.Context, clusterID uint64, namespace, p
 	return string(raw), nil
 }
 
-func buildPodLogOptions(container string, follow bool, tailLines int64) *corev1.PodLogOptions {
-	if tailLines <= 0 {
-		tailLines = 200
-	}
-	return &corev1.PodLogOptions{
+func buildPodLogOptions(container string, follow bool, tailLines int64, previous bool) *corev1.PodLogOptions {
+	options := &corev1.PodLogOptions{
 		Container: strings.TrimSpace(container),
 		Follow:    follow,
-		TailLines: &tailLines,
+		Previous:  previous,
 	}
+	if tailLines < 0 {
+		tailLines = 200
+	}
+	if tailLines > 0 {
+		options.TailLines = &tailLines
+	}
+	return options
 }
 
 func buildPodExecOptions(container *string, command []string, tty bool, stdin io.Reader, stdout io.Writer, stderr io.Writer) *corev1.PodExecOptions {
