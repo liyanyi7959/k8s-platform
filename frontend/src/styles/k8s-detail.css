@@ -261,6 +261,60 @@
   margin-top: 0;
 }
 
+.k8s-detail-box.cm-host {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin-top: 0;
+  padding: 0;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.k8s-detail-box.cm-host .cm-editor,
+.k8s-detail-box.cm-host .cm-mergeView,
+.k8s-detail-box.cm-host .cm-mergeViewEditors,
+.k8s-detail-box.cm-host .cm-mergeViewEditor {
+  width: 100%;
+  min-width: 0;
+}
+
+.k8s-detail-box.cm-host .cm-mergeView {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.k8s-detail-box.cm-host .cm-mergeViewEditors {
+  flex: 1;
+  min-height: 0;
+}
+
+.k8s-detail-box.cm-host .cm-editor,
+.k8s-detail-box.cm-host .cm-scroller {
+  height: 100%;
+}
+
+.k8s-detail-box.cm-host .cm-scroller {
+  width: 100%;
+  overflow: auto;
+}
+
+.k8s-detail-box.cm-host .cm-sizer {
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.k8s-detail-box.cm-host .cm-content {
+  width: max-content;
+  min-width: 100%;
+}
+
+.k8s-detail-box.cm-host .cm-lineWrapping {
+  width: 100%;
+}
+
 .k8s-detail-box--wrap {
   white-space: pre-wrap;
   word-break: break-word;
