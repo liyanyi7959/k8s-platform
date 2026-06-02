@@ -1,21 +1,64 @@
 <template>
   <div class="settings-page">
     <section class="settings-hero">
-      <div>
-        <p class="eyebrow">Model Hub</p>
-        <h1>AI 模型与提供商配置</h1>
+      <div class="settings-hero__main">
+        <div class="hero-mark">
+          <span class="hero-mark__icon">
+            <el-icon><Cpu /></el-icon>
+          </span>
+          <div>
+            <p class="eyebrow">Model Hub</p>
+            <h1>AI 模型与提供商配置</h1>
+          </div>
+        </div>
         <p>
           统一维护模型接入、能力标签和默认排序。当前版本支持多提供商、多模型配置，为后续聊天、诊断、图片理解与工具调用做准备。
         </p>
+        <div class="hero-chips">
+          <span class="hero-chip">
+            <el-icon><Connection /></el-icon>
+            多提供商接入
+          </span>
+          <span class="hero-chip">
+            <el-icon><MagicStick /></el-icon>
+            能力标签管理
+          </span>
+          <span class="hero-chip">
+            <el-icon><Cpu /></el-icon>
+            与 AI 助手联动
+          </span>
+        </div>
       </div>
       <div class="hero-side">
         <div class="hero-box">
-          <span>提供商</span>
-          <strong>{{ providers.length }}</strong>
+          <span class="hero-box__icon">
+            <el-icon><Connection /></el-icon>
+          </span>
+          <div>
+            <span>提供商</span>
+            <strong>{{ providers.length }}</strong>
+            <small>{{ enabledProviderCount }} 个已启用</small>
+          </div>
         </div>
         <div class="hero-box">
-          <span>模型</span>
-          <strong>{{ models.length }}</strong>
+          <span class="hero-box__icon">
+            <el-icon><Cpu /></el-icon>
+          </span>
+          <div>
+            <span>模型</span>
+            <strong>{{ models.length }}</strong>
+            <small>{{ enabledModelCount }} 个可调度</small>
+          </div>
+        </div>
+        <div class="hero-box">
+          <span class="hero-box__icon">
+            <el-icon><MagicStick /></el-icon>
+          </span>
+          <div>
+            <span>视觉模型</span>
+            <strong>{{ visionModelCount }}</strong>
+            <small>适配图片理解场景</small>
+          </div>
         </div>
       </div>
     </section>
@@ -23,14 +66,19 @@
     <section class="grid-layout">
       <div class="panel-card">
         <div class="panel-head">
-          <div>
-            <h2>提供商</h2>
-            <p>保存 API 地址、密钥与扩展参数。</p>
+          <div class="panel-head__title">
+            <span class="panel-head__icon">
+              <el-icon><Connection /></el-icon>
+            </span>
+            <div>
+              <h2>提供商</h2>
+              <p>保存 API 地址、密钥与扩展参数。</p>
+            </div>
           </div>
-          <el-button type="primary" @click="openProviderDialog()">新增提供商</el-button>
+          <el-button type="primary" :icon="Plus" @click="openProviderDialog()">新增提供商</el-button>
         </div>
 
-        <el-table :data="providers" stripe>
+        <el-table :data="providers" class="page-table" stripe border>
           <el-table-column prop="name" label="名称" min-width="140" />
           <el-table-column prop="provider_type" label="类型" min-width="120" />
           <el-table-column prop="base_url" label="Base URL" min-width="220" />
@@ -48,9 +96,9 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" fixed="right">
+          <el-table-column label="操作" width="86" fixed="right">
             <template #default="{ row }">
-              <el-button text @click="openProviderDialog(row)">编辑</el-button>
+              <ActionIconButton :icon="EditPen" tooltip="编辑提供商" variant="edit" @click="openProviderDialog(row)" />
             </template>
           </el-table-column>
         </el-table>
@@ -58,14 +106,19 @@
 
       <div class="panel-card">
         <div class="panel-head">
-          <div>
-            <h2>模型</h2>
-            <p>标记模型的用途、视觉能力与工具能力。</p>
+          <div class="panel-head__title">
+            <span class="panel-head__icon">
+              <el-icon><Cpu /></el-icon>
+            </span>
+            <div>
+              <h2>模型</h2>
+              <p>标记模型的用途、视觉能力与工具能力。</p>
+            </div>
           </div>
-          <el-button type="primary" @click="openModelDialog()">新增模型</el-button>
+          <el-button type="primary" :icon="Plus" @click="openModelDialog()">新增模型</el-button>
         </div>
 
-        <el-table :data="models" stripe>
+        <el-table :data="models" class="page-table" stripe border>
           <el-table-column prop="name" label="模型名称" min-width="150" />
           <el-table-column prop="provider_name" label="提供商" min-width="140" />
           <el-table-column prop="model_code" label="模型编码" min-width="180" />
@@ -73,15 +126,24 @@
           <el-table-column label="能力" min-width="160">
             <template #default="{ row }">
               <div class="capability-tags">
-                <el-tag size="small" effect="plain">{{ row.enabled ? '启用' : '停用' }}</el-tag>
-                <el-tag v-if="row.supports_tools" size="small" type="warning" effect="plain">工具</el-tag>
-                <el-tag v-if="row.supports_vision" size="small" type="success" effect="plain">视觉</el-tag>
+                <span class="capability-pill" :class="row.enabled ? 'capability-pill--active' : 'capability-pill--muted'">
+                  <el-icon><Connection /></el-icon>
+                  {{ row.enabled ? '启用' : '停用' }}
+                </span>
+                <span v-if="row.supports_tools" class="capability-pill capability-pill--tools">
+                  <el-icon><MagicStick /></el-icon>
+                  工具
+                </span>
+                <span v-if="row.supports_vision" class="capability-pill capability-pill--vision">
+                  <el-icon><Cpu /></el-icon>
+                  视觉
+                </span>
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" fixed="right">
+          <el-table-column label="操作" width="86" fixed="right">
             <template #default="{ row }">
-              <el-button text @click="openModelDialog(row)">编辑</el-button>
+              <ActionIconButton :icon="EditPen" tooltip="编辑模型" variant="edit" @click="openModelDialog(row)" />
             </template>
           </el-table-column>
         </el-table>
@@ -160,8 +222,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Connection, Cpu, EditPen, MagicStick, Plus } from '@element-plus/icons-vue'
 
 import { createAIModel, createAIProvider, getAIModels, getAIProviders, patchAIModel, patchAIProvider, type AIModelItem, type AIProviderItem } from '@/features/ai/api/ai'
+import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 
 const providers = ref<AIProviderItem[]>([])
 const models = ref<AIModelItem[]>([])
@@ -197,6 +261,9 @@ const modelForm = reactive({
 
 const providerDialogTitle = computed(() => editingProviderId.value ? '编辑提供商' : '新增提供商')
 const modelDialogTitle = computed(() => editingModelId.value ? '编辑模型' : '新增模型')
+const enabledProviderCount = computed(() => providers.value.filter((item) => item.enabled).length)
+const enabledModelCount = computed(() => models.value.filter((item) => item.enabled).length)
+const visionModelCount = computed(() => models.value.filter((item) => item.supports_vision).length)
 
 async function loadData() {
   const [providerItems, modelItems] = await Promise.all([
@@ -316,35 +383,67 @@ onMounted(loadData)
 .settings-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   padding: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.08), transparent 24%),
+    radial-gradient(circle at top left, rgba(250, 204, 21, 0.08), transparent 22%),
+    linear-gradient(180deg, #f7f9fc 0%, #f4f7fb 100%);
 }
 
 .settings-hero,
 .panel-card {
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 24px;
+  border-radius: 16px;
   background:
-    radial-gradient(circle at top right, rgba(191, 219, 254, 0.25), transparent 28%),
-    linear-gradient(180deg, #ffffff, #f5f8ff);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06);
+    radial-gradient(circle at top right, rgba(191, 219, 254, 0.18), transparent 28%),
+    linear-gradient(180deg, #ffffff, #f9fbff);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
 }
 
 .settings-hero {
   display: flex;
   justify-content: space-between;
-  gap: 20px;
-  padding: 28px;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+}
+
+.settings-hero__main {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.hero-mark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-mark__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(96, 165, 250, 0.2));
+  color: #2563eb;
 }
 
 .settings-hero h1 {
   margin: 0;
   color: #1f2937;
+  font-size: 18px;
+  line-height: 1.35;
 }
 
 .settings-hero p {
-  max-width: 760px;
-  line-height: 1.7;
+  max-width: 680px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
   color: #4b5563;
 }
 
@@ -356,57 +455,124 @@ onMounted(loadData)
   color: #2563eb;
 }
 
+.hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.86);
+  color: #1f2937;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .hero-side {
   display: grid;
-  gap: 12px;
-  min-width: 180px;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 10px;
+  min-width: 420px;
+  flex-shrink: 0;
 }
 
 .hero-box {
-  padding: 16px 18px;
-  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.hero-box__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  flex-shrink: 0;
 }
 
 .hero-box span {
   display: block;
   color: #6b7280;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .hero-box strong {
   display: block;
-  margin-top: 6px;
-  font-size: 26px;
+  margin-top: 2px;
+  font-size: 20px;
+  line-height: 1.1;
   color: #1f2937;
+}
+
+.hero-box small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #94a3b8;
 }
 
 .grid-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 18px;
+  gap: 16px;
 }
 
 .panel-card {
-  padding: 20px;
+  padding: 16px 18px;
 }
 
 .panel-head {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-  margin-bottom: 16px;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.panel-head__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-head__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  flex-shrink: 0;
 }
 
 .panel-head h2 {
   margin: 0;
   color: #1f2937;
+  font-size: 16px;
+  line-height: 1.35;
 }
 
 .panel-head p {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
   color: #6b7280;
 }
 
@@ -416,15 +582,124 @@ onMounted(loadData)
   flex-wrap: wrap;
 }
 
+.capability-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1f2937;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.capability-pill--active {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.capability-pill--muted {
+  color: #64748b;
+}
+
+.capability-pill--tools {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
+.capability-pill--vision {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
 .switch-row {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
 }
 
+.settings-page :deep(.el-button) {
+  height: 36px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.settings-page :deep(.el-button--primary) {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  border-color: transparent;
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.18);
+}
+
+.settings-page :deep(.el-input__wrapper),
+.settings-page :deep(.el-select__wrapper),
+.settings-page :deep(.el-textarea__inner),
+.settings-page :deep(.el-input-number) {
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08) inset;
+}
+
+.settings-page :deep(.el-table) {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.settings-page :deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+}
+
+.settings-page :deep(.el-table th.el-table__cell .cell) {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.settings-page :deep(.el-table td.el-table__cell .cell) {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.settings-page :deep(.el-table .el-tag) {
+  font-size: 11px;
+}
+
+.settings-page :deep(.el-form-item__label) {
+  font-size: 13px;
+  color: #475569;
+}
+
+.settings-page :deep(.el-dialog) {
+  border-radius: 20px;
+}
+
 @media (max-width: 1080px) {
   .settings-hero {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-side {
+    min-width: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .settings-page {
+    padding: 14px;
+  }
+
+  .hero-side {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-head,
+  .panel-head__title,
+  .hero-mark {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

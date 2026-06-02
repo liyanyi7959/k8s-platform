@@ -119,11 +119,19 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 	if err != nil {
 		return AIChatResponse{}, err
 	}
+	providerID := conversation.ProviderID
+	if req.ProviderID != nil {
+		providerID = req.ProviderID
+	}
+	modelID := conversation.ModelID
+	if req.ModelID != nil {
+		modelID = req.ModelID
+	}
 	assistantResp, err := s.gateway.Invoke(ctx, AIGatewayRequest{
 		ConversationID:  conversation.ID,
 		AssistantMode:   conversation.AssistantMode,
-		ProviderID:      conversation.ProviderID,
-		ModelID:         conversation.ModelID,
+		ProviderID:      providerID,
+		ModelID:         modelID,
 		PreferModelCode: req.PreferModel,
 		Messages:        history,
 		DiagnosticNotes: diagnosticNotes,

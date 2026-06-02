@@ -527,7 +527,7 @@ func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController) {
 	ai.GET("/providers", aiWritePerm, ctl.ListProviders)
 	ai.POST("/providers", aiWritePerm, ctl.CreateProvider)
 	ai.PATCH("/providers/:id", aiWritePerm, ctl.PatchProvider)
-	ai.GET("/models", aiWritePerm, ctl.ListModels)
+	ai.GET("/models", aiReadPerm, ctl.ListModels)
 	ai.POST("/models", aiWritePerm, ctl.CreateModel)
 	ai.PATCH("/models/:id", aiWritePerm, ctl.PatchModel)
 	ai.GET("/route-settings", aiWritePerm, ctl.GetRouteSettings)

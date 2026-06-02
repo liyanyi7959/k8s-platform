@@ -2,25 +2,52 @@
   <div class="ai-page">
     <section class="topbar-card">
       <div class="topbar-copy">
-        <p class="eyebrow">AI Ops Desk</p>
-        <h1>集群排障工作台</h1>
+        <div class="hero-title">
+          <span class="hero-title__icon">
+            <el-icon><ChatDotRound /></el-icon>
+          </span>
+          <div>
+            <p class="eyebrow">AI Ops Desk</p>
+            <h1>集群排障工作台</h1>
+          </div>
+        </div>
         <p>
-          把会话、证据采集、建议动作和人工确认放到一条连续流程里。AI 只会自动执行只读诊断查询，所有变更提案仍然需要人工确认后才能落地。
+          把会话、证据采集、建议动作和人工确认收敛到一条连续排障链路里。当前页面会优先自动做只读取证，所有变更都保持人工确认，再执行落地。
         </p>
+        <div class="hero-pills">
+          <span class="hero-pill">会话留痕</span>
+          <span class="hero-pill">只读取证</span>
+          <span class="hero-pill">变更强制确认</span>
+        </div>
       </div>
 
       <div class="topbar-metrics">
         <div class="metric-pill">
-          <span>当前集群</span>
-          <strong>{{ currentClusterLabel }}</strong>
+          <span class="metric-pill__icon">
+            <el-icon><Monitor /></el-icon>
+          </span>
+          <div>
+            <span>当前集群</span>
+            <strong>{{ currentClusterLabel }}</strong>
+          </div>
         </div>
         <div class="metric-pill">
-          <span>会话数量</span>
-          <strong>{{ conversationResult.total }}</strong>
+          <span class="metric-pill__icon">
+            <el-icon><Collection /></el-icon>
+          </span>
+          <div>
+            <span>会话数量</span>
+            <strong>{{ conversationResult.total }}</strong>
+          </div>
         </div>
         <div class="metric-pill metric-pill--warn">
-          <span>执行策略</span>
-          <strong>只读自动采集 / 变更强制确认</strong>
+          <span class="metric-pill__icon">
+            <el-icon><Operation /></el-icon>
+          </span>
+          <div>
+            <span>执行策略</span>
+            <strong>只读自动采集 / 变更强制确认</strong>
+          </div>
         </div>
       </div>
     </section>
@@ -42,6 +69,7 @@
         <el-form-item label="搜索会话" class="control-item control-item--grow">
           <el-input
             v-model="keyword"
+            :prefix-icon="Search"
             placeholder="按标题、摘要或问题关键字过滤"
             clearable
             @keyup.enter="loadConversations"
@@ -50,8 +78,8 @@
         </el-form-item>
 
         <div class="control-actions">
-          <el-button type="primary" @click="openCreateDialog">新建会话</el-button>
-          <el-button :loading="loadingConversations" @click="loadConversations">刷新列表</el-button>
+          <el-button type="primary" :icon="Plus" @click="openCreateDialog">新建会话</el-button>
+          <el-button :icon="RefreshRight" :loading="loadingConversations" @click="loadConversations">刷新列表</el-button>
         </div>
       </div>
     </section>
@@ -59,9 +87,14 @@
     <section class="workspace">
       <aside class="sidebar-card">
         <div class="sidebar-head">
-          <div>
-            <h2>会话索引</h2>
-            <p>从最近处理过的问题继续追问，或者新开一个诊断上下文。</p>
+          <div class="panel-title panel-title--tight">
+            <span class="panel-title__icon">
+              <el-icon><Collection /></el-icon>
+            </span>
+            <div>
+              <h2>会话索引</h2>
+              <p>从最近处理过的问题继续追问，或者新开一个诊断上下文。</p>
+            </div>
           </div>
           <el-tag type="info" effect="plain">{{ conversationResult.total }} 条</el-tag>
         </div>
@@ -117,20 +150,25 @@
       <div class="main-column">
         <section class="detail-card">
           <div class="detail-head">
-            <div>
-              <p class="detail-kicker">诊断会话</p>
-              <h2>{{ activeConversation?.title || '开始一段新的 AI 排障对话' }}</h2>
-              <p class="detail-subtitle">
-                {{
-                  activeConversation
-                    ? `${assistantModeLabel(activeConversation.assistant_mode)} · 集群 #${activeConversation.cluster_id} · ${activeConversation.status}`
-                    : '直接在下方输入问题即可自动创建会话。AI 会先尝试只读采集证据，再给出结论和建议动作。'
-                }}
-              </p>
+            <div class="panel-title panel-title--tight">
+              <span class="panel-title__icon panel-title__icon--primary">
+                <el-icon><Document /></el-icon>
+              </span>
+              <div>
+                <p class="detail-kicker">诊断会话</p>
+                <h2>{{ activeConversation?.title || '开始一段新的 AI 排障对话' }}</h2>
+                <p class="detail-subtitle">
+                  {{
+                    activeConversation
+                      ? `${assistantModeLabel(activeConversation.assistant_mode)} · 集群 #${activeConversation.cluster_id} · ${activeConversation.status}`
+                      : '直接在下方输入问题即可自动创建会话。AI 会先尝试只读采集证据，再给出结论和建议动作。'
+                  }}
+                </p>
+              </div>
             </div>
             <div class="detail-head__actions">
-              <el-button v-if="activeConversation" text @click="reloadActiveConversation">刷新详情</el-button>
-              <el-button v-if="activeConversation" type="primary" plain @click="openProposalDialog">创建提案</el-button>
+              <el-button v-if="activeConversation" text :icon="RefreshRight" @click="reloadActiveConversation">刷新详情</el-button>
+              <el-button v-if="activeConversation" type="primary" plain :icon="MagicStick" @click="openProposalDialog">创建提案</el-button>
             </div>
           </div>
 
@@ -165,9 +203,14 @@
 
             <section v-if="activeSuggestedActions.length > 0" class="section-card">
               <div class="section-head">
-                <div>
-                  <h3>建议动作</h3>
-                  <p>来自 AI 最近一次回复的结构化建议，可直接生成待确认提案。</p>
+                <div class="panel-title panel-title--tight">
+                  <span class="panel-title__icon panel-title__icon--accent">
+                    <el-icon><MagicStick /></el-icon>
+                  </span>
+                  <div>
+                    <h3>建议动作</h3>
+                    <p>来自 AI 最近一次回复的结构化建议，可直接生成待确认提案。</p>
+                  </div>
                 </div>
                 <el-tag type="warning" effect="plain">{{ activeSuggestedActions.length }} 条</el-tag>
               </div>
@@ -225,9 +268,14 @@
 
             <section v-if="activeConversation.action_proposals.length > 0" class="section-card">
               <div class="section-head">
-                <div>
-                  <h3>待确认与历史提案</h3>
-                  <p>AI 只能创建建议，真正执行前仍需要人工确认。</p>
+                <div class="panel-title panel-title--tight">
+                  <span class="panel-title__icon panel-title__icon--warn">
+                    <el-icon><Operation /></el-icon>
+                  </span>
+                  <div>
+                    <h3>待确认与历史提案</h3>
+                    <p>AI 只能创建建议，真正执行前仍需要人工确认。</p>
+                  </div>
                 </div>
                 <el-tag type="info" effect="plain">{{ activeConversation.action_proposals.length }} 个</el-tag>
               </div>
@@ -292,9 +340,14 @@
 
             <section v-if="activeConversation.tool_calls.length > 0" class="section-card">
               <div class="section-head">
-                <div>
-                  <h3>自动取证记录</h3>
-                  <p>这里展示 AI 为了回答问题所触发的只读查询和取证结果。</p>
+                <div class="panel-title panel-title--tight">
+                  <span class="panel-title__icon">
+                    <el-icon><DataAnalysis /></el-icon>
+                  </span>
+                  <div>
+                    <h3>自动取证记录</h3>
+                    <p>这里展示 AI 为了回答问题所触发的只读查询和取证结果。</p>
+                  </div>
                 </div>
                 <el-tag type="success" effect="plain">{{ activeConversation.tool_calls.length }} 次</el-tag>
               </div>
@@ -316,9 +369,14 @@
 
             <section class="section-card section-card--timeline">
               <div class="section-head">
-                <div>
-                  <h3>对话时间线</h3>
-                  <p>保留问题、AI 结论、工具取证轨迹以及结构化建议动作。</p>
+                <div class="panel-title panel-title--tight">
+                  <span class="panel-title__icon panel-title__icon--primary">
+                    <el-icon><ChatDotRound /></el-icon>
+                  </span>
+                  <div>
+                    <h3>对话时间线</h3>
+                    <p>保留问题、AI 结论、工具取证轨迹以及结构化建议动作。</p>
+                  </div>
                 </div>
                 <el-tag type="info" effect="plain">{{ activeConversation.messages.length }} 条消息</el-tag>
               </div>
@@ -381,10 +439,15 @@
 
         <section class="composer-card">
           <div class="composer-head">
-            <div>
-              <p class="detail-kicker">提问入口</p>
-              <h3>{{ activeConversationId ? '继续追问当前会话' : '发起新的 AI 诊断' }}</h3>
-              <p>支持带上下文提问。诊断模式会优先采集只读证据，聊天模式更适合方案讨论和文档问答。</p>
+            <div class="panel-title panel-title--tight">
+              <span class="panel-title__icon panel-title__icon--accent">
+                <el-icon><MagicStick /></el-icon>
+              </span>
+              <div>
+                <p class="detail-kicker">提问入口</p>
+                <h3>{{ activeConversationId ? '继续追问当前会话' : '发起新的 AI 诊断' }}</h3>
+                <p>支持带上下文提问。诊断模式会优先采集只读证据，聊天模式更适合方案讨论和文档问答。</p>
+              </div>
             </div>
             <el-tag :type="composerModeType" effect="dark">{{ composerModeText }}</el-tag>
           </div>
@@ -412,39 +475,72 @@
             </el-form-item>
           </div>
 
-          <div class="composer-shortcuts">
-            <span>快捷提问</span>
-            <button
-              v-for="item in quickPrompts"
-              :key="`${item.title}-composer`"
-              type="button"
-              class="prompt-chip"
-              @click="applyQuickPrompt(item.mode, item.prompt)"
-            >
-              {{ item.title }}
-            </button>
-          </div>
-
-          <el-input
-            v-model="draftMessage"
-            type="textarea"
-            :rows="6"
-            resize="none"
-            placeholder="例如：帮我分析 payment 命名空间最近 30 分钟 Pod 重启频繁的问题，优先查看事件、日志和工作负载状态。"
-            @keyup.ctrl.enter="sendMessage"
-          />
-
-          <div class="composer-footer">
-            <div class="composer-hints">
-              <span>{{ activeConversationId ? '发送后将继续当前会话' : '发送后将自动创建一个新会话' }}</span>
-              <span>{{ scopeSummary }}</span>
+          <div class="composer-shell">
+            <div class="composer-shortcuts">
+              <span>快捷提问</span>
+              <button
+                v-for="item in quickPrompts"
+                :key="`${item.title}-composer`"
+                type="button"
+                class="prompt-chip"
+                @click="applyQuickPrompt(item.mode, item.prompt)"
+              >
+                {{ item.title }}
+              </button>
             </div>
 
-            <div class="composer-actions">
-              <el-button v-if="activeConversationId" @click="openProposalDialog">手动创建提案</el-button>
-              <el-button type="primary" :loading="sendingMessage" @click="sendMessage">
-                {{ activeConversationId ? '继续追问' : '发送诊断' }}
-              </el-button>
+            <el-input
+              v-model="draftMessage"
+              class="composer-input"
+              type="textarea"
+              :rows="6"
+              resize="none"
+              placeholder="例如：帮我分析 payment 命名空间最近 30 分钟 Pod 重启频繁的问题，优先查看事件、日志和工作负载状态。"
+              @keyup.ctrl.enter="sendMessage"
+            />
+
+            <div class="composer-toolbar">
+              <div class="composer-toolbar__left">
+                <div class="composer-model-field">
+                  <span class="composer-toolbar__label">
+                    <el-icon><Cpu /></el-icon>
+                    模型
+                  </span>
+                  <el-select
+                    v-model="selectedModelId"
+                    class="composer-model-select"
+                    placeholder="跟随后端默认模型"
+                    filterable
+                    clearable
+                    :loading="loadingModels"
+                    :disabled="loadingModels || filteredModelOptions.length === 0"
+                  >
+                    <el-option
+                      v-for="item in filteredModelOptions"
+                      :key="item.id"
+                      :label="formatModelOption(item)"
+                      :value="item.id"
+                    />
+                  </el-select>
+                </div>
+
+                <div class="composer-scope-pill">
+                  <el-icon><SetUp /></el-icon>
+                  <span>{{ scopeSummary }}</span>
+                </div>
+              </div>
+
+              <div class="composer-actions">
+                <el-button v-if="activeConversationId" :icon="MagicStick" @click="openProposalDialog">手动创建提案</el-button>
+                <el-button type="primary" :icon="Promotion" :loading="sendingMessage" @click="sendMessage">
+                  {{ activeConversationId ? '继续追问' : '发送诊断' }}
+                </el-button>
+              </div>
+            </div>
+
+            <div class="composer-meta">
+              <span>{{ activeConversationId ? '发送后将继续当前会话' : '发送后将自动创建一个新会话' }}</span>
+              <span>{{ modelUsageHint }}</span>
             </div>
           </div>
         </section>
@@ -543,8 +639,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  ChatDotRound,
+  Collection,
+  Cpu,
+  DataAnalysis,
+  Document,
+  MagicStick,
+  Monitor,
+  Operation,
+  Plus,
+  Promotion,
+  RefreshRight,
+  Search,
+  SetUp
+} from '@element-plus/icons-vue'
 
 import {
   confirmAIActionProposal,
@@ -552,10 +663,12 @@ import {
   createAIConversation,
   getAIConversationDetail,
   getAIConversations,
+  getAIModels,
   sendAIChat,
   type AIActionProposalItem,
   type AIConversationDetail,
-  type AIConversationItem
+  type AIConversationItem,
+  type AIModelItem
 } from '@/features/ai/api/ai'
 import { listClusters, type ClusterItem } from '@/features/clusters/api/clusters'
 import CodeMirrorViewer from '@/shared/components/CodeMirrorViewer.vue'
@@ -583,29 +696,33 @@ interface SuggestedAction {
 const clusters = ref<ClusterItem[]>([])
 const selectedClusterId = ref<number>()
 const keyword = ref('')
-const draftMessage = ref('')
-const draftNamespace = ref('')
-const draftResourceKind = ref('')
-const draftResourceName = ref('')
-const draftAssistantMode = ref<'diagnose' | 'chat'>('diagnose')
-const loadingConversations = ref(false)
-const loadingDetail = ref(false)
-const creatingConversation = ref(false)
-const sendingMessage = ref(false)
-const creatingProposal = ref(false)
-const confirmingProposalId = ref<number>()
-const creatingSuggestedActionKey = ref('')
-const createDialogVisible = ref(false)
-const proposalDialogVisible = ref(false)
-const activeConversationId = ref<number>()
-const activeConversation = ref<AIConversationDetail>()
-
 const conversationResult = ref<PageResult<AIConversationItem>>({
   list: [],
   total: 0,
   page: 1,
   page_size: 20
 })
+const loadingConversations = ref(false)
+const loadingDetail = ref(false)
+const sendingMessage = ref(false)
+const creatingConversation = ref(false)
+const createDialogVisible = ref(false)
+const creatingProposal = ref(false)
+const proposalDialogVisible = ref(false)
+const activeConversationId = ref<number>()
+const activeConversation = ref<AIConversationDetail>()
+const availableModels = ref<AIModelItem[]>([])
+const selectedModelId = ref<number>()
+const loadingModels = ref(false)
+const modelLoadError = ref('')
+const confirmingProposalId = ref<number>()
+const creatingSuggestedActionKey = ref('')
+
+const draftAssistantMode = ref<'diagnose' | 'chat'>('diagnose')
+const draftNamespace = ref('')
+const draftResourceKind = ref('')
+const draftResourceName = ref('')
+const draftMessage = ref('')
 
 const createForm = reactive({
   title: '',
@@ -615,11 +732,11 @@ const createForm = reactive({
 
 const proposalForm = reactive({
   proposal_type: 'restart_workload' as 'restart_workload' | 'scale_workload' | 'apply_manifest',
+  title: '',
   target_kind: 'Deployment',
   target_namespace: '',
   target_name: '',
   replicas: 1,
-  title: '',
   manifest_yaml: '',
   default_namespace: '',
   reason: ''
@@ -627,98 +744,125 @@ const proposalForm = reactive({
 
 const resourceKindOptions = [
   { label: 'Pod', value: 'Pod' },
-  { label: 'Node', value: 'Node' },
   { label: 'Deployment', value: 'Deployment' },
+  { label: 'StatefulSet', value: 'StatefulSet' },
+  { label: 'DaemonSet', value: 'DaemonSet' },
+  { label: 'Job', value: 'Job' },
+  { label: 'CronJob', value: 'CronJob' },
   { label: 'Service', value: 'Service' },
   { label: 'Ingress', value: 'Ingress' },
   { label: 'ConfigMap', value: 'ConfigMap' },
-  { label: 'Secret', value: 'Secret' },
-  { label: 'StatefulSet', value: 'StatefulSet' },
-  { label: 'DaemonSet', value: 'DaemonSet' }
+  { label: 'Secret', value: 'Secret' }
 ]
-
-const quickPrompts = computed(() => {
-  const diagnosePrompts = [
-    {
-      title: '排查 Pod 重启',
-      hint: '事件、日志、重启次数',
-      mode: 'diagnose' as const,
-      prompt: '帮我分析最近 30 分钟 Pod 重启异常，优先查看事件、日志和容器退出原因。'
-    },
-    {
-      title: '分析服务不可用',
-      hint: '工作负载、探针、流量入口',
-      mode: 'diagnose' as const,
-      prompt: '请排查服务不可用问题，优先检查工作负载状态、探针失败和入口配置。'
-    },
-    {
-      title: '看节点健康',
-      hint: '调度、资源、异常事件',
-      mode: 'diagnose' as const,
-      prompt: '帮我看看当前节点健康情况，关注 NotReady、资源压力和调度异常。'
-    }
-  ]
-
-  const chatPrompts = [
-    {
-      title: '梳理处理方案',
-      hint: '讨论修复路径',
-      mode: 'chat' as const,
-      prompt: '结合当前上下文，帮我梳理一个分阶段的排障与修复方案。'
-    }
-  ]
-
-  return draftAssistantMode.value === 'chat' ? [...diagnosePrompts, ...chatPrompts] : diagnosePrompts
-})
 
 const currentClusterLabel = computed(() => {
   const current = clusters.value.find((item) => item.id === selectedClusterId.value)
   return current?.name ?? '未选择'
 })
 
-const composerModeText = computed(() => {
+const effectiveAssistantMode = computed<'diagnose' | 'chat'>(() => {
   const mode = activeConversation.value?.assistant_mode ?? draftAssistantMode.value
-  return mode === 'diagnose' ? '只读诊断模式' : '通用聊天模式'
+  return mode === 'chat' ? 'chat' : 'diagnose'
 })
 
-const composerModeType = computed(() => {
-  const mode = activeConversation.value?.assistant_mode ?? draftAssistantMode.value
-  return mode === 'diagnose' ? 'warning' : 'success'
+const filteredModelOptions = computed(() => {
+  const allowTypes = effectiveAssistantMode.value === 'chat'
+    ? new Set(['chat', 'reasoning'])
+    : new Set(['chat', 'reasoning', 'vision'])
+  return availableModels.value.filter((item) => item.enabled && allowTypes.has(item.model_type))
 })
+
+const selectedModel = computed(() => availableModels.value.find((item) => item.id === selectedModelId.value))
+
+const modelUsageHint = computed(() => {
+  if (loadingModels.value) return '正在加载模型列表'
+  if (selectedModel.value) {
+    return `当前发送将使用 ${selectedModel.value.provider_name} / ${selectedModel.value.name}`
+  }
+  if (modelLoadError.value) return modelLoadError.value
+  return '未手动指定模型，将沿用后端默认路由'
+})
+
+const quickPrompts = computed(() => {
+  if (effectiveAssistantMode.value === 'chat') {
+    return [
+      {
+        title: '梳理根因',
+        hint: '把当前现象整理成排障结论',
+        mode: 'chat' as const,
+        prompt: '请基于当前上下文，帮我梳理问题现象、根因假设和下一步排查建议。'
+      },
+      {
+        title: '制定修复方案',
+        hint: '给出低风险处置步骤',
+        mode: 'chat' as const,
+        prompt: '请结合当前证据，给我一套低风险的修复方案，并说明每一步的预期影响。'
+      },
+      {
+        title: '复盘摘要',
+        hint: '生成适合同步的简报',
+        mode: 'chat' as const,
+        prompt: '请把当前对话整理成一份适合同步给团队的故障复盘摘要。'
+      }
+    ]
+  }
+
+  return [
+    {
+      title: '排查频繁重启',
+      hint: '聚焦事件、探针和 Pod 状态',
+      mode: 'diagnose' as const,
+      prompt: '请帮我分析当前工作负载最近频繁重启的原因，优先查看事件、探针、容器退出信息和副本状态。'
+    },
+    {
+      title: '检查命名空间健康',
+      hint: '快速扫描资源异常',
+      mode: 'diagnose' as const,
+      prompt: '请先概览这个命名空间的健康状态，指出异常的工作负载、Pod、事件和资源告警。'
+    },
+    {
+      title: '分析发布失败',
+      hint: '关注滚动更新与事件',
+      mode: 'diagnose' as const,
+      prompt: '请帮我分析当前应用发布失败的问题，重点看 Deployment 状态、事件、Pod 调度和镜像拉取。'
+    }
+  ]
+})
+
+const composerModeText = computed(() => assistantModeLabel(effectiveAssistantMode.value))
+const composerModeType = computed(() => (effectiveAssistantMode.value === 'diagnose' ? 'warning' : 'success'))
 
 const pendingProposalCount = computed(() => {
-  return activeConversation.value?.action_proposals.filter((item) => item.status === 'pending_confirm').length ?? 0
+  return (activeConversation.value?.action_proposals ?? []).filter((item) => {
+    return item.status === 'pending_confirm' || item.status === 'await_second_confirm' || item.status === 'pending'
+  }).length
 })
 
 const evidenceSummary = computed(() => {
   const toolCalls = activeConversation.value?.tool_calls ?? []
-  if (toolCalls.length === 0) return '尚未采集'
-  const succeeded = toolCalls.filter((item) => item.status === 'succeeded').length
-  const failed = toolCalls.filter((item) => item.status === 'failed').length
-  return `成功 ${succeeded} / 失败 ${failed}`
+  if (toolCalls.length === 0) return '暂无取证记录'
+  const successCount = toolCalls.filter((item) => item.status === 'success').length
+  return `${successCount}/${toolCalls.length} 次成功`
 })
 
 const evidenceWarning = computed(() => {
-  const toolCalls = activeConversation.value?.tool_calls ?? []
-  if (toolCalls.length === 0) return ''
-  const failedItems = toolCalls.filter((item) => item.status === 'failed')
-  if (failedItems.length === 0) return ''
-  const networkError = failedItems.find((item) => (item.error_message || '').toLowerCase().includes('network error'))
-  if (networkError) {
-    return '部分集群取证请求失败，当前结论可能缺少实时证据，请结合集群连通性一起判断。'
-  }
-  return '部分工具调用失败，建议在确认结论前补充核实关键证据。'
+  const failed = (activeConversation.value?.tool_calls ?? []).filter((item) => item.status === 'failed')
+  if (failed.length === 0) return ''
+  return `有 ${failed.length} 次取证失败，建议补充上下文或重试诊断。`
 })
 
-const activeSuggestedActions = computed(() => {
+const activeSuggestedActions = computed<SuggestedAction[]>(() => {
   const messages = activeConversation.value?.messages ?? []
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index]
     if (message.role !== 'assistant') continue
-    const actions = extractSuggestedActions(message.structured)
+    const actions = extractSuggestedActions(message.structured).map((item): SuggestedAction => ({
+      ...item,
+      message_id: item.message_id ?? message.id
+    }))
     if (actions.length > 0) return actions
   }
-  return [] as SuggestedAction[]
+  return []
 })
 
 const scopeSummary = computed(() => {
@@ -726,278 +870,7 @@ const scopeSummary = computed(() => {
   return segments.length > 0 ? `当前上下文: ${segments.join(' / ')}` : '当前未限定命名空间或资源范围'
 })
 
-async function loadClusters() {
-  const result = await listClusters({ page: 1, page_size: 200 })
-  clusters.value = result.list
-  if (!selectedClusterId.value && clusters.value.length > 0) {
-    selectedClusterId.value = clusters.value[0].id
-  }
-}
-
-async function loadConversations() {
-  loadingConversations.value = true
-  try {
-    const result = await getAIConversations({
-      page: 1,
-      page_size: 100,
-      cluster_id: selectedClusterId.value,
-      keyword: keyword.value || undefined
-    })
-    conversationResult.value = result
-    if (!result.list.some((item) => item.id === activeConversationId.value)) {
-      activeConversationId.value = result.list[0]?.id
-    }
-    if (activeConversationId.value) {
-      await selectConversation(activeConversationId.value)
-    } else {
-      activeConversation.value = undefined
-    }
-  } finally {
-    loadingConversations.value = false
-  }
-}
-
-async function selectConversation(id: number) {
-  activeConversationId.value = id
-  loadingDetail.value = true
-  try {
-    activeConversation.value = await getAIConversationDetail(id)
-    draftAssistantMode.value = activeConversation.value.assistant_mode as 'diagnose' | 'chat'
-  } finally {
-    loadingDetail.value = false
-  }
-}
-
-async function reloadActiveConversation() {
-  if (!activeConversationId.value) return
-  await selectConversation(activeConversationId.value)
-}
-
-function openCreateDialog() {
-  if (!selectedClusterId.value) {
-    ElMessage.warning('请先选择目标集群')
-    return
-  }
-  createForm.title = ''
-  createForm.assistant_mode = draftAssistantMode.value
-  createForm.opening_message = draftMessage.value.trim()
-  createDialogVisible.value = true
-}
-
-async function submitConversation() {
-  if (!selectedClusterId.value) {
-    ElMessage.warning('请先选择目标集群')
-    return
-  }
-  creatingConversation.value = true
-  try {
-    const result = await createAIConversation(selectedClusterId.value, {
-      title: createForm.title || undefined,
-      assistant_mode: createForm.assistant_mode,
-      opening_message: createForm.opening_message || undefined
-    })
-    createDialogVisible.value = false
-    await loadConversations()
-    if (result.id) {
-      await selectConversation(result.id)
-    }
-    ElMessage.success('AI 会话已创建')
-  } finally {
-    creatingConversation.value = false
-  }
-}
-
-async function sendMessage() {
-  if (!selectedClusterId.value) {
-    ElMessage.warning('请先选择目标集群')
-    return
-  }
-  const message = draftMessage.value.trim()
-  if (!message) {
-    ElMessage.warning('请输入问题后再发送')
-    return
-  }
-
-  sendingMessage.value = true
-  try {
-    const result = await sendAIChat(selectedClusterId.value, {
-      conversation_id: activeConversationId.value,
-      message,
-      assistant_mode: activeConversationId.value ? undefined : draftAssistantMode.value,
-      namespace: draftNamespace.value || undefined,
-      resource_kind: draftResourceKind.value || undefined,
-      resource_name: draftResourceName.value || undefined
-    })
-    draftMessage.value = ''
-    await loadConversations()
-    await selectConversation(result.conversation_id)
-    const autoProposalCount = result.action_proposals?.length ?? 0
-    if (autoProposalCount > 0) {
-      ElMessage.success(`AI 已回复，并自动生成 ${autoProposalCount} 个待确认变更提案`)
-      return
-    }
-    ElMessage.success(result.tool_calls.length > 0 ? `AI 已回复，并自动采集 ${result.tool_calls.length} 条诊断上下文` : 'AI 已回复')
-  } finally {
-    sendingMessage.value = false
-  }
-}
-
-function openProposalDialog() {
-  if (!activeConversationId.value) {
-    ElMessage.warning('请先选择或创建一个会话')
-    return
-  }
-  proposalForm.proposal_type = 'restart_workload'
-  proposalForm.target_kind = normalizeProposalKind(draftResourceKind.value) || 'Deployment'
-  proposalForm.target_namespace = draftNamespace.value
-  proposalForm.target_name = draftResourceName.value
-  proposalForm.replicas = 1
-  proposalForm.title = ''
-  proposalForm.manifest_yaml = ''
-  proposalForm.default_namespace = draftNamespace.value
-  proposalForm.reason = ''
-  proposalDialogVisible.value = true
-}
-
-async function submitProposal() {
-  if (!selectedClusterId.value || !activeConversationId.value) {
-    ElMessage.warning('请先选择集群并打开会话')
-    return
-  }
-
-  if (proposalForm.proposal_type !== 'apply_manifest') {
-    if (!proposalForm.target_namespace.trim() || !proposalForm.target_name.trim()) {
-      ElMessage.warning('请填写命名空间和资源名称')
-      return
-    }
-    if (proposalForm.proposal_type === 'scale_workload' && proposalForm.target_kind === 'DaemonSet') {
-      ElMessage.warning('DaemonSet 不支持调整副本数')
-      return
-    }
-  }
-
-  if (proposalForm.proposal_type === 'apply_manifest' && !proposalForm.manifest_yaml.trim()) {
-    ElMessage.warning('请填写 Manifest YAML')
-    return
-  }
-
-  creatingProposal.value = true
-  try {
-    await createAIActionProposal(selectedClusterId.value, {
-      conversation_id: activeConversationId.value,
-      proposal_type: proposalForm.proposal_type,
-      target_resource: {
-        kind: proposalForm.proposal_type === 'apply_manifest' ? '' : proposalForm.target_kind,
-        namespace: proposalForm.proposal_type === 'apply_manifest' ? '' : proposalForm.target_namespace.trim(),
-        name: proposalForm.proposal_type === 'apply_manifest' ? '' : proposalForm.target_name.trim()
-      },
-      payload:
-        proposalForm.proposal_type === 'scale_workload'
-          ? { replicas: proposalForm.replicas }
-          : proposalForm.proposal_type === 'apply_manifest'
-            ? {
-                yaml: proposalForm.manifest_yaml.trim(),
-                default_namespace: proposalForm.default_namespace.trim() || undefined,
-                title: proposalForm.title.trim() || undefined
-              }
-            : {},
-      reason: proposalForm.reason.trim() || undefined
-    })
-    proposalDialogVisible.value = false
-    await reloadActiveConversation()
-    ElMessage.success('变更提案已生成，等待人工确认')
-  } finally {
-    creatingProposal.value = false
-  }
-}
-
-async function createProposalFromSuggestion(action: SuggestedAction) {
-  if (!selectedClusterId.value || !activeConversationId.value) {
-    ElMessage.warning('请先选择集群并打开会话')
-    return
-  }
-  const requestPayload =
-    action.action_type === 'scale_workload'
-      ? { replicas: action.replicas ?? 1 }
-      : action.action_type === 'apply_manifest'
-        ? {
-            yaml: action.manifest_yaml || '',
-            default_namespace: action.default_namespace || action.target_namespace || undefined,
-            title: action.title || undefined
-          }
-        : {}
-
-  const targetResource =
-    action.action_type === 'apply_manifest'
-      ? { kind: '', namespace: '', name: '' }
-      : {
-          kind: action.target_kind || '',
-          namespace: action.target_namespace || '',
-          name: action.target_name || ''
-        }
-
-  creatingSuggestedActionKey.value = suggestedActionKey(action)
-  try {
-    await createAIActionProposal(selectedClusterId.value, {
-      conversation_id: activeConversationId.value,
-      message_id: action.message_id,
-      proposal_type: action.action_type,
-      target_resource: targetResource,
-      payload: requestPayload,
-      reason: action.reason || undefined
-    })
-    await reloadActiveConversation()
-    ElMessage.success('建议动作已转成待确认提案')
-  } finally {
-    creatingSuggestedActionKey.value = ''
-  }
-}
-
-async function confirmProposal(proposal: AIActionProposalItem) {
-  if (!selectedClusterId.value) {
-    ElMessage.warning('请先选择目标集群')
-    return
-  }
-  const confirmText = `确认执行提案“${proposal.title}”？\n\n${proposal.summary}`
-  await ElMessageBox.confirm(confirmText, '执行确认', {
-    confirmButtonText: '确认执行',
-    cancelButtonText: '取消',
-    type: proposal.risk_level === 'high' ? 'warning' : 'info'
-  })
-
-  confirmingProposalId.value = proposal.id
-  try {
-    const result = await confirmAIActionProposal(selectedClusterId.value, proposal.id, {
-      confirmation_text: 'confirmed',
-      confirm_risk: true
-    })
-    await reloadActiveConversation()
-    ElMessage.success(result.result_summary || '提案已执行')
-  } finally {
-    confirmingProposalId.value = undefined
-  }
-}
-
-async function handleClusterChange() {
-  activeConversationId.value = undefined
-  activeConversation.value = undefined
-  draftAssistantMode.value = 'diagnose'
-  await loadConversations()
-}
-
-function applyQuickPrompt(mode: 'diagnose' | 'chat', prompt: string) {
-  if (!activeConversationId.value) {
-    draftAssistantMode.value = mode
-  }
-  draftMessage.value = prompt
-}
-
-function formatDate(value?: string) {
-  if (!value) return '-'
-  return new Date(value).toLocaleString('zh-CN')
-}
-
-function assistantModeLabel(mode: string) {
+function assistantModeLabel(mode?: string) {
   return mode === 'chat' ? '通用聊天' : '故障诊断'
 }
 
@@ -1012,144 +885,494 @@ function roleTagType(role: string) {
   if (role === 'assistant') return 'success'
   if (role === 'tool') return 'warning'
   if (role === 'system') return 'info'
-  return ''
+  return 'primary'
 }
 
 function toolStatusType(status: string) {
-  if (status === 'succeeded') return 'success'
+  if (status === 'success') return 'success'
   if (status === 'failed') return 'danger'
-  return 'warning'
-}
-
-function proposalStatusType(status: string) {
-  if (status === 'succeeded') return 'success'
-  if (status === 'failed') return 'danger'
-  if (status === 'pending_confirm') return 'warning'
+  if (status === 'running') return 'warning'
   return 'info'
 }
 
-function proposalRiskType(risk: string) {
-  if (risk === 'high') return 'danger'
-  if (risk === 'medium') return 'warning'
-  return 'success'
+function proposalStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    pending: '待确认',
+    pending_confirm: '待确认',
+    await_second_confirm: '待二次确认',
+    approved: '已批准',
+    executed: '已执行',
+    failed: '执行失败',
+    rejected: '已拒绝',
+    cancelled: '已取消'
+  }
+  return labels[status] ?? status
 }
 
-function proposalStatusLabel(status: string) {
-  switch (status) {
-    case 'pending_confirm':
-      return '待确认'
-    case 'approved':
-      return '已确认'
-    case 'executing':
-      return '执行中'
-    case 'succeeded':
-      return '已成功'
-    case 'failed':
-      return '已失败'
-    case 'cancelled':
-      return '已取消'
-    default:
-      return status || '未知'
-  }
+function proposalStatusType(status: string) {
+  if (status === 'executed') return 'success'
+  if (status === 'failed' || status === 'rejected') return 'danger'
+  if (status === 'pending_confirm' || status === 'await_second_confirm' || status === 'pending') return 'warning'
+  return 'info'
+}
+
+function proposalRiskType(riskLevel: string) {
+  if (riskLevel === 'high') return 'danger'
+  if (riskLevel === 'medium') return 'warning'
+  if (riskLevel === 'low') return 'success'
+  return 'info'
 }
 
 function actionTypeLabel(actionType: string) {
-  switch (actionType) {
-    case 'restart_workload':
-      return '滚动重启'
-    case 'scale_workload':
-      return '调整副本数'
-    case 'apply_manifest':
-      return '应用 Manifest'
-    default:
-      return actionType || '建议动作'
+  const labels: Record<string, string> = {
+    restart_workload: '滚动重启',
+    scale_workload: '调整副本数',
+    apply_manifest: '应用 Manifest'
+  }
+  return labels[actionType] ?? actionType
+}
+
+function formatDate(value?: string) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date)
+}
+
+function preferredModelByMode() {
+  const preferredTypes = effectiveAssistantMode.value === 'chat'
+    ? ['reasoning', 'chat']
+    : ['reasoning', 'vision', 'chat']
+  for (const modelType of preferredTypes) {
+    const matched = filteredModelOptions.value.find((item) => item.model_type === modelType)
+    if (matched) return matched
+  }
+  return filteredModelOptions.value[0]
+}
+
+function syncSelectedModel(preferConversation = false) {
+  const conversationModelId = activeConversation.value?.model_id
+  if (preferConversation && conversationModelId && filteredModelOptions.value.some((item) => item.id === conversationModelId)) {
+    selectedModelId.value = conversationModelId
+    return
+  }
+  if (selectedModelId.value && filteredModelOptions.value.some((item) => item.id === selectedModelId.value)) {
+    return
+  }
+  selectedModelId.value = preferredModelByMode()?.id
+}
+
+function resolveSelectedModel() {
+  return filteredModelOptions.value.find((item) => item.id === selectedModelId.value)
+}
+
+function formatModelOption(item: AIModelItem) {
+  return `${item.name} · ${item.provider_name}`
+}
+
+async function loadModels() {
+  loadingModels.value = true
+  modelLoadError.value = ''
+  try {
+    availableModels.value = await getAIModels({ enabled: true })
+    syncSelectedModel(Boolean(activeConversationId.value))
+  } catch {
+    availableModels.value = []
+    selectedModelId.value = undefined
+    modelLoadError.value = '当前账号未拿到可选模型，将沿用后端默认模型'
+  } finally {
+    loadingModels.value = false
   }
 }
 
-function proposalPreview(proposal: AIActionProposalItem) {
-  const preview = proposal.change?.preview
-  return typeof preview === 'string' ? preview : ''
-}
-
-function proposalManifestText(proposal: AIActionProposalItem) {
-  const payload = proposal.change?.payload
-  if (!payload || typeof payload !== 'object') return ''
-  const yaml = (payload as Record<string, unknown>).yaml
-  return typeof yaml === 'string' ? yaml : ''
-}
-
-function normalizeProposalKind(value: string) {
-  if (value === 'Deployment' || value === 'StatefulSet' || value === 'DaemonSet') {
-    return value
+async function loadClusters() {
+  const result = await listClusters({ page: 1, page_size: 200 })
+  clusters.value = result.list
+  if (!selectedClusterId.value && clusters.value.length > 0) {
+    selectedClusterId.value = clusters.value[0].id
   }
-  return ''
+}
+
+async function loadConversations() {
+  loadingConversations.value = true
+  try {
+    conversationResult.value = await getAIConversations({
+      page: 1,
+      page_size: 50,
+      cluster_id: selectedClusterId.value,
+      keyword: keyword.value.trim() || undefined
+    })
+    if (activeConversationId.value && !conversationResult.value.list.some((item) => item.id === activeConversationId.value)) {
+      activeConversationId.value = undefined
+      activeConversation.value = undefined
+    }
+  } finally {
+    loadingConversations.value = false
+  }
+}
+
+async function selectConversation(id: number) {
+  activeConversationId.value = id
+  loadingDetail.value = true
+  try {
+    activeConversation.value = await getAIConversationDetail(id)
+    draftAssistantMode.value = activeConversation.value.assistant_mode as 'diagnose' | 'chat'
+    syncSelectedModel(true)
+  } finally {
+    loadingDetail.value = false
+  }
+}
+
+async function reloadActiveConversation() {
+  if (!activeConversationId.value) return
+  await selectConversation(activeConversationId.value)
+}
+
+function openCreateDialog() {
+  createForm.title = ''
+  createForm.assistant_mode = draftAssistantMode.value
+  createForm.opening_message = draftMessage.value.trim()
+  createDialogVisible.value = true
+}
+
+async function submitConversation() {
+  if (!selectedClusterId.value) {
+    ElMessage.warning('请先选择目标集群')
+    return
+  }
+  const selectedModelOption = resolveSelectedModel()
+  creatingConversation.value = true
+  try {
+    const result = await createAIConversation(selectedClusterId.value, {
+      title: createForm.title || undefined,
+      assistant_mode: createForm.assistant_mode,
+      provider_id: selectedModelOption?.provider_id,
+      model_id: selectedModelOption?.id,
+      opening_message: createForm.opening_message || undefined
+    })
+    createDialogVisible.value = false
+    draftMessage.value = ''
+    await loadConversations()
+    await selectConversation(result.id)
+    ElMessage.success('AI 会话已创建')
+  } finally {
+    creatingConversation.value = false
+  }
+}
+
+function resetProposalForm() {
+  Object.assign(proposalForm, {
+    proposal_type: 'restart_workload',
+    title: '',
+    target_kind: draftResourceKind.value || 'Deployment',
+    target_namespace: draftNamespace.value,
+    target_name: draftResourceName.value,
+    replicas: 1,
+    manifest_yaml: '',
+    default_namespace: draftNamespace.value,
+    reason: ''
+  })
+}
+
+function applySuggestionToForm(action: SuggestedAction) {
+  Object.assign(proposalForm, {
+    proposal_type: action.action_type,
+    title: action.title || '',
+    target_kind: action.target_kind || draftResourceKind.value || 'Deployment',
+    target_namespace: action.target_namespace || draftNamespace.value,
+    target_name: action.target_name || draftResourceName.value,
+    replicas: action.replicas ?? 1,
+    manifest_yaml: action.manifest_yaml || '',
+    default_namespace: action.default_namespace || action.target_namespace || draftNamespace.value,
+    reason: action.reason || ''
+  })
+}
+
+function openProposalDialog() {
+  const suggestion = activeSuggestedActions.value[0]
+  if (suggestion) {
+    applySuggestionToForm(suggestion)
+  } else {
+    resetProposalForm()
+  }
+  proposalDialogVisible.value = true
+}
+
+function buildProposalRequest(input: {
+  proposal_type: 'restart_workload' | 'scale_workload' | 'apply_manifest'
+  title?: string
+  target_kind?: string
+  target_namespace?: string
+  target_name?: string
+  replicas?: number
+  manifest_yaml?: string
+  default_namespace?: string
+  reason?: string
+  message_id?: number
+}) {
+  if (!activeConversationId.value) {
+    throw new Error('请先创建或选中一个 AI 会话')
+  }
+
+  const payload: Record<string, unknown> = {}
+  let targetKind = (input.target_kind || '').trim()
+  let targetNamespace = (input.target_namespace || '').trim()
+  let targetName = (input.target_name || '').trim()
+
+  if (input.proposal_type === 'scale_workload') {
+    payload.replicas = input.replicas ?? 1
+  }
+
+  if (input.proposal_type === 'apply_manifest') {
+    targetKind = 'Manifest'
+    targetNamespace = (input.default_namespace || input.target_namespace || '').trim()
+    targetName = (input.title || 'manifest').trim()
+    payload.manifest_yaml = input.manifest_yaml || ''
+    if (input.default_namespace) {
+      payload.default_namespace = input.default_namespace
+    }
+  }
+
+  return {
+    conversation_id: activeConversationId.value,
+    message_id: input.message_id,
+    proposal_type: input.proposal_type,
+    target_resource: {
+      kind: targetKind,
+      namespace: targetNamespace,
+      name: targetName
+    },
+    payload: Object.keys(payload).length > 0 ? payload : undefined,
+    reason: input.reason?.trim() || undefined
+  }
+}
+
+async function submitProposal() {
+  if (!selectedClusterId.value) {
+    ElMessage.warning('请先选择目标集群')
+    return
+  }
+  creatingProposal.value = true
+  try {
+    const request = buildProposalRequest(proposalForm)
+    await createAIActionProposal(selectedClusterId.value, request)
+    proposalDialogVisible.value = false
+    await reloadActiveConversation()
+    ElMessage.success('提案已生成，等待人工确认')
+  } finally {
+    creatingProposal.value = false
+  }
+}
+
+async function createProposalFromSuggestion(action: SuggestedAction) {
+  if (!selectedClusterId.value) {
+    ElMessage.warning('请先选择目标集群')
+    return
+  }
+  const key = suggestedActionKey(action)
+  creatingSuggestedActionKey.value = key
+  try {
+    const request = buildProposalRequest({
+      ...action,
+      proposal_type: action.action_type
+    })
+    await createAIActionProposal(selectedClusterId.value, request)
+    await reloadActiveConversation()
+    ElMessage.success('建议动作已生成提案')
+  } finally {
+    creatingSuggestedActionKey.value = ''
+  }
+}
+
+async function confirmProposal(proposal: AIActionProposalItem) {
+  if (!selectedClusterId.value) {
+    ElMessage.warning('请先选择目标集群')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `即将执行提案“${proposal.title}”，该操作会对集群产生写入影响。`,
+      '确认执行',
+      {
+        type: 'warning',
+        confirmButtonText: '确认执行',
+        cancelButtonText: '取消'
+      }
+    )
+  } catch {
+    return
+  }
+
+  confirmingProposalId.value = proposal.id
+  try {
+    await confirmAIActionProposal(selectedClusterId.value, proposal.id, {
+      confirmation_text: 'operator-confirmed',
+      confirm_risk: true
+    })
+    await reloadActiveConversation()
+    ElMessage.success('提案已提交执行')
+  } finally {
+    confirmingProposalId.value = undefined
+  }
+}
+
+async function sendMessage() {
+  if (!selectedClusterId.value) {
+    ElMessage.warning('请先选择目标集群')
+    return
+  }
+  const message = draftMessage.value.trim()
+  if (!message) {
+    ElMessage.warning('请输入问题后再发送')
+    return
+  }
+  const selectedModelOption = resolveSelectedModel()
+
+  sendingMessage.value = true
+  try {
+    const result = await sendAIChat(selectedClusterId.value, {
+      conversation_id: activeConversationId.value,
+      message,
+      assistant_mode: activeConversationId.value ? undefined : draftAssistantMode.value,
+      provider_id: selectedModelOption?.provider_id,
+      model_id: selectedModelOption?.id,
+      prefer_model: selectedModelOption?.model_code,
+      namespace: draftNamespace.value || undefined,
+      resource_kind: draftResourceKind.value || undefined,
+      resource_name: draftResourceName.value || undefined
+    })
+    activeConversationId.value = result.conversation_id
+    draftMessage.value = ''
+    await loadConversations()
+    await selectConversation(result.conversation_id)
+  } finally {
+    sendingMessage.value = false
+  }
+}
+
+async function handleClusterChange() {
+  activeConversationId.value = undefined
+  activeConversation.value = undefined
+  draftAssistantMode.value = 'diagnose'
+  syncSelectedModel()
+  await loadConversations()
+}
+
+function applyQuickPrompt(mode: 'diagnose' | 'chat', prompt: string) {
+  if (!activeConversationId.value) {
+    draftAssistantMode.value = mode
+  }
+  draftMessage.value = prompt
 }
 
 function suggestedActionKey(action: SuggestedAction) {
   return [
-    action.message_id ?? 'new',
+    action.message_id ?? 'message',
     action.action_type,
-    action.target_kind ?? '-',
-    action.target_namespace ?? '-',
-    action.target_name ?? '-',
-    action.replicas ?? '-',
-    action.proposal_id ?? '-'
+    action.target_kind ?? 'kind',
+    action.target_namespace ?? 'ns',
+    action.target_name ?? 'name'
   ].join(':')
 }
 
 function isSuggestedActionMaterialized(action: SuggestedAction) {
   if (action.proposal_created || action.proposal_id) return true
-  const proposals = activeConversation.value?.action_proposals ?? []
-  return proposals.some((proposal) => {
-    if (action.message_id && proposal.message_id === action.message_id) {
-      if (proposal.action_type !== action.action_type) return false
-      if (action.action_type === 'apply_manifest') return true
-      return (
-        proposal.target_kind === (action.target_kind || '') &&
-        proposal.target_namespace === (action.target_namespace || '') &&
-        proposal.target_name === (action.target_name || '')
-      )
-    }
-    return false
+  return (activeConversation.value?.action_proposals ?? []).some((proposal) => {
+    return proposal.message_id === action.message_id
+      && proposal.action_type === action.action_type
+      && proposal.target_kind === (action.target_kind || 'Manifest')
+      && proposal.target_namespace === (action.target_namespace || action.default_namespace || '')
+      && proposal.target_name === (action.target_name || action.title || 'manifest')
   })
 }
 
-function extractSuggestedActions(structured?: Record<string, unknown>): SuggestedAction[] {
-  const payload = structured?.suggested_actions
-  if (!Array.isArray(payload)) return []
-  return payload
-    .map((item) => normalizeSuggestedAction(item))
-    .filter((item): item is SuggestedAction => item !== null)
+function proposalPreview(proposal: AIActionProposalItem) {
+  const change = proposal.change ?? {}
+  if (proposal.action_type === 'scale_workload') {
+    const replicas = asNumber(change.replicas)
+    if (typeof replicas === 'number') return `目标副本数: ${replicas}`
+  }
+  if (proposal.action_type === 'restart_workload') {
+    return `${proposal.target_kind}/${proposal.target_name}`
+  }
+  if (proposal.action_type === 'apply_manifest') {
+    return asString(change.summary) ?? asString(change.preview) ?? asString(change.title) ?? ''
+  }
+  return ''
 }
 
-function normalizeSuggestedAction(item: unknown): SuggestedAction | null {
-  if (!item || typeof item !== 'object') return null
-  const row = item as Record<string, unknown>
-  const actionType = typeof row.action_type === 'string' ? row.action_type : ''
+function proposalManifestText(proposal: AIActionProposalItem) {
+  const change = proposal.change ?? {}
+  return asString(change.manifest_yaml) ?? asString(change.manifest) ?? asString(change.yaml) ?? ''
+}
+
+function extractSuggestedActions(structured?: Record<string, unknown>): SuggestedAction[] {
+  if (!structured || typeof structured !== 'object') return []
+  const candidates = [
+    (structured as Record<string, unknown>).suggested_actions,
+    (structured as Record<string, unknown>).suggestedActions,
+    (structured as Record<string, unknown>).action_proposals,
+    (structured as Record<string, unknown>).actions,
+    (structured as Record<string, unknown>).recommended_actions,
+    (structured as Record<string, unknown>).next_actions
+  ]
+
+  const normalized: SuggestedAction[] = candidates.flatMap((candidate) => {
+    if (!Array.isArray(candidate)) return [] as SuggestedAction[]
+    return candidate.map(normalizeSuggestedAction).filter(isSuggestedAction)
+  })
+
+  const seen = new Set<string>()
+  return normalized.filter((item) => {
+    const key = suggestedActionKey(item)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function normalizeSuggestedAction(value: unknown): SuggestedAction | null {
+  if (!value || typeof value !== 'object') return null
+  const record = value as Record<string, unknown>
+  const targetResource = record.target_resource && typeof record.target_resource === 'object'
+    ? record.target_resource as Record<string, unknown>
+    : undefined
+
+  const actionType = asString(record.action_type)
   if (actionType !== 'restart_workload' && actionType !== 'scale_workload' && actionType !== 'apply_manifest') {
     return null
   }
+
   return {
-    message_id: asNumber(row.message_id),
+    message_id: asNumber(record.message_id) ?? asNumber(record.source_message_id),
     action_type: actionType,
-    title: asString(row.title),
-    reason: asString(row.reason),
-    target_kind: asString(row.target_kind),
-    target_namespace: asString(row.target_namespace),
-    target_name: asString(row.target_name),
-    replicas: asNumber(row.replicas),
-    manifest_yaml: asString(row.manifest_yaml),
-    default_namespace: asString(row.default_namespace),
-    risk_level: asString(row.risk_level),
-    requires_confirmation: asBoolean(row.requires_confirmation),
-    auto_proposal_eligible: asBoolean(row.auto_proposal_eligible),
-    proposal_created: asBoolean(row.proposal_created),
-    proposal_id: asNumber(row.proposal_id)
-  } satisfies SuggestedAction
+    title: asString(record.title),
+    reason: asString(record.reason) ?? asString(record.summary),
+    target_kind: asString(record.target_kind) ?? asString(targetResource?.kind),
+    target_namespace: asString(record.target_namespace) ?? asString(targetResource?.namespace),
+    target_name: asString(record.target_name) ?? asString(targetResource?.name),
+    replicas: asNumber(record.replicas) ?? asNumber(record.target_replicas),
+    manifest_yaml: asString(record.manifest_yaml) ?? asString(record.manifest) ?? asString(record.yaml),
+    default_namespace: asString(record.default_namespace),
+    risk_level: asString(record.risk_level),
+    requires_confirmation: asBoolean(record.requires_confirmation),
+    auto_proposal_eligible: asBoolean(record.auto_proposal_eligible),
+    proposal_created: asBoolean(record.proposal_created),
+    proposal_id: asNumber(record.proposal_id) ?? asNumber(record.created_proposal_id)
+  }
+}
+
+function isSuggestedAction(value: SuggestedAction | null): value is SuggestedAction {
+  return Boolean(value)
 }
 
 function asString(value: unknown) {
-  return typeof value === 'string' ? value : ''
+  return typeof value === 'string' && value.trim() ? value : undefined
 }
 
 function asNumber(value: unknown) {
@@ -1160,32 +1383,39 @@ function asBoolean(value: unknown) {
   return typeof value === 'boolean' ? value : undefined
 }
 
+watch(() => draftAssistantMode.value, () => {
+  if (!activeConversationId.value) {
+    syncSelectedModel()
+  }
+})
+
 onMounted(async () => {
-  await loadClusters()
+  await Promise.all([loadClusters(), loadModels()])
   await loadConversations()
 })
 </script>
 
 <style scoped>
 .ai-page {
-  --ai-bg: linear-gradient(180deg, #fffaf2 0%, #f5f7fb 38%, #eef3f8 100%);
-  --ai-card: rgba(255, 255, 255, 0.82);
+  --ai-bg: linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+  --ai-card: #ffffff;
   --ai-border: rgba(15, 23, 42, 0.08);
-  --ai-text: #132238;
-  --ai-muted: #5b6b81;
+  --ai-text: #1e293b;
+  --ai-muted: #64748b;
+  --ai-primary: #409eff;
+  --ai-primary-soft: rgba(64, 158, 255, 0.12);
   --ai-accent: #0f766e;
   --ai-accent-soft: rgba(15, 118, 110, 0.12);
-  --ai-warm: #b45309;
+  --ai-warm: #d97706;
   display: flex;
   flex-direction: column;
   gap: 18px;
   min-height: 100%;
-  padding: 18px;
+  padding: 20px;
   background:
-    radial-gradient(circle at top left, rgba(255, 206, 138, 0.34), transparent 26%),
-    radial-gradient(circle at top right, rgba(125, 211, 252, 0.24), transparent 30%),
+    radial-gradient(circle at top right, rgba(191, 219, 254, 0.18), transparent 24%),
+    radial-gradient(circle at top left, rgba(253, 230, 138, 0.14), transparent 22%),
     var(--ai-bg);
-  font-family: 'Avenir Next', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 .topbar-card,
@@ -1195,26 +1425,79 @@ onMounted(async () => {
 .composer-card {
   border: 1px solid var(--ai-border);
   background: var(--ai-card);
-  border-radius: 28px;
-  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(16px);
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
 }
 
 .topbar-card {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: space-between;
   gap: 24px;
   padding: 28px;
+  background: linear-gradient(135deg, #ffffff, #f7fbff);
 }
 
 .eyebrow,
 .detail-kicker {
   margin: 0 0 10px;
   font-size: 12px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ai-warm);
+}
+
+.hero-title,
+.panel-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hero-title__icon,
+.panel-title__icon,
+.metric-pill__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hero-title__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  color: #ffffff;
+  font-size: 22px;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.24);
+}
+
+.panel-title__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: var(--ai-primary);
+}
+
+.panel-title__icon--primary {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.panel-title__icon--accent {
+  background: rgba(15, 118, 110, 0.12);
+  color: #0f766e;
+}
+
+.panel-title__icon--warn {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.panel-title--tight {
+  align-items: center;
 }
 
 .topbar-copy h1,
@@ -1226,7 +1509,7 @@ onMounted(async () => {
 }
 
 .topbar-copy h1 {
-  font-size: 32px;
+  font-size: 34px;
 }
 
 .topbar-copy p,
@@ -1240,7 +1523,8 @@ onMounted(async () => {
 .message-content,
 .suggestion-card__reason,
 .composer-hints,
-.suggestion-hint {
+.suggestion-hint,
+.composer-meta {
   color: var(--ai-muted);
   line-height: 1.7;
 }
@@ -1250,17 +1534,48 @@ onMounted(async () => {
   margin: 14px 0 0;
 }
 
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: var(--ai-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .topbar-metrics {
   display: grid;
   gap: 12px;
-  min-width: 280px;
+  min-width: 300px;
 }
 
 .metric-pill {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   padding: 16px 18px;
   border-radius: 18px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(255, 255, 255, 0.72);
+  background: #ffffff;
+}
+
+.metric-pill__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: var(--ai-primary-soft);
+  color: var(--ai-primary);
+  font-size: 18px;
 }
 
 .metric-pill span,
@@ -1278,26 +1593,32 @@ onMounted(async () => {
 .metric-pill strong,
 .status-card strong {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   color: var(--ai-text);
 }
 
 .metric-pill--warn {
-  background: rgba(255, 244, 229, 0.9);
+  background: rgba(255, 250, 240, 0.96);
+}
+
+.metric-pill--warn .metric-pill__icon {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
 }
 
 .control-card {
-  padding: 18px 22px 6px;
+  padding: 14px 18px;
 }
 
 .control-row {
   display: flex;
   align-items: flex-end;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .control-item {
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .control-item--grow {
@@ -1311,7 +1632,7 @@ onMounted(async () => {
 .control-actions {
   display: flex;
   gap: 10px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .workspace {
@@ -1325,7 +1646,7 @@ onMounted(async () => {
 .sidebar-card,
 .detail-card,
 .composer-card {
-  padding: 22px;
+  padding: 20px;
 }
 
 .sidebar-card {
@@ -1344,10 +1665,10 @@ onMounted(async () => {
 .suggestion-card__head,
 .suggestion-actions,
 .composer-head,
-.composer-footer,
 .proposal-execution,
 .conversation-item__head,
-.conversation-item__meta {
+.conversation-item__meta,
+.composer-toolbar {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1361,30 +1682,29 @@ onMounted(async () => {
 }
 
 .sidebar-shortcuts {
-  display: grid;
-  gap: 10px;
-  margin: 18px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 14px;
 }
 
 .shortcut-chip {
+  width: 100%;
   padding: 14px 16px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(247, 250, 252, 0.98), rgba(255, 255, 255, 0.86));
+  background: linear-gradient(180deg, #fbfcfe, #ffffff);
   text-align: left;
   cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .shortcut-chip:hover,
 .conversation-item:hover,
 .conversation-item--active {
   transform: translateY(-1px);
-  border-color: rgba(15, 118, 110, 0.28);
-  box-shadow: 0 18px 38px rgba(15, 118, 110, 0.12);
+  border-color: rgba(64, 158, 255, 0.28);
+  box-shadow: 0 16px 28px rgba(64, 158, 255, 0.12);
 }
 
 .shortcut-chip span {
@@ -1413,22 +1733,38 @@ onMounted(async () => {
   width: 100%;
   padding: 16px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
+  background: #ffffff;
   cursor: pointer;
   text-align: left;
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+  position: relative;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.conversation-item::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(64, 158, 255, 0.18);
+}
+
+.conversation-item--active::before,
+.conversation-item:hover::before {
+  background: var(--ai-primary);
 }
 
 .conversation-item__head strong {
   color: var(--ai-text);
+  padding-left: 16px;
 }
 
 .conversation-item p {
   margin: 10px 0 12px;
+  min-height: 46px;
 }
 
 .main-column {
@@ -1475,8 +1811,8 @@ onMounted(async () => {
 .empty-stage,
 .warning-banner {
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.78);
+  border-radius: 18px;
+  background: #ffffff;
 }
 
 .status-card {
@@ -1491,7 +1827,7 @@ onMounted(async () => {
   padding: 16px 18px;
   margin-bottom: 16px;
   color: #92400e;
-  background: rgba(255, 245, 230, 0.92);
+  background: rgba(255, 247, 237, 0.96);
 }
 
 .section-card {
@@ -1525,8 +1861,8 @@ onMounted(async () => {
 .message-card {
   padding: 18px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
+  background: #ffffff;
 }
 
 .suggestion-card__head strong,
@@ -1559,7 +1895,7 @@ onMounted(async () => {
 .proposal-facts span {
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(64, 158, 255, 0.1);
 }
 
 .manifest-preview {
@@ -1588,8 +1924,8 @@ onMounted(async () => {
   margin-top: 12px;
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(255, 248, 235, 0.92);
-  color: #8a5a15;
+  background: #f8fafc;
+  color: #475569;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -1620,15 +1956,15 @@ onMounted(async () => {
 }
 
 .message-card--assistant {
-  background: linear-gradient(180deg, rgba(239, 252, 249, 0.96), rgba(255, 255, 255, 0.84));
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(255, 255, 255, 1));
 }
 
 .message-card--user {
-  background: linear-gradient(180deg, rgba(248, 250, 255, 0.96), rgba(255, 255, 255, 0.84));
+  background: linear-gradient(180deg, rgba(248, 250, 255, 0.98), rgba(255, 255, 255, 1));
 }
 
 .message-card--tool {
-  background: linear-gradient(180deg, rgba(255, 248, 237, 0.96), rgba(255, 255, 255, 0.84));
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.98), rgba(255, 255, 255, 1));
 }
 
 .message-role,
@@ -1658,7 +1994,7 @@ onMounted(async () => {
 .message-suggestion {
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(64, 158, 255, 0.1);
 }
 
 .message-suggestion strong {
@@ -1682,6 +2018,7 @@ onMounted(async () => {
 .composer-card {
   position: sticky;
   bottom: 0;
+  padding-bottom: 18px;
 }
 
 .composer-head {
@@ -1707,46 +2044,110 @@ onMounted(async () => {
   grid-column: span 2;
 }
 
+.composer-shell {
+  padding: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
 .composer-shortcuts {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin: 18px 0 14px;
+  margin-bottom: 14px;
 }
 
 .composer-shortcuts span {
   font-size: 12px;
   color: var(--ai-muted);
+  margin-right: 2px;
 }
 
 .prompt-chip {
   padding: 8px 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
+  background: #ffffff;
   color: var(--ai-text);
   cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .prompt-chip:hover {
   transform: translateY(-1px);
-  border-color: rgba(15, 118, 110, 0.24);
-  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.12);
+  border-color: rgba(64, 158, 255, 0.24);
+  box-shadow: 0 10px 18px rgba(64, 158, 255, 0.12);
 }
 
-.composer-footer {
+.composer-input :deep(.el-textarea__inner) {
+  min-height: 176px !important;
+  padding: 10px 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ai-text);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.composer-toolbar__left {
+  display: flex;
   align-items: center;
-  margin-top: 16px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.composer-hints {
-  display: grid;
+.composer-toolbar__label {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  font-size: 12px;
+  color: var(--ai-muted);
+  white-space: nowrap;
+}
+
+.composer-model-field,
+.composer-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.composer-model-select {
+  width: 220px;
+}
+
+.composer-model-select :deep(.el-select__wrapper) {
+  min-height: 28px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none !important;
+}
+
+.composer-scope-pill {
+  max-width: 360px;
+  color: var(--ai-muted);
+  font-size: 12px;
+}
+
+.composer-scope-pill .el-icon {
+  color: var(--ai-primary);
+}
+
+.composer-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
   font-size: 12px;
 }
 
@@ -1756,6 +2157,26 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
+.ai-page :deep(.el-input__wrapper),
+.ai-page :deep(.el-select__wrapper),
+.ai-page :deep(.el-input-number) {
+  border-radius: 12px;
+}
+
+.ai-page :deep(.el-button) {
+  border-radius: 12px;
+}
+
+.ai-page :deep(.el-button--primary) {
+  box-shadow: 0 10px 18px rgba(64, 158, 255, 0.18);
+}
+
+.control-actions :deep(.el-button),
+.detail-head__actions :deep(.el-button),
+.composer-actions :deep(.el-button) {
+  min-height: 40px;
+}
+
 @media (max-width: 1440px) {
   .status-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1763,6 +2184,10 @@ onMounted(async () => {
 }
 
 @media (max-width: 1280px) {
+  .topbar-card {
+    flex-direction: column;
+  }
+
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -1787,7 +2212,7 @@ onMounted(async () => {
 
   .topbar-card,
   .control-row,
-  .composer-footer,
+  .composer-toolbar,
   .detail-head,
   .warning-banner {
     flex-direction: column;
@@ -1814,6 +2239,24 @@ onMounted(async () => {
     flex: 1;
   }
 
+  .composer-toolbar__left,
+  .composer-model-field,
+  .composer-scope-pill,
+  .composer-model-select {
+    width: 100%;
+    max-width: none;
+  }
+
+  .composer-model-field {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+
+  .composer-meta {
+    flex-direction: column;
+  }
+
   .status-grid,
   .suggestion-grid,
   .proposal-grid,
@@ -1828,11 +2271,28 @@ onMounted(async () => {
     grid-column: span 1;
   }
 
+  .sidebar-head,
+  .message-card__head,
+  .tool-card__meta,
+  .section-head,
+  .suggestion-actions,
+  .proposal-card__head {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar-copy h1 {
+    font-size: 26px;
+  }
+
+  .conversation-item__head,
   .tool-card__meta,
   .message-card__head,
   .section-head,
   .suggestion-actions,
-  .proposal-card__head {
+  .proposal-card__head,
+  .hero-title {
     flex-direction: column;
   }
 }
