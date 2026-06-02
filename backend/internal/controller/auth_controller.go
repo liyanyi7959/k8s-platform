@@ -200,12 +200,21 @@ func (ac *AuthController) Me(c *gin.Context) {
 		})
 		return
 	}
+
+	roles := claims.Roles
+	perms := claims.Perms
+	if ac.rbacSvc != nil && claims.UserID > 0 {
+		if latestRoles, latestPerms, err := ac.rbacSvc.GetUserRolesPerms(c.Request.Context(), uint64(claims.UserID)); err == nil {
+			roles = latestRoles
+			perms = latestPerms
+		}
+	}
 	resp.OK(c, gin.H{
 		"id":          claims.UserID,
 		"username":    claims.Username,
 		"status":      "active",
-		"roles":       claims.Roles,
-		"permissions": claims.Perms,
+		"roles":       roles,
+		"permissions": perms,
 	})
 }
 

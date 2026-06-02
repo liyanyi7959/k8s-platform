@@ -164,3 +164,34 @@ export const RoleManageIcon = defineComponent({
     ])
   }
 })
+
+export const AiAssistantIcon = defineComponent({
+  name: 'AiAssistantIcon',
+  setup() {
+    return () => h('svg', {
+      viewBox: '0 0 24 24', fill: 'none',
+      style: { width: '1em', height: '1em', display: 'block' }
+    }, [
+      h('rect', { x: '4', y: '5', width: '16', height: '12', rx: '4', stroke: 'currentColor', 'stroke-width': '1.7' }),
+      h('path', { d: 'M9 10h6', stroke: 'currentColor', 'stroke-width': '1.7', 'stroke-linecap': 'round' }),
+      h('path', { d: 'M12 3v2', stroke: 'currentColor', 'stroke-width': '1.7', 'stroke-linecap': 'round' }),
+      h('path', { d: 'M9 17l-1.5 3M15 17l1.5 3', stroke: 'currentColor', 'stroke-width': '1.7', 'stroke-linecap': 'round' }),
+      h('circle', { cx: '9', cy: '12.2', r: '0.9', fill: 'currentColor' }),
+      h('circle', { cx: '15', cy: '12.2', r: '0.9', fill: 'currentColor' })
+    ])
+  }
+})
+
+export const ModelHubIcon = defineComponent({
+  name: 'ModelHubIcon',
+  setup() {
+    return () => h('svg', {
+      viewBox: '0 0 24 24', fill: 'none',
+      style: { width: '1em', height: '1em', display: 'block' }
+    }, [
+      h('path', { d: 'M12 3l7 4v10l-7 4-7-4V7l7-4z', stroke: 'currentColor', 'stroke-width': '1.7', 'stroke-linejoin': 'round' }),
+      h('path', { d: 'M12 7l3.5 2v4L12 15l-3.5-2V9L12 7z', stroke: 'currentColor', 'stroke-width': '1.7', 'stroke-linejoin': 'round' }),
+      h('path', { d: 'M12 7V3M8.5 9L5 7M15.5 9L19 7', stroke: 'currentColor', 'stroke-width': '1.7', 'stroke-linecap': 'round' })
+    ])
+  }
+})

@@ -2,7 +2,15 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useUserStore } from '@/app/store/user'
-import { K8sClusterIcon, SystemSettingsIcon, AuditLogIcon, UserManageIcon, RoleManageIcon } from '@/shared/icons/appIcons'
+import {
+  AiAssistantIcon,
+  AuditLogIcon,
+  K8sClusterIcon,
+  ModelHubIcon,
+  RoleManageIcon,
+  SystemSettingsIcon,
+  UserManageIcon
+} from '@/shared/icons/appIcons'
 
 export interface MenuItem {
   title: string
@@ -50,6 +58,28 @@ export function useMenu() {
       ]
     },
     {
+      key: 'ai',
+      title: 'AI 助手',
+      icon: AiAssistantIcon,
+      path: '/ai/assistant',
+      children: [
+        {
+          title: '排障助手',
+          desc: '面向故障排查、诊断和会话沉淀',
+          path: '/ai/assistant',
+          icon: AiAssistantIcon,
+          perm: ['ai:chat', 'ai:diagnose']
+        },
+        {
+          title: '模型配置',
+          desc: '管理多模型与多提供商接入',
+          path: '/ai/settings',
+          icon: ModelHubIcon,
+          perm: 'ai:model_admin'
+        }
+      ]
+    },
+    {
       key: 'system',
       title: '系统管理',
       icon: SystemSettingsIcon,
@@ -75,6 +105,9 @@ export function useMenu() {
     const path = route.path
     if (path.startsWith('/clusters') || path.startsWith('/k8s')) {
       return visibleGroups.value.find((group) => group.key === 'k8s')
+    }
+    if (path.startsWith('/ai')) {
+      return visibleGroups.value.find((group) => group.key === 'ai')
     }
     if (path.startsWith('/system')) {
       return visibleGroups.value.find((group) => group.key === 'system')

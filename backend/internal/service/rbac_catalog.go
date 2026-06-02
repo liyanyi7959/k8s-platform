@@ -22,6 +22,14 @@ var builtinPermissionCatalog = []PermissionCatalogItem{
 	{Code: "k8s:rbac_read", Description: "K8s RBAC 查看", Category: "rbac", CategoryLabel: "RBAC 与权限治理", Builtin: true},
 	{Code: "k8s:rbac_write", Description: "K8s RBAC 管理", Category: "rbac", CategoryLabel: "RBAC 与权限治理", Builtin: true},
 	{Code: "k8s:permission_audit", Description: "K8s 最小权限分析", Category: "rbac", CategoryLabel: "RBAC 与权限治理", Builtin: true},
+	{Code: "ai:chat", Description: "AI 助手对话", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
+	{Code: "ai:diagnose", Description: "AI 故障诊断", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
+	{Code: "ai:image", Description: "AI 图片理解", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
+	{Code: "ai:tool_exec", Description: "AI 查询工具执行", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
+	{Code: "ai:change_propose", Description: "AI 变更建议生成", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
+	{Code: "ai:change_confirm", Description: "AI 变更确认审批", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
+	{Code: "ai:model_admin", Description: "AI 模型与提供商配置", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
+	{Code: "ai:audit_read", Description: "AI 审计记录查看", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
 	{Code: "user:read", Description: "用户、角色与审计查看", Category: "system", CategoryLabel: "系统管理", Builtin: true},
 	{Code: "user:write", Description: "用户与角色管理", Category: "system", CategoryLabel: "系统管理", Builtin: true},
 }
@@ -32,7 +40,6 @@ func BuiltinPermissionCatalog() []PermissionCatalogItem {
 	return out
 }
 
-// BuiltinPermissions 返回系统预置权限点列表。
 func BuiltinPermissions() map[string]string {
 	out := make(map[string]string, len(builtinPermissionCatalog))
 	for _, item := range builtinPermissionCatalog {
@@ -72,6 +79,8 @@ func derivePermissionCategory(code string) (string, string) {
 		return "cluster", "平台与集群"
 	case strings.HasPrefix(code, "namespace:"):
 		return "namespace", "命名空间"
+	case strings.HasPrefix(code, "ai:"):
+		return "ai", "AI 助手"
 	case strings.HasPrefix(code, "k8s:rbac_") || code == "k8s:permission_audit":
 		return "rbac", "RBAC 与权限治理"
 	case code == "k8s:exec" || code == "k8s:secret_reveal":
@@ -97,8 +106,10 @@ func permissionCategoryOrder(category string) int {
 		return 4
 	case "rbac":
 		return 5
-	case "security":
+	case "ai":
 		return 6
+	case "security":
+		return 7
 	default:
 		return 99
 	}

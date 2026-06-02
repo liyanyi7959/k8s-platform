@@ -45,6 +45,7 @@ func New(d Deps) (*gin.Engine, error) {
 	var permissionAuditCtl *controller.K8sPermissionAuditController
 	var auditCtl *controller.AuditController
 	var userCtl *controller.UserController
+	var aiCtl *controller.AIController
 
 	if d.DB != nil {
 		clusterReg := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
@@ -60,6 +61,14 @@ func New(d Deps) (*gin.Engine, error) {
 		permissionAuditCtl = controller.NewK8sPermissionAuditController(permissionAuditSvc)
 		auditCtl = controller.NewAuditController(auditSvc)
 		userCtl = controller.NewUserController(d.RbacSvc)
+		aiProviderSvc := service.NewAIProviderService(d.DB, d.EncryptionKey)
+		aiRouteSettingsSvc := service.NewAIRouteSettingsService(d.DB)
+		aiGatewaySvc := service.NewAIGatewayService(d.DB, d.EncryptionKey)
+		aiConversationSvc := service.NewAIConversationService(d.DB)
+		aiToolSvc := service.NewAIToolService(d.DB, k8sSvc)
+		aiActionSvc := service.NewAIActionService(d.DB, k8sSvc, manifestApplySvc)
+		aiChatSvc := service.NewAIChatService(d.DB, aiGatewaySvc, aiToolSvc, aiActionSvc)
+		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiActionSvc)
 	}
 
 	// ── 健康检查 ──
@@ -68,7 +77,7 @@ func New(d Deps) (*gin.Engine, error) {
 	})
 
 	// ── 路由注册 ──
-	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl)
+	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, aiCtl)
 
 	return r, nil
 }
@@ -83,6 +92,7 @@ func registerRoutes(
 	permissionAuditCtl *controller.K8sPermissionAuditController,
 	auditCtl *controller.AuditController,
 	userCtl *controller.UserController,
+	aiCtl *controller.AIController,
 ) {
 	api := r.Group("/api/v1")
 
@@ -109,6 +119,7 @@ func registerRoutes(
 	registerWebSocketRoutes(authed, k8sCtl)
 	registerAuditRoutes(authed, auditCtl)
 	registerUserRoutes(authed, userCtl)
+	registerAIRoutes(authed, aiCtl)
 }
 
 func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sPermissionAuditController) {
@@ -501,4 +512,32 @@ func registerUserRoutes(authed *gin.RouterGroup, ctl *controller.UserController)
 
 	// 权限点列表
 	authed.GET("/permissions", read, ctl.ListPermissions)
+}
+
+func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController) {
+	if ctl == nil {
+		return
+	}
+
+	aiReadPerm := middleware.RequireAnyPerm("ai:chat", "ai:diagnose", "ai:image", "ai:model_admin")
+	aiWritePerm := middleware.RequirePerm("ai:model_admin")
+	clusterReadPerm := middleware.RequirePerm("cluster:read")
+
+	ai := authed.Group("/ai")
+	ai.GET("/providers", aiWritePerm, ctl.ListProviders)
+	ai.POST("/providers", aiWritePerm, ctl.CreateProvider)
+	ai.PATCH("/providers/:id", aiWritePerm, ctl.PatchProvider)
+	ai.GET("/models", aiWritePerm, ctl.ListModels)
+	ai.POST("/models", aiWritePerm, ctl.CreateModel)
+	ai.PATCH("/models/:id", aiWritePerm, ctl.PatchModel)
+	ai.GET("/route-settings", aiWritePerm, ctl.GetRouteSettings)
+	ai.PUT("/route-settings", aiWritePerm, ctl.UpdateRouteSettings)
+	ai.GET("/conversations", aiReadPerm, ctl.ListConversations)
+	ai.GET("/conversations/:id", aiReadPerm, ctl.GetConversation)
+
+	clusters := authed.Group("/clusters")
+	clusters.POST("/:id/ai/conversations", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), ctl.CreateConversation)
+	clusters.POST("/:id/ai/chat", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), ctl.SendChat)
+	clusters.POST("/:id/ai/actions/propose", clusterReadPerm, middleware.RequirePerm("ai:change_propose"), ctl.CreateActionProposal)
+	clusters.POST("/:id/ai/actions/:actionId/confirm", clusterReadPerm, middleware.RequirePerm("ai:change_confirm"), middleware.RequirePerm("k8s:write"), ctl.ConfirmActionProposal)
 }

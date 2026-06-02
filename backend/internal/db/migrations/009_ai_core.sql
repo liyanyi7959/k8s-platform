@@ -1,0 +1,80 @@
+CREATE TABLE IF NOT EXISTS ai_providers (
+  id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name          VARCHAR(120) NOT NULL,
+  provider_type VARCHAR(32) NOT NULL DEFAULT 'openai',
+  base_url      VARCHAR(255) NOT NULL DEFAULT '',
+  api_key_enc   LONGTEXT NULL,
+  enabled       TINYINT(1) NOT NULL DEFAULT 1,
+  priority      INT NOT NULL DEFAULT 100,
+  meta_json     JSON NULL,
+  created_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at    DATETIME(3) NULL,
+  UNIQUE KEY uk_ai_providers_name (name),
+  INDEX idx_ai_providers_type_enabled (provider_type, enabled),
+  INDEX idx_ai_providers_deleted (deleted_at)
+);
+
+CREATE TABLE IF NOT EXISTS ai_models (
+  id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  provider_id       BIGINT UNSIGNED NOT NULL,
+  name              VARCHAR(120) NOT NULL,
+  model_code        VARCHAR(160) NOT NULL,
+  model_type        VARCHAR(32) NOT NULL DEFAULT 'chat',
+  enabled           TINYINT(1) NOT NULL DEFAULT 1,
+  supports_tools    TINYINT(1) NOT NULL DEFAULT 0,
+  supports_vision   TINYINT(1) NOT NULL DEFAULT 0,
+  max_input_tokens  INT NOT NULL DEFAULT 0,
+  max_output_tokens INT NOT NULL DEFAULT 0,
+  meta_json         JSON NULL,
+  created_at        DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at        DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at        DATETIME(3) NULL,
+  CONSTRAINT fk_ai_models_provider FOREIGN KEY (provider_id) REFERENCES ai_providers(id) ON DELETE CASCADE,
+  UNIQUE KEY uk_ai_models_provider_code (provider_id, model_code),
+  INDEX idx_ai_models_type_enabled (model_type, enabled),
+  INDEX idx_ai_models_deleted (deleted_at)
+);
+
+CREATE TABLE IF NOT EXISTS ai_conversations (
+  id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  cluster_id       BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  provider_id      BIGINT UNSIGNED NULL,
+  model_id         BIGINT UNSIGNED NULL,
+  title            VARCHAR(255) NOT NULL DEFAULT '',
+  status           VARCHAR(32) NOT NULL DEFAULT 'open',
+  assistant_mode   VARCHAR(32) NOT NULL DEFAULT 'diagnose',
+  summary          VARCHAR(512) NOT NULL DEFAULT '',
+  created_by       BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  created_by_name  VARCHAR(80) NOT NULL DEFAULT '',
+  last_message_at  DATETIME(3) NULL,
+  created_at       DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at       DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at       DATETIME(3) NULL,
+  CONSTRAINT fk_ai_conversations_cluster FOREIGN KEY (cluster_id) REFERENCES clusters(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_ai_conversations_provider FOREIGN KEY (provider_id) REFERENCES ai_providers(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_conversations_model FOREIGN KEY (model_id) REFERENCES ai_models(id) ON DELETE SET NULL,
+  INDEX idx_ai_conversations_cluster_updated (cluster_id, updated_at),
+  INDEX idx_ai_conversations_status_updated (status, updated_at),
+  INDEX idx_ai_conversations_creator_updated (created_by, updated_at),
+  INDEX idx_ai_conversations_deleted (deleted_at)
+);
+
+CREATE TABLE IF NOT EXISTS ai_messages (
+  id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  conversation_id   BIGINT UNSIGNED NOT NULL,
+  role              VARCHAR(32) NOT NULL DEFAULT 'user',
+  message_type      VARCHAR(32) NOT NULL DEFAULT 'text',
+  content           LONGTEXT NOT NULL,
+  structured_json   JSON NULL,
+  status            VARCHAR(32) NOT NULL DEFAULT 'created',
+  tool_call_count   INT NOT NULL DEFAULT 0,
+  token_input       INT NOT NULL DEFAULT 0,
+  token_output      INT NOT NULL DEFAULT 0,
+  created_by        BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at        DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at        DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  CONSTRAINT fk_ai_messages_conversation FOREIGN KEY (conversation_id) REFERENCES ai_conversations(id) ON DELETE CASCADE,
+  INDEX idx_ai_messages_conversation_created (conversation_id, created_at),
+  INDEX idx_ai_messages_role_created (role, created_at)
+);

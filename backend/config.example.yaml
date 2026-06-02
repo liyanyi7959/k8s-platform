@@ -1,9 +1,9 @@
 server:
   addr: ":8080"
   gin_mode: "release"
-  read_timeout: "30s"
-  write_timeout: "30s"
-  idle_timeout: "60s"
+  read_timeout: "120s"
+  write_timeout: "120s"
+  idle_timeout: "180s"
   shutdown_timeout: "10s"
 db:
   mysql_dsn: "root:Root@123@tcp(127.0.0.1:3306)/k8spaltform?charset=utf8mb4&parseTime=True&loc=Local"
@@ -30,3 +30,11 @@ log:
   format: "json"
 k8s:
   insecure_skip_tls_verify: false
+ai:
+  enabled: true
+  default_provider: ""
+  default_chat_model: ""
+  default_vision_model: ""
+  mask_secrets: true
+  allow_external_model_data: false
+  tool_timeout: "20s"

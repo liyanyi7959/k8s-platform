@@ -55,6 +55,18 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '资源关系图', requiresAuth: true, perm: ['cluster:read', 'k8s:read'], hideInMenu: true }
       },
       {
+        path: 'ai/assistant',
+        name: 'AiAssistant',
+        component: () => import('@/features/ai/pages/AiAssistantView.vue'),
+        meta: { title: '排障助手', requiresAuth: true, perm: ['ai:chat', 'ai:diagnose'] }
+      },
+      {
+        path: 'ai/settings',
+        name: 'AiModelSettings',
+        component: () => import('@/features/ai/pages/AiModelSettingsView.vue'),
+        meta: { title: '模型配置', requiresAuth: true, perm: 'ai:model_admin' }
+      },
+      {
         path: 'system/audit-logs',
         name: 'AuditLogs',
         component: () => import('@/features/system/pages/AuditLogView.vue'),

@@ -26,9 +26,9 @@
             @click="activeGroup.path && router.push(activeGroup.path)"
           >{{ activeGroup.title }}</span>
         </template>
-        <template v-if="currentTitle && activeGroup?.key !== 'dashboard'">
+        <template v-if="displayTitle && activeGroup?.key !== 'dashboard'">
           <span class="breadcrumb-sep">/</span>
-          <span class="breadcrumb-item breadcrumb-current">{{ currentTitle }}</span>
+          <span class="breadcrumb-item breadcrumb-current">{{ displayTitle }}</span>
         </template>
       </nav>
     </div>
@@ -108,6 +108,12 @@ const messageCount = ref(0)
 
 /* ── 面包屑：当前页面标题 ─────────────────────────────────────────────── */
 const currentTitle = computed(() => String(route.meta?.title ?? ''))
+const displayTitle = computed(() => {
+  const title = currentTitle.value.trim()
+  const groupTitle = String(activeGroup.value?.title ?? '').trim()
+  if (!title || title === groupTitle) return ''
+  return title
+})
 
 /* ── 主题图标 ─────────────────────────────────────────────────────────── */
 const themeIcon = computed(() => {

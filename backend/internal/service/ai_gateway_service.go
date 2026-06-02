@@ -1,0 +1,397 @@
+package service
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
+	"gorm.io/gorm"
+
+	"k8s-platform-backend/internal/model"
+)
+
+type AIGatewayMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type AIGatewayRequest struct {
+	ConversationID  uint64
+	AssistantMode   string
+	ProviderID      *uint64
+	ModelID         *uint64
+	PreferModelCode string
+	Messages        []AIGatewayMessage
+	DiagnosticNotes string
+}
+
+type AIGatewayUsage struct {
+	RequestTokens  int
+	ResponseTokens int
+	TotalTokens    int
+	LatencyMS      int
+}
+
+type AIGatewayResponse struct {
+	ProviderID       uint64
+	ProviderName     string
+	ModelID          uint64
+	ModelName        string
+	ModelCode        string
+	Content          string
+	SuggestedActions []AISuggestedAction
+	Usage            AIGatewayUsage
+}
+
+type AIGatewayService struct {
+	db            *gorm.DB
+	encryptionKey string
+	httpClient    *http.Client
+}
+
+func NewAIGatewayService(db *gorm.DB, encryptionKey string) *AIGatewayService {
+	return &AIGatewayService{
+		db:            db,
+		encryptionKey: encryptionKey,
+		httpClient: &http.Client{
+			Timeout: 90 * time.Second,
+		},
+	}
+}
+
+func (s *AIGatewayService) Invoke(ctx context.Context, req AIGatewayRequest) (AIGatewayResponse, error) {
+	if s.db == nil {
+		return AIGatewayResponse{}, errors.New("db is required")
+	}
+
+	provider, aiModel, apiKey, err := s.resolveInvocationTarget(ctx, req)
+	if err != nil {
+		return AIGatewayResponse{}, err
+	}
+
+	if provider.ProviderType == "mock" {
+		return s.invokeMock(provider, aiModel, req), nil
+	}
+
+	switch provider.ProviderType {
+	case "openai", "compatible", "openai-compatible":
+		return s.invokeOpenAICompatible(ctx, provider, aiModel, apiKey, req)
+	default:
+		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "当前提供商类型暂不支持在线调用")
+	}
+}
+
+func (s *AIGatewayService) resolveInvocationTarget(ctx context.Context, req AIGatewayRequest) (model.AIProvider, model.AIModel, string, error) {
+	var aiModel model.AIModel
+	q := s.db.WithContext(ctx).
+		Table("ai_models AS m").
+		Joins("JOIN ai_providers AS p ON p.id = m.provider_id").
+		Where("m.deleted_at IS NULL AND p.deleted_at IS NULL AND m.enabled = 1 AND p.enabled = 1")
+
+	switch {
+	case req.ModelID != nil && *req.ModelID > 0:
+		q = q.Where("m.id = ?", *req.ModelID)
+	case strings.TrimSpace(req.PreferModelCode) != "":
+		q = q.Where("m.model_code = ?", strings.TrimSpace(req.PreferModelCode))
+	case req.ProviderID != nil && *req.ProviderID > 0:
+		q = q.Where("m.provider_id = ?", *req.ProviderID)
+	default:
+		if routed := s.findRoutePreferredModel(ctx, req); routed != nil {
+			q = q.Where("m.id = ?", *routed)
+		}
+	}
+
+	if strings.TrimSpace(req.AssistantMode) == "chat" {
+		q = q.Where("m.model_type IN ?", []string{"chat", "reasoning"})
+	} else {
+		q = q.Where("m.model_type IN ?", []string{"chat", "reasoning", "vision"})
+	}
+
+	if err := q.Order("p.priority ASC, m.id DESC").First(&aiModel).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.AIProvider{}, model.AIModel{}, "", ErrWithMessage(ErrNotFound, "未找到可用的 AI 模型")
+		}
+		return model.AIProvider{}, model.AIModel{}, "", err
+	}
+
+	if provider, apiKey, providerErr := s.loadProviderWithKey(ctx, aiModel.ProviderID); providerErr == nil {
+		return provider, aiModel, apiKey, nil
+	} else if !errors.Is(providerErr, ErrNotFound) {
+		return model.AIProvider{}, model.AIModel{}, "", providerErr
+	} else if routeSettings, routeErr := s.loadRouteSettings(ctx); routeErr == nil && routeSettings != nil && routeSettings.AllowFallback {
+		if routeSettings.DefaultFallbackProviderID != nil &&
+			*routeSettings.DefaultFallbackProviderID > 0 &&
+			*routeSettings.DefaultFallbackProviderID != aiModel.ProviderID {
+			fallbackModel, fallbackErr := s.findFallbackModel(ctx, req, *routeSettings.DefaultFallbackProviderID)
+			if fallbackErr == nil {
+				fallbackProvider, fallbackKey, fallbackProviderErr := s.loadProviderWithKey(ctx, fallbackModel.ProviderID)
+				if fallbackProviderErr == nil {
+					return fallbackProvider, fallbackModel, fallbackKey, nil
+				}
+			}
+		}
+	}
+
+	var provider model.AIProvider
+	if err := s.db.WithContext(ctx).
+		Where("deleted_at IS NULL AND enabled = 1 AND id = ?", aiModel.ProviderID).
+		First(&provider).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.AIProvider{}, model.AIModel{}, "", ErrWithMessage(ErrNotFound, "未找到可用的 AI 提供商")
+		}
+		return model.AIProvider{}, model.AIModel{}, "", err
+	}
+
+	apiKey := ""
+	if provider.APIKeyEnc != nil && strings.TrimSpace(*provider.APIKeyEnc) != "" {
+		plain, err := decryptText(s.encryptionKey, *provider.APIKeyEnc)
+		if err != nil {
+			return model.AIProvider{}, model.AIModel{}, "", err
+		}
+		apiKey = strings.TrimSpace(plain)
+	}
+	return provider, aiModel, apiKey, nil
+}
+
+func (s *AIGatewayService) baseEnabledModelQuery(ctx context.Context, req AIGatewayRequest) *gorm.DB {
+	q := s.db.WithContext(ctx).
+		Table("ai_models AS m").
+		Joins("JOIN ai_providers AS p ON p.id = m.provider_id").
+		Where("m.deleted_at IS NULL AND p.deleted_at IS NULL AND m.enabled = 1 AND p.enabled = 1")
+
+	if strings.TrimSpace(req.AssistantMode) == "chat" {
+		return q.Where("m.model_type IN ?", []string{"chat", "reasoning"})
+	}
+	return q.Where("m.model_type IN ?", []string{"chat", "reasoning", "vision"})
+}
+
+func (s *AIGatewayService) findRoutePreferredModel(ctx context.Context, req AIGatewayRequest) *uint64 {
+	settings, err := s.loadRouteSettings(ctx)
+	if err != nil || settings == nil {
+		return nil
+	}
+
+	switch normalizeAIRoutingStrategy(settings.RoutingStrategy) {
+	case "default_model_first", "capability_first", "priority_first":
+	default:
+		return nil
+	}
+
+	var candidate *uint64
+	if strings.TrimSpace(req.AssistantMode) == "chat" {
+		candidate = settings.DefaultChatModelID
+	} else {
+		candidate = settings.DefaultDiagnoseModelID
+	}
+	if candidate == nil || *candidate == 0 {
+		return nil
+	}
+	return candidate
+}
+
+func (s *AIGatewayService) loadRouteSettings(ctx context.Context) (*model.AIRouteSetting, error) {
+	var row model.AIRouteSetting
+	if err := s.db.WithContext(ctx).First(&row, 1).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &row, nil
+}
+
+func (s *AIGatewayService) findFallbackModel(ctx context.Context, req AIGatewayRequest, providerID uint64) (model.AIModel, error) {
+	var row model.AIModel
+	if err := s.baseEnabledModelQuery(ctx, req).
+		Where("m.provider_id = ?", providerID).
+		Order("m.id DESC").
+		First(&row).Error; err != nil {
+		return model.AIModel{}, err
+	}
+	return row, nil
+}
+
+func (s *AIGatewayService) loadProviderWithKey(ctx context.Context, providerID uint64) (model.AIProvider, string, error) {
+	var provider model.AIProvider
+	if err := s.db.WithContext(ctx).
+		Where("deleted_at IS NULL AND enabled = 1 AND id = ?", providerID).
+		First(&provider).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.AIProvider{}, "", ErrNotFound
+		}
+		return model.AIProvider{}, "", err
+	}
+
+	apiKey := ""
+	if provider.AuthScheme != "none" && provider.APIKeyEnc != nil && strings.TrimSpace(*provider.APIKeyEnc) != "" {
+		plain, err := decryptText(s.encryptionKey, *provider.APIKeyEnc)
+		if err != nil {
+			return model.AIProvider{}, "", err
+		}
+		apiKey = strings.TrimSpace(plain)
+	}
+	return provider, apiKey, nil
+}
+
+func (s *AIGatewayService) invokeMock(provider model.AIProvider, aiModel model.AIModel, req AIGatewayRequest) AIGatewayResponse {
+	lastUser := ""
+	for i := len(req.Messages) - 1; i >= 0; i-- {
+		if strings.EqualFold(req.Messages[i].Role, "user") {
+			lastUser = strings.TrimSpace(req.Messages[i].Content)
+			break
+		}
+	}
+	notes := strings.TrimSpace(req.DiagnosticNotes)
+	if len([]rune(notes)) > 360 {
+		notes = string([]rune(notes)[:360]) + "..."
+	}
+	content := "当前使用的是 mock AI 提供商，已打通会话、自动取证和回复链路。\n\n"
+	if lastUser != "" {
+		content += "你的问题摘要: " + lastUser + "\n"
+	}
+	if notes != "" {
+		content += "\n已收集诊断上下文:\n" + notes + "\n"
+	}
+	content += "\n建议下一步: 如需接入真实模型，请在 AI 模型配置页启用兼容 OpenAI 协议的提供商。"
+	return AIGatewayResponse{
+		ProviderID:   provider.ID,
+		ProviderName: provider.Name,
+		ModelID:      aiModel.ID,
+		ModelName:    aiModel.Name,
+		ModelCode:    aiModel.ModelCode,
+		Content:      content,
+		Usage: AIGatewayUsage{
+			RequestTokens:  0,
+			ResponseTokens: 0,
+			TotalTokens:    0,
+			LatencyMS:      1,
+		},
+	}
+}
+
+func (s *AIGatewayService) invokeOpenAICompatible(
+	ctx context.Context,
+	provider model.AIProvider,
+	aiModel model.AIModel,
+	apiKey string,
+	req AIGatewayRequest,
+) (AIGatewayResponse, error) {
+	if apiKey == "" {
+		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "当前 AI 提供商未配置 API Key")
+	}
+
+	systemPrompt := buildAISystemPrompt(req.AssistantMode)
+	messages := make([]map[string]string, 0, len(req.Messages)+2)
+	messages = append(messages, map[string]string{
+		"role":    "system",
+		"content": systemPrompt,
+	})
+	if notes := strings.TrimSpace(req.DiagnosticNotes); notes != "" {
+		messages = append(messages, map[string]string{
+			"role":    "system",
+			"content": "以下是平台自动收集的只读诊断信息，请优先基于这些证据分析，不要编造缺失事实。\n" + notes,
+		})
+	} else {
+		messages = append(messages, map[string]string{
+			"role":    "system",
+			"content": "当前没有拿到任何平台诊断证据。不要声称已经看到集群状态、Pod 状态、事件、日志或具体资源异常；请明确说明证据不足，并只给出下一步排查建议。",
+		})
+	}
+	for _, item := range req.Messages {
+		role := strings.ToLower(strings.TrimSpace(item.Role))
+		if role == "" {
+			role = "user"
+		}
+		messages = append(messages, map[string]string{
+			"role":    role,
+			"content": item.Content,
+		})
+	}
+
+	payload := map[string]any{
+		"model":       aiModel.ModelCode,
+		"messages":    messages,
+		"temperature": 0.2,
+		"stream":      false,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return AIGatewayResponse{}, err
+	}
+
+	baseURL := strings.TrimRight(strings.TrimSpace(provider.BaseURL), "/")
+	if baseURL == "" {
+		baseURL = "https://api.openai.com/v1"
+	}
+	endpoint := baseURL + "/chat/completions"
+
+	reqStart := time.Now()
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return AIGatewayResponse{}, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	httpResp, err := s.httpClient.Do(httpReq)
+	if err != nil {
+		return AIGatewayResponse{}, ErrWithMessage(ErrK8sNetwork, "AI 提供商连接失败")
+	}
+	defer func() { _ = httpResp.Body.Close() }()
+
+	respBody, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return AIGatewayResponse{}, err
+	}
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, fmt.Sprintf("AI 提供商返回异常状态: %d", httpResp.StatusCode))
+	}
+
+	var parsed struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+		Usage struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+			TotalTokens      int `json:"total_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(respBody, &parsed); err != nil {
+		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "AI 提供商响应格式无法解析")
+	}
+	if len(parsed.Choices) == 0 || strings.TrimSpace(parsed.Choices[0].Message.Content) == "" {
+		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "AI 提供商未返回有效回答")
+	}
+
+	return AIGatewayResponse{
+		ProviderID:   provider.ID,
+		ProviderName: provider.Name,
+		ModelID:      aiModel.ID,
+		ModelName:    aiModel.Name,
+		ModelCode:    aiModel.ModelCode,
+		Content:      strings.TrimSpace(parsed.Choices[0].Message.Content),
+		Usage: AIGatewayUsage{
+			RequestTokens:  parsed.Usage.PromptTokens,
+			ResponseTokens: parsed.Usage.CompletionTokens,
+			TotalTokens:    parsed.Usage.TotalTokens,
+			LatencyMS:      int(time.Since(reqStart).Milliseconds()),
+		},
+	}, nil
+}
+
+func buildAISystemPrompt(mode string) string {
+	base := "你是 Kubernetes 平台内置的 AI 助手。请基于提供的集群证据回答，严格区分“已确认事实”和“推测判断”，如果证据不足要明确说明。"
+	if strings.TrimSpace(mode) == "chat" {
+		return base + "当前模式为通用协助，但仍然不允许绕过平台权限或直接执行写操作。"
+	}
+	return base + "当前模式为故障诊断，请优先输出问题摘要、可能原因、关键证据、影响范围和建议下一步。涉及写操作时只给建议，不可默认执行。"
+}

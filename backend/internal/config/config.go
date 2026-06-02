@@ -29,10 +29,11 @@ type Config struct {
 	Redis   RedisConfig   `yaml:"redis"`
 	Log     LogConfig     `yaml:"log"`
 	K8s     K8sConfig     `yaml:"k8s"`
+	AI      AIConfig      `yaml:"ai"`
 }
 
 // ServerConfig 描述 HTTP Server 的启动参数。
-// 注意：read/write/idle/shutdown 使用字符串表示 duration，便于在 YAML 中书写（如 "30s"、"2m"）。
+// 注意：read/write/idle/shutdown 使用字符串表示 duration，便于在 YAML 中书写（如 "120s"、"2m"）。
 type ServerConfig struct {
 	Addr            string `yaml:"addr"`
 	GinMode         string `yaml:"gin_mode"`
@@ -92,6 +93,16 @@ type RedisConfig struct {
 	DefaultTTL string `yaml:"default_ttl"`
 }
 
+type AIConfig struct {
+	Enabled                bool   `yaml:"enabled"`
+	DefaultProvider        string `yaml:"default_provider"`
+	DefaultChatModel       string `yaml:"default_chat_model"`
+	DefaultVisionModel     string `yaml:"default_vision_model"`
+	MaskSecrets            bool   `yaml:"mask_secrets"`
+	AllowExternalModelData bool   `yaml:"allow_external_model_data"`
+	ToolTimeout            string `yaml:"tool_timeout"`
+}
+
 // Default 返回一份“可运行的默认配置骨架”。
 // 说明：生产环境务必通过 config.yaml 或环境变量覆盖敏感信息（如 JWT secret、DB DSN 等）。
 func Default() Config {
@@ -99,9 +110,9 @@ func Default() Config {
 		Server: ServerConfig{
 			Addr:            ":8080",
 			GinMode:         "",
-			ReadTimeout:     "30s",
-			WriteTimeout:    "30s",
-			IdleTimeout:     "60s",
+			ReadTimeout:     "120s",
+			WriteTimeout:    "120s",
+			IdleTimeout:     "180s",
 			ShutdownTimeout: "10s",
 		},
 		DB:      DBConfig{MySQLDSN: ""},
@@ -128,6 +139,15 @@ func Default() Config {
 		Log: LogConfig{
 			Level:  "info",
 			Format: "json",
+		},
+		AI: AIConfig{
+			Enabled:                true,
+			DefaultProvider:        "",
+			DefaultChatModel:       "",
+			DefaultVisionModel:     "",
+			MaskSecrets:            true,
+			AllowExternalModelData: false,
+			ToolTimeout:            "20s",
 		},
 	}
 }
@@ -211,6 +231,11 @@ func (c Config) Validate() error {
 			return errors.New("log.format must be json or console")
 		}
 	}
+	if c.AI.ToolTimeout != "" {
+		if _, err := time.ParseDuration(c.AI.ToolTimeout); err != nil {
+			return errors.New("ai.tool_timeout must be a valid duration")
+		}
+	}
 	return nil
 }
 
@@ -223,19 +248,23 @@ func (c Config) ParsedTokenTTL() time.Duration {
 }
 
 func (c Config) ParsedReadTimeout() time.Duration {
-	return parseDurationOrDefault(c.Server.ReadTimeout, 30*time.Second)
+	return parseDurationOrDefault(c.Server.ReadTimeout, 120*time.Second)
 }
 func (c Config) ParsedWriteTimeout() time.Duration {
-	return parseDurationOrDefault(c.Server.WriteTimeout, 30*time.Second)
+	return parseDurationOrDefault(c.Server.WriteTimeout, 120*time.Second)
 }
 func (c Config) ParsedIdleTimeout() time.Duration {
-	return parseDurationOrDefault(c.Server.IdleTimeout, 60*time.Second)
+	return parseDurationOrDefault(c.Server.IdleTimeout, 180*time.Second)
 }
 func (c Config) ParsedShutdownTimeout() time.Duration {
 	return parseDurationOrDefault(c.Server.ShutdownTimeout, 10*time.Second)
 }
 func (c Config) ParsedRedisDefaultTTL() time.Duration {
 	return parseDurationOrDefault(c.Redis.DefaultTTL, 20*time.Second)
+}
+
+func (c Config) ParsedAIToolTimeout() time.Duration {
+	return parseDurationOrDefault(c.AI.ToolTimeout, 20*time.Second)
 }
 
 // EncryptionKey 返回数据加密的有效密钥。
@@ -323,5 +352,32 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := os.Getenv("LOG_FORMAT"); v != "" {
 		cfg.Log.Format = v
+	}
+	if v := os.Getenv("AI_ENABLED"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			cfg.AI.Enabled = b
+		}
+	}
+	if v := os.Getenv("AI_DEFAULT_PROVIDER"); v != "" {
+		cfg.AI.DefaultProvider = v
+	}
+	if v := os.Getenv("AI_DEFAULT_CHAT_MODEL"); v != "" {
+		cfg.AI.DefaultChatModel = v
+	}
+	if v := os.Getenv("AI_DEFAULT_VISION_MODEL"); v != "" {
+		cfg.AI.DefaultVisionModel = v
+	}
+	if v := os.Getenv("AI_MASK_SECRETS"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			cfg.AI.MaskSecrets = b
+		}
+	}
+	if v := os.Getenv("AI_ALLOW_EXTERNAL_MODEL_DATA"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			cfg.AI.AllowExternalModelData = b
+		}
+	}
+	if v := os.Getenv("AI_TOOL_TIMEOUT"); v != "" {
+		cfg.AI.ToolTimeout = v
 	}
 }

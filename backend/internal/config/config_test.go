@@ -188,8 +188,8 @@ func TestParsedRedisDefaultTTL(t *testing.T) {
 func TestParsedDuration_Empty(t *testing.T) {
 	cfg := Default()
 	cfg.Server.ReadTimeout = ""
-	if cfg.ParsedReadTimeout() != 30*time.Second {
-		t.Errorf("ParsedReadTimeout() should default to 30s when empty")
+	if cfg.ParsedReadTimeout() != 120*time.Second {
+		t.Errorf("ParsedReadTimeout() should default to 120s when empty")
 	}
 }
 
