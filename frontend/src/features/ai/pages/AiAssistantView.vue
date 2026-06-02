@@ -555,8 +555,7 @@ import {
   sendAIChat,
   type AIActionProposalItem,
   type AIConversationDetail,
-  type AIConversationItem,
-  type AIMessageItem
+  type AIConversationItem
 } from '@/features/ai/api/ai'
 import { listClusters, type ClusterItem } from '@/features/clusters/api/clusters'
 import CodeMirrorViewer from '@/shared/components/CodeMirrorViewer.vue'
@@ -1115,15 +1114,15 @@ function isSuggestedActionMaterialized(action: SuggestedAction) {
   })
 }
 
-function extractSuggestedActions(structured?: Record<string, unknown>) {
+function extractSuggestedActions(structured?: Record<string, unknown>): SuggestedAction[] {
   const payload = structured?.suggested_actions
-  if (!Array.isArray(payload)) return [] as SuggestedAction[]
+  if (!Array.isArray(payload)) return []
   return payload
     .map((item) => normalizeSuggestedAction(item))
-    .filter((item): item is SuggestedAction => Boolean(item))
+    .filter((item): item is SuggestedAction => item !== null)
 }
 
-function normalizeSuggestedAction(item: unknown) {
+function normalizeSuggestedAction(item: unknown): SuggestedAction | null {
   if (!item || typeof item !== 'object') return null
   const row = item as Record<string, unknown>
   const actionType = typeof row.action_type === 'string' ? row.action_type : ''
