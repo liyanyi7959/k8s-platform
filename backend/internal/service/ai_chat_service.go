@@ -63,6 +63,12 @@ func NewAIChatService(
 	return &AIChatService{db: db, gateway: gateway, toolSvc: toolSvc, actionSvc: actionSvc}
 }
 
+type aiAutoDiagnosticsPlan struct {
+	Enabled  bool
+	Optional bool
+	Timeout  time.Duration
+}
+
 func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username string, req AIChatRequest) (AIChatResponse, error) {
 	if s.db == nil {
 		return AIChatResponse{}, errors.New("db is required")
@@ -101,20 +107,33 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		return AIChatResponse{}, err
 	}
 
-	toolCalls, diagnosticNotes, err := s.toolSvc.RunAutoDiagnostics(ctx, AIToolContextRequest{
-		ConversationID: conversation.ID,
-		MessageID:      userMessage.ID,
-		ClusterID:      req.ClusterID,
-		UserID:         userID,
-		Username:       username,
-		UserPerms:      req.UserPerms,
-		Query:          message,
-		Namespace:      strings.TrimSpace(req.Namespace),
-		ResourceKind:   strings.TrimSpace(req.ResourceKind),
-		ResourceName:   strings.TrimSpace(req.ResourceName),
-	})
-	if err != nil {
-		return AIChatResponse{}, err
+	toolCalls := make([]AIToolCallItem, 0, 6)
+	diagnosticNotes := ""
+	diagPlan := buildAIAutoDiagnosticsPlan(conversation.AssistantMode, req, message)
+	if diagPlan.Enabled {
+		diagCtx := ctx
+		cancel := func() {}
+		if diagPlan.Timeout > 0 {
+			diagCtx, cancel = context.WithTimeout(ctx, diagPlan.Timeout)
+		}
+		defer cancel()
+
+		var diagErr error
+		toolCalls, diagnosticNotes, diagErr = s.toolSvc.RunAutoDiagnostics(diagCtx, AIToolContextRequest{
+			ConversationID: conversation.ID,
+			MessageID:      userMessage.ID,
+			ClusterID:      req.ClusterID,
+			UserID:         userID,
+			Username:       username,
+			UserPerms:      req.UserPerms,
+			Query:          message,
+			Namespace:      strings.TrimSpace(req.Namespace),
+			ResourceKind:   strings.TrimSpace(req.ResourceKind),
+			ResourceName:   strings.TrimSpace(req.ResourceName),
+		})
+		if diagErr != nil && !diagPlan.Optional {
+			return AIChatResponse{}, diagErr
+		}
 	}
 
 	history, err := s.buildGatewayMessages(ctx, conversation.ID)
@@ -515,4 +534,69 @@ func containsAny(text string, candidates ...string) bool {
 
 func ptrUint64(v uint64) *uint64 {
 	return &v
+}
+
+func buildAIAutoDiagnosticsPlan(mode string, req AIChatRequest, message string) aiAutoDiagnosticsPlan {
+	normalizedMode := normalizeAIAssistantMode(mode)
+	if normalizedMode == "diagnose" {
+		return aiAutoDiagnosticsPlan{
+			Enabled: true,
+			Timeout: 20 * time.Second,
+		}
+	}
+
+	if shouldRunChatDiagnostics(req, message) {
+		return aiAutoDiagnosticsPlan{
+			Enabled:  true,
+			Optional: true,
+			Timeout:  12 * time.Second,
+		}
+	}
+
+	return aiAutoDiagnosticsPlan{}
+}
+
+func shouldRunChatDiagnostics(req AIChatRequest, message string) bool {
+	trimmedMessage := strings.TrimSpace(message)
+	if trimmedMessage == "" {
+		return false
+	}
+	if isGenericKnowledgeQuestion(trimmedMessage) {
+		return false
+	}
+
+	namespace := strings.TrimSpace(req.Namespace)
+	kind := strings.TrimSpace(req.ResourceKind)
+	name := strings.TrimSpace(req.ResourceName)
+	if kind != "" && name != "" {
+		return true
+	}
+	if namespace != "" && looksLikeScopedClusterQuestion(trimmedMessage) {
+		return true
+	}
+	return false
+}
+
+func isGenericKnowledgeQuestion(message string) bool {
+	if containsAny(message,
+		"哪些方面", "从哪些方面", "一般怎么", "通常怎么", "如何", "怎么做", "是什么", "有哪些", "最佳实践", "注意事项", "巡检思路", "排查思路", "设计方案", "实施步骤",
+	) {
+		return true
+	}
+	lower := strings.ToLower(strings.TrimSpace(message))
+	return containsAny(lower,
+		"what is", "how to", "best practice", "checklist", "overview", "introduction", "general", "typically", "usually",
+	)
+}
+
+func looksLikeScopedClusterQuestion(message string) bool {
+	if containsAny(message,
+		"这个集群", "当前集群", "本集群", "这个命名空间", "当前命名空间", "这个服务", "这个 deployment", "这个 pod", "帮我看", "帮我查", "看看", "查一下", "分析一下", "诊断一下", "排查一下",
+	) {
+		return true
+	}
+	lower := strings.ToLower(strings.TrimSpace(message))
+	return containsAny(lower,
+		"check", "inspect", "diagnose", "analyze", "look into", "current cluster", "this cluster", "this namespace", "show me",
+	)
 }

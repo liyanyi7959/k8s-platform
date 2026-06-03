@@ -69,9 +69,10 @@ func New(d Deps) (*gin.Engine, error) {
 		namespaceDiagnosisSvc := service.NewNamespaceDiagnosisService(k8sSvc)
 		resourceInspectionSvc := service.NewResourceInspectionService(k8sSvc)
 		resourceExportPolicySvc := service.NewResourceExportPolicyService()
+		workloadActionSvc := service.NewWorkloadActionService(k8sSvc, manifestApplySvc)
 		aiToolRegistry := service.NewAIToolRegistry(clusterReadModelSvc, namespaceDiagnosisSvc, resourceInspectionSvc, resourceExportPolicySvc)
 		aiToolSvc := service.NewAIToolService(d.DB, aiToolRegistry)
-		aiActionSvc := service.NewAIActionService(d.DB, k8sSvc, manifestApplySvc)
+		aiActionSvc := service.NewAIActionService(d.DB, workloadActionSvc)
 		aiChatSvc := service.NewAIChatService(d.DB, aiGatewaySvc, aiToolSvc, aiActionSvc)
 		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiActionSvc)
 	}

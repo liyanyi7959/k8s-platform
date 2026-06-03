@@ -190,11 +190,21 @@ func (s *AIToolService) executeRegisteredTool(
 		return buildAIToolCallItem(row), ""
 	}
 
-	result, err := def.Handler(ctx, req, params)
+	handlerCtx := ctx
+	cancel := func() {}
+	if def.Timeout > 0 {
+		handlerCtx, cancel = context.WithTimeout(ctx, def.Timeout)
+	}
+	defer cancel()
+
+	result, err := def.Handler(handlerCtx, req, params)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(handlerCtx.Err(), context.DeadlineExceeded) {
+			err = ErrWithMessage(ErrK8sTimeout, fmt.Sprintf("tool %s execution timed out", toolName))
+		}
 		row.Status = "failed"
-		row.ErrorMessage = err.Error()
-		row.ResultSummary = err.Error()
+		row.ErrorMessage = firstUserFacingError(err)
+		row.ResultSummary = firstUserFacingError(err)
 		_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
 			"status":         row.Status,
 			"error_message":  row.ErrorMessage,

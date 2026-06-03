@@ -1588,7 +1588,7 @@ async function confirmProposal(proposal: AIActionProposalItem) {
   confirmingProposalId.value = proposal.id
   try {
     await confirmAIActionProposal(selectedClusterId.value, proposal.id, {
-      confirmation_text: 'operator-confirmed',
+      confirmation_text: proposal.required_confirmation_text || `confirm-proposal-${proposal.id}`,
       confirm_risk: true
     })
     await reloadActiveConversation()

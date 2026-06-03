@@ -148,6 +148,7 @@ export interface AIActionProposalItem {
   second_approved_by?: number
   second_approved_name: string
   second_approved_at?: string
+  required_confirmation_text: string
   latest_execution?: AIActionExecutionItem
   executions?: AIActionExecutionItem[]
   created_at: string
@@ -210,6 +211,7 @@ export interface CreateAIActionProposalResponse {
   status: string
   risk_level: string
   need_second_confirm: boolean
+  required_confirmation_text: string
   preview: string
   diff: string
   proposal: AIActionProposalItem
