@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"k8s-platform-backend/internal/model"
 )
@@ -20,6 +19,7 @@ type AIToolContextRequest struct {
 	ClusterID      uint64
 	UserID         uint64
 	Username       string
+	UserPerms      []string
 	Query          string
 	Namespace      string
 	ResourceKind   string
@@ -41,34 +41,30 @@ type AIToolCallItem struct {
 }
 
 type AIToolService struct {
-	db     *gorm.DB
-	k8sSvc *K8sService
+	db       *gorm.DB
+	registry *AIToolRegistry
 }
 
-func NewAIToolService(db *gorm.DB, k8sSvc *K8sService) *AIToolService {
-	return &AIToolService{db: db, k8sSvc: k8sSvc}
+func NewAIToolService(db *gorm.DB, registry *AIToolRegistry) *AIToolService {
+	return &AIToolService{db: db, registry: registry}
 }
 
 func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContextRequest) ([]AIToolCallItem, string, error) {
 	if s.db == nil {
 		return nil, "", errors.New("db is required")
 	}
-	if s.k8sSvc == nil {
-		return nil, "", errors.New("k8s service is required")
+	if s.registry == nil {
+		return nil, "", errors.New("tool registry is required")
 	}
 	if req.ClusterID == 0 || req.ConversationID == 0 {
-		return nil, "", ErrWithMessage(ErrInvalidParams, "AI 诊断上下文无效")
+		return nil, "", ErrWithMessage(ErrInvalidParams, "AI diagnostic context is invalid")
 	}
 
-	items := make([]AIToolCallItem, 0, 4)
-	contextBlocks := make([]string, 0, 4)
+	items := make([]AIToolCallItem, 0, 6)
+	contextBlocks := make([]string, 0, 6)
 
-	run := func(
-		toolName string,
-		params map[string]any,
-		action func(context.Context) (string, any, error),
-	) {
-		item, block := s.executeTool(ctx, req, toolName, params, action)
+	run := func(toolName string, params map[string]any) {
+		item, block := s.executeRegisteredTool(ctx, req, toolName, params)
 		if item.ID > 0 {
 			items = append(items, item)
 		}
@@ -79,67 +75,9 @@ func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContex
 
 	run("cluster.health", map[string]any{
 		"cluster_id": req.ClusterID,
-	}, func(ctx context.Context) (string, any, error) {
-		apiOK, nodeReady, nodeTotal, version, err := s.k8sSvc.CheckHealth(ctx, req.ClusterID)
-		if err != nil {
-			return "", nil, err
-		}
-		result := map[string]any{
-			"api_ok":      apiOK,
-			"node_ready":  nodeReady,
-			"node_total":  nodeTotal,
-			"k8s_version": version,
-		}
-		summary := fmt.Sprintf("API %t, Node Ready %d/%d, Version %s", apiOK, nodeReady, nodeTotal, version)
-		return summary, result, nil
 	})
-
 	run("cluster.inventory", map[string]any{
 		"cluster_id": req.ClusterID,
-	}, func(ctx context.Context) (string, any, error) {
-		namespaces, err := s.k8sSvc.List(ctx, req.ClusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}, "", "metadata.name", "asc", nil)
-		if err != nil {
-			return "", nil, err
-		}
-		pods, err := s.k8sSvc.List(ctx, req.ClusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}, "", "metadata.namespace", "asc", nil)
-		if err != nil {
-			return "", nil, err
-		}
-
-		podCounts := make(map[string]int, len(namespaces))
-		for _, nsObj := range namespaces {
-			ns := aiObjectMetaString(nsObj, "name")
-			if ns != "" {
-				podCounts[ns] = 0
-			}
-		}
-		for _, pod := range pods {
-			ns := aiObjectMetaString(pod, "namespace")
-			if ns == "" {
-				ns = "default"
-			}
-			podCounts[ns]++
-		}
-
-		namespaceItems := make([]map[string]any, 0, len(namespaces))
-		for _, nsObj := range namespaces {
-			ns := aiObjectMetaString(nsObj, "name")
-			if ns == "" {
-				continue
-			}
-			namespaceItems = append(namespaceItems, map[string]any{
-				"name":      ns,
-				"pod_count": podCounts[ns],
-			})
-		}
-
-		result := map[string]any{
-			"namespace_count": len(namespaceItems),
-			"pod_count":       len(pods),
-			"namespaces":      namespaceItems,
-		}
-		summary := fmt.Sprintf("集群共有 %d 个命名空间、%d 个 Pod", len(namespaceItems), len(pods))
-		return summary, result, nil
 	})
 
 	namespace := strings.TrimSpace(req.Namespace)
@@ -147,55 +85,43 @@ func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContex
 		run("namespace.health", map[string]any{
 			"cluster_id": req.ClusterID,
 			"namespace":  namespace,
-		}, func(ctx context.Context) (string, any, error) {
-			result, err := s.k8sSvc.GetNamespaceHealth(ctx, req.ClusterID, namespace)
-			if err != nil {
-				return "", nil, err
-			}
-			counts, _ := result["pod_counts"].(map[string]int)
-			abnormalCount := counts["abnormal"]
-			warningEventCount, _ := result["warning_event_count"].(int)
-			summary := fmt.Sprintf("Namespace %s 检测到 %d 个异常 Pod、%d 条 Warning 事件", namespace, abnormalCount, warningEventCount)
-			return summary, result, nil
 		})
-
 		run("namespace.summary", map[string]any{
 			"cluster_id": req.ClusterID,
 			"namespace":  namespace,
-		}, func(ctx context.Context) (string, any, error) {
-			items, total, err := s.k8sSvc.GetNamespaceResourcesSummary(ctx, req.ClusterID, namespace)
-			if err != nil {
-				return "", nil, err
-			}
-			result := map[string]any{
-				"namespace": namespace,
-				"total":     total,
-				"items":     items,
-			}
-			summary := fmt.Sprintf("Namespace %s 共发现 %d 个资源对象", namespace, total)
-			return summary, result, nil
 		})
 	}
 
 	kind := strings.TrimSpace(req.ResourceKind)
 	name := strings.TrimSpace(req.ResourceName)
 	if kind != "" && name != "" {
-		s.runResourceDiagnostics(ctx, req, kind, name, &items, &contextBlocks)
+		switch strings.ToLower(kind) {
+		case "pod":
+			run("pod.inspect", map[string]any{
+				"namespace": namespace,
+				"name":      name,
+			})
+		case "node":
+			run("node.inspect", map[string]any{
+				"name": name,
+			})
+		case "deployment":
+			run("deployment.inspect", map[string]any{
+				"namespace": namespace,
+				"name":      name,
+			})
+		default:
+			if namespace != "" {
+				run("resource.yaml", map[string]any{
+					"kind":      kind,
+					"namespace": namespace,
+					"name":      name,
+				})
+			}
+		}
 	}
 
 	return items, strings.Join(contextBlocks, "\n\n"), nil
-}
-
-func aiObjectMetaString(item any, key string) string {
-	obj, ok := item.(map[string]any)
-	if !ok {
-		return ""
-	}
-	meta, ok := obj["metadata"].(map[string]any)
-	if !ok {
-		return ""
-	}
-	return strings.TrimSpace(fmt.Sprint(meta[key]))
 }
 
 func (s *AIToolService) ListConversationToolCalls(ctx context.Context, conversationID uint64) ([]AIToolCallItem, error) {
@@ -203,7 +129,7 @@ func (s *AIToolService) ListConversationToolCalls(ctx context.Context, conversat
 		return nil, errors.New("db is required")
 	}
 	if conversationID == 0 {
-		return nil, ErrWithMessage(ErrInvalidParams, "会话 ID 无效")
+		return nil, ErrWithMessage(ErrInvalidParams, "conversation ID is invalid")
 	}
 	var rows []model.AIToolCall
 	if err := s.db.WithContext(ctx).
@@ -219,146 +145,27 @@ func (s *AIToolService) ListConversationToolCalls(ctx context.Context, conversat
 	return items, nil
 }
 
-func (s *AIToolService) runResourceDiagnostics(
-	ctx context.Context,
-	req AIToolContextRequest,
-	kind string,
-	name string,
-	items *[]AIToolCallItem,
-	contextBlocks *[]string,
-) {
-	switch strings.ToLower(strings.TrimSpace(kind)) {
-	case "pod":
-		item, block := s.executeTool(ctx, req, "pod.inspect", map[string]any{
-			"namespace": req.Namespace,
-			"name":      name,
-		}, func(ctx context.Context) (string, any, error) {
-			obj, err := s.k8sSvc.GetObject(ctx, req.ClusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}, req.Namespace, name)
-			if err != nil {
-				return "", nil, err
-			}
-			logText, logErr := s.k8sSvc.PodLogs(ctx, req.ClusterID, req.Namespace, name, "", 120, false)
-			result := map[string]any{
-				"object": obj,
-				"logs":   truncateForModel(logText, 6000),
-			}
-			summary := fmt.Sprintf("已读取 Pod %s/%s 的对象信息和最近日志", req.Namespace, name)
-			if logErr != nil {
-				result["logs_error"] = logErr.Error()
-				summary = fmt.Sprintf("已读取 Pod %s/%s 对象信息，日志读取失败", req.Namespace, name)
-			}
-			return summary, result, nil
-		})
-		if item.ID > 0 {
-			*items = append(*items, item)
-		}
-		if strings.TrimSpace(block) != "" {
-			*contextBlocks = append(*contextBlocks, block)
-		}
-	case "node":
-		item, block := s.executeTool(ctx, req, "node.inspect", map[string]any{
-			"name": name,
-		}, func(ctx context.Context) (string, any, error) {
-			obj, err := s.k8sSvc.GetObject(ctx, req.ClusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}, "", name)
-			if err != nil {
-				return "", nil, err
-			}
-			events, evErr := s.k8sSvc.ListNodeEvents(ctx, req.ClusterID, name)
-			result := map[string]any{
-				"object": obj,
-			}
-			summary := fmt.Sprintf("已读取 Node %s 的对象信息", name)
-			if evErr == nil {
-				result["events"] = events
-				summary = fmt.Sprintf("已读取 Node %s 的对象信息和关联事件", name)
-			} else {
-				result["events_error"] = evErr.Error()
-			}
-			return summary, result, nil
-		})
-		if item.ID > 0 {
-			*items = append(*items, item)
-		}
-		if strings.TrimSpace(block) != "" {
-			*contextBlocks = append(*contextBlocks, block)
-		}
-	case "deployment":
-		item, block := s.executeTool(ctx, req, "deployment.inspect", map[string]any{
-			"namespace": req.Namespace,
-			"name":      name,
-		}, func(ctx context.Context) (string, any, error) {
-			obj, err := s.k8sSvc.GetObject(ctx, req.ClusterID, schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}, req.Namespace, name)
-			if err != nil {
-				return "", nil, err
-			}
-			history, historyErr := s.k8sSvc.RolloutHistory(ctx, req.ClusterID, req.Namespace, name, "Deployment")
-			result := map[string]any{
-				"object": obj,
-			}
-			summary := fmt.Sprintf("已读取 Deployment %s/%s 的对象信息", req.Namespace, name)
-			if historyErr == nil {
-				result["rollout_history"] = history
-				summary = fmt.Sprintf("已读取 Deployment %s/%s 的对象信息和发布历史", req.Namespace, name)
-			} else {
-				result["rollout_history_error"] = historyErr.Error()
-			}
-			return summary, result, nil
-		})
-		if item.ID > 0 {
-			*items = append(*items, item)
-		}
-		if strings.TrimSpace(block) != "" {
-			*contextBlocks = append(*contextBlocks, block)
-		}
-	default:
-		if req.Namespace == "" {
-			return
-		}
-		item, block := s.executeTool(ctx, req, "resource.yaml", map[string]any{
-			"kind":      kind,
-			"namespace": req.Namespace,
-			"name":      name,
-		}, func(ctx context.Context) (string, any, error) {
-			gvr, ok := aiGenericNamespacedGVR(kind)
-			if !ok {
-				return "", nil, ErrWithMessage(ErrInvalidParams, "当前资源类型暂不支持自动取证")
-			}
-			yamlText, err := s.k8sSvc.GetYAML(ctx, req.ClusterID, gvr, req.Namespace, name)
-			if err != nil {
-				return "", nil, err
-			}
-			result := map[string]any{
-				"yaml": truncateForModel(yamlText, 6000),
-			}
-			summary := fmt.Sprintf("已读取 %s %s/%s 的 YAML", kind, req.Namespace, name)
-			return summary, result, nil
-		})
-		if item.ID > 0 {
-			*items = append(*items, item)
-		}
-		if strings.TrimSpace(block) != "" {
-			*contextBlocks = append(*contextBlocks, block)
-		}
-	}
-}
-
-func (s *AIToolService) executeTool(
+func (s *AIToolService) executeRegisteredTool(
 	ctx context.Context,
 	req AIToolContextRequest,
 	toolName string,
 	params map[string]any,
-	action func(context.Context) (string, any, error),
 ) (AIToolCallItem, string) {
+	def, ok := s.registry.Get(toolName)
+	if !ok {
+		return AIToolCallItem{}, ""
+	}
+
 	row := model.AIToolCall{
 		ConversationID: req.ConversationID,
 		MessageID:      &req.MessageID,
 		ClusterID:      req.ClusterID,
 		ToolName:       toolName,
-		ToolKind:       "query",
+		ToolKind:       def.Category,
 		ExecutionMode:  "auto",
 		Status:         "executing",
-		RiskLevel:      "low",
-		ConfirmLevel:   "single",
+		RiskLevel:      def.RiskLevel,
+		ConfirmLevel:   def.ConfirmLevel,
 		CreatedBy:      req.UserID,
 		CreatedByName:  strings.TrimSpace(req.Username),
 	}
@@ -370,32 +177,45 @@ func (s *AIToolService) executeTool(
 		return AIToolCallItem{}, ""
 	}
 
-	summary, result, err := action(ctx)
-	update := map[string]any{}
-	contextBlock := ""
+	if len(req.UserPerms) > 0 {
+		if err := toolPermissionErr(def.RequiredPermissions, req.UserPerms, toolName); err != nil {
+			row.Status = "failed"
+			row.ErrorMessage = err.Error()
+			row.ResultSummary = err.Error()
+			_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
+				"status":         row.Status,
+				"error_message":  row.ErrorMessage,
+				"result_summary": row.ResultSummary,
+			}).Error
+			return buildAIToolCallItem(row), ""
+		}
+	}
+
+	result, err := def.Handler(ctx, req, params)
 	if err != nil {
-		update["status"] = "failed"
-		update["error_message"] = err.Error()
-		update["result_summary"] = err.Error()
-		_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(update).Error
 		row.Status = "failed"
 		row.ErrorMessage = err.Error()
 		row.ResultSummary = err.Error()
+		_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
+			"status":         row.Status,
+			"error_message":  row.ErrorMessage,
+			"result_summary": row.ResultSummary,
+		}).Error
 		return buildAIToolCallItem(row), ""
 	}
 
-	resultMap := model.JSONMap{
-		"output": result,
-	}
-	update["status"] = "succeeded"
-	update["result_summary"] = summary
-	update["result_json"] = resultMap
-	_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(update).Error
-
+	resultJSON := toolEvidenceMap(result)
 	row.Status = "succeeded"
-	row.ResultSummary = summary
-	row.ResultJSON = resultMap
-	contextBlock = "工具 " + toolName + ": " + summary + "\n" + compactToolResult(result)
+	row.ResultSummary = result.Summary
+	row.ResultJSON = resultJSON
+	_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
+		"status":         row.Status,
+		"result_summary": row.ResultSummary,
+		"result_json":    row.ResultJSON,
+	}).Error
+
+	row.ResultJSON = resultJSON
+	contextBlock := "工具 " + toolName + ": " + result.Summary + "\n" + compactToolResult(resultJSON)
 	return buildAIToolCallItem(row), contextBlock
 }
 
@@ -431,6 +251,18 @@ func truncateForModel(input string, limit int) string {
 	return string([]rune(raw)[:limit]) + "..."
 }
 
+func aiObjectMetaString(item any, key string) string {
+	obj, ok := item.(map[string]any)
+	if !ok {
+		return ""
+	}
+	meta, ok := obj["metadata"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(meta[key]))
+}
+
 func aiGenericNamespacedGVR(kind string) (schema.GroupVersionResource, bool) {
 	switch strings.ToLower(strings.TrimSpace(kind)) {
 	case "service":
@@ -449,3 +281,4 @@ func aiGenericNamespacedGVR(kind string) (schema.GroupVersionResource, bool) {
 		return schema.GroupVersionResource{}, false
 	}
 }
+
