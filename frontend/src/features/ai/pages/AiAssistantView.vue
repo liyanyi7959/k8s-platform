@@ -318,21 +318,26 @@
                     <h3>对话时间线</h3>
                   </div>
                 </div>
-                <el-tag type="info" effect="plain">{{ activeConversation.messages.length }} 条消息</el-tag>
+                <div class="timeline-head__meta">
+                  <el-tag type="info" effect="plain">{{ visibleConversationMessages.length }} 条消息</el-tag>
+                  <el-button v-if="hiddenMessageCount > 0" text size="small" @click="restoreHiddenMessages">
+                    恢复 {{ hiddenMessageCount }} 条隐藏消息
+                  </el-button>
+                </div>
               </div>
 
               <el-scrollbar class="timeline-scroll">
-                <div v-if="activeConversation.messages.length === 0" class="timeline-empty">
+                <div v-if="visibleConversationMessages.length === 0" class="timeline-empty">
                   <EmptyState
                     type="empty"
-                    title="当前会话还没有消息"
-                    description="在下方输入问题后，AI 会结合集群只读证据给出分析；如果建议变更，会先生成待确认提案。"
+                    :title="hiddenMessageCount > 0 ? '当前消息已被隐藏' : '当前会话还没有消息'"
+                    :description="hiddenMessageCount > 0 ? '可点击右上方按钮恢复被隐藏的消息。' : '在下方输入问题后，AI 会结合集群只读证据给出分析；如果建议变更，会先生成待确认提案。'"
                   />
                 </div>
 
                 <div v-else class="timeline-list">
                   <article
-                    v-for="message in activeConversation.messages"
+                    v-for="message in visibleConversationMessages"
                     :key="message.id"
                     class="message-card"
                     :class="[
@@ -375,6 +380,55 @@
                         <strong>{{ action.title || actionTypeLabel(action.action_type) }}</strong>
                         <span>{{ action.reason }}</span>
                       </div>
+                    </div>
+
+                    <div v-if="canOperateMessage(message)" class="message-card__actions">
+                      <template v-if="message.role === 'assistant'">
+                        <el-tooltip content="复制回答" placement="top">
+                          <el-button text circle :icon="CopyDocument" @click="copyAssistantMessage(message)" />
+                        </el-tooltip>
+                        <el-tooltip content="复制分享版" placement="top">
+                          <el-button text circle :icon="Promotion" @click="copyAssistantShare(message)" />
+                        </el-tooltip>
+                        <el-tooltip content="引用到输入框" placement="top">
+                          <el-button text circle :icon="EditPen" @click="quoteAssistantMessage(message)" />
+                        </el-tooltip>
+                        <el-tooltip content="导出 Markdown" placement="top">
+                          <el-button text circle :icon="Download" @click="exportAssistantMessage(message, 'md')" />
+                        </el-tooltip>
+                        <el-popover placement="bottom-end" width="188" trigger="click" popper-class="message-action-popover">
+                          <template #reference>
+                            <el-button text circle :icon="MoreFilled" />
+                          </template>
+
+                          <div class="message-action-menu">
+                            <button type="button" @click="toggleAssistantMessageFavorite(message)">
+                              <el-icon><component :is="isAssistantMessageFavorited(message) ? StarFilled : Star" /></el-icon>
+                              <span>{{ isAssistantMessageFavorited(message) ? '取消收藏' : '收藏回答' }}</span>
+                            </button>
+                            <button type="button" @click="exportAssistantMessage(message, 'txt')">
+                              <el-icon><Download /></el-icon>
+                              <span>导出纯文本</span>
+                            </button>
+                            <button type="button" class="danger" @click="hideMessage(message)">
+                              <el-icon><Delete /></el-icon>
+                              <span>删除当前回答</span>
+                            </button>
+                          </div>
+                        </el-popover>
+                      </template>
+
+                      <template v-else-if="message.role === 'user'">
+                        <el-tooltip content="复制消息" placement="top">
+                          <el-button text circle :icon="CopyDocument" @click="copyUserMessage(message)" />
+                        </el-tooltip>
+                        <el-tooltip content="编辑后重发" placement="top">
+                          <el-button text circle :icon="EditPen" @click="editUserMessage(message)" />
+                        </el-tooltip>
+                        <el-tooltip content="删除消息" placement="top">
+                          <el-button text circle :icon="Delete" @click="hideMessage(message)" />
+                        </el-tooltip>
+                      </template>
                     </div>
                   </article>
                   <div ref="timelineEndRef" class="timeline-end-anchor" />
@@ -623,10 +677,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ChatDotRound,
   Close,
+  CopyDocument,
   Cpu,
   DataAnalysis,
   Delete,
+  Download,
   Document,
+  EditPen,
   MagicStick,
   MoreFilled,
   Operation,
@@ -635,6 +692,8 @@ import {
   RefreshRight,
   Search,
   SetUp,
+  Star,
+  StarFilled,
   Top
 } from '@element-plus/icons-vue'
 
@@ -728,7 +787,11 @@ const pastedImages = ref<PastedImage[]>([])
 const imagePreviewVisible = ref(false)
 const previewingImage = ref<PastedImage>()
 const pinnedConversationKey = 'ai-assistant:pinned-conversations'
+const favoritedAssistantMessageKey = 'ai-assistant:favorited-assistant-messages'
+const hiddenAssistantMessageKey = 'ai-assistant:hidden-assistant-messages'
 const pinnedConversationIds = ref<number[]>(loadPinnedConversationIds())
+const favoritedAssistantMessageIds = ref<string[]>(loadStoredMessageKeys(favoritedAssistantMessageKey))
+const hiddenAssistantMessageIds = ref<string[]>(loadStoredMessageKeys(hiddenAssistantMessageKey))
 const conversationTitleOverflow = reactive<Record<number, boolean>>({})
 const timelineEndRef = ref<HTMLElement>()
 const conversationMenu = reactive({
@@ -903,6 +966,14 @@ const activeSuggestedActions = computed<SuggestedAction[]>(() => {
     if (actions.length > 0) return actions
   }
   return []
+})
+
+const visibleConversationMessages = computed(() => {
+  return (activeConversation.value?.messages ?? []).filter((message) => !isMessageHidden(message))
+})
+
+const hiddenMessageCount = computed(() => {
+  return (activeConversation.value?.messages ?? []).filter((message) => isMessageHidden(message)).length
 })
 
 const scopeSummary = computed(() => {
@@ -1672,8 +1743,217 @@ function persistPinnedConversationIds() {
   window.localStorage.setItem(pinnedConversationKey, JSON.stringify(pinnedConversationIds.value))
 }
 
+function loadStoredMessageKeys(storageKey: string) {
+  try {
+    const raw = window.localStorage.getItem(storageKey)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
+  } catch {
+    return []
+  }
+}
+
+function persistStoredMessageKeys(storageKey: string, values: string[]) {
+  window.localStorage.setItem(storageKey, JSON.stringify(values))
+}
+
 function isConversationPinned(id: number) {
   return pinnedConversationIds.value.includes(id)
+}
+
+function assistantMessageKey(message: AIMessageItem) {
+  return `${message.conversation_id}:${message.id}`
+}
+
+function canOperateMessage(message: AIMessageItem) {
+  return message.content.trim().length > 0 && message.role !== 'system' && message.status !== 'pending'
+}
+
+function canOperateAssistantMessage(message: AIMessageItem) {
+  return message.role === 'assistant' && message.status !== 'pending' && message.content.trim().length > 0
+}
+
+function canOperateUserMessage(message: AIMessageItem) {
+  return message.role === 'user' && message.content.trim().length > 0
+}
+
+function isAssistantMessageFavorited(message: AIMessageItem) {
+  return favoritedAssistantMessageIds.value.includes(assistantMessageKey(message))
+}
+
+function toggleAssistantMessageFavorite(message: AIMessageItem) {
+  const key = assistantMessageKey(message)
+  if (favoritedAssistantMessageIds.value.includes(key)) {
+    favoritedAssistantMessageIds.value = favoritedAssistantMessageIds.value.filter((item) => item !== key)
+    ElMessage.success('已取消收藏')
+  } else {
+    favoritedAssistantMessageIds.value = [key, ...favoritedAssistantMessageIds.value]
+    ElMessage.success('回答已收藏')
+  }
+  persistStoredMessageKeys(favoritedAssistantMessageKey, favoritedAssistantMessageIds.value)
+}
+
+function isMessageHidden(message: AIMessageItem) {
+  return hiddenAssistantMessageIds.value.includes(assistantMessageKey(message))
+}
+
+async function hideMessage(message: AIMessageItem) {
+  const isAssistant = message.role === 'assistant'
+  try {
+    await ElMessageBox.confirm(
+      isAssistant
+        ? '删除后只会在当前浏览器里隐藏这条 AI 回答，不会影响服务端会话记录。'
+        : '删除后只会在当前浏览器里隐藏这条用户消息，不会影响服务端会话记录。',
+      isAssistant ? '隐藏当前回答' : '隐藏当前消息',
+      {
+      type: 'warning',
+      confirmButtonText: isAssistant ? '隐藏回答' : '隐藏消息',
+      cancelButtonText: '取消'
+      }
+    )
+  } catch {
+    return
+  }
+
+  const key = assistantMessageKey(message)
+  if (!hiddenAssistantMessageIds.value.includes(key)) {
+    hiddenAssistantMessageIds.value = [key, ...hiddenAssistantMessageIds.value]
+    persistStoredMessageKeys(hiddenAssistantMessageKey, hiddenAssistantMessageIds.value)
+  }
+  ElMessage.success(isAssistant ? '回答已隐藏' : '消息已隐藏')
+}
+
+function restoreHiddenMessages() {
+  const conversationId = activeConversation.value?.id
+  if (!conversationId) return
+  const prefix = `${conversationId}:`
+  hiddenAssistantMessageIds.value = hiddenAssistantMessageIds.value.filter((item) => !item.startsWith(prefix))
+  persistStoredMessageKeys(hiddenAssistantMessageKey, hiddenAssistantMessageIds.value)
+  ElMessage.success('已恢复隐藏消息')
+}
+
+async function copyTextValue(value: string) {
+  const text = value.trim()
+  if (!text) return false
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      // Ignore and fall back to manual copy below.
+    }
+  }
+
+  try {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', 'true')
+    textarea.style.position = 'fixed'
+    textarea.style.top = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.select()
+    const copied = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return copied
+  } catch {
+    return false
+  }
+}
+
+async function copyAssistantMessage(message: AIMessageItem) {
+  const copied = await copyTextValue(message.content)
+  if (copied) {
+    ElMessage.success('回答已复制')
+  } else {
+    ElMessage.error('复制失败，请手动选择内容复制')
+  }
+}
+
+function assistantShareContent(message: AIMessageItem) {
+  const title = activeConversation.value?.title || 'AI 助手回答'
+  return `${title}\n时间：${formatDate(message.created_at)}\n\n${message.content.trim()}`
+}
+
+async function copyAssistantShare(message: AIMessageItem) {
+  const copied = await copyTextValue(assistantShareContent(message))
+  if (copied) {
+    ElMessage.success('分享版内容已复制')
+  } else {
+    ElMessage.error('复制失败，请手动选择内容复制')
+  }
+}
+
+async function copyUserMessage(message: AIMessageItem) {
+  const copied = await copyTextValue(message.content)
+  if (copied) {
+    ElMessage.success('消息已复制')
+  } else {
+    ElMessage.error('复制失败，请手动选择内容复制')
+  }
+}
+
+function focusComposerInput() {
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      const textarea = document.querySelector<HTMLTextAreaElement>('.composer-input textarea')
+      textarea?.focus()
+      const length = textarea?.value.length ?? 0
+      textarea?.setSelectionRange(length, length)
+    })
+  })
+}
+
+function quoteAssistantMessage(message: AIMessageItem) {
+  const quoted = message.content.trim().split(/\r?\n/).map((line) => `> ${line}`).join('\n')
+  if (!quoted.trim()) return
+  const prefix = draftMessage.value.trim() ? `${draftMessage.value.trim()}\n\n` : ''
+  draftMessage.value = `${prefix}${quoted}\n\n`
+  focusComposerInput()
+  ElMessage.success('回答已引用到输入框')
+}
+
+function editUserMessage(message: AIMessageItem) {
+  if (!canOperateUserMessage(message)) return
+  draftMessage.value = message.content.trim()
+  focusComposerInput()
+  ElMessage.success('已将消息放回输入框，可直接修改后重发')
+}
+
+function assistantPlainText(message: AIMessageItem) {
+  const container = document.createElement('div')
+  container.innerHTML = renderMarkdown(message.content)
+  return container.textContent?.trim() || message.content.trim()
+}
+
+function assistantExportFilename(message: AIMessageItem, extension: 'md' | 'txt') {
+  const title = (activeConversation.value?.title || 'ai-response').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 36)
+  const createdAt = new Date(message.created_at)
+  const stamp = Number.isNaN(createdAt.getTime()) ? `${Date.now()}` : createdAt.toISOString().slice(0, 19).replace(/[T:]/g, '-')
+  return `${title || 'ai-response'}-${stamp}.${extension}`
+}
+
+function downloadTextFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType })
+  const href = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = href
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
+  URL.revokeObjectURL(href)
+}
+
+function exportAssistantMessage(message: AIMessageItem, extension: 'md' | 'txt') {
+  const raw = message.content.trim()
+  if (!raw) {
+    ElMessage.warning('当前回答暂无可导出的内容')
+    return
+  }
+  const content = extension === 'md' ? raw : assistantPlainText(message)
+  const mimeType = extension === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8'
+  downloadTextFile(content, assistantExportFilename(message, extension), mimeType)
+  ElMessage.success(extension === 'md' ? 'Markdown 已导出' : '纯文本已导出')
 }
 
 function updateConversationTitleOverflow(id: number, event: MouseEvent) {
@@ -3688,6 +3968,36 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
+.timeline-head__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.message-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.message-card__actions :deep(.el-button) {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 9px;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.message-card__actions :deep(.el-button:hover) {
+  color: #2563eb;
+  background: #eef5ff;
+}
+
 .message-role,
 .message-usage {
   gap: 6px;
@@ -3706,6 +4016,52 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
   white-space: normal;
   word-break: break-word;
+}
+
+.timeline-end-anchor {
+  width: 100%;
+  height: 1px;
+}
+
+:global(.message-action-popover) {
+  padding: 8px !important;
+  border-radius: 12px !important;
+}
+
+.message-action-menu {
+  display: grid;
+  gap: 4px;
+}
+
+.message-action-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #243247;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.message-action-menu button:hover {
+  background: #f3f7ff;
+}
+
+.message-action-menu button.danger {
+  color: #dc2626;
+}
+
+.message-action-menu .el-icon {
+  color: #64748b;
+}
+
+.message-action-menu button.danger .el-icon {
+  color: inherit;
 }
 
 .markdown-body :deep(p) {
@@ -3908,6 +4264,15 @@ onBeforeUnmount(() => {
   .suggestion-actions,
   .proposal-card__head {
     flex-direction: column;
+  }
+
+  .timeline-head__meta,
+  .message-card__actions {
+    justify-content: flex-start;
+  }
+
+  .message-card__actions {
+    flex-wrap: wrap;
   }
 }
 
