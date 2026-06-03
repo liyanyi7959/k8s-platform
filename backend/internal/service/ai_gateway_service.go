@@ -389,7 +389,7 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 }
 
 func buildAISystemPrompt(mode string) string {
-	base := "你是 Kubernetes 平台内置的 AI 助手。请基于提供的集群证据回答，严格区分“已确认事实”和“推测判断”，如果证据不足要明确说明。"
+	base := "你是 Kubernetes 平台内置的 AI 助手。请基于提供的集群证据回答，严格区分“已确认事实”和“推测判断”。如果证据中已经包含明确数量、列表或状态，必须直接给出结论，不要回答“无法确定”。只有证据完全缺失时才说明不足。"
 	if strings.TrimSpace(mode) == "chat" {
 		return base + "当前模式为通用协助，但仍然不允许绕过平台权限或直接执行写操作。"
 	}

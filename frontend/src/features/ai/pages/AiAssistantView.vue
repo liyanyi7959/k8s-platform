@@ -1,52 +1,5 @@
 <template>
   <div class="ai-page">
-    <section class="topbar-card">
-      <div class="topbar-copy">
-        <div class="hero-title">
-          <span class="hero-title__icon">
-            <el-icon><ChatDotRound /></el-icon>
-          </span>
-          <div>
-            <p class="eyebrow">AI Ops Desk</p>
-            <h1>集群排障工作台</h1>
-          </div>
-        </div>
-        <p>
-          继续追问、采集只读证据并人工确认提案，保持一条紧凑的排障链路。
-        </p>
-      </div>
-
-      <div class="topbar-metrics">
-        <div class="metric-pill">
-          <span class="metric-pill__icon">
-            <el-icon><Monitor /></el-icon>
-          </span>
-          <div>
-            <span>集群</span>
-            <strong>{{ currentClusterLabel }}</strong>
-          </div>
-        </div>
-        <div class="metric-pill">
-          <span class="metric-pill__icon">
-            <el-icon><Collection /></el-icon>
-          </span>
-          <div>
-            <span>会话</span>
-            <strong>{{ conversationResult.total }} 条</strong>
-          </div>
-        </div>
-        <div class="metric-pill metric-pill--warn">
-          <span class="metric-pill__icon">
-            <el-icon><Operation /></el-icon>
-          </span>
-          <div>
-            <span>策略</span>
-            <strong>只读采集 / 人工确认</strong>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="control-card">
       <div class="control-row">
         <el-form-item label="目标集群" class="control-item">
@@ -73,8 +26,12 @@
         </el-form-item>
 
         <div class="control-actions">
-          <el-button type="primary" :icon="Plus" @click="openCreateDialog">新建会话</el-button>
-          <el-button :icon="RefreshRight" :loading="loadingConversations" @click="loadConversations">刷新列表</el-button>
+          <el-tooltip content="新建会话" placement="bottom">
+            <el-button type="primary" :icon="Plus" circle @click="openCreateDialog" />
+          </el-tooltip>
+          <el-tooltip content="刷新列表" placement="bottom">
+            <el-button :icon="RefreshRight" circle :loading="loadingConversations" @click="loadConversations" />
+          </el-tooltip>
         </div>
       </div>
     </section>
@@ -82,62 +39,44 @@
     <section class="workspace">
       <aside class="sidebar-card">
         <div class="sidebar-head">
-          <div class="panel-title panel-title--tight">
-            <span class="panel-title__icon">
-              <el-icon><Collection /></el-icon>
-            </span>
-            <div>
-              <h2>会话索引</h2>
-              <p>从最近处理过的问题继续追问，或者新开一个诊断上下文。</p>
-            </div>
-          </div>
+          <h2>历史会话</h2>
           <el-tag type="info" effect="plain">{{ conversationResult.total }} 条</el-tag>
-        </div>
-
-        <div class="sidebar-shortcuts">
-          <button
-            v-for="item in quickPrompts"
-            :key="item.title"
-            type="button"
-            class="shortcut-chip"
-            @click="applyQuickPrompt(item.mode, item.prompt)"
-          >
-            <span>{{ item.title }}</span>
-            <small>{{ item.hint }}</small>
-          </button>
         </div>
 
         <el-scrollbar class="conversation-scroll">
           <EmptyState
             v-if="conversationResult.list.length === 0 && !loadingConversations"
             type="no-data"
-            title="还没有 AI 会话"
-            description="可以直接发送问题自动创建会话，也可以先点上方“新建会话”建立独立的排障上下文。"
+            title="暂无会话"
+            description=""
           >
-            <el-button type="primary" @click="openCreateDialog">新建会话</el-button>
+            <el-button type="primary" :icon="Plus" circle @click="openCreateDialog" />
           </EmptyState>
 
           <div v-else class="conversation-list">
-            <button
-              v-for="item in conversationResult.list"
+            <div
+              v-for="item in orderedConversations"
               :key="item.id"
-              type="button"
               class="conversation-item"
-              :class="{ 'conversation-item--active': item.id === activeConversationId }"
+              :class="{
+                'conversation-item--active': item.id === activeConversationId,
+                'conversation-item--pinned': isConversationPinned(item.id)
+              }"
               @click="selectConversation(item.id)"
+              @contextmenu.prevent="openConversationMenu($event, item)"
             >
-              <div class="conversation-item__head">
+              <span class="conversation-dot" />
+              <div class="conversation-item__main">
                 <strong>{{ item.title || `会话 #${item.id}` }}</strong>
-                <el-tag size="small" :type="item.assistant_mode === 'diagnose' ? 'warning' : 'success'" effect="plain">
-                  {{ assistantModeLabel(item.assistant_mode) }}
-                </el-tag>
+                <span>{{ formatDate(item.updated_at) }} · {{ item.message_count }} 条</span>
               </div>
-              <p>{{ item.summary || '等待 AI 生成故障摘要或下一步结论。' }}</p>
-              <div class="conversation-item__meta">
-                <span>{{ item.message_count }} 条消息</span>
-                <span>{{ formatDate(item.updated_at) }}</span>
+              <el-icon v-if="isConversationPinned(item.id)" class="conversation-pin"><Top /></el-icon>
+              <div class="conversation-item__actions">
+                <el-tooltip content="更多操作" placement="top">
+                  <el-button size="small" text :icon="MoreFilled" @click.stop="openConversationMenu($event, item)" />
+                </el-tooltip>
               </div>
-            </button>
+            </div>
           </div>
         </el-scrollbar>
       </aside>
@@ -155,15 +94,19 @@
                 <p class="detail-subtitle">
                   {{
                     activeConversation
-                      ? `${assistantModeLabel(activeConversation.assistant_mode)} · 集群 #${activeConversation.cluster_id} · ${activeConversation.status}`
-                      : '直接在下方输入问题即可自动创建会话。AI 会先尝试只读采集证据，再给出结论和建议动作。'
+                      ? `${assistantModeLabel(activeConversation.assistant_mode)} · 集群 ${activeClusterLabel} · ${activeConversation.status}`
+                      : ''
                   }}
                 </p>
               </div>
             </div>
             <div class="detail-head__actions">
-              <el-button v-if="activeConversation" text :icon="RefreshRight" @click="reloadActiveConversation">刷新详情</el-button>
-              <el-button v-if="activeConversation" type="primary" plain :icon="MagicStick" @click="openProposalDialog">创建提案</el-button>
+              <el-tooltip v-if="activeConversation" content="刷新详情" placement="bottom">
+                <el-button circle text :icon="RefreshRight" @click="reloadActiveConversation" />
+              </el-tooltip>
+              <el-tooltip v-if="activeConversation" content="创建提案" placement="bottom">
+                <el-button circle type="primary" plain :icon="MagicStick" @click="openProposalDialog" />
+              </el-tooltip>
             </div>
           </div>
 
@@ -172,23 +115,34 @@
           </div>
 
           <template v-else-if="activeConversation">
-            <div class="status-grid">
-              <article class="status-card">
-                <span>发起人</span>
-                <strong>{{ activeConversation.created_by_name || `#${activeConversation.created_by}` }}</strong>
-              </article>
-              <article class="status-card">
-                <span>最近更新</span>
-                <strong>{{ formatDate(activeConversation.updated_at) }}</strong>
-              </article>
-              <article class="status-card">
-                <span>只读证据</span>
-                <strong>{{ evidenceSummary }}</strong>
-              </article>
-              <article class="status-card">
-                <span>待确认变更</span>
-                <strong>{{ pendingProposalCount }} 个</strong>
-              </article>
+            <div class="conversation-meta-line">
+              <span>发起人 <strong>{{ activeConversation.created_by_name || `#${activeConversation.created_by}` }}</strong></span>
+              <span>更新 <strong>{{ formatDate(activeConversation.updated_at) }}</strong></span>
+              <el-popover
+                v-if="activeConversation.tool_calls.length > 0"
+                placement="bottom-start"
+                width="460"
+                trigger="click"
+                popper-class="tool-call-popover"
+              >
+                <template #reference>
+                  <button type="button" class="meta-link">
+                    <el-icon><DataAnalysis /></el-icon>
+                    <span>取证 <strong>{{ evidenceSummary }}</strong></span>
+                  </button>
+                </template>
+                <div class="tool-popover-list">
+                  <article v-for="tool in activeConversation.tool_calls" :key="tool.id" class="tool-popover-item">
+                    <div>
+                      <strong>{{ tool.tool_name }}</strong>
+                      <span>{{ formatDate(tool.created_at) }}</span>
+                    </div>
+                    <p>{{ tool.result_summary || tool.error_message || '等待工具结果返回。' }}</p>
+                  </article>
+                </div>
+              </el-popover>
+              <span v-else>取证 <strong>{{ evidenceSummary }}</strong></span>
+              <span>待确认 <strong>{{ pendingProposalCount }} 个</strong></span>
             </div>
 
             <div v-if="evidenceWarning" class="warning-banner">
@@ -333,35 +287,6 @@
               </div>
             </section>
 
-            <section v-if="activeConversation.tool_calls.length > 0" class="section-card">
-              <div class="section-head">
-                <div class="panel-title panel-title--tight">
-                  <span class="panel-title__icon">
-                    <el-icon><DataAnalysis /></el-icon>
-                  </span>
-                  <div>
-                    <h3>自动取证记录</h3>
-                    <p>这里展示 AI 为了回答问题所触发的只读查询和取证结果。</p>
-                  </div>
-                </div>
-                <el-tag type="success" effect="plain">{{ activeConversation.tool_calls.length }} 次</el-tag>
-              </div>
-
-              <div class="tool-grid">
-                <article v-for="tool in activeConversation.tool_calls" :key="tool.id" class="tool-card">
-                  <div class="tool-card__head">
-                    <strong>{{ tool.tool_name }}</strong>
-                    <el-tag size="small" :type="toolStatusType(tool.status)" effect="plain">{{ tool.status }}</el-tag>
-                  </div>
-                  <p>{{ tool.result_summary || tool.error_message || '等待工具结果返回。' }}</p>
-                  <div class="tool-card__meta">
-                    <span>{{ tool.tool_kind }} · {{ tool.risk_level }}</span>
-                    <span>{{ formatDate(tool.created_at) }}</span>
-                  </div>
-                </article>
-              </div>
-            </section>
-
             <section class="section-card section-card--timeline">
               <div class="section-head">
                 <div class="panel-title panel-title--tight">
@@ -370,7 +295,6 @@
                   </span>
                   <div>
                     <h3>对话时间线</h3>
-                    <p>保留问题、AI 结论、工具取证轨迹以及结构化建议动作。</p>
                   </div>
                 </div>
                 <el-tag type="info" effect="plain">{{ activeConversation.messages.length }} 条消息</el-tag>
@@ -405,7 +329,7 @@
                       </div>
                     </div>
 
-                    <p class="message-content">{{ message.content }}</p>
+                    <div class="message-content markdown-body" v-html="renderMarkdown(message.content)" />
 
                     <div v-if="extractSuggestedActions(message.structured).length > 0" class="message-suggestions">
                       <div
@@ -423,76 +347,86 @@
             </section>
           </template>
 
-          <div v-else class="empty-stage">
-            <EmptyState
-              type="empty"
-              title="还没有选中会话"
-              description="可以从左侧进入已有诊断，也可以直接在下方发起一个新问题。为了减少来回切换，发送首条消息时会自动创建会话。"
-            />
+          <div v-else class="empty-stage empty-stage--assistant">
+            <h2>有什么我能帮你的吗？</h2>
           </div>
         </section>
 
         <section class="composer-card">
-          <div class="composer-head">
-            <div class="panel-title panel-title--tight">
-              <span class="panel-title__icon panel-title__icon--accent">
-                <el-icon><MagicStick /></el-icon>
-              </span>
-              <div>
-                <p class="detail-kicker">提问入口</p>
-                <h3>{{ activeConversationId ? '继续追问当前会话' : '发起新的 AI 诊断' }}</h3>
-                <p>支持带上下文提问。诊断模式会优先采集只读证据，聊天模式更适合方案讨论和文档问答。</p>
-              </div>
-            </div>
-            <el-tag :type="composerModeType" effect="dark">{{ composerModeText }}</el-tag>
-          </div>
-
           <div class="composer-grid">
-            <el-form-item label="会话模式" class="composer-field composer-field--wide">
+            <el-form-item label="会话模式" class="composer-field composer-field--mode">
               <el-radio-group v-model="draftAssistantMode" :disabled="Boolean(activeConversationId)">
                 <el-radio-button label="diagnose">故障诊断</el-radio-button>
                 <el-radio-button label="chat">通用聊天</el-radio-button>
               </el-radio-group>
             </el-form-item>
 
-            <el-form-item label="命名空间" class="composer-field">
-              <el-input v-model="draftNamespace" placeholder="例如 payment" clearable />
+            <el-form-item label="命名空间" class="composer-field composer-field--namespace">
+              <el-select
+                v-model="draftNamespace"
+                placeholder="全部命名空间"
+                clearable
+                filterable
+                :loading="loadingNamespaces"
+              >
+                <el-option v-for="item in namespaceOptions" :key="item" :label="item" :value="item" />
+              </el-select>
             </el-form-item>
 
-            <el-form-item label="资源类型" class="composer-field">
+            <el-form-item label="资源类型" class="composer-field composer-field--kind">
               <el-select v-model="draftResourceKind" placeholder="可选" clearable filterable>
                 <el-option v-for="item in resourceKindOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </el-form-item>
 
-            <el-form-item label="资源名称" class="composer-field">
-              <el-input v-model="draftResourceName" placeholder="例如 payment-api-7df8d6" clearable />
+            <el-form-item label="资源名称" class="composer-field composer-field--name">
+              <el-select
+                v-model="draftResourceName"
+                placeholder="全部资源"
+                clearable
+                filterable
+                :loading="loadingResourceNames"
+                :disabled="!draftResourceKind"
+              >
+                <el-option v-for="item in resourceNameOptions" :key="item.value" :label="item.label" :value="item.value">
+                  <span>{{ item.label }}</span>
+                  <small v-if="item.namespace" class="resource-option-ns">{{ item.namespace }}</small>
+                </el-option>
+              </el-select>
             </el-form-item>
           </div>
 
           <div class="composer-shell">
-            <div class="composer-shortcuts">
-              <span>快捷提问</span>
-              <button
-                v-for="item in quickPrompts"
-                :key="`${item.title}-composer`"
-                type="button"
-                class="prompt-chip"
-                @click="applyQuickPrompt(item.mode, item.prompt)"
-              >
-                {{ item.title }}
-              </button>
-            </div>
-
             <el-input
               v-model="draftMessage"
               class="composer-input"
               type="textarea"
-              :rows="6"
+              :rows="3"
               resize="none"
-              placeholder="例如：帮我分析 payment 命名空间最近 30 分钟 Pod 重启频繁的问题，优先查看事件、日志和工作负载状态。"
+              placeholder="输入问题，支持 Ctrl + Enter 发送；可直接粘贴图片"
+              @paste="handleComposerPaste"
               @keyup.ctrl.enter="sendMessage"
             />
+
+            <div v-if="pastedImages.length > 0" class="composer-images">
+              <button
+                v-for="image in pastedImages"
+                :key="image.id"
+                type="button"
+                class="composer-image"
+                @click="previewImage(image)"
+              >
+                <img :src="image.url" :alt="image.name" />
+                <span>{{ image.name }}</span>
+                <el-button
+                  class="composer-image__remove"
+                  size="small"
+                  text
+                  :icon="Close"
+                  @click.stop="removePastedImage(image.id)"
+                />
+              </button>
+            </div>
 
             <div class="composer-toolbar">
               <div class="composer-toolbar__left">
@@ -526,16 +460,10 @@
               </div>
 
               <div class="composer-actions">
-                <el-button v-if="activeConversationId" :icon="MagicStick" @click="openProposalDialog">手动创建提案</el-button>
-                <el-button type="primary" :icon="Promotion" :loading="sendingMessage" @click="sendMessage">
-                  {{ activeConversationId ? '继续追问' : '发送诊断' }}
-                </el-button>
+                <el-tooltip :content="activeConversationId ? '继续追问' : '发送诊断'" placement="top">
+                  <el-button type="primary" circle :icon="Promotion" :loading="sendingMessage" @click="sendMessage" />
+                </el-tooltip>
               </div>
-            </div>
-
-            <div class="composer-meta">
-              <span>{{ activeConversationId ? '发送后将继续当前会话' : '发送后将自动创建一个新会话' }}</span>
-              <span>{{ modelUsageHint }}</span>
             </div>
           </div>
         </section>
@@ -630,32 +558,55 @@
         <el-button type="primary" :loading="creatingProposal" @click="submitProposal">生成提案</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="imagePreviewVisible" title="图片预览" width="720px" class="image-preview-dialog">
+      <img v-if="previewingImage" :src="previewingImage.url" :alt="previewingImage.name" class="image-preview" />
+    </el-dialog>
+
+    <div
+      v-if="conversationMenu.visible"
+      class="conversation-context-menu"
+      :style="{ left: `${conversationMenu.x}px`, top: `${conversationMenu.y}px` }"
+      @click.stop
+    >
+      <button type="button" @click="togglePinConversationFromMenu">
+        <el-icon><Top /></el-icon>
+        <span>{{ conversationMenu.item && isConversationPinned(conversationMenu.item.id) ? '取消置顶' : '置顶会话' }}</span>
+      </button>
+      <button type="button" class="danger" @click="deleteConversationFromMenu">
+        <el-icon><Delete /></el-icon>
+        <span>删除会话</span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ChatDotRound,
-  Collection,
+  Close,
   Cpu,
   DataAnalysis,
+  Delete,
   Document,
   MagicStick,
-  Monitor,
+  MoreFilled,
   Operation,
   Plus,
   Promotion,
   RefreshRight,
   Search,
-  SetUp
+  SetUp,
+  Top
 } from '@element-plus/icons-vue'
 
 import {
   confirmAIActionProposal,
   createAIActionProposal,
   createAIConversation,
+  deleteAIConversation,
   getAIConversationDetail,
   getAIConversations,
   getAIModels,
@@ -666,6 +617,12 @@ import {
   type AIModelItem
 } from '@/features/ai/api/ai'
 import { listClusters, type ClusterItem } from '@/features/clusters/api/clusters'
+import { listNamespaces } from '@/features/k8s/api/namespace'
+import { listPods } from '@/features/k8s/api/pod'
+import { listWorkloads } from '@/features/k8s/api/workload'
+import { listJobs, listCronJobs } from '@/features/k8s/api/batch'
+import { listServices, listIngresses } from '@/features/k8s/api/network'
+import { listConfigMaps, listSecrets } from '@/features/k8s/api/config'
 import CodeMirrorViewer from '@/shared/components/CodeMirrorViewer.vue'
 import EmptyState from '@/shared/components/EmptyState.vue'
 import type { PageResult } from '@/shared/types/api'
@@ -686,6 +643,20 @@ interface SuggestedAction {
   auto_proposal_eligible?: boolean
   proposal_created?: boolean
   proposal_id?: number
+}
+
+interface ResourceNameOption {
+  label: string
+  value: string
+  namespace: string
+  name: string
+}
+
+interface PastedImage {
+  id: string
+  name: string
+  url: string
+  file: File
 }
 
 const clusters = ref<ClusterItem[]>([])
@@ -712,6 +683,21 @@ const loadingModels = ref(false)
 const modelLoadError = ref('')
 const confirmingProposalId = ref<number>()
 const creatingSuggestedActionKey = ref('')
+const namespaceOptions = ref<string[]>([])
+const resourceNameOptions = ref<ResourceNameOption[]>([])
+const loadingNamespaces = ref(false)
+const loadingResourceNames = ref(false)
+const pastedImages = ref<PastedImage[]>([])
+const imagePreviewVisible = ref(false)
+const previewingImage = ref<PastedImage>()
+const pinnedConversationKey = 'ai-assistant:pinned-conversations'
+const pinnedConversationIds = ref<number[]>(loadPinnedConversationIds())
+const conversationMenu = reactive({
+  visible: false,
+  x: 0,
+  y: 0,
+  item: undefined as AIConversationItem | undefined
+})
 
 const draftAssistantMode = ref<'diagnose' | 'chat'>('diagnose')
 const draftNamespace = ref('')
@@ -755,6 +741,12 @@ const currentClusterLabel = computed(() => {
   return current?.name ?? '未选择'
 })
 
+const activeClusterLabel = computed(() => {
+  const clusterId = activeConversation.value?.cluster_id ?? selectedClusterId.value
+  const current = clusters.value.find((item) => item.id === clusterId)
+  return current?.name ?? (clusterId ? `#${clusterId}` : currentClusterLabel.value)
+})
+
 const effectiveAssistantMode = computed<'diagnose' | 'chat'>(() => {
   const mode = activeConversation.value?.assistant_mode ?? draftAssistantMode.value
   return mode === 'chat' ? 'chat' : 'diagnose'
@@ -768,6 +760,18 @@ const filteredModelOptions = computed(() => {
 })
 
 const selectedModel = computed(() => availableModels.value.find((item) => item.id === selectedModelId.value))
+const selectedResourceOption = computed(() => resourceNameOptions.value.find((item) => item.value === draftResourceName.value))
+const resolvedNamespace = computed(() => selectedResourceOption.value?.namespace || draftNamespace.value)
+const resolvedResourceName = computed(() => selectedResourceOption.value?.name || draftResourceName.value)
+const orderedConversations = computed(() => {
+  const pinned = new Set(pinnedConversationIds.value)
+  return [...conversationResult.value.list].sort((a, b) => {
+    const aPinned = pinned.has(a.id)
+    const bPinned = pinned.has(b.id)
+    if (aPinned !== bPinned) return aPinned ? -1 : 1
+    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  })
+})
 
 const modelUsageHint = computed(() => {
   if (loadingModels.value) return '正在加载模型列表'
@@ -861,8 +865,8 @@ const activeSuggestedActions = computed<SuggestedAction[]>(() => {
 })
 
 const scopeSummary = computed(() => {
-  const segments = [draftNamespace.value, draftResourceKind.value, draftResourceName.value].filter(Boolean)
-  return segments.length > 0 ? `当前上下文: ${segments.join(' / ')}` : '当前未限定命名空间或资源范围'
+  const segments = [resolvedNamespace.value, draftResourceKind.value, resolvedResourceName.value].filter(Boolean)
+  return segments.length > 0 ? segments.join(' / ') : '全部范围'
 })
 
 function assistantModeLabel(mode?: string) {
@@ -991,6 +995,79 @@ async function loadClusters() {
   if (!selectedClusterId.value && clusters.value.length > 0) {
     selectedClusterId.value = clusters.value[0].id
   }
+  await loadNamespaces()
+}
+
+async function loadNamespaces() {
+  if (!selectedClusterId.value) {
+    namespaceOptions.value = []
+    draftNamespace.value = ''
+    return
+  }
+  loadingNamespaces.value = true
+  try {
+    const result = await listNamespaces(selectedClusterId.value, { sort_by: 'name', order: 'asc' })
+    namespaceOptions.value = result.list
+      .map((item) => String(item?.metadata?.name ?? '').trim())
+      .filter(Boolean)
+    if (draftNamespace.value && !namespaceOptions.value.includes(draftNamespace.value)) {
+      draftNamespace.value = ''
+    }
+  } finally {
+    loadingNamespaces.value = false
+  }
+}
+
+async function loadResourceNames() {
+  if (!selectedClusterId.value || !draftResourceKind.value) {
+    resourceNameOptions.value = []
+    draftResourceName.value = ''
+    return
+  }
+  loadingResourceNames.value = true
+  try {
+    const params = { namespace: draftNamespace.value || undefined, sort_by: 'name' as const, order: 'asc' as const }
+    const list = await fetchResourceList(selectedClusterId.value, draftResourceKind.value, params)
+    resourceNameOptions.value = list
+      .map(toResourceNameOption)
+      .filter((item): item is ResourceNameOption => Boolean(item))
+      .sort((a, b) => a.value.localeCompare(b.value, 'zh-Hans-CN'))
+    if (draftResourceName.value && !resourceNameOptions.value.some((item) => item.value === draftResourceName.value)) {
+      draftResourceName.value = ''
+    }
+  } finally {
+    loadingResourceNames.value = false
+  }
+}
+
+async function fetchResourceList(
+  clusterId: number,
+  kind: string,
+  params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' }
+) {
+  if (kind === 'Pod') return (await listPods(clusterId, params)).list
+  if (kind === 'Deployment' || kind === 'StatefulSet' || kind === 'DaemonSet') {
+    return (await listWorkloads(clusterId, { ...params, kind })).list
+  }
+  if (kind === 'Job') return (await listJobs(clusterId, params)).list
+  if (kind === 'CronJob') return (await listCronJobs(clusterId, params)).list
+  if (kind === 'Service') return (await listServices(clusterId, params)).list
+  if (kind === 'Ingress') return (await listIngresses(clusterId, params)).list
+  if (kind === 'ConfigMap') return (await listConfigMaps(clusterId, params)).list
+  if (kind === 'Secret') return (await listSecrets(clusterId, params)).list
+  return []
+}
+
+function toResourceNameOption(item: any): ResourceNameOption | null {
+  const name = String(item?.metadata?.name ?? item?.name ?? '').trim()
+  const namespace = String(item?.metadata?.namespace ?? item?.namespace ?? draftNamespace.value ?? '').trim()
+  if (!name) return null
+  return {
+    name,
+    namespace,
+    value: namespace ? `${namespace}/${name}` : name,
+    label: draftNamespace.value || !namespace ? name : `${namespace}/${name}`
+  }
 }
 
 async function loadConversations() {
@@ -1065,11 +1142,11 @@ function resetProposalForm() {
     proposal_type: 'restart_workload',
     title: '',
     target_kind: draftResourceKind.value || 'Deployment',
-    target_namespace: draftNamespace.value,
-    target_name: draftResourceName.value,
+    target_namespace: resolvedNamespace.value,
+    target_name: resolvedResourceName.value,
     replicas: 1,
     manifest_yaml: '',
-    default_namespace: draftNamespace.value,
+    default_namespace: resolvedNamespace.value,
     reason: ''
   })
 }
@@ -1079,11 +1156,11 @@ function applySuggestionToForm(action: SuggestedAction) {
     proposal_type: action.action_type,
     title: action.title || '',
     target_kind: action.target_kind || draftResourceKind.value || 'Deployment',
-    target_namespace: action.target_namespace || draftNamespace.value,
-    target_name: action.target_name || draftResourceName.value,
+    target_namespace: action.target_namespace || resolvedNamespace.value,
+    target_name: action.target_name || resolvedResourceName.value,
     replicas: action.replicas ?? 1,
     manifest_yaml: action.manifest_yaml || '',
-    default_namespace: action.default_namespace || action.target_namespace || draftNamespace.value,
+    default_namespace: action.default_namespace || action.target_namespace || resolvedNamespace.value,
     reason: action.reason || ''
   })
 }
@@ -1237,12 +1314,13 @@ async function sendMessage() {
       provider_id: selectedModelOption?.provider_id,
       model_id: selectedModelOption?.id,
       prefer_model: selectedModelOption?.model_code,
-      namespace: draftNamespace.value || undefined,
+      namespace: resolvedNamespace.value || undefined,
       resource_kind: draftResourceKind.value || undefined,
-      resource_name: draftResourceName.value || undefined
+      resource_name: resolvedResourceName.value || undefined
     })
     activeConversationId.value = result.conversation_id
     draftMessage.value = ''
+    clearPastedImages()
     await loadConversations()
     await selectConversation(result.conversation_id)
   } finally {
@@ -1254,8 +1332,12 @@ async function handleClusterChange() {
   activeConversationId.value = undefined
   activeConversation.value = undefined
   draftAssistantMode.value = 'diagnose'
+  draftNamespace.value = ''
+  draftResourceKind.value = ''
+  draftResourceName.value = ''
+  resourceNameOptions.value = []
   syncSelectedModel()
-  await loadConversations()
+  await Promise.all([loadNamespaces(), loadConversations()])
 }
 
 function applyQuickPrompt(mode: 'diagnose' | 'chat', prompt: string) {
@@ -1263,6 +1345,263 @@ function applyQuickPrompt(mode: 'diagnose' | 'chat', prompt: string) {
     draftAssistantMode.value = mode
   }
   draftMessage.value = prompt
+}
+
+function handleComposerPaste(event: ClipboardEvent) {
+  const items = Array.from(event.clipboardData?.items ?? [])
+  const imageFiles = items
+    .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => Boolean(file))
+
+  if (imageFiles.length === 0) return
+  event.preventDefault()
+  const nextImages = imageFiles.map((file, index): PastedImage => ({
+    id: `${Date.now()}-${index}-${file.name || 'paste'}`,
+    name: file.name || `粘贴图片 ${pastedImages.value.length + index + 1}`,
+    file,
+    url: URL.createObjectURL(file)
+  }))
+  pastedImages.value = [...pastedImages.value, ...nextImages].slice(-6)
+}
+
+function previewImage(image: PastedImage) {
+  previewingImage.value = image
+  imagePreviewVisible.value = true
+}
+
+function removePastedImage(id: string) {
+  const image = pastedImages.value.find((item) => item.id === id)
+  if (image) URL.revokeObjectURL(image.url)
+  pastedImages.value = pastedImages.value.filter((item) => item.id !== id)
+}
+
+function clearPastedImages() {
+  pastedImages.value.forEach((item) => URL.revokeObjectURL(item.url))
+  pastedImages.value = []
+}
+
+function loadPinnedConversationIds() {
+  try {
+    const raw = window.localStorage.getItem(pinnedConversationKey)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed.filter((item): item is number => typeof item === 'number') : []
+  } catch {
+    return []
+  }
+}
+
+function persistPinnedConversationIds() {
+  window.localStorage.setItem(pinnedConversationKey, JSON.stringify(pinnedConversationIds.value))
+}
+
+function isConversationPinned(id: number) {
+  return pinnedConversationIds.value.includes(id)
+}
+
+function openConversationMenu(event: MouseEvent, item: AIConversationItem) {
+  conversationMenu.visible = true
+  conversationMenu.x = event.clientX
+  conversationMenu.y = event.clientY
+  conversationMenu.item = item
+}
+
+function closeConversationMenu() {
+  conversationMenu.visible = false
+}
+
+function togglePinConversationFromMenu() {
+  const item = conversationMenu.item
+  if (!item) return
+  if (isConversationPinned(item.id)) {
+    pinnedConversationIds.value = pinnedConversationIds.value.filter((id) => id !== item.id)
+  } else {
+    pinnedConversationIds.value = [item.id, ...pinnedConversationIds.value]
+  }
+  persistPinnedConversationIds()
+  closeConversationMenu()
+}
+
+async function deleteConversationFromMenu() {
+  const item = conversationMenu.item
+  if (!item) return
+  try {
+    await ElMessageBox.confirm(`删除会话“${item.title || `#${item.id}`}”？删除后不会在历史列表展示。`, '删除会话', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消'
+    })
+  } catch {
+    closeConversationMenu()
+    return
+  }
+
+  await deleteAIConversation(item.id)
+  pinnedConversationIds.value = pinnedConversationIds.value.filter((id) => id !== item.id)
+  persistPinnedConversationIds()
+  if (activeConversationId.value === item.id) {
+    activeConversationId.value = undefined
+    activeConversation.value = undefined
+  }
+  closeConversationMenu()
+  await loadConversations()
+  ElMessage.success('会话已删除')
+}
+
+function escapeHtml(input: string) {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function renderInlineMarkdown(input: string) {
+  return input
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+}
+
+function isMarkdownTableRow(line: string) {
+  return line.includes('|') && line.replace(/\|/g, '').trim().length > 0
+}
+
+function isMarkdownTableSeparator(line: string) {
+  if (!isMarkdownTableRow(line)) return false
+  return splitMarkdownTableRow(line).every((cell) => /^:?-{3,}:?$/.test(cell))
+}
+
+function splitMarkdownTableRow(line: string) {
+  return line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => cell.trim())
+}
+
+function renderMarkdownTable(headers: string[], rows: string[][]) {
+  const head = headers.map((cell) => `<th>${renderInlineMarkdown(cell)}</th>`).join('')
+  const body = rows
+    .map((row) => {
+      const cells = headers.map((_, index) => `<td>${renderInlineMarkdown(row[index] ?? '')}</td>`).join('')
+      return `<tr>${cells}</tr>`
+    })
+    .join('')
+  return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`
+}
+
+function renderMarkdown(input: string) {
+  const lines = escapeHtml(input || '').split(/\r?\n/)
+  const html: string[] = []
+  let inCode = false
+  let listType: 'ul' | 'ol' | '' = ''
+  const paragraph: string[] = []
+
+  const flushParagraph = () => {
+    if (paragraph.length === 0) return
+    html.push(`<p>${renderInlineMarkdown(paragraph.join('<br>'))}</p>`)
+    paragraph.length = 0
+  }
+
+  const closeList = () => {
+    if (!listType) return
+    html.push(`</${listType}>`)
+    listType = ''
+  }
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]
+    const trimmed = line.trim()
+    if (trimmed.startsWith('```')) {
+      flushParagraph()
+      closeList()
+      if (inCode) {
+        html.push('</code></pre>')
+      } else {
+        html.push('<pre><code>')
+      }
+      inCode = !inCode
+      continue
+    }
+
+    if (inCode) {
+      html.push(`${line}\n`)
+      continue
+    }
+
+    if (!trimmed) {
+      flushParagraph()
+      closeList()
+      continue
+    }
+
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      flushParagraph()
+      closeList()
+      html.push('<hr>')
+      continue
+    }
+
+    if (isMarkdownTableRow(trimmed) && index + 1 < lines.length && isMarkdownTableSeparator(lines[index + 1].trim())) {
+      flushParagraph()
+      closeList()
+      const headers = splitMarkdownTableRow(trimmed)
+      const rows: string[][] = []
+      index += 2
+      while (index < lines.length) {
+        const rowLine = lines[index].trim()
+        if (!isMarkdownTableRow(rowLine) || isMarkdownTableSeparator(rowLine)) break
+        rows.push(splitMarkdownTableRow(rowLine))
+        index += 1
+      }
+      index -= 1
+      html.push(renderMarkdownTable(headers, rows))
+      continue
+    }
+
+    const heading = trimmed.match(/^(#{1,4})\s+(.+)$/)
+    if (heading) {
+      flushParagraph()
+      closeList()
+      const level = heading[1].length + 1
+      html.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`)
+      continue
+    }
+
+    const unordered = trimmed.match(/^[-*]\s+(.+)$/)
+    if (unordered) {
+      flushParagraph()
+      if (listType !== 'ul') {
+        closeList()
+        html.push('<ul>')
+        listType = 'ul'
+      }
+      html.push(`<li>${renderInlineMarkdown(unordered[1])}</li>`)
+      continue
+    }
+
+    const ordered = trimmed.match(/^\d+[.)]\s+(.+)$/)
+    if (ordered) {
+      flushParagraph()
+      if (listType !== 'ol') {
+        closeList()
+        html.push('<ol>')
+        listType = 'ol'
+      }
+      html.push(`<li>${renderInlineMarkdown(ordered[1])}</li>`)
+      continue
+    }
+
+    closeList()
+    paragraph.push(trimmed)
+  }
+
+  flushParagraph()
+  closeList()
+  if (inCode) html.push('</code></pre>')
+  return html.join('')
 }
 
 function suggestedActionKey(action: SuggestedAction) {
@@ -1384,17 +1723,33 @@ watch(() => draftAssistantMode.value, () => {
   }
 })
 
+watch(() => draftResourceKind.value, () => {
+  draftResourceName.value = ''
+  void loadResourceNames()
+})
+
+watch(() => draftNamespace.value, () => {
+  draftResourceName.value = ''
+  void loadResourceNames()
+})
+
 onMounted(async () => {
+  window.addEventListener('click', closeConversationMenu)
   await Promise.all([loadClusters(), loadModels()])
   await loadConversations()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('click', closeConversationMenu)
+  clearPastedImages()
 })
 </script>
 
 <style scoped>
 .ai-page {
-  --ai-bg: linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+  --ai-bg: #f5f7fb;
   --ai-card: #ffffff;
-  --ai-border: rgba(15, 23, 42, 0.08);
+  --ai-border: rgba(15, 23, 42, 0.075);
   --ai-text: #1e293b;
   --ai-muted: #64748b;
   --ai-primary: #409eff;
@@ -1404,13 +1759,10 @@ onMounted(async () => {
   --ai-warm: #d97706;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   min-height: 100%;
-  padding: 16px;
-  background:
-    radial-gradient(circle at top right, rgba(191, 219, 254, 0.18), transparent 24%),
-    radial-gradient(circle at top left, rgba(253, 230, 138, 0.14), transparent 22%),
-    var(--ai-bg);
+  padding: 14px;
+  background: var(--ai-bg);
 }
 
 .topbar-card,
@@ -1420,17 +1772,17 @@ onMounted(async () => {
 .composer-card {
   border: 1px solid var(--ai-border);
   background: var(--ai-card);
-  border-radius: 18px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+  border-radius: 16px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
 }
 
 .topbar-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px;
-  background: linear-gradient(135deg, #ffffff, #fbfdff);
+  gap: 14px;
+  padding: 12px 16px;
+  background: #ffffff;
 }
 
 .eyebrow,
@@ -1446,7 +1798,7 @@ onMounted(async () => {
 .panel-title {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
 }
 
 .hero-title__icon,
@@ -1469,9 +1821,9 @@ onMounted(async () => {
 }
 
 .panel-title__icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   background: #eff6ff;
   color: var(--ai-primary);
 }
@@ -1504,7 +1856,7 @@ onMounted(async () => {
 }
 
 .topbar-copy h1 {
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1.3;
 }
 
@@ -1534,7 +1886,7 @@ onMounted(async () => {
 .topbar-copy p {
   max-width: 720px;
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -1550,8 +1902,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  padding: 9px 11px;
+  border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: #f8fafc;
   min-height: 0;
@@ -1600,7 +1952,7 @@ onMounted(async () => {
 }
 
 .control-card {
-  padding: 14px 18px;
+  padding: 12px 14px;
 }
 
 .control-row {
@@ -1630,8 +1982,8 @@ onMounted(async () => {
 
 .workspace {
   display: grid;
-  grid-template-columns: 288px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 12px;
   min-height: 0;
   flex: 1;
 }
@@ -1646,7 +1998,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 16px;
+  padding: 12px;
 }
 
 .sidebar-head,
@@ -1694,10 +2046,10 @@ onMounted(async () => {
 
 .shortcut-chip {
   width: 100%;
-  padding: 10px 12px;
+  padding: 9px 11px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 14px;
-  background: linear-gradient(180deg, #fbfcfe, #ffffff);
+  border-radius: 12px;
+  background: #ffffff;
   text-align: left;
   cursor: pointer;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
@@ -1707,8 +2059,8 @@ onMounted(async () => {
 .conversation-item:hover,
 .conversation-item--active {
   transform: translateY(-1px);
-  border-color: rgba(64, 158, 255, 0.28);
-  box-shadow: 0 16px 28px rgba(64, 158, 255, 0.12);
+  border-color: rgba(64, 158, 255, 0.3);
+  box-shadow: 0 10px 22px rgba(64, 158, 255, 0.1);
 }
 
 .shortcut-chip span {
@@ -1739,9 +2091,9 @@ onMounted(async () => {
 
 .conversation-item {
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 14px;
+  border-radius: 12px;
   background: #ffffff;
   cursor: pointer;
   text-align: left;
@@ -1791,7 +2143,7 @@ onMounted(async () => {
 .main-column {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   min-height: 0;
 }
 
@@ -1806,7 +2158,7 @@ onMounted(async () => {
 }
 
 .detail-head {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .detail-head__actions {
@@ -1832,7 +2184,7 @@ onMounted(async () => {
 .empty-stage,
 .warning-banner {
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
+  border-radius: 16px;
   background: #ffffff;
 }
 
@@ -2036,16 +2388,56 @@ onMounted(async () => {
   padding: 12px;
 }
 
+.empty-stage--assistant {
+  display: grid;
+  place-items: center;
+  min-height: 430px;
+}
+
+.empty-stage--assistant h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
 .composer-card {
   position: static;
-  padding-bottom: 0;
+  padding: 24px 26px 16px;
 }
 
 .composer-head {
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.composer-head .panel-title__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(15, 118, 110, 0.1);
+}
+
+.composer-head h3 {
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.composer-head p {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.composer-grid {
+  display: grid;
+  grid-template-columns: minmax(430px, 1.1fr) minmax(260px, 0.7fr) minmax(240px, 0.6fr);
+  gap: 18px 22px;
+  align-items: center;
   margin-bottom: 18px;
 }
 
-.composer-grid,
 .proposal-form-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2057,19 +2449,86 @@ onMounted(async () => {
 }
 
 .composer-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 0;
 }
 
-.composer-field--wide {
-  grid-column: span 2;
+.composer-field :deep(.el-form-item__label) {
+  flex: 0 0 auto;
+  height: auto;
+  margin: 0 4px 0 0;
+  padding: 0;
+  color: #334155;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.composer-field :deep(.el-form-item__content) {
+  flex: 1;
+  min-width: 0;
+}
+
+.composer-field :deep(.el-input__wrapper),
+.composer-field :deep(.el-select__wrapper) {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.composer-field :deep(.el-input__wrapper:hover),
+.composer-field :deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.22);
+}
+
+.composer-field--mode :deep(.el-radio-group) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(116px, 1fr));
+  width: 282px;
+  padding: 2px;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 15px;
+  background: #ffffff;
+}
+
+.composer-field--mode :deep(.el-radio-button) {
+  min-width: 0;
+}
+
+.composer-field--mode :deep(.el-radio-button__inner) {
+  width: 100%;
+  height: 42px;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 42px;
+  padding: 0 18px;
+}
+
+.composer-field--mode :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  color: #ffffff;
+  background: var(--ai-primary);
+}
+
+.composer-field--name {
+  grid-column: 1;
+  max-width: 430px;
 }
 
 .composer-shell {
-  padding: 16px;
+  overflow: hidden;
+  padding: 0;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 22px;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 1));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055);
 }
 
 .composer-shortcuts {
@@ -2077,7 +2536,8 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-bottom: 14px;
+  margin: 0;
+  padding: 16px 20px 12px;
 }
 
 .composer-shortcuts span {
@@ -2087,7 +2547,7 @@ onMounted(async () => {
 }
 
 .prompt-chip {
-  padding: 8px 12px;
+  padding: 8px 14px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 999px;
   background: #ffffff;
@@ -2102,15 +2562,26 @@ onMounted(async () => {
   box-shadow: 0 10px 18px rgba(64, 158, 255, 0.12);
 }
 
+.composer-input {
+  display: block;
+  padding: 0 20px;
+}
+
 .composer-input :deep(.el-textarea__inner) {
-  min-height: 176px !important;
-  padding: 10px 0 0;
+  min-height: 210px !important;
+  padding: 16px;
   border: 0;
-  background: transparent;
-  box-shadow: none;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.18);
   color: var(--ai-text);
   font-size: 15px;
-  line-height: 1.75;
+  line-height: 1.7;
+}
+
+.composer-toolbar {
+  align-items: center;
+  padding: 10px 20px 12px;
 }
 
 .composer-toolbar__left {
@@ -2134,10 +2605,10 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 42px;
+  min-height: 40px;
   padding: 0 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 14px;
+  border-radius: 12px;
   background: #ffffff;
 }
 
@@ -2167,7 +2638,8 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: 0;
+  padding: 0 20px 14px;
   font-size: 12px;
 }
 
@@ -2175,6 +2647,14 @@ onMounted(async () => {
   display: flex;
   gap: 10px;
   flex-shrink: 0;
+}
+
+.composer-actions :deep(.el-button) {
+  min-width: 128px;
+  min-height: 46px;
+  padding: 0 20px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .ai-page :deep(.el-input__wrapper),
@@ -2192,9 +2672,727 @@ onMounted(async () => {
 }
 
 .control-actions :deep(.el-button),
-.detail-head__actions :deep(.el-button),
-.composer-actions :deep(.el-button) {
+.detail-head__actions :deep(.el-button) {
   min-height: 40px;
+}
+
+.ai-page {
+  height: calc(100vh - 88px);
+  min-height: 560px;
+  overflow: hidden;
+  gap: 8px;
+  padding: 10px;
+  color: #172033;
+  font-size: 13px;
+}
+
+.control-card {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+.control-row {
+  align-items: center;
+  gap: 10px;
+}
+
+.control-item :deep(.el-form-item__label) {
+  height: 32px;
+  padding-right: 8px;
+  color: #26364f;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 32px;
+}
+
+.control-item :deep(.el-input__wrapper),
+.control-item :deep(.el-select__wrapper) {
+  min-height: 34px;
+  border-radius: 10px;
+}
+
+.control-select {
+  width: 220px;
+}
+
+.control-actions {
+  gap: 8px;
+}
+
+.control-actions :deep(.el-button.is-circle) {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+
+.workspace {
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
+}
+
+.sidebar-card {
+  min-height: 0;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.sidebar-head {
+  align-items: center;
+  min-height: 30px;
+  margin-bottom: 8px;
+}
+
+.sidebar-head h2 {
+  font-size: 14px;
+}
+
+.sidebar-head > span {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #eef5ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.conversation-list {
+  gap: 3px;
+}
+
+.conversation-item {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.conversation-item::before {
+  display: none;
+}
+
+.conversation-item:hover,
+.conversation-item--active {
+  transform: none;
+  background: #f3f7ff;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.conversation-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #cfe5ff;
+}
+
+.conversation-item--active .conversation-dot {
+  background: var(--ai-primary);
+}
+
+.conversation-item__main {
+  min-width: 0;
+}
+
+.conversation-item__main strong {
+  display: block;
+  overflow: hidden;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-item__main span,
+.conversation-item__meta {
+  display: none;
+}
+
+.conversation-item__actions {
+  opacity: 0;
+}
+
+.conversation-item:hover .conversation-item__actions,
+.conversation-item--active .conversation-item__actions {
+  opacity: 1;
+}
+
+.conversation-item__actions :deep(.el-button) {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+}
+
+.main-column {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
+  min-height: 0;
+}
+
+.detail-card {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px;
+  border-radius: 12px;
+}
+
+.detail-head {
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.detail-head .panel-title__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.detail-kicker {
+  margin-bottom: 2px;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.detail-head h2 {
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.detail-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.detail-head__actions :deep(.el-button) {
+  min-height: 30px;
+  padding: 6px 10px;
+}
+
+.detail-head__actions :deep(.el-button.is-circle) {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+
+.status-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.status-card,
+.section-card,
+.suggestion-card,
+.proposal-card,
+.tool-card,
+.message-card {
+  border-radius: 10px;
+}
+
+.status-card {
+  padding: 10px;
+}
+
+.section-card {
+  padding: 12px;
+}
+
+.section-card + .section-card {
+  margin-top: 10px;
+}
+
+.empty-stage--assistant {
+  min-height: 0;
+  height: 100%;
+}
+
+.empty-stage--assistant h2 {
+  font-size: 22px;
+}
+
+.composer-card {
+  flex: 0 0 auto;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.composer-grid {
+  grid-template-columns: 180px minmax(150px, 0.7fr) 150px minmax(180px, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.composer-field {
+  gap: 6px;
+}
+
+.composer-field :deep(.el-form-item__label) {
+  margin: 0;
+  color: #26364f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.composer-field :deep(.el-input__wrapper),
+.composer-field :deep(.el-select__wrapper) {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 9px;
+}
+
+.composer-field--mode :deep(.el-radio-group) {
+  width: 126px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 1px;
+  border-radius: 10px;
+}
+
+.composer-field--mode :deep(.el-radio-button__inner) {
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 28px;
+}
+
+.composer-field--name {
+  grid-column: auto;
+  max-width: none;
+}
+
+.resource-option-ns {
+  float: right;
+  margin-left: 12px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.composer-shell {
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.composer-input {
+  padding: 0;
+}
+
+.composer-input :deep(.el-textarea__inner) {
+  min-height: 86px !important;
+  padding: 10px 12px;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.composer-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px;
+  border-top: 1px solid #eef2f7;
+  background: #fbfdff;
+}
+
+.composer-image {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 160px;
+  height: 36px;
+  padding: 3px 24px 3px 4px;
+  border: 1px solid #dbe7f5;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.composer-image img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.composer-image span {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-image__remove {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+}
+
+.composer-toolbar {
+  align-items: center;
+  padding: 8px;
+  border-top: 1px solid #eef2f7;
+}
+
+.composer-model-field,
+.composer-scope-pill {
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.composer-model-select {
+  width: 190px;
+}
+
+.composer-actions :deep(.el-button) {
+  min-width: auto;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.composer-actions :deep(.el-button.is-circle) {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.image-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  margin: 0 auto;
+  border-radius: 10px;
+}
+
+.conversation-pin {
+  color: #2563eb;
+  font-size: 13px;
+}
+
+.conversation-context-menu {
+  position: fixed;
+  z-index: 3000;
+  min-width: 136px;
+  padding: 5px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+}
+
+.conversation-context-menu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #243247;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.conversation-context-menu button:hover {
+  background: #f3f7ff;
+}
+
+.conversation-context-menu button.danger {
+  color: #dc2626;
+}
+
+.conversation-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: -2px 0 8px;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid #eef2f7;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.conversation-meta-line span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.conversation-meta-line strong {
+  color: #172033;
+  font-weight: 650;
+}
+
+.meta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  cursor: pointer;
+}
+
+.meta-link:hover {
+  color: #2563eb;
+}
+
+.meta-link .el-icon {
+  font-size: 13px;
+}
+
+:global(.tool-call-popover) {
+  padding: 8px !important;
+  border-radius: 10px !important;
+}
+
+:global(.tool-call-popover .tool-popover-list) {
+  display: grid;
+  gap: 6px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+:global(.tool-call-popover .tool-popover-item) {
+  padding: 8px;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+:global(.tool-call-popover .tool-popover-item > div) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #172033;
+  font-size: 12px;
+}
+
+:global(.tool-call-popover .tool-popover-item span) {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+:global(.tool-call-popover .tool-popover-item p) {
+  margin: 5px 0 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.section-card {
+  border-radius: 10px;
+}
+
+.section-head {
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.section-head h3 {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.section-head p {
+  display: none;
+}
+
+.tool-grid {
+  margin-top: 6px;
+}
+
+.section-card--timeline {
+  overflow: hidden;
+}
+
+.timeline-scroll {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 4px 4px;
+}
+
+.message-card {
+  width: fit-content;
+  max-width: min(780px, 78%);
+  padding: 10px 12px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.message-card--user {
+  align-self: flex-end;
+  background: #edf5ff;
+  border-color: #cfe2ff;
+}
+
+.message-card--assistant,
+.message-card--tool,
+.message-card--system {
+  align-self: flex-start;
+}
+
+.message-card--assistant {
+  background: #ffffff;
+}
+
+.message-card--tool {
+  background: #fff7ed;
+}
+
+.message-card__head {
+  align-items: center;
+  gap: 10px;
+}
+
+.message-role,
+.message-usage {
+  gap: 6px;
+}
+
+.message-role span,
+.message-usage span {
+  font-size: 11px;
+}
+
+.message-content {
+  margin: 8px 0 0;
+  color: #172033;
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.markdown-body :deep(p) {
+  margin: 0 0 8px;
+}
+
+.markdown-body :deep(p:last-child),
+.markdown-body :deep(ul:last-child),
+.markdown-body :deep(ol:last-child),
+.markdown-body :deep(pre:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-body :deep(h2),
+.markdown-body :deep(h3),
+.markdown-body :deep(h4),
+.markdown-body :deep(h5) {
+  margin: 10px 0 6px;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) {
+  margin: 6px 0 8px;
+  padding-left: 18px;
+}
+
+.markdown-body :deep(hr) {
+  height: 1px;
+  margin: 10px 0;
+  border: 0;
+  background: #e5e7eb;
+}
+
+.markdown-body :deep(table) {
+  width: 100%;
+  margin: 8px 0 10px;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid #dbe5f1;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  padding: 7px 9px;
+  border: 1px solid #dbe5f1;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-body :deep(th) {
+  background: #f5f8fc;
+  color: #172033;
+  font-weight: 700;
+}
+
+.markdown-body :deep(td) {
+  background: #ffffff;
+}
+
+.markdown-body :deep(li + li) {
+  margin-top: 3px;
+}
+
+.markdown-body :deep(code) {
+  padding: 1px 4px;
+  border-radius: 5px;
+  background: #eef2f7;
+  color: #0f172a;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+}
+
+.markdown-body :deep(pre) {
+  max-width: 100%;
+  margin: 8px 0;
+  padding: 9px 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+.markdown-body :deep(pre code) {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  white-space: pre;
 }
 
 @media (max-width: 1440px) {
@@ -2220,9 +3418,18 @@ onMounted(async () => {
   .suggestion-grid,
   .proposal-grid,
   .tool-grid,
-  .composer-grid,
   .proposal-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .composer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .composer-field--mode,
+  .composer-field--name {
+    grid-column: span 1;
+    max-width: none;
   }
 }
 
@@ -2282,14 +3489,23 @@ onMounted(async () => {
   .suggestion-grid,
   .proposal-grid,
   .tool-grid,
-  .composer-grid,
   .proposal-form-grid,
   .proposal-form-grid--manifest {
     grid-template-columns: 1fr;
   }
 
-  .composer-field--wide {
-    grid-column: span 1;
+  .composer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-field {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .composer-field--mode :deep(.el-radio-group) {
+    width: 100%;
   }
 
   .sidebar-head,

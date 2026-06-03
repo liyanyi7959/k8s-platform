@@ -94,6 +94,54 @@ func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContex
 		return summary, result, nil
 	})
 
+	run("cluster.inventory", map[string]any{
+		"cluster_id": req.ClusterID,
+	}, func(ctx context.Context) (string, any, error) {
+		namespaces, err := s.k8sSvc.List(ctx, req.ClusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}, "", "metadata.name", "asc", nil)
+		if err != nil {
+			return "", nil, err
+		}
+		pods, err := s.k8sSvc.List(ctx, req.ClusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}, "", "metadata.namespace", "asc", nil)
+		if err != nil {
+			return "", nil, err
+		}
+
+		podCounts := make(map[string]int, len(namespaces))
+		for _, nsObj := range namespaces {
+			ns := aiObjectMetaString(nsObj, "name")
+			if ns != "" {
+				podCounts[ns] = 0
+			}
+		}
+		for _, pod := range pods {
+			ns := aiObjectMetaString(pod, "namespace")
+			if ns == "" {
+				ns = "default"
+			}
+			podCounts[ns]++
+		}
+
+		namespaceItems := make([]map[string]any, 0, len(namespaces))
+		for _, nsObj := range namespaces {
+			ns := aiObjectMetaString(nsObj, "name")
+			if ns == "" {
+				continue
+			}
+			namespaceItems = append(namespaceItems, map[string]any{
+				"name":      ns,
+				"pod_count": podCounts[ns],
+			})
+		}
+
+		result := map[string]any{
+			"namespace_count": len(namespaceItems),
+			"pod_count":       len(pods),
+			"namespaces":      namespaceItems,
+		}
+		summary := fmt.Sprintf("集群共有 %d 个命名空间、%d 个 Pod", len(namespaceItems), len(pods))
+		return summary, result, nil
+	})
+
 	namespace := strings.TrimSpace(req.Namespace)
 	if namespace != "" {
 		run("namespace.summary", map[string]any{
@@ -121,6 +169,18 @@ func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContex
 	}
 
 	return items, strings.Join(contextBlocks, "\n\n"), nil
+}
+
+func aiObjectMetaString(item any, key string) string {
+	obj, ok := item.(map[string]any)
+	if !ok {
+		return ""
+	}
+	meta, ok := obj["metadata"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(meta[key]))
 }
 
 func (s *AIToolService) ListConversationToolCalls(ctx context.Context, conversationID uint64) ([]AIToolCallItem, error) {

@@ -179,6 +179,19 @@ func (ctl *AIController) GetConversation(c *gin.Context) {
 	resp.OK(c, data)
 }
 
+func (ctl *AIController) DeleteConversation(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil || id == 0 {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+	if err := ctl.conversationSvc.DeleteConversation(c.Request.Context(), id); err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK[any](c, nil)
+}
+
 func (ctl *AIController) CreateConversation(c *gin.Context) {
 	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil || clusterID == 0 {

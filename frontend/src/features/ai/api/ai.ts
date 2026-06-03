@@ -268,6 +268,10 @@ export function getAIConversationDetail(id: number) {
   return unwrap<AIConversationDetail>(http.get(`/api/v1/ai/conversations/${id}`))
 }
 
+export function deleteAIConversation(id: number) {
+  return unwrap<null>(http.delete(`/api/v1/ai/conversations/${id}`))
+}
+
 export function createAIConversation(clusterId: number, data: CreateAIConversationRequest) {
   return unwrap<{ id: number }>(http.post(`/api/v1/clusters/${clusterId}/ai/conversations`, data))
 }

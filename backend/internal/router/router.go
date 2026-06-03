@@ -534,6 +534,7 @@ func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController) {
 	ai.PUT("/route-settings", aiWritePerm, ctl.UpdateRouteSettings)
 	ai.GET("/conversations", aiReadPerm, ctl.ListConversations)
 	ai.GET("/conversations/:id", aiReadPerm, ctl.GetConversation)
+	ai.DELETE("/conversations/:id", aiReadPerm, ctl.DeleteConversation)
 
 	clusters := authed.Group("/clusters")
 	clusters.POST("/:id/ai/conversations", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), ctl.CreateConversation)

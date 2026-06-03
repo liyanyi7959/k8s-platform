@@ -189,6 +189,27 @@ func (s *AIConversationService) GetConversation(ctx context.Context, id uint64) 
 	}, nil
 }
 
+func (s *AIConversationService) DeleteConversation(ctx context.Context, id uint64) error {
+	if s.db == nil {
+		return errors.New("db is required")
+	}
+	if id == 0 {
+		return ErrWithMessage(ErrInvalidParams, "会话 ID 无效")
+	}
+	now := time.Now().UTC()
+	result := s.db.WithContext(ctx).
+		Model(&model.AIConversation{}).
+		Where("deleted_at IS NULL AND id = ?", id).
+		Update("deleted_at", &now)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (s *AIConversationService) CreateConversation(
 	ctx context.Context,
 	clusterID uint64,
