@@ -1,85 +1,102 @@
 <template>
   <div class="ai-page">
-    <section class="control-card">
-      <div class="control-row">
-        <el-form-item label="目标集群" class="control-item">
-          <el-select
-            v-model="selectedClusterId"
-            placeholder="请选择集群"
-            filterable
-            class="control-select"
-            @change="handleClusterChange"
-          >
-            <el-option v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="搜索会话" class="control-item control-item--grow">
-          <el-input
-            v-model="keyword"
-            :prefix-icon="Search"
-            placeholder="按标题、摘要或问题关键字过滤"
-            clearable
-            @keyup.enter="loadConversations"
-            @clear="loadConversations"
-          />
-        </el-form-item>
-
-        <div class="control-actions">
-          <el-tooltip content="新建会话" placement="bottom">
-            <el-button type="primary" :icon="Plus" circle @click="openCreateDialog" />
-          </el-tooltip>
-          <el-tooltip content="刷新列表" placement="bottom">
-            <el-button :icon="RefreshRight" circle :loading="loadingConversations" @click="loadConversations" />
-          </el-tooltip>
-        </div>
-      </div>
-    </section>
-
     <section class="workspace">
-      <aside class="sidebar-card">
-        <div class="sidebar-head">
-          <h2>历史会话</h2>
-          <el-tag type="info" effect="plain">{{ conversationResult.total }} 条</el-tag>
-        </div>
+      <div class="sidebar-column">
+        <section class="control-card">
+          <div class="control-stack">
+            <div class="control-cluster-row">
+              <span class="control-inline-label">集群：</span>
+              <el-select
+                v-model="selectedClusterId"
+                placeholder="请选择集群"
+                filterable
+                class="control-select"
+                @change="handleClusterChange"
+              >
+                <el-option v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
+              </el-select>
+            </div>
 
-        <el-scrollbar class="conversation-scroll">
-          <EmptyState
-            v-if="conversationResult.list.length === 0 && !loadingConversations"
-            type="no-data"
-            title="暂无会话"
-            description=""
-          >
-            <el-button type="primary" :icon="Plus" circle @click="openCreateDialog" />
-          </EmptyState>
+            <div class="control-search-row">
+              <el-input
+                v-model="keyword"
+                class="control-search-input"
+                :prefix-icon="Search"
+                placeholder="搜索标题、摘要或问题关键字"
+                clearable
+                @keyup.enter="loadConversations"
+                @clear="loadConversations"
+              />
 
-          <div v-else class="conversation-list">
-            <div
-              v-for="item in orderedConversations"
-              :key="item.id"
-              class="conversation-item"
-              :class="{
-                'conversation-item--active': item.id === activeConversationId,
-                'conversation-item--pinned': isConversationPinned(item.id)
-              }"
-              @click="selectConversation(item.id)"
-              @contextmenu.prevent="openConversationMenu($event, item)"
-            >
-              <span class="conversation-dot" />
-              <div class="conversation-item__main">
-                <strong>{{ item.title || `会话 #${item.id}` }}</strong>
-                <span>{{ formatDate(item.updated_at) }} · {{ item.message_count }} 条</span>
-              </div>
-              <el-icon v-if="isConversationPinned(item.id)" class="conversation-pin"><Top /></el-icon>
-              <div class="conversation-item__actions">
-                <el-tooltip content="更多操作" placement="top">
-                  <el-button size="small" text :icon="MoreFilled" @click.stop="openConversationMenu($event, item)" />
+              <div class="control-actions">
+                <el-tooltip content="新建会话" placement="bottom">
+                  <el-button type="primary" :icon="Plus" circle @click="openCreateDialog" />
+                </el-tooltip>
+                <el-tooltip content="刷新列表" placement="bottom">
+                  <el-button :icon="RefreshRight" circle :loading="loadingConversations" @click="loadConversations" />
                 </el-tooltip>
               </div>
             </div>
           </div>
-        </el-scrollbar>
-      </aside>
+        </section>
+
+        <aside class="sidebar-card">
+          <div class="sidebar-head">
+            <h2>历史会话</h2>
+            <el-tag type="info" effect="plain">{{ conversationResult.total }} 条</el-tag>
+          </div>
+
+          <el-scrollbar class="conversation-scroll">
+            <EmptyState
+              v-if="conversationResult.list.length === 0 && !loadingConversations"
+              type="no-data"
+              title="暂无会话"
+              description=""
+            >
+              <el-button type="primary" :icon="Plus" circle @click="openCreateDialog" />
+            </EmptyState>
+
+            <div v-else class="conversation-list">
+              <div
+                v-for="item in orderedConversations"
+                :key="item.id"
+                class="conversation-item"
+                :class="{
+                  'conversation-item--active': item.id === activeConversationId,
+                  'conversation-item--pinned': isConversationPinned(item.id)
+                }"
+                @click="selectConversation(item.id)"
+                @contextmenu.prevent="openConversationMenu($event, item)"
+              >
+                <span class="conversation-dot" />
+                <div class="conversation-item__main">
+                  <el-tooltip
+                    :content="item.title || `会话 #${item.id}`"
+                    placement="right-start"
+                    :show-after="250"
+                    :disabled="!conversationTitleOverflow[item.id]"
+                    popper-class="conversation-title-tooltip"
+                  >
+                    <strong
+                      class="conversation-item__title"
+                      @mouseenter="updateConversationTitleOverflow(item.id, $event)"
+                    >
+                      {{ item.title || `会话 #${item.id}` }}
+                    </strong>
+                  </el-tooltip>
+                  <span>{{ formatDate(item.updated_at) }} · {{ item.message_count }} 条</span>
+                </div>
+                <el-icon v-if="isConversationPinned(item.id)" class="conversation-pin"><Top /></el-icon>
+                <div class="conversation-item__actions">
+                  <el-tooltip content="更多操作" placement="top">
+                    <el-button size="small" text :icon="MoreFilled" @click.stop="openConversationMenu($event, item)" />
+                  </el-tooltip>
+                </div>
+              </div>
+            </div>
+          </el-scrollbar>
+        </aside>
+      </div>
 
       <div class="main-column">
         <section class="detail-card">
@@ -89,24 +106,58 @@
                 <el-icon><Document /></el-icon>
               </span>
               <div>
-                <p class="detail-kicker">诊断会话</p>
-                <h2>{{ activeConversation?.title || '开始一段新的 AI 排障对话' }}</h2>
-                <p class="detail-subtitle">
-                  {{
-                    activeConversation
-                      ? `${assistantModeLabel(activeConversation.assistant_mode)} · 集群 ${activeClusterLabel} · ${activeConversation.status}`
-                      : ''
-                  }}
+                <p class="detail-kicker detail-kicker--inline">
+                  <span>{{ `${assistantModeLabel(activeConversation?.assistant_mode || draftAssistantMode)}会话` }}</span>
+                  <template v-if="activeConversation">
+                    <span class="detail-kicker__sep">·</span>
+                    <span class="detail-kicker__secondary">集群 {{ activeClusterLabel }} · {{ activeConversation.status }}</span>
+                  </template>
                 </p>
+                <h2>{{ activeConversation?.title || '开始一段新的 AI 排障对话' }}</h2>
               </div>
             </div>
-            <div class="detail-head__actions">
-              <el-tooltip v-if="activeConversation" content="刷新详情" placement="bottom">
-                <el-button circle text :icon="RefreshRight" @click="reloadActiveConversation" />
-              </el-tooltip>
-              <el-tooltip v-if="activeConversation" content="创建提案" placement="bottom">
-                <el-button circle type="primary" plain :icon="MagicStick" @click="openProposalDialog" />
-              </el-tooltip>
+            <div class="detail-head__side">
+              <div class="detail-head__actions">
+                <el-tooltip v-if="activeConversation && hasPersistedConversationId(activeConversation.id)" content="刷新详情" placement="bottom">
+                  <el-button circle text :icon="RefreshRight" @click="reloadActiveConversation" />
+                </el-tooltip>
+                <el-tooltip v-if="activeConversation && hasPersistedConversationId(activeConversation.id)" content="创建提案" placement="bottom">
+                  <el-button circle type="primary" plain :icon="MagicStick" @click="openProposalDialog" />
+                </el-tooltip>
+              </div>
+
+              <div
+                v-if="activeConversation && hasPersistedConversationId(activeConversation.id)"
+                class="conversation-meta-line conversation-meta-line--header"
+              >
+                <span>发起人 <strong>{{ activeConversation.created_by_name || `#${activeConversation.created_by}` }}</strong></span>
+                <span>更新 <strong>{{ formatDate(activeConversation.updated_at) }}</strong></span>
+                <el-popover
+                  v-if="activeConversation.tool_calls.length > 0"
+                  placement="bottom-end"
+                  width="460"
+                  trigger="click"
+                  popper-class="tool-call-popover"
+                >
+                  <template #reference>
+                    <button type="button" class="meta-link">
+                      <el-icon><DataAnalysis /></el-icon>
+                      <span>取证 <strong>{{ evidenceSummary }}</strong></span>
+                    </button>
+                  </template>
+                  <div class="tool-popover-list">
+                    <article v-for="tool in activeConversation.tool_calls" :key="tool.id" class="tool-popover-item">
+                      <div>
+                        <strong>{{ tool.tool_name }}</strong>
+                        <span>{{ formatDate(tool.created_at) }}</span>
+                      </div>
+                      <p>{{ tool.result_summary || tool.error_message || '等待工具结果返回。' }}</p>
+                    </article>
+                  </div>
+                </el-popover>
+                <span v-else>取证 <strong>{{ evidenceSummary }}</strong></span>
+                <span>待确认 <strong>{{ pendingProposalCount }} 个</strong></span>
+              </div>
             </div>
           </div>
 
@@ -115,36 +166,6 @@
           </div>
 
           <template v-else-if="activeConversation">
-            <div class="conversation-meta-line">
-              <span>发起人 <strong>{{ activeConversation.created_by_name || `#${activeConversation.created_by}` }}</strong></span>
-              <span>更新 <strong>{{ formatDate(activeConversation.updated_at) }}</strong></span>
-              <el-popover
-                v-if="activeConversation.tool_calls.length > 0"
-                placement="bottom-start"
-                width="460"
-                trigger="click"
-                popper-class="tool-call-popover"
-              >
-                <template #reference>
-                  <button type="button" class="meta-link">
-                    <el-icon><DataAnalysis /></el-icon>
-                    <span>取证 <strong>{{ evidenceSummary }}</strong></span>
-                  </button>
-                </template>
-                <div class="tool-popover-list">
-                  <article v-for="tool in activeConversation.tool_calls" :key="tool.id" class="tool-popover-item">
-                    <div>
-                      <strong>{{ tool.tool_name }}</strong>
-                      <span>{{ formatDate(tool.created_at) }}</span>
-                    </div>
-                    <p>{{ tool.result_summary || tool.error_message || '等待工具结果返回。' }}</p>
-                  </article>
-                </div>
-              </el-popover>
-              <span v-else>取证 <strong>{{ evidenceSummary }}</strong></span>
-              <span>待确认 <strong>{{ pendingProposalCount }} 个</strong></span>
-            </div>
-
             <div v-if="evidenceWarning" class="warning-banner">
               <strong>证据采集存在缺口</strong>
               <span>{{ evidenceWarning }}</span>
@@ -314,11 +335,25 @@
                     v-for="message in activeConversation.messages"
                     :key="message.id"
                     class="message-card"
-                    :class="`message-card--${message.role}`"
+                    :class="[
+                      `message-card--${message.role}`,
+                      {
+                        'message-card--pending': message.status === 'pending',
+                        'message-card--failed': message.status === 'failed'
+                      }
+                    ]"
                   >
                     <div class="message-card__head">
                       <div class="message-role">
                         <el-tag size="small" :type="roleTagType(message.role)" effect="plain">{{ roleLabel(message.role) }}</el-tag>
+                        <el-tag
+                          v-if="messageStatusText(message.status)"
+                          size="small"
+                          :type="messageStatusType(message.status)"
+                          effect="plain"
+                        >
+                          {{ messageStatusText(message.status) }}
+                        </el-tag>
                         <span>{{ formatDate(message.created_at) }}</span>
                       </div>
                       <div class="message-usage">
@@ -342,6 +377,7 @@
                       </div>
                     </div>
                   </article>
+                  <div ref="timelineEndRef" class="timeline-end-anchor" />
                 </div>
               </el-scrollbar>
             </section>
@@ -403,9 +439,9 @@
               type="textarea"
               :rows="3"
               resize="none"
-              placeholder="输入问题，支持 Ctrl + Enter 发送；可直接粘贴图片"
+              placeholder="输入问题，按 Enter 发送，Shift + Enter 换行；可直接粘贴图片"
               @paste="handleComposerPaste"
-              @keyup.ctrl.enter="sendMessage"
+              @keydown.enter="handleComposerEnter"
             />
 
             <div v-if="pastedImages.length > 0" class="composer-images">
@@ -582,7 +618,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ChatDotRound,
@@ -614,6 +650,7 @@ import {
   type AIActionProposalItem,
   type AIConversationDetail,
   type AIConversationItem,
+  type AIMessageItem,
   type AIModelItem
 } from '@/features/ai/api/ai'
 import { listClusters, type ClusterItem } from '@/features/clusters/api/clusters'
@@ -692,12 +729,16 @@ const imagePreviewVisible = ref(false)
 const previewingImage = ref<PastedImage>()
 const pinnedConversationKey = 'ai-assistant:pinned-conversations'
 const pinnedConversationIds = ref<number[]>(loadPinnedConversationIds())
+const conversationTitleOverflow = reactive<Record<number, boolean>>({})
+const timelineEndRef = ref<HTMLElement>()
 const conversationMenu = reactive({
   visible: false,
   x: 0,
   y: 0,
   item: undefined as AIConversationItem | undefined
 })
+
+let optimisticIdSeed = 0
 
 const draftAssistantMode = ref<'diagnose' | 'chat'>('diagnose')
 const draftNamespace = ref('')
@@ -871,6 +912,195 @@ const scopeSummary = computed(() => {
 
 function assistantModeLabel(mode?: string) {
   return mode === 'chat' ? '通用聊天' : '故障诊断'
+}
+
+function hasPersistedConversationId(id?: number): id is number {
+  return typeof id === 'number' && id > 0
+}
+
+function nextOptimisticId() {
+  optimisticIdSeed -= 1
+  return optimisticIdSeed
+}
+
+function buildConversationTitleFromMessage(message: string) {
+  const normalized = message.replace(/\s+/g, ' ').trim()
+  if (!normalized) return '新的 AI 会话'
+  return normalized.length > 24 ? `${normalized.slice(0, 24)}...` : normalized
+}
+
+function pendingAssistantReplyText() {
+  if (effectiveAssistantMode.value === 'chat') {
+    return 'AI 正在整理当前上下文并生成回复，请稍候...'
+  }
+  return 'AI 正在结合当前集群证据进行分析，请稍候...'
+}
+
+function resolveSendErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) {
+    const message = error.message.trim()
+    if (message) return message
+  }
+  return fallback
+}
+
+function isTimeoutLikeMessage(message: string) {
+  const lower = message.toLowerCase()
+  return lower.includes('timeout') || lower.includes('deadline exceeded') || message.includes('超时')
+}
+
+function buildAssistantFailureReply(error: unknown) {
+  const message = resolveSendErrorMessage(error, '发送失败')
+  if (isTimeoutLikeMessage(message)) {
+    return '本次会话已超时，AI 未能在限定时间内完成回答。建议缩小排查范围后重试，或重新发送当前问题。'
+  }
+  return `本次会话发送失败，AI 暂时没有返回结果。原因：${message}`
+}
+
+function messageStatusText(status: string) {
+  if (status === 'pending') return '等待回复'
+  if (status === 'failed') return '回复失败'
+  return ''
+}
+
+function messageStatusType(status: string) {
+  if (status === 'pending') return 'warning'
+  if (status === 'failed') return 'danger'
+  return 'info'
+}
+
+function createOptimisticMessage(input: {
+  conversationId: number
+  role: 'user' | 'assistant'
+  content: string
+  status: string
+  createdAt: string
+}): AIMessageItem {
+  return {
+    id: nextOptimisticId(),
+    conversation_id: input.conversationId,
+    role: input.role,
+    message_type: 'text',
+    content: input.content,
+    status: input.status,
+    tool_call_count: 0,
+    token_input: 0,
+    token_output: 0,
+    created_by: 0,
+    created_at: input.createdAt
+  }
+}
+
+function upsertConversationListItem(conversationId: number, message: string, updatedAt: string, status = '处理中') {
+  const list = [...conversationResult.value.list]
+  const index = list.findIndex((item) => item.id === conversationId)
+  const title = activeConversation.value?.title || buildConversationTitleFromMessage(message)
+  if (index >= 0) {
+    const current = list[index]
+    list[index] = {
+      ...current,
+      title: current.title || title,
+      status,
+      updated_at: updatedAt,
+      last_message_at: updatedAt,
+      message_count: Math.max(current.message_count, activeConversation.value?.messages.length ?? current.message_count)
+    }
+    conversationResult.value = { ...conversationResult.value, list }
+    return
+  }
+
+  list.unshift({
+    id: conversationId,
+    cluster_id: selectedClusterId.value ?? 0,
+    provider_id: resolveSelectedModel()?.provider_id,
+    model_id: resolveSelectedModel()?.id,
+    title,
+    status,
+    assistant_mode: activeConversation.value?.assistant_mode || draftAssistantMode.value,
+    summary: '',
+    created_by: activeConversation.value?.created_by ?? 0,
+    created_by_name: activeConversation.value?.created_by_name || '当前用户',
+    message_count: activeConversation.value?.messages.length ?? 0,
+    last_message_at: updatedAt,
+    created_at: activeConversation.value?.created_at || updatedAt,
+    updated_at: updatedAt
+  })
+  conversationResult.value = {
+    ...conversationResult.value,
+    list,
+    total: conversationResult.value.total + 1
+  }
+}
+
+function ensureOptimisticConversation(message: string, createdAt: string) {
+  if (activeConversation.value && typeof activeConversationId.value === 'number') {
+    if (!activeConversation.value.title) {
+      activeConversation.value.title = buildConversationTitleFromMessage(message)
+    }
+    activeConversation.value.updated_at = createdAt
+    activeConversation.value.last_message_at = createdAt
+    activeConversation.value.status = '处理中'
+    upsertConversationListItem(activeConversationId.value, message, createdAt, '处理中')
+    return activeConversationId.value
+  }
+
+  const conversationId = nextOptimisticId()
+  activeConversationId.value = conversationId
+  activeConversation.value = {
+    id: conversationId,
+    cluster_id: selectedClusterId.value ?? 0,
+    provider_id: resolveSelectedModel()?.provider_id,
+    model_id: resolveSelectedModel()?.id,
+    title: buildConversationTitleFromMessage(message),
+    status: '处理中',
+    assistant_mode: draftAssistantMode.value,
+    summary: '',
+    created_by: 0,
+    created_by_name: '当前用户',
+    message_count: 0,
+    last_message_at: createdAt,
+    created_at: createdAt,
+    updated_at: createdAt,
+    messages: [],
+    tool_calls: [],
+    action_proposals: []
+  }
+  upsertConversationListItem(conversationId, message, createdAt, '处理中')
+  return conversationId
+}
+
+function appendOptimisticMessages(conversationId: number, userMessage: AIMessageItem, assistantMessage: AIMessageItem) {
+  if (!activeConversation.value || activeConversationId.value !== conversationId) return
+  activeConversation.value.messages = [...activeConversation.value.messages, userMessage, assistantMessage]
+  activeConversation.value.updated_at = assistantMessage.created_at
+  activeConversation.value.last_message_at = assistantMessage.created_at
+  activeConversation.value.message_count = activeConversation.value.messages.length
+  upsertConversationListItem(conversationId, userMessage.content, assistantMessage.created_at, '处理中')
+}
+
+function patchOptimisticAssistantMessage(conversationId: number, messageId: number, patch: Partial<AIMessageItem>) {
+  if (!activeConversation.value || activeConversationId.value !== conversationId) return
+  const index = activeConversation.value.messages.findIndex((item) => item.id === messageId)
+  if (index < 0) return
+  activeConversation.value.messages[index] = {
+    ...activeConversation.value.messages[index],
+    ...patch
+  }
+}
+
+function removeLocalConversation(conversationId: number) {
+  const nextList = conversationResult.value.list.filter((item) => item.id !== conversationId)
+  if (nextList.length !== conversationResult.value.list.length) {
+    conversationResult.value = {
+      ...conversationResult.value,
+      list: nextList,
+      total: Math.max(0, conversationResult.value.total - 1)
+    }
+  }
+  if (activeConversationId.value === conversationId) {
+    activeConversationId.value = undefined
+    activeConversation.value = undefined
+  }
 }
 
 function roleLabel(role: string) {
@@ -1079,7 +1309,7 @@ async function loadConversations() {
       cluster_id: selectedClusterId.value,
       keyword: keyword.value.trim() || undefined
     })
-    if (activeConversationId.value && !conversationResult.value.list.some((item) => item.id === activeConversationId.value)) {
+    if (hasPersistedConversationId(activeConversationId.value) && !conversationResult.value.list.some((item) => item.id === activeConversationId.value)) {
       activeConversationId.value = undefined
       activeConversation.value = undefined
     }
@@ -1089,6 +1319,10 @@ async function loadConversations() {
 }
 
 async function selectConversation(id: number) {
+  if (!hasPersistedConversationId(id)) {
+    activeConversationId.value = id
+    return
+  }
   activeConversationId.value = id
   loadingDetail.value = true
   try {
@@ -1101,7 +1335,7 @@ async function selectConversation(id: number) {
 }
 
 async function reloadActiveConversation() {
-  if (!activeConversationId.value) return
+  if (!hasPersistedConversationId(activeConversationId.value)) return
   await selectConversation(activeConversationId.value)
 }
 
@@ -1187,7 +1421,7 @@ function buildProposalRequest(input: {
   reason?: string
   message_id?: number
 }) {
-  if (!activeConversationId.value) {
+  if (!hasPersistedConversationId(activeConversationId.value)) {
     throw new Error('请先创建或选中一个 AI 会话')
   }
 
@@ -1304,13 +1538,32 @@ async function sendMessage() {
     return
   }
   const selectedModelOption = resolveSelectedModel()
+  const persistedConversationId = hasPersistedConversationId(activeConversationId.value) ? activeConversationId.value : undefined
+  const createdAt = new Date().toISOString()
+  const optimisticConversationId = ensureOptimisticConversation(message, createdAt)
+  const optimisticUserMessage = createOptimisticMessage({
+    conversationId: optimisticConversationId,
+    role: 'user',
+    content: message,
+    status: 'success',
+    createdAt
+  })
+  const optimisticAssistantMessage = createOptimisticMessage({
+    conversationId: optimisticConversationId,
+    role: 'assistant',
+    content: pendingAssistantReplyText(),
+    status: 'pending',
+    createdAt
+  })
+  appendOptimisticMessages(optimisticConversationId, optimisticUserMessage, optimisticAssistantMessage)
+  draftMessage.value = ''
 
   sendingMessage.value = true
   try {
     const result = await sendAIChat(selectedClusterId.value, {
-      conversation_id: activeConversationId.value,
+      conversation_id: persistedConversationId,
       message,
-      assistant_mode: activeConversationId.value ? undefined : draftAssistantMode.value,
+      assistant_mode: persistedConversationId ? undefined : draftAssistantMode.value,
       provider_id: selectedModelOption?.provider_id,
       model_id: selectedModelOption?.id,
       prefer_model: selectedModelOption?.model_code,
@@ -1318,14 +1571,38 @@ async function sendMessage() {
       resource_kind: draftResourceKind.value || undefined,
       resource_name: resolvedResourceName.value || undefined
     })
+    if (!hasPersistedConversationId(optimisticConversationId)) {
+      removeLocalConversation(optimisticConversationId)
+    }
     activeConversationId.value = result.conversation_id
-    draftMessage.value = ''
     clearPastedImages()
     await loadConversations()
     await selectConversation(result.conversation_id)
+  } catch (error) {
+    const failureReply = buildAssistantFailureReply(error)
+    const failureAt = new Date().toISOString()
+    patchOptimisticAssistantMessage(optimisticConversationId, optimisticAssistantMessage.id, {
+      content: failureReply,
+      status: 'failed',
+      created_at: failureAt
+    })
+    if (activeConversation.value && activeConversationId.value === optimisticConversationId) {
+      activeConversation.value.status = '需重试'
+      activeConversation.value.updated_at = failureAt
+      activeConversation.value.last_message_at = failureAt
+    }
+    upsertConversationListItem(optimisticConversationId, message, failureAt, '需重试')
+    ElMessage.error(resolveSendErrorMessage(error, '发送失败'))
   } finally {
     sendingMessage.value = false
   }
+}
+
+function handleComposerEnter(event: KeyboardEvent) {
+  if (event.isComposing || event.shiftKey) return
+  event.preventDefault()
+  if (sendingMessage.value) return
+  void sendMessage()
 }
 
 async function handleClusterChange() {
@@ -1399,7 +1676,14 @@ function isConversationPinned(id: number) {
   return pinnedConversationIds.value.includes(id)
 }
 
+function updateConversationTitleOverflow(id: number, event: MouseEvent) {
+  const target = event.currentTarget
+  if (!(target instanceof HTMLElement)) return
+  conversationTitleOverflow[id] = target.scrollWidth > target.clientWidth + 1
+}
+
 function openConversationMenu(event: MouseEvent, item: AIConversationItem) {
+  if (!hasPersistedConversationId(item.id)) return
   conversationMenu.visible = true
   conversationMenu.x = event.clientX
   conversationMenu.y = event.clientY
@@ -1413,6 +1697,10 @@ function closeConversationMenu() {
 function togglePinConversationFromMenu() {
   const item = conversationMenu.item
   if (!item) return
+  if (!hasPersistedConversationId(item.id)) {
+    closeConversationMenu()
+    return
+  }
   if (isConversationPinned(item.id)) {
     pinnedConversationIds.value = pinnedConversationIds.value.filter((id) => id !== item.id)
   } else {
@@ -1425,6 +1713,12 @@ function togglePinConversationFromMenu() {
 async function deleteConversationFromMenu() {
   const item = conversationMenu.item
   if (!item) return
+  if (!hasPersistedConversationId(item.id)) {
+    removeLocalConversation(item.id)
+    closeConversationMenu()
+    ElMessage.success('临时会话已移除')
+    return
+  }
   try {
     await ElMessageBox.confirm(`删除会话“${item.title || `#${item.id}`}”？删除后不会在历史列表展示。`, '删除会话', {
       type: 'warning',
@@ -1717,6 +2011,14 @@ function asBoolean(value: unknown) {
   return typeof value === 'boolean' ? value : undefined
 }
 
+function scrollTimelineToLatest() {
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      timelineEndRef.value?.scrollIntoView({ block: 'end', behavior: 'auto' })
+    })
+  })
+}
+
 watch(() => draftAssistantMode.value, () => {
   if (!activeConversationId.value) {
     syncSelectedModel()
@@ -1732,6 +2034,19 @@ watch(() => draftNamespace.value, () => {
   draftResourceName.value = ''
   void loadResourceNames()
 })
+
+watch(
+  () => ({
+    conversationId: activeConversation.value?.id,
+    updatedAt: activeConversation.value?.updated_at,
+    messageCount: activeConversation.value?.messages.length ?? 0,
+    detailLoading: loadingDetail.value
+  }),
+  ({ conversationId, messageCount, detailLoading }) => {
+    if (!conversationId || detailLoading || messageCount <= 0) return
+    scrollTimelineToLatest()
+  }
+)
 
 onMounted(async () => {
   window.addEventListener('click', closeConversationMenu)
@@ -2681,43 +2996,61 @@ onBeforeUnmount(() => {
   min-height: 560px;
   overflow: hidden;
   gap: 8px;
-  padding: 10px;
+  padding: 2px 10px 10px;
   color: #172033;
   font-size: 13px;
 }
 
 .control-card {
   flex: 0 0 auto;
-  padding: 8px 10px;
+  padding: 10px;
   border-radius: 12px;
 }
 
-.control-row {
+.control-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.control-cluster-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 10px;
 }
 
-.control-item :deep(.el-form-item__label) {
-  height: 32px;
-  padding-right: 8px;
+.control-inline-label {
   color: #26364f;
   font-size: 13px;
   font-weight: 700;
-  line-height: 32px;
+  line-height: 1;
 }
 
-.control-item :deep(.el-input__wrapper),
-.control-item :deep(.el-select__wrapper) {
+.control-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-cluster-row :deep(.el-select__wrapper),
+.control-search-row :deep(.el-input__wrapper) {
   min-height: 34px;
   border-radius: 10px;
 }
 
 .control-select {
-  width: 220px;
+  width: 100%;
+}
+
+.control-search-input {
+  min-width: 0;
 }
 
 .control-actions {
+  display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .control-actions :deep(.el-button.is-circle) {
@@ -2734,8 +3067,16 @@ onBeforeUnmount(() => {
   flex: 1;
 }
 
+.sidebar-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
 .sidebar-card {
   min-height: 0;
+  flex: 1;
   padding: 10px;
   border-radius: 12px;
 }
@@ -2805,7 +3146,7 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-.conversation-item__main strong {
+.conversation-item__title {
   display: block;
   overflow: hidden;
   color: #172033;
@@ -2847,47 +3188,86 @@ onBeforeUnmount(() => {
 .detail-card {
   min-height: 0;
   overflow: auto;
-  padding: 14px 16px;
+  padding: 10px 14px;
   border-radius: 12px;
 }
 
 .detail-head {
-  align-items: center;
-  margin-bottom: 10px;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.detail-head__side {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.detail-head .panel-title {
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.detail-head .panel-title > div {
+  display: grid;
+  gap: 1px;
 }
 
 .detail-head .panel-title__icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
 }
 
 .detail-kicker {
-  margin-bottom: 2px;
-  font-size: 11px;
+  margin-bottom: 0;
+  font-size: 10px;
   letter-spacing: 0;
 }
 
+.detail-kicker--inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  line-height: 1.2;
+}
+
+.detail-kicker__sep,
+.detail-kicker__secondary {
+  color: #64748b;
+}
+
+.detail-kicker__secondary {
+  font-weight: 600;
+}
+
 .detail-head h2 {
-  font-size: 17px;
-  line-height: 1.3;
+  font-size: 15px;
+  line-height: 1.2;
 }
 
 .detail-subtitle {
-  margin: 4px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.detail-head__actions {
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .detail-head__actions :deep(.el-button) {
-  min-height: 30px;
-  padding: 6px 10px;
+  min-height: 28px;
+  padding: 5px 9px;
 }
 
 .detail-head__actions :deep(.el-button.is-circle) {
-  width: 34px;
-  height: 34px;
-  min-height: 34px;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
   padding: 0;
 }
 
@@ -3131,13 +3511,21 @@ onBeforeUnmount(() => {
 .conversation-meta-line {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  margin: -2px 0 8px;
-  padding: 0 2px 8px;
+  gap: 6px 10px;
+  margin: -1px 0 6px;
+  padding: 0 0 6px;
   border-bottom: 1px solid #eef2f7;
   color: #64748b;
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.conversation-meta-line--header {
+  justify-content: flex-end;
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+  max-width: 100%;
 }
 
 .conversation-meta-line span {
@@ -3175,6 +3563,13 @@ onBeforeUnmount(() => {
 :global(.tool-call-popover) {
   padding: 8px !important;
   border-radius: 10px !important;
+}
+
+:global(.conversation-title-tooltip) {
+  max-width: 360px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
 }
 
 :global(.tool-call-popover .tool-popover-list) {
@@ -3276,6 +3671,16 @@ onBeforeUnmount(() => {
 
 .message-card--tool {
   background: #fff7ed;
+}
+
+.message-card--pending {
+  border-style: dashed;
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+.message-card--failed {
+  border-color: rgba(220, 38, 38, 0.22);
+  background: linear-gradient(180deg, rgba(254, 242, 242, 0.96), rgba(255, 255, 255, 1));
 }
 
 .message-card__head {
@@ -3402,13 +3807,12 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1280px) {
-  .topbar-card {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .sidebar-column {
+    min-height: auto;
   }
 
   .sidebar-card {
@@ -3435,25 +3839,14 @@ onBeforeUnmount(() => {
 
 @media (max-width: 900px) {
   .ai-page {
-    padding: 14px;
+    padding: 8px 12px 12px;
   }
 
-  .topbar-card,
   .control-row,
   .composer-toolbar,
   .detail-head,
   .warning-banner {
     flex-direction: column;
-  }
-
-  .topbar-card {
-    padding: 14px;
-  }
-
-  .topbar-metrics,
-  .control-item--grow,
-  .control-select {
-    width: 100%;
   }
 
   .control-actions,
@@ -3519,17 +3912,12 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 640px) {
-  .topbar-copy h1 {
-    font-size: 18px;
-  }
-
   .conversation-item__head,
   .tool-card__meta,
   .message-card__head,
   .section-head,
   .suggestion-actions,
-  .proposal-card__head,
-  .hero-title {
+  .proposal-card__head {
     flex-direction: column;
   }
 }

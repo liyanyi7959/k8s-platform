@@ -21,6 +21,25 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
+type NamespacePodHealthItem struct {
+	Name         string `json:"name"`
+	Namespace    string `json:"namespace"`
+	Phase        string `json:"phase"`
+	Ready        string `json:"ready"`
+	RestartCount int    `json:"restart_count"`
+	Reason       string `json:"reason,omitempty"`
+}
+
+type NamespaceEventItem struct {
+	Type          string `json:"type"`
+	Reason        string `json:"reason,omitempty"`
+	Message       string `json:"message,omitempty"`
+	InvolvedKind  string `json:"involved_kind,omitempty"`
+	InvolvedName  string `json:"involved_name,omitempty"`
+	Count         int32  `json:"count,omitempty"`
+	LastTimestamp string `json:"last_timestamp,omitempty"`
+}
+
 // ---------------------------------------------------------------------------
 // Pod listing — cached / direct / Redis
 // ---------------------------------------------------------------------------
@@ -302,6 +321,221 @@ func eventsToAnyList(events []*corev1.Event) []any {
 		out = append(out, m)
 	}
 	return out
+}
+
+func namespacePodReadyCount(pod *corev1.Pod) (int, int) {
+	if pod == nil {
+		return 0, 0
+	}
+	total := len(pod.Status.ContainerStatuses)
+	ready := 0
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.Ready {
+			ready++
+		}
+	}
+	if total == 0 {
+		total = len(pod.Spec.Containers)
+	}
+	return ready, total
+}
+
+func namespacePodRestartCount(pod *corev1.Pod) int {
+	if pod == nil {
+		return 0
+	}
+	total := 0
+	for _, status := range pod.Status.ContainerStatuses {
+		total += int(status.RestartCount)
+	}
+	return total
+}
+
+func namespacePodReason(pod *corev1.Pod) string {
+	if pod == nil {
+		return ""
+	}
+	if strings.TrimSpace(pod.Status.Reason) != "" {
+		return strings.TrimSpace(pod.Status.Reason)
+	}
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.State.Waiting != nil && strings.TrimSpace(status.State.Waiting.Reason) != "" {
+			return strings.TrimSpace(status.State.Waiting.Reason)
+		}
+		if status.State.Terminated != nil && strings.TrimSpace(status.State.Terminated.Reason) != "" {
+			return strings.TrimSpace(status.State.Terminated.Reason)
+		}
+	}
+	return strings.TrimSpace(string(pod.Status.Phase))
+}
+
+func namespacePodIsAbnormal(pod *corev1.Pod) bool {
+	if pod == nil {
+		return false
+	}
+	if pod.DeletionTimestamp != nil {
+		return false
+	}
+	if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodPending {
+		return true
+	}
+	ready, total := namespacePodReadyCount(pod)
+	if total > 0 && ready < total {
+		return true
+	}
+	return namespacePodRestartCount(pod) > 0
+}
+
+func namespacePodHealthItem(pod *corev1.Pod) NamespacePodHealthItem {
+	ready, total := namespacePodReadyCount(pod)
+	return NamespacePodHealthItem{
+		Name:         pod.Name,
+		Namespace:    pod.Namespace,
+		Phase:        string(pod.Status.Phase),
+		Ready:        fmt.Sprintf("%d/%d", ready, total),
+		RestartCount: namespacePodRestartCount(pod),
+		Reason:       namespacePodReason(pod),
+	}
+}
+
+func namespaceEventLastTimestamp(ev *corev1.Event) time.Time {
+	if ev == nil {
+		return time.Time{}
+	}
+	if !ev.LastTimestamp.IsZero() {
+		return ev.LastTimestamp.Time
+	}
+	if !ev.EventTime.IsZero() {
+		return ev.EventTime.Time
+	}
+	if !ev.CreationTimestamp.IsZero() {
+		return ev.CreationTimestamp.Time
+	}
+	return time.Time{}
+}
+
+func namespaceEventItem(ev *corev1.Event) NamespaceEventItem {
+	lastAt := namespaceEventLastTimestamp(ev)
+	return NamespaceEventItem{
+		Type:          strings.TrimSpace(ev.Type),
+		Reason:        strings.TrimSpace(ev.Reason),
+		Message:       strings.TrimSpace(ev.Message),
+		InvolvedKind:  strings.TrimSpace(ev.InvolvedObject.Kind),
+		InvolvedName:  strings.TrimSpace(ev.InvolvedObject.Name),
+		Count:         ev.Count,
+		LastTimestamp: lastAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func sortNamespaceEvents(events []*corev1.Event) {
+	sort.SliceStable(events, func(i, j int) bool {
+		left := namespaceEventLastTimestamp(events[i])
+		right := namespaceEventLastTimestamp(events[j])
+		if left.Equal(right) {
+			if events[i] == nil || events[j] == nil {
+				return i < j
+			}
+			return events[i].Name > events[j].Name
+		}
+		return left.After(right)
+	})
+}
+
+func (s *K8sService) GetNamespaceHealth(ctx context.Context, clusterID uint64, namespace string) (map[string]any, error) {
+	ns := strings.TrimSpace(namespace)
+	if clusterID == 0 || ns == "" {
+		return nil, ErrInvalidParams
+	}
+	cs, err := s.typedClient(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	pods, err := s.listPodsDirectPods(ctx, clusterID, ns, "")
+	if err != nil {
+		return nil, err
+	}
+
+	podItems := make([]NamespacePodHealthItem, 0, minInt(len(pods), 20))
+	counts := map[string]int{
+		"total":     len(pods),
+		"running":   0,
+		"pending":   0,
+		"failed":    0,
+		"succeeded": 0,
+		"abnormal":  0,
+	}
+	totalRestarts := 0
+	for _, pod := range pods {
+		if pod == nil {
+			continue
+		}
+		switch pod.Status.Phase {
+		case corev1.PodRunning:
+			counts["running"]++
+		case corev1.PodPending:
+			counts["pending"]++
+		case corev1.PodFailed:
+			counts["failed"]++
+		case corev1.PodSucceeded:
+			counts["succeeded"]++
+		}
+		restarts := namespacePodRestartCount(pod)
+		totalRestarts += restarts
+		if namespacePodIsAbnormal(pod) {
+			counts["abnormal"]++
+			if len(podItems) < 20 {
+				podItems = append(podItems, namespacePodHealthItem(pod))
+			}
+		}
+	}
+
+	opts := metav1.ListOptions{Limit: k8sListPageLimit}
+	events := make([]*corev1.Event, 0, 128)
+	for {
+		el, err := cs.CoreV1().Events(ns).List(ctx, opts)
+		if err != nil {
+			return nil, normalizeK8sErr(err)
+		}
+		for i := range el.Items {
+			item := el.Items[i].DeepCopy()
+			if strings.EqualFold(strings.TrimSpace(item.Type), corev1.EventTypeWarning) {
+				events = append(events, item)
+			}
+		}
+		token := strings.TrimSpace(el.Continue)
+		if token == "" {
+			break
+		}
+		opts.Continue = token
+	}
+	sortNamespaceEvents(events)
+	eventItems := make([]NamespaceEventItem, 0, minInt(len(events), 20))
+	for _, ev := range events {
+		if ev == nil {
+			continue
+		}
+		if len(eventItems) >= 20 {
+			break
+		}
+		eventItems = append(eventItems, namespaceEventItem(ev))
+	}
+
+	return map[string]any{
+		"namespace":           ns,
+		"pod_counts":          counts,
+		"total_restarts":      totalRestarts,
+		"abnormal_pods":       podItems,
+		"warning_event_count": len(events),
+		"warning_events":      eventItems,
+	}, nil
+}
+
+func minInt(left, right int) int {
+	if left < right {
+		return left
+	}
+	return right
 }
 
 func sortPods(pods []*corev1.Pod, sortBy, order string) {

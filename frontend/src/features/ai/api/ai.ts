@@ -277,7 +277,7 @@ export function createAIConversation(clusterId: number, data: CreateAIConversati
 }
 
 export function sendAIChat(clusterId: number, data: SendAIChatRequest) {
-  return unwrap<SendAIChatResponse>(http.post(`/api/v1/clusters/${clusterId}/ai/chat`, data))
+  return unwrap<SendAIChatResponse>(http.post(`/api/v1/clusters/${clusterId}/ai/chat`, data, { timeout: 120_000 }))
 }
 
 export function createAIActionProposal(clusterId: number, data: CreateAIActionProposalRequest) {

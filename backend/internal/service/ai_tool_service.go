@@ -27,17 +27,17 @@ type AIToolContextRequest struct {
 }
 
 type AIToolCallItem struct {
-	ID            uint64         `json:"id"`
-	MessageID     *uint64        `json:"message_id,omitempty"`
-	ToolName      string         `json:"tool_name"`
-	ToolKind      string         `json:"tool_kind"`
-	Status        string         `json:"status"`
-	RiskLevel     string         `json:"risk_level"`
-	ConfirmLevel  string         `json:"confirm_level"`
-	ResultSummary string         `json:"result_summary"`
-	Result        model.JSONMap  `json:"result,omitempty"`
-	ErrorMessage  string         `json:"error_message,omitempty"`
-	CreatedAt     string         `json:"created_at"`
+	ID            uint64        `json:"id"`
+	MessageID     *uint64       `json:"message_id,omitempty"`
+	ToolName      string        `json:"tool_name"`
+	ToolKind      string        `json:"tool_kind"`
+	Status        string        `json:"status"`
+	RiskLevel     string        `json:"risk_level"`
+	ConfirmLevel  string        `json:"confirm_level"`
+	ResultSummary string        `json:"result_summary"`
+	Result        model.JSONMap `json:"result,omitempty"`
+	ErrorMessage  string        `json:"error_message,omitempty"`
+	CreatedAt     string        `json:"created_at"`
 }
 
 type AIToolService struct {
@@ -144,6 +144,21 @@ func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContex
 
 	namespace := strings.TrimSpace(req.Namespace)
 	if namespace != "" {
+		run("namespace.health", map[string]any{
+			"cluster_id": req.ClusterID,
+			"namespace":  namespace,
+		}, func(ctx context.Context) (string, any, error) {
+			result, err := s.k8sSvc.GetNamespaceHealth(ctx, req.ClusterID, namespace)
+			if err != nil {
+				return "", nil, err
+			}
+			counts, _ := result["pod_counts"].(map[string]int)
+			abnormalCount := counts["abnormal"]
+			warningEventCount, _ := result["warning_event_count"].(int)
+			summary := fmt.Sprintf("Namespace %s 检测到 %d 个异常 Pod、%d 条 Warning 事件", namespace, abnormalCount, warningEventCount)
+			return summary, result, nil
+		})
+
 		run("namespace.summary", map[string]any{
 			"cluster_id": req.ClusterID,
 			"namespace":  namespace,
