@@ -27,9 +27,9 @@ func (s *ClusterReadModelService) GetClusterHealth(ctx context.Context, clusterI
 		return AIToolResult{}, err
 	}
 	evidence := model.JSONMap{
-		"api_ok":     apiOK,
-		"node_ready": nodeReady,
-		"node_total": nodeTotal,
+		"api_ok":      apiOK,
+		"node_ready":  nodeReady,
+		"node_total":  nodeTotal,
 		"k8s_version": version,
 	}
 	rawRef := model.JSONMap{
@@ -205,7 +205,7 @@ func (s *ResourceInspectionService) InspectPod(ctx context.Context, clusterID ui
 		summary = fmt.Sprintf("Read pod %s/%s object information and recent logs", ns, podName)
 	}
 	return AIToolResult{
-		Summary: summary,
+		Summary:  summary,
 		Evidence: evidence,
 		RawRef: model.JSONMap{
 			"cluster_id": clusterID,
@@ -240,7 +240,7 @@ func (s *ResourceInspectionService) InspectNode(ctx context.Context, clusterID u
 		evidence["events_error"] = evErr.Error()
 	}
 	return AIToolResult{
-		Summary: summary,
+		Summary:  summary,
 		Evidence: evidence,
 		RawRef: model.JSONMap{
 			"cluster_id": clusterID,
@@ -275,7 +275,7 @@ func (s *ResourceInspectionService) InspectDeployment(ctx context.Context, clust
 		evidence["rollout_history_error"] = historyErr.Error()
 	}
 	return AIToolResult{
-		Summary: summary,
+		Summary:  summary,
 		Evidence: evidence,
 		RawRef: model.JSONMap{
 			"cluster_id": clusterID,
@@ -323,7 +323,7 @@ func (s *ResourceInspectionService) ExportResourceYAML(ctx context.Context, clus
 		summary = fmt.Sprintf("Exported %s %s/%s YAML with masking", resKind, ns, resName)
 	}
 	return AIToolResult{
-		Summary: summary,
+		Summary:  summary,
 		Evidence: evidence,
 		RawRef: model.JSONMap{
 			"cluster_id": clusterID,
@@ -334,4 +334,3 @@ func (s *ResourceInspectionService) ExportResourceYAML(ctx context.Context, clus
 		},
 	}, nil
 }
-

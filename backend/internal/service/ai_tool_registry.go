@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -12,7 +11,7 @@ import (
 )
 
 type AIToolResult struct {
-	Summary string        `json:"summary"`
+	Summary  string        `json:"summary"`
 	Evidence model.JSONMap `json:"evidence,omitempty"`
 	RawRef   model.JSONMap `json:"raw_ref,omitempty"`
 }
@@ -46,105 +45,105 @@ func NewAIToolRegistry(
 	}
 
 	r.register(AIToolDefinition{
-		Name:        "cluster.health",
-		Category:    "query",
-		Description: "Cluster health overview",
-		RequiredPermissions: []string{"k8s:read"},
-		RiskLevel:   "low",
-		ConfirmLevel: "single",
-		Timeout:     10 * time.Second,
+		Name:                "cluster.health",
+		Category:            "query",
+		Description:         "Cluster health overview",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             10 * time.Second,
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
 			return clusterSvc.GetClusterHealth(ctx, req.ClusterID)
 		},
 	})
 
 	r.register(AIToolDefinition{
-		Name:        "cluster.inventory",
-		Category:    "query",
-		Description: "Cluster inventory snapshot",
-		RequiredPermissions: []string{"k8s:read"},
-		RiskLevel:   "low",
-		ConfirmLevel: "single",
-		Timeout:     15 * time.Second,
+		Name:                "cluster.inventory",
+		Category:            "query",
+		Description:         "Cluster inventory snapshot",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             15 * time.Second,
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
 			return clusterSvc.GetClusterInventory(ctx, req.ClusterID)
 		},
 	})
 
 	r.register(AIToolDefinition{
-		Name:        "namespace.health",
-		Category:    "query",
-		Description: "Namespace health diagnostics",
-		RequiredPermissions: []string{"namespace:read"},
-		RiskLevel:   "low",
-		ConfirmLevel: "single",
-		Timeout:     15 * time.Second,
+		Name:                "namespace.health",
+		Category:            "query",
+		Description:         "Namespace health diagnostics",
+		RequiredPermissions: []string{"ai:tool_exec", "namespace:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             15 * time.Second,
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
 			return namespaceSvc.GetNamespaceHealth(ctx, req.ClusterID, req.Namespace)
 		},
 	})
 
 	r.register(AIToolDefinition{
-		Name:        "namespace.summary",
-		Category:    "query",
-		Description: "Namespace resource summary",
-		RequiredPermissions: []string{"namespace:read"},
-		RiskLevel:   "low",
-		ConfirmLevel: "single",
-		Timeout:     15 * time.Second,
+		Name:                "namespace.summary",
+		Category:            "query",
+		Description:         "Namespace resource summary",
+		RequiredPermissions: []string{"ai:tool_exec", "namespace:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             15 * time.Second,
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
 			return namespaceSvc.GetNamespaceResourceSummary(ctx, req.ClusterID, req.Namespace)
 		},
 	})
 
 	r.register(AIToolDefinition{
-		Name:        "pod.inspect",
-		Category:    "inspect",
-		Description: "Inspect pod details and recent logs",
-		RequiredPermissions: []string{"k8s:read"},
-		RiskLevel:   "medium",
-		ConfirmLevel: "single",
-		Timeout:     20 * time.Second,
+		Name:                "pod.inspect",
+		Category:            "inspect",
+		Description:         "Inspect pod details and recent logs",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "medium",
+		ConfirmLevel:        "single",
+		Timeout:             20 * time.Second,
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
 			return inspectionSvc.InspectPod(ctx, req.ClusterID, req.Namespace, req.ResourceName)
 		},
 	})
 
 	r.register(AIToolDefinition{
-		Name:        "node.inspect",
-		Category:    "inspect",
-		Description: "Inspect node details and related events",
-		RequiredPermissions: []string{"k8s:read"},
-		RiskLevel:   "medium",
-		ConfirmLevel: "single",
-		Timeout:     20 * time.Second,
+		Name:                "node.inspect",
+		Category:            "inspect",
+		Description:         "Inspect node details and related events",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "medium",
+		ConfirmLevel:        "single",
+		Timeout:             20 * time.Second,
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
 			return inspectionSvc.InspectNode(ctx, req.ClusterID, req.ResourceName)
 		},
 	})
 
 	r.register(AIToolDefinition{
-		Name:        "deployment.inspect",
-		Category:    "inspect",
-		Description: "Inspect deployment details and rollout history",
-		RequiredPermissions: []string{"k8s:read"},
-		RiskLevel:   "medium",
-		ConfirmLevel: "single",
-		Timeout:     20 * time.Second,
+		Name:                "deployment.inspect",
+		Category:            "inspect",
+		Description:         "Inspect deployment details and rollout history",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "medium",
+		ConfirmLevel:        "single",
+		Timeout:             20 * time.Second,
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
 			return inspectionSvc.InspectDeployment(ctx, req.ClusterID, req.Namespace, req.ResourceName)
 		},
 	})
 
 	r.register(AIToolDefinition{
-		Name:        "resource.yaml",
-		Category:    "export",
-		Description: "Export resource YAML with redaction policy",
-		RequiredPermissions: []string{"k8s:read"},
-		RiskLevel:   "medium",
-		ConfirmLevel: "single",
-		Timeout:     20 * time.Second,
-		RedactionPolicy: "mask_sensitive",
+		Name:                "resource.yaml",
+		Category:            "export",
+		Description:         "Export resource YAML with redaction policy",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "medium",
+		ConfirmLevel:        "single",
+		Timeout:             20 * time.Second,
+		RedactionPolicy:     "mask_sensitive",
 		Handler: func(ctx context.Context, req AIToolContextRequest, input map[string]any) (AIToolResult, error) {
 			kind := strings.TrimSpace(fmt.Sprint(input["kind"]))
 			namespace := strings.TrimSpace(fmt.Sprint(input["namespace"]))
@@ -268,4 +267,3 @@ func toolEvidenceMap(result AIToolResult) model.JSONMap {
 	}
 	return out
 }
-

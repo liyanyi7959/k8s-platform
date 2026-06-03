@@ -12,11 +12,11 @@ import (
 )
 
 type AIController struct {
-	providerSvc     *service.AIProviderService
+	providerSvc      *service.AIProviderService
 	routeSettingsSvc *service.AIRouteSettingsService
-	conversationSvc *service.AIConversationService
-	chatSvc         *service.AIChatService
-	actionSvc       *service.AIActionService
+	conversationSvc  *service.AIConversationService
+	chatSvc          *service.AIChatService
+	actionSvc        *service.AIActionService
 }
 
 func NewAIController(
@@ -27,11 +27,11 @@ func NewAIController(
 	actionSvc *service.AIActionService,
 ) *AIController {
 	return &AIController{
-		providerSvc:     providerSvc,
+		providerSvc:      providerSvc,
 		routeSettingsSvc: routeSettingsSvc,
-		conversationSvc: conversationSvc,
-		chatSvc:         chatSvc,
-		actionSvc:       actionSvc,
+		conversationSvc:  conversationSvc,
+		chatSvc:          chatSvc,
+		actionSvc:        actionSvc,
 	}
 }
 
@@ -243,6 +243,7 @@ func (ctl *AIController) SendChat(c *gin.Context) {
 			userID = uint64(claims.UserID)
 		}
 		username = strings.TrimSpace(claims.Username)
+		req.UserPerms = append([]string(nil), claims.Perms...)
 	}
 
 	data, err := ctl.chatSvc.SendMessage(c.Request.Context(), userID, username, req)

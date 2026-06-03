@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"k8s-platform-backend/internal/model"
 )
@@ -177,18 +178,16 @@ func (s *AIToolService) executeRegisteredTool(
 		return AIToolCallItem{}, ""
 	}
 
-	if len(req.UserPerms) > 0 {
-		if err := toolPermissionErr(def.RequiredPermissions, req.UserPerms, toolName); err != nil {
-			row.Status = "failed"
-			row.ErrorMessage = err.Error()
-			row.ResultSummary = err.Error()
-			_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
-				"status":         row.Status,
-				"error_message":  row.ErrorMessage,
-				"result_summary": row.ResultSummary,
-			}).Error
-			return buildAIToolCallItem(row), ""
-		}
+	if err := toolPermissionErr(def.RequiredPermissions, req.UserPerms, toolName); err != nil {
+		row.Status = "failed"
+		row.ErrorMessage = err.Error()
+		row.ResultSummary = err.Error()
+		_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
+			"status":         row.Status,
+			"error_message":  row.ErrorMessage,
+			"result_summary": row.ResultSummary,
+		}).Error
+		return buildAIToolCallItem(row), ""
 	}
 
 	result, err := def.Handler(ctx, req, params)
@@ -281,4 +280,3 @@ func aiGenericNamespacedGVR(kind string) (schema.GroupVersionResource, bool) {
 		return schema.GroupVersionResource{}, false
 	}
 }
-

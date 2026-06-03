@@ -68,4 +68,3 @@ func maskSecretYAMLValue(v any) any {
 		return v
 	}
 }
-

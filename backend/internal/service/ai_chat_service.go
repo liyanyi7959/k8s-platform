@@ -22,16 +22,17 @@ var (
 )
 
 type AIChatRequest struct {
-	ClusterID      uint64  `json:"-"`
-	ConversationID *uint64 `json:"conversation_id"`
-	Message        string  `json:"message"`
-	AssistantMode  string  `json:"assistant_mode"`
-	ProviderID     *uint64 `json:"provider_id"`
-	ModelID        *uint64 `json:"model_id"`
-	PreferModel    string  `json:"prefer_model"`
-	Namespace      string  `json:"namespace"`
-	ResourceKind   string  `json:"resource_kind"`
-	ResourceName   string  `json:"resource_name"`
+	ClusterID      uint64   `json:"-"`
+	ConversationID *uint64  `json:"conversation_id"`
+	Message        string   `json:"message"`
+	AssistantMode  string   `json:"assistant_mode"`
+	ProviderID     *uint64  `json:"provider_id"`
+	ModelID        *uint64  `json:"model_id"`
+	PreferModel    string   `json:"prefer_model"`
+	Namespace      string   `json:"namespace"`
+	ResourceKind   string   `json:"resource_kind"`
+	ResourceName   string   `json:"resource_name"`
+	UserPerms      []string `json:"-"`
 }
 
 type AIChatResponse struct {
@@ -106,6 +107,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		ClusterID:      req.ClusterID,
 		UserID:         userID,
 		Username:       username,
+		UserPerms:      req.UserPerms,
 		Query:          message,
 		Namespace:      strings.TrimSpace(req.Namespace),
 		ResourceKind:   strings.TrimSpace(req.ResourceKind),
