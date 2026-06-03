@@ -12,13 +12,8 @@
           </div>
         </div>
         <p>
-          把会话、证据采集、建议动作和人工确认收敛到一条连续排障链路里。当前页面会优先自动做只读取证，所有变更都保持人工确认，再执行落地。
+          继续追问、采集只读证据并人工确认提案，保持一条紧凑的排障链路。
         </p>
-        <div class="hero-pills">
-          <span class="hero-pill">会话留痕</span>
-          <span class="hero-pill">只读取证</span>
-          <span class="hero-pill">变更强制确认</span>
-        </div>
       </div>
 
       <div class="topbar-metrics">
@@ -27,7 +22,7 @@
             <el-icon><Monitor /></el-icon>
           </span>
           <div>
-            <span>当前集群</span>
+            <span>集群</span>
             <strong>{{ currentClusterLabel }}</strong>
           </div>
         </div>
@@ -36,8 +31,8 @@
             <el-icon><Collection /></el-icon>
           </span>
           <div>
-            <span>会话数量</span>
-            <strong>{{ conversationResult.total }}</strong>
+            <span>会话</span>
+            <strong>{{ conversationResult.total }} 条</strong>
           </div>
         </div>
         <div class="metric-pill metric-pill--warn">
@@ -45,8 +40,8 @@
             <el-icon><Operation /></el-icon>
           </span>
           <div>
-            <span>执行策略</span>
-            <strong>只读自动采集 / 变更强制确认</strong>
+            <span>策略</span>
+            <strong>只读采集 / 人工确认</strong>
           </div>
         </div>
       </div>
@@ -1409,9 +1404,9 @@ onMounted(async () => {
   --ai-warm: #d97706;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   min-height: 100%;
-  padding: 20px;
+  padding: 16px;
   background:
     radial-gradient(circle at top right, rgba(191, 219, 254, 0.18), transparent 24%),
     radial-gradient(circle at top left, rgba(253, 230, 138, 0.14), transparent 22%),
@@ -1425,24 +1420,24 @@ onMounted(async () => {
 .composer-card {
   border: 1px solid var(--ai-border);
   background: var(--ai-card);
-  border-radius: 20px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
 }
 
 .topbar-card {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 28px;
-  background: linear-gradient(135deg, #ffffff, #f7fbff);
+  gap: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #ffffff, #fbfdff);
 }
 
 .eyebrow,
 .detail-kicker {
-  margin: 0 0 10px;
-  font-size: 12px;
-  letter-spacing: 0.14em;
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ai-warm);
 }
@@ -1464,13 +1459,13 @@ onMounted(async () => {
 }
 
 .hero-title__icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #60a5fa, #2563eb);
   color: #ffffff;
-  font-size: 22px;
-  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.24);
+  font-size: 18px;
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.18);
 }
 
 .panel-title__icon {
@@ -1509,7 +1504,8 @@ onMounted(async () => {
 }
 
 .topbar-copy h1 {
-  font-size: 34px;
+  font-size: 20px;
+  line-height: 1.3;
 }
 
 .topbar-copy p,
@@ -1529,53 +1525,45 @@ onMounted(async () => {
   line-height: 1.7;
 }
 
+.topbar-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
 .topbar-copy p {
-  max-width: 760px;
-  margin: 14px 0 0;
-}
-
-.hero-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.hero-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #f8fafc;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  color: var(--ai-muted);
-  font-size: 12px;
-  font-weight: 600;
+  max-width: 720px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .topbar-metrics {
-  display: grid;
-  gap: 12px;
-  min-width: 300px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
 }
 
 .metric-pill {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
-  border-radius: 18px;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #ffffff;
+  background: #f8fafc;
+  min-height: 0;
 }
 
 .metric-pill__icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
   background: var(--ai-primary-soft);
   color: var(--ai-primary);
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .metric-pill span,
@@ -1586,15 +1574,20 @@ onMounted(async () => {
 .conversation-item__meta span,
 .suggestion-facts span {
   display: inline-flex;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ai-muted);
 }
 
 .metric-pill strong,
 .status-card strong {
   display: block;
-  margin-top: 4px;
+  margin-top: 1px;
   color: var(--ai-text);
+  line-height: 1.35;
+}
+
+.metric-pill > div {
+  min-width: 0;
 }
 
 .metric-pill--warn {
@@ -1637,8 +1630,8 @@ onMounted(async () => {
 
 .workspace {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 288px minmax(0, 1fr);
+  gap: 16px;
   min-height: 0;
   flex: 1;
 }
@@ -1653,6 +1646,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding: 16px;
 }
 
 .sidebar-head,
@@ -1681,18 +1675,28 @@ onMounted(async () => {
   color: var(--ai-text);
 }
 
+.sidebar-head h2 {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.sidebar-head p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .sidebar-shortcuts {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 8px;
-  margin: 18px 0 14px;
+  margin: 12px 0 10px;
 }
 
 .shortcut-chip {
   width: 100%;
-  padding: 14px 16px;
+  padding: 10px 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
+  border-radius: 14px;
   background: linear-gradient(180deg, #fbfcfe, #ffffff);
   text-align: left;
   cursor: pointer;
@@ -1711,12 +1715,16 @@ onMounted(async () => {
   display: block;
   font-weight: 600;
   color: var(--ai-text);
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .shortcut-chip small {
   display: block;
-  margin-top: 6px;
+  margin-top: 3px;
   color: var(--ai-muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .conversation-scroll {
@@ -1726,14 +1734,14 @@ onMounted(async () => {
 
 .conversation-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .conversation-item {
   width: 100%;
-  padding: 16px;
+  padding: 12px 14px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
+  border-radius: 14px;
   background: #ffffff;
   cursor: pointer;
   text-align: left;
@@ -1744,10 +1752,10 @@ onMounted(async () => {
 .conversation-item::before {
   content: '';
   position: absolute;
-  top: 14px;
-  left: 14px;
-  width: 8px;
-  height: 8px;
+  top: 12px;
+  left: 12px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   background: rgba(64, 158, 255, 0.18);
 }
@@ -1759,18 +1767,31 @@ onMounted(async () => {
 
 .conversation-item__head strong {
   color: var(--ai-text);
-  padding-left: 16px;
+  padding-left: 12px;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .conversation-item p {
-  margin: 10px 0 12px;
-  min-height: 46px;
+  margin: 8px 0 10px;
+  min-height: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.conversation-item__meta {
+  font-size: 11px;
 }
 
 .main-column {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   min-height: 0;
 }
 
@@ -2016,9 +2037,8 @@ onMounted(async () => {
 }
 
 .composer-card {
-  position: sticky;
-  bottom: 0;
-  padding-bottom: 18px;
+  position: static;
+  padding-bottom: 0;
 }
 
 .composer-head {
@@ -2186,6 +2206,7 @@ onMounted(async () => {
 @media (max-width: 1280px) {
   .topbar-card {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .workspace {
@@ -2219,7 +2240,7 @@ onMounted(async () => {
   }
 
   .topbar-card {
-    padding: 22px;
+    padding: 14px;
   }
 
   .topbar-metrics,
@@ -2283,7 +2304,7 @@ onMounted(async () => {
 
 @media (max-width: 640px) {
   .topbar-copy h1 {
-    font-size: 26px;
+    font-size: 18px;
   }
 
   .conversation-item__head,
