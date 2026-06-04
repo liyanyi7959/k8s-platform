@@ -165,6 +165,8 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 	}
 
 	ready, total := 0, 0
+	apiOK := false
+	k8sVersion := ""
 	podsTotal, podsRunning, podsPending, podsFailed, podsSucceeded := 0, 0, 0, 0, 0
 	nsPods := map[string]int{}
 
@@ -190,12 +192,17 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 		if err != nil {
 			return
 		}
-		if _, err := cs.Discovery().ServerVersion(); err != nil {
+		version, err := cs.Discovery().ServerVersion()
+		if err != nil {
 			return
 		}
 		nodes, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		if err != nil {
 			mu.Lock()
+			apiOK = true
+			if version != nil {
+				k8sVersion = strings.TrimSpace(version.GitVersion)
+			}
 			total = 0
 			ready = 0
 			mu.Unlock()
@@ -208,6 +215,10 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 			}
 		}
 		mu.Lock()
+		apiOK = true
+		if version != nil {
+			k8sVersion = strings.TrimSpace(version.GitVersion)
+		}
 		nodeItems = nodes.Items
 		total = len(nodes.Items)
 		ready = r
@@ -464,7 +475,13 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 	}
 
 	out := map[string]any{
-		"cluster": map[string]any{"id": cluster.ID, "name": cluster.Name, "status": cluster.Status},
+		"cluster": map[string]any{
+			"id":          cluster.ID,
+			"name":        cluster.Name,
+			"status":      cluster.Status,
+			"api_ok":      apiOK,
+			"k8s_version": k8sVersion,
+		},
 		"stats": map[string]any{
 			"nodes": map[string]any{"total": total, "ready": ready},
 			"pods": map[string]any{

@@ -23,7 +23,7 @@ func TestBuildAIAutoDiagnosticsPlan(t *testing.T) {
 			req: AIChatRequest{
 				Namespace: "blueking",
 			},
-			message: "做一个 k8s 集群的巡检会从哪些方面进行呢？",
+			message: "做一个 k8s 集群巡检会从哪些方面进行？",
 			enabled: false,
 		},
 		{
@@ -35,6 +35,29 @@ func TestBuildAIAutoDiagnosticsPlan(t *testing.T) {
 				ResourceName: "api-server",
 			},
 			message: "帮我看一下这个 deployment 现在是否健康",
+			enabled: true,
+		},
+		{
+			name: "chat mode collects diagnostics for namespace inspection request",
+			mode: "chat",
+			req: AIChatRequest{
+				Namespace: "blueking",
+			},
+			message: "针对当前 blueking 命名空间做一次完整巡检，包含资源个数和 pod 资源使用情况",
+			enabled: true,
+		},
+		{
+			name:    "chat mode collects diagnostics for cluster overview request",
+			mode:    "chat",
+			req:     AIChatRequest{},
+			message: "帮我看下当前集群的整体状态和资源使用情况",
+			enabled: true,
+		},
+		{
+			name:    "chat mode collects diagnostics for control plane request",
+			mode:    "chat",
+			req:     AIChatRequest{},
+			message: "检查一下当前集群控制面和证书风险",
 			enabled: true,
 		},
 	}

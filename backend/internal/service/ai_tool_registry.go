@@ -41,13 +41,26 @@ func NewAIToolRegistry(
 ) *AIToolRegistry {
 	r := &AIToolRegistry{
 		defs:  map[string]AIToolDefinition{},
-		order: make([]string, 0, 8),
+		order: make([]string, 0, 12),
 	}
+
+	r.register(AIToolDefinition{
+		Name:                "cluster.overview",
+		Category:            "query",
+		Description:         "Platform cluster overview reused from dashboard capability",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             15 * time.Second,
+		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
+			return clusterSvc.GetClusterOverview(ctx, req.ClusterID)
+		},
+	})
 
 	r.register(AIToolDefinition{
 		Name:                "cluster.health",
 		Category:            "query",
-		Description:         "Cluster health overview",
+		Description:         "Cluster API and workload health from platform overview",
 		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
 		RiskLevel:           "low",
 		ConfirmLevel:        "single",
@@ -60,13 +73,39 @@ func NewAIToolRegistry(
 	r.register(AIToolDefinition{
 		Name:                "cluster.inventory",
 		Category:            "query",
-		Description:         "Cluster inventory snapshot",
+		Description:         "Cluster overview alias for backward compatibility",
 		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
 		RiskLevel:           "low",
 		ConfirmLevel:        "single",
 		Timeout:             15 * time.Second,
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
 			return clusterSvc.GetClusterInventory(ctx, req.ClusterID)
+		},
+	})
+
+	r.register(AIToolDefinition{
+		Name:                "cluster.certificate_risks",
+		Category:            "query",
+		Description:         "Control plane and cluster certificate risk overview from dashboard capability",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             15 * time.Second,
+		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
+			return clusterSvc.GetClusterCertificateRisks(ctx, req.ClusterID)
+		},
+	})
+
+	r.register(AIToolDefinition{
+		Name:                "namespace.inspect",
+		Category:            "query",
+		Description:         "Full namespace inspection with health, counts and pod metrics",
+		RequiredPermissions: []string{"ai:tool_exec", "namespace:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             20 * time.Second,
+		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
+			return namespaceSvc.GetNamespaceInspection(ctx, req.ClusterID, req.Namespace)
 		},
 	})
 
@@ -132,6 +171,23 @@ func NewAIToolRegistry(
 		Timeout:             20 * time.Second,
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
 			return inspectionSvc.InspectDeployment(ctx, req.ClusterID, req.Namespace, req.ResourceName)
+		},
+	})
+
+	r.register(AIToolDefinition{
+		Name:                "resource.inspect",
+		Category:            "inspect",
+		Description:         "Inspect a supported Kubernetes resource with masking policy",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "medium",
+		ConfirmLevel:        "single",
+		Timeout:             20 * time.Second,
+		RedactionPolicy:     "mask_sensitive",
+		Handler: func(ctx context.Context, req AIToolContextRequest, input map[string]any) (AIToolResult, error) {
+			kind := strings.TrimSpace(fmt.Sprint(input["kind"]))
+			namespace := strings.TrimSpace(fmt.Sprint(input["namespace"]))
+			name := strings.TrimSpace(fmt.Sprint(input["name"]))
+			return inspectionSvc.InspectResource(ctx, req.ClusterID, kind, namespace, name, exportPolicySvc)
 		},
 	})
 

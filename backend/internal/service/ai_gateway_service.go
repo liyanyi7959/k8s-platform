@@ -286,7 +286,7 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "当前 AI 提供商未配置 API Key")
 	}
 
-	systemPrompt := buildAISystemPrompt(req.AssistantMode)
+	systemPrompt := buildAISystemPromptV2(req.AssistantMode)
 	messages := make([]map[string]string, 0, len(req.Messages)+2)
 	messages = append(messages, map[string]string{
 		"role":    "system",
@@ -301,6 +301,17 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 		messages = append(messages, map[string]string{
 			"role":    "system",
 			"content": "当前没有拿到任何平台诊断证据。不要声称已经看到集群状态、Pod 状态、事件、日志或具体资源异常；请明确说明证据不足，并只给出下一步排查建议。",
+		})
+	}
+	if strings.TrimSpace(req.DiagnosticNotes) == "" {
+		messages = append(messages, map[string]string{
+			"role":    "system",
+			"content": "No platform diagnostic evidence was collected for this round. Do not pretend you saw cluster state. Say that this round lacks evidence, ask to narrow scope or retry collection, and only suggest manual commands when the requested data is outside the platform's current read capabilities.",
+		})
+	} else {
+		messages = append(messages, map[string]string{
+			"role":    "system",
+			"content": "Treat the provided diagnostic notes as platform-collected evidence. If the notes already contain concrete counts, lists, states, logs, metrics, or events, answer with them directly and do not fall back to generic kubectl instructions.",
 		})
 	}
 	for _, item := range req.Messages {
@@ -386,6 +397,14 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 			LatencyMS:      int(time.Since(reqStart).Milliseconds()),
 		},
 	}, nil
+}
+
+func buildAISystemPromptV2(mode string) string {
+	base := "You are the built-in AI assistant of a Kubernetes management platform. The platform backend can directly collect live, read-only cluster evidence for the current scope. When evidence is provided, treat it as current platform data. State confirmed facts directly, separate them from inference, and do not say that you cannot access the cluster. Do not ask the user to run kubectl for data that the platform has already collected. If counts, lists, states, logs, metrics, events, or rollout details appear in evidence, answer with them directly. Only say evidence is insufficient when the evidence for this round is truly missing, partial, or failed."
+	if strings.TrimSpace(mode) == "chat" {
+		return base + " Current mode is general assistance. Keep answers concise but evidence-based. You may explain, compare, and summarize, but you must still respect platform permissions and must not imply direct write execution."
+	}
+	return base + " Current mode is fault diagnosis. Prefer an answer structure of issue summary, key evidence, likely causes, impact scope, and next step. For write actions, only provide recommendations or proposals and never imply that a risky change has already been executed."
 }
 
 func buildAISystemPrompt(mode string) string {

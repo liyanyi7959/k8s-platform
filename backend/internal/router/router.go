@@ -65,7 +65,7 @@ func New(d Deps) (*gin.Engine, error) {
 		aiRouteSettingsSvc := service.NewAIRouteSettingsService(d.DB)
 		aiGatewaySvc := service.NewAIGatewayService(d.DB, d.EncryptionKey)
 		aiConversationSvc := service.NewAIConversationService(d.DB)
-		clusterReadModelSvc := service.NewClusterReadModelService(k8sSvc)
+		clusterReadModelSvc := service.NewClusterReadModelService(dashboardSvc)
 		namespaceDiagnosisSvc := service.NewNamespaceDiagnosisService(k8sSvc)
 		resourceInspectionSvc := service.NewResourceInspectionService(k8sSvc)
 		resourceExportPolicySvc := service.NewResourceExportPolicyService()

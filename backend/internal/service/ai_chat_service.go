@@ -571,7 +571,10 @@ func shouldRunChatDiagnostics(req AIChatRequest, message string) bool {
 	if kind != "" && name != "" {
 		return true
 	}
-	if namespace != "" && looksLikeScopedClusterQuestion(trimmedMessage) {
+	if namespace != "" && (looksLikeScopedClusterQuestion(trimmedMessage) || aiNeedsBroadInspection(trimmedMessage)) {
+		return true
+	}
+	if namespace == "" && (aiNeedsClusterInspection(trimmedMessage) || aiNeedsBroadInspection(trimmedMessage) || aiNeedsControlPlaneInspection(trimmedMessage)) {
 		return true
 	}
 	return false
@@ -597,6 +600,94 @@ func looksLikeScopedClusterQuestion(message string) bool {
 	}
 	lower := strings.ToLower(strings.TrimSpace(message))
 	return containsAny(lower,
-		"check", "inspect", "diagnose", "analyze", "look into", "current cluster", "this cluster", "this namespace", "show me",
+		"check", "inspect", "diagnose", "analyze", "look into", "current cluster", "this cluster", "this namespace", "show me", "health", "usage", "metrics",
 	)
+}
+
+func aiNeedsClusterInspection(message string) bool {
+	text := strings.ToLower(strings.TrimSpace(message))
+	if text == "" {
+		return false
+	}
+	return containsAny(text,
+		"current cluster",
+		"this cluster",
+		"cluster status",
+		"cluster overview",
+		"cluster health",
+	) || containsAny(
+		message,
+		"当前集群",
+		"这个集群",
+		"本集群",
+		"集群状态",
+		"集群概览",
+		"集群健康",
+	)
+}
+
+func aiNeedsControlPlaneInspection(message string) bool {
+	text := strings.ToLower(strings.TrimSpace(message))
+	if text == "" {
+		return false
+	}
+	return containsAny(text,
+		"control plane",
+		"apiserver",
+		"api server",
+		"controller manager",
+		"scheduler",
+		"etcd",
+		"certificate",
+		"cert expiry",
+	) || containsAny(
+		message,
+		"控制面",
+		"api server",
+		"apiserver",
+		"调度器",
+		"controller-manager",
+		"etcd",
+		"证书",
+		"证书风险",
+		"证书过期",
+	)
+}
+
+func aiNeedsBroadInspection(message string) bool {
+	text := strings.ToLower(strings.TrimSpace(message))
+	if text == "" {
+		return false
+	}
+	return containsAny(text,
+		"inspection",
+		"full inspection",
+		"full check",
+		"health check",
+		"resource usage",
+		"metrics",
+		"usage",
+		"inventory",
+	) || containsAny(
+		message,
+		"巡检",
+		"巡查",
+		"完整检查",
+		"完整巡检",
+		"资源使用",
+		"使用情况",
+		"资源个数",
+		"资源数量",
+		"指标",
+		"健康检查",
+		"排查",
+	)
+}
+
+func aiNeedsResourceYAML(message string) bool {
+	text := strings.ToLower(strings.TrimSpace(message))
+	if text == "" {
+		return false
+	}
+	return containsAny(text, "yaml", "manifest", "spec") || containsAny(message, "配置", "清单", "导出")
 }

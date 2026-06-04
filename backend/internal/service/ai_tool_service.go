@@ -74,27 +74,47 @@ func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContex
 		}
 	}
 
+	query := strings.TrimSpace(req.Query)
+	namespace := strings.TrimSpace(req.Namespace)
+	kind := strings.TrimSpace(req.ResourceKind)
+	name := strings.TrimSpace(req.ResourceName)
+	broadInspection := aiNeedsBroadInspection(query)
+	clusterInspection := aiNeedsClusterInspection(query)
+	controlPlaneInspection := aiNeedsControlPlaneInspection(query)
+	yamlIntent := aiNeedsResourceYAML(query)
+
 	run("cluster.health", map[string]any{
 		"cluster_id": req.ClusterID,
 	})
-	run("cluster.inventory", map[string]any{
-		"cluster_id": req.ClusterID,
-	})
-
-	namespace := strings.TrimSpace(req.Namespace)
-	if namespace != "" {
-		run("namespace.health", map[string]any{
+	if namespace == "" || broadInspection || clusterInspection {
+		run("cluster.overview", map[string]any{
 			"cluster_id": req.ClusterID,
-			"namespace":  namespace,
 		})
-		run("namespace.summary", map[string]any{
+	}
+	if namespace == "" && (controlPlaneInspection || broadInspection) {
+		run("cluster.certificate_risks", map[string]any{
 			"cluster_id": req.ClusterID,
-			"namespace":  namespace,
 		})
 	}
 
-	kind := strings.TrimSpace(req.ResourceKind)
-	name := strings.TrimSpace(req.ResourceName)
+	if namespace != "" {
+		if broadInspection {
+			run("namespace.inspect", map[string]any{
+				"cluster_id": req.ClusterID,
+				"namespace":  namespace,
+			})
+		} else {
+			run("namespace.health", map[string]any{
+				"cluster_id": req.ClusterID,
+				"namespace":  namespace,
+			})
+			run("namespace.summary", map[string]any{
+				"cluster_id": req.ClusterID,
+				"namespace":  namespace,
+			})
+		}
+	}
+
 	if kind != "" && name != "" {
 		switch strings.ToLower(kind) {
 		case "pod":
@@ -112,7 +132,12 @@ func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContex
 				"name":      name,
 			})
 		default:
-			if namespace != "" {
+			run("resource.inspect", map[string]any{
+				"kind":      kind,
+				"namespace": namespace,
+				"name":      name,
+			})
+			if yamlIntent {
 				run("resource.yaml", map[string]any{
 					"kind":      kind,
 					"namespace": namespace,
@@ -272,21 +297,109 @@ func aiObjectMetaString(item any, key string) string {
 	return strings.TrimSpace(fmt.Sprint(meta[key]))
 }
 
-func aiGenericNamespacedGVR(kind string) (schema.GroupVersionResource, bool) {
+func aiSupportedResourceGVR(kind string) (schema.GroupVersionResource, bool, bool) {
 	switch strings.ToLower(strings.TrimSpace(kind)) {
-	case "service":
-		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}, true
-	case "ingress":
-		return schema.GroupVersionResource{Group: "networking.k8s.io", Version: "v1", Resource: "ingresses"}, true
-	case "configmap":
-		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}, true
-	case "secret":
-		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "secrets"}, true
+	case "namespace":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}, false, true
+	case "node":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}, false, true
+	case "pod":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}, true, true
+	case "deployment":
+		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}, true, true
 	case "statefulset":
-		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}, true
+		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}, true, true
 	case "daemonset":
-		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}, true
+		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}, true, true
+	case "replicaset":
+		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}, true, true
+	case "service":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}, true, true
+	case "ingress":
+		return schema.GroupVersionResource{Group: "networking.k8s.io", Version: "v1", Resource: "ingresses"}, true, true
+	case "ingressclass":
+		return schema.GroupVersionResource{Group: "networking.k8s.io", Version: "v1", Resource: "ingressclasses"}, false, true
+	case "networkpolicy":
+		return schema.GroupVersionResource{Group: "networking.k8s.io", Version: "v1", Resource: "networkpolicies"}, true, true
+	case "configmap":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}, true, true
+	case "secret":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "secrets"}, true, true
+	case "serviceaccount":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "serviceaccounts"}, true, true
+	case "endpoint":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "endpoints"}, true, true
+	case "endpointslice":
+		return schema.GroupVersionResource{Group: "discovery.k8s.io", Version: "v1", Resource: "endpointslices"}, true, true
+	case "lease":
+		return schema.GroupVersionResource{Group: "coordination.k8s.io", Version: "v1", Resource: "leases"}, true, true
+	case "pdb", "poddisruptionbudget":
+		return schema.GroupVersionResource{Group: "policy", Version: "v1", Resource: "poddisruptionbudgets"}, true, true
+	case "role":
+		return schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles"}, true, true
+	case "clusterrole":
+		return schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles"}, false, true
+	case "rolebinding":
+		return schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "rolebindings"}, true, true
+	case "clusterrolebinding":
+		return schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterrolebindings"}, false, true
+	case "hpa", "horizontalpodautoscaler":
+		return schema.GroupVersionResource{Group: "autoscaling", Version: "v2", Resource: "horizontalpodautoscalers"}, true, true
+	case "event":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "events"}, true, true
+	case "pvc", "persistentvolumeclaim":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "persistentvolumeclaims"}, true, true
+	case "pv", "persistentvolume":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "persistentvolumes"}, false, true
+	case "storageclass":
+		return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "storageclasses"}, false, true
+	case "csidriver":
+		return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "csidrivers"}, false, true
+	case "csinode":
+		return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "csinodes"}, false, true
+	case "csistoragecapacity":
+		return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "csistoragecapacities"}, true, true
+	case "volumeattachment":
+		return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "volumeattachments"}, false, true
+	case "volumesnapshot":
+		return schema.GroupVersionResource{Group: "snapshot.storage.k8s.io", Version: "v1", Resource: "volumesnapshots"}, true, true
+	case "volumesnapshotclass":
+		return schema.GroupVersionResource{Group: "snapshot.storage.k8s.io", Version: "v1", Resource: "volumesnapshotclasses"}, false, true
+	case "volumesnapshotcontent":
+		return schema.GroupVersionResource{Group: "snapshot.storage.k8s.io", Version: "v1", Resource: "volumesnapshotcontents"}, false, true
+	case "resourcequota":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "resourcequotas"}, true, true
+	case "limitrange":
+		return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "limitranges"}, true, true
+	case "customresourcedefinition", "crd":
+		return schema.GroupVersionResource{Group: "apiextensions.k8s.io", Version: "v1", Resource: "customresourcedefinitions"}, false, true
+	case "apiservice":
+		return schema.GroupVersionResource{Group: "apiregistration.k8s.io", Version: "v1", Resource: "apiservices"}, false, true
+	case "priorityclass":
+		return schema.GroupVersionResource{Group: "scheduling.k8s.io", Version: "v1", Resource: "priorityclasses"}, false, true
+	case "runtimeclass":
+		return schema.GroupVersionResource{Group: "node.k8s.io", Version: "v1", Resource: "runtimeclasses"}, false, true
+	case "validatingwebhookconfiguration":
+		return schema.GroupVersionResource{Group: "admissionregistration.k8s.io", Version: "v1", Resource: "validatingwebhookconfigurations"}, false, true
+	case "mutatingwebhookconfiguration":
+		return schema.GroupVersionResource{Group: "admissionregistration.k8s.io", Version: "v1", Resource: "mutatingwebhookconfigurations"}, false, true
+	case "validatingadmissionpolicy":
+		return schema.GroupVersionResource{Group: "admissionregistration.k8s.io", Version: "v1", Resource: "validatingadmissionpolicies"}, false, true
+	case "validatingadmissionpolicybinding":
+		return schema.GroupVersionResource{Group: "admissionregistration.k8s.io", Version: "v1", Resource: "validatingadmissionpolicybindings"}, false, true
+	case "job":
+		return schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "jobs"}, true, true
+	case "cronjob":
+		return schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "cronjobs"}, true, true
 	default:
+		return schema.GroupVersionResource{}, false, false
+	}
+}
+
+func aiGenericNamespacedGVR(kind string) (schema.GroupVersionResource, bool) {
+	gvr, namespaced, ok := aiSupportedResourceGVR(kind)
+	if !ok || !namespaced {
 		return schema.GroupVersionResource{}, false
 	}
+	return gvr, true
 }
