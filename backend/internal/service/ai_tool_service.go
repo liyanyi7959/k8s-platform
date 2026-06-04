@@ -63,6 +63,7 @@ func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContex
 
 	items := make([]AIToolCallItem, 0, 6)
 	contextBlocks := make([]string, 0, 6)
+	plan := s.registry.PlanAutoDiagnostics(req)
 
 	run := func(toolName string, params map[string]any) {
 		item, block := s.executeRegisteredTool(ctx, req, toolName, params)
@@ -74,80 +75,18 @@ func (s *AIToolService) RunAutoDiagnostics(ctx context.Context, req AIToolContex
 		}
 	}
 
-	query := strings.TrimSpace(req.Query)
-	namespace := strings.TrimSpace(req.Namespace)
-	kind := strings.TrimSpace(req.ResourceKind)
-	name := strings.TrimSpace(req.ResourceName)
-	broadInspection := aiNeedsBroadInspection(query)
-	clusterInspection := aiNeedsClusterInspection(query)
-	controlPlaneInspection := aiNeedsControlPlaneInspection(query)
-	yamlIntent := aiNeedsResourceYAML(query)
-
-	run("cluster.health", map[string]any{
-		"cluster_id": req.ClusterID,
-	})
-	if namespace == "" || broadInspection || clusterInspection {
-		run("cluster.overview", map[string]any{
-			"cluster_id": req.ClusterID,
-		})
-	}
-	if namespace == "" && (controlPlaneInspection || broadInspection) {
-		run("cluster.certificate_risks", map[string]any{
-			"cluster_id": req.ClusterID,
-		})
-	}
-
-	if namespace != "" {
-		if broadInspection {
-			run("namespace.inspect", map[string]any{
-				"cluster_id": req.ClusterID,
-				"namespace":  namespace,
-			})
-		} else {
-			run("namespace.health", map[string]any{
-				"cluster_id": req.ClusterID,
-				"namespace":  namespace,
-			})
-			run("namespace.summary", map[string]any{
-				"cluster_id": req.ClusterID,
-				"namespace":  namespace,
-			})
-		}
-	}
-
-	if kind != "" && name != "" {
-		switch strings.ToLower(kind) {
-		case "pod":
-			run("pod.inspect", map[string]any{
-				"namespace": namespace,
-				"name":      name,
-			})
-		case "node":
-			run("node.inspect", map[string]any{
-				"name": name,
-			})
-		case "deployment":
-			run("deployment.inspect", map[string]any{
-				"namespace": namespace,
-				"name":      name,
-			})
-		default:
-			run("resource.inspect", map[string]any{
-				"kind":      kind,
-				"namespace": namespace,
-				"name":      name,
-			})
-			if yamlIntent {
-				run("resource.yaml", map[string]any{
-					"kind":      kind,
-					"namespace": namespace,
-					"name":      name,
-				})
-			}
-		}
+	for _, step := range plan {
+		run(step.ToolName, map[string]any(step.Params))
 	}
 
 	return items, strings.Join(contextBlocks, "\n\n"), nil
+}
+
+func (s *AIToolService) ListTools(userPerms []string) []AIToolCatalogItem {
+	if s == nil || s.registry == nil {
+		return nil
+	}
+	return s.registry.ListCatalog(userPerms)
 }
 
 func (s *AIToolService) ListConversationToolCalls(ctx context.Context, conversationID uint64) ([]AIToolCallItem, error) {

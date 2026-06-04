@@ -1,6 +1,7 @@
 // k8s 命名空间相关 API
 import { http } from '@/shared/http/http'
 import type { ApiResponse } from '@/shared/types/api'
+import type { K8sInspectionResult } from './pod'
 
 export type NamespaceResourceSummaryItem = {
   key: string
@@ -40,5 +41,19 @@ export async function getNamespaceResourcesSummary(clusterId: number, ns: string
 
 export async function getNamespaceYaml(clusterId: number, ns: string): Promise<{ text: string }> {
   const resp = (await http.get(`/api/v1/clusters/${clusterId}/namespaces/${encodeURIComponent(ns)}/yaml`)) as ApiResponse<{ text: string }>
+  return resp.data
+}
+
+export async function getNamespaceInspection(clusterId: number, ns: string): Promise<K8sInspectionResult> {
+  const resp = (await http.get(
+    `/api/v1/clusters/${clusterId}/namespaces/${encodeURIComponent(ns)}/inspection`
+  )) as ApiResponse<K8sInspectionResult>
+  return resp.data
+}
+
+export async function getNamespaceWorkloadInventory(clusterId: number, ns: string): Promise<K8sInspectionResult> {
+  const resp = (await http.get(
+    `/api/v1/clusters/${clusterId}/namespaces/${encodeURIComponent(ns)}/workload-inventory`
+  )) as ApiResponse<K8sInspectionResult>
   return resp.data
 }

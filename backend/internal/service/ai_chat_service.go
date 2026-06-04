@@ -90,20 +90,22 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 	}
 
 	now := time.Now().UTC()
+	if err := s.beginConversationRun(ctx, conversation.ID, now); err != nil {
+		return AIChatResponse{}, err
+	}
+	selectedProviderID, selectedModelID := resolveAIInvocationTarget(conversation, req)
+	requestScope := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID)
+
 	userMessage := model.AIMessage{
 		ConversationID: conversation.ID,
 		Role:           "user",
 		MessageType:    "text",
 		Content:        message,
 		Status:         "created",
+		StructuredJSON: requestScope,
 		CreatedBy:      userID,
 	}
 	if err := s.db.WithContext(ctx).Create(&userMessage).Error; err != nil {
-		return AIChatResponse{}, err
-	}
-	if err := s.db.WithContext(ctx).Model(&model.AIConversation{}).
-		Where("id = ?", conversation.ID).
-		Updates(map[string]any{"status": "running", "last_message_at": &now}).Error; err != nil {
 		return AIChatResponse{}, err
 	}
 
@@ -132,6 +134,16 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 			ResourceName:   strings.TrimSpace(req.ResourceName),
 		})
 		if diagErr != nil && !diagPlan.Optional {
+			s.finishConversationRun(conversation.ID, aiConversationRunResult{
+				Status:            aiConversationRunStatusFromError(diagErr),
+				Summary:           firstUserFacingError(diagErr),
+				AssistantContent:  buildAIAssistantFailureReply(diagErr),
+				AssistantStatus:   aiMessageStatusFromError(diagErr),
+				StructuredPayload: requestScope,
+				ToolCallCount:     len(toolCalls),
+				ProviderID:        selectedProviderID,
+				ModelID:           selectedModelID,
+			})
 			return AIChatResponse{}, diagErr
 		}
 	}
@@ -140,36 +152,41 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 	if err != nil {
 		return AIChatResponse{}, err
 	}
-	providerID := conversation.ProviderID
-	if req.ProviderID != nil {
-		providerID = req.ProviderID
-	}
-	modelID := conversation.ModelID
-	if req.ModelID != nil {
-		modelID = req.ModelID
-	}
 	assistantResp, err := s.gateway.Invoke(ctx, AIGatewayRequest{
 		ConversationID:  conversation.ID,
 		AssistantMode:   conversation.AssistantMode,
-		ProviderID:      providerID,
-		ModelID:         modelID,
+		ProviderID:      selectedProviderID,
+		ModelID:         selectedModelID,
 		PreferModelCode: req.PreferModel,
 		Messages:        history,
 		DiagnosticNotes: diagnosticNotes,
+		ScopeNote:       buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
 	})
 	if err != nil {
-		_ = s.db.WithContext(ctx).Model(&model.AIConversation{}).
-			Where("id = ?", conversation.ID).
-			Update("status", "failed").Error
+		s.finishConversationRun(conversation.ID, aiConversationRunResult{
+			Status:            aiConversationRunStatusFromError(err),
+			Summary:           firstUserFacingError(err),
+			AssistantContent:  buildAIAssistantFailureReply(err),
+			AssistantStatus:   aiMessageStatusFromError(err),
+			StructuredPayload: requestScope,
+			ToolCallCount:     len(toolCalls),
+			ProviderID:        selectedProviderID,
+			ModelID:           selectedModelID,
+		})
 		return AIChatResponse{}, err
 	}
+
+	assistantContent, assistantStructured := normalizeAIModelAnswer(assistantResp.Content)
+	assistantStructured = mergeAIStructuredPayload(assistantStructured, requestScope)
+	assistantResp.Content = assistantContent
 
 	assistantMessage := model.AIMessage{
 		ConversationID: conversation.ID,
 		Role:           "assistant",
 		MessageType:    "text",
-		Content:        assistantResp.Content,
+		Content:        assistantContent,
 		Status:         "created",
+		StructuredJSON: assistantStructured,
 		ToolCallCount:  len(toolCalls),
 		TokenInput:     assistantResp.Usage.RequestTokens,
 		TokenOutput:    assistantResp.Usage.ResponseTokens,
@@ -203,7 +220,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		message,
 	)
 
-	summary := buildConversationSummary(assistantResp.Content)
+	summary := buildConversationSummary(assistantContent)
 	conversationStatus := "open"
 	if len(actionProposals) > 0 {
 		conversationStatus = "waiting_confirm"
@@ -224,13 +241,179 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		ConversationID:     conversation.ID,
 		UserMessageID:      userMessage.ID,
 		AssistantMessageID: assistantMessage.ID,
-		AssistantMessage:   assistantResp.Content,
+		AssistantMessage:   assistantContent,
 		ProviderName:       assistantResp.ProviderName,
 		ModelName:          assistantResp.ModelName,
 		ModelCode:          assistantResp.ModelCode,
 		ToolCalls:          toolCalls,
 		ActionProposals:    actionProposals,
 	}, nil
+}
+
+type aiConversationRunResult struct {
+	Status            string
+	Summary           string
+	AssistantContent  string
+	AssistantStatus   string
+	StructuredPayload model.JSONMap
+	ToolCallCount     int
+	ProviderID        *uint64
+	ModelID           *uint64
+}
+
+func (s *AIChatService) beginConversationRun(ctx context.Context, conversationID uint64, lastMessageAt time.Time) error {
+	if s == nil || s.db == nil {
+		return errors.New("db is required")
+	}
+	if conversationID == 0 {
+		return ErrWithMessage(ErrInvalidParams, "会话 ID 无效")
+	}
+	result := s.db.WithContext(ctx).
+		Model(&model.AIConversation{}).
+		Where("deleted_at IS NULL AND id = ? AND status <> ?", conversationID, "running").
+		Updates(map[string]any{
+			"status":          "running",
+			"last_message_at": lastMessageAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected > 0 {
+		return nil
+	}
+
+	var row model.AIConversation
+	if err := s.db.WithContext(ctx).
+		Select("id", "status").
+		Where("deleted_at IS NULL AND id = ?", conversationID).
+		First(&row).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if strings.EqualFold(strings.TrimSpace(row.Status), "running") {
+		return ErrWithMessage(ErrConflict, "当前会话仍在处理中，请先等待完成或取消当前回答")
+	}
+	return ErrConflict
+}
+
+func resolveAIInvocationTarget(conversation model.AIConversation, req AIChatRequest) (*uint64, *uint64) {
+	providerID := conversation.ProviderID
+	if req.ProviderID != nil && *req.ProviderID > 0 {
+		providerID = req.ProviderID
+	}
+	modelID := conversation.ModelID
+	if req.ModelID != nil && *req.ModelID > 0 {
+		modelID = req.ModelID
+	}
+	return providerID, modelID
+}
+
+func buildAIMessageScopeSnapshot(
+	conversation model.AIConversation,
+	req AIChatRequest,
+	providerID,
+	modelID *uint64,
+) model.JSONMap {
+	scope := model.JSONMap{
+		"request_scope": model.JSONMap{
+			"cluster_id":      req.ClusterID,
+			"conversation_id": conversation.ID,
+			"assistant_mode":  conversation.AssistantMode,
+			"namespace":       strings.TrimSpace(req.Namespace),
+			"resource_kind":   strings.TrimSpace(req.ResourceKind),
+			"resource_name":   strings.TrimSpace(req.ResourceName),
+			"prefer_model":    strings.TrimSpace(req.PreferModel),
+		},
+	}
+	requestScope, _ := scope["request_scope"].(model.JSONMap)
+	if providerID != nil && *providerID > 0 {
+		requestScope["provider_id"] = *providerID
+	}
+	if modelID != nil && *modelID > 0 {
+		requestScope["model_id"] = *modelID
+	}
+	return scope
+}
+
+func aiConversationRunStatusFromError(err error) string {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return "cancelled"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "failed"
+	default:
+		return "failed"
+	}
+}
+
+func aiMessageStatusFromError(err error) string {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return "cancelled"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "failed"
+	default:
+		return "failed"
+	}
+}
+
+func buildAIAssistantFailureReply(err error) string {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return "本轮回答已取消，平台已停止继续生成结果。你可以调整问题或范围后重新发送。"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "本轮回答处理超时，AI 未能在限定时间内完成。建议缩小排查范围后重试。"
+	default:
+		message := firstUserFacingError(err)
+		if strings.TrimSpace(message) == "" {
+			message = "本轮回答失败，请稍后重试。"
+		}
+		return "本轮回答未成功完成。原因：" + message
+	}
+}
+
+func (s *AIChatService) finishConversationRun(conversationID uint64, result aiConversationRunResult) {
+	if s == nil || s.db == nil || conversationID == 0 {
+		return
+	}
+	bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	updates := map[string]any{
+		"status":          strings.TrimSpace(result.Status),
+		"summary":         strings.TrimSpace(result.Summary),
+		"last_message_at": time.Now().UTC(),
+	}
+	if result.ProviderID != nil && *result.ProviderID > 0 {
+		updates["provider_id"] = *result.ProviderID
+	}
+	if result.ModelID != nil && *result.ModelID > 0 {
+		updates["model_id"] = *result.ModelID
+	}
+	_ = s.db.WithContext(bgCtx).
+		Model(&model.AIConversation{}).
+		Where("id = ?", conversationID).
+		Updates(updates).Error
+
+	content := strings.TrimSpace(result.AssistantContent)
+	if content == "" {
+		return
+	}
+	messageStatus := strings.TrimSpace(result.AssistantStatus)
+	if messageStatus == "" {
+		messageStatus = "failed"
+	}
+	_ = s.db.WithContext(bgCtx).Create(&model.AIMessage{
+		ConversationID: conversationID,
+		Role:           "assistant",
+		MessageType:    "text",
+		Content:        content,
+		Status:         messageStatus,
+		StructuredJSON: result.StructuredPayload,
+		ToolCallCount:  result.ToolCallCount,
+	}).Error
 }
 
 func (s *AIChatService) ensureConversation(ctx context.Context, userID uint64, username string, req AIChatRequest) (model.AIConversation, error) {

@@ -454,7 +454,6 @@ import ActionIconButton from '@/shared/components/ActionIconButton.vue'
 import K8sYamlPanel from '@/features/k8s/components/K8sYamlPanel.vue'
 import WorkloadDetailDrawerShell from './WorkloadDetailDrawerShell.vue'
 import type { ApiError } from '@/shared/utils/error'
-import { getHttpStatus } from '@/features/k8s/pages/ClusterManageView.utils'
 import {
   formatBytes,
   formatMillicores,
@@ -505,6 +504,7 @@ const visible = ref(false)
 const loading = ref(false)
 const tab = ref<TabKey>('overview')
 const podRow = ref<any>(null)
+const podInspection = ref<any | null>(null)
 
 function getRowNamespace(row: any): string | null {
   const ns = row?.metadata?.namespace
@@ -667,6 +667,43 @@ function formatAgeMs(ms: number): string {
   if (hour > 0) return `${hour}h`
   if (min > 0) return `${min}m`
   return `${sec}s`
+}
+
+function toObject(value: any): Record<string, any> | null {
+  return value && typeof value === 'object' ? (value as Record<string, any>) : null
+}
+
+function buildPodMetricsRowFromInspection(metrics: any): any | null {
+  const source = toObject(metrics)
+  if (!source || source.supported !== true || source.available !== true) return null
+  const rawContainers = Array.isArray(source.containers) ? source.containers : []
+  return {
+    timestamp: source.timestamp,
+    window: source.window,
+    containers: rawContainers.map((container) => {
+      const current = toObject(container) ?? {}
+      return {
+        name: String(current.name ?? ''),
+        usage: {
+          cpu: String(current.cpu ?? ''),
+          memory: String(current.memory ?? '')
+        }
+      }
+    })
+  }
+}
+
+function formatWorkloadReplicaSummary(value: any): string | undefined {
+  const summary = toObject(value)
+  if (!summary) return undefined
+  const desired = Number(summary.desired_replicas ?? NaN)
+  const ready = Number(summary.ready_replicas ?? NaN)
+  if (Number.isFinite(ready) && Number.isFinite(desired)) {
+    return `ready ${ready}/${desired}`
+  }
+  const containers = Array.isArray(summary.containers) ? summary.containers.length : 0
+  if (containers > 0) return `${containers} containers`
+  return undefined
 }
 
 const podName = computed(() => String(podRow.value?.metadata?.name ?? ''))
@@ -916,6 +953,27 @@ function getResVal(obj: any, key: string): string {
 }
 
 const containerResourceRows = computed<ContainerResourceRow[]>(() => {
+  const inspectionContainers = Array.isArray(podInspection.value?.evidence?.containers) ? podInspection.value.evidence.containers : []
+  if (inspectionContainers.length > 0) {
+    return inspectionContainers
+      .map((container: any) => {
+        const kind = String(container?.type ?? 'container').trim()
+        const rawName = String(container?.name ?? '').trim()
+        const name = kind === 'initContainer' ? `init/${rawName}` : rawName
+        if (!name) return null
+        return {
+          name,
+          cpuRequests: getResVal(container, 'cpu_request'),
+          cpuLimits: getResVal(container, 'cpu_limit'),
+          memRequests: getResVal(container, 'memory_request'),
+          memLimits: getResVal(container, 'memory_limit'),
+          ephemeralRequests: getResVal(container, 'ephemeral_request'),
+          ephemeralLimits: getResVal(container, 'ephemeral_limit')
+        }
+      })
+      .filter(Boolean) as ContainerResourceRow[]
+  }
+
   const containers: any[] = Array.isArray(podRow.value?.spec?.containers) ? podRow.value.spec.containers : []
   const initContainers: any[] = Array.isArray(podRow.value?.spec?.initContainers) ? podRow.value.spec.initContainers : []
   const spec = [
@@ -944,20 +1002,23 @@ const containerResourceRows = computed<ContainerResourceRow[]>(() => {
 
 type ResourceSummaryRow = { type: string; requests: string; limits: string; usage: string; note: string }
 function collectResByContainer(resourceKey: string): { requests: string; limits: string } {
-  const containers: any[] = Array.isArray(podRow.value?.spec?.containers) ? podRow.value.spec.containers : []
-  const initContainers: any[] = Array.isArray(podRow.value?.spec?.initContainers) ? podRow.value.spec.initContainers : []
-  const spec = [
-    ...initContainers.map((c) => ({ kind: 'initContainer' as const, c })),
-    ...containers.map((c) => ({ kind: 'container' as const, c }))
-  ]
   const reqParts: string[] = []
   const limParts: string[] = []
-  for (const c of spec) {
-    const rawName = String(c?.c?.name ?? '')
-    const name = c.kind === 'initContainer' ? `init/${rawName}` : rawName
+  for (const row of containerResourceRows.value) {
+    const name = String(row?.name ?? '').trim()
     if (!name) continue
-    const reqVal = String(c?.c?.resources?.requests?.[resourceKey] ?? '').trim()
-    const limVal = String(c?.c?.resources?.limits?.[resourceKey] ?? '').trim()
+    const reqVal =
+      resourceKey === 'cpu'
+        ? row.cpuRequests
+        : resourceKey === 'memory'
+          ? row.memRequests
+          : row.ephemeralRequests
+    const limVal =
+      resourceKey === 'cpu'
+        ? row.cpuLimits
+        : resourceKey === 'memory'
+          ? row.memLimits
+          : row.ephemeralLimits
     if (reqVal) reqParts.push(`${name}:${reqVal}`)
     if (limVal) limParts.push(`${name}:${limVal}`)
   }
@@ -1043,9 +1104,10 @@ function resetPodMetricsState() {
   podMetricsRow.value = null
   podMetricsLoadedKey.value = ''
   podMetricsUnsupported.value = false
+  podInspection.value = null
 }
 
-async function loadPodMetrics(force = false) {
+async function loadPodInspection(force = false) {
   if (!props.clusterId || !podRow.value) return
   const ns = getRowNamespace(podRow.value)
   const name = String(podRow.value?.metadata?.name ?? '').trim()
@@ -1053,35 +1115,30 @@ async function loadPodMetrics(force = false) {
 
   const key = `${ns}/${name}`
   if (podMetricsLoading.value && !force) return
-  if (!force && podMetricsLoadedKey.value === key) return
+  if (!force && podMetricsLoadedKey.value === key && podInspection.value) return
 
   podMetricsLoading.value = true
   try {
-    const data = await k8sApi.listPodMetrics(props.clusterId, { namespace: ns })
-    const list = Array.isArray(data.list) ? data.list : []
-    podMetricsRow.value = list.find((item: any) => String(item?.metadata?.name ?? '').trim() === name) ?? null
-    podMetricsUnsupported.value = false
+    const data = await k8sApi.getPodInspection(props.clusterId, ns, name)
+    const metrics = toObject(data?.evidence?.metrics)
+    podInspection.value = data
+    podMetricsRow.value = buildPodMetricsRowFromInspection(metrics)
+    podMetricsUnsupported.value = metrics?.supported === false
     podMetricsLoadedKey.value = key
   } catch (e) {
-    const err = e as ApiError
-    const status = getHttpStatus(e)
-    const lowerMessage = String(err?.message ?? '').toLowerCase()
-    if (
-      status === 404 ||
-      lowerMessage.includes('requested resource') ||
-      lowerMessage.includes("doesn't have a resource type") ||
-      lowerMessage.includes('no matches for kind')
-    ) {
-      podMetricsRow.value = null
-      podMetricsUnsupported.value = true
-      podMetricsLoadedKey.value = key
-      return
-    }
+    podInspection.value = null
+    podMetricsRow.value = null
     podMetricsLoadedKey.value = ''
+    podMetricsUnsupported.value = false
+    const err = e as ApiError
     notifyError(err.requestId ? `${err.message} (request_id=${err.requestId})` : err.message)
   } finally {
     podMetricsLoading.value = false
   }
+}
+
+async function loadPodMetrics(force = false) {
+  await loadPodInspection(force)
 }
 
 const podPortsText = computed(() => {
@@ -1355,11 +1412,31 @@ const ingressItemsRef = ref<RelatedItem[]>([])
 const pvcItemsRef = ref<RelatedItem[]>([])
 const pvItemsRef = ref<RelatedItem[]>([])
 
-type OwnerRef = { kind: string; name: string }
+type OwnerRef = { kind: string; name: string; summary?: string }
 const owners = computed<OwnerRef[]>(() => {
+  const chain: any[] = Array.isArray(podInspection.value?.evidence?.relationships?.controller_chain)
+    ? podInspection.value.evidence.relationships.controller_chain
+    : []
+  if (chain.length > 0) {
+    const seen = new Set<string>()
+    const inspectionOwners = chain
+      .map((entry) => {
+        const summary = toObject(entry?.summary)
+        const kind = String(summary?.kind ?? entry?.kind ?? '').trim()
+        const name = String(summary?.name ?? entry?.name ?? '').trim()
+        if (!kind || !name) return null
+        const key = `${kind}/${name}`
+        if (seen.has(key)) return null
+        seen.add(key)
+        return { kind, name, summary: formatWorkloadReplicaSummary(summary) }
+      })
+      .filter(Boolean) as OwnerRef[]
+    if (inspectionOwners.length > 0) return inspectionOwners
+  }
+
   const raw: any[] = Array.isArray(podRow.value?.metadata?.ownerReferences) ? podRow.value.metadata.ownerReferences : []
   return raw
-    .map((it) => ({ kind: String(it?.kind ?? ''), name: String(it?.name ?? '') }))
+    .map((it) => ({ kind: String(it?.kind ?? ''), name: String(it?.name ?? ''), summary: undefined }))
     .filter((it) => it.kind && it.name)
 })
 
@@ -1629,6 +1706,7 @@ const relatedRows = computed<RelatedRow[]>(() => {
       group: '控制器',
       kind: it.kind,
       name: it.name,
+      summary: it.summary,
       iconUrl: getRelatedIconUrl(it.kind),
       kindTagType: getRelatedTagType(it.kind),
       action: 'owner'
@@ -1781,8 +1859,9 @@ async function refresh() {
     const data = await k8sApi.listPods(props.clusterId, { namespace: ns })
     const found = (data.list ?? []).find((it: any) => String(it?.metadata?.name ?? '') === name)
     if (found) podRow.value = found
+    await loadPodInspection(true)
     if (tab.value === 'events') await loadEvents()
-    if (tab.value === 'resources') await loadPodMetrics(true)
+    if (tab.value === 'resources') await loadPodMetrics()
     if (tab.value === 'related') {
       if (services.value.length === 0) await loadServices()
       await loadRelated()
@@ -1810,12 +1889,14 @@ function open(row: any) {
   nodeInfo.value = null
   activeContainer.value = ''
   resetPodMetricsState()
+  void loadPodInspection()
 }
 
 watch(
   () => [visible.value, tab.value, podName.value, podNamespace.value] as const,
   ([v, t]) => {
     if (!v) return
+    if (getPodMetricsKey() && podMetricsLoadedKey.value !== getPodMetricsKey()) void loadPodInspection()
     if (t === 'events' && events.value.length === 0) void loadEvents()
     if (t === 'resources' && getPodMetricsKey() && podMetricsLoadedKey.value !== getPodMetricsKey()) void loadPodMetrics()
     if (t === 'related') {

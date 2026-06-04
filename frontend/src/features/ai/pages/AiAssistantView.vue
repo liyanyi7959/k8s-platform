@@ -11,6 +11,7 @@
                 placeholder="请选择集群"
                 filterable
                 class="control-select"
+                :disabled="sendingMessage"
                 @change="handleClusterChange"
               >
                 <el-option v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
@@ -24,16 +25,20 @@
                 :prefix-icon="Search"
                 placeholder="搜索标题、摘要或问题关键字"
                 clearable
+                :disabled="sendingMessage"
                 @keyup.enter="loadConversations"
                 @clear="loadConversations"
               />
 
               <div class="control-actions">
                 <el-tooltip content="新建会话" placement="bottom">
-                  <el-button type="primary" :icon="Plus" circle @click="openCreateDialog" />
+                  <el-button type="primary" :icon="Plus" circle :disabled="sendingMessage" @click="openCreateDialog" />
                 </el-tooltip>
                 <el-tooltip content="刷新列表" placement="bottom">
-                  <el-button :icon="RefreshRight" circle :loading="loadingConversations" @click="loadConversations" />
+                  <el-button :icon="RefreshRight" circle :loading="loadingConversations" :disabled="sendingMessage" @click="loadConversations" />
+                </el-tooltip>
+                <el-tooltip v-if="sendingMessage" content="鍙栨秷褰撳墠鍥炵瓟" placement="top">
+                  <el-button circle :icon="Close" @click="cancelPendingSend" />
                 </el-tooltip>
               </div>
             </div>
@@ -53,7 +58,7 @@
               title="暂无会话"
               description=""
             >
-              <el-button type="primary" :icon="Plus" circle @click="openCreateDialog" />
+              <el-button type="primary" :icon="Plus" circle :disabled="sendingMessage" @click="openCreateDialog" />
             </EmptyState>
 
             <div v-else class="conversation-list">
@@ -119,10 +124,10 @@
             <div class="detail-head__side">
               <div class="detail-head__actions">
                 <el-tooltip v-if="activeConversation && hasPersistedConversationId(activeConversation.id)" content="刷新详情" placement="bottom">
-                  <el-button circle text :icon="RefreshRight" @click="reloadActiveConversation" />
+                  <el-button circle text :icon="RefreshRight" :disabled="sendingMessage" @click="reloadActiveConversation" />
                 </el-tooltip>
                 <el-tooltip v-if="activeConversation && hasPersistedConversationId(activeConversation.id)" content="创建提案" placement="bottom">
-                  <el-button circle type="primary" plain :icon="MagicStick" @click="openProposalDialog" />
+                  <el-button circle type="primary" plain :icon="MagicStick" :disabled="sendingMessage" @click="openProposalDialog" />
                 </el-tooltip>
               </div>
 
@@ -344,7 +349,8 @@
                       `message-card--${message.role}`,
                       {
                         'message-card--pending': message.status === 'pending',
-                        'message-card--failed': message.status === 'failed'
+                        'message-card--failed': message.status === 'failed',
+                        'message-card--cancelled': message.status === 'cancelled'
                       }
                     ]"
                   >
@@ -369,7 +375,22 @@
                       </div>
                     </div>
 
-                    <div class="message-content markdown-body" v-html="renderMarkdown(message.content)" />
+                    <div v-if="messageScopeTags(message).length > 0" class="message-scope">
+                      <span v-for="tag in messageScopeTags(message)" :key="`${message.id}-${tag}`" class="message-scope__tag">{{ tag }}</span>
+                    </div>
+
+                    <div v-if="message.status === 'pending'" class="message-pending">
+                      <div class="message-pending__pulse">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                      <div class="message-pending__body">
+                        <strong>{{ pendingMessageTitle(message) }}</strong>
+                        <p>{{ pendingMessageSubtitle(message) }}</p>
+                      </div>
+                    </div>
+                    <div v-else class="message-content markdown-body" v-html="renderMarkdown(message.content)" />
 
                     <div v-if="extractSuggestedActions(message.structured).length > 0" class="message-suggestions">
                       <div
@@ -445,7 +466,7 @@
         <section class="composer-card">
           <div class="composer-grid">
             <el-form-item label="会话模式" class="composer-field composer-field--mode">
-              <el-radio-group v-model="draftAssistantMode" :disabled="Boolean(activeConversationId)">
+              <el-radio-group v-model="draftAssistantMode" :disabled="Boolean(activeConversationId) || sendingMessage">
                 <el-radio-button label="diagnose">故障诊断</el-radio-button>
                 <el-radio-button label="chat">通用聊天</el-radio-button>
               </el-radio-group>
@@ -458,13 +479,14 @@
                 clearable
                 filterable
                 :loading="loadingNamespaces"
+                :disabled="sendingMessage"
               >
                 <el-option v-for="item in namespaceOptions" :key="item" :label="item" :value="item" />
               </el-select>
             </el-form-item>
 
             <el-form-item label="资源类型" class="composer-field composer-field--kind">
-              <el-select v-model="draftResourceKind" placeholder="可选" clearable filterable>
+              <el-select v-model="draftResourceKind" placeholder="可选" clearable filterable :disabled="sendingMessage">
                 <el-option v-for="item in resourceKindOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </el-form-item>
@@ -476,7 +498,7 @@
                 clearable
                 filterable
                 :loading="loadingResourceNames"
-                :disabled="!draftResourceKind"
+                :disabled="!draftResourceKind || sendingMessage"
               >
                 <el-option v-for="item in resourceNameOptions" :key="item.value" :label="item.label" :value="item.value">
                   <span>{{ item.label }}</span>
@@ -532,7 +554,7 @@
                     filterable
                     clearable
                     :loading="loadingModels"
-                    :disabled="loadingModels || filteredModelOptions.length === 0"
+                    :disabled="sendingMessage || loadingModels || filteredModelOptions.length === 0"
                   >
                     <el-option
                       v-for="item in filteredModelOptions"
@@ -550,8 +572,11 @@
               </div>
 
               <div class="composer-actions">
-                <el-tooltip :content="activeConversationId ? '继续追问' : '发送诊断'" placement="top">
-                  <el-button type="primary" circle :icon="Promotion" :loading="sendingMessage" @click="sendMessage" />
+                <el-tooltip v-if="sendingMessage" content="取消当前回答" placement="top">
+                  <el-button :icon="Close" @click="cancelPendingSend">取消</el-button>
+                </el-tooltip>
+                <el-tooltip :content="sendingMessage ? '请先等待完成或取消当前回答' : (activeConversationId ? '继续追问' : '发送诊断')" placement="top">
+                  <el-button type="primary" circle :icon="Promotion" :loading="sendingMessage" :disabled="sendingMessage" @click="sendMessage" />
                 </el-tooltip>
               </div>
             </div>
@@ -755,6 +780,18 @@ interface PastedImage {
   file: File
 }
 
+interface MessageRequestScope {
+  cluster_id?: number
+  conversation_id?: number
+  assistant_mode?: string
+  namespace?: string
+  resource_kind?: string
+  resource_name?: string
+  provider_id?: number
+  model_id?: number
+  prefer_model?: string
+}
+
 const clusters = ref<ClusterItem[]>([])
 const selectedClusterId = ref<number>()
 const keyword = ref('')
@@ -800,6 +837,8 @@ const conversationMenu = reactive({
   y: 0,
   item: undefined as AIConversationItem | undefined
 })
+const activeSendController = ref<AbortController>()
+const pendingCancelRequested = ref(false)
 
 let optimisticIdSeed = 0
 
@@ -1007,6 +1046,53 @@ function pendingAssistantReplyText() {
   return 'AI 正在结合当前集群证据进行分析，请稍候...'
 }
 
+function buildRequestScopePayload() {
+  const selectedModelOption = resolveSelectedModel()
+  const payload: MessageRequestScope = {
+    cluster_id: selectedClusterId.value,
+    conversation_id: activeConversation.value?.id,
+    assistant_mode: effectiveAssistantMode.value,
+    namespace: resolvedNamespace.value || undefined,
+    resource_kind: draftResourceKind.value || undefined,
+    resource_name: resolvedResourceName.value || undefined,
+    provider_id: selectedModelOption?.provider_id,
+    model_id: selectedModelOption?.id,
+    prefer_model: selectedModelOption?.model_code || undefined
+  }
+  return { request_scope: payload }
+}
+
+function extractMessageRequestScope(message?: AIMessageItem) {
+  const raw = message?.structured?.request_scope
+  if (!raw || typeof raw !== 'object') return undefined
+  return raw as MessageRequestScope
+}
+
+function messageScopeTags(message: AIMessageItem) {
+  const scope = extractMessageRequestScope(message)
+  if (!scope) return []
+  const tags: string[] = []
+  if (scope.assistant_mode) tags.push(scope.assistant_mode === 'chat' ? '通用聊天' : '故障诊断')
+  if (scope.namespace) tags.push(`ns:${scope.namespace}`)
+  if (scope.resource_kind) tags.push(scope.resource_kind)
+  if (scope.resource_name) tags.push(scope.resource_name)
+  if (scope.model_id) tags.push(`模型#${scope.model_id}`)
+  return tags
+}
+
+function pendingMessageTitle(message: AIMessageItem) {
+  const scope = extractMessageRequestScope(message)
+  return scope?.assistant_mode === 'chat' ? 'AI 正在组织回答' : 'AI 正在结合平台证据分析'
+}
+
+function pendingMessageSubtitle(message: AIMessageItem) {
+  const tags = messageScopeTags(message)
+  if (tags.length > 0) {
+    return `当前范围：${tags.join(' · ')}`
+  }
+  return '当前轮次已锁定参数范围，请等待完成或取消后再继续提问。'
+}
+
 function resolveSendErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) {
     const message = error.message.trim()
@@ -1020,8 +1106,16 @@ function isTimeoutLikeMessage(message: string) {
   return lower.includes('timeout') || lower.includes('deadline exceeded') || message.includes('超时')
 }
 
+function isCanceledLikeMessage(message: string) {
+  const lower = message.toLowerCase()
+  return lower.includes('canceled') || lower.includes('cancelled') || lower.includes('aborted') || message.includes('取消')
+}
+
 function buildAssistantFailureReply(error: unknown) {
   const message = resolveSendErrorMessage(error, '发送失败')
+  if (isCanceledLikeMessage(message)) {
+    return '本轮回答已取消，平台已停止继续生成结果。你可以调整问题或范围后重新发送。'
+  }
   if (isTimeoutLikeMessage(message)) {
     return '本次会话已超时，AI 未能在限定时间内完成回答。建议缩小排查范围后重试，或重新发送当前问题。'
   }
@@ -1031,12 +1125,14 @@ function buildAssistantFailureReply(error: unknown) {
 function messageStatusText(status: string) {
   if (status === 'pending') return '等待回复'
   if (status === 'failed') return '回复失败'
+  if (status === 'cancelled') return '已取消'
   return ''
 }
 
 function messageStatusType(status: string) {
   if (status === 'pending') return 'warning'
   if (status === 'failed') return 'danger'
+  if (status === 'cancelled') return 'info'
   return 'info'
 }
 
@@ -1046,6 +1142,7 @@ function createOptimisticMessage(input: {
   content: string
   status: string
   createdAt: string
+  structured?: Record<string, unknown>
 }): AIMessageItem {
   return {
     id: nextOptimisticId(),
@@ -1053,6 +1150,7 @@ function createOptimisticMessage(input: {
     role: input.role,
     message_type: 'text',
     content: input.content,
+    structured: input.structured,
     status: input.status,
     tool_call_count: 0,
     token_input: 0,
@@ -1389,7 +1487,11 @@ async function loadConversations() {
   }
 }
 
-async function selectConversation(id: number) {
+async function selectConversation(id: number, options: { force?: boolean } = {}) {
+  if (!options.force && sendingMessage.value && id !== activeConversationId.value) {
+    ElMessage.warning('当前会话仍在处理中，请先等待完成或取消当前回答')
+    return
+  }
   if (!hasPersistedConversationId(id)) {
     activeConversationId.value = id
     return
@@ -1407,10 +1509,14 @@ async function selectConversation(id: number) {
 
 async function reloadActiveConversation() {
   if (!hasPersistedConversationId(activeConversationId.value)) return
-  await selectConversation(activeConversationId.value)
+  await selectConversation(activeConversationId.value, { force: true })
 }
 
 function openCreateDialog() {
+  if (sendingMessage.value) {
+    ElMessage.warning('当前会话仍在处理中，请先等待完成或取消当前回答')
+    return
+  }
   createForm.title = ''
   createForm.assistant_mode = draftAssistantMode.value
   createForm.opening_message = draftMessage.value.trim()
@@ -1435,7 +1541,7 @@ async function submitConversation() {
     createDialogVisible.value = false
     draftMessage.value = ''
     await loadConversations()
-    await selectConversation(result.id)
+    await selectConversation(result.id, { force: true })
     ElMessage.success('AI 会话已创建')
   } finally {
     creatingConversation.value = false
@@ -1599,6 +1705,10 @@ async function confirmProposal(proposal: AIActionProposalItem) {
 }
 
 async function sendMessage() {
+  if (sendingMessage.value) {
+    ElMessage.warning('当前会话仍在处理中，请先等待完成或取消当前回答')
+    return
+  }
   if (!selectedClusterId.value) {
     ElMessage.warning('请先选择目标集群')
     return
@@ -1609,6 +1719,7 @@ async function sendMessage() {
     return
   }
   const selectedModelOption = resolveSelectedModel()
+  const requestScopePayload = buildRequestScopePayload()
   const persistedConversationId = hasPersistedConversationId(activeConversationId.value) ? activeConversationId.value : undefined
   const createdAt = new Date().toISOString()
   const optimisticConversationId = ensureOptimisticConversation(message, createdAt)
@@ -1617,19 +1728,24 @@ async function sendMessage() {
     role: 'user',
     content: message,
     status: 'success',
-    createdAt
+    createdAt,
+    structured: requestScopePayload
   })
   const optimisticAssistantMessage = createOptimisticMessage({
     conversationId: optimisticConversationId,
     role: 'assistant',
     content: pendingAssistantReplyText(),
     status: 'pending',
-    createdAt
+    createdAt,
+    structured: requestScopePayload
   })
   appendOptimisticMessages(optimisticConversationId, optimisticUserMessage, optimisticAssistantMessage)
   draftMessage.value = ''
 
   sendingMessage.value = true
+  pendingCancelRequested.value = false
+  const controller = new AbortController()
+  activeSendController.value = controller
   try {
     const result = await sendAIChat(selectedClusterId.value, {
       conversation_id: persistedConversationId,
@@ -1641,32 +1757,55 @@ async function sendMessage() {
       namespace: resolvedNamespace.value || undefined,
       resource_kind: draftResourceKind.value || undefined,
       resource_name: resolvedResourceName.value || undefined
-    })
+    }, { signal: controller.signal })
     if (!hasPersistedConversationId(optimisticConversationId)) {
       removeLocalConversation(optimisticConversationId)
     }
     activeConversationId.value = result.conversation_id
     clearPastedImages()
     await loadConversations()
-    await selectConversation(result.conversation_id)
+    await selectConversation(result.conversation_id, { force: true })
   } catch (error) {
     const failureReply = buildAssistantFailureReply(error)
     const failureAt = new Date().toISOString()
+    const wasCanceled = pendingCancelRequested.value || isCanceledLikeMessage(resolveSendErrorMessage(error, ''))
     patchOptimisticAssistantMessage(optimisticConversationId, optimisticAssistantMessage.id, {
       content: failureReply,
-      status: 'failed',
+      status: wasCanceled ? 'cancelled' : 'failed',
       created_at: failureAt
     })
     if (activeConversation.value && activeConversationId.value === optimisticConversationId) {
       activeConversation.value.status = '需重试'
       activeConversation.value.updated_at = failureAt
       activeConversation.value.last_message_at = failureAt
+      if (wasCanceled) {
+        activeConversation.value.status = '已取消'
+      }
     }
-    upsertConversationListItem(optimisticConversationId, message, failureAt, '需重试')
+    upsertConversationListItem(optimisticConversationId, message, failureAt, wasCanceled ? '已取消' : '需重试')
+    if (wasCanceled) {
+      if (persistedConversationId) {
+        await loadConversations()
+        await reloadActiveConversation()
+      } else {
+        removeLocalConversation(optimisticConversationId)
+        await loadConversations()
+      }
+      ElMessage.info('已取消当前回答')
+      return
+    }
     ElMessage.error(resolveSendErrorMessage(error, '发送失败'))
   } finally {
+    activeSendController.value = undefined
+    pendingCancelRequested.value = false
     sendingMessage.value = false
   }
+}
+
+function cancelPendingSend() {
+  if (!sendingMessage.value) return
+  pendingCancelRequested.value = true
+  activeSendController.value?.abort()
 }
 
 function handleComposerEnter(event: KeyboardEvent) {
@@ -1677,6 +1816,10 @@ function handleComposerEnter(event: KeyboardEvent) {
 }
 
 async function handleClusterChange() {
+  if (sendingMessage.value) {
+    ElMessage.warning('当前会话仍在处理中，请先等待完成或取消当前回答')
+    return
+  }
   activeConversationId.value = undefined
   activeConversation.value = undefined
   draftAssistantMode.value = 'diagnose'
@@ -1993,6 +2136,11 @@ function togglePinConversationFromMenu() {
 async function deleteConversationFromMenu() {
   const item = conversationMenu.item
   if (!item) return
+  if (sendingMessage.value) {
+    closeConversationMenu()
+    ElMessage.warning('当前会话仍在处理中，暂不支持删除会话')
+    return
+  }
   if (!hasPersistedConversationId(item.id)) {
     removeLocalConversation(item.id)
     closeConversationMenu()
@@ -3961,6 +4109,96 @@ onBeforeUnmount(() => {
 .message-card--failed {
   border-color: rgba(220, 38, 38, 0.22);
   background: linear-gradient(180deg, rgba(254, 242, 242, 0.96), rgba(255, 255, 255, 1));
+}
+
+.message-card--cancelled {
+  border-color: rgba(100, 116, 139, 0.2);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 1));
+}
+
+.message-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.message-scope__tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.message-pending {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px dashed rgba(217, 119, 6, 0.25);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.9), rgba(255, 255, 255, 0.98));
+}
+
+.message-pending__pulse {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.message-pending__pulse span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #d97706;
+  animation: ai-pending-pulse 1.2s ease-in-out infinite;
+}
+
+.message-pending__pulse span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.message-pending__pulse span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.message-pending__body {
+  min-width: 0;
+}
+
+.message-pending__body strong {
+  display: block;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.message-pending__body p {
+  margin: 4px 0 0;
+  color: #78716c;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+@keyframes ai-pending-pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0) scale(0.92);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1);
+  }
 }
 
 .message-card__head {

@@ -2,6 +2,12 @@
 import { http } from '@/shared/http/http'
 import type { ApiResponse } from '@/shared/types/api'
 
+export type K8sInspectionResult = {
+  summary: string
+  evidence?: Record<string, any>
+  raw_ref?: Record<string, any>
+}
+
 export async function listPods(
   clusterId: number,
   params: { namespace?: string; label_selector?: string; sort_by?: string; order?: 'asc' | 'desc' } = {},
@@ -29,6 +35,18 @@ export async function getPodYaml(
   const resp = (await http.get(`/api/v1/clusters/${clusterId}/pods/${encodeURIComponent(ns)}/${encodeURIComponent(pod)}/yaml`, {
     signal: options.signal
   })) as ApiResponse<{ text: string }>
+  return resp.data
+}
+
+export async function getPodInspection(
+  clusterId: number,
+  ns: string,
+  pod: string,
+  options: { signal?: AbortSignal } = {}
+): Promise<K8sInspectionResult> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/pods/${encodeURIComponent(ns)}/${encodeURIComponent(pod)}/inspection`, {
+    signal: options.signal
+  })) as ApiResponse<K8sInspectionResult>
   return resp.data
 }
 

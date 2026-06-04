@@ -16,6 +16,7 @@ type AIController struct {
 	routeSettingsSvc *service.AIRouteSettingsService
 	conversationSvc  *service.AIConversationService
 	chatSvc          *service.AIChatService
+	toolSvc          *service.AIToolService
 	actionSvc        *service.AIActionService
 }
 
@@ -24,6 +25,7 @@ func NewAIController(
 	routeSettingsSvc *service.AIRouteSettingsService,
 	conversationSvc *service.AIConversationService,
 	chatSvc *service.AIChatService,
+	toolSvc *service.AIToolService,
 	actionSvc *service.AIActionService,
 ) *AIController {
 	return &AIController{
@@ -31,6 +33,7 @@ func NewAIController(
 		routeSettingsSvc: routeSettingsSvc,
 		conversationSvc:  conversationSvc,
 		chatSvc:          chatSvc,
+		toolSvc:          toolSvc,
 		actionSvc:        actionSvc,
 	}
 }
@@ -92,6 +95,18 @@ func (ctl *AIController) ListModels(c *gin.Context) {
 		return
 	}
 	resp.OK(c, items)
+}
+
+func (ctl *AIController) ListTools(c *gin.Context) {
+	if ctl.toolSvc == nil {
+		resp.OK(c, []service.AIToolCatalogItem{})
+		return
+	}
+	var userPerms []string
+	if claims, ok := middleware.GetClaims(c); ok && claims != nil {
+		userPerms = append(userPerms, claims.Perms...)
+	}
+	resp.OK(c, ctl.toolSvc.ListTools(userPerms))
 }
 
 func (ctl *AIController) GetRouteSettings(c *gin.Context) {

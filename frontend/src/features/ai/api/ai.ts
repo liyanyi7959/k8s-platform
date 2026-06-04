@@ -109,6 +109,21 @@ export interface AIToolCallItem {
   created_at: string
 }
 
+export interface AIToolCatalogItem {
+  name: string
+  category: string
+  description: string
+  required_permissions: string[]
+  missing_permissions?: string[]
+  risk_level: string
+  confirm_level: string
+  timeout_seconds: number
+  redaction_policy?: string
+  input_schema?: Record<string, unknown>
+  output_schema?: Record<string, unknown>
+  available: boolean
+}
+
 export interface AIActionExecutionItem {
   id: number
   proposal_id: number
@@ -247,6 +262,10 @@ export function getAIModels(params: { provider_id?: number; model_type?: string;
   return unwrap<AIModelItem[]>(http.get('/api/v1/ai/models', { params }))
 }
 
+export function getAITools() {
+  return unwrap<AIToolCatalogItem[]>(http.get('/api/v1/ai/tools'))
+}
+
 export function createAIModel(data: CreateAIModelRequest) {
   return unwrap<{ id: number }>(http.post('/api/v1/ai/models', data))
 }
@@ -278,8 +297,11 @@ export function createAIConversation(clusterId: number, data: CreateAIConversati
   return unwrap<{ id: number }>(http.post(`/api/v1/clusters/${clusterId}/ai/conversations`, data))
 }
 
-export function sendAIChat(clusterId: number, data: SendAIChatRequest) {
-  return unwrap<SendAIChatResponse>(http.post(`/api/v1/clusters/${clusterId}/ai/chat`, data, { timeout: 120_000 }))
+export function sendAIChat(clusterId: number, data: SendAIChatRequest, options: { signal?: AbortSignal } = {}) {
+  return unwrap<SendAIChatResponse>(http.post(`/api/v1/clusters/${clusterId}/ai/chat`, data, {
+    timeout: 120_000,
+    signal: options.signal
+  }))
 }
 
 export function createAIActionProposal(clusterId: number, data: CreateAIActionProposalRequest) {

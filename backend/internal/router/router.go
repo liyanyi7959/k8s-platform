@@ -54,7 +54,6 @@ func New(d Deps) (*gin.Engine, error) {
 		clusterManageCtl = controller.NewClusterManageController(clusterReg, k8sSvc)
 		execSessions := service.NewExecSessionStore(0)
 		logSessions := service.NewPodLogSessionStore(0)
-		k8sCtl = controller.NewK8sController(k8sSvc, manifestApplySvc, execSessions, logSessions)
 		dashboardSvc := service.NewDashboardService(d.DB, clusterReg, k8sSvc, d.CacheStore)
 		dashboardCtl = controller.NewDashboardController(dashboardSvc)
 		permissionAuditSvc := service.NewK8sPermissionAuditService(d.DB, taskStore, clusterReg, k8sSvc, d.CacheStore, d.EncryptionKey)
@@ -68,13 +67,22 @@ func New(d Deps) (*gin.Engine, error) {
 		clusterReadModelSvc := service.NewClusterReadModelService(dashboardSvc)
 		namespaceDiagnosisSvc := service.NewNamespaceDiagnosisService(k8sSvc)
 		resourceInspectionSvc := service.NewResourceInspectionService(k8sSvc)
+		resourceQuerySvc := service.NewResourceQueryService(k8sSvc)
 		resourceExportPolicySvc := service.NewResourceExportPolicyService()
 		workloadActionSvc := service.NewWorkloadActionService(k8sSvc, manifestApplySvc)
-		aiToolRegistry := service.NewAIToolRegistry(clusterReadModelSvc, namespaceDiagnosisSvc, resourceInspectionSvc, resourceExportPolicySvc)
-		aiToolSvc := service.NewAIToolService(d.DB, aiToolRegistry)
 		aiActionSvc := service.NewAIActionService(d.DB, workloadActionSvc)
+		k8sCtl = controller.NewK8sController(
+			k8sSvc,
+			manifestApplySvc,
+			execSessions,
+			logSessions,
+			namespaceDiagnosisSvc,
+			resourceInspectionSvc,
+		)
+		aiToolRegistry := service.NewAIToolRegistry(clusterReadModelSvc, namespaceDiagnosisSvc, resourceInspectionSvc, resourceQuerySvc, aiActionSvc, resourceExportPolicySvc)
+		aiToolSvc := service.NewAIToolService(d.DB, aiToolRegistry)
 		aiChatSvc := service.NewAIChatService(d.DB, aiGatewaySvc, aiToolSvc, aiActionSvc)
-		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiActionSvc)
+		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiToolSvc, aiActionSvc)
 	}
 
 	// ── 健康检查 ──
@@ -202,6 +210,8 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	k8s.DELETE("/clusters/:id/namespaces/:ns", namespaceWritePerm, ctl.DeleteNamespace)
 	k8s.GET("/clusters/:id/namespaces/:ns/yaml", namespaceReadPerm, ctl.GetNamespaceYAML)
 	k8s.GET("/clusters/:id/namespaces/:ns/resources-summary", namespaceReadPerm, ctl.GetNamespaceResourcesSummary)
+	k8s.GET("/clusters/:id/namespaces/:ns/inspection", namespaceReadPerm, ctl.GetNamespaceInspection)
+	k8s.GET("/clusters/:id/namespaces/:ns/workload-inventory", namespaceReadPerm, ctl.GetNamespaceWorkloadInventory)
 
 	// Node
 	k8s.GET("/clusters/:id/nodes", readPerm, middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.ListNodes)
@@ -217,6 +227,7 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	// Pod
 	k8s.GET("/clusters/:id/pods", readPerm, ctl.ListPods)
 	k8s.GET("/clusters/:id/podmetrics", readPerm, ctl.ListPodMetrics)
+	k8s.GET("/clusters/:id/pods/:ns/:pod/inspection", readPerm, ctl.GetPodInspection)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/yaml", readPerm, ctl.GetPodYAML)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/logs", readPerm, ctl.GetPodLogs)
 	k8s.POST("/clusters/:id/pods/:ns/:pod/logs/session", readPerm, ctl.CreatePodLogSession)
@@ -534,6 +545,7 @@ func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController) {
 	ai.POST("/providers", aiWritePerm, ctl.CreateProvider)
 	ai.PATCH("/providers/:id", aiWritePerm, ctl.PatchProvider)
 	ai.GET("/models", aiReadPerm, ctl.ListModels)
+	ai.GET("/tools", aiReadPerm, ctl.ListTools)
 	ai.POST("/models", aiWritePerm, ctl.CreateModel)
 	ai.PATCH("/models/:id", aiWritePerm, ctl.PatchModel)
 	ai.GET("/route-settings", aiWritePerm, ctl.GetRouteSettings)

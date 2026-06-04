@@ -17,6 +17,30 @@ func (s *ResourceExportPolicyService) IsSensitiveKind(kind string) bool {
 	return strings.EqualFold(strings.TrimSpace(kind), "secret")
 }
 
+func (s *ResourceExportPolicyService) CanExposeToAI(kind string) bool {
+	return !s.IsSensitiveKind(kind)
+}
+
+func (s *ResourceExportPolicyService) ExportYAML(kind string, yamlText string) (string, bool, error) {
+	raw := strings.TrimSpace(yamlText)
+	if raw == "" {
+		return raw, false, nil
+	}
+	if !s.CanExposeToAI(kind) {
+		return "", false, ErrWithMessage(ErrK8sForbidden, "AI direct YAML export is disabled for sensitive resource kind")
+	}
+	return raw, false, nil
+}
+
+func (s *ResourceExportPolicyService) ExportMaskedYAML(kind string, yamlText string) (string, bool, error) {
+	raw := strings.TrimSpace(yamlText)
+	if raw == "" {
+		return raw, false, nil
+	}
+	masked, changed := s.MaskYAML(kind, raw)
+	return masked, changed, nil
+}
+
 func (s *ResourceExportPolicyService) MaskYAML(kind string, yamlText string) (string, bool) {
 	raw := strings.TrimSpace(yamlText)
 	if raw == "" {

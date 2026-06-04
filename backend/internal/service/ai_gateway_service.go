@@ -29,6 +29,7 @@ type AIGatewayRequest struct {
 	PreferModelCode string
 	Messages        []AIGatewayMessage
 	DiagnosticNotes string
+	ScopeNote       string
 }
 
 type AIGatewayUsage struct {
@@ -292,6 +293,12 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 		"role":    "system",
 		"content": systemPrompt,
 	})
+	if scopeNote := strings.TrimSpace(req.ScopeNote); scopeNote != "" {
+		messages = append(messages, map[string]string{
+			"role":    "system",
+			"content": scopeNote,
+		})
+	}
 	if notes := strings.TrimSpace(req.DiagnosticNotes); notes != "" {
 		messages = append(messages, map[string]string{
 			"role":    "system",
@@ -352,12 +359,24 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 
 	httpResp, err := s.httpClient.Do(httpReq)
 	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
+			return AIGatewayResponse{}, context.Canceled
+		}
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return AIGatewayResponse{}, context.DeadlineExceeded
+		}
 		return AIGatewayResponse{}, ErrWithMessage(ErrK8sNetwork, "AI 提供商连接失败")
 	}
 	defer func() { _ = httpResp.Body.Close() }()
 
 	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
+			return AIGatewayResponse{}, context.Canceled
+		}
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return AIGatewayResponse{}, context.DeadlineExceeded
+		}
 		return AIGatewayResponse{}, err
 	}
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
@@ -405,6 +424,35 @@ func buildAISystemPromptV2(mode string) string {
 		return base + " Current mode is general assistance. Keep answers concise but evidence-based. You may explain, compare, and summarize, but you must still respect platform permissions and must not imply direct write execution."
 	}
 	return base + " Current mode is fault diagnosis. Prefer an answer structure of issue summary, key evidence, likely causes, impact scope, and next step. For write actions, only provide recommendations or proposals and never imply that a risky change has already been executed."
+}
+
+func buildAIGatewayScopeNote(namespace, kind, name string) string {
+	ns := strings.TrimSpace(namespace)
+	resKind := strings.TrimSpace(kind)
+	resName := strings.TrimSpace(name)
+	if ns == "" && resKind == "" && resName == "" {
+		return ""
+	}
+
+	parts := make([]string, 0, 3)
+	if ns != "" {
+		parts = append(parts, "namespace="+ns)
+	}
+	if resKind != "" {
+		parts = append(parts, "kind="+resKind)
+	}
+	if resName != "" {
+		parts = append(parts, "name="+resName)
+	}
+
+	base := "Current request scope is fixed to " + strings.Join(parts, ", ") + "."
+	if resKind != "" && resName != "" {
+		return base + " Answer only for this target resource. Do not list sibling resources, namespace-wide inventories, or cluster-wide summaries unless the user explicitly asks to broaden scope."
+	}
+	if ns != "" {
+		return base + " Keep the answer inside this namespace scope unless the user explicitly asks to broaden scope."
+	}
+	return base + " Keep the answer inside this current scope unless the user explicitly asks to broaden scope."
 }
 
 func buildAISystemPrompt(mode string) string {

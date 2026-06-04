@@ -15,9 +15,21 @@ import (
 )
 
 const (
-	aiActionTypeRestartWorkload = "restart_workload"
-	aiActionTypeScaleWorkload   = "scale_workload"
-	aiActionTypeApplyManifest   = "apply_manifest"
+	aiActionTypeRestartWorkload      = "restart_workload"
+	aiActionTypeScaleWorkload        = "scale_workload"
+	aiActionTypeUpdateWorkloadImage  = "update_workload_image"
+	aiActionTypePauseWorkloadRollout = "pause_workload_rollout"
+	aiActionTypeRolloutUndo          = "rollout_undo"
+	aiActionTypeDeleteWorkload       = "delete_workload"
+	aiActionTypeDeleteResource       = "delete_resource"
+	aiActionTypeDeletePod            = "delete_pod"
+	aiActionTypeCordonNode           = "cordon_node"
+	aiActionTypeUncordonNode         = "uncordon_node"
+	aiActionTypeDrainNode            = "drain_node"
+	aiActionTypeTriggerCronJob       = "trigger_cronjob"
+	aiActionTypeSuspendCronJob       = "suspend_cronjob"
+	aiActionTypeDeleteCompletedJobs  = "delete_completed_jobs"
+	aiActionTypeApplyManifest        = "apply_manifest"
 )
 
 type AIActionTargetResource struct {
@@ -692,6 +704,30 @@ func normalizeAIActionType(v string) string {
 		return aiActionTypeRestartWorkload
 	case aiActionTypeScaleWorkload:
 		return aiActionTypeScaleWorkload
+	case aiActionTypeUpdateWorkloadImage:
+		return aiActionTypeUpdateWorkloadImage
+	case aiActionTypePauseWorkloadRollout:
+		return aiActionTypePauseWorkloadRollout
+	case aiActionTypeRolloutUndo:
+		return aiActionTypeRolloutUndo
+	case aiActionTypeDeleteWorkload:
+		return aiActionTypeDeleteWorkload
+	case aiActionTypeDeleteResource:
+		return aiActionTypeDeleteResource
+	case aiActionTypeDeletePod:
+		return aiActionTypeDeletePod
+	case aiActionTypeCordonNode:
+		return aiActionTypeCordonNode
+	case aiActionTypeUncordonNode:
+		return aiActionTypeUncordonNode
+	case aiActionTypeDrainNode:
+		return aiActionTypeDrainNode
+	case aiActionTypeTriggerCronJob:
+		return aiActionTypeTriggerCronJob
+	case aiActionTypeSuspendCronJob:
+		return aiActionTypeSuspendCronJob
+	case aiActionTypeDeleteCompletedJobs:
+		return aiActionTypeDeleteCompletedJobs
 	case aiActionTypeApplyManifest:
 		return aiActionTypeApplyManifest
 	default:
@@ -702,12 +738,38 @@ func normalizeAIActionType(v string) string {
 func normalizeAIActionTarget(target AIActionTargetResource) AIActionTargetResource {
 	kind := strings.TrimSpace(target.Kind)
 	switch strings.ToLower(kind) {
+	case "namespace":
+		kind = "Namespace"
+	case "node":
+		kind = "Node"
+	case "pod":
+		kind = "Pod"
 	case "deployment":
 		kind = "Deployment"
 	case "statefulset":
 		kind = "StatefulSet"
 	case "daemonset":
 		kind = "DaemonSet"
+	case "replicaset":
+		kind = "ReplicaSet"
+	case "service":
+		kind = "Service"
+	case "ingress":
+		kind = "Ingress"
+	case "configmap":
+		kind = "ConfigMap"
+	case "secret":
+		kind = "Secret"
+	case "persistentvolumeclaim", "pvc":
+		kind = "PersistentVolumeClaim"
+	case "persistentvolume", "pv":
+		kind = "PersistentVolume"
+	case "storageclass":
+		kind = "StorageClass"
+	case "job":
+		kind = "Job"
+	case "cronjob":
+		kind = "CronJob"
 	}
 	return AIActionTargetResource{
 		Kind:      kind,
