@@ -94,6 +94,7 @@ func TestBuildAIMessageScopeSnapshot(t *testing.T) {
 		},
 		&providerID,
 		&modelID,
+		nil,
 	)
 
 	requestScope, ok := snapshot["request_scope"].(model.JSONMap)
@@ -129,6 +130,46 @@ func TestBuildAIMessageScopeSnapshot(t *testing.T) {
 	}
 }
 
+func TestBuildAIMessageScopeSnapshotIncludesImages(t *testing.T) {
+	snapshot := buildAIMessageScopeSnapshot(
+		model.AIConversation{
+			ID:            7,
+			AssistantMode: "diagnose",
+		},
+		AIChatRequest{
+			ClusterID:    3,
+			Namespace:    "devops",
+			ResourceKind: "Pod",
+			ResourceName: "demo",
+		},
+		nil,
+		nil,
+		[]model.JSONMap{
+			{
+				"name":         "image.png",
+				"content_type": "image/png",
+				"data_url":     "data:image/png;base64,abc",
+				"size":         int64(123),
+			},
+		},
+	)
+
+	requestScope, ok := snapshot["request_scope"].(model.JSONMap)
+	if !ok {
+		t.Fatalf("expected request_scope JSON map, got %#v", snapshot["request_scope"])
+	}
+	if got := requestScope["image_count"]; got != 1 {
+		t.Fatalf("request_scope.image_count = %#v, want 1", got)
+	}
+	images, ok := snapshot["request_images"].([]model.JSONMap)
+	if !ok || len(images) != 1 {
+		t.Fatalf("request_images = %#v, want one image", snapshot["request_images"])
+	}
+	if got := images[0]["name"]; got != "image.png" {
+		t.Fatalf("request_images[0].name = %#v, want %q", got, "image.png")
+	}
+}
+
 func TestBuildAIGatewayScopeNote(t *testing.T) {
 	note := buildAIGatewayScopeNote("devops", "Deployment", "bkci-auth")
 	if !strings.Contains(note, "namespace=devops") {
@@ -139,5 +180,123 @@ func TestBuildAIGatewayScopeNote(t *testing.T) {
 	}
 	if !strings.Contains(note, "Do not list sibling resources") {
 		t.Fatalf("expected strict scope guard, got %q", note)
+	}
+}
+
+func TestBuildScopedGatewayHistoryFiltersPreviousScope(t *testing.T) {
+	rows := []model.AIMessage{
+		{
+			ID:      1,
+			Role:    "user",
+			Content: "show deployment a",
+			StructuredJSON: model.JSONMap{
+				"request_scope": model.JSONMap{
+					"assistant_mode": "diagnose",
+					"namespace":      "payments",
+					"resource_kind":  "Deployment",
+					"resource_name":  "api-a",
+				},
+			},
+		},
+		{
+			ID:      2,
+			Role:    "assistant",
+			Content: "deployment a reply",
+			StructuredJSON: model.JSONMap{
+				"request_scope": model.JSONMap{
+					"assistant_mode": "diagnose",
+					"namespace":      "payments",
+					"resource_kind":  "Deployment",
+					"resource_name":  "api-a",
+				},
+			},
+		},
+		{
+			ID:      3,
+			Role:    "user",
+			Content: "show deployment b",
+			StructuredJSON: model.JSONMap{
+				"request_scope": model.JSONMap{
+					"assistant_mode": "diagnose",
+					"namespace":      "payments",
+					"resource_kind":  "Deployment",
+					"resource_name":  "api-b",
+				},
+			},
+		},
+	}
+
+	got := buildScopedGatewayHistory(rows, aiMessageRequestScope{
+		AssistantMode: "diagnose",
+		Namespace:     "payments",
+		ResourceKind:  "Deployment",
+		ResourceName:  "api-b",
+	})
+
+	if len(got) != 1 {
+		t.Fatalf("buildScopedGatewayHistory() len = %d, want 1; rows=%#v", len(got), got)
+	}
+	if got[0].ID != 3 {
+		t.Fatalf("buildScopedGatewayHistory()[0].ID = %d, want 3", got[0].ID)
+	}
+}
+
+func TestBuildScopedGatewayHistoryKeepsCurrentScopeChain(t *testing.T) {
+	rows := []model.AIMessage{
+		{
+			ID:      10,
+			Role:    "user",
+			Content: "first question",
+			StructuredJSON: model.JSONMap{
+				"request_scope": model.JSONMap{
+					"assistant_mode": "chat",
+					"namespace":      "devops",
+					"resource_kind":  "Deployment",
+					"resource_name":  "bkci-auth",
+				},
+			},
+		},
+		{
+			ID:      11,
+			Role:    "assistant",
+			Content: "first reply",
+			StructuredJSON: model.JSONMap{
+				"request_scope": model.JSONMap{
+					"assistant_mode": "chat",
+					"namespace":      "devops",
+					"resource_kind":  "Deployment",
+					"resource_name":  "bkci-auth",
+				},
+			},
+		},
+		{
+			ID:      12,
+			Role:    "user",
+			Content: "follow up",
+			StructuredJSON: model.JSONMap{
+				"request_scope": model.JSONMap{
+					"assistant_mode": "chat",
+					"namespace":      "devops",
+					"resource_kind":  "Deployment",
+					"resource_name":  "bkci-auth",
+				},
+			},
+		},
+	}
+
+	got := buildScopedGatewayHistory(rows, aiMessageRequestScope{
+		AssistantMode: "chat",
+		Namespace:     "devops",
+		ResourceKind:  "Deployment",
+		ResourceName:  "bkci-auth",
+	})
+
+	if len(got) != 3 {
+		t.Fatalf("buildScopedGatewayHistory() len = %d, want 3; rows=%#v", len(got), got)
+	}
+	for i, wantID := range []uint64{10, 11, 12} {
+		if got[i].ID != wantID {
+			t.Fatalf("buildScopedGatewayHistory()[%d].ID = %d, want %d", i, got[i].ID, wantID)
+		}
 	}
 }

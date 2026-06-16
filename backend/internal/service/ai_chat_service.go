@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,17 +23,25 @@ var (
 )
 
 type AIChatRequest struct {
-	ClusterID      uint64   `json:"-"`
-	ConversationID *uint64  `json:"conversation_id"`
-	Message        string   `json:"message"`
-	AssistantMode  string   `json:"assistant_mode"`
-	ProviderID     *uint64  `json:"provider_id"`
-	ModelID        *uint64  `json:"model_id"`
-	PreferModel    string   `json:"prefer_model"`
-	Namespace      string   `json:"namespace"`
-	ResourceKind   string   `json:"resource_kind"`
-	ResourceName   string   `json:"resource_name"`
-	UserPerms      []string `json:"-"`
+	ClusterID      uint64             `json:"-"`
+	ConversationID *uint64            `json:"conversation_id"`
+	Message        string             `json:"message"`
+	AssistantMode  string             `json:"assistant_mode"`
+	ProviderID     *uint64            `json:"provider_id"`
+	ModelID        *uint64            `json:"model_id"`
+	PreferModel    string             `json:"prefer_model"`
+	Namespace      string             `json:"namespace"`
+	ResourceKind   string             `json:"resource_kind"`
+	ResourceName   string             `json:"resource_name"`
+	Images         []AIChatImageInput `json:"images"`
+	UserPerms      []string           `json:"-"`
+}
+
+type AIChatImageInput struct {
+	Name        string `json:"name"`
+	ContentType string `json:"content_type"`
+	DataURL     string `json:"data_url"`
+	Size        int64  `json:"size"`
 }
 
 type AIChatResponse struct {
@@ -69,6 +78,13 @@ type aiAutoDiagnosticsPlan struct {
 	Timeout  time.Duration
 }
 
+type aiMessageRequestScope struct {
+	AssistantMode string
+	Namespace     string
+	ResourceKind  string
+	ResourceName  string
+}
+
 func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username string, req AIChatRequest) (AIChatResponse, error) {
 	if s.db == nil {
 		return AIChatResponse{}, errors.New("db is required")
@@ -94,7 +110,9 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		return AIChatResponse{}, err
 	}
 	selectedProviderID, selectedModelID := resolveAIInvocationTarget(conversation, req)
-	requestScope := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID)
+	normalizedImages := normalizeAIChatImages(req.Images)
+	userMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, normalizedImages)
+	assistantMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, nil)
 
 	userMessage := model.AIMessage{
 		ConversationID: conversation.ID,
@@ -102,7 +120,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		MessageType:    "text",
 		Content:        message,
 		Status:         "created",
-		StructuredJSON: requestScope,
+		StructuredJSON: userMessageStructured,
 		CreatedBy:      userID,
 	}
 	if err := s.db.WithContext(ctx).Create(&userMessage).Error; err != nil {
@@ -139,7 +157,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 				Summary:           firstUserFacingError(diagErr),
 				AssistantContent:  buildAIAssistantFailureReply(diagErr),
 				AssistantStatus:   aiMessageStatusFromError(diagErr),
-				StructuredPayload: requestScope,
+				StructuredPayload: assistantMessageStructured,
 				ToolCallCount:     len(toolCalls),
 				ProviderID:        selectedProviderID,
 				ModelID:           selectedModelID,
@@ -148,7 +166,12 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		}
 	}
 
-	history, err := s.buildGatewayMessages(ctx, conversation.ID)
+	history, err := s.buildGatewayMessages(ctx, conversation.ID, aiMessageRequestScope{
+		AssistantMode: conversation.AssistantMode,
+		Namespace:     strings.TrimSpace(req.Namespace),
+		ResourceKind:  strings.TrimSpace(req.ResourceKind),
+		ResourceName:  strings.TrimSpace(req.ResourceName),
+	})
 	if err != nil {
 		return AIChatResponse{}, err
 	}
@@ -168,7 +191,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 			Summary:           firstUserFacingError(err),
 			AssistantContent:  buildAIAssistantFailureReply(err),
 			AssistantStatus:   aiMessageStatusFromError(err),
-			StructuredPayload: requestScope,
+			StructuredPayload: assistantMessageStructured,
 			ToolCallCount:     len(toolCalls),
 			ProviderID:        selectedProviderID,
 			ModelID:           selectedModelID,
@@ -177,7 +200,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 	}
 
 	assistantContent, assistantStructured := normalizeAIModelAnswer(assistantResp.Content)
-	assistantStructured = mergeAIStructuredPayload(assistantStructured, requestScope)
+	assistantStructured = mergeAIStructuredPayload(assistantStructured, assistantMessageStructured)
 	assistantResp.Content = assistantContent
 
 	assistantMessage := model.AIMessage{
@@ -204,6 +227,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		RequestTokens:  assistantResp.Usage.RequestTokens,
 		ResponseTokens: assistantResp.Usage.ResponseTokens,
 		TotalTokens:    assistantResp.Usage.TotalTokens,
+		ImageCount:     len(normalizedImages),
 		LatencyMS:      assistantResp.Usage.LatencyMS,
 	}
 	if err := s.db.WithContext(ctx).Create(&usage).Error; err != nil {
@@ -315,6 +339,7 @@ func buildAIMessageScopeSnapshot(
 	req AIChatRequest,
 	providerID,
 	modelID *uint64,
+	images []model.JSONMap,
 ) model.JSONMap {
 	scope := model.JSONMap{
 		"request_scope": model.JSONMap{
@@ -334,7 +359,69 @@ func buildAIMessageScopeSnapshot(
 	if modelID != nil && *modelID > 0 {
 		requestScope["model_id"] = *modelID
 	}
+	if len(images) > 0 {
+		requestScope["image_count"] = len(images)
+		scope["request_images"] = images
+	}
 	return scope
+}
+
+func normalizeAIChatImages(images []AIChatImageInput) []model.JSONMap {
+	if len(images) == 0 {
+		return nil
+	}
+
+	out := make([]model.JSONMap, 0, minInt(len(images), 6))
+	for _, item := range images {
+		if len(out) >= 6 {
+			break
+		}
+		dataURL := strings.TrimSpace(item.DataURL)
+		contentType := strings.TrimSpace(item.ContentType)
+		name := strings.TrimSpace(item.Name)
+		if dataURL == "" || !strings.HasPrefix(strings.ToLower(dataURL), "data:image/") {
+			continue
+		}
+		if contentType == "" {
+			contentType = inferAIChatImageContentType(dataURL)
+		}
+		if !strings.HasPrefix(strings.ToLower(contentType), "image/") {
+			continue
+		}
+		if len(dataURL) > 8*1024*1024 {
+			continue
+		}
+		if name == "" {
+			name = "image"
+		}
+		out = append(out, model.JSONMap{
+			"name":         name,
+			"content_type": contentType,
+			"data_url":     dataURL,
+			"size":         maxInt64(item.Size, 0),
+		})
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func inferAIChatImageContentType(dataURL string) string {
+	trimmed := strings.TrimSpace(dataURL)
+	if !strings.HasPrefix(strings.ToLower(trimmed), "data:") {
+		return ""
+	}
+	trimmed = strings.TrimPrefix(trimmed, "data:")
+	parts := strings.SplitN(trimmed, ";", 2)
+	return strings.TrimSpace(parts[0])
+}
+
+func maxInt64(value, floor int64) int64 {
+	if value < floor {
+		return floor
+	}
+	return value
 }
 
 func aiConversationRunStatusFromError(err error) string {
@@ -451,7 +538,11 @@ func (s *AIChatService) ensureConversation(ctx context.Context, userID uint64, u
 	return conversation, nil
 }
 
-func (s *AIChatService) buildGatewayMessages(ctx context.Context, conversationID uint64) ([]AIGatewayMessage, error) {
+func (s *AIChatService) buildGatewayMessages(
+	ctx context.Context,
+	conversationID uint64,
+	currentScope aiMessageRequestScope,
+) ([]AIGatewayMessage, error) {
 	var rows []model.AIMessage
 	if err := s.db.WithContext(ctx).
 		Where("conversation_id = ?", conversationID).
@@ -461,8 +552,9 @@ func (s *AIChatService) buildGatewayMessages(ctx context.Context, conversationID
 		return nil, err
 	}
 
-	messages := make([]AIGatewayMessage, 0, len(rows))
-	for _, row := range rows {
+	filteredRows := buildScopedGatewayHistory(rows, currentScope)
+	messages := make([]AIGatewayMessage, 0, len(filteredRows))
+	for _, row := range filteredRows {
 		role := strings.ToLower(strings.TrimSpace(row.Role))
 		if role == "" {
 			role = "user"
@@ -473,6 +565,75 @@ func (s *AIChatService) buildGatewayMessages(ctx context.Context, conversationID
 		})
 	}
 	return messages, nil
+}
+
+func buildScopedGatewayHistory(rows []model.AIMessage, currentScope aiMessageRequestScope) []model.AIMessage {
+	if len(rows) == 0 {
+		return nil
+	}
+	if !currentScope.hasExplicitScope() {
+		return append([]model.AIMessage(nil), rows...)
+	}
+
+	filteredReversed := make([]model.AIMessage, 0, len(rows))
+	seenScopedCurrent := false
+	for i := len(rows) - 1; i >= 0; i-- {
+		row := rows[i]
+		rowScope := extractAIMessageRequestScope(row.StructuredJSON)
+		if rowScope.hasExplicitScope() {
+			if !currentScope.matches(rowScope) {
+				break
+			}
+			seenScopedCurrent = true
+			filteredReversed = append(filteredReversed, row)
+			continue
+		}
+		if seenScopedCurrent && strings.EqualFold(strings.TrimSpace(row.Role), "system") {
+			filteredReversed = append(filteredReversed, row)
+		}
+	}
+
+	if len(filteredReversed) == 0 {
+		return append([]model.AIMessage(nil), rows[len(rows)-1])
+	}
+
+	filtered := make([]model.AIMessage, 0, len(filteredReversed))
+	for i := len(filteredReversed) - 1; i >= 0; i-- {
+		filtered = append(filtered, filteredReversed[i])
+	}
+	return filtered
+}
+
+func extractAIMessageRequestScope(structured model.JSONMap) aiMessageRequestScope {
+	if len(structured) == 0 {
+		return aiMessageRequestScope{}
+	}
+	raw, _ := structured["request_scope"].(model.JSONMap)
+	if raw == nil {
+		if mapValue, ok := structured["request_scope"].(map[string]any); ok {
+			raw = model.JSONMap(mapValue)
+		}
+	}
+	if raw == nil {
+		return aiMessageRequestScope{}
+	}
+	return aiMessageRequestScope{
+		AssistantMode: strings.TrimSpace(fmt.Sprint(raw["assistant_mode"])),
+		Namespace:     strings.TrimSpace(fmt.Sprint(raw["namespace"])),
+		ResourceKind:  strings.TrimSpace(fmt.Sprint(raw["resource_kind"])),
+		ResourceName:  strings.TrimSpace(fmt.Sprint(raw["resource_name"])),
+	}
+}
+
+func (s aiMessageRequestScope) hasExplicitScope() bool {
+	return strings.TrimSpace(s.Namespace) != "" || strings.TrimSpace(s.ResourceKind) != "" || strings.TrimSpace(s.ResourceName) != ""
+}
+
+func (s aiMessageRequestScope) matches(other aiMessageRequestScope) bool {
+	return strings.EqualFold(strings.TrimSpace(s.AssistantMode), strings.TrimSpace(other.AssistantMode)) &&
+		strings.EqualFold(strings.TrimSpace(s.Namespace), strings.TrimSpace(other.Namespace)) &&
+		strings.EqualFold(strings.TrimSpace(s.ResourceKind), strings.TrimSpace(other.ResourceKind)) &&
+		strings.EqualFold(strings.TrimSpace(s.ResourceName), strings.TrimSpace(other.ResourceName))
 }
 
 func buildConversationSummary(content string) string {

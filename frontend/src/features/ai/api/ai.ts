@@ -184,6 +184,13 @@ export interface CreateAIConversationRequest {
   opening_message?: string
 }
 
+export interface AIChatImagePayload {
+  name: string
+  content_type: string
+  data_url: string
+  size?: number
+}
+
 export interface SendAIChatRequest {
   conversation_id?: number
   message: string
@@ -194,6 +201,7 @@ export interface SendAIChatRequest {
   namespace?: string
   resource_kind?: string
   resource_name?: string
+  images?: AIChatImagePayload[]
 }
 
 export interface SendAIChatResponse {

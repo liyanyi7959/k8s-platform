@@ -392,6 +392,19 @@
                     </div>
                     <div v-else class="message-content markdown-body" v-html="renderMarkdown(message.content)" />
 
+                    <div v-if="message.role === 'user' && extractMessageImages(message).length > 0" class="message-images">
+                      <button
+                        v-for="image in extractMessageImages(message)"
+                        :key="`${message.id}-${image.id}`"
+                        type="button"
+                        class="message-image"
+                        @click="previewStoredImage(image)"
+                      >
+                        <img :src="image.url" :alt="image.name" />
+                        <span>{{ image.name }}</span>
+                      </button>
+                    </div>
+
                     <div v-if="extractSuggestedActions(message.structured).length > 0" class="message-suggestions">
                       <div
                         v-for="action in extractSuggestedActions(message.structured)"
@@ -724,6 +737,7 @@ import {
 
 import {
   confirmAIActionProposal,
+  type AIChatImagePayload,
   createAIActionProposal,
   createAIConversation,
   deleteAIConversation,
@@ -777,7 +791,23 @@ interface PastedImage {
   id: string
   name: string
   url: string
-  file: File
+  file?: File
+  contentType?: string
+  size?: number
+  dataUrl?: string
+}
+
+interface PreviewImageAsset {
+  name: string
+  url: string
+}
+
+interface MessageImageAttachment {
+  id: string
+  name: string
+  url: string
+  contentType?: string
+  size?: number
 }
 
 interface MessageRequestScope {
@@ -790,6 +820,7 @@ interface MessageRequestScope {
   provider_id?: number
   model_id?: number
   prefer_model?: string
+  image_count?: number
 }
 
 const clusters = ref<ClusterItem[]>([])
@@ -822,7 +853,7 @@ const loadingNamespaces = ref(false)
 const loadingResourceNames = ref(false)
 const pastedImages = ref<PastedImage[]>([])
 const imagePreviewVisible = ref(false)
-const previewingImage = ref<PastedImage>()
+const previewingImage = ref<PreviewImageAsset>()
 const pinnedConversationKey = 'ai-assistant:pinned-conversations'
 const favoritedAssistantMessageKey = 'ai-assistant:favorited-assistant-messages'
 const hiddenAssistantMessageKey = 'ai-assistant:hidden-assistant-messages'
@@ -1047,6 +1078,10 @@ function pendingAssistantReplyText() {
 }
 
 function buildRequestScopePayload() {
+  return buildRequestScopePayloadWithImages([])
+}
+
+function buildRequestScopePayloadWithImages(images: AIChatImagePayload[]) {
   const selectedModelOption = resolveSelectedModel()
   const payload: MessageRequestScope = {
     cluster_id: selectedClusterId.value,
@@ -1059,13 +1094,53 @@ function buildRequestScopePayload() {
     model_id: selectedModelOption?.id,
     prefer_model: selectedModelOption?.model_code || undefined
   }
-  return { request_scope: payload }
+  if (images.length > 0) {
+    payload.image_count = images.length
+  }
+  return {
+    request_scope: payload,
+    request_images: images
+  }
 }
 
 function extractMessageRequestScope(message?: AIMessageItem) {
   const raw = message?.structured?.request_scope
   if (!raw || typeof raw !== 'object') return undefined
   return raw as MessageRequestScope
+}
+
+function extractMessageImages(message?: AIMessageItem): MessageImageAttachment[] {
+  const structured = message?.structured
+  if (!structured || typeof structured !== 'object') return []
+
+  const candidates = [
+    (structured as Record<string, unknown>).request_images,
+    (structured as Record<string, unknown>).images
+  ]
+  const seen = new Set<string>()
+  const out: MessageImageAttachment[] = []
+  for (const candidate of candidates) {
+    if (!Array.isArray(candidate)) continue
+    for (let index = 0; index < candidate.length; index += 1) {
+      const raw = candidate[index]
+      if (!raw || typeof raw !== 'object') continue
+      const record = raw as Record<string, unknown>
+      const url = asString(record.data_url) ?? asString(record.url)
+      if (!url) continue
+      const name = asString(record.name) ?? `图片 ${index + 1}`
+      const key = `${name}:${url}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push({
+        id: `${index}-${name}`,
+        name,
+        url,
+        contentType: asString(record.content_type),
+        size: asNumber(record.size)
+      })
+    }
+  }
+  return out
 }
 
 function messageScopeTags(message: AIMessageItem) {
@@ -1158,6 +1233,78 @@ function createOptimisticMessage(input: {
     created_by: 0,
     created_at: input.createdAt
   }
+}
+
+function buildComposerResourceValue(namespace?: string, resourceName?: string) {
+  const ns = (namespace || '').trim()
+  const name = (resourceName || '').trim()
+  if (!name) return ''
+  return ns ? `${ns}/${name}` : name
+}
+
+async function serializeComposerImages(images: PastedImage[]): Promise<AIChatImagePayload[]> {
+  const out: AIChatImagePayload[] = []
+  for (const image of images) {
+    const dataUrl = image.dataUrl || await readFileAsDataURL(image.file)
+    if (!dataUrl) continue
+    out.push({
+      name: image.name,
+      content_type: image.contentType || inferImageContentType(dataUrl),
+      data_url: dataUrl,
+      size: image.size
+    })
+  }
+  return out
+}
+
+function readFileAsDataURL(file?: File): Promise<string> {
+  if (!file) return Promise.resolve('')
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
+    reader.onerror = () => reject(reader.error ?? new Error('图片读取失败'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function inferImageContentType(dataUrl: string) {
+  const matched = dataUrl.match(/^data:([^;,]+)[;,]/i)
+  return matched?.[1]?.trim() || 'image/png'
+}
+
+function revokeImageUrl(url?: string) {
+  if (!url || !url.startsWith('blob:')) return
+  URL.revokeObjectURL(url)
+}
+
+function replaceComposerImages(images: MessageImageAttachment[]) {
+  clearPastedImages()
+  pastedImages.value = images.map((image, index) => ({
+    id: `${Date.now()}-${index}-${image.name}`,
+    name: image.name,
+    url: image.url,
+    contentType: image.contentType,
+    size: image.size,
+    dataUrl: image.url
+  }))
+}
+
+async function restoreComposerFromUserMessage(message: AIMessageItem) {
+  const scope = extractMessageRequestScope(message)
+  draftAssistantMode.value = scope?.assistant_mode === 'chat' ? 'chat' : 'diagnose'
+  draftNamespace.value = scope?.namespace || ''
+  draftResourceKind.value = scope?.resource_kind || ''
+  resourceNameOptions.value = []
+  if (draftResourceKind.value) {
+    await loadResourceNames()
+  } else {
+    draftResourceName.value = ''
+  }
+  draftResourceName.value = buildComposerResourceValue(scope?.namespace, scope?.resource_name)
+  if (scope?.model_id && filteredModelOptions.value.some((item) => item.id === scope.model_id)) {
+    selectedModelId.value = scope.model_id
+  }
+  replaceComposerImages(extractMessageImages(message))
 }
 
 function upsertConversationListItem(conversationId: number, message: string, updatedAt: string, status = '处理中') {
@@ -1719,7 +1866,14 @@ async function sendMessage() {
     return
   }
   const selectedModelOption = resolveSelectedModel()
-  const requestScopePayload = buildRequestScopePayload()
+  let preparedImages: AIChatImagePayload[] = []
+  try {
+    preparedImages = await serializeComposerImages(pastedImages.value)
+  } catch (error) {
+    ElMessage.error(resolveSendErrorMessage(error, '图片读取失败，请重新粘贴后再试'))
+    return
+  }
+  const requestScopePayload = buildRequestScopePayloadWithImages(preparedImages)
   const persistedConversationId = hasPersistedConversationId(activeConversationId.value) ? activeConversationId.value : undefined
   const createdAt = new Date().toISOString()
   const optimisticConversationId = ensureOptimisticConversation(message, createdAt)
@@ -1756,7 +1910,8 @@ async function sendMessage() {
       prefer_model: selectedModelOption?.model_code,
       namespace: resolvedNamespace.value || undefined,
       resource_kind: draftResourceKind.value || undefined,
-      resource_name: resolvedResourceName.value || undefined
+      resource_name: resolvedResourceName.value || undefined,
+      images: preparedImages.length > 0 ? preparedImages : undefined
     }, { signal: controller.signal })
     if (!hasPersistedConversationId(optimisticConversationId)) {
       removeLocalConversation(optimisticConversationId)
@@ -1851,7 +2006,9 @@ function handleComposerPaste(event: ClipboardEvent) {
     id: `${Date.now()}-${index}-${file.name || 'paste'}`,
     name: file.name || `粘贴图片 ${pastedImages.value.length + index + 1}`,
     file,
-    url: URL.createObjectURL(file)
+    url: URL.createObjectURL(file),
+    contentType: file.type,
+    size: file.size
   }))
   pastedImages.value = [...pastedImages.value, ...nextImages].slice(-6)
 }
@@ -1861,14 +2018,19 @@ function previewImage(image: PastedImage) {
   imagePreviewVisible.value = true
 }
 
+function previewStoredImage(image: MessageImageAttachment) {
+  previewingImage.value = image
+  imagePreviewVisible.value = true
+}
+
 function removePastedImage(id: string) {
   const image = pastedImages.value.find((item) => item.id === id)
-  if (image) URL.revokeObjectURL(image.url)
+  if (image) revokeImageUrl(image.url)
   pastedImages.value = pastedImages.value.filter((item) => item.id !== id)
 }
 
 function clearPastedImages() {
-  pastedImages.value.forEach((item) => URL.revokeObjectURL(item.url))
+  pastedImages.value.forEach((item) => revokeImageUrl(item.url))
   pastedImages.value = []
 }
 
@@ -2058,6 +2220,7 @@ function quoteAssistantMessage(message: AIMessageItem) {
 function editUserMessage(message: AIMessageItem) {
   if (!canOperateUserMessage(message)) return
   draftMessage.value = message.content.trim()
+  void restoreComposerFromUserMessage(message)
   focusComposerInput()
   ElMessage.success('已将消息放回输入框，可直接修改后重发')
 }
@@ -4254,6 +4417,41 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
   white-space: normal;
   word-break: break-word;
+}
+
+.message-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.message-image {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 132px;
+  padding: 6px;
+  border: 1px solid #dbe7f5;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #475569;
+  text-align: left;
+  cursor: pointer;
+}
+
+.message-image img {
+  width: 100%;
+  height: 92px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.message-image span {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .timeline-end-anchor {
