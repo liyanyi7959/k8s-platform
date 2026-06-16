@@ -31,7 +31,7 @@ defineProps<{
 }
 
 .events-empty {
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 600;
   padding: 20px 16px;
@@ -55,7 +55,7 @@ defineProps<{
 }
 
 .events-item:hover {
-  border-color: color-mix(in srgb, var(--app-accent-blue) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-primary) 20%, transparent);
 }
 
 .events-title {
@@ -68,7 +68,7 @@ defineProps<{
 .events-sub {
   margin-top: 2px;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -78,7 +78,7 @@ defineProps<{
 
 .events-time {
   font-weight: 700;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 

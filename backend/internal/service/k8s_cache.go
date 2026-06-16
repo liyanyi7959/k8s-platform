@@ -90,6 +90,17 @@ func (m *objCacheManager) stop(clusterID uint64) {
 	}
 }
 
+// cachedIDs 返回当前缓存中所有集群 ID。
+func (m *objCacheManager) cachedIDs() []uint64 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	ids := make([]uint64, 0, len(m.clusters))
+	for id := range m.clusters {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
 func (m *objCacheManager) isBackoff(clusterID uint64, kind string) bool {
 	if m == nil {
 		return false
@@ -394,6 +405,17 @@ func (m *podCacheManager) stop(clusterID uint64) {
 	if e != nil {
 		close(e.stopCh)
 	}
+}
+
+// cachedIDs 返回当前缓存中所有集群 ID。
+func (m *podCacheManager) cachedIDs() []uint64 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	ids := make([]uint64, 0, len(m.clusters))
+	for id := range m.clusters {
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 func (m *podCacheManager) isBackoff(clusterID uint64) bool {

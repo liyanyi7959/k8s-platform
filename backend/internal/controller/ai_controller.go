@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -267,6 +270,52 @@ func (ctl *AIController) SendChat(c *gin.Context) {
 		return
 	}
 	resp.OK(c, data)
+}
+
+// SendChatStream handles SSE streaming chat requests.
+func (ctl *AIController) SendChatStream(c *gin.Context) {
+	clusterID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	if clusterID == 0 {
+		resp.Fail(c, 4000, "集群 ID 无效")
+		return
+	}
+
+	var req service.AIChatRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.Fail(c, 4000, "请求参数无效")
+		return
+	}
+	req.ClusterID = clusterID
+
+	var userID uint64
+	var username string
+	if claims, ok := middleware.GetClaims(c); ok && claims != nil {
+		if claims.UserID > 0 {
+			userID = uint64(claims.UserID)
+		}
+		username = strings.TrimSpace(claims.Username)
+		if len(req.UserPerms) == 0 {
+			req.UserPerms = append([]string(nil), claims.Perms...)
+		}
+	}
+
+	// Set SSE headers
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		resp.Fail(c, 5000, "当前网关不支持流式响应")
+		return
+	}
+
+	_ = ctl.chatSvc.SendChatStream(c.Request.Context(), userID, username, req, func(chunk service.AIStreamChunk) {
+		data, _ := json.Marshal(chunk)
+		fmt.Fprintf(c.Writer, "data: %s\n\n", data)
+		flusher.Flush()
+	})
 }
 
 func (ctl *AIController) CreateActionProposal(c *gin.Context) {

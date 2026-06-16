@@ -1,5 +1,6 @@
 import { http } from '@/shared/http/http'
 import type { ApiResponse, PageResult } from '@/shared/types/api'
+import { getToken } from '@/shared/utils/auth'
 
 async function unwrap<T>(request: Promise<unknown>): Promise<T> {
   const resp = (await request) as ApiResponse<T>
@@ -303,6 +304,111 @@ export function deleteAIConversation(id: number) {
 
 export function createAIConversation(clusterId: number, data: CreateAIConversationRequest) {
   return unwrap<{ id: number }>(http.post(`/api/v1/clusters/${clusterId}/ai/conversations`, data))
+}
+
+/** SSE 流式聊天的回调函数类型 */
+export interface AIStreamCallbacks {
+  onChunk: (delta: string) => void
+  onDone: (data: {
+    conversation_id: number
+    user_message_id: number
+    assistant_message_id: number
+    provider_name: string
+    model_name: string
+    model_code: string
+    tool_calls: AIToolCallItem[]
+    action_proposals: AIActionProposalItem[]
+  }) => void
+  onError: (message: string) => void
+}
+
+/** SSE 流式聊天请求，返回 abort 函数用于取消 */
+export function sendAIChatStream(
+  clusterId: number,
+  data: SendAIChatRequest,
+  callbacks: AIStreamCallbacks,
+  options?: { signal?: AbortSignal }
+): { abort: () => void } {
+  const controller = new AbortController()
+  // Link external signal to internal controller
+  if (options?.signal) {
+    if (options.signal.aborted) {
+      controller.abort()
+    } else {
+      options.signal.addEventListener('abort', () => controller.abort(), { once: true })
+    }
+  }
+
+  const runtimeBase = String(localStorage.getItem('k8s_platform_api_base') ?? '').trim()
+  const envBase = import.meta.env.VITE_API_BASE_URL ?? ''
+  const rawBase = runtimeBase || envBase || window.location.origin
+  let baseUrl = ''
+  try {
+    const u = new URL(rawBase.startsWith('http') ? rawBase : `http://${rawBase}`)
+    baseUrl = `${u.protocol}//${u.host}${u.pathname.replace(/\/+$/, '')}`
+  } catch {
+    baseUrl = ''
+  }
+
+  const token = getToken()
+
+  const url = `${baseUrl}/api/v1/clusters/${clusterId}/ai/chat/stream`
+
+  ;(async () => {
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data),
+        signal: controller.signal
+      })
+
+      if (!resp.ok) {
+        callbacks.onError(`HTTP ${resp.status}`)
+        return
+      }
+
+      const reader = resp.body!.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const payload = line.slice(6).trim()
+          if (!payload || payload === '[DONE]') continue
+
+          try {
+            const event = JSON.parse(payload) as { type: string; content?: string; error?: string }
+            if (event.type === 'chunk' && event.content) {
+              callbacks.onChunk(event.content)
+            } else if (event.type === 'done' && event.content) {
+              callbacks.onDone(JSON.parse(event.content))
+            } else if (event.type === 'error') {
+              callbacks.onError(event.error || '未知错误')
+            }
+          } catch {
+            // skip malformed JSON
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      callbacks.onError(err instanceof Error ? err.message : '网络错误')
+    }
+  })()
+
+  return { abort: () => controller.abort() }
 }
 
 export function sendAIChat(clusterId: number, data: SendAIChatRequest, options: { signal?: AbortSignal } = {}) {

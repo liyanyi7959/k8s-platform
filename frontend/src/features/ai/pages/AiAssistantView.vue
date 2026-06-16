@@ -744,7 +744,8 @@ import {
   getAIConversationDetail,
   getAIConversations,
   getAIModels,
-  sendAIChat,
+  sendAIChatStream,
+  type SendAIChatResponse,
   type AIActionProposalItem,
   type AIConversationDetail,
   type AIConversationItem,
@@ -1901,7 +1902,7 @@ async function sendMessage() {
   const controller = new AbortController()
   activeSendController.value = controller
   try {
-    const result = await sendAIChat(selectedClusterId.value, {
+    const streamRequestData = {
       conversation_id: persistedConversationId,
       message,
       assistant_mode: persistedConversationId ? undefined : draftAssistantMode.value,
@@ -1912,7 +1913,34 @@ async function sendMessage() {
       resource_kind: draftResourceKind.value || undefined,
       resource_name: resolvedResourceName.value || undefined,
       images: preparedImages.length > 0 ? preparedImages : undefined
-    }, { signal: controller.signal })
+    }
+    const result = await new Promise<SendAIChatResponse>((resolve, reject) => {
+      let fullContent = ''
+      sendAIChatStream(selectedClusterId.value!, streamRequestData, {
+        onChunk(delta) {
+          fullContent += delta
+          patchOptimisticAssistantMessage(optimisticConversationId, optimisticAssistantMessage.id, {
+            content: fullContent
+          })
+        },
+        onDone(data) {
+          resolve({
+            conversation_id: data.conversation_id,
+            user_message_id: data.user_message_id,
+            assistant_message_id: data.assistant_message_id,
+            assistant_message: fullContent,
+            provider_name: data.provider_name,
+            model_name: data.model_name,
+            model_code: data.model_code,
+            tool_calls: data.tool_calls,
+            action_proposals: data.action_proposals
+          })
+        },
+        onError(msg) {
+          reject(new Error(msg))
+        }
+      }, { signal: controller.signal })
+    })
     if (!hasPersistedConversationId(optimisticConversationId)) {
       removeLocalConversation(optimisticConversationId)
     }

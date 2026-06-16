@@ -30,8 +30,8 @@ const statKeys = ['status', 'nodes', 'pods', 'workloads'] as const
   position: relative;
   overflow: hidden;
   border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--core-stat-value-color, var(--app-accent-blue)) 18%, var(--k8s-card-border));
-  background: linear-gradient(135deg, var(--k8s-card-bg) 60%, color-mix(in srgb, var(--core-stat-value-color, var(--app-accent-blue)) 4%, transparent));
+  border: 1px solid color-mix(in srgb, var(--core-stat-value-color, var(--color-accent-primary)) 18%, var(--k8s-card-border));
+  background: linear-gradient(135deg, var(--k8s-card-bg) 60%, color-mix(in srgb, var(--core-stat-value-color, var(--color-accent-primary)) 4%, transparent));
   padding: 18px 20px;
   min-height: 96px;
   display: flex;
@@ -51,7 +51,7 @@ const statKeys = ['status', 'nodes', 'pods', 'workloads'] as const
   bottom: 12px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--core-stat-value-color, var(--app-accent-blue));
+  background: var(--core-stat-value-color, var(--color-accent-primary));
   opacity: 0.75;
   transition: opacity 0.2s;
 }
@@ -65,13 +65,13 @@ const statKeys = ['status', 'nodes', 'pods', 'workloads'] as const
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--core-stat-value-color, var(--app-accent-blue)) 12%, transparent), transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--core-stat-value-color, var(--color-accent-primary)) 12%, transparent), transparent 70%);
   pointer-events: none;
 }
 
 .core-stat:hover {
-  border-color: color-mix(in srgb, var(--core-stat-value-color, var(--app-accent-blue)) 35%, transparent);
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--core-stat-value-color, var(--app-accent-blue)) 10%, transparent);
+  border-color: color-mix(in srgb, var(--core-stat-value-color, var(--color-accent-primary)) 35%, transparent);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--core-stat-value-color, var(--color-accent-primary)) 10%, transparent);
   transform: translateY(-1px);
 }
 
@@ -80,10 +80,10 @@ const statKeys = ['status', 'nodes', 'pods', 'workloads'] as const
 }
 
 /* ── Color variants ── */
-.core-stat--cyan { --core-stat-value-color: var(--app-accent-cyan); }
-.core-stat--blue { --core-stat-value-color: var(--app-accent-blue); }
-.core-stat--violet { --core-stat-value-color: var(--app-accent-violet); }
-.core-stat--slate { --core-stat-value-color: var(--app-title); }
+.core-stat--cyan { --core-stat-value-color: var(--color-accent-cyan); }
+.core-stat--blue { --core-stat-value-color: var(--color-accent-primary); }
+.core-stat--violet { --core-stat-value-color: var(--color-accent-violet); }
+.core-stat--slate { --core-stat-value-color: var(--color-text-title); }
 .core-stat--status-ok { --core-stat-value-color: var(--c-emerald-500); }
 .core-stat--status-warn { --core-stat-value-color: var(--c-amber-500); }
 .core-stat--status-bad { --core-stat-value-color: var(--c-red-500); }
@@ -91,7 +91,7 @@ const statKeys = ['status', 'nodes', 'pods', 'workloads'] as const
 /* ── Typography ── */
 .stat-label {
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -102,21 +102,21 @@ const statKeys = ['status', 'nodes', 'pods', 'workloads'] as const
   font-weight: 900;
   letter-spacing: -0.5px;
   line-height: 1;
-  color: var(--core-stat-value-color, var(--app-title));
+  color: var(--core-stat-value-color, var(--color-text-title));
 }
 
 .stat-sub {
   margin-top: 10px;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   letter-spacing: 0.01em;
   opacity: 0.85;
 }
 
 /* ── Dark mode ── */
 :global(html.dark) .core-stat {
-  background: linear-gradient(135deg, rgba(2, 6, 23, 0.5) 60%, color-mix(in srgb, var(--core-stat-value-color, var(--app-accent-blue)) 8%, transparent));
-  border-color: color-mix(in srgb, var(--core-stat-value-color, var(--app-accent-blue)) 15%, rgba(226, 232, 240, 0.10));
+  background: linear-gradient(135deg, rgba(2, 6, 23, 0.5) 60%, color-mix(in srgb, var(--core-stat-value-color, var(--color-accent-primary)) 8%, transparent));
+  border-color: color-mix(in srgb, var(--core-stat-value-color, var(--color-accent-primary)) 15%, rgba(226, 232, 240, 0.10));
 }
 
 :global(html.dark) .core-stat::before {

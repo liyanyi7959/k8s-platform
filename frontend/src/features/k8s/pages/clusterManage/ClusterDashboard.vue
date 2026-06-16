@@ -866,11 +866,11 @@ onBeforeUnmount(() => { disposeCharts() })
 .kd {
   --g: 12px;
   --r: 8px;
-  --border: color-mix(in srgb, var(--app-title, #1e293b) 7%, transparent);
+  --border: color-mix(in srgb, var(--color-text-title, #1e293b) 7%, transparent);
   --bg: var(--color-bg-card, #fff);
-  --bg2: color-mix(in srgb, var(--app-title, #1e293b) 2.5%, var(--bg));
-  --fg: var(--app-title, #1e293b);
-  --fg2: var(--app-muted, #64748b);
+  --bg2: color-mix(in srgb, var(--color-text-title, #1e293b) 2.5%, var(--bg));
+  --fg: var(--color-text-title, #1e293b);
+  --fg2: var(--color-text-muted, #64748b);
   --c-cyan:   #0891b2;
   --c-blue:   #2563eb;
   --c-violet: #7c3aed;

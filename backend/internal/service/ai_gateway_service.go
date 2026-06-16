@@ -418,6 +418,112 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 	}, nil
 }
 
+// AIGatewayStreamResult holds the final result after streaming completes.
+type AIGatewayStreamResult struct {
+	ProviderID   uint64
+	ProviderName string
+	ModelID      uint64
+	ModelName    string
+	ModelCode    string
+	Usage        AIGatewayUsage
+}
+
+// InvokeStream starts a streaming chat completion request. It returns:
+//   - an io.ReadCloser for the SSE event stream (caller must close)
+//   - the resolved provider/model metadata
+//   - an error if the request setup or HTTP call fails
+//
+// The caller is responsible for reading and parsing SSE lines from the reader,
+// and for closing it when done.
+func (s *AIGatewayService) InvokeStream(ctx context.Context, req AIGatewayRequest) (io.ReadCloser, AIGatewayStreamResult, error) {
+	var result AIGatewayStreamResult
+	if s.db == nil {
+		return nil, result, errors.New("db is required")
+	}
+
+	provider, aiModel, apiKey, err := s.resolveInvocationTarget(ctx, req)
+	if err != nil {
+		return nil, result, err
+	}
+
+	if apiKey == "" {
+		return nil, result, ErrWithMessage(ErrInvalidParams, "当前 AI 提供商未配置 API Key")
+	}
+
+	result.ProviderID = provider.ID
+	result.ProviderName = provider.Name
+	result.ModelID = aiModel.ID
+	result.ModelName = aiModel.Name
+	result.ModelCode = aiModel.ModelCode
+
+	systemPrompt := buildAISystemPromptV2(req.AssistantMode)
+	messages := make([]map[string]string, 0, len(req.Messages)+2)
+	messages = append(messages, map[string]string{"role": "system", "content": systemPrompt})
+	if scopeNote := strings.TrimSpace(req.ScopeNote); scopeNote != "" {
+		messages = append(messages, map[string]string{"role": "system", "content": scopeNote})
+	}
+	if notes := strings.TrimSpace(req.DiagnosticNotes); notes != "" {
+		messages = append(messages, map[string]string{
+			"role":    "system",
+			"content": "以下是平台自动收集的只读诊断信息，请优先基于这些证据分析，不要编造缺失事实。\n" + notes,
+		})
+	} else {
+		messages = append(messages, map[string]string{
+			"role":    "system",
+			"content": "当前没有拿到任何平台诊断证据。不要声称已经看到集群状态、Pod 状态、事件、日志或具体资源异常；请明确说明证据不足，并只给出下一步排查建议。",
+		})
+	}
+	for _, item := range req.Messages {
+		role := strings.ToLower(strings.TrimSpace(item.Role))
+		if role == "" {
+			role = "user"
+		}
+		messages = append(messages, map[string]string{"role": role, "content": item.Content})
+	}
+
+	payload := map[string]any{
+		"model":       aiModel.ModelCode,
+		"messages":    messages,
+		"temperature": 0.2,
+		"stream":      true,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, result, err
+	}
+
+	baseURL := strings.TrimRight(strings.TrimSpace(provider.BaseURL), "/")
+	if baseURL == "" {
+		baseURL = "https://api.openai.com/v1"
+	}
+	endpoint := baseURL + "/chat/completions"
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return nil, result, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+	httpReq.Header.Set("Accept", "text/event-stream")
+
+	httpResp, err := s.httpClient.Do(httpReq)
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
+			return nil, result, context.Canceled
+		}
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return nil, result, context.DeadlineExceeded
+		}
+		return nil, result, ErrWithMessage(ErrK8sNetwork, "AI 提供商连接失败")
+	}
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		_ = httpResp.Body.Close()
+		return nil, result, ErrWithMessage(ErrInvalidParams, fmt.Sprintf("AI 提供商返回异常状态: %d", httpResp.StatusCode))
+	}
+
+	return httpResp.Body, result, nil
+}
+
 func buildAISystemPromptV2(mode string) string {
 	base := "You are the built-in AI assistant of a Kubernetes management platform. The platform backend can directly collect live, read-only cluster evidence for the current scope. When evidence is provided, treat it as current platform data. State confirmed facts directly, separate them from inference, and do not say that you cannot access the cluster. Do not ask the user to run kubectl for data that the platform has already collected. If counts, lists, states, logs, metrics, events, or rollout details appear in evidence, answer with them directly. Only say evidence is insufficient when the evidence for this round is truly missing, partial, or failed."
 	if strings.TrimSpace(mode) == "chat" {

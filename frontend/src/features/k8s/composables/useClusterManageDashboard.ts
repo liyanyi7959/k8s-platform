@@ -9,6 +9,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, type ComputedRef } from 'vue'
 import * as dashboardApi from '@/features/dashboard/api/dashboard'
 import * as k8sApi from '@/features/k8s/api/k8s'
+import type { ResourceKey } from '@/features/k8s/pages/ClusterManageView.types'
 import { notifyError } from '@/shared/utils/notify'
 import type { ApiError } from '@/shared/utils/error'
 
@@ -22,7 +23,7 @@ import {
 export type { DashboardCardVm, DashboardWidgetKey }
 export { dashboardWidgetOptions }
 
-export function useClusterManageDashboard(opts: { clusterId: ComputedRef<number>; currentResource: ComputedRef<string | undefined> }) {
+export function useClusterManageDashboard(opts: { clusterId: ComputedRef<number>; currentResource: ComputedRef<ResourceKey | undefined> }) {
   const { clusterId, currentResource } = opts
 
   /* ── 响应式状态 ── */

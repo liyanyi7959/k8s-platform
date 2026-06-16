@@ -27,6 +27,7 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		perms    []string
 		wantCode int
 	}{
+		// ── Secret / Exec（已有） ──
 		{
 			name:     "secret reveal does not reuse read perm",
 			method:   http.MethodGet,
@@ -53,6 +54,120 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 			method:   http.MethodDelete,
 			path:     "/api/v1/clusters/1/roles/default/demo",
 			perms:    []string{"k8s:write"},
+			wantCode: 1003,
+		},
+		// ── RBAC：rbac_read / rbac_write 权限隔离 ──
+		{
+			name:     "clusterrole list requires rbac_read not k8s:read",
+			method:   http.MethodGet,
+			path:     "/api/v1/clusters/1/clusterroles",
+			perms:    []string{"k8s:read"},
+			wantCode: 1003,
+		},
+		{
+			name:     "rolebinding edit requires rbac_write not k8s:write",
+			method:   http.MethodPatch,
+			path:     "/api/v1/clusters/1/rolebindings/edit",
+			perms:    []string{"k8s:write"},
+			wantCode: 1003,
+		},
+		{
+			name:     "clusterrolebinding delete requires rbac_write",
+			method:   http.MethodDelete,
+			path:     "/api/v1/clusters/1/clusterrolebindings/admin",
+			perms:    []string{"k8s:write"},
+			wantCode: 1003,
+		},
+		// ── PDB ──
+		{
+			name:     "pdb list requires k8s:read",
+			method:   http.MethodGet,
+			path:     "/api/v1/clusters/1/pdbs",
+			perms:    []string{},
+			wantCode: 1003,
+		},
+		{
+			name:     "pdb delete requires k8s:write",
+			method:   http.MethodDelete,
+			path:     "/api/v1/clusters/1/pdbs/default/my-pdb",
+			perms:    []string{"k8s:read"},
+			wantCode: 1003,
+		},
+		// ── Lease ──
+		{
+			name:     "lease list requires k8s:read",
+			method:   http.MethodGet,
+			path:     "/api/v1/clusters/1/leases",
+			perms:    []string{},
+			wantCode: 1003,
+		},
+		// ── CRD ──
+		{
+			name:     "crd delete requires k8s:write",
+			method:   http.MethodDelete,
+			path:     "/api/v1/clusters/1/customresourcedefinitions/my-crd",
+			perms:    []string{"k8s:read"},
+			wantCode: 1003,
+		},
+		// ── Webhook ──
+		{
+			name:     "validating webhook list requires k8s:read",
+			method:   http.MethodGet,
+			path:     "/api/v1/clusters/1/validatingwebhookconfigurations",
+			perms:    []string{},
+			wantCode: 1003,
+		},
+		{
+			name:     "mutating webhook delete requires k8s:write",
+			method:   http.MethodDelete,
+			path:     "/api/v1/clusters/1/mutatingwebhookconfigurations/my-wh",
+			perms:    []string{"k8s:read"},
+			wantCode: 1003,
+		},
+		// ── EndpointSlice ──
+		{
+			name:     "endpointslice list requires k8s:read",
+			method:   http.MethodGet,
+			path:     "/api/v1/clusters/1/endpointslices",
+			perms:    []string{},
+			wantCode: 1003,
+		},
+		{
+			name:     "endpointslice delete requires k8s:write",
+			method:   http.MethodDelete,
+			path:     "/api/v1/clusters/1/endpointslices/default/my-eps",
+			perms:    []string{"k8s:read"},
+			wantCode: 1003,
+		},
+		// ── Namespace（namespace:read / namespace:write 权限隔离） ──
+		{
+			name:     "namespace create accepts namespace:write",
+			method:   http.MethodPost,
+			path:     "/api/v1/clusters/1/namespaces",
+			perms:    []string{"namespace:write"},
+			wantCode: 4000, // 有权限但缺少 body → 参数错误
+		},
+		{
+			name:     "namespace delete rejects k8s:read",
+			method:   http.MethodDelete,
+			path:     "/api/v1/clusters/1/namespaces/test-ns",
+			perms:    []string{"k8s:read"},
+			wantCode: 1003,
+		},
+		// ── ValidatingAdmissionPolicy ──
+		{
+			name:     "validatingadmissionpolicy list requires k8s:read",
+			method:   http.MethodGet,
+			path:     "/api/v1/clusters/1/validatingadmissionpolicies",
+			perms:    []string{},
+			wantCode: 1003,
+		},
+		// ── PriorityClass ──
+		{
+			name:     "priorityclass delete requires k8s:write",
+			method:   http.MethodDelete,
+			path:     "/api/v1/clusters/1/priorityclasses/my-pc",
+			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
 	}

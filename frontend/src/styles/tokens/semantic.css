@@ -42,7 +42,7 @@
   --color-text-secondary:  var(--c-slate-600);             /* 正文 / 次文字 */
   --color-text-muted:      var(--c-slate-400);             /* 辅助 / 占位符 */
   --color-text-inverse:    var(--c-white);                 /* 深色底上的文字 */
-  --color-text-title:      rgba(2, 6, 23, 0.92);          /* 兼容旧 --app-title */
+  --color-text-title:      rgba(2, 6, 23, 0.92);
 
   /* 边框 */
   --color-border-default:  rgba(0, 0, 0, 0.10);           /* 默认边框 */

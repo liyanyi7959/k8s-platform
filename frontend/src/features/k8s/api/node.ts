@@ -1,9 +1,9 @@
 // k8s 节点相关 API
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse, K8sObjectResponse } from '@/shared/types/api'
 
-export async function listNodes(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/nodes`, { params })) as ApiResponse<{ list: any[] }>
+export async function listNodes(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/nodes`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -12,8 +12,8 @@ export async function getNodeYaml(clusterId: number, name: string): Promise<{ te
   return resp.data
 }
 
-export async function getNodeDetail(clusterId: number, name: string): Promise<{ obj: any }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/nodes/${encodeURIComponent(name)}/detail`)) as ApiResponse<{ obj: any }>
+export async function getNodeDetail(clusterId: number, name: string): Promise<K8sObjectResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/nodes/${encodeURIComponent(name)}/detail`)) as ApiResponse<K8sObjectResponse<any>>
   return resp.data
 }
 
@@ -21,13 +21,13 @@ export async function listNodePods(
   clusterId: number,
   name: string,
   params: { sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/nodes/${encodeURIComponent(name)}/pods`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/nodes/${encodeURIComponent(name)}/pods`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
-export async function listNodeEvents(clusterId: number, name: string): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/nodes/${encodeURIComponent(name)}/events`)) as ApiResponse<{ list: any[] }>
+export async function listNodeEvents(clusterId: number, name: string): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/nodes/${encodeURIComponent(name)}/events`)) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 

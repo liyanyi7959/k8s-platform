@@ -4855,7 +4855,7 @@ onBeforeUnmount(() => {
 
 .logs-meta {
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
 }
 
 .logs-pane {
@@ -4926,7 +4926,7 @@ onBeforeUnmount(() => {
 }
 .pod-term-meta {
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   padding-top: 6px;
 }
 

@@ -1,8 +1,8 @@
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
-export async function listLeases(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-	const resp = (await http.get(`/api/v1/clusters/${clusterId}/leases`, { params })) as ApiResponse<{ list: any[] }>
+export async function listLeases(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+	const resp = (await http.get(`/api/v1/clusters/${clusterId}/leases`, { params })) as ApiResponse<K8sListResponse<any>>
 	return resp.data
 }
 

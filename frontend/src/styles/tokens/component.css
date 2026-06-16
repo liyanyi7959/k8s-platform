@@ -120,6 +120,9 @@ html.dark {
   --btn-info-shadow:     0 4px 12px rgba(100, 116, 139, 0.25);
   --btn-info-hover-shadow: 0 6px 16px rgba(100, 116, 139, 0.35);
   --btn-checked-shadow:  0 2px 5px rgba(59, 130, 246, 0.25);
+
+  --table-shadow:        0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  --card-glass-shadow:   0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.12);
 }
 
 /* ── 全局自定义滚动条 ────────────────────────────────────────────────── */

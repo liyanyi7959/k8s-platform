@@ -1,11 +1,11 @@
 // k8s 配置与发现相关 API（ConfigMap / Secret / ServiceAccount / HPA / Event）
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
 // ── ConfigMap ────────────────────────────────────────────
 
-export async function listConfigMaps(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/configmaps`, { params })) as ApiResponse<{ list: any[] }>
+export async function listConfigMaps(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/configmaps`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -46,8 +46,8 @@ export async function editConfigMap(clusterId: number, req: EditConfigMapRequest
 
 // ── Secret ───────────────────────────────────────────────
 
-export async function listSecrets(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/secrets`, { params })) as ApiResponse<{ list: any[] }>
+export async function listSecrets(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/secrets`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -97,8 +97,8 @@ export async function editSecret(clusterId: number, req: EditSecretRequest): Pro
 export async function listServiceAccounts(
   clusterId: number,
   params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/serviceaccounts`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/serviceaccounts`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -122,8 +122,8 @@ export async function getServiceAccountYaml(clusterId: number, ns: string, name:
 export async function listHPAs(
   clusterId: number,
   params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/hpas`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/hpas`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -159,7 +159,7 @@ export async function listEvents(
     sort_by?: string
     order?: 'asc' | 'desc'
   } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/events`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/events`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }

@@ -963,3 +963,25 @@ func (s *K8sService) StopClusterCaches(clusterID uint64) {
 		s.objCache.stop(clusterID)
 	}
 }
+
+// StopUnusedInformers 停止不在 activeIDs 集合中的所有 Informer 缓存。
+// 用于集群删除后清理遗留缓存，防止内存泄漏。
+func (s *K8sService) StopUnusedInformers(activeIDs map[uint64]bool) {
+	if s == nil {
+		return
+	}
+	if s.podCache != nil {
+		for _, id := range s.podCache.cachedIDs() {
+			if !activeIDs[id] {
+				s.podCache.stop(id)
+			}
+		}
+	}
+	if s.objCache != nil {
+		for _, id := range s.objCache.cachedIDs() {
+			if !activeIDs[id] {
+				s.objCache.stop(id)
+			}
+		}
+	}
+}

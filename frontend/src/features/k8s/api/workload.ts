@@ -1,12 +1,12 @@
 // k8s 工作负载相关 API（Deployment / StatefulSet / DaemonSet 等）
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
 export async function listWorkloads(
   clusterId: number,
   params: { kind?: string; namespace?: string; label_selector?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/workloads`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/workloads`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 

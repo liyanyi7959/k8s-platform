@@ -252,7 +252,7 @@ async function submit() {
 .manifest-apply-drawer__title {
   font-size: 18px;
   font-weight: 700;
-  color: var(--app-text);
+  color: var(--color-text-primary);
   white-space: nowrap;
 }
 
@@ -265,7 +265,7 @@ async function submit() {
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 999px;
   background: rgba(248, 250, 252, 0.92);
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   cursor: help;
   transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
@@ -348,7 +348,7 @@ async function submit() {
 .manifest-apply-drawer__result-title {
   font-size: 15px;
   font-weight: 700;
-  color: var(--app-text);
+  color: var(--color-text-primary);
 }
 
 .manifest-apply-drawer__alert {
@@ -384,7 +384,7 @@ async function submit() {
   margin-top: 8px;
   font-size: 12px;
   line-height: 1.6;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   word-break: break-word;
 }
 

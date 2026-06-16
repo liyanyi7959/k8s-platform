@@ -472,7 +472,7 @@ defineExpose({ reload: fetchData })
 .manifest-records__source-title {
   min-width: 0;
   font-weight: 600;
-  color: var(--app-text);
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -484,7 +484,7 @@ defineExpose({ reload: fetchData })
   padding: 3px 8px;
   border-radius: 999px;
   background: rgba(241, 245, 249, 0.95);
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   font-size: 12px;
   line-height: 1;
   white-space: nowrap;
@@ -493,7 +493,7 @@ defineExpose({ reload: fetchData })
 .manifest-records__summary {
   min-width: 0;
   flex: 1 1 auto;
-  color: var(--app-text);
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -530,14 +530,14 @@ defineExpose({ reload: fetchData })
 .manifest-records__detail-title {
   font-size: 18px;
   font-weight: 700;
-  color: var(--app-text);
+  color: var(--color-text-primary);
   line-height: 1.2;
 }
 
 .manifest-records__detail-sub {
   margin-top: 4px;
   font-size: 13px;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
 }
 
 .manifest-records__detail-actions {

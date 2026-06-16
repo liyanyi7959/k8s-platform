@@ -1,8 +1,8 @@
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
-export async function listPDBs(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/pdbs`, { params })) as ApiResponse<{ list: any[] }>
+export async function listPDBs(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/pdbs`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -19,8 +19,8 @@ export async function editPDB(clusterId: number, req: { namespace: string; yaml:
   await http.patch(`/api/v1/clusters/${clusterId}/pdbs/edit`, req)
 }
 
-export async function listRoles(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/roles`, { params })) as ApiResponse<{ list: any[] }>
+export async function listRoles(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/roles`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -37,8 +37,8 @@ export async function editRole(clusterId: number, req: { namespace: string; yaml
   await http.patch(`/api/v1/clusters/${clusterId}/roles/edit`, req)
 }
 
-export async function listClusterRoles(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/clusterroles`, { params })) as ApiResponse<{ list: any[] }>
+export async function listClusterRoles(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/clusterroles`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -55,8 +55,8 @@ export async function editClusterRole(clusterId: number, req: { yaml: string }):
   await http.patch(`/api/v1/clusters/${clusterId}/clusterroles/edit`, req)
 }
 
-export async function listRoleBindings(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/rolebindings`, { params })) as ApiResponse<{ list: any[] }>
+export async function listRoleBindings(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/rolebindings`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -73,8 +73,8 @@ export async function editRoleBinding(clusterId: number, req: { namespace: strin
   await http.patch(`/api/v1/clusters/${clusterId}/rolebindings/edit`, req)
 }
 
-export async function listClusterRoleBindings(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/clusterrolebindings`, { params })) as ApiResponse<{ list: any[] }>
+export async function listClusterRoleBindings(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/clusterrolebindings`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 

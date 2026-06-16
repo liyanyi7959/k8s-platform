@@ -1,27 +1,5 @@
 /* base.css — body 重置、极光背景动画、工具类
-   颜色 Token 已迁移至 tokens/primitives.css + semantic.css + component.css
-   下面保留向后兼容别名（指向新 Token），后续逐步删除 --app-* 引用 */
-
-:root {
-  /* ── 向后兼容别名 → 指向 semantic / component token ────────── */
-  --app-bg:               var(--color-bg-page);
-  --app-accent-cyan:      var(--color-accent-cyan);
-  --app-accent-blue:      var(--color-accent-primary);
-  --app-accent-violet:    var(--color-accent-violet);
-  --app-glow-cyan:        var(--glow-cyan);
-  --app-glow-blue:        var(--glow-blue);
-  --app-glow-violet:      var(--glow-violet);
-  --app-card-shadow:      var(--shadow-card);
-  --app-card-shadow-hover:var(--shadow-card-hover);
-  --app-radius:           14px;
-  --app-muted:            var(--color-text-muted);
-  --app-title:            var(--color-text-title);
-  --app-glass-bg:         var(--color-glass-bg);
-  --app-glass-bg-strong:  var(--color-glass-bg-strong);
-  --app-glass-border:     var(--color-glass-border);
-}
-
-/* html.dark 的值已在 semantic.css 中声明，此处无需重复 */
+   颜色 Token 已迁移至 tokens/primitives.css + semantic.css + component.css */
 
 html,
 body,
@@ -54,8 +32,15 @@ body::before {
     radial-gradient(520px 420px at 68% 86%, var(--glow-blue), transparent 62%);
   filter: blur(26px);
   opacity: 0.38;
+  contain: paint;
+  will-change: transform;
   transform: translate3d(0, 0, 0);
-  animation: app-aurora 18s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body::before {
+    animation: app-aurora 18s ease-in-out infinite alternate;
+  }
 }
 
 #app {

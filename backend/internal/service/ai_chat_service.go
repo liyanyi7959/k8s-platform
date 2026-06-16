@@ -1,9 +1,12 @@
 package service
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strconv"
 	"strings"
@@ -272,6 +275,291 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		ToolCalls:          toolCalls,
 		ActionProposals:    actionProposals,
 	}, nil
+}
+
+// AIStreamChunk represents a single event in the SSE stream.
+type AIStreamChunk struct {
+	Type    string `json:"type"`    // "chunk", "done", "error"
+	Content string `json:"content"` // delta text for "chunk"
+	Error   string `json:"error"`   // error message for "error"
+}
+
+// AIStreamDoneData is sent as the final "done" event payload.
+type AIStreamDoneData struct {
+	ConversationID     uint64                 `json:"conversation_id"`
+	UserMessageID      uint64                 `json:"user_message_id"`
+	AssistantMessageID uint64                 `json:"assistant_message_id"`
+	ProviderName       string                 `json:"provider_name"`
+	ModelName          string                 `json:"model_name"`
+	ModelCode          string                 `json:"model_code"`
+	ToolCalls          []AIToolCallItem       `json:"tool_calls"`
+	ActionProposals    []AIActionProposalItem `json:"action_proposals"`
+}
+
+// SendChatStream performs the same business logic as SendMessage but streams
+// the AI response via the onChunk callback. The callback is guaranteed to be
+// called sequentially: zero or more "chunk" events, then exactly one "done" or "error" event.
+func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, username string, req AIChatRequest, onChunk func(AIStreamChunk)) error {
+	if s.db == nil || s.gateway == nil || s.toolSvc == nil {
+		onChunk(AIStreamChunk{Type: "error", Error: "服务依赖未就绪"})
+		return errors.New("ai dependencies are required")
+	}
+	if req.ClusterID == 0 {
+		onChunk(AIStreamChunk{Type: "error", Error: "集群 ID 无效"})
+		return ErrWithMessage(ErrInvalidParams, "集群 ID 无效")
+	}
+	message := strings.TrimSpace(req.Message)
+	if message == "" {
+		onChunk(AIStreamChunk{Type: "error", Error: "消息内容不能为空"})
+		return ErrWithMessage(ErrInvalidParams, "消息内容不能为空")
+	}
+
+	conversation, err := s.ensureConversation(ctx, userID, username, req)
+	if err != nil {
+		onChunk(AIStreamChunk{Type: "error", Error: firstUserFacingError(err)})
+		return err
+	}
+
+	now := time.Now().UTC()
+	if err := s.beginConversationRun(ctx, conversation.ID, now); err != nil {
+		onChunk(AIStreamChunk{Type: "error", Error: firstUserFacingError(err)})
+		return err
+	}
+	selectedProviderID, selectedModelID := resolveAIInvocationTarget(conversation, req)
+	normalizedImages := normalizeAIChatImages(req.Images)
+	userMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, normalizedImages)
+	assistantMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, nil)
+
+	userMessage := model.AIMessage{
+		ConversationID: conversation.ID,
+		Role:           "user",
+		MessageType:    "text",
+		Content:        message,
+		Status:         "created",
+		StructuredJSON: userMessageStructured,
+		CreatedBy:      userID,
+	}
+	if err := s.db.WithContext(ctx).Create(&userMessage).Error; err != nil {
+		onChunk(AIStreamChunk{Type: "error", Error: "保存用户消息失败"})
+		return err
+	}
+
+	toolCalls := make([]AIToolCallItem, 0, 6)
+	diagnosticNotes := ""
+	diagPlan := buildAIAutoDiagnosticsPlan(conversation.AssistantMode, req, message)
+	if diagPlan.Enabled {
+		diagCtx := ctx
+		cancel := func() {}
+		if diagPlan.Timeout > 0 {
+			diagCtx, cancel = context.WithTimeout(ctx, diagPlan.Timeout)
+		}
+		defer cancel()
+
+		var diagErr error
+		toolCalls, diagnosticNotes, diagErr = s.toolSvc.RunAutoDiagnostics(diagCtx, AIToolContextRequest{
+			ConversationID: conversation.ID,
+			MessageID:      userMessage.ID,
+			ClusterID:      req.ClusterID,
+			UserID:         userID,
+			Username:       username,
+			UserPerms:      req.UserPerms,
+			Query:          message,
+			Namespace:      strings.TrimSpace(req.Namespace),
+			ResourceKind:   strings.TrimSpace(req.ResourceKind),
+			ResourceName:   strings.TrimSpace(req.ResourceName),
+		})
+		if diagErr != nil && !diagPlan.Optional {
+			s.finishConversationRun(conversation.ID, aiConversationRunResult{
+				Status:            aiConversationRunStatusFromError(diagErr),
+				Summary:           firstUserFacingError(diagErr),
+				AssistantContent:  buildAIAssistantFailureReply(diagErr),
+				AssistantStatus:   aiMessageStatusFromError(diagErr),
+				StructuredPayload: assistantMessageStructured,
+				ToolCallCount:     len(toolCalls),
+				ProviderID:        selectedProviderID,
+				ModelID:           selectedModelID,
+			})
+			onChunk(AIStreamChunk{Type: "error", Error: firstUserFacingError(diagErr)})
+			return diagErr
+		}
+	}
+
+	history, err := s.buildGatewayMessages(ctx, conversation.ID, aiMessageRequestScope{
+		AssistantMode: conversation.AssistantMode,
+		Namespace:     strings.TrimSpace(req.Namespace),
+		ResourceKind:  strings.TrimSpace(req.ResourceKind),
+		ResourceName:  strings.TrimSpace(req.ResourceName),
+	})
+	if err != nil {
+		onChunk(AIStreamChunk{Type: "error", Error: "构建消息历史失败"})
+		return err
+	}
+
+	streamReader, streamResult, err := s.gateway.InvokeStream(ctx, AIGatewayRequest{
+		ConversationID:  conversation.ID,
+		AssistantMode:   conversation.AssistantMode,
+		ProviderID:      selectedProviderID,
+		ModelID:         selectedModelID,
+		PreferModelCode: req.PreferModel,
+		Messages:        history,
+		DiagnosticNotes: diagnosticNotes,
+		ScopeNote:       buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
+	})
+	if err != nil {
+		s.finishConversationRun(conversation.ID, aiConversationRunResult{
+			Status:            aiConversationRunStatusFromError(err),
+			Summary:           firstUserFacingError(err),
+			AssistantContent:  buildAIAssistantFailureReply(err),
+			AssistantStatus:   aiMessageStatusFromError(err),
+			StructuredPayload: assistantMessageStructured,
+			ToolCallCount:     len(toolCalls),
+			ProviderID:        selectedProviderID,
+			ModelID:           selectedModelID,
+		})
+		onChunk(AIStreamChunk{Type: "error", Error: firstUserFacingError(err)})
+		return err
+	}
+	defer func() { _ = streamReader.Close() }()
+
+	// Read SSE lines, accumulate content, forward deltas
+	var fullContent strings.Builder
+	reqStart := time.Now()
+	scanner := bufio.NewScanner(streamReader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		payload := strings.TrimPrefix(line, "data: ")
+		if payload == "[DONE]" {
+			break
+		}
+
+		var chunk struct {
+			Choices []struct {
+				Delta struct {
+					Content string `json:"content"`
+				} `json:"delta"`
+			} `json:"choices"`
+			Usage *struct {
+				PromptTokens     int `json:"prompt_tokens"`
+				CompletionTokens int `json:"completion_tokens"`
+				TotalTokens      int `json:"total_tokens"`
+			} `json:"usage"`
+		}
+		if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
+			continue
+		}
+		if len(chunk.Choices) == 0 {
+			continue
+		}
+		delta := chunk.Choices[0].Delta.Content
+		if delta == "" {
+			continue
+		}
+		fullContent.WriteString(delta)
+		onChunk(AIStreamChunk{Type: "chunk", Content: delta})
+
+		if chunk.Usage != nil {
+			streamResult.Usage.RequestTokens = chunk.Usage.PromptTokens
+			streamResult.Usage.ResponseTokens = chunk.Usage.CompletionTokens
+			streamResult.Usage.TotalTokens = chunk.Usage.TotalTokens
+		}
+	}
+
+	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
+		s.finishConversationRun(conversation.ID, aiConversationRunResult{
+			Status:            "failed",
+			Summary:           "流式读取中断",
+			AssistantContent:  fullContent.String(),
+			AssistantStatus:   "failed",
+			StructuredPayload: assistantMessageStructured,
+			ToolCallCount:     len(toolCalls),
+			ProviderID:        selectedProviderID,
+			ModelID:           selectedModelID,
+		})
+		onChunk(AIStreamChunk{Type: "error", Error: "流式读取中断"})
+		return err
+	}
+
+	latencyMS := int(time.Since(reqStart).Milliseconds())
+	streamResult.Usage.LatencyMS = latencyMS
+	if streamResult.Usage.TotalTokens == 0 {
+		streamResult.Usage.TotalTokens = streamResult.Usage.RequestTokens + streamResult.Usage.ResponseTokens
+	}
+
+	assistantContent, assistantStructured := normalizeAIModelAnswer(fullContent.String())
+	assistantStructured = mergeAIStructuredPayload(assistantStructured, assistantMessageStructured)
+
+	assistantMessage := model.AIMessage{
+		ConversationID: conversation.ID,
+		Role:           "assistant",
+		MessageType:    "text",
+		Content:        assistantContent,
+		Status:         "created",
+		StructuredJSON: assistantStructured,
+		ToolCallCount:  len(toolCalls),
+		TokenInput:     streamResult.Usage.RequestTokens,
+		TokenOutput:    streamResult.Usage.ResponseTokens,
+	}
+	if err := s.db.WithContext(ctx).Create(&assistantMessage).Error; err != nil {
+		onChunk(AIStreamChunk{Type: "error", Error: "保存助手消息失败"})
+		return err
+	}
+
+	usage := model.AIUsageRecord{
+		ConversationID: ptrUint64(conversation.ID),
+		MessageID:      ptrUint64(assistantMessage.ID),
+		ProviderID:     ptrUint64(streamResult.ProviderID),
+		ModelID:        ptrUint64(streamResult.ModelID),
+		UsageType:      "chat",
+		RequestTokens:  streamResult.Usage.RequestTokens,
+		ResponseTokens: streamResult.Usage.ResponseTokens,
+		TotalTokens:    streamResult.Usage.TotalTokens,
+		ImageCount:     len(normalizedImages),
+		LatencyMS:      latencyMS,
+	}
+	if err := s.db.WithContext(ctx).Create(&usage).Error; err != nil {
+		// Non-fatal: log but don't fail the response
+		_ = err
+	}
+
+	actionProposals := s.autoCreateActionProposals(ctx, userID, username, req, conversation.ID, assistantMessage.ID, message)
+
+	summary := buildConversationSummary(assistantContent)
+	conversationStatus := "open"
+	if len(actionProposals) > 0 {
+		conversationStatus = "waiting_confirm"
+	}
+	_ = s.db.WithContext(ctx).Model(&model.AIConversation{}).
+		Where("id = ?", conversation.ID).
+		Updates(map[string]any{
+			"provider_id":     streamResult.ProviderID,
+			"model_id":        streamResult.ModelID,
+			"summary":         summary,
+			"status":          conversationStatus,
+			"last_message_at": time.Now().UTC(),
+		})
+
+	onChunk(AIStreamChunk{
+		Type: "done",
+		Content: mustMarshalJSON(AIStreamDoneData{
+			ConversationID:     conversation.ID,
+			UserMessageID:      userMessage.ID,
+			AssistantMessageID: assistantMessage.ID,
+			ProviderName:       streamResult.ProviderName,
+			ModelName:          streamResult.ModelName,
+			ModelCode:          streamResult.ModelCode,
+			ToolCalls:          toolCalls,
+			ActionProposals:    actionProposals,
+		}),
+	})
+	return nil
+}
+
+func mustMarshalJSON(v any) string {
+	b, _ := json.Marshal(v)
+	return string(b)
 }
 
 type aiConversationRunResult struct {

@@ -1,11 +1,11 @@
 // k8s 网络相关 API（Service / Ingress / IngressClass）
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
 // ── Service ──────────────────────────────────────────────
 
-export async function listServices(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/services`, { params })) as ApiResponse<{ list: any[] }>
+export async function listServices(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/services`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -54,8 +54,8 @@ export async function createService(clusterId: number, req: CreateServiceRequest
 
 // ── Endpoints ────────────────────────────────────────────
 
-export async function listEndpoints(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/endpoints`, { params })) as ApiResponse<{ list: any[] }>
+export async function listEndpoints(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/endpoints`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -74,8 +74,8 @@ export async function editEndpoints(clusterId: number, req: { namespace: string;
 
 // ── EndpointSlice ────────────────────────────────────────
 
-export async function listEndpointSlices(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/endpointslices`, { params })) as ApiResponse<{ list: any[] }>
+export async function listEndpointSlices(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/endpointslices`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -94,8 +94,8 @@ export async function editEndpointSlice(clusterId: number, req: { namespace: str
 
 // ── Ingress ──────────────────────────────────────────────
 
-export async function listIngresses(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/ingresses`, { params })) as ApiResponse<{ list: any[] }>
+export async function listIngresses(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/ingresses`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -152,8 +152,8 @@ export async function createIngress(clusterId: number, req: CreateIngressRequest
 export async function listIngressClasses(
   clusterId: number,
   params: { sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/ingressclasses`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/ingressclasses`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 

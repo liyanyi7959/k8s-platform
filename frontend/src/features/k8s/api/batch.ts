@@ -1,6 +1,6 @@
 // k8s 批处理相关 API（Job / CronJob）
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
 export interface TriggerCronJobResp {
   job_name: string
@@ -24,8 +24,8 @@ export interface CleanCompletedJobsResp {
 export async function listJobs(
   clusterId: number,
   params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/jobs`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/jobs`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -64,8 +64,8 @@ export async function editJob(
 export async function listCronJobs(
   clusterId: number,
   params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/cronjobs`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/cronjobs`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 

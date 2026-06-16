@@ -119,7 +119,7 @@
       </template>
     </el-table>
 
-    <div v-if="pagination" class="pager">
+    <div v-if="pagination || autoPaginateActive" class="pager">
       <el-pagination
         v-model:current-page="pageModel"
         v-model:page-size="pageSizeModel"
@@ -255,7 +255,7 @@
         </el-table>
       </div>
 
-      <div v-if="pagination" class="pager">
+      <div v-if="pagination || autoPaginateActive" class="pager">
         <el-pagination
           v-model:current-page="pageModel"
           v-model:page-size="pageSizeModel"
@@ -319,6 +319,8 @@ const props = defineProps<{
   pageSize?: number
   pageSizeOptions?: number[]
   paginationLayout?: string
+  autoPaginate?: boolean
+  autoPaginateThreshold?: number
 }>()
 
 const slots = useSlots()
@@ -383,19 +385,29 @@ const tableSize = ref<TableSize>(props.size ?? 'default')
 const pageSizeOptions = computed(() => props.pageSizeOptions ?? [20, 50, 100, 200])
 const effectivePaginationLayout = computed(() => props.paginationLayout ?? 'total, sizes, prev, pager, next, jumper')
 
+const AUTO_PAGINATE_THRESHOLD = 50
+const autoPaginateActive = computed(() => {
+  if (props.autoPaginate === false) return false
+  if (props.pagination) return false
+  if (props.total != null) return false
+  return props.data.length > (props.autoPaginateThreshold ?? AUTO_PAGINATE_THRESHOLD)
+})
+
 const effectivePaginationMode = computed<'server' | 'client'>(() => {
   if (props.paginationMode) return props.paginationMode
+  if (autoPaginateActive.value) return 'client'
   return props.total != null ? 'server' : 'client'
 })
 
 const effectiveTotal = computed(() => {
-  if (!props.pagination) return 0
+  if (!props.pagination && !autoPaginateActive.value) return 0
   if (effectivePaginationMode.value === 'client') return props.data.length
   return Number(props.total ?? 0)
 })
 
 const tableData = computed(() => {
-  if (!props.pagination || effectivePaginationMode.value !== 'client') return props.data
+  if (!props.pagination && !autoPaginateActive.value) return props.data
+  if (effectivePaginationMode.value !== 'client') return props.data
   const p = Math.max(1, Number(pageModel.value) || 1)
   const ps = Math.max(1, Number(pageSizeModel.value) || 20)
   const start = (p - 1) * ps
@@ -902,7 +914,7 @@ watch(
 watch(
   () => [effectivePaginationMode.value, props.data.length, pageSizeModel.value].join('|'),
   () => {
-    if (!props.pagination) return
+    if (!props.pagination && !autoPaginateActive.value) return
     if (effectivePaginationMode.value !== 'client') return
     const ps = Math.max(1, Number(pageSizeModel.value) || 20)
     const maxPage = Math.max(1, Math.ceil(props.data.length / ps))

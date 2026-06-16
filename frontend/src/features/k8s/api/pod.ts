@@ -1,6 +1,6 @@
 // k8s Pod 相关 API
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
 export type K8sInspectionResult = {
   summary: string
@@ -12,8 +12,8 @@ export async function listPods(
   clusterId: number,
   params: { namespace?: string; label_selector?: string; sort_by?: string; order?: 'asc' | 'desc' } = {},
   options: { signal?: AbortSignal } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/pods`, { params, signal: options.signal })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/pods`, { params, signal: options.signal })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -21,8 +21,8 @@ export async function listPodMetrics(
   clusterId: number,
   params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {},
   options: { signal?: AbortSignal } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/podmetrics`, { params, signal: options.signal })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/podmetrics`, { params, signal: options.signal })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 

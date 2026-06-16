@@ -1,8 +1,8 @@
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
-export async function listReplicaSets(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/replicasets`, { params })) as ApiResponse<{ list: any[] }>
+export async function listReplicaSets(clusterId: number, params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/replicasets`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -19,8 +19,8 @@ export async function deleteReplicaSet(clusterId: number, ns: string, name: stri
   await http.delete(`/api/v1/clusters/${clusterId}/replicasets/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`)
 }
 
-export async function listVolumeAttachments(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/volumeattachments`, { params })) as ApiResponse<{ list: any[] }>
+export async function listVolumeAttachments(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/volumeattachments`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 

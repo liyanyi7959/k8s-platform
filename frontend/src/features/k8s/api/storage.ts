@@ -1,6 +1,6 @@
 // k8s 存储相关 API（PVC / PV / StorageClass / VolumeSnapshot）
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
 export type K8sResourceSupport = {
   replicasets?: boolean
@@ -28,8 +28,8 @@ export type K8sResourceSupport = {
 export async function listPVCs(
   clusterId: number,
   params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/pvcs`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/pvcs`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -56,8 +56,8 @@ export async function createPVC(clusterId: number, req: CreatePVCRequest): Promi
 
 // ── PV ───────────────────────────────────────────────────
 
-export async function listPVs(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/pvs`, { params })) as ApiResponse<{ list: any[] }>
+export async function listPVs(clusterId: number, params: { sort_by?: string; order?: 'asc' | 'desc' } = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/pvs`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -75,8 +75,8 @@ export async function deletePV(clusterId: number, name: string): Promise<void> {
 export async function listStorageClasses(
   clusterId: number,
   params: { sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/storageclasses`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/storageclasses`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -96,8 +96,8 @@ export async function editStorageClass(clusterId: number, req: { yaml: string })
 export async function listCSIStorageCapacities(
   clusterId: number,
   params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/csistoragecapacities`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/csistoragecapacities`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -128,8 +128,8 @@ export async function getStorageSnapshotSupport(clusterId: number): Promise<K8sR
 export async function listVolumeSnapshots(
   clusterId: number,
   params: { namespace?: string; sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/volumesnapshots`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/volumesnapshots`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -151,8 +151,8 @@ export async function editVolumeSnapshot(clusterId: number, req: { namespace: st
 export async function listVolumeSnapshotClasses(
   clusterId: number,
   params: { sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/volumesnapshotclasses`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/volumesnapshotclasses`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 
@@ -174,8 +174,8 @@ export async function editVolumeSnapshotClass(clusterId: number, req: { yaml: st
 export async function listVolumeSnapshotContents(
   clusterId: number,
   params: { sort_by?: string; order?: 'asc' | 'desc' } = {}
-): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/volumesnapshotcontents`, { params })) as ApiResponse<{ list: any[] }>
+): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/volumesnapshotcontents`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 

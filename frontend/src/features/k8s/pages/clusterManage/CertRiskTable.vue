@@ -124,7 +124,7 @@ function certStatusText(status: CertStatus): string {
 .cert-purpose {
   margin-top: 2px;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
 }
 
 .cert-days {

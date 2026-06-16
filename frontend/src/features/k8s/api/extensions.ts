@@ -1,10 +1,10 @@
 import { http } from '@/shared/http/http'
-import type { ApiResponse } from '@/shared/types/api'
+import type { ApiResponse, K8sListResponse } from '@/shared/types/api'
 
 type ListParams = { sort_by?: string; order?: 'asc' | 'desc' }
 
-async function listClusterScoped(clusterId: number, resource: string, params: ListParams = {}): Promise<{ list: any[] }> {
-  const resp = (await http.get(`/api/v1/clusters/${clusterId}/${resource}`, { params })) as ApiResponse<{ list: any[] }>
+async function listClusterScoped(clusterId: number, resource: string, params: ListParams = {}): Promise<K8sListResponse<any>> {
+  const resp = (await http.get(`/api/v1/clusters/${clusterId}/${resource}`, { params })) as ApiResponse<K8sListResponse<any>>
   return resp.data
 }
 

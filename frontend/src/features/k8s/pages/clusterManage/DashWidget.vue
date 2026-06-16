@@ -87,13 +87,13 @@ defineProps<{
 .widget-title {
   font-size: 14px;
   font-weight: 700;
-  color: var(--app-title);
+  color: var(--color-text-title);
   letter-spacing: -0.01em;
 }
 
 .widget-sub {
   font-size: 11px;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

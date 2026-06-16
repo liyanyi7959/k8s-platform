@@ -28,7 +28,7 @@ defineProps<{
 }
 
 .alerts-empty {
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 600;
   padding: 20px 16px;
@@ -52,7 +52,7 @@ defineProps<{
 }
 
 .alerts-item:hover {
-  border-color: color-mix(in srgb, var(--app-accent-blue) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-primary) 20%, transparent);
 }
 
 .alerts-title {
@@ -62,7 +62,7 @@ defineProps<{
 .alerts-sub {
   margin-top: 2px;
   font-size: 12px;
-  color: var(--app-muted);
+  color: var(--color-text-muted);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;

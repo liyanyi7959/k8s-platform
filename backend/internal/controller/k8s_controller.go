@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 
 	"k8s-platform-backend/internal/service"
+	"k8s-platform-backend/pkg/resp"
 )
 
 // ──────────────────────────────────────────────────────────
@@ -412,6 +413,9 @@ func timeRFC3339() string {
 // writeServiceErr 将 service 层错误映射为前端约定的业务错误码。
 // 委托给共享 WriteServiceErr，追加 K8s 领域特定映射。
 func (kc *K8sController) writeServiceErr(c *gin.Context, err error) {
+	if resp.HandleK8sError(c, err) {
+		return
+	}
 	WriteServiceErr(c, err, K8sErrMappings...)
 }
 
