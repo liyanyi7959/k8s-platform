@@ -91,23 +91,23 @@ function colWidth(col: number): string {
   @apply h-3 rounded-md;
   background: linear-gradient(90deg, var(--sk-from) 25%, var(--sk-via) 50%, var(--sk-from) 75%);
   background-size: 200% 100%;
-  animation: sk-shimmer 1.5s ease-in-out infinite;
+  animation: sk-shimmer 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .skeleton-pulse {
   background: linear-gradient(90deg, var(--sk-from) 25%, var(--sk-via) 50%, var(--sk-from) 75%);
   background-size: 200% 100%;
-  animation: sk-shimmer 1.5s ease-in-out infinite;
+  animation: sk-shimmer 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 :root {
-  --sk-from: #e2e8f0;
-  --sk-via: #f1f5f9;
+  --sk-from: color-mix(in srgb, var(--color-text-title, #0f172a) 6%, transparent);
+  --sk-via: color-mix(in srgb, var(--color-text-title, #0f172a) 3%, transparent);
 }
 
 :global(html.dark) {
-  --sk-from: #334155;
-  --sk-via: #475569;
+  --sk-from: color-mix(in srgb, var(--color-text-title, #e2e8f0) 10%, transparent);
+  --sk-via: color-mix(in srgb, var(--color-text-title, #e2e8f0) 5%, transparent);
 }
 
 .skeleton-title {
@@ -148,7 +148,7 @@ function colWidth(col: number): string {
   @apply flex-1 rounded-t-md;
   background: linear-gradient(90deg, var(--sk-from) 25%, var(--sk-via) 50%, var(--sk-from) 75%);
   background-size: 200% 100%;
-  animation: sk-shimmer 1.5s ease-in-out infinite;
+  animation: sk-shimmer 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ---- Table 变体 ---- */

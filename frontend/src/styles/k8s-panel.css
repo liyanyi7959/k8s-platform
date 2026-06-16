@@ -45,9 +45,9 @@
   border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
-  color: #1f2937;
+  color: var(--color-text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
   font-size: 15px;
 }
 

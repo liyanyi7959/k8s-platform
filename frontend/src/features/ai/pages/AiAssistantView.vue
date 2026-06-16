@@ -37,7 +37,7 @@
                 <el-tooltip content="刷新列表" placement="bottom">
                   <el-button :icon="RefreshRight" circle :loading="loadingConversations" :disabled="sendingMessage" @click="loadConversations" />
                 </el-tooltip>
-                <el-tooltip v-if="sendingMessage" content="鍙栨秷褰撳墠鍥炵瓟" placement="top">
+                <el-tooltip v-if="sendingMessage" content="取消当前回答" placement="top">
                   <el-button circle :icon="Close" @click="cancelPendingSend" />
                 </el-tooltip>
               </div>
@@ -4274,8 +4274,8 @@ onBeforeUnmount(() => {
 
 .message-card--user {
   align-self: flex-end;
-  background: #edf5ff;
-  border-color: #cfe2ff;
+  background: var(--color-bg-active, #edf5ff);
+  border-color: color-mix(in srgb, var(--color-accent-primary, #3b82f6) 18%, transparent);
 }
 
 .message-card--assistant,
@@ -4285,11 +4285,11 @@ onBeforeUnmount(() => {
 }
 
 .message-card--assistant {
-  background: #ffffff;
+  background: var(--color-bg-card, #ffffff);
 }
 
 .message-card--tool {
-  background: #fff7ed;
+  background: color-mix(in srgb, var(--c-amber, #f59e0b) 6%, var(--color-bg-card, #ffffff));
 }
 
 .message-card--pending {

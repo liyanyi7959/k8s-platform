@@ -43,10 +43,10 @@
   --drawer-border:       var(--color-border-default);
 
   /* ── Table ───────────────────────────────────────────────────────────── */
-  --table-header-bg:     #dbeafe;
-  --table-header-text:   #1d4ed8;
+  --table-header-bg:     color-mix(in srgb, var(--color-text-title) 4%, transparent);
+  --table-header-text:   var(--color-text-secondary);
   --table-row-hover:     rgba(59, 130, 246, 0.10);
-  --table-stripe-bg:     #eff6ff;
+  --table-stripe-bg:     color-mix(in srgb, var(--color-text-title) 2%, transparent);
   --table-border:        var(--color-border-subtle);
   --table-shadow:        0 4px 6px -1px rgba(0, 0, 0, 0.05);
   --card-glass-shadow:   0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
@@ -104,10 +104,10 @@ html.dark {
   --dialog-bg:           var(--color-glass-bg-strong);
   --drawer-bg:           var(--color-glass-bg-strong);
 
-  --table-header-bg:     rgba(59, 130, 246, 0.18);
-  --table-header-text:   #dbeafe;
+  --table-header-bg:     color-mix(in srgb, var(--color-text-title) 8%, transparent);
+  --table-header-text:   var(--color-text-secondary);
   --table-row-hover:     rgba(59, 130, 246, 0.14);
-  --table-stripe-bg:     rgba(59, 130, 246, 0.07);
+  --table-stripe-bg:     color-mix(in srgb, var(--color-text-title) 4%, transparent);
 
   --input-bg:            rgba(0, 0, 0, 0.3);
   --input-border:        var(--color-border-strong);
@@ -129,7 +129,7 @@ html.dark {
 /* 细线滚动条（现代浏览器） */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-border-default) transparent;
+  scrollbar-color: color-mix(in srgb, var(--color-text-title) 18%, transparent) transparent;
 }
 
 /* Webkit 系浏览器滚动条 */
@@ -141,17 +141,38 @@ html.dark {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border-default);
+  background: color-mix(in srgb, var(--color-text-title) 18%, transparent);
   border-radius: 999px;
+  transition: background 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-text-title) 28%, transparent);
 }
 html.dark ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
+  background: color-mix(in srgb, var(--color-text-title) 22%, transparent);
 }
 html.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
+  background: color-mix(in srgb, var(--color-text-title) 36%, transparent);
+}
+
+/* ── 全局可访问性焦点环（a11y） ─────────────────────────────────────── */
+:where(button, [role="button"], a, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent-primary, #2563eb);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+/* el-input/select 等已自带焦点样式，避免重复 */
+.el-input__wrapper:focus-visible,
+.el-select__wrapper:focus-visible,
+.el-textarea__inner:focus-visible {
+  outline: none;
+}
+
+/* ── 抽屉/弹窗缓动柔化 ──────────────────────────────────────────────── */
+.el-drawer {
+  transition:
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.32s cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 
 /* ── Dialog / Drawer 统一样式 ────────────────────────────────────────── */

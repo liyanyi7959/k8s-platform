@@ -1,5 +1,5 @@
 <template>
-  <div class="empty-state" :class="`empty-state--${type}`">
+  <div class="empty-state" :class="[`empty-state--${type}`, sizeClass]">
     <div class="empty-state-illustration" aria-hidden="true">
       <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" class="empty-state-svg">
         <ellipse cx="100" cy="136" rx="54" ry="9" :fill="colors.shadow" />
@@ -24,9 +24,9 @@
           <line x1="132" y1="96" x2="148" y2="96" :stroke="colors.badgeIcon" stroke-width="2.4" stroke-linecap="round" />
         </template>
 
-        <circle cx="52" cy="64" r="3" :fill="colors.dot" />
-        <circle cx="156" cy="60" r="2.5" :fill="colors.dot" />
-        <circle cx="46" cy="92" r="2.5" :fill="colors.dot" />
+        <circle class="empty-state-dot--1" cx="52" cy="64" r="3" :fill="colors.dot" />
+        <circle class="empty-state-dot--2" cx="156" cy="60" r="2.5" :fill="colors.dot" />
+        <circle class="empty-state-dot--3" cx="46" cy="92" r="2.5" :fill="colors.dot" />
       </svg>
     </div>
 
@@ -45,13 +45,13 @@
 import { computed } from 'vue'
 
 const props = defineProps<{
-  /** 空状态类型 */
   type?: 'empty' | 'no-data' | 'no-result' | 'error'
-  /** 标题（可选） */
   title?: string
-  /** 描述文字 */
   description?: string
+  size?: 'sm' | 'md' | 'lg'
 }>()
+
+const sizeClass = computed(() => props.size ? `empty-state--${props.size}` : '')
 
 const defaultDesc = computed(() => {
   switch (props.type) {
@@ -105,6 +105,34 @@ const colors = computed(() => {
   padding: 44px 24px;
 }
 
+.empty-state--sm {
+  min-height: 140px;
+  padding: 24px 16px;
+  gap: 10px;
+}
+
+.empty-state--sm .empty-state-svg {
+  width: 96px;
+  height: 77px;
+}
+
+.empty-state--sm .empty-state-illustration {
+  width: 96px;
+}
+
+.empty-state--sm .empty-state-title {
+  font-size: 13px;
+}
+
+.empty-state--sm .empty-state-desc {
+  font-size: 12px;
+}
+
+.empty-state--lg {
+  min-height: 280px;
+  padding: 56px 32px;
+}
+
 .empty-state--no-data {
   min-height: 240px;
 }
@@ -145,5 +173,33 @@ const colors = computed(() => {
   margin-top: 4px;
   display: flex;
   justify-content: center;
+}
+
+/* 装饰点微浮动动画 */
+.empty-state-dot--1,
+.empty-state-dot--2,
+.empty-state-dot--3 {
+  animation: empty-float 3s ease-in-out infinite;
+}
+
+.empty-state-dot--2 {
+  animation-delay: 0.8s;
+}
+
+.empty-state-dot--3 {
+  animation-delay: 1.6s;
+}
+
+@keyframes empty-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-state-dot--1,
+  .empty-state-dot--2,
+  .empty-state-dot--3 {
+    animation: none;
+  }
 }
 </style>

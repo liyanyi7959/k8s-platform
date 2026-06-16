@@ -86,7 +86,7 @@
 
   /* K8s 页面 — 通用文字 */
   --k8s-text-title:      rgba(2, 6, 23, 0.86);
-  --k8s-text-label:      rgba(2, 6, 23, 0.56);
+  --k8s-text-label:      rgba(2, 6, 23, 0.66);
   --k8s-text-body:       rgba(2, 6, 23, 0.76);
   --k8s-text-strong:     rgba(2, 6, 23, 0.82);
   --k8s-text-ro:         rgba(2, 6, 23, 0.82);
@@ -251,7 +251,7 @@ html.dark {
 
   /* K8s 页面 — 暗色覆盖 */
   --k8s-text-title:      rgba(226, 232, 240, 0.92);
-  --k8s-text-label:      rgba(226, 232, 240, 0.62);
+  --k8s-text-label:      rgba(226, 232, 240, 0.7);
   --k8s-text-body:       rgba(226, 232, 240, 0.84);
   --k8s-text-strong:     rgba(226, 232, 240, 0.82);
   --k8s-text-ro:         rgba(226, 232, 240, 0.9);

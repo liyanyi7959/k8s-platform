@@ -75,15 +75,16 @@
             </div>
             <div class="kd-header__right">
               <div class="kd-score" :class="healthTier">
-                <svg viewBox="0 0 44 44" class="kd-score__ring">
-                  <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="3" opacity="0.1" />
-                  <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" :stroke-dasharray="`${healthArc} 999`"
-                    transform="rotate(-90 22 22)" class="kd-score__arc" />
+                <svg viewBox="0 0 72 72" class="kd-score__ring">
+                  <circle cx="36" cy="36" r="30" fill="none" stroke="currentColor" stroke-width="5" opacity="0.1" />
+                  <circle cx="36" cy="36" r="30" fill="none" stroke="currentColor" stroke-width="5"
+                    stroke-linecap="round" :stroke-dasharray="`${healthArc72} 999`"
+                    transform="rotate(-90 36 36)" class="kd-score__arc" />
                 </svg>
                 <span class="kd-score__num">{{ dashboardHealthScore }}</span>
               </div>
               <div class="kd-score__info">
+                <span class="kd-score__kicker">集群健康</span>
                 <span class="kd-score__label">健康评分</span>
                 <span class="kd-score__hint" :class="healthTier">{{ healthHint }}</span>
               </div>
@@ -426,6 +427,7 @@ function onKpiClick(key: string) {
 }
 /* ── Health ── */
 const healthArc = computed(() => (Math.max(0, Math.min(100, props.dashboardHealthScore)) / 100) * 113.1)
+const healthArc72 = computed(() => (Math.max(0, Math.min(100, props.dashboardHealthScore)) / 100) * 188.5)
 const healthTier = computed(() => {
   const s = props.dashboardHealthScore
   return s >= 80 ? 'kd--good' : s >= 60 ? 'kd--warn' : 'kd--bad'
@@ -966,14 +968,15 @@ onBeforeUnmount(() => { disposeCharts() })
 .kd-refresh-select { width: 88px; }
 
 .kd-header__right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.kd-score { position: relative; width: 48px; height: 48px; }
+.kd-score { position: relative; width: 72px; height: 72px; }
 .kd-score__ring { width: 100%; height: 100%; }
 .kd-score__arc { transition: stroke-dasharray .5s ease; }
 .kd-score__num {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 900;
+  font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums;
 }
 .kd-score__info { display: flex; flex-direction: column; gap: 1px; }
+.kd-score__kicker { font-size: 10px; font-weight: 600; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.04em; }
 .kd-score__label { font-size: 11px; font-weight: 700; color: var(--fg2); }
 .kd-score__hint { font-size: 11px; font-weight: 700; }
 .kd--good { color: var(--c-green); }
@@ -1037,13 +1040,14 @@ onBeforeUnmount(() => { disposeCharts() })
   padding: 14px 16px;
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--r);
   cursor: pointer; user-select: none;
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
   position: relative;
   box-shadow: none;
 }
 .kd-kpi-card:hover {
   border-color: color-mix(in srgb, var(--_a, var(--c-cyan)) 20%, var(--border));
   box-shadow: 0 10px 18px rgba(15, 23, 42, 0.05);
+  transform: translateY(-2px);
 }
 .kd-kpi-card--cyan   { --_a: var(--c-cyan); }
 .kd-kpi-card--blue   { --_a: var(--c-blue); }
@@ -1072,10 +1076,10 @@ onBeforeUnmount(() => { disposeCharts() })
 }
 .kd-kpi-card__arrow {
   position: absolute; right: 8px; top: 8px;
-  color: var(--fg2); opacity: 0;
-  transition: opacity .15s;
+  color: var(--fg2); opacity: 0.3;
+  transition: opacity .18s;
 }
-.kd-kpi-card:hover .kd-kpi-card__arrow { opacity: .6; }
+.kd-kpi-card:hover .kd-kpi-card__arrow { opacity: 1; }
 
 /* ═══════════════ CHARTS GRID ═══════════════ */
 .kd-charts-grid {

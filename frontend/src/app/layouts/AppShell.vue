@@ -41,10 +41,16 @@ onBeforeUnmount(() => {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: var(--color-bg-page, #f8fafc);
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(59, 130, 246, 0.04), transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(139, 92, 246, 0.04), transparent 50%),
+    var(--color-bg-page, #f8fafc);
 }
 html.dark .app-shell {
-  background: var(--color-bg-page, #0f172a);
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(59, 130, 246, 0.06), transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(139, 92, 246, 0.06), transparent 50%),
+    var(--color-bg-page, #0f172a);
 }
 
 .shell-main {
