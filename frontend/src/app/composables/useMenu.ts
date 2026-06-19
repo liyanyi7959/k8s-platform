@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useUserStore } from '@/app/store/user'
@@ -9,6 +9,7 @@ import {
   ModelHubIcon,
   RoleManageIcon,
   SystemSettingsIcon,
+  TerminalConsoleIcon,
   UserManageIcon
 } from '@/shared/icons/appIcons'
 
@@ -29,6 +30,19 @@ export interface NavGroup {
   children?: MenuItem[]
 }
 
+/* ── 系统管理模式（全局单例） ───────────────────────────────────────── */
+const systemMode = ref(false)
+
+/** 进入系统管理模式（侧边栏仅显示系统管理菜单） */
+export function enterSystemMode() {
+  systemMode.value = true
+}
+
+/** 退出系统管理模式（恢复默认侧边栏） */
+export function exitSystemMode() {
+  systemMode.value = false
+}
+
 export function useMenu() {
   const route = useRoute()
   const userStore = useUserStore()
@@ -44,7 +58,7 @@ export function useMenu() {
   const allGroups: NavGroup[] = [
     {
       key: 'k8s',
-      title: 'K8s 管理',
+      title: 'K8S 管理',
       icon: K8sClusterIcon,
       path: '/clusters',
       children: [
@@ -54,6 +68,13 @@ export function useMenu() {
           path: '/clusters',
           icon: K8sClusterIcon,
           perm: 'cluster:read'
+        },
+        {
+          title: '在线部署',
+          desc: '服务器、凭证与部署计划管理',
+          path: '/deploy/online',
+          icon: TerminalConsoleIcon,
+          perm: ['deploy:server_read', 'deploy:plan_read']
         }
       ]
     },
@@ -93,24 +114,37 @@ export function useMenu() {
   ]
 
   const visibleGroups = computed<NavGroup[]>(() => {
-    return allGroups
+    const filtered = allGroups
       .filter((group) => !group.children || group.children.some((child) => hasPerm(child.perm)))
       .map((group) => ({
         ...group,
         children: group.children?.filter((child) => hasPerm(child.perm)) || []
       }))
+
+    // 系统管理模式下只显示系统管理分组
+    if (systemMode.value) {
+      return filtered.filter((g) => g.key === 'system')
+    }
+    // 默认模式下隐藏系统管理分组（移至用户下拉菜单）
+    return filtered.filter((g) => g.key !== 'system')
   })
 
   const activeGroup = computed<NavGroup | undefined>(() => {
     const path = route.path
-    if (path.startsWith('/clusters') || path.startsWith('/k8s')) {
+
+    // 系统管理模式下始终返回系统分组
+    if (systemMode.value) {
+      return allGroups.find((group) => group.key === 'system')
+    }
+
+    if (path.startsWith('/system')) {
+      return allGroups.find((group) => group.key === 'system')
+    }
+    if (path.startsWith('/clusters') || path.startsWith('/k8s') || path.startsWith('/deploy')) {
       return visibleGroups.value.find((group) => group.key === 'k8s')
     }
     if (path.startsWith('/ai')) {
       return visibleGroups.value.find((group) => group.key === 'ai')
-    }
-    if (path.startsWith('/system')) {
-      return visibleGroups.value.find((group) => group.key === 'system')
     }
     return visibleGroups.value[0]
   })
@@ -127,6 +161,7 @@ export function useMenu() {
     sidebarItems,
     hasSidebarItems,
     activeMenuPath,
-    hasPerm
+    hasPerm,
+    systemMode
   }
 }

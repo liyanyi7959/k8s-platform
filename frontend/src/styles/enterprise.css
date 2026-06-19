@@ -21,7 +21,7 @@
    1. 页面容器 — .page-card
    ═══════════════════════════════════════════════════════════════════════════ */
 .page-card {
-  border-radius: var(--radius-lg, 10px);
+  border-radius: 0;
   border: 1px solid var(--color-border-subtle);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   overflow: visible;
@@ -1005,7 +1005,7 @@ html.dark .qb-btn--primary.el-button:hover {
    ═══════════════════════════════════════════════════════════════════════════ */
 .table-shell {
   border: 1px solid rgba(59, 130, 246, 0.08);
-  border-radius: 12px;
+  border-radius: 0;
   background: #fff;
   overflow: hidden;
 }

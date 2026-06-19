@@ -75,7 +75,13 @@
         </button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="logout">
+            <el-dropdown-item command="profile">
+              <el-icon><User /></el-icon>个人中心
+            </el-dropdown-item>
+            <el-dropdown-item v-if="isAdmin" command="system" divided>
+              <el-icon><Setting /></el-icon>系统管理
+            </el-dropdown-item>
+            <el-dropdown-item command="logout" :divided="!isAdmin">
               <el-icon><SwitchButton /></el-icon>退出登录
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -89,12 +95,12 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/app/store/user'
-import { useMenu } from '@/app/composables/useMenu'
+import { useMenu, enterSystemMode } from '@/app/composables/useMenu'
 import { useSidebarState } from '@/app/composables/useSidebarState'
 import { useTheme } from '@/app/composables/useTheme'
 import {
   HomeFilled, Bell, Moon, Sunny, Monitor,
-  ArrowDown, SwitchButton
+  ArrowDown, SwitchButton, User, Setting
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -123,10 +129,17 @@ const themeIcon = computed(() => {
 })
 
 /* ── 用户菜单 ─────────────────────────────────────────────────────────── */
+const isAdmin = computed(() => userStore.permissions.includes('user:write'))
+
 async function onUserCommand(cmd: string) {
   if (cmd === 'logout') {
     await userStore.logout()
     await router.push('/login')
+  } else if (cmd === 'system') {
+    enterSystemMode()
+    await router.push('/system/audit-logs')
+  } else if (cmd === 'profile') {
+    // TODO: 个人中心页面
   }
 }
 </script>

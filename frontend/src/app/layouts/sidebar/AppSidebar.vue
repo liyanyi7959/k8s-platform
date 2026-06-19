@@ -158,7 +158,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Close } from '@element-plus/icons-vue'
-import { useMenu, type NavGroup } from '@/app/composables/useMenu'
+import { useMenu, exitSystemMode, type NavGroup } from '@/app/composables/useMenu'
 import { useSidebarState } from '@/app/composables/useSidebarState'
 import { getClusterUnavailableMessage, useClusterShortcuts, type ClusterShortcut } from '@/app/composables/useClusterShortcuts'
 import { notifyError } from '@/shared/utils/notify'
@@ -166,7 +166,7 @@ import logoUrl from '@/assets/images/logo.svg'
 
 const route = useRoute()
 const router = useRouter()
-const { railGroups, activeGroupKey } = useMenu()
+const { railGroups, activeGroupKey, systemMode } = useMenu()
 const { collapsed } = useSidebarState()
 const { shortcuts, unpinCluster: removeShortcut } = useClusterShortcuts()
 
@@ -181,6 +181,16 @@ watch(
     }
   },
   { immediate: true }
+)
+
+// 当路由离开 /system 时，自动退出系统管理模式
+watch(
+  () => route.path,
+  (path) => {
+    if (systemMode.value && !path.startsWith('/system')) {
+      exitSystemMode()
+    }
+  }
 )
 
 function hasChildren(group: NavGroup): boolean {

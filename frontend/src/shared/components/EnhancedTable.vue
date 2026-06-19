@@ -79,7 +79,7 @@
       :border="border"
       :fit="tableFit"
       :size="tableSize"
-      :height="height"
+      :height="height ?? autoFitHeight"
       v-loading="loading"
       @selection-change="onSelectionChange"
       @sort-change="onSortChange"
@@ -369,6 +369,24 @@ const selectedCount = computed(() => selectedRows.value.length)
 const fullscreenTableHeight = ref<number | undefined>(undefined)
 let tableLayoutSyncPending = false
 let tableLayoutSyncQueued = false
+
+/* ── 自动计算表格高度，使表格填满父容器（仅未显式设置 height 时生效） ── */
+const autoFitHeight = ref<number | undefined>(undefined)
+let autoFitRo: ResizeObserver | null = null
+
+function computeAutoFitHeight() {
+  if (props.height != null) return
+  const container = containerRef.value
+  if (!container) return
+  const topbar = container.querySelector('.table-topbar')
+  const pager = container.querySelector('.pager')
+  const topH = topbar ? (topbar as HTMLElement).offsetHeight : 0
+  const botH = pager ? (pager as HTMLElement).offsetHeight : 0
+  const h = container.clientHeight - topH - botH
+  if (h > 0) {
+    autoFitHeight.value = Math.max(120, h)
+  }
+}
 
 const pageModel = computed({
   get: () => props.page ?? 1,
@@ -884,6 +902,13 @@ onMounted(() => {
   applyPersistedColumnWidths()
   applyPersistedSize()
   void syncTableLayout()
+
+  // 当未显式设置 height 时，通过 ResizeObserver 监听容器尺寸并自动计算表格高度
+  if (props.height == null && containerRef.value) {
+    autoFitRo = new ResizeObserver(() => computeAutoFitHeight())
+    autoFitRo.observe(containerRef.value)
+    nextTick(() => computeAutoFitHeight())
+  }
 })
 
 function onWindowResize() {
@@ -925,6 +950,8 @@ watch(
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onWindowResize)
+  autoFitRo?.disconnect()
+  autoFitRo = null
   if (bodyOverflowBeforeFullscreen.value != null) {
     document.body.style.overflow = bodyOverflowBeforeFullscreen.value
     bodyOverflowBeforeFullscreen.value = null
@@ -956,6 +983,12 @@ watch(
   }
 )
 
+// 数据或容器变化时重新计算自动高度
+watch(
+  () => [props.data?.length, props.showTopbar, props.pagination],
+  () => { nextTick(() => computeAutoFitHeight()) }
+)
+
 defineExpose({
   getColumns: () => props.columns,
   getColumnVisibleMap: () => ({ ...columnVisible.value }),
@@ -979,6 +1012,17 @@ defineExpose({
 </script>
 
 <style scoped>
+.enhanced-table {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pager {
+  flex: 0 0 auto;
+}
+
 .table-topbar {
   @apply mb-0 flex flex-wrap items-center justify-between gap-3;
   position: relative;
@@ -1001,7 +1045,8 @@ defineExpose({
 }
 
 .tool-btn {
-  @apply inline-flex h-8 w-8 items-center justify-center rounded-md border-0 bg-slate-100 text-slate-600 transition;
+  @apply inline-flex h-8 w-8 items-center justify-center border-0 bg-slate-100 text-slate-600 transition;
+  border-radius: 0;
 }
 
 .tool-btn:hover {
@@ -1050,7 +1095,7 @@ defineExpose({
 
 .pager :deep(.el-pagination__jump .el-input__wrapper) {
   padding: 0 6px;
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 .pager :deep(.el-pagination__jump .el-input__inner) {
@@ -1096,8 +1141,34 @@ defineExpose({
 
 .enhanced-table :deep(.el-table--border),
 .enhanced-table :deep(.el-table--group) {
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
+}
+
+.enhanced-table :deep(.el-table),
+.enhanced-table :deep(.el-table__inner-wrapper),
+.enhanced-table :deep(.el-table__header-wrapper),
+.enhanced-table :deep(.el-table__body-wrapper),
+.enhanced-table :deep(.el-table__fixed),
+.enhanced-table :deep(.el-table__fixed-right),
+.enhanced-table :deep(.el-table__fixed-left),
+.enhanced-table :deep(.el-table__fixed-body-wrapper),
+.enhanced-table :deep(.el-table__fixed-header-wrapper),
+.enhanced-table :deep(.el-scrollbar__bar),
+.enhanced-table :deep(.el-scrollbar__thumb) {
+  border-radius: 0;
+}
+
+.enhanced-table :deep(.el-table__fixed-right) {
+  right: 0 !important;
+}
+
+.enhanced-table :deep(.el-table__fixed-right-patch) {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
 }
 
 .enhanced-table :deep(.k8s-act-group) {

@@ -42,7 +42,7 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  border-radius: 6px;
+  border-radius: 0;
   border: 1px solid transparent;
   background: transparent;
   color: var(--color-text-muted);
@@ -60,7 +60,7 @@
 .k8s-act-btn--toolbar {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(148, 163, 184, 0.18);
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);

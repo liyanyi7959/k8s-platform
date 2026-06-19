@@ -248,7 +248,7 @@ onMounted(() => {
 .user-card {
   background: var(--color-bg-card, #ffffff);
   border: 1px solid var(--color-border-default, rgba(15, 23, 42, 0.08));
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: var(--shadow-card, 0 1px 3px rgba(15, 23, 42, 0.05));
   overflow: hidden;
 }

@@ -533,6 +533,8 @@ defineExpose({ getTable: () => tableRef.value })
 
 <style scoped>
 .namespaces-panel {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }

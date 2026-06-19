@@ -1038,6 +1038,10 @@ function openRbacDialog() {
 
 <style scoped>
 .permission-audit-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   --permission-metric-border: var(--color-border-subtle);
   --permission-metric-bg: linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
   --permission-metric-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);

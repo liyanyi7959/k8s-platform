@@ -641,7 +641,7 @@ onMounted(loadData)
 }
 
 .settings-page :deep(.el-table) {
-  border-radius: 14px;
+  border-radius: 0;
   overflow: hidden;
 }
 

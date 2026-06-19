@@ -13,7 +13,13 @@
     </div>
     <template #dropdown>
       <el-dropdown-menu class="user-dropdown">
-        <el-dropdown-item command="logout">
+        <el-dropdown-item command="profile">
+          <el-icon><User /></el-icon>个人中心
+        </el-dropdown-item>
+        <el-dropdown-item v-if="isAdmin" command="system" divided>
+          <el-icon><Setting /></el-icon>系统管理
+        </el-dropdown-item>
+        <el-dropdown-item command="logout" :divided="!isAdmin">
           <el-icon><SwitchButton /></el-icon>退出登录
         </el-dropdown-item>
       </el-dropdown-menu>
@@ -22,17 +28,26 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/app/store/user'
-import { SwitchButton } from '@element-plus/icons-vue'
+import { enterSystemMode } from '@/app/composables/useMenu'
+import { SwitchButton, User, Setting } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+const isAdmin = computed(() => userStore.permissions.includes('user:write'))
 
 async function onUserCommand(cmd: string) {
   if (cmd === 'logout') {
     await userStore.logout()
     await router.push('/login')
+  } else if (cmd === 'system') {
+    enterSystemMode()
+    await router.push('/system/audit-logs')
+  } else if (cmd === 'profile') {
+    // TODO: 个人中心页面
   }
 }
 </script>

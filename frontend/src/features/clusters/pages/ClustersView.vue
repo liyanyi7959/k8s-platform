@@ -645,6 +645,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: calc(100vh - 92px);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .clusters-panel {
@@ -655,6 +658,7 @@ onBeforeUnmount(() => {
 }
 
 .clusters-panel--filters {
+  flex: 0 0 auto;
   padding: 16px 18px;
 }
 
@@ -802,6 +806,19 @@ onBeforeUnmount(() => {
 
 .page-card--clusters {
   position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.page-card--clusters :deep(> .el-card__body) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .table-summary {

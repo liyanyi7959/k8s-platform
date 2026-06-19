@@ -46,6 +46,7 @@ func New(d Deps) (*gin.Engine, error) {
 	var auditCtl *controller.AuditController
 	var userCtl *controller.UserController
 	var aiCtl *controller.AIController
+	var deployCtl *controller.DeployController
 
 	if d.DB != nil {
 		clusterReg := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
@@ -83,6 +84,8 @@ func New(d Deps) (*gin.Engine, error) {
 		aiToolSvc := service.NewAIToolService(d.DB, aiToolRegistry)
 		aiChatSvc := service.NewAIChatService(d.DB, aiGatewaySvc, aiToolSvc, aiActionSvc)
 		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiToolSvc, aiActionSvc)
+		deploySvc := service.NewDeployService(d.DB, d.EncryptionKey, taskStore)
+		deployCtl = controller.NewDeployController(deploySvc)
 	}
 
 	// ── 健康检查 ──
@@ -91,7 +94,7 @@ func New(d Deps) (*gin.Engine, error) {
 	})
 
 	// ── 路由注册 ──
-	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, aiCtl)
+	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, aiCtl, deployCtl)
 
 	return r, nil
 }
@@ -107,6 +110,7 @@ func registerRoutes(
 	auditCtl *controller.AuditController,
 	userCtl *controller.UserController,
 	aiCtl *controller.AIController,
+	deployCtl *controller.DeployController,
 ) {
 	api := r.Group("/api/v1")
 

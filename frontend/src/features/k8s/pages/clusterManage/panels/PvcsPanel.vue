@@ -138,6 +138,8 @@ defineExpose({ getTable: () => tableRef.value, openCreate })
 
 <style scoped>
 .pvcs-panel {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }

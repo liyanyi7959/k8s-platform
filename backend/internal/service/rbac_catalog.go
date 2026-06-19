@@ -32,6 +32,13 @@ var builtinPermissionCatalog = []PermissionCatalogItem{
 	{Code: "ai:audit_read", Description: "AI 审计记录查看", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
 	{Code: "user:read", Description: "用户、角色与审计查看", Category: "system", CategoryLabel: "系统管理", Builtin: true},
 	{Code: "user:write", Description: "用户与角色管理", Category: "system", CategoryLabel: "系统管理", Builtin: true},
+	{Code: "deploy:server_read", Description: "部署服务器查看", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
+	{Code: "deploy:server_write", Description: "部署服务器管理", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
+	{Code: "deploy:server_delete", Description: "部署服务器删除", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
+	{Code: "deploy:plan_read", Description: "部署计划查看", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
+	{Code: "deploy:plan_write", Description: "部署计划管理", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
+	{Code: "deploy:plan_delete", Description: "部署计划删除", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
+	{Code: "deploy:execute", Description: "执行在线部署", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
 }
 
 func BuiltinPermissionCatalog() []PermissionCatalogItem {
@@ -79,6 +86,8 @@ func derivePermissionCategory(code string) (string, string) {
 		return "cluster", "平台与集群"
 	case strings.HasPrefix(code, "namespace:"):
 		return "namespace", "命名空间"
+	case strings.HasPrefix(code, "deploy:"):
+		return "deploy", "在线部署"
 	case strings.HasPrefix(code, "ai:"):
 		return "ai", "AI 助手"
 	case strings.HasPrefix(code, "k8s:rbac_") || code == "k8s:permission_audit":
@@ -108,8 +117,10 @@ func permissionCategoryOrder(category string) int {
 		return 5
 	case "ai":
 		return 6
-	case "security":
+	case "deploy":
 		return 7
+	case "security":
+		return 8
 	default:
 		return 99
 	}

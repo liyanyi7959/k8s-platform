@@ -133,7 +133,7 @@ html.dark .el-table {
 
 /* ── Table — transparent bg & fixed-column mask ──────────────────────── */
 .el-table {
-  border-radius: var(--radius-md);
+  border-radius: 0;
   overflow: hidden;
   box-shadow: var(--table-shadow);
 }
@@ -151,6 +151,18 @@ html.dark .el-table {
 .el-table th.el-table-fixed-column--right,
 .el-table .el-table__fixed-right-patch {
   background-color: var(--table-surface-fixed-header-bg, var(--table-surface-header-bg, var(--table-surface-fixed-bg, var(--color-bg-card)))) !important;
+}
+
+.el-table .el-table__fixed-right {
+  right: 0 !important;
+}
+
+.el-table .el-table__fixed-right-patch {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
 }
 
 /* ── Pagination ──────────────────────────────────────────────────────── */

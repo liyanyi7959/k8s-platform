@@ -55,6 +55,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '资源关系图', requiresAuth: true, perm: ['cluster:read', 'k8s:read'], hideInMenu: true }
       },
       {
+        path: 'deploy/online',
+        name: 'OnlineDeploy',
+        component: () => import('@/features/deploy/pages/OnlineDeployView.vue'),
+        meta: { title: '在线部署', requiresAuth: true, perm: ['deploy:server_read', 'deploy:plan_read'] }
+      },
+      {
         path: 'ai/assistant',
         name: 'AiAssistant',
         component: () => import('@/features/ai/pages/AiAssistantView.vue'),

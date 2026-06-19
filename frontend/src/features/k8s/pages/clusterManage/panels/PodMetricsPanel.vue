@@ -184,6 +184,8 @@ defineExpose({ getTable: () => tableRef.value })
 
 <style scoped>
 .pod-metrics-panel {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }

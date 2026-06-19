@@ -4533,7 +4533,6 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 16px;
   border-color: var(--color-border-default);
   background: var(--color-bg-card);
   box-shadow: var(--shadow-card);
@@ -4604,6 +4603,8 @@ onBeforeUnmount(() => {
   overflow: auto;
   overflow-x: hidden;
   padding: 14px;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-card :deep(> .el-card__header) {
