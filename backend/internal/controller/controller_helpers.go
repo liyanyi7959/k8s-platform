@@ -67,6 +67,12 @@ func WriteServiceErr(c *gin.Context, err error, extras ...errMapping) {
 			msg = m
 		}
 		resp.Fail(c, 4090, msg)
+	case errors.Is(err, service.ErrCrypto):
+		msg := "加密/解密错误"
+		if m, ok := service.UserMessage(err); ok {
+			msg = m
+		}
+		resp.Fail(c, 5000, msg)
 	default:
 		resp.Fail(c, 5000, "内部错误")
 	}

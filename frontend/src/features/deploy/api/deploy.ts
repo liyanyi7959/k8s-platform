@@ -13,6 +13,7 @@ export interface DeployServerItem {
   ssh_port: number
   user: string
   auth_type: 'password' | 'key'
+  credential_id?: number
   os?: string
   os_version?: string
   kernel?: string
@@ -31,6 +32,7 @@ export interface SSHCredentialItem {
   auth_type: 'password' | 'key'
   username: string
   remark?: string
+  server_count: number
   created_at: string
   updated_at: string
 }
@@ -64,6 +66,7 @@ export interface CreateDeployServerReq {
   ssh_port: number
   user: string
   auth_type: 'password' | 'key'
+  credential_id?: number
   credential: string
   remark?: string
 }
@@ -98,46 +101,257 @@ export function createDeployServer(data: CreateDeployServerReq) {
   return unwrap<{ id: number }>(http.post('/api/v1/deploy/servers', data))
 }
 
+export function updateDeployServer(id: number, data: Partial<CreateDeployServerReq>) {
+  return unwrap<null>(http.put(`/api/v1/deploy/servers/${id}`, data))
+}
+
 export function deleteDeployServer(id: number) {
   return unwrap<null>(http.delete(`/api/v1/deploy/servers/${id}`))
 }
 
-export function testDeployServerSSH(id: number) {
-  return unwrap<{ status: string; message: string }>(http.post(`/api/v1/deploy/servers/${id}/test-ssh`))
+export interface SSHProbeResult {
+  status: string
+  message: string
+  os?: string
+  os_version?: string
+  kernel?: string
 }
 
-export function listSSHCredentials(params: { page?: number; page_size?: number } = {}) {
-  return unwrap<PageResult<SSHCredentialItem>>(http.get('/api/v1/deploy/ssh-credentials', { params }))
+export function testDeployServerSSH(id: number) {
+  return unwrap<SSHProbeResult>(http.post(`/api/v1/deploy/servers/${id}/test-ssh`))
+}
+
+export function listSSHCredentials(params: { page?: number; page_size?: number; keyword?: string; auth_type?: string } = {}) {
+  return unwrap<PageResult<SSHCredentialItem>>(http.get('/api/v1/deploy/credentials', { params }))
 }
 
 export function createSSHCredential(data: CreateSSHCredentialReq) {
-  return unwrap<{ id: number }>(http.post('/api/v1/deploy/ssh-credentials', data))
+  return unwrap<{ id: number }>(http.post('/api/v1/deploy/credentials', data))
+}
+
+export function getSSHCredential(id: number) {
+  return unwrap<SSHCredentialItem>(http.get(`/api/v1/deploy/credentials/${id}`))
+}
+
+export function updateSSHCredential(id: number, data: Partial<CreateSSHCredentialReq>) {
+  return unwrap<null>(http.put(`/api/v1/deploy/credentials/${id}`, data))
 }
 
 export function deleteSSHCredential(id: number) {
-  return unwrap<null>(http.delete(`/api/v1/deploy/ssh-credentials/${id}`))
+  return unwrap<null>(http.delete(`/api/v1/deploy/credentials/${id}`))
+}
+
+export function batchDeleteSSHCredentials(ids: number[]) {
+  return unwrap<null>(http.post('/api/v1/deploy/credentials/batch-delete', { ids }))
 }
 
 export function listDeployPlans(params: { page?: number; page_size?: number; keyword?: string; status?: string } = {}) {
-  return unwrap<PageResult<DeployPlanItem>>(http.get('/api/v1/deploy/deploy-plans', { params }))
+  return unwrap<PageResult<DeployPlanItem>>(http.get('/api/v1/deploy/plans', { params }))
 }
 
 export function createDeployPlan(data: CreateDeployPlanReq) {
-  return unwrap<{ id: number }>(http.post('/api/v1/deploy/deploy-plans', data))
+  return unwrap<{ id: number }>(http.post('/api/v1/deploy/plans', data))
 }
 
 export function deleteDeployPlan(id: number) {
-  return unwrap<null>(http.delete(`/api/v1/deploy/deploy-plans/${id}`))
+  return unwrap<null>(http.delete(`/api/v1/deploy/plans/${id}`))
 }
 
 export function executeDeployPlan(id: number) {
-  return unwrap<{ task_id: number }>(http.post(`/api/v1/deploy/deploy-plans/${id}/execute`))
+  return unwrap<{ task_id: number }>(http.post(`/api/v1/deploy/plans/${id}/execute`))
+}
+
+export interface DryRunStep {
+  key: string
+  title: string
+  description: string
+  phase: string
+  commands: string[]
+  depends_on?: string[]
+}
+export interface DryRunNodeFlow {
+  server_id: number
+  server_name: string
+  ip: string
+  role: string
+  steps: DryRunStep[]
+}
+export interface DryRunResult {
+  plan_id: number
+  plan_name: string
+  cluster_name: string
+  k8s_version: string
+  cni_type: string
+  nodes: DryRunNodeFlow[]
+  summary: Record<string, number>
+}
+export function dryRunDeployPlan(id: number) {
+  return unwrap<DryRunResult>(http.get(`/api/v1/deploy/plans/${id}/dry-run`))
 }
 
 export function cancelDeployPlan(id: number) {
-  return unwrap<null>(http.post(`/api/v1/deploy/deploy-plans/${id}/cancel`))
+  return unwrap<null>(http.post(`/api/v1/deploy/plans/${id}/cancel`))
 }
 
 export function retryDeployPlan(id: number) {
-  return unwrap<{ task_id: number }>(http.post(`/api/v1/deploy/deploy-plans/${id}/retry`))
+  return unwrap<{ task_id: number }>(http.post(`/api/v1/deploy/plans/${id}/retry`))
+}
+
+// SSE 实时日志订阅
+export function subscribeDeployLogs(taskId: number, onLog: (log: string) => void, onDone?: (status: string, message: string) => void): EventSource {
+  const token = localStorage.getItem('token') || ''
+  const url = `/api/v1/deploy/tasks/${taskId}/logs/sse`
+  
+  const eventSource = new EventSource(url)
+  
+  eventSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      if (data.log) {
+        onLog(data.log)
+      }
+    } catch (e) {
+      console.error('Failed to parse SSE log:', e)
+    }
+  }
+  
+  eventSource.addEventListener('done', (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      onDone?.(data.status, data.message)
+    } catch (e) {
+      console.error('Failed to parse SSE done event:', e)
+    }
+    eventSource.close()
+  })
+  
+  eventSource.onerror = (error) => {
+    console.error('SSE connection error:', error)
+    eventSource.close()
+  }
+  
+  return eventSource
+}
+
+export interface TaskLogsResult {
+  task_id: number
+  logs: string[]
+  total: number
+}
+
+export function getDeployTaskLogs(taskId: number, params?: { offset?: number; limit?: number }) {
+  return unwrap<TaskLogsResult>(http.get(`/api/v1/deploy/tasks/${taskId}/logs`, { params }))
+}
+
+// ─── 部署配置管理 ───
+
+export interface DeployConfigItem {
+  id: number
+  step_key: string
+  os_type: string
+  step_name: string
+  step_order: number
+  command_template: string
+  description?: string
+  enabled: boolean
+  timeout_seconds: number
+  retry_count: number
+  created_by: number
+  created_at: string
+  updated_at: string
+}
+
+export interface DeployConfigVersion {
+  id: number
+  config_id: number
+  step_key: string
+  command_template: string
+  description?: string
+  change_type: string
+  changed_by: number
+  changed_at: string
+  change_summary?: string
+}
+
+export function listDeployConfigs(params?: { os_type?: string }) {
+  return unwrap<DeployConfigItem[]>(http.get('/api/v1/deploy/configs', { params }))
+}
+
+export function listSupportedOSTypes() {
+  return unwrap<string[]>(http.get('/api/v1/deploy/configs/os-types'))
+}
+
+export function getDeployConfig(id: number) {
+  return unwrap<DeployConfigItem>(http.get(`/api/v1/deploy/configs/${id}`))
+}
+
+export function updateDeployConfig(id: number, data: {
+  command_template: string
+  description?: string
+  enabled?: boolean
+  timeout_seconds?: number
+  retry_count?: number
+  change_summary?: string
+}) {
+  return unwrap<null>(http.put(`/api/v1/deploy/configs/${id}`, data))
+}
+
+export function getDeployConfigVersions(id: number) {
+  return unwrap<DeployConfigVersion[]>(http.get(`/api/v1/deploy/configs/${id}/versions`))
+}
+
+// ─── 仓库配置管理 ───
+
+export interface RepositoryItem {
+  id: number
+  repo_type: string
+  name: string
+  url: string
+  description?: string
+  auth_type: string
+  priority: number
+  enabled: boolean
+  is_default: boolean
+  mirror_of?: string
+  created_by: number
+  created_at: string
+  updated_at: string
+}
+
+export function listRepositories(params?: { type?: string }) {
+  return unwrap<RepositoryItem[]>(http.get('/api/v1/deploy/repositories', { params }))
+}
+
+export function getRepository(id: number) {
+  return unwrap<RepositoryItem>(http.get(`/api/v1/deploy/repositories/${id}`))
+}
+
+export function createRepository(data: {
+  repo_type: string
+  name: string
+  url: string
+  description?: string
+  auth_type?: string
+  priority?: number
+  is_default?: boolean
+  mirror_of?: string
+}) {
+  return unwrap<{ id: number }>(http.post('/api/v1/deploy/repositories', data))
+}
+
+export function updateRepository(id: number, data: {
+  name?: string
+  url?: string
+  description?: string
+  auth_type?: string
+  priority?: number
+  enabled?: boolean
+  is_default?: boolean
+  mirror_of?: string
+}) {
+  return unwrap<null>(http.put(`/api/v1/deploy/repositories/${id}`, data))
+}
+
+export function deleteRepository(id: number) {
+  return unwrap<null>(http.delete(`/api/v1/deploy/repositories/${id}`))
 }

@@ -7,6 +7,7 @@ import {
   AuditLogIcon,
   K8sClusterIcon,
   ModelHubIcon,
+  PowerSwitchIcon,
   RoleManageIcon,
   SystemSettingsIcon,
   TerminalConsoleIcon,
@@ -71,7 +72,7 @@ export function useMenu() {
         },
         {
           title: '在线部署',
-          desc: '服务器、凭证与部署计划管理',
+          desc: '部署计划与执行任务管理',
           path: '/deploy/online',
           icon: TerminalConsoleIcon,
           perm: ['deploy:server_read', 'deploy:plan_read']
@@ -90,13 +91,6 @@ export function useMenu() {
           path: '/ai/assistant',
           icon: AiAssistantIcon,
           perm: ['ai:chat', 'ai:diagnose']
-        },
-        {
-          title: '模型配置',
-          desc: '管理多模型与多提供商接入',
-          path: '/ai/settings',
-          icon: ModelHubIcon,
-          perm: 'ai:model_admin'
         }
       ]
     },
@@ -108,7 +102,10 @@ export function useMenu() {
       children: [
         { title: '操作审计', path: '/system/audit-logs', icon: AuditLogIcon, perm: 'user:read' },
         { title: '用户管理', path: '/system/users', icon: UserManageIcon, perm: 'user:write' },
-        { title: '角色管理', path: '/system/roles', icon: RoleManageIcon, perm: 'user:write' }
+        { title: '角色管理', path: '/system/roles', icon: RoleManageIcon, perm: 'user:write' },
+        { title: '凭据管理', desc: 'SSH 凭据集中管理', path: '/system/credentials', icon: PowerSwitchIcon, perm: 'deploy:server_read' },
+        { title: '部署配置', desc: '部署流程命令与仓库配置', path: '/system/deploy-config', icon: SystemSettingsIcon, perm: 'deploy:plan_read' },
+        { title: '模型配置', desc: '管理多模型与多提供商接入', path: '/system/ai-settings', icon: ModelHubIcon, perm: 'ai:model_admin' }
       ]
     }
   ]

@@ -61,16 +61,38 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '在线部署', requiresAuth: true, perm: ['deploy:server_read', 'deploy:plan_read'] }
       },
       {
+        path: 'system/credentials',
+        name: 'SystemCredentials',
+        component: () => import('@/features/deploy/pages/CredentialsView.vue'),
+        meta: { title: '凭据管理', requiresAuth: true, perm: 'deploy:server_read' }
+      },
+      {
+        path: 'system/deploy-config',
+        name: 'SystemDeployConfig',
+        component: () => import('@/features/deploy/pages/DeployConfigView.vue'),
+        meta: { title: '部署配置', requiresAuth: true, perm: 'deploy:plan_read' }
+      },
+      {
+        path: 'deploy/config',
+        redirect: '/system/deploy-config',
+        meta: { title: '部署配置', hideInMenu: true }
+      },
+      {
         path: 'ai/assistant',
         name: 'AiAssistant',
         component: () => import('@/features/ai/pages/AiAssistantView.vue'),
         meta: { title: '排障助手', requiresAuth: true, perm: ['ai:chat', 'ai:diagnose'] }
       },
       {
-        path: 'ai/settings',
-        name: 'AiModelSettings',
+        path: 'system/ai-settings',
+        name: 'SystemAiSettings',
         component: () => import('@/features/ai/pages/AiModelSettingsView.vue'),
         meta: { title: '模型配置', requiresAuth: true, perm: 'ai:model_admin' }
+      },
+      {
+        path: 'ai/settings',
+        redirect: '/system/ai-settings',
+        meta: { title: '模型配置', hideInMenu: true }
       },
       {
         path: 'system/audit-logs',

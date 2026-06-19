@@ -1,7 +1,10 @@
 package controller
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -97,7 +100,7 @@ func (dc *DeployController) TestSSH(c *gin.Context) {
 }
 
 func (dc *DeployController) ListCredentials(c *gin.Context) {
-	data, err := dc.svc.ListCredentials(c.Request.Context(), parseInt(c.Query("page"), 1), parseInt(c.Query("page_size"), 20))
+	data, err := dc.svc.ListCredentials(c.Request.Context(), service.ListCredentialsRequest{Page: parseInt(c.Query("page"), 1), PageSize: parseInt(c.Query("page_size"), 20), Keyword: c.Query("keyword"), AuthType: c.Query("auth_type")})
 	if err != nil {
 		WriteServiceErr(c, err)
 		return
@@ -125,6 +128,51 @@ func (dc *DeployController) DeleteCredential(c *gin.Context) {
 		return
 	}
 	if err := dc.svc.DeleteCredential(c.Request.Context(), id); err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK[any](c, nil)
+}
+
+func (dc *DeployController) BatchDeleteCredentials(c *gin.Context) {
+	var req struct {
+		Ids []uint64 `json:"ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.Ids) == 0 {
+		resp.Fail(c, 4000, "请选择要删除的凭据")
+		return
+	}
+	if err := dc.svc.BatchDeleteCredentials(c.Request.Context(), req.Ids); err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK[any](c, nil)
+}
+
+func (dc *DeployController) GetCredential(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	data, err := dc.svc.GetCredential(c.Request.Context(), id)
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, data)
+}
+
+func (dc *DeployController) UpdateCredential(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	var req service.UpdateSSHCredentialRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+	if err := dc.svc.UpdateCredential(c.Request.Context(), id, req); err != nil {
 		WriteServiceErr(c, err)
 		return
 	}
@@ -160,6 +208,19 @@ func (dc *DeployController) GetPlan(c *gin.Context) {
 		return
 	}
 	data, err := dc.svc.GetPlan(c.Request.Context(), id)
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, data)
+}
+
+func (dc *DeployController) DryRunPlan(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	data, err := dc.svc.DryRunPlan(c.Request.Context(), id)
 	if err != nil {
 		WriteServiceErr(c, err)
 		return
@@ -215,6 +276,112 @@ func (dc *DeployController) RetryPlan(c *gin.Context) {
 		return
 	}
 	resp.OK(c, gin.H{"task_id": taskID})
+}
+
+// GetDeployTaskLogs 获取部署任务日志
+func (dc *DeployController) GetDeployTaskLogs(c *gin.Context) {
+	taskID, err := strconv.ParseInt(c.Param("taskId"), 10, 64)
+	if err != nil || taskID <= 0 {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+	task, ok := dc.svc.GetTaskStore().Get(taskID)
+	if !ok {
+		resp.Fail(c, 4004, "任务不存在")
+		return
+	}
+	offset := parseInt(c.Query("offset"), 0)
+	limit := parseInt(c.Query("limit"), 200)
+	logs := task.Logs(offset, limit)
+	resp.OK(c, gin.H{"task_id": taskID, "logs": logs, "total": len(logs)})
+}
+
+// GetDeployTaskLogsSSE SSE 实时日志推送
+func (dc *DeployController) GetDeployTaskLogsSSE(c *gin.Context) {
+	taskID, err := strconv.ParseInt(c.Param("taskId"), 10, 64)
+	if err != nil || taskID <= 0 {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+
+	// 设置 SSE 响应头
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	// 获取初始偏移量
+	offset := 0
+	if lastEventID := c.GetHeader("Last-Event-ID"); lastEventID != "" {
+		fmt.Sscanf(lastEventID, "%d", &offset)
+	}
+
+	// 发送心跳和日志
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	// 先发送已有日志
+	dc.sendLogs(c, taskID, &offset)
+
+	// 持续推送新日志
+	for {
+		select {
+		case <-c.Request.Context().Done():
+			return
+		case <-ticker.C:
+			// 检查任务状态
+			task, ok := dc.svc.GetTaskStore().Get(taskID)
+			if !ok {
+				// 任务不存在，发送完成事件
+				fmt.Fprintf(c.Writer, "event: done\ndata: {\"status\":\"not_found\"}\n\n")
+				c.Writer.Flush()
+				return
+			}
+
+			// 发送新日志
+			dc.sendLogs(c, taskID, &offset)
+
+			// 检查任务是否完成
+			if task.Status == "success" || task.Status == "failed" || task.Status == "canceled" || task.Status == "timeout" {
+				// 发送任务状态事件
+				fmt.Fprintf(c.Writer, "event: done\ndata: {\"status\":\"%s\",\"message\":\"%s\"}\n\n", task.Status, getMessage(task.Message))
+				c.Writer.Flush()
+				return
+			}
+
+			// 发送心跳
+			fmt.Fprintf(c.Writer, ": heartbeat\n\n")
+			c.Writer.Flush()
+		}
+	}
+}
+
+// sendLogs 发送日志到 SSE 流
+func (dc *DeployController) sendLogs(c *gin.Context, taskID int64, offset *int) {
+	task, ok := dc.svc.GetTaskStore().Get(taskID)
+	if !ok {
+		return
+	}
+
+	logs := task.Logs(*offset, 100)
+	for _, log := range logs {
+		// 转义 JSON 特殊字符
+		escaped := strings.ReplaceAll(log, "\\", "\\\\")
+		escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
+		escaped = strings.ReplaceAll(escaped, "\n", "\\n")
+		escaped = strings.ReplaceAll(escaped, "\r", "\\r")
+		fmt.Fprintf(c.Writer, "data: {\"log\":\"%s\"}\n\n", escaped)
+	}
+	*offset += len(logs)
+	c.Writer.Flush()
+}
+
+// getMessage 获取消息字符串
+func getMessage(msg *string) string {
+	if msg == nil {
+		return ""
+	}
+	return strings.ReplaceAll(*msg, "\"", "\\\"")
 }
 
 func parseUintParam(c *gin.Context, name string) (uint64, bool) {

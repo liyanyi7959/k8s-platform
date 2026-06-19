@@ -332,7 +332,7 @@ const columns = computed<EnhancedColumn[]>(() => [
   { key: 'node_count', label: '节点数', prop: 'node_count', width: 100, sortable: 'custom', align: 'center', headerAlign: 'center' },
   { key: 'status', label: '状态', prop: 'status', width: 160, sortable: 'custom' },
   { key: 'created_at', label: '创建时间', prop: 'created_at', minWidth: 180, sortable: 'custom' },
-  { key: 'actions', label: '操作', width: 180, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false }
+  { key: 'actions', label: '操作', width: 220, align: 'center', headerAlign: 'center', disableToggle: true, overflowTooltip: false }
 ])
 
 const importVisible = ref(false)

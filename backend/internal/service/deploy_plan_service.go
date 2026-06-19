@@ -13,13 +13,21 @@ import (
 )
 
 type SSHCredentialItem struct {
-	ID        uint64  `json:"id"`
-	Name      string  `json:"name"`
-	AuthType  string  `json:"auth_type"`
-	Username  string  `json:"username"`
-	Remark    *string `json:"remark,omitempty"`
-	CreatedAt string  `json:"created_at"`
-	UpdatedAt string  `json:"updated_at"`
+	ID          uint64  `json:"id"`
+	Name        string  `json:"name"`
+	AuthType    string  `json:"auth_type"`
+	Username    string  `json:"username"`
+	Remark      *string `json:"remark,omitempty"`
+	ServerCount int     `json:"server_count"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
+
+type ListCredentialsRequest struct {
+	Page     int
+	PageSize int
+	Keyword  string
+	AuthType string
 }
 
 type CreateSSHCredentialRequest struct {
@@ -28,6 +36,14 @@ type CreateSSHCredentialRequest struct {
 	Username   string `json:"username"`
 	Credential string `json:"credential"`
 	Remark     string `json:"remark"`
+}
+
+type UpdateSSHCredentialRequest struct {
+	Name       string  `json:"name"`
+	AuthType   string  `json:"auth_type"`
+	Username   string  `json:"username"`
+	Credential string  `json:"credential"`
+	Remark     *string `json:"remark"`
 }
 
 type DeployPlanNodeItem struct {
@@ -81,9 +97,15 @@ type DeployPlanNodeReq struct {
 	SortOrder int    `json:"sort_order"`
 }
 
-func (s *DeployService) ListCredentials(ctx context.Context, page, pageSize int) (PageResult[SSHCredentialItem], error) {
-	page, pageSize = normalizePage(page, pageSize)
+func (s *DeployService) ListCredentials(ctx context.Context, req ListCredentialsRequest) (PageResult[SSHCredentialItem], error) {
+	page, pageSize := normalizePage(req.Page, req.PageSize)
 	q := s.db.WithContext(ctx).Model(&model.SSHCredential{}).Where("deleted_at IS NULL")
+	if kw := strings.TrimSpace(req.Keyword); kw != "" {
+		q = q.Where("name LIKE ? OR username LIKE ?", "%"+kw+"%", "%"+kw+"%")
+	}
+	if at := strings.TrimSpace(req.AuthType); at != "" {
+		q = q.Where("auth_type = ?", at)
+	}
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
 		return PageResult[SSHCredentialItem]{}, err
@@ -94,7 +116,8 @@ func (s *DeployService) ListCredentials(ctx context.Context, page, pageSize int)
 	}
 	items := make([]SSHCredentialItem, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, sshCredentialToItem(row))
+		sc := countServersByCredential(s.db.WithContext(ctx), row.ID)
+		items = append(items, sshCredentialToItem(row, sc))
 	}
 	return PageResult[SSHCredentialItem]{List: items, Total: int(total), Page: page, PageSize: pageSize}, nil
 }
@@ -133,6 +156,64 @@ func (s *DeployService) DeleteCredential(ctx context.Context, id uint64) error {
 	}
 	now := time.Now().UTC()
 	res := s.db.WithContext(ctx).Model(&model.SSHCredential{}).Where("deleted_at IS NULL AND id = ?", id).Update("deleted_at", &now)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (s *DeployService) GetCredential(ctx context.Context, id uint64) (SSHCredentialItem, error) {
+	if id == 0 {
+		return SSHCredentialItem{}, ErrInvalidParams
+	}
+	var row model.SSHCredential
+	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return SSHCredentialItem{}, ErrNotFound
+		}
+		return SSHCredentialItem{}, err
+	}
+	sc := countServersByCredential(s.db.WithContext(ctx), row.ID)
+	return sshCredentialToItem(row, sc), nil
+}
+
+func (s *DeployService) UpdateCredential(ctx context.Context, id uint64, req UpdateSSHCredentialRequest) error {
+	if id == 0 {
+		return ErrInvalidParams
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return ErrWithMessage(ErrInvalidParams, "凭证名称不能为空")
+	}
+	authType := normalizeAuthType(req.AuthType)
+	if authType == "" {
+		return ErrWithMessage(ErrInvalidParams, "认证类型必须为 password 或 key")
+	}
+	username := strings.TrimSpace(req.Username)
+	if username == "" {
+		username = "root"
+	}
+
+	updates := map[string]any{
+		"name":      name,
+		"auth_type": authType,
+		"username":  username,
+		"remark":    req.Remark,
+	}
+
+	credential := strings.TrimSpace(req.Credential)
+	if credential != "" {
+		enc, err := encryptText(s.encryptionKey, credential)
+		if err != nil {
+			return err
+		}
+		updates["credential_enc"] = enc
+	}
+
+	res := s.db.WithContext(ctx).Model(&model.SSHCredential{}).Where("deleted_at IS NULL AND id = ?", id).Updates(updates)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -238,7 +319,7 @@ func (s *DeployService) ExecutePlan(ctx context.Context, id uint64, userID uint6
 		}
 		title := "部署集群 " + plan.ClusterName
 		percent := 0
-		message := "部署任务已创建，等待执行器接入"
+		message := "部署任务已创建，正在执行"
 		task := &Task{Type: "deploy_cluster", Status: TaskPending, Title: &title, CreatedBy: int64(userID), Percent: &percent, Message: &message, Meta: map[string]any{"deploy_plan_id": plan.ID}}
 		if err := s.taskStore.Put(task); err != nil {
 			return err
@@ -246,10 +327,29 @@ func (s *DeployService) ExecutePlan(ctx context.Context, id uint64, userID uint6
 		taskID = uint64(task.ID)
 		return tx.Model(&model.DeployPlan{}).Where("id = ?", id).Updates(map[string]any{"status": "running", "task_id": taskID}).Error
 	})
-	return taskID, err
+	if err != nil {
+		return 0, err
+	}
+	// 异步启动部署流水线
+	go s.deployPipeline(context.Background(), id, int64(taskID))
+	return taskID, nil
 }
 
 func (s *DeployService) CancelPlan(ctx context.Context, id uint64) error {
+	// 获取关联的任务 ID 并取消
+	var plan model.DeployPlan
+	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&plan).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if plan.Status != "running" {
+		return ErrWithMessage(ErrConflict, "仅运行中的计划可取消")
+	}
+	if plan.TaskID != nil && *plan.TaskID > 0 {
+		s.taskStore.CancelExecution(int64(*plan.TaskID))
+	}
 	return s.updatePlanStatus(ctx, id, "running", "cancelled")
 }
 
@@ -388,6 +488,27 @@ func deployPlanToItem(row model.DeployPlan, nodes []model.DeployPlanNode) Deploy
 	return item
 }
 
-func sshCredentialToItem(row model.SSHCredential) SSHCredentialItem {
-	return SSHCredentialItem{ID: row.ID, Name: row.Name, AuthType: row.AuthType, Username: row.Username, Remark: row.Remark, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339)}
+func sshCredentialToItem(row model.SSHCredential, serverCount int) SSHCredentialItem {
+	return SSHCredentialItem{ID: row.ID, Name: row.Name, AuthType: row.AuthType, Username: row.Username, Remark: row.Remark, ServerCount: serverCount, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339)}
+}
+
+func countServersByCredential(db *gorm.DB, credentialID uint64) int {
+	var count int64
+	db.Model(&model.DeployServer{}).Where("deleted_at IS NULL AND credential_id = ?", credentialID).Count(&count)
+	return int(count)
+}
+
+func (s *DeployService) BatchDeleteCredentials(ctx context.Context, ids []uint64) error {
+	if len(ids) == 0 {
+		return ErrInvalidParams
+	}
+	now := time.Now().UTC()
+	res := s.db.WithContext(ctx).Model(&model.SSHCredential{}).Where("deleted_at IS NULL AND id IN ?", ids).Update("deleted_at", &now)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
 }

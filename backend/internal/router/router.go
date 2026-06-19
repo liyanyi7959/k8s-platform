@@ -47,6 +47,7 @@ func New(d Deps) (*gin.Engine, error) {
 	var userCtl *controller.UserController
 	var aiCtl *controller.AIController
 	var deployCtl *controller.DeployController
+	var deployConfigCtl *controller.DeployConfigController
 
 	if d.DB != nil {
 		clusterReg := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
@@ -84,8 +85,10 @@ func New(d Deps) (*gin.Engine, error) {
 		aiToolSvc := service.NewAIToolService(d.DB, aiToolRegistry)
 		aiChatSvc := service.NewAIChatService(d.DB, aiGatewaySvc, aiToolSvc, aiActionSvc)
 		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiToolSvc, aiActionSvc)
-		deploySvc := service.NewDeployService(d.DB, d.EncryptionKey, taskStore)
+		deploySvc := service.NewDeployService(d.DB, d.EncryptionKey, taskStore, clusterReg)
 		deployCtl = controller.NewDeployController(deploySvc)
+		deployConfigSvc := service.NewDeployConfigService(d.DB)
+		deployConfigCtl = controller.NewDeployConfigController(deployConfigSvc)
 	}
 
 	// ── 健康检查 ──
@@ -94,7 +97,7 @@ func New(d Deps) (*gin.Engine, error) {
 	})
 
 	// ── 路由注册 ──
-	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, aiCtl, deployCtl)
+	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, aiCtl, deployCtl, deployConfigCtl)
 
 	return r, nil
 }
@@ -111,6 +114,7 @@ func registerRoutes(
 	userCtl *controller.UserController,
 	aiCtl *controller.AIController,
 	deployCtl *controller.DeployController,
+	deployConfigCtl *controller.DeployConfigController,
 ) {
 	api := r.Group("/api/v1")
 
@@ -138,6 +142,67 @@ func registerRoutes(
 	registerAuditRoutes(authed, auditCtl)
 	registerUserRoutes(authed, userCtl)
 	registerAIRoutes(authed, aiCtl)
+	registerDeployRoutes(authed, deployCtl, deployConfigCtl)
+}
+
+func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployController, configCtl *controller.DeployConfigController) {
+	if ctl == nil {
+		return
+	}
+	deploy := authed.Group("/deploy")
+
+	readServer := middleware.RequirePerm("deploy:server_read")
+	writeServer := middleware.RequirePerm("deploy:server_write")
+	deleteServer := middleware.RequirePerm("deploy:server_delete")
+	readPlan := middleware.RequirePerm("deploy:plan_read")
+	writePlan := middleware.RequirePerm("deploy:plan_write")
+	deletePlan := middleware.RequirePerm("deploy:plan_delete")
+	execDeploy := middleware.RequirePerm("deploy:execute")
+
+	// 服务器管理
+	deploy.GET("/servers", readServer, ctl.ListServers)
+	deploy.POST("/servers", writeServer, ctl.CreateServer)
+	deploy.GET("/servers/:id", readServer, ctl.GetServer)
+	deploy.PUT("/servers/:id", writeServer, ctl.UpdateServer)
+	deploy.POST("/servers/:id/test-ssh", readServer, ctl.TestSSH)
+	deploy.DELETE("/servers/:id", deleteServer, ctl.DeleteServer)
+
+	// SSH 凭证
+	deploy.GET("/credentials", readServer, ctl.ListCredentials)
+	deploy.POST("/credentials", writeServer, ctl.CreateCredential)
+	deploy.GET("/credentials/:id", readServer, ctl.GetCredential)
+	deploy.PUT("/credentials/:id", writeServer, ctl.UpdateCredential)
+	deploy.DELETE("/credentials/:id", deleteServer, ctl.DeleteCredential)
+	deploy.POST("/credentials/batch-delete", deleteServer, ctl.BatchDeleteCredentials)
+
+	// 部署计划
+	deploy.GET("/plans", readPlan, ctl.ListPlans)
+	deploy.POST("/plans", writePlan, ctl.CreatePlan)
+	deploy.GET("/plans/:id/dry-run", readPlan, ctl.DryRunPlan)
+	deploy.POST("/plans/:id/execute", execDeploy, ctl.ExecutePlan)
+	deploy.POST("/plans/:id/cancel", execDeploy, ctl.CancelPlan)
+	deploy.POST("/plans/:id/retry", execDeploy, ctl.RetryPlan)
+	deploy.DELETE("/plans/:id", deletePlan, ctl.DeletePlan)
+
+	// 部署任务日志
+	deploy.GET("/tasks/:taskId/logs", readPlan, ctl.GetDeployTaskLogs)
+	deploy.GET("/tasks/:taskId/logs/sse", readPlan, ctl.GetDeployTaskLogsSSE)
+
+	// 部署配置管理
+	if configCtl != nil {
+		deploy.GET("/configs", readPlan, configCtl.ListConfigs)
+		deploy.GET("/configs/os-types", readPlan, configCtl.ListSupportedOSTypes)
+		deploy.GET("/configs/:id", readPlan, configCtl.GetConfig)
+		deploy.PUT("/configs/:id", writePlan, configCtl.UpdateConfig)
+		deploy.GET("/configs/:id/versions", readPlan, configCtl.GetConfigVersions)
+
+		// 仓库配置管理
+		deploy.GET("/repositories", readPlan, configCtl.ListRepositories)
+		deploy.POST("/repositories", writePlan, configCtl.CreateRepository)
+		deploy.GET("/repositories/:id", readPlan, configCtl.GetRepository)
+		deploy.PUT("/repositories/:id", writePlan, configCtl.UpdateRepository)
+		deploy.DELETE("/repositories/:id", deletePlan, configCtl.DeleteRepository)
+	}
 }
 
 func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sPermissionAuditController) {

@@ -29,13 +29,30 @@ func (s *DeployService) ProbeServerSSH(ctx context.Context, id uint64) (SSHProbe
 	}
 	var row model.DeployServer
 	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-		return SSHProbeResult{}, normalizeGormNotFound(err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return SSHProbeResult{}, ErrNotFound
+		}
+		return SSHProbeResult{}, err
 	}
-	credential, err := decryptText(s.encryptionKey, row.CredentialEnc)
+	// 如果服务器关联了凭据，从凭据表获取凭证
+	credentialEnc := row.CredentialEnc
+	authType := row.AuthType
+	if row.CredentialID != nil && *row.CredentialID > 0 {
+		var cred model.SSHCredential
+		if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", *row.CredentialID).First(&cred).Error; err != nil {
+			_ = s.updateServerStatus(ctx, id, "unavailable")
+			return SSHProbeResult{}, ErrWithMessage(ErrNotFound, "关联的凭据不存在")
+		}
+		credentialEnc = cred.CredentialEnc
+		authType = cred.AuthType
+	}
+	credential, err := decryptText(s.encryptionKey, credentialEnc)
 	if err != nil {
 		_ = s.updateServerStatus(ctx, id, "unavailable")
 		return SSHProbeResult{}, ErrWithMessage(ErrCrypto, "服务器凭证解密失败")
 	}
+	// 临时覆盖 authType 用于 SSH 连接
+	row.AuthType = authType
 	result, err := probeSSH(ctx, row, credential)
 	status := "available"
 	if err != nil {
@@ -81,6 +98,14 @@ func probeSSH(ctx context.Context, row model.DeployServer, credential string) (S
 	defer conn.Close()
 	sshConn, chans, reqs, err := ssh.NewClientConn(conn, addr, config)
 	if err != nil {
+		// 将技术性 SSH 错误转换为用户友好的提示
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "unable to authenticate") || strings.Contains(errMsg, "no supported methods remain") {
+			return SSHProbeResult{}, fmt.Errorf("SSH 认证失败：密码错误或用户名不正确")
+		}
+		if strings.Contains(errMsg, "handshake failed") {
+			return SSHProbeResult{}, fmt.Errorf("SSH 认证失败：服务器拒绝连接，请检查用户名和密码")
+		}
 		return SSHProbeResult{}, fmt.Errorf("SSH 认证失败：%w", err)
 	}
 	client := ssh.NewClient(sshConn, chans, reqs)
