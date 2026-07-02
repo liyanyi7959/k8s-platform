@@ -193,6 +193,7 @@
             0,
             0,
             0,
+            0,
             0
           ]
         },
@@ -289,7 +290,10 @@
             59,
             62,
             60,
-            67
+            67,
+            59,
+            93,
+            62
           ]
         },
         "register": 3
@@ -347,7 +351,8 @@
             25,
             26,
             31,
-            32
+            32,
+            31
           ]
         },
         "register": 41
@@ -382,6 +387,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -465,7 +471,9 @@
             0,
             1,
             0,
-            1
+            1,
+            0,
+            0
           ],
           "onCheckCode": [
             1,
@@ -611,6 +619,9 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -1619,6 +1630,8 @@
             0,
             0,
             0,
+            0,
+            0,
             0
           ]
         },
@@ -1674,6 +1687,7 @@
             2,
             1,
             2,
+            2,
             2
           ],
           "addRuntimePlugin": [
@@ -1697,6 +1711,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -1827,6 +1842,7 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addEntryImports": [
@@ -1839,6 +1855,8 @@
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -1978,6 +1996,7 @@
             52,
             74,
             73,
+            58,
             58
           ],
           "addPolyfillImports": [
@@ -1988,6 +2007,8 @@
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -2151,6 +2172,8 @@
             0,
             0,
             0,
+            0,
+            0,
             0
           ]
         },
@@ -2169,6 +2192,7 @@
         "hooks": {
           "onGenerateFiles": [
             394,
+            0,
             0,
             0,
             0,
@@ -2287,6 +2311,7 @@
             1,
             0,
             0,
+            1,
             1
           ],
           "addBeforeMiddlewares": [
@@ -2384,7 +2409,9 @@
             220,
             13,
             221,
-            14
+            14,
+            267,
+            13
           ]
         },
         "register": 13
@@ -2477,7 +2504,8 @@
             20,
             32,
             26,
-            24
+            24,
+            31
           ]
         },
         "register": 9
@@ -2600,7 +2628,8 @@
             3,
             2,
             1,
-            2
+            2,
+            1
           ]
         },
         "register": 3
@@ -2733,6 +2762,8 @@
       "time": {
         "hooks": {
           "addHTMLHeadScripts": [
+            0,
+            0,
             0,
             0,
             0,
@@ -3139,6 +3170,7 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -3180,6 +3212,7 @@
             4,
             2,
             1,
+            2,
             2
           ],
           "addTmpGenerateWatcherPaths": [
@@ -3300,6 +3333,8 @@
             0,
             0,
             0,
+            0,
+            0,
             0
           ],
           "addRuntimePlugin": [
@@ -3341,9 +3376,11 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -3423,6 +3460,7 @@
             4,
             4,
             4,
+            3,
             3
           ],
           "addExtraBabelPlugins": [
@@ -3496,6 +3534,7 @@
             0,
             1,
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
@@ -3521,6 +3560,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -3578,7 +3618,8 @@
             2,
             3,
             2,
-            1
+            1,
+            2
           ],
           "addExtraModels": [
             0,
@@ -3609,6 +3650,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -3679,6 +3721,7 @@
             0,
             1,
             0,
+            0,
             0
           ],
           "modifyAppData": [
@@ -3723,9 +3766,11 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -3805,7 +3850,8 @@
             11,
             6,
             7,
-            7
+            7,
+            10
           ]
         },
         "register": 6
@@ -3886,6 +3932,7 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -3927,7 +3974,8 @@
             156,
             185,
             146,
-            153
+            153,
+            161
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -3960,6 +4008,7 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -4083,7 +4132,8 @@
             1,
             0,
             0,
-            0
+            0,
+            1
           ],
           "addRuntimePlugin": [
             0,
@@ -4124,9 +4174,11 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -4206,7 +4258,8 @@
             2,
             4,
             3,
-            3
+            3,
+            2
           ]
         },
         "register": 2
@@ -4261,7 +4314,8 @@
             0,
             0,
             0,
-            0
+            0,
+            1
           ],
           "onGenerateFiles": [
             14,
@@ -4302,6 +4356,7 @@
             3,
             3,
             4,
+            3,
             3
           ]
         },
@@ -7876,7 +7931,7 @@
       "parentId": "83",
       "id": "112",
       "absPath": "/k8s/:clusterId/csi-storage-capacities",
-      "__content": "import GenericResourceList, { rawColumn } from '@/components/GenericResourceList'\n\nexport default function CSIStorageCapacitiesPage() {\n  return (\n    <GenericResourceList\n      resource=\"csistoragecapacities\"\n      title=\"CSIStorageCapacities\"\n      namespaced\n      creatable={false}\n      extraColumns={[\n        rawColumn('StorageClass', 'storageClassName', { width: 180 }),\n        rawColumn('容量', 'capacity', { width: 120 }),\n      ]}\n    />\n  )\n}\n",
+      "__content": "import GenericResourceList, { rawColumn } from '@/components/GenericResourceList'\n\nexport default function CSIStorageCapacitiesPage() {\n  return (\n    <GenericResourceList\n      resource=\"csistoragecapacities\"\n      title=\"CSIStorageCapacities\"\n      namespaced\n      creatable={false}\n      deletable={false}\n      extraColumns={[\n        rawColumn('StorageClass', 'storageClassName', { width: 180 }),\n        rawColumn('容量', 'capacity.storage', { width: 120 }),\n      ]}\n    />\n  )\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/csistoragecapacities.tsx"
     },
@@ -10394,7 +10449,7 @@
             "format": "esm"
           },
           "src/services/k8s.ts": {
-            "bytes": 95196,
+            "bytes": 98336,
             "imports": [
               {
                 "path": "src/.umi/exports.ts",
@@ -13236,7 +13291,7 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/csistoragecapacities.tsx": {
-            "bytes": 458,
+            "bytes": 490,
             "imports": [
               {
                 "path": "src/components/GenericResourceList/index.tsx",
@@ -18746,7 +18801,7 @@
                 "bytesInOutput": 742
               },
               "src/pages/k8s/$clusterId/csistoragecapacities.tsx": {
-                "bytesInOutput": 742
+                "bytesInOutput": 774
               },
               "src/pages/k8s/$clusterId/volumeattachments.tsx": {
                 "bytesInOutput": 959
@@ -18848,7 +18903,7 @@
                 "bytesInOutput": 2108
               }
             },
-            "bytes": 924071
+            "bytes": 924103
           }
         }
       }
