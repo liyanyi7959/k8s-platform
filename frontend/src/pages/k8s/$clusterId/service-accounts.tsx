@@ -4,7 +4,7 @@ import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from '
 import { DeleteOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listServiceAccounts, deleteServiceAccount } from '@/services/k8s'
-import { AppPage, NamespaceSelector } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -37,8 +37,9 @@ const ServiceAccountsPage: React.FC = () => {
     {
       title: '命名空间',
       dataIndex: 'namespace',
-      width: 120,
-      render: (_, r) => r.namespace || namespace,
+      width: 140,
+      ellipsis: true,
+      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
     { title: 'Secrets', dataIndex: 'secrets', width: 80, search: false },
     {

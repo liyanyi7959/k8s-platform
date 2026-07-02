@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { history } from '@umijs/max'
 
 /**
@@ -14,10 +14,14 @@ export type Cluster = {
 
 /**
  * 从 URL 中提取集群 ID
- * 优先级：query ?cluster=xxx > path /cluster/xxx
+ * 优先级：path /k8s/xxx > query ?cluster=xxx > path /cluster/xxx
  */
 const getClusterIdFromUrl = (): string | null => {
   const { search, pathname } = history.location
+
+  // K8s 资源页路由：/k8s/:clusterId/...
+  const k8sMatch = pathname.match(/^\/k8s\/([^/]+)/)
+  if (k8sMatch?.[1]) return k8sMatch[1]
 
   const queryCluster = new URLSearchParams(search).get('cluster')
   if (queryCluster) return queryCluster
@@ -30,9 +34,14 @@ const getClusterIdFromUrl = (): string | null => {
 
 /**
  * 同步当前集群 ID 到 URL query 参数
+ * 注意：/k8s/:clusterId 路径已在 path 中携带集群 ID，无需追加 query
  */
 const syncClusterQuery = (clusterId: string | null) => {
   const { pathname, search } = history.location
+
+  // K8s 资源页路由自身携带 clusterId，跳过 query 同步避免冗余与循环
+  if (pathname.startsWith('/k8s/')) return
+
   const params = new URLSearchParams(search)
 
   if (clusterId) {
@@ -61,46 +70,48 @@ export default function useClusterModel() {
   const [currentCluster, setCurrentClusterState] = useState<Cluster | null>(null)
   const [clusterList, setClusterListState] = useState<Cluster[]>([])
   const [initialized, setInitialized] = useState(false)
-  const clusterListRef = useRef<Cluster[]>([])
+  // 跟踪当前路径名，路由变化时触发集群状态恢复
+  const [pathname, setPathname] = useState<string>(history.location.pathname)
 
-  // 保持 ref 与 state 同步，供 recovery 使用
+  // 订阅路由变化，同步 pathname
   useEffect(() => {
-    clusterListRef.current = clusterList
-  }, [clusterList])
-
-  // 初始化：从 URL 恢复集群状态（从 clusterList 中查找）
-  useEffect(() => {
-    const clusterId = getClusterIdFromUrl()
-    if (clusterId) {
-      // 先从当前 clusterList 查找，如果还没加载（首次渲染），等待后续 setClusterList 触发恢复
-      const found = clusterListRef.current.find((c) => c.id === clusterId)
-      if (found) {
-        setCurrentClusterState({
-          id: found.id,
-          name: found.name,
-          version: found.version,
-          status: found.status,
-        })
-      }
-    }
-    setInitialized(true)
+    const unlisten = history.listen(({ location }) => {
+      setPathname(location.pathname)
+    })
+    return unlisten
   }, [])
 
-  // 当 clusterList 更新后，尝试恢复之前未恢复的集群状态
+  // 根据 URL + clusterList 恢复/切换集群状态
+  // 依赖 pathname 与 clusterList：任何路由跳转或列表加载完成都会重新校准
   useEffect(() => {
     const clusterId = getClusterIdFromUrl()
-    if (clusterId && !currentCluster) {
-      const found = clusterList.find((c) => c.id === clusterId)
-      if (found) {
-        setCurrentClusterState({
-          id: found.id,
-          name: found.name,
-          version: found.version,
-          status: found.status,
-        })
-      }
+
+    // 非集群上下文（URL 中无 clusterId）→ 回到全局模式
+    if (!clusterId) {
+      if (currentCluster) setCurrentClusterState(null)
+      setInitialized(true)
+      return
     }
-  }, [clusterList, currentCluster])
+
+    // 已是目标集群，无需重复设置
+    if (currentCluster?.id === clusterId) {
+      setInitialized(true)
+      return
+    }
+
+    // 从 clusterList 查找目标集群；列表未加载时等待后续触发
+    const found = clusterList.find((c) => c.id === clusterId)
+    if (found) {
+      setCurrentClusterState({
+        id: found.id,
+        name: found.name,
+        version: found.version,
+        status: found.status,
+      })
+    }
+    setInitialized(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, clusterList])
 
   /**
    * 设置当前集群

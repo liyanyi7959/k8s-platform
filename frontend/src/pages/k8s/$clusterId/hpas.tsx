@@ -17,7 +17,7 @@ import {
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listHPAs, deleteHPA, createHPA, updateHPA } from '@/services/k8s'
-import { AppPage, NamespaceSelector } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -77,8 +77,9 @@ const HPAsPage: React.FC = () => {
     {
       title: '命名空间',
       dataIndex: 'namespace',
-      width: 120,
-      render: (_, r) => r.namespace || namespace,
+      width: 140,
+      ellipsis: true,
+      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
     { title: '目标', dataIndex: 'targetName', ellipsis: true, search: false },
     { title: '最小副本', dataIndex: 'minReplicas', width: 100, search: false },

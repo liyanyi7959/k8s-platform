@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listIngresses, deleteIngress, createIngress, updateIngress } from '@/services/k8s'
-import { AppPage, NamespaceSelector } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import type { Ingress } from '@/types'
@@ -76,8 +76,9 @@ const IngressesPage: React.FC = () => {
     {
       title: '命名空间',
       dataIndex: 'namespace',
-      width: 120,
-      render: (_, r) => r.namespace || namespace,
+      width: 140,
+      ellipsis: true,
+      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
     { title: 'Ingress Class', dataIndex: 'ingressClass', width: 140 },
     {

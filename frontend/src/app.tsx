@@ -500,7 +500,9 @@ export const layout = ({ initialState, setInitialState }: any) => {
   }, [clusterListRes, setClusterList])
 
   const pathname = history.location.pathname
-  const currentClusterId = currentCluster?.id ?? null
+  // 优先从 URL path 解析 clusterId（/k8s/:clusterId/...），确保刷新/直达时菜单立即正确
+  const pathClusterId = pathname.match(/^\/k8s\/([^/]+)/)?.[1] ?? null
+  const currentClusterId = pathClusterId ?? currentCluster?.id ?? null
   const isAdminMode = pathname.startsWith('/config')
   const isClusterMode = pathname.startsWith('/k8s/') && Boolean(currentClusterId)
   const currentUserName = getUserDisplayName(initialState?.currentUser)
@@ -603,12 +605,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
         <a
           onClick={() => {
             const targetPath = item.path!
-            // 集群模式下，k8s 路由带上 cluster 参数
-            if (currentClusterId && targetPath.startsWith('/k8s/')) {
-              history.push(`${targetPath}?cluster=${currentClusterId}`)
-            } else {
-              history.push(targetPath)
-            }
+            history.push(targetPath)
           }}
         >
           {dom}
@@ -664,7 +661,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
                   version: cluster.k8sVersion || '',
                   status: cluster.status,
                 })
-                history.push(`/cluster/dashboard?cluster=${cluster.id}`)
+                history.push(`/k8s/${cluster.id}/dashboard`)
               }
             }}
           />

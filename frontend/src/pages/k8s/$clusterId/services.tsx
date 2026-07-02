@@ -23,7 +23,7 @@ import {
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listServices, deleteService, createService, updateService } from '@/services/k8s'
-import { AppPage, NamespaceSelector } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -94,8 +94,9 @@ const ServicesPage: React.FC = () => {
     {
       title: '命名空间',
       dataIndex: 'namespace',
-      width: 120,
-      render: (t) => <Tag>{t as string}</Tag>,
+      width: 140,
+      ellipsis: true,
+      render: (t) => <EllipsisText text={t as string} tag />,
     },
     {
       title: '类型',

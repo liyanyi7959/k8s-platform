@@ -15,6 +15,7 @@
 bin/
 dist/
 tmp/
+*.zip
 
 # Test binary, built with go test -c
 *.test

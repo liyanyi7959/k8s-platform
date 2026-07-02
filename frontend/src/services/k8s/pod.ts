@@ -1,0 +1,75 @@
+/**
+ * Pod 资源 API
+ */
+import { request } from '@umijs/max'
+import type { Pod, PodList, PodListParams } from '@/types'
+import { mapPod, extractMappedList } from './shared'
+
+/** 获取 Pod 列表 */
+export function listPods(
+  clusterId: number,
+  params: PodListParams,
+  signal?: AbortSignal,
+): Promise<PodList> {
+  return request(`/api/v1/clusters/${clusterId}/pods`, { params, signal }).then(extractMappedList(mapPod))
+}
+
+/** 获取 Pod 详情 */
+export function getPod(
+  clusterId: number,
+  namespace: string,
+  name: string,
+  signal?: AbortSignal,
+): Promise<Pod> {
+  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}`, { signal })
+}
+
+/** 获取 Pod YAML */
+export function getPodYaml(
+  clusterId: number,
+  namespace: string,
+  name: string,
+  signal?: AbortSignal,
+): Promise<{ yaml: string }> {
+  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/yaml`, { signal }).then((res: { text?: string; yaml?: string }) => ({
+    yaml: res.yaml || res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
+  }))
+}
+
+/** 删除 Pod */
+export function deletePod(clusterId: number, namespace: string, name: string, _force?: boolean): Promise<void> {
+  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}`, { method: 'DELETE' })
+}
+
+/** 获取 Pod 日志 */
+export function getPodLogs(clusterId: number, namespace: string, name: string, tailLines?: number): Promise<{ logs: string }> {
+  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/logs`, { params: { tail_lines: tailLines ?? 200 } }).then((res: { text?: string; logs?: string }) => ({
+    logs: res.text || res.logs || '',
+  }))
+}
+
+/** 获取 Pod 终端 WebSocket 地址 */
+export function getPodTerminalUrl(clusterId: number, namespace: string, name: string, options?: { container?: string; command?: string[]; tty?: boolean }): Promise<{ url: string }> {
+  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/exec`, {
+    method: 'POST',
+    data: {
+      container: options?.container || undefined,
+      command: options?.command?.length ? options.command : ['/bin/sh'],
+      tty: options?.tty ?? true,
+    },
+  }).then((res: { session_id?: string; ws_url?: string; url?: string }) => ({
+    url: res.ws_url || res.url || '',
+  }))
+}
+
+/** Pod 巡检诊断 */
+export function getPodInspection(clusterId: number, namespace: string, name: string, signal?: AbortSignal): Promise<{ text: string }> {
+  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/inspection`, { signal }).then((res: any) => ({
+    text: res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
+  }))
+}
+
+/** 获取 Pod 列表（兼容拓扑图页面调用签名） */
+export function getPods(clusterId: number, namespace?: string, signal?: AbortSignal): Promise<PodList> {
+  return listPods(clusterId, { namespace: namespace || undefined }, signal)
+}

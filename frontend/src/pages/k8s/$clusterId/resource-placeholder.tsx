@@ -4,7 +4,7 @@ import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert, Button, Popconfirm, Space, Tag, message } from 'antd'
 import { CodeOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
-import { AppPage, NamespaceSelector } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { deleteGenericResource, listGenericResources, listPermissionAudits } from '@/services/k8s'
@@ -132,7 +132,8 @@ const K8sResourcePlaceholder: React.FC = () => {
       title: '命名空间',
       dataIndex: 'namespace',
       width: 140,
-      render: (_: unknown, record: any) => <Tag>{record.namespace || '-'}</Tag>,
+      ellipsis: true,
+      render: (_: unknown, record: any) => <EllipsisText text={record.namespace} tag />,
     } : undefined,
     {
       title: '类型',

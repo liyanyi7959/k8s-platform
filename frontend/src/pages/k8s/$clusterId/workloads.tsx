@@ -55,7 +55,7 @@ import {
   updateWorkloadPaused,
 } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
-import { AppPage, NamespaceSelector } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 
 const { Text } = Typography
 
@@ -219,8 +219,9 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
     {
       title: 'Namespace',
       dataIndex: 'namespace',
-      width: 120,
-      render: (_, r) => <Tag>{r.namespace}</Tag>,
+      width: 140,
+      ellipsis: true,
+      render: (_, r) => <EllipsisText text={r.namespace} tag />,
     },
     { title: '名称', dataIndex: 'name', ellipsis: true },
     {

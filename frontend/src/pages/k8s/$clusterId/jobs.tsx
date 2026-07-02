@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from 'antd'
-import { DeleteOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons'
+import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button } from 'antd'
+import { DeleteOutlined, CodeOutlined, EyeOutlined, ClearOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listJobs, deleteJob } from '@/services/k8s'
-import { AppPage, NamespaceSelector } from '@/components'
+import { listJobs, deleteJob, deleteCompletedJobs } from '@/services/k8s'
+import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -38,13 +38,23 @@ const JobsPage: React.FC = () => {
     },
   })
 
+  const cleanupMutation = useMutation({
+    mutationFn: () => deleteCompletedJobs(clusterId),
+    onSuccess: () => {
+      message.success('已清理所有已完成的 Job')
+      queryClient.invalidateQueries({ queryKey: ['k8s-jobs', clusterId] })
+    },
+    onError: () => message.error('清理失败'),
+  })
+
   const columns: ProColumns<Job>[] = [
     { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
       title: '命名空间',
       dataIndex: 'namespace',
-      width: 120,
-      render: (_, r) => r.namespace || namespace,
+      width: 140,
+      ellipsis: true,
+      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
     {
       title: '状态',
@@ -105,6 +115,17 @@ const JobsPage: React.FC = () => {
         search={false}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 800 }}
+        toolBarRender={() => [
+          <Popconfirm
+            key="cleanup"
+            title="清理该命名空间下所有已完成的 Job？"
+            onConfirm={() => cleanupMutation.mutate()}
+          >
+            <Button danger icon={<ClearOutlined />} loading={cleanupMutation.isPending}>
+              清理已完成
+            </Button>
+          </Popconfirm>,
+        ]}
         headerTitle={
           <NamespaceSelector
             clusterId={clusterId}

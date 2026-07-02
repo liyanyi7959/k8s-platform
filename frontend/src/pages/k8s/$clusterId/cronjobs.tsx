@@ -4,7 +4,7 @@ import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from '
 import { DeleteOutlined, CodeOutlined, EyeOutlined, ThunderboltOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listCronJobs, deleteCronJob, triggerCronJob, suspendCronJob } from '@/services/k8s'
-import { AppPage, NamespaceSelector } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -57,8 +57,9 @@ const CronJobsPage: React.FC = () => {
     {
       title: '命名空间',
       dataIndex: 'namespace',
-      width: 120,
-      render: (_, r) => r.namespace || namespace,
+      width: 140,
+      ellipsis: true,
+      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
     {
       title: '调度',
@@ -91,7 +92,7 @@ const CronJobsPage: React.FC = () => {
     {
       title: '操作',
       valueType: 'option',
-      width: 140,
+      width: 200,
       fixed: 'right',
       render: (_, record) => (
         <Space
@@ -108,6 +109,23 @@ const CronJobsPage: React.FC = () => {
               <CodeOutlined />
             </a>
           </Tooltip>
+          <Popconfirm title="立即手动触发一次该 CronJob？" onConfirm={() => triggerMutation.mutate(record)}>
+            <Tooltip title="手动触发">
+              <a style={{ color: '#52c41a' }}>
+                <ThunderboltOutlined />
+              </a>
+            </Tooltip>
+          </Popconfirm>
+          <Popconfirm
+            title={record.suspend ? '恢复该 CronJob 调度？' : '暂停该 CronJob 调度？'}
+            onConfirm={() => suspendMutation.mutate(record)}
+          >
+            <Tooltip title={record.suspend ? '恢复' : '暂停'}>
+              <a style={{ color: '#faad14' }}>
+                {record.suspend ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
+              </a>
+            </Tooltip>
+          </Popconfirm>
           <Popconfirm title="确定删除该 CronJob？" onConfirm={() => deleteMutation.mutate(record)}>
             <Tooltip title="删除">
               <a style={{ color: '#ff4d4f' }}>

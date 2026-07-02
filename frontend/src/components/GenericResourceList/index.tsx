@@ -6,11 +6,12 @@
  */
 import React, { useMemo, useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Typography, Button, Empty, Input, Alert } from 'antd'
+import { Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Typography, Button, Empty, Input, Alert } from 'antd'
 import { DeleteOutlined, CodeOutlined, EyeOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listGenericResources, deleteGenericResource, type GenericResourceItem } from '@/services/k8s'
 import { AppPage, NamespaceSelector, ManifestApplyDrawer } from '@/components'
+import EllipsisText from '@/components/EllipsisText'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -129,7 +130,8 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
         dataIndex: 'namespace',
         width: 140,
         search: false,
-        render: (_, r) => (r.namespace ? <Tag>{r.namespace}</Tag> : '-'),
+        ellipsis: true,
+        render: (_, r) => <EllipsisText text={r.namespace} tag />,
       })
     }
 

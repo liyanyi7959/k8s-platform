@@ -27,9 +27,10 @@ import {
   ReloadOutlined,
   DesktopOutlined,
   InfoCircleOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listPods, deletePod, getPodLogs, getPodTerminalUrl, getPodYaml } from '@/services/k8s'
+import { listPods, deletePod, getPodLogs, getPodTerminalUrl, getPodYaml, getPodInspection } from '@/services/k8s'
 import { AppPage, PodStatusTag, NamespaceSelector } from '@/components'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -58,6 +59,12 @@ const PodsPage: React.FC = () => {
   const [logs, setLogs] = useState<string>('')
   const [logsLoading, setLogsLoading] = useState(false)
   const [forceDelete, setForceDelete] = useState(false)
+  const [inspectDrawer, setInspectDrawer] = useState<{
+    open: boolean
+    pod?: Pod
+    text?: string
+    loading: boolean
+  }>({ open: false, loading: false })
   const [batchDeleteModal, setBatchDeleteModal] = useState(false)
 
   const { data, isLoading, refetch } = useQuery({
@@ -150,6 +157,16 @@ const PodsPage: React.FC = () => {
     }
   }
 
+  const handleInspection = async (pod: Pod) => {
+    setInspectDrawer({ open: true, pod, loading: true })
+    try {
+      const res = await getPodInspection(clusterId, pod.namespace, pod.name)
+      setInspectDrawer((prev) => ({ ...prev, text: res.text, loading: false }))
+    } catch {
+      setInspectDrawer((prev) => ({ ...prev, text: '获取巡检结果失败', loading: false }))
+    }
+  }
+
   const selectedPods = useMemo(() => {
     return (data?.items || []).filter((p) => selectedKeys.includes(`${p.namespace}/${p.name}`))
   }, [data, selectedKeys])
@@ -203,15 +220,28 @@ const PodsPage: React.FC = () => {
     { title: '节点', dataIndex: 'nodeName', width: 130, ellipsis: true },
     {
       title: '所属',
-      width: 150,
-      render: (_, r) =>
-        r.ownerName ? (
-          <Tag>
-            {r.ownerKind || 'ReplicaSet'}/{r.ownerName}
-          </Tag>
-        ) : (
-          <Text type="secondary">-</Text>
-        ),
+      width: 180,
+      ellipsis: true,
+      render: (_, r) => {
+        if (!r.ownerName) return <Text type="secondary">-</Text>
+        const full = `${r.ownerKind || 'ReplicaSet'}/${r.ownerName}`
+        return (
+          <Tooltip title={full}>
+            <Tag
+              style={{
+                maxWidth: '100%',
+                display: 'inline-block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                verticalAlign: 'middle',
+              }}
+            >
+              {full}
+            </Tag>
+          </Tooltip>
+        )
+      },
     },
     {
       title: 'QoS',
@@ -223,7 +253,7 @@ const PodsPage: React.FC = () => {
     {
       title: '操作',
       valueType: 'option',
-      width: 160,
+      width: 190,
       fixed: 'right',
       render: (_, record) => (
         <Space
@@ -248,6 +278,11 @@ const PodsPage: React.FC = () => {
           <Tooltip title="查看 YAML">
             <a onClick={() => handleViewYaml(record)}>
               <CodeOutlined />
+            </a>
+          </Tooltip>
+          <Tooltip title="巡检诊断">
+            <a onClick={() => handleInspection(record)}>
+              <SafetyCertificateOutlined />
             </a>
           </Tooltip>
           <Popconfirm
@@ -556,6 +591,29 @@ const PodsPage: React.FC = () => {
           }}
         >
           {yamlDrawer.loading ? '加载中...' : yamlDrawer.yaml || '暂无数据'}
+        </pre>
+      </Drawer>
+
+      {/* ═══ 巡检诊断抽屉 ═══ */}
+      <Drawer
+        title={`巡检诊断 - ${inspectDrawer.pod?.name}`}
+        open={inspectDrawer.open}
+        onClose={() => setInspectDrawer({ open: false, loading: false })}
+        width={800}
+      >
+        <pre
+          style={{
+            background: '#1e1e1e',
+            color: '#d4d4d4',
+            padding: 16,
+            borderRadius: 4,
+            fontSize: 13,
+            lineHeight: 1.6,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+          }}
+        >
+          {inspectDrawer.loading ? '巡检中...' : inspectDrawer.text || '暂无巡检数据'}
         </pre>
       </Drawer>
 

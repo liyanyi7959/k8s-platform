@@ -3,7 +3,7 @@ import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Alert, Button, Space, Tag, Typography } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { AppPage, NamespaceSelector } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import { useClusterId } from '@/hooks/useClusterId'
 import { listEvents } from '@/services/k8s'
 import { formatDate } from '@/utils'
@@ -50,7 +50,8 @@ const EventsPage: React.FC = () => {
       title: '命名空间',
       dataIndex: 'namespace',
       width: 140,
-      render: (_, record) => <Tag>{record.namespace || '-'}</Tag>,
+      ellipsis: true,
+      render: (_, record) => <EllipsisText text={record.namespace} tag />,
     },
     {
       title: '关联对象',
