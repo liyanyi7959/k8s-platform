@@ -1,0 +1,46 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "importHelpers": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "paths": {
+      "@/*": [
+        "../../src/*"
+      ],
+      "@@/*": [
+        "../../src/.umi/*"
+      ],
+      "@umijs/max": [
+        "../../node_modules/.pnpm/umi@4.6.65_@babel+core@7.29_1bbca118541480622b7e273d97f29a8e/node_modules/umi"
+      ],
+      "@umijs/max/typings": [
+        "../../src/.umi/typings"
+      ],
+      "@tanstack/query-core": [
+        "D:/03_学习/soft/k8s-platform/frontend/node_modules/.pnpm/@tanstack+query-core@5.101.0/node_modules/@tanstack/query-core"
+      ]
+    }
+  },
+  "include": [
+    "../../.umirc.ts",
+    "../../.umirc.*.ts",
+    "../../**/*.d.ts",
+    "../../**/*.ts",
+    "../../**/*.tsx"
+  ]
+}

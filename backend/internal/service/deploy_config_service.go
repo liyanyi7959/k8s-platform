@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"sort"
 
 	"gorm.io/gorm"
 
@@ -22,15 +23,63 @@ func NewDeployConfigService(db *gorm.DB) *DeployConfigService {
 
 // ListConfigs 获取部署配置列表，支持按 os_type 筛选
 func (s *DeployConfigService) ListConfigs(ctx context.Context, osType string) ([]model.DeployConfig, error) {
+	if osType != "" {
+		return s.listConfigsWithFallback(ctx, osType)
+	}
+
 	var configs []model.DeployConfig
 	q := s.db.WithContext(ctx).Order("step_order ASC, os_type ASC")
-	if osType != "" {
-		q = q.Where("os_type = ?", osType)
-	}
 	if err := q.Find(&configs).Error; err != nil {
 		return nil, err
 	}
 	return configs, nil
+}
+
+func (s *DeployConfigService) listConfigsWithFallback(ctx context.Context, osType string) ([]model.DeployConfig, error) {
+	fallbackTypes := configFallbackTypes(osType)
+	var rows []model.DeployConfig
+	if err := s.db.WithContext(ctx).
+		Where("os_type IN ?", fallbackTypes).
+		Order("step_order ASC, os_type ASC").
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	priority := make(map[string]int, len(fallbackTypes))
+	for index, item := range fallbackTypes {
+		priority[item] = index
+	}
+
+	merged := make(map[string]model.DeployConfig)
+	for _, row := range rows {
+		existing, ok := merged[row.StepKey]
+		if !ok || priority[row.OSType] < priority[existing.OSType] {
+			merged[row.StepKey] = row
+		}
+	}
+
+	configs := make([]model.DeployConfig, 0, len(merged))
+	for _, item := range merged {
+		configs = append(configs, item)
+	}
+	sort.SliceStable(configs, func(i, j int) bool {
+		if configs[i].StepOrder != configs[j].StepOrder {
+			return configs[i].StepOrder < configs[j].StepOrder
+		}
+		return configs[i].StepKey < configs[j].StepKey
+	})
+	return configs, nil
+}
+
+func configFallbackTypes(osType string) []string {
+	switch osType {
+	case "centos", "rocky", "rhel", "almalinux":
+		return []string{osType, "centos", "rocky", "rhel", "almalinux", "ubuntu"}
+	case "debian", "ubuntu":
+		return []string{osType, "ubuntu", "debian"}
+	default:
+		return []string{osType, "ubuntu"}
+	}
 }
 
 // GetConfig 根据ID获取配置
@@ -47,18 +96,39 @@ func (s *DeployConfigService) GetConfig(ctx context.Context, id uint64) (*model.
 
 // GetConfigByKey 根据step_key和os_type获取配置
 func (s *DeployConfigService) GetConfigByKey(ctx context.Context, stepKey, osType string) (*model.DeployConfig, error) {
-	var config model.DeployConfig
-	q := s.db.WithContext(ctx).Where("step_key = ?", stepKey)
-	if osType != "" {
-		q = q.Where("os_type = ?", osType)
-	}
-	if err := q.First(&config).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrNotFound
+	if osType == "" {
+		var config model.DeployConfig
+		if err := s.db.WithContext(ctx).Where("step_key = ?", stepKey).First(&config).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, ErrNotFound
+			}
+			return nil, err
 		}
+		return &config, nil
+	}
+
+	fallbackTypes := configFallbackTypes(osType)
+	var rows []model.DeployConfig
+	if err := s.db.WithContext(ctx).
+		Where("step_key = ? AND os_type IN ?", stepKey, fallbackTypes).
+		Find(&rows).Error; err != nil {
 		return nil, err
 	}
-	return &config, nil
+	if len(rows) == 0 {
+		return nil, ErrNotFound
+	}
+
+	priority := make(map[string]int, len(fallbackTypes))
+	for index, item := range fallbackTypes {
+		priority[item] = index
+	}
+	best := rows[0]
+	for _, row := range rows[1:] {
+		if priority[row.OSType] < priority[best.OSType] {
+			best = row
+		}
+	}
+	return &best, nil
 }
 
 // ListSupportedOSTypes 获取所有已配置的操作系统类型

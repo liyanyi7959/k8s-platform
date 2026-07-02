@@ -42,22 +42,23 @@ type SSHCredential struct {
 func (SSHCredential) TableName() string { return "ssh_credentials" }
 
 type DeployPlan struct {
-	ID          uint64          `gorm:"column:id;primaryKey;autoIncrement"`
-	Name        string          `gorm:"column:name"`
-	ClusterName string          `gorm:"column:cluster_name"`
-	K8sVersion  string          `gorm:"column:k8s_version"`
-	PodCIDR     string          `gorm:"column:pod_cidr"`
-	SvcCIDR     string          `gorm:"column:svc_cidr"`
-	CNIType     string          `gorm:"column:cni_type"`
-	CNIConfig   JSONMap         `gorm:"column:cni_config;type:json"`
-	Addons      JSONStringSlice `gorm:"column:addons;type:json"`
-	Status      string          `gorm:"column:status"`
-	TaskID      *uint64         `gorm:"column:task_id"`
-	ClusterID   *uint64         `gorm:"column:cluster_id"`
-	CreatedBy   uint64          `gorm:"column:created_by"`
-	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time       `gorm:"column:updated_at;autoUpdateTime"`
-	DeletedAt   *time.Time      `gorm:"column:deleted_at"`
+	ID            uint64          `gorm:"column:id;primaryKey;autoIncrement"`
+	Name          string          `gorm:"column:name"`
+	ClusterName   string          `gorm:"column:cluster_name"`
+	K8sVersion    string          `gorm:"column:k8s_version"`
+	PodCIDR       string          `gorm:"column:pod_cidr"`
+	SvcCIDR       string          `gorm:"column:svc_cidr"`
+	CNIType       string          `gorm:"column:cni_type"`
+	CNIConfig     JSONMap         `gorm:"column:cni_config;type:json"`
+	Addons        JSONStringSlice `gorm:"column:addons;type:json"`
+	StepOverrides JSONMap         `gorm:"column:step_overrides;type:json"`
+	Status        string          `gorm:"column:status"`
+	TaskID        *uint64         `gorm:"column:task_id"`
+	ClusterID     *uint64         `gorm:"column:cluster_id"`
+	CreatedBy     uint64          `gorm:"column:created_by"`
+	CreatedAt     time.Time       `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt     time.Time       `gorm:"column:updated_at;autoUpdateTime"`
+	DeletedAt     *time.Time      `gorm:"column:deleted_at"`
 }
 
 func (DeployPlan) TableName() string { return "deploy_plans" }
@@ -72,6 +73,17 @@ type DeployPlanNode struct {
 }
 
 func (DeployPlanNode) TableName() string { return "deploy_plan_nodes" }
+
+type DeployPlanStepOverride struct {
+	StepKey         string  `json:"step_key"`
+	NodeRole        string  `json:"node_role,omitempty"`
+	NodeServerID    *uint64 `json:"node_server_id,omitempty"`
+	CommandTemplate string  `json:"command_template"`
+	Description     *string `json:"description,omitempty"`
+	TimeoutSeconds  *int    `json:"timeout_seconds,omitempty"`
+	RetryCount      *int    `json:"retry_count,omitempty"`
+	Enabled         *bool   `json:"enabled,omitempty"`
+}
 
 type DeployLog struct {
 	ID        uint64    `gorm:"column:id;primaryKey;autoIncrement"`

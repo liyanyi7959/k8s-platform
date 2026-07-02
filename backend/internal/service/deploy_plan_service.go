@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,22 +56,23 @@ type DeployPlanNodeItem struct {
 }
 
 type DeployPlanItem struct {
-	ID          uint64               `json:"id"`
-	Name        string               `json:"name"`
-	ClusterName string               `json:"cluster_name"`
-	K8sVersion  string               `json:"k8s_version"`
-	PodCIDR     string               `json:"pod_cidr"`
-	SvcCIDR     string               `json:"svc_cidr"`
-	CNIType     string               `json:"cni_type"`
-	CNIConfig   map[string]any       `json:"cni_config,omitempty"`
-	Addons      []string             `json:"addons,omitempty"`
-	Status      string               `json:"status"`
-	TaskID      *uint64              `json:"task_id,omitempty"`
-	ClusterID   *uint64              `json:"cluster_id,omitempty"`
-	CreatedBy   uint64               `json:"created_by"`
-	Nodes       []DeployPlanNodeItem `json:"nodes,omitempty"`
-	CreatedAt   string               `json:"created_at"`
-	UpdatedAt   string               `json:"updated_at"`
+	ID            uint64                                  `json:"id"`
+	Name          string                                  `json:"name"`
+	ClusterName   string                                  `json:"cluster_name"`
+	K8sVersion    string                                  `json:"k8s_version"`
+	PodCIDR       string                                  `json:"pod_cidr"`
+	SvcCIDR       string                                  `json:"svc_cidr"`
+	CNIType       string                                  `json:"cni_type"`
+	CNIConfig     map[string]any                          `json:"cni_config,omitempty"`
+	Addons        []string                                `json:"addons,omitempty"`
+	StepOverrides map[string]model.DeployPlanStepOverride `json:"step_overrides,omitempty"`
+	Status        string                                  `json:"status"`
+	TaskID        *uint64                                 `json:"task_id,omitempty"`
+	ClusterID     *uint64                                 `json:"cluster_id,omitempty"`
+	CreatedBy     uint64                                  `json:"created_by"`
+	Nodes         []DeployPlanNodeItem                    `json:"nodes,omitempty"`
+	CreatedAt     string                                  `json:"created_at"`
+	UpdatedAt     string                                  `json:"updated_at"`
 }
 
 type ListDeployPlansRequest struct {
@@ -80,15 +83,29 @@ type ListDeployPlansRequest struct {
 }
 
 type CreateDeployPlanRequest struct {
-	Name        string              `json:"name"`
-	ClusterName string              `json:"cluster_name"`
-	K8sVersion  string              `json:"k8s_version"`
-	PodCIDR     string              `json:"pod_cidr"`
-	SvcCIDR     string              `json:"svc_cidr"`
-	CNIType     string              `json:"cni_type"`
-	CNIConfig   map[string]any      `json:"cni_config"`
-	Addons      []string            `json:"addons"`
-	Nodes       []DeployPlanNodeReq `json:"nodes"`
+	Name          string                                  `json:"name"`
+	ClusterName   string                                  `json:"cluster_name"`
+	K8sVersion    string                                  `json:"k8s_version"`
+	PodCIDR       string                                  `json:"pod_cidr"`
+	SvcCIDR       string                                  `json:"svc_cidr"`
+	CNIType       string                                  `json:"cni_type"`
+	CNIConfig     map[string]any                          `json:"cni_config"`
+	Addons        []string                                `json:"addons"`
+	StepOverrides map[string]model.DeployPlanStepOverride `json:"step_overrides"`
+	Nodes         []DeployPlanNodeReq                     `json:"nodes"`
+}
+
+type UpdateDeployPlanRequest struct {
+	Name          string                                  `json:"name"`
+	ClusterName   string                                  `json:"cluster_name"`
+	K8sVersion    string                                  `json:"k8s_version"`
+	PodCIDR       string                                  `json:"pod_cidr"`
+	SvcCIDR       string                                  `json:"svc_cidr"`
+	CNIType       string                                  `json:"cni_type"`
+	CNIConfig     map[string]any                          `json:"cni_config"`
+	Addons        []string                                `json:"addons"`
+	StepOverrides map[string]model.DeployPlanStepOverride `json:"step_overrides"`
+	Nodes         []DeployPlanNodeReq                     `json:"nodes"`
 }
 
 type DeployPlanNodeReq struct {
@@ -273,6 +290,65 @@ func (s *DeployService) CreatePlan(ctx context.Context, req CreateDeployPlanRequ
 	return plan.ID, nil
 }
 
+func (s *DeployService) UpdatePlan(ctx context.Context, id uint64, req UpdateDeployPlanRequest) error {
+	if id == 0 {
+		return ErrInvalidParams
+	}
+	plan, nodes, err := normalizeDeployPlan(CreateDeployPlanRequest(req), 0)
+	if err != nil {
+		return err
+	}
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var existing model.DeployPlan
+		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&existing).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrNotFound
+			}
+			return err
+		}
+		if existing.Status != "draft" && existing.Status != "failed" && existing.Status != "cancelled" {
+			return ErrWithMessage(ErrConflict, "当前状态不允许编辑部署计划")
+		}
+		if err := ensureClusterNameUnique(tx, plan.ClusterName, id); err != nil {
+			return err
+		}
+		if err := validatePlanServers(tx, nodes); err != nil {
+			return err
+		}
+
+		plan.ID = existing.ID
+		plan.CreatedBy = existing.CreatedBy
+		plan.Status = "draft"
+		plan.ClusterID = nil
+		plan.TaskID = nil
+
+		if err := tx.Model(&model.DeployPlan{}).Where("id = ?", id).Updates(map[string]any{
+			"name":           plan.Name,
+			"cluster_name":   plan.ClusterName,
+			"k8s_version":    plan.K8sVersion,
+			"pod_cidr":       plan.PodCIDR,
+			"svc_cidr":       plan.SvcCIDR,
+			"cni_type":       plan.CNIType,
+			"cni_config":     plan.CNIConfig,
+			"addons":         plan.Addons,
+			"step_overrides": plan.StepOverrides,
+			"status":         "draft",
+			"task_id":        nil,
+			"cluster_id":     nil,
+		}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("plan_id = ?", id).Delete(&model.DeployPlanNode{}).Error; err != nil {
+			return err
+		}
+		for i := range nodes {
+			nodes[i].PlanID = id
+		}
+		return tx.Create(&nodes).Error
+	})
+}
+
 func (s *DeployService) GetPlan(ctx context.Context, id uint64) (DeployPlanItem, error) {
 	plan, nodes, err := s.getPlanWithNodes(ctx, id)
 	if err != nil {
@@ -444,8 +520,62 @@ func normalizeDeployPlan(req CreateDeployPlanRequest, createdBy uint64) (model.D
 	if masterCount == 0 {
 		return model.DeployPlan{}, nil, ErrWithMessage(ErrInvalidParams, "至少需要一个 master 节点")
 	}
-	plan := model.DeployPlan{Name: name, ClusterName: clusterName, K8sVersion: k8sVersion, PodCIDR: podCIDR, SvcCIDR: svcCIDR, CNIType: cniType, CNIConfig: model.JSONMap(req.CNIConfig), Addons: model.JSONStringSlice(req.Addons), Status: "draft", CreatedBy: createdBy}
+	overrides, err := normalizePlanStepOverrides(req.StepOverrides)
+	if err != nil {
+		return model.DeployPlan{}, nil, err
+	}
+	plan := model.DeployPlan{Name: name, ClusterName: clusterName, K8sVersion: k8sVersion, PodCIDR: podCIDR, SvcCIDR: svcCIDR, CNIType: cniType, CNIConfig: model.JSONMap(req.CNIConfig), Addons: model.JSONStringSlice(req.Addons), StepOverrides: model.JSONMap(overrides), Status: "draft", CreatedBy: createdBy}
 	return plan, nodes, nil
+}
+
+func normalizePlanStepOverrides(input map[string]model.DeployPlanStepOverride) (map[string]any, error) {
+	if len(input) == 0 {
+		return nil, nil
+	}
+	normalized := make(map[string]any, len(input))
+	for entryKey, item := range input {
+		key := strings.TrimSpace(entryKey)
+		item.StepKey = strings.TrimSpace(item.StepKey)
+		if item.StepKey == "" {
+			item.StepKey = key
+		}
+		if item.StepKey == "" {
+			return nil, ErrWithMessage(ErrInvalidParams, "步骤覆盖的 step_key 不能为空")
+		}
+		if key == "" {
+			key = item.StepKey
+			if item.NodeServerID != nil {
+				key = key + "#server:" + strconv.FormatUint(*item.NodeServerID, 10)
+			} else if item.NodeRole != "" {
+				key = key + "#role:" + item.NodeRole
+			}
+		}
+		cmd := strings.TrimSpace(item.CommandTemplate)
+		if cmd == "" {
+			return nil, ErrWithMessage(ErrInvalidParams, "步骤覆盖命令不能为空")
+		}
+		item.NodeRole = strings.TrimSpace(item.NodeRole)
+		if item.NodeRole != "" && item.NodeRole != "master" && item.NodeRole != "worker" {
+			return nil, ErrWithMessage(ErrInvalidParams, "步骤覆盖的节点角色必须为 master 或 worker")
+		}
+		normalized[key] = item
+	}
+	return normalized, nil
+}
+
+func decodePlanStepOverrides(raw model.JSONMap) map[string]model.DeployPlanStepOverride {
+	if len(raw) == 0 {
+		return nil
+	}
+	encoded, err := json.Marshal(raw)
+	if err != nil {
+		return nil
+	}
+	var out map[string]model.DeployPlanStepOverride
+	if err := json.Unmarshal(encoded, &out); err != nil {
+		return nil
+	}
+	return out
 }
 
 func validatePlanServers(tx *gorm.DB, nodes []model.DeployPlanNode) error {
@@ -478,7 +608,7 @@ func ensureClusterNameUnique(tx *gorm.DB, name string, excludeID uint64) error {
 }
 
 func deployPlanToItem(row model.DeployPlan, nodes []model.DeployPlanNode) DeployPlanItem {
-	item := DeployPlanItem{ID: row.ID, Name: row.Name, ClusterName: row.ClusterName, K8sVersion: row.K8sVersion, PodCIDR: row.PodCIDR, SvcCIDR: row.SvcCIDR, CNIType: row.CNIType, CNIConfig: map[string]any(row.CNIConfig), Addons: []string(row.Addons), Status: row.Status, TaskID: row.TaskID, ClusterID: row.ClusterID, CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339)}
+	item := DeployPlanItem{ID: row.ID, Name: row.Name, ClusterName: row.ClusterName, K8sVersion: row.K8sVersion, PodCIDR: row.PodCIDR, SvcCIDR: row.SvcCIDR, CNIType: row.CNIType, CNIConfig: map[string]any(row.CNIConfig), Addons: []string(row.Addons), StepOverrides: decodePlanStepOverrides(row.StepOverrides), Status: row.Status, TaskID: row.TaskID, ClusterID: row.ClusterID, CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339)}
 	if nodes != nil {
 		item.Nodes = make([]DeployPlanNodeItem, 0, len(nodes))
 		for _, n := range nodes {

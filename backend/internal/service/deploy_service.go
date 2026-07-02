@@ -17,10 +17,11 @@ type DeployService struct {
 	encryptionKey   string
 	taskStore       *TaskStore
 	clusterRegistry *ClusterRegistryService
+	deployConfig    *DeployConfigService
 }
 
 func NewDeployService(db *gorm.DB, encryptionKey string, taskStore *TaskStore, clusterRegistry *ClusterRegistryService) *DeployService {
-	return &DeployService{db: db, encryptionKey: encryptionKey, taskStore: taskStore, clusterRegistry: clusterRegistry}
+	return &DeployService{db: db, encryptionKey: encryptionKey, taskStore: taskStore, clusterRegistry: clusterRegistry, deployConfig: NewDeployConfigService(db)}
 }
 
 func (s *DeployService) GetTaskStore() *TaskStore {

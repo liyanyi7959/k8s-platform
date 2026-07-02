@@ -95,7 +95,7 @@ func (s *DeployService) DryRunPlan(ctx context.Context, planID uint64) (DryRunRe
 			serverName = fmt.Sprintf("server-%d", n.ServerID)
 		}
 		isFirstMaster := n.ServerID == firstMasterID
-		steps := buildNodeSteps(plan, n.Role, isFirstMaster)
+		steps := s.buildNodeSteps(ctx, plan, n, srv, isFirstMaster)
 		for _, st := range steps {
 			summary[st.Phase]++
 		}
@@ -120,136 +120,60 @@ func (s *DeployService) DryRunPlan(ctx context.Context, planID uint64) (DryRunRe
 }
 
 // buildNodeSteps 根据计划与节点角色生成步骤序列
-func buildNodeSteps(plan model.DeployPlan, role string, isFirstMaster bool) []DryRunStep {
-	k8sVer := strings.TrimPrefix(plan.K8sVersion, "v")
-	steps := []DryRunStep{
-		{
-			Key: "preflight.os", Title: "操作系统预检", Phase: "preflight",
-			Description: "校验系统版本、关闭 swap、调整内核参数",
-			Commands: []string{
-				"swapoff -a",
-				"sed -i '/ swap / s/^\\(.*\\)$/#\\1/g' /etc/fstab",
-				"modprobe br_netfilter && modprobe overlay",
-				"sysctl --system",
-			},
-		},
-		{
-			Key: "preflight.firewall", Title: "防火墙与 SELinux", Phase: "preflight",
-			Description: "关闭 firewalld、设置 SELinux 为 permissive",
-			Commands: []string{
-				"systemctl stop firewalld && systemctl disable firewalld",
-				"setenforce 0 || true",
-				"sed -i 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config || true",
-			},
-			DependsOn: []string{"preflight.os"},
-		},
-		{
-			Key: "install.containerd", Title: "安装容器运行时", Phase: "install",
-			Description: "安装并配置 containerd 作为 K8s 容器运行时",
-			Commands: []string{
-				"yum install -y yum-utils device-mapper-persistent-data lvm2",
-				"yum install -y containerd.io",
-				"containerd config default > /etc/containerd/config.toml",
-				"sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml",
-				"systemctl enable --now containerd",
-			},
-			DependsOn: []string{"preflight.firewall"},
-		},
-		{
-			Key: "install.kube", Title: "安装 kubeadm/kubelet/kubectl", Phase: "install",
-			Description: fmt.Sprintf("安装 K8s %s 工具链", plan.K8sVersion),
-			Commands: []string{
-				"cat > /etc/yum.repos.d/kubernetes.repo <<EOF\n[kubernetes]\nname=Kubernetes\nbaseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64\nenabled=1\ngpgcheck=0\nEOF",
-				fmt.Sprintf("yum install -y kubelet-%s kubeadm-%s kubectl-%s --disableexcludes=kubernetes", k8sVer, k8sVer, k8sVer),
-				"systemctl enable kubelet",
-			},
-			DependsOn: []string{"install.containerd"},
-		},
+func (s *DeployService) buildNodeSteps(ctx context.Context, plan model.DeployPlan, node model.DeployPlanNode, server model.DeployServer, isFirstMaster bool) []DryRunStep {
+	stepMetas := []struct {
+		stepKey string
+		title   string
+		phase   string
+		when    func() bool
+	}{
+		{stepKey: "pre_check", title: "环境预检", phase: "preflight", when: func() bool { return true }},
+		{stepKey: "bootstrap", title: "基础环境初始化", phase: "install", when: func() bool { return true }},
+		{stepKey: "init_master", title: "初始化 Master", phase: "init", when: func() bool { return node.Role == "master" && isFirstMaster }},
+		{stepKey: "join_workers", title: "节点加入集群", phase: "join", when: func() bool { return node.Role == "worker" }},
+		{stepKey: "install_cni", title: "安装网络插件", phase: "addon", when: func() bool { return node.Role == "master" && isFirstMaster }},
+		{stepKey: "register", title: "注册集群", phase: "finalize", when: func() bool { return node.Role == "master" && isFirstMaster }},
 	}
-
-	if role == "master" && isFirstMaster {
-		steps = append(steps,
-			DryRunStep{
-				Key: "init.controlplane", Title: "初始化控制平面", Phase: "init",
-				Description: fmt.Sprintf("通过 kubeadm 初始化集群 %s", plan.ClusterName),
-				Commands: []string{
-					fmt.Sprintf("kubeadm init --kubernetes-version=%s --pod-network-cidr=%s --service-cidr=%s --image-repository=registry.aliyuncs.com/google_containers", plan.K8sVersion, plan.PodCIDR, plan.SvcCIDR),
-					"mkdir -p $HOME/.kube && cp /etc/kubernetes/admin.conf $HOME/.kube/config",
-					"chown $(id -u):$(id -g) $HOME/.kube/config",
-				},
-				DependsOn: []string{"install.kube"},
-			},
-			buildCNIStep(plan.CNIType, plan.PodCIDR),
-		)
-		// addons
-		for _, addon := range plan.Addons {
-			steps = append(steps, buildAddonStep(addon))
+	data := deployTemplateData{
+		PlanID:       plan.ID,
+		PlanName:     plan.Name,
+		ClusterName:  plan.ClusterName,
+		K8sVersion:   plan.K8sVersion,
+		MinorVersion: strings.TrimPrefix(plan.K8sVersion, "v"),
+		PodCIDR:      plan.PodCIDR,
+		SvcCIDR:      plan.SvcCIDR,
+		MasterIP:     server.IP,
+		JoinCommand:  "kubeadm join <CONTROL_PLANE_ENDPOINT> --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>",
+		CNICommand:   resolveCNICommand(plan.CNIType),
+		NodeRole:     node.Role,
+		ServerID:     node.ServerID,
+		ServerIP:     server.IP,
+	}
+	if idx := strings.LastIndex(data.MinorVersion, "."); idx > 0 {
+		data.MinorVersion = data.MinorVersion[:idx]
+	}
+	steps := make([]DryRunStep, 0, len(stepMetas))
+	for _, meta := range stepMetas {
+		if !meta.when() {
+			continue
 		}
-	} else if role == "master" {
+		resolved, err := s.resolvePlanStep(ctx, plan, meta.stepKey, node, server, data)
+		if err != nil || !resolved.Config.Enabled {
+			continue
+		}
+		description := meta.title
+		if resolved.Config.Description != nil && strings.TrimSpace(*resolved.Config.Description) != "" {
+			description = *resolved.Config.Description
+		}
 		steps = append(steps, DryRunStep{
-			Key: "join.controlplane", Title: "加入控制平面", Phase: "join",
-			Description: "以 control-plane 角色加入集群",
-			Commands: []string{
-				"# 在首个 master 上获取 join 命令：kubeadm token create --print-join-command",
-				"kubeadm join <CONTROL_PLANE_ENDPOINT> --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH> --control-plane --certificate-key <CERT_KEY>",
-			},
-			DependsOn: []string{"install.kube"},
-		})
-	} else {
-		steps = append(steps, DryRunStep{
-			Key: "join.worker", Title: "加入工作节点", Phase: "join",
-			Description: "以 worker 角色加入集群",
-			Commands: []string{
-				"# 在首个 master 上获取 join 命令：kubeadm token create --print-join-command",
-				"kubeadm join <CONTROL_PLANE_ENDPOINT> --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>",
-			},
-			DependsOn: []string{"install.kube"},
+			Key:         resolved.Config.StepKey,
+			Title:       resolved.Config.StepName,
+			Description: description,
+			Phase:       meta.phase,
+			Commands:    resolved.Commands,
 		})
 	}
-
-	steps = append(steps, DryRunStep{
-		Key: "finalize.verify", Title: "节点状态校验", Phase: "finalize",
-		Description: "等待节点就绪并验证 kubelet 状态",
-		Commands: []string{
-			"systemctl status kubelet --no-pager",
-			"kubectl get nodes -o wide || true",
-		},
-	})
-
 	return steps
-}
-
-func buildCNIStep(cniType, podCIDR string) DryRunStep {
-	switch cniType {
-	case "calico":
-		return DryRunStep{
-			Key: "addon.cni", Title: "部署 Calico CNI", Phase: "addon",
-			Description: "应用 Calico 网络插件清单",
-			Commands: []string{
-				"kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml",
-			},
-			DependsOn: []string{"init.controlplane"},
-		}
-	case "cilium":
-		return DryRunStep{
-			Key: "addon.cni", Title: "部署 Cilium CNI", Phase: "addon",
-			Description: "通过 helm 部署 Cilium",
-			Commands: []string{
-				"helm repo add cilium https://helm.cilium.io/",
-				"helm install cilium cilium/cilium --namespace kube-system",
-			},
-			DependsOn: []string{"init.controlplane"},
-		}
-	default:
-		return DryRunStep{
-			Key: "addon.cni", Title: "部署 Flannel CNI", Phase: "addon",
-			Description: fmt.Sprintf("应用 Flannel 网络插件（Pod CIDR: %s）", podCIDR),
-			Commands: []string{
-				"kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml",
-			},
-			DependsOn: []string{"init.controlplane"},
-		}
-	}
 }
 
 func buildAddonStep(addon string) DryRunStep {

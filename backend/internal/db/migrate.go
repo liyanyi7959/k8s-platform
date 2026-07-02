@@ -142,14 +142,58 @@ func splitSQLStatements(src []byte) []string {
 		buf.WriteByte('\n')
 	}
 	clean := buf.String()
-	parts := strings.Split(clean, ";")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		s := strings.TrimSpace(p)
-		if s == "" {
-			continue
+	out := make([]string, 0, 8)
+	var current strings.Builder
+	inSingleQuote := false
+	inDoubleQuote := false
+	inBacktick := false
+
+	for i := 0; i < len(clean); i++ {
+		ch := clean[i]
+
+		switch ch {
+		case '\'':
+			current.WriteByte(ch)
+			if !inDoubleQuote && !inBacktick {
+				if inSingleQuote && i+1 < len(clean) && clean[i+1] == '\'' {
+					current.WriteByte(clean[i+1])
+					i++
+					continue
+				}
+				inSingleQuote = !inSingleQuote
+			}
+		case '"':
+			current.WriteByte(ch)
+			if !inSingleQuote && !inBacktick {
+				if inDoubleQuote && i+1 < len(clean) && clean[i+1] == '"' {
+					current.WriteByte(clean[i+1])
+					i++
+					continue
+				}
+				inDoubleQuote = !inDoubleQuote
+			}
+		case '`':
+			current.WriteByte(ch)
+			if !inSingleQuote && !inDoubleQuote {
+				inBacktick = !inBacktick
+			}
+		case ';':
+			if inSingleQuote || inDoubleQuote || inBacktick {
+				current.WriteByte(ch)
+				continue
+			}
+			s := strings.TrimSpace(current.String())
+			if s != "" {
+				out = append(out, s)
+			}
+			current.Reset()
+		default:
+			current.WriteByte(ch)
 		}
-		out = append(out, s)
+	}
+
+	if tail := strings.TrimSpace(current.String()); tail != "" {
+		out = append(out, tail)
 	}
 	return out
 }

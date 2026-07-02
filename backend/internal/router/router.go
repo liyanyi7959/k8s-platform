@@ -178,6 +178,8 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	// 部署计划
 	deploy.GET("/plans", readPlan, ctl.ListPlans)
 	deploy.POST("/plans", writePlan, ctl.CreatePlan)
+	deploy.GET("/plans/:id", readPlan, ctl.GetPlan)
+	deploy.PUT("/plans/:id", writePlan, ctl.UpdatePlan)
 	deploy.GET("/plans/:id/dry-run", readPlan, ctl.DryRunPlan)
 	deploy.POST("/plans/:id/execute", execDeploy, ctl.ExecutePlan)
 	deploy.POST("/plans/:id/cancel", execDeploy, ctl.CancelPlan)

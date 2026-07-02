@@ -215,6 +215,23 @@ func (dc *DeployController) GetPlan(c *gin.Context) {
 	resp.OK(c, data)
 }
 
+func (dc *DeployController) UpdatePlan(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	var req service.UpdateDeployPlanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+	if err := dc.svc.UpdatePlan(c.Request.Context(), id, req); err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK[any](c, nil)
+}
+
 func (dc *DeployController) DryRunPlan(c *gin.Context) {
 	id, ok := parseUintParam(c, "id")
 	if !ok {

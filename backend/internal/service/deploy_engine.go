@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -184,7 +185,7 @@ func (s *DeployService) rollbackNodes(ctx context.Context, nodes []model.DeployP
 }
 
 // stepPreCheck 环境预检：SSH 连通性、系统版本、CPU/内存/磁盘、端口、内核参数、hostname、时间同步
-func (s *DeployService) stepPreCheck(ctx context.Context, _ model.DeployPlan, nodes []model.DeployPlanNode, task *Task) error {
+func (s *DeployService) stepPreCheck(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, task *Task) error {
 	// 收集所有节点的 hostname 用于唯一性检查
 	hostnames := make(map[string]string) // hostname -> serverIP
 
@@ -199,46 +200,57 @@ func (s *DeployService) stepPreCheck(ctx context.Context, _ model.DeployPlan, no
 			return fmt.Errorf("SSH 连接服务器 %s(%s) 失败: %w", server.Name, server.IP, err)
 		}
 
-		// 1. 检查 sudo 权限
-		if _, err := runSSHCommand(client, "sudo -n true 2>/dev/null || echo NO_SUDO"); err != nil {
-			task.AppendLog(fmt.Sprintf("[warn] 服务器 %s sudo 权限检查警告", server.IP))
+		resolved, err := s.resolvePlanStep(ctx, plan, "pre_check", node, server, deployTemplateData{
+			PlanID:       plan.ID,
+			PlanName:     plan.Name,
+			ClusterName:  plan.ClusterName,
+			K8sVersion:   plan.K8sVersion,
+			MinorVersion: strings.TrimPrefix(plan.K8sVersion, "v")[:strings.LastIndex(strings.TrimPrefix(plan.K8sVersion, "v"), ".")],
+			PodCIDR:      plan.PodCIDR,
+			SvcCIDR:      plan.SvcCIDR,
+			CNICommand:   resolveCNICommand(plan.CNIType),
+			NodeRole:     node.Role,
+			ServerID:     node.ServerID,
+			ServerIP:     server.IP,
+		})
+		if err != nil {
+			client.Close()
+			return fmt.Errorf("解析 pre_check 命令失败: %w", err)
+		}
+		if len(resolved.Commands) == 0 {
+			client.Close()
+			return fmt.Errorf("pre_check 没有可执行命令")
 		}
 
-		// 2. 检查 OS 版本
-		osInfo, _ := runSSHCommand(client, "cat /etc/os-release | grep PRETTY_NAME | cut -d'\"' -f2")
-		osInfo = strings.TrimSpace(osInfo)
-		if osInfo != "" {
-			server.OS = &osInfo
-			task.AppendLog(fmt.Sprintf("[info] 服务器 %s OS: %s", server.IP, osInfo))
+		output, err := runSSHCommand(client, resolved.Commands[0])
+		if err != nil {
+			client.Close()
+			return fmt.Errorf("执行 pre_check 命令失败: %w", err)
+		}
+		precheck := parseDeployStepKeyValueOutput(output)
+
+		if value := strings.TrimSpace(precheck["OS"]); value != "" {
+			server.OS = &value
+			task.AppendLog(fmt.Sprintf("[info] 服务器 %s OS: %s", server.IP, value))
+		}
+		if value := strings.TrimSpace(precheck["OS_VERSION"]); value != "" && value != "unknown" {
+			server.OSVersion = &value
+		}
+		if value := strings.TrimSpace(precheck["KERNEL"]); value != "" {
+			server.Kernel = &value
 		}
 
-		// 3. 检查内核版本
-		kernelVer, _ := runSSHCommand(client, "uname -r")
-		kernelVer = strings.TrimSpace(kernelVer)
-		if kernelVer != "" {
-			server.Kernel = &kernelVer
-		}
-
-		// 4. 检查 CPU 核心数
-		cpuOutput, _ := runSSHCommand(client, "nproc")
-		cpuOutput = strings.TrimSpace(cpuOutput)
-		if cpuOutput != "" {
-			var cpuCores uint
-			fmt.Sscanf(cpuOutput, "%d", &cpuCores)
+		if cpuCores, ok := parseUintValue(precheck["CPU_CORES"]); ok {
 			if cpuCores < 2 {
 				client.Close()
 				return fmt.Errorf("服务器 %s CPU 核心数不足: %d (最低要求 2 核)", server.IP, cpuCores)
 			}
-			server.CPUCores = &cpuCores
+			cpu := uint(cpuCores)
+			server.CPUCores = &cpu
 			task.AppendLog(fmt.Sprintf("[info] 服务器 %s CPU: %d 核", server.IP, cpuCores))
 		}
 
-		// 5. 检查内存 (最低 2GB)
-		memOutput, _ := runSSHCommand(client, "free -m | awk '/Mem:/{print $2}'")
-		memOutput = strings.TrimSpace(memOutput)
-		if memOutput != "" {
-			var memMB uint64
-			fmt.Sscanf(memOutput, "%d", &memMB)
+		if memMB, ok := parseUintValue(precheck["MEMORY_MB"]); ok {
 			if memMB < 2048 {
 				client.Close()
 				return fmt.Errorf("服务器 %s 内存不足: %dMB (最低要求 2048MB)", server.IP, memMB)
@@ -247,12 +259,7 @@ func (s *DeployService) stepPreCheck(ctx context.Context, _ model.DeployPlan, no
 			task.AppendLog(fmt.Sprintf("[info] 服务器 %s 内存: %dMB", server.IP, memMB))
 		}
 
-		// 6. 检查磁盘空间 (最低 20GB)
-		diskOutput, _ := runSSHCommand(client, "df -BG / | awk 'NR==2{print $4}' | tr -d 'G'")
-		diskOutput = strings.TrimSpace(diskOutput)
-		if diskOutput != "" {
-			var diskGB uint64
-			fmt.Sscanf(diskOutput, "%d", &diskGB)
+		if diskGB, ok := parseUintValue(precheck["DISK_GB"]); ok {
 			if diskGB < 20 {
 				client.Close()
 				return fmt.Errorf("服务器 %s 可用磁盘空间不足: %dGB (最低要求 20GB)", server.IP, diskGB)
@@ -261,9 +268,7 @@ func (s *DeployService) stepPreCheck(ctx context.Context, _ model.DeployPlan, no
 			task.AppendLog(fmt.Sprintf("[info] 服务器 %s 可用磁盘: %dGB", server.IP, diskGB))
 		}
 
-		// 7. 检查 hostname 唯一性
-		hostname, _ := runSSHCommand(client, "hostname")
-		hostname = strings.TrimSpace(hostname)
+		hostname := strings.TrimSpace(precheck["HOSTNAME"])
 		if hostname != "" {
 			if existingIP, exists := hostnames[hostname]; exists {
 				client.Close()
@@ -272,57 +277,59 @@ func (s *DeployService) stepPreCheck(ctx context.Context, _ model.DeployPlan, no
 			hostnames[hostname] = server.IP
 		}
 
-		// 8. 检查 swap 状态
-		swapOutput, _ := runSSHCommand(client, "swapon --show --noheadings | wc -l")
-		if strings.TrimSpace(swapOutput) != "0" {
+		if strings.TrimSpace(precheck["SWAP_LINES"]) != "0" {
 			task.AppendLog(fmt.Sprintf("[warn] 服务器 %s swap 未关闭，将在 Bootstrap 阶段关闭", server.IP))
 		}
 
-		// 9. 检查必要端口
 		if node.Role == "master" {
 			ports := []string{"6443", "2379", "2380", "10250", "10259", "10257"}
 			for _, port := range ports {
-				output, _ := runSSHCommand(client, fmt.Sprintf("ss -tlnp | grep ':%s ' | wc -l", port))
-				if strings.TrimSpace(output) != "0" {
+				key := "PORT_" + port
+				if strings.TrimSpace(precheck[key]) != "0" {
 					client.Close()
 					return fmt.Errorf("服务器 %s 端口 %s 已被占用", server.IP, port)
 				}
 			}
 		} else {
-			// Worker 节点检查 kubelet 端口
-			output, _ := runSSHCommand(client, "ss -tlnp | grep ':10250 ' | wc -l")
-			if strings.TrimSpace(output) != "0" {
+			if strings.TrimSpace(precheck["PORT_10250"]) != "0" {
 				client.Close()
 				return fmt.Errorf("服务器 %s 端口 10250 已被占用", server.IP)
 			}
 		}
 
-		// 10. 检查内核参数
 		kernelParams := []string{
 			"net.bridge.bridge-nf-call-iptables",
 			"net.bridge.bridge-nf-call-ip6tables",
 			"net.ipv4.ip_forward",
 		}
 		for _, param := range kernelParams {
-			val, _ := runSSHCommand(client, fmt.Sprintf("sysctl -n %s 2>/dev/null || echo 0", param))
-			val = strings.TrimSpace(val)
+			key := map[string]string{
+				"net.bridge.bridge-nf-call-iptables":  "BR_NETFILTER",
+				"net.bridge.bridge-nf-call-ip6tables": "BR_NETFILTER_IPV6",
+				"net.ipv4.ip_forward":                 "IP_FORWARD",
+			}[param]
+			val := strings.TrimSpace(precheck[key])
 			if val != "1" {
 				task.AppendLog(fmt.Sprintf("[warn] 服务器 %s 内核参数 %s=%s (将在 Bootstrap 阶段配置)", server.IP, param, val))
 			}
 		}
 
-		// 11. 检查时间同步 (NTP)
-		ntpOutput, _ := runSSHCommand(client, "timedatectl show --property=NTPSynchronized --value 2>/dev/null || echo unknown")
-		ntpOutput = strings.TrimSpace(ntpOutput)
+		ntpOutput := strings.TrimSpace(precheck["NTP_SYNC"])
 		if ntpOutput == "no" {
 			task.AppendLog(fmt.Sprintf("[warn] 服务器 %s NTP 时间同步未启用", server.IP))
 		}
 
-		// 12. 检查 containerd/docker 是否已安装
-		containerRuntime, _ := runSSHCommand(client, "which containerd 2>/dev/null || which docker 2>/dev/null || echo none")
-		containerRuntime = strings.TrimSpace(containerRuntime)
-		if containerRuntime != "none" {
-			task.AppendLog(fmt.Sprintf("[info] 服务器 %s 已安装容器运行时: %s", server.IP, containerRuntime))
+		if containerRuntime := strings.TrimSpace(precheck["CONTAINERD"]); containerRuntime == "installed" {
+			task.AppendLog(fmt.Sprintf("[info] 服务器 %s 已安装 containerd", server.IP))
+		}
+		if kubeadmVersion := strings.TrimSpace(precheck["KUBEADM"]); kubeadmVersion != "" && kubeadmVersion != "missing" {
+			task.AppendLog(fmt.Sprintf("[info] 服务器 %s 已安装 kubeadm: %s", server.IP, kubeadmVersion))
+		}
+		if selinux := strings.TrimSpace(precheck["SELINUX"]); selinux != "" && selinux != "unknown" && selinux != "Disabled" {
+			task.AppendLog(fmt.Sprintf("[warn] 服务器 %s SELinux 当前状态: %s (将在 Bootstrap 阶段调整)", server.IP, selinux))
+		}
+		if firewalld := strings.TrimSpace(precheck["FIREWALLD"]); firewalld == "active" {
+			task.AppendLog(fmt.Sprintf("[warn] 服务器 %s firewalld 仍在运行 (将在 Bootstrap 阶段关闭)", server.IP))
 		}
 
 		// 更新服务器系统信息
@@ -342,6 +349,34 @@ func (s *DeployService) stepPreCheck(ctx context.Context, _ model.DeployPlan, no
 	return nil
 }
 
+func parseDeployStepKeyValueOutput(output string) map[string]string {
+	result := map[string]string{}
+	for _, line := range strings.Split(output, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		key, value, ok := strings.Cut(trimmed, "=")
+		if !ok {
+			continue
+		}
+		result[strings.TrimSpace(key)] = strings.TrimSpace(value)
+	}
+	return result
+}
+
+func parseUintValue(raw string) (uint64, bool) {
+	text := strings.TrimSpace(raw)
+	if text == "" {
+		return 0, false
+	}
+	value, err := strconv.ParseUint(text, 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return value, true
+}
+
 // stepBootstrap 基础环境初始化
 func (s *DeployService) stepBootstrap(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, task *Task) error {
 	for _, node := range nodes {
@@ -354,58 +389,28 @@ func (s *DeployService) stepBootstrap(ctx context.Context, plan model.DeployPlan
 		if err != nil {
 			return fmt.Errorf("SSH 连接失败: %w", err)
 		}
-
-		// 关闭 swap
-		if _, err := runSSHCommand(client, "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"); err != nil {
+		resolved, err := s.resolvePlanStep(ctx, plan, "bootstrap", node, server, deployTemplateData{
+			PlanID:       plan.ID,
+			PlanName:     plan.Name,
+			ClusterName:  plan.ClusterName,
+			K8sVersion:   plan.K8sVersion,
+			MinorVersion: strings.TrimPrefix(plan.K8sVersion, "v")[:strings.LastIndex(strings.TrimPrefix(plan.K8sVersion, "v"), ".")],
+			PodCIDR:      plan.PodCIDR,
+			SvcCIDR:      plan.SvcCIDR,
+			CNICommand:   resolveCNICommand(plan.CNIType),
+			NodeRole:     node.Role,
+			ServerID:     node.ServerID,
+			ServerIP:     server.IP,
+		})
+		if err != nil {
 			client.Close()
-			return fmt.Errorf("关闭 swap 失败: %w", err)
+			return fmt.Errorf("解析 bootstrap 命令失败: %w", err)
 		}
-
-		// 加载内核模块
-		modules := `cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-overlay
-br_netfilter
-EOF
-sudo modprobe overlay && sudo modprobe br_netfilter`
-		if _, err := runSSHCommand(client, modules); err != nil {
-			client.Close()
-			return fmt.Errorf("加载内核模块失败: %w", err)
-		}
-
-		// 配置 sysctl
-		sysctl := `cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-iptables  = 1
-net.bridge.bridge-nf-call-ip6tables = 1
-net.ipv4.ip_forward                 = 1
-EOF
-sudo sysctl --system`
-		if _, err := runSSHCommand(client, sysctl); err != nil {
-			client.Close()
-			return fmt.Errorf("配置 sysctl 失败: %w", err)
-		}
-
-		// 安装 containerd
-		installContainerd := `sudo apt-get update -y && sudo apt-get install -y containerd
-sudo mkdir -p /etc/containerd
-containerd config default | sudo tee /etc/containerd/config.toml > /dev/null
-sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
-sudo systemctl restart containerd && sudo systemctl enable containerd`
-		if _, err := runSSHCommand(client, installContainerd); err != nil {
-			client.Close()
-			return fmt.Errorf("安装 containerd 失败: %w", err)
-		}
-
-		// 安装 kubeadm/kubelet/kubectl
-		k8sVersion := strings.TrimPrefix(plan.K8sVersion, "v")
-		minorVer := k8sVersion[:strings.LastIndex(k8sVersion, ".")]
-		installKube := fmt.Sprintf(`sudo apt-get install -y apt-transport-https ca-certificates curl gpg
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v%s/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v%s/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo apt-get update -y && sudo apt-get install -y kubelet kubeadm kubectl
-sudo apt-mark hold kubelet kubeadm kubectl`, minorVer, minorVer)
-		if _, err := runSSHCommand(client, installKube); err != nil {
-			client.Close()
-			return fmt.Errorf("安装 kubeadm/kubelet/kubectl 失败: %w", err)
+		for _, command := range resolved.Commands {
+			if _, err := runSSHCommand(client, command); err != nil {
+				client.Close()
+				return fmt.Errorf("执行 bootstrap 命令失败: %w", err)
+			}
 		}
 
 		client.Close()
@@ -433,29 +438,36 @@ func (s *DeployService) stepInitMaster(ctx context.Context, plan model.DeployPla
 	}
 	defer client.Close()
 
-	// 生成 kubeadm 配置并执行 init
-	initCmd := fmt.Sprintf(`sudo kubeadm init \
-  --pod-network-cidr=%s \
-  --service-cidr=%s \
-  --kubernetes-version=%s \
-  --apiserver-advertise-address=%s \
-  --upload-certs`, plan.PodCIDR, plan.SvcCIDR, plan.K8sVersion, server.IP)
-
-	output, err := runSSHCommand(client, initCmd)
+	resolved, err := s.resolvePlanStep(ctx, plan, "init_master", *masterNode, server, deployTemplateData{
+		PlanID:       plan.ID,
+		PlanName:     plan.Name,
+		ClusterName:  plan.ClusterName,
+		K8sVersion:   plan.K8sVersion,
+		MinorVersion: strings.TrimPrefix(plan.K8sVersion, "v")[:strings.LastIndex(strings.TrimPrefix(plan.K8sVersion, "v"), ".")],
+		PodCIDR:      plan.PodCIDR,
+		SvcCIDR:      plan.SvcCIDR,
+		MasterIP:     server.IP,
+		CNICommand:   resolveCNICommand(plan.CNIType),
+		NodeRole:     masterNode.Role,
+		ServerID:     masterNode.ServerID,
+		ServerIP:     server.IP,
+	})
+	if err != nil {
+		return fmt.Errorf("解析 init_master 命令失败: %w", err)
+	}
+	if len(resolved.Commands) == 0 {
+		return fmt.Errorf("init_master 没有可执行命令")
+	}
+	output, err := runSSHCommand(client, resolved.Commands[0])
 	if err != nil {
 		_, _ = runSSHCommand(client, "sudo kubeadm reset -f")
 		return fmt.Errorf("kubeadm init 失败: %w\n%s", err, output)
 	}
-
-	// 配置 kubectl
-	kubeconfig := `mkdir -p $HOME/.kube
-sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config`
-	if _, err := runSSHCommand(client, kubeconfig); err != nil {
-		return fmt.Errorf("配置 kubectl 失败: %w", err)
+	for _, command := range resolved.Commands[1:] {
+		if _, err := runSSHCommand(client, command); err != nil {
+			return fmt.Errorf("执行 init_master 后续命令失败: %w", err)
+		}
 	}
-
-	// 获取 join token
 	joinOutput, err := runSSHCommand(client, "sudo kubeadm token create --print-join-command")
 	if err != nil {
 		return fmt.Errorf("获取 join token 失败: %w", err)
@@ -473,7 +485,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config`
 }
 
 // stepJoinWorkers Worker 节点加入集群
-func (s *DeployService) stepJoinWorkers(ctx context.Context, _ model.DeployPlan, nodes []model.DeployPlanNode, task *Task) error {
+func (s *DeployService) stepJoinWorkers(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, task *Task) error {
 	joinCmd, ok := task.Meta["join_command"].(string)
 	if !ok || joinCmd == "" {
 		return fmt.Errorf("未找到 join 命令")
@@ -490,8 +502,29 @@ func (s *DeployService) stepJoinWorkers(ctx context.Context, _ model.DeployPlan,
 		if err != nil {
 			return fmt.Errorf("SSH 连接 Worker %s 失败: %w", server.IP, err)
 		}
-
-		if _, err := runSSHCommand(client, joinCmd); err != nil {
+		resolved, err := s.resolvePlanStep(ctx, plan, "join_workers", node, server, deployTemplateData{
+			PlanID:       plan.ID,
+			PlanName:     plan.Name,
+			ClusterName:  plan.ClusterName,
+			K8sVersion:   plan.K8sVersion,
+			MinorVersion: strings.TrimPrefix(plan.K8sVersion, "v")[:strings.LastIndex(strings.TrimPrefix(plan.K8sVersion, "v"), ".")],
+			PodCIDR:      plan.PodCIDR,
+			SvcCIDR:      plan.SvcCIDR,
+			JoinCommand:  joinCmd,
+			CNICommand:   resolveCNICommand(plan.CNIType),
+			NodeRole:     node.Role,
+			ServerID:     node.ServerID,
+			ServerIP:     server.IP,
+		})
+		if err != nil {
+			client.Close()
+			return fmt.Errorf("解析 join_workers 命令失败: %w", err)
+		}
+		if len(resolved.Commands) == 0 {
+			client.Close()
+			return fmt.Errorf("join_workers 没有可执行命令")
+		}
+		if _, err := runSSHCommand(client, resolved.Commands[0]); err != nil {
 			client.Close()
 			return fmt.Errorf("Worker %s 加入集群失败: %w", server.IP, err)
 		}
@@ -521,26 +554,27 @@ func (s *DeployService) stepInstallCNI(ctx context.Context, plan model.DeployPla
 	}
 	defer client.Close()
 
-	var cniCmd string
-	switch plan.CNIType {
-	case "flannel":
-		cniCmd = "kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml"
-	case "calico":
-		cniCmd = "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml"
-	case "cilium":
-		cniCmd = "kubectl apply -f https://raw.githubusercontent.com/cilium/cilium/v1.15.0/install/kubernetes/quick-install.yaml"
-	default:
-		cniCmd = "kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml"
+	resolved, err := s.resolvePlanStep(ctx, plan, "install_cni", *masterNode, server, deployTemplateData{
+		PlanID:       plan.ID,
+		PlanName:     plan.Name,
+		ClusterName:  plan.ClusterName,
+		K8sVersion:   plan.K8sVersion,
+		MinorVersion: strings.TrimPrefix(plan.K8sVersion, "v")[:strings.LastIndex(strings.TrimPrefix(plan.K8sVersion, "v"), ".")],
+		PodCIDR:      plan.PodCIDR,
+		SvcCIDR:      plan.SvcCIDR,
+		MasterIP:     server.IP,
+		CNICommand:   resolveCNICommand(plan.CNIType),
+		NodeRole:     masterNode.Role,
+		ServerID:     masterNode.ServerID,
+		ServerIP:     server.IP,
+	})
+	if err != nil {
+		return fmt.Errorf("解析 install_cni 命令失败: %w", err)
 	}
-
-	if _, err := runSSHCommand(client, cniCmd); err != nil {
-		return fmt.Errorf("安装 CNI(%s) 失败: %w", plan.CNIType, err)
-	}
-
-	// 等待 CoreDNS 就绪
-	waitCmd := "kubectl wait --for=condition=Ready pods -l k8s-app=kube-dns -n kube-system --timeout=120s"
-	if _, err := runSSHCommand(client, waitCmd); err != nil {
-		return fmt.Errorf("等待 CoreDNS 就绪超时: %w", err)
+	for _, command := range resolved.Commands {
+		if _, err := runSSHCommand(client, command); err != nil {
+			return fmt.Errorf("安装 CNI(%s) 失败: %w", plan.CNIType, err)
+		}
 	}
 
 	task.AppendLog(fmt.Sprintf("[info] CNI(%s) 安装完成", plan.CNIType))
@@ -565,8 +599,27 @@ func (s *DeployService) stepRegisterCluster(ctx context.Context, plan model.Depl
 	}
 	defer client.Close()
 
-	// 提取 kubeconfig
-	kubeconfig, err := runSSHCommand(client, "sudo cat /etc/kubernetes/admin.conf")
+	resolved, err := s.resolvePlanStep(ctx, plan, "register", *masterNode, server, deployTemplateData{
+		PlanID:       plan.ID,
+		PlanName:     plan.Name,
+		ClusterName:  plan.ClusterName,
+		K8sVersion:   plan.K8sVersion,
+		MinorVersion: strings.TrimPrefix(plan.K8sVersion, "v")[:strings.LastIndex(strings.TrimPrefix(plan.K8sVersion, "v"), ".")],
+		PodCIDR:      plan.PodCIDR,
+		SvcCIDR:      plan.SvcCIDR,
+		MasterIP:     server.IP,
+		CNICommand:   resolveCNICommand(plan.CNIType),
+		NodeRole:     masterNode.Role,
+		ServerID:     masterNode.ServerID,
+		ServerIP:     server.IP,
+	})
+	if err != nil {
+		return fmt.Errorf("解析 register 命令失败: %w", err)
+	}
+	if len(resolved.Commands) == 0 {
+		return fmt.Errorf("register 没有可执行命令")
+	}
+	kubeconfig, err := runSSHCommand(client, resolved.Commands[0])
 	if err != nil {
 		return fmt.Errorf("提取 kubeconfig 失败: %w", err)
 	}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 
 	"k8s-platform-backend/internal/service"
 	"k8s-platform-backend/pkg/resp"
@@ -380,14 +381,28 @@ type createPodExecSessionReq struct {
 func (kc *K8sController) CreatePodExecSession(c *gin.Context) {
 	id, ok := parseClusterID(c)
 	if !ok {
+		zap.L().Warn("CreatePodExecSession: invalid cluster id",
+			zap.String("id_param", c.Param("id")),
+			zap.String("clusterId_param", c.Param("clusterId")),
+		)
 		resp.Fail(c, 4000, "invalid params")
 		return
 	}
 	var req createPodExecSessionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		zap.L().Warn("CreatePodExecSession: bind json failed",
+			zap.Uint64("cluster_id", id),
+			zap.Error(err),
+		)
 		resp.Fail(c, 4000, "invalid params")
 		return
 	}
+	zap.L().Info("CreatePodExecSession: success",
+		zap.Uint64("cluster_id", id),
+		zap.String("namespace", decodePathParam(c.Param("ns"))),
+		zap.String("pod", decodePathParam(c.Param("pod"))),
+		zap.Strings("command", req.Command),
+	)
 	sessionID := kc.execSessions.NewSessionID()
 	wsURL := "/api/v1/ws/pod-exec?session_id=" + url.QueryEscape(sessionID)
 	kc.execSessions.Put(sessionID, service.ExecSession{

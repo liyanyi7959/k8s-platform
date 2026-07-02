@@ -16,6 +16,8 @@ import (
 	"github.com/gorilla/websocket"
 	"k8s.io/client-go/tools/remotecommand"
 
+	"go.uber.org/zap"
+
 	"k8s-platform-backend/internal/service"
 	"k8s-platform-backend/pkg/resp"
 )
@@ -107,15 +109,24 @@ func (kc *K8sController) PodExecWS(c *gin.Context) {
 	}
 	conn, err := up.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		zap.L().Warn("pod_exec_ws: websocket upgrade failed", zap.String("session_id", sid), zap.Error(err))
 		return
 	}
 	defer func() { _ = conn.Close() }()
 
 	sess, ok := kc.execSessions.Take(sid)
 	if !ok {
+		zap.L().Warn("pod_exec_ws: session not found or already consumed", zap.String("session_id", sid))
 		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "session not found"), time.Now().Add(3*time.Second))
 		return
 	}
+	zap.L().Info("pod_exec_ws: starting exec",
+		zap.String("session_id", sid),
+		zap.Uint64("cluster_id", sess.ClusterID),
+		zap.String("namespace", sess.Namespace),
+		zap.String("pod", sess.Pod),
+		zap.Strings("command", sess.Command),
+	)
 	tty := true
 	if sess.TTY != nil {
 		tty = *sess.TTY
@@ -225,8 +236,14 @@ func (kc *K8sController) PodExecWS(c *gin.Context) {
 
 	err = kc.svc.PodExec(execCtx, sess.ClusterID, sess.Namespace, sess.Pod, sess.Container, cmd, tty, pr, stdout, stderr, resizeQueue)
 	if err != nil && !errors.Is(err, context.Canceled) {
+		zap.L().Warn("pod_exec_ws: exec failed",
+			zap.String("session_id", sid),
+			zap.Error(err),
+		)
 		// 将错误发给前端，但不再中断后续 defer 清理流程。
 		_ = writeBin(3, []byte(err.Error()))
 		closeSocket(websocket.CloseInternalServerErr, websocketCloseReason(err, "exec failed"))
+	} else if err == nil {
+		zap.L().Info("pod_exec_ws: exec completed", zap.String("session_id", sid))
 	}
 }
