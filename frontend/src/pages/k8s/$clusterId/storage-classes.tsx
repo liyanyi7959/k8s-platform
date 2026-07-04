@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from 'antd'
-import { DeleteOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listStorageClasses, deleteStorageClass } from '@/services/k8s'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
@@ -69,9 +69,9 @@ const StorageClassesPage: React.FC = () => {
               <EyeOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm

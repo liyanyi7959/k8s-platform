@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Tabs, Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip } from 'antd'
-import { DeleteOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listRoleBindings,
@@ -107,9 +107,9 @@ const RoleBindingsPage: React.FC = () => {
               <EyeOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm
@@ -175,9 +175,9 @@ const RoleBindingsPage: React.FC = () => {
               <EyeOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm

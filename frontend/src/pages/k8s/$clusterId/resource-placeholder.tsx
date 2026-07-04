@@ -2,8 +2,8 @@ import React, { useMemo, useState } from 'react'
 import { history, useLocation } from '@umijs/max'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, Button, Popconfirm, Space, Tag, message } from 'antd'
-import { CodeOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Alert, Button, Popconfirm, Space, Tag, Tooltip, message } from 'antd'
+import { ProfileOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
@@ -159,9 +159,11 @@ const K8sResourcePlaceholder: React.FC = () => {
       width: canDelete ? 120 : 70,
       render: (_: unknown, record: any) => (
         <Space>
-          <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace)}>
-            <CodeOutlined />
-          </a>
+          <Tooltip title="查看 YAML">
+            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace)}>
+              <ProfileOutlined />
+            </a>
+          </Tooltip>
           {canDelete ? (
             <Popconfirm title="确定删除该资源？" onConfirm={() => deleteMutation.mutate(record)}>
               <a style={{ color: '#ff4d4f' }}>

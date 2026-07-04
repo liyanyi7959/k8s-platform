@@ -9,7 +9,7 @@ import {
 import { Popconfirm, message, Space, Tag, Tooltip, Drawer, Descriptions, Button } from 'antd'
 import {
   DeleteOutlined,
-  CodeOutlined,
+  ProfileOutlined,
   EditOutlined,
   EyeOutlined,
   PlusOutlined,
@@ -123,9 +123,9 @@ const HPAsPage: React.FC = () => {
               <EditOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm title="确定删除该 HPA？" onConfirm={() => deleteMutation.mutate(record)}>

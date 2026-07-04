@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip } from 'antd'
-import { DeleteOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listResourceQuotas, deleteResourceQuota } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -93,9 +93,9 @@ const ResourceQuotasPage: React.FC = () => {
               <EyeOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm

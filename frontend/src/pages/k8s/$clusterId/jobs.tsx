@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button } from 'antd'
-import { DeleteOutlined, CodeOutlined, EyeOutlined, ClearOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, ClearOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listJobs, deleteJob, deleteCompletedJobs } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -88,9 +88,9 @@ const JobsPage: React.FC = () => {
               <EyeOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm title="确定删除该 Job？" onConfirm={() => deleteMutation.mutate(record)}>

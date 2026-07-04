@@ -7,7 +7,7 @@
 import React, { useMemo, useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Typography, Button, Empty, Input, Alert } from 'antd'
-import { DeleteOutlined, CodeOutlined, EyeOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listGenericResources, deleteGenericResource, type GenericResourceItem } from '@/services/k8s'
 import { AppPage, NamespaceSelector, ManifestApplyDrawer } from '@/components'
@@ -33,6 +33,10 @@ export interface GenericResourceListProps {
   creatable?: boolean
   /** 创建时预填充 YAML 模板 */
   createTemplate?: string
+  /** 自动刷新间隔（毫秒），如 15000 = 15秒 */
+  refetchInterval?: number
+  /** 自定义详情抽屉内容 */
+  renderDetail?: (record: GenericResourceItem) => React.ReactNode
 }
 
 /**
@@ -78,6 +82,8 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
   deletable = true,
   creatable = true,
   createTemplate,
+  refetchInterval,
+  renderDetail,
 }) => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
@@ -94,6 +100,7 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
     queryFn: ({ signal }) =>
       listGenericResources(clusterId, resource, namespaced ? namespace || undefined : undefined, signal),
     enabled: !!clusterId,
+    refetchInterval,
   })
 
   const deleteMutation = useMutation({
@@ -158,9 +165,9 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
               <EyeOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           {deletable && (
@@ -284,17 +291,21 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
         width={720}
       >
         {detail && (
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="名称">{detail.name}</Descriptions.Item>
-            {namespaced && (
-              <Descriptions.Item label="命名空间">{detail.namespace || '-'}</Descriptions.Item>
-            )}
-            {detail.kind && <Descriptions.Item label="Kind">{detail.kind}</Descriptions.Item>}
-            {detail.status && <Descriptions.Item label="状态">{detail.status}</Descriptions.Item>}
-            <Descriptions.Item label="创建时间">
-              {detail.createdAt ? formatDate(detail.createdAt) : '-'}
-            </Descriptions.Item>
-          </Descriptions>
+          renderDetail ? (
+            renderDetail(detail)
+          ) : (
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="名称">{detail.name}</Descriptions.Item>
+              {namespaced && (
+                <Descriptions.Item label="命名空间">{detail.namespace || '-'}</Descriptions.Item>
+              )}
+              {detail.kind && <Descriptions.Item label="Kind">{detail.kind}</Descriptions.Item>}
+              {detail.status && <Descriptions.Item label="状态">{detail.status}</Descriptions.Item>}
+              <Descriptions.Item label="创建时间">
+                {detail.createdAt ? formatDate(detail.createdAt) : '-'}
+              </Descriptions.Item>
+            </Descriptions>
+          )
         )}
       </Drawer>
     </AppPage>

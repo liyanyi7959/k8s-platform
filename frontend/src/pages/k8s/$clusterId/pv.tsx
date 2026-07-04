@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from 'antd'
-import { DeleteOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listPersistentVolumes, deletePersistentVolume } from '@/services/k8s'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
@@ -86,9 +86,9 @@ const PVPage: React.FC = () => {
               <EyeOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm title="确定删除该 PV？" onConfirm={() => deleteMutation.mutate(record.name)}>

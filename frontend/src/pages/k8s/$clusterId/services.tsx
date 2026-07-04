@@ -19,7 +19,7 @@ import {
   ReloadOutlined,
   CopyOutlined,
   EyeOutlined,
-  CodeOutlined,
+  ProfileOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listServices, deleteService, createService, updateService } from '@/services/k8s'
@@ -223,9 +223,9 @@ const ServicesPage: React.FC = () => {
               <EditOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm

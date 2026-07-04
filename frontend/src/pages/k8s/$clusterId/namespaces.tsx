@@ -1,7 +1,7 @@
 import React from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Tag, Badge, Space, Tooltip, Popconfirm, message, Button } from 'antd'
-import { CodeOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
+import { ProfileOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listNamespaces, deleteNamespace } from '@/services/k8s'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
@@ -79,9 +79,9 @@ const NamespacesPage: React.FC = () => {
           size="small"
           style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
         >
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           {record.name !== 'default' &&

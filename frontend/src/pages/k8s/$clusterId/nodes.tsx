@@ -22,7 +22,7 @@ import {
 } from 'antd'
 import {
   ReloadOutlined,
-  CodeOutlined,
+  ProfileOutlined,
   DeleteOutlined,
   StopOutlined,
   PlayCircleOutlined,
@@ -231,9 +231,9 @@ export default function NodesPage() {
               <InfoCircleOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => setYamlDrawer({ open: true, name: record.name })}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           {isCordoned(record.status) ? (

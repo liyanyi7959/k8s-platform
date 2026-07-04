@@ -8,7 +8,7 @@ import {
   type ProColumns,
 } from '@ant-design/pro-components'
 import { Space, message, Popconfirm, Tag, Modal, Button, Card, Tooltip } from 'antd'
-import { PlusOutlined, EyeOutlined, DeleteOutlined, CodeOutlined } from '@ant-design/icons'
+import { PlusOutlined, EyeOutlined, DeleteOutlined, ProfileOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listSecrets, deleteSecret, createSecret, getSecretReveal } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -109,9 +109,9 @@ const SecretsPage: React.FC = () => {
               <EyeOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm

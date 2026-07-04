@@ -33,7 +33,7 @@ import {
   ReloadOutlined,
   DeleteOutlined,
   EditOutlined,
-  CodeOutlined,
+  ProfileOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
   HistoryOutlined,
@@ -350,9 +350,9 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
               <HistoryOutlined />
             </a>
           </Tooltip>
-          <Tooltip title="YAML">
+          <Tooltip title="查看 YAML">
             <a onClick={() => handleViewYaml(record)}>
-              <CodeOutlined />
+              <ProfileOutlined />
             </a>
           </Tooltip>
           <Popconfirm
