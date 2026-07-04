@@ -78,10 +78,76 @@ export function mapPod(raw: any): Pod {
   const s = raw?.status || {}
   const spec = raw?.spec || {}
   const ownerRef = Array.isArray(m.ownerReferences) ? m.ownerReferences[0] : undefined
+
+  // 提取容器级等待状态（CrashLoopBackOff / ImagePullBackOff / ContainerCreating 等）
+  let containerReason = ''
+  if (Array.isArray(s.containerStatuses)) {
+    for (const cs of s.containerStatuses) {
+      if (cs.state?.waiting?.reason) {
+        containerReason = cs.state.waiting.reason
+        break
+      }
+      if (cs.state?.terminated?.reason) {
+        containerReason = cs.state.terminated.reason
+        break
+      }
+    }
+  }
+
+  // 映射容器（含 initContainers）
+  const mapContainer = (c: any): any => {
+    const cs = Array.isArray(s.containerStatuses) ? s.containerStatuses.find((cs: any) => cs.name === c.name) :
+      Array.isArray(s.initContainerStatuses) ? s.initContainerStatuses.find((cs: any) => cs.name === c.name) : undefined
+    const res = c.resources || {}
+    const req = res.requests || {}
+    const lim = res.limits || {}
+    const stateKey = cs?.state ? Object.keys(cs.state)[0] : undefined
+    const stateObj = stateKey ? cs.state[stateKey] : undefined
+    return {
+      name: c.name || '',
+      image: c.image || '',
+      ready: cs?.ready,
+      restartCount: cs?.restartCount,
+      state: stateKey,
+      stateReason: stateObj?.reason,
+      stateMessage: stateObj?.message,
+      exitCode: stateObj?.exitCode,
+      startedAt: stateObj?.startedAt,
+      finishedAt: stateObj?.finishedAt,
+      cpuRequest: req.cpu,
+      cpuLimit: lim.cpu,
+      memoryRequest: req.memory,
+      memoryLimit: lim.memory,
+      ports: Array.isArray(c.ports) ? c.ports.map((p: any) => ({ containerPort: p.containerPort, protocol: p.protocol })) : undefined,
+      command: c.command,
+      args: c.args,
+      workingDir: c.workingDir,
+      imagePullPolicy: c.imagePullPolicy,
+    }
+  }
+
+  // 提取探针（取第一个容器的探针）
+  const firstContainer = Array.isArray(spec.containers) ? spec.containers[0] : undefined
+  const probes = firstContainer ? extractProbes(firstContainer) : undefined
+
+  // 提取调度信息
+  const scheduling = extractScheduling(spec)
+
+  // 提取安全上下文
+  const security = extractSecurity(spec, firstContainer)
+
+  // 提取环境变量
+  const envVars = Array.isArray(firstContainer?.env) ? firstContainer.env.map((e: any) => ({
+    name: e.name || '',
+    value: e.value,
+    valueFrom: e.valueFrom ? Object.keys(e.valueFrom)[0] : undefined,
+  })) : undefined
+
   return {
     name: m.name || '',
     namespace: m.namespace || '',
     status: s.phase || 'Unknown',
+    containerReason,
     ready: podReadyStr(raw),
     restarts: podRestartCount(raw),
     nodeName: spec.nodeName || '',
@@ -92,30 +158,75 @@ export function mapPod(raw: any): Pod {
     ownerKind: ownerRef?.kind || '',
     qosClass: s.qosClass || '',
     annotations: m.annotations || {},
-    containers: Array.isArray(spec.containers) ? spec.containers.map((c: any) => {
-      const cs = Array.isArray(s.containerStatuses) ? s.containerStatuses.find((cs: any) => cs.name === c.name) : undefined
-      const res = c.resources || {}
-      const req = res.requests || {}
-      const lim = res.limits || {}
-      return {
-        name: c.name || '',
-        image: c.image || '',
-        ready: cs?.ready,
-        restartCount: cs?.restartCount,
-        state: cs?.state ? Object.keys(cs.state)[0] : undefined,
-        cpuRequest: req.cpu,
-        cpuLimit: lim.cpu,
-        memoryRequest: req.memory,
-        memoryLimit: lim.memory,
-        ports: Array.isArray(c.ports) ? c.ports.map((p: any) => ({ containerPort: p.containerPort, protocol: p.protocol })) : undefined,
-      }
-    }) : [],
+    containers: Array.isArray(spec.containers) ? spec.containers.map(mapContainer) : [],
+    initContainers: Array.isArray(spec.initContainers) ? spec.initContainers.map(mapContainer) : [],
     conditions: Array.isArray(s.conditions) ? s.conditions.map((c: any) => ({
       type: c.type || '',
       status: c.status || '',
+      reason: c.reason,
+      message: c.message,
       lastTransitionTime: c.lastTransitionTime || '',
     })) : [],
     volumes: extractVolumes(spec),
+    probes,
+    scheduling,
+    security,
+    envVars,
+    serviceAccountName: spec.serviceAccountName,
+    restartPolicy: spec.restartPolicy,
+    dnsPolicy: spec.dnsPolicy,
+  }
+}
+
+/** 提取探针配置 */
+function extractProbes(c: any): any {
+  const map = (p: any) => {
+    if (!p) return undefined
+    const probeKeys = Object.keys(p)
+    const probe = probeKeys.length > 0 ? p[probeKeys[0]!] : {}
+    return {
+      path: probe.httpGet?.path || probe.tcpSocket ? undefined : probe.httpGet?.path,
+      port: probe.httpGet?.port ?? probe.tcpSocket?.port,
+      delay: p.initialDelaySeconds,
+      period: p.periodSeconds,
+      timeout: p.timeoutSeconds,
+      failure: p.failureThreshold,
+    }
+  }
+  return {
+    liveness: map(c.livenessProbe),
+    readiness: map(c.readinessProbe),
+    startup: map(c.startupProbe),
+  }
+}
+
+/** 提取调度信息 */
+function extractScheduling(spec: any): any {
+  return {
+    nodeSelector: spec.nodeSelector,
+    nodeName: spec.nodeName,
+    affinity: spec.affinity ? JSON.stringify(spec.affinity, null, 2) : undefined,
+    tolerations: Array.isArray(spec.tolerations) ? spec.tolerations.map((t: any) => ({
+      key: t.key, operator: t.operator, value: t.value, effect: t.effect, tolerationSeconds: t.tolerationSeconds,
+    })) : undefined,
+    priorityClassName: spec.priorityClassName,
+    topologySpreadConstraints: spec.topologySpreadConstraints ? JSON.stringify(spec.topologySpreadConstraints, null, 2) : undefined,
+  }
+}
+
+/** 提取安全上下文 */
+function extractSecurity(spec: any, firstContainer?: any): any {
+  const sc = firstContainer?.securityContext || {}
+  const podSc = spec.securityContext || {}
+  return {
+    serviceAccountName: spec.serviceAccountName,
+    runAsUser: sc.runAsUser ?? podSc.runAsUser,
+    runAsGroup: sc.runAsGroup ?? podSc.runAsGroup,
+    runAsNonRoot: sc.runAsNonRoot ?? podSc.runAsNonRoot,
+    privileged: sc.privileged,
+    readOnlyRootFilesystem: sc.readOnlyRootFilesystem,
+    capabilities: sc.capabilities ? { add: sc.capabilities.add, drop: sc.capabilities.drop } : undefined,
+    imagePullSecrets: Array.isArray(spec.imagePullSecrets) ? spec.imagePullSecrets.map((ips: any) => ips.name) : undefined,
   }
 }
 

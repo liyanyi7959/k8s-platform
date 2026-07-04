@@ -35,6 +35,7 @@ export interface Pod {
   name: string
   namespace: string
   status: string        // Running / Pending / Succeeded / Failed / Unknown
+  containerReason?: string  // CrashLoopBackOff / ImagePullBackOff / ContainerCreating 等
   ready: string         // e.g. "1/1"
   restarts: number
   nodeName: string
@@ -46,8 +47,16 @@ export interface Pod {
   qosClass?: string
   annotations?: Record<string, string>
   containers?: PodContainer[]
-  conditions?: Array<{ type: string; status: string; lastTransitionTime?: string }>
+  initContainers?: PodContainer[]
+  conditions?: Array<{ type: string; status: string; reason?: string; message?: string; lastTransitionTime?: string }>
   volumes?: PodVolume[]
+  probes?: PodProbes
+  scheduling?: PodScheduling
+  security?: PodSecurity
+  envVars?: Array<{ name: string; value?: string; valueFrom?: string }>
+  serviceAccountName?: string
+  restartPolicy?: string
+  dnsPolicy?: string
 }
 
 export interface PodContainer {
@@ -56,11 +65,46 @@ export interface PodContainer {
   ready?: boolean
   restartCount?: number
   state?: string
+  stateReason?: string
+  stateMessage?: string
+  exitCode?: number
+  startedAt?: string
+  finishedAt?: string
   cpuRequest?: string
   cpuLimit?: string
   memoryRequest?: string
   memoryLimit?: string
   ports?: Array<{ containerPort: number; protocol?: string }>
+  command?: string[]
+  args?: string[]
+  workingDir?: string
+  imagePullPolicy?: string
+}
+
+export interface PodProbes {
+  liveness?: { path?: string; port?: string | number; delay?: number; period?: number; timeout?: number; failure?: number }
+  readiness?: { path?: string; port?: string | number; delay?: number; period?: number; timeout?: number; failure?: number }
+  startup?: { path?: string; port?: string | number; delay?: number; period?: number; timeout?: number; failure?: number }
+}
+
+export interface PodScheduling {
+  nodeSelector?: Record<string, string>
+  nodeName?: string
+  affinity?: string  // JSON string for display
+  tolerations?: Array<{ key?: string; operator?: string; value?: string; effect?: string; tolerationSeconds?: number }>
+  priorityClassName?: string
+  topologySpreadConstraints?: string
+}
+
+export interface PodSecurity {
+  serviceAccountName?: string
+  runAsUser?: number
+  runAsGroup?: number
+  runAsNonRoot?: boolean
+  privileged?: boolean
+  readOnlyRootFilesystem?: boolean
+  capabilities?: { add?: string[]; drop?: string[] }
+  imagePullSecrets?: string[]
 }
 
 export interface PodVolume {

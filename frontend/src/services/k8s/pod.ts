@@ -45,8 +45,17 @@ export function deletePod(clusterId: number, namespace: string, name: string, fo
 }
 
 /** 获取 Pod 日志 */
-export function getPodLogs(clusterId: number, namespace: string, name: string, tailLines?: number): Promise<{ logs: string }> {
-  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/logs`, { params: { tail_lines: tailLines ?? 200 } }).then((res: { text?: string; logs?: string }) => ({
+export function getPodLogs(
+  clusterId: number,
+  namespace: string,
+  name: string,
+  options?: { tailLines?: number; container?: string; previous?: boolean; timestamps?: boolean },
+): Promise<{ logs: string }> {
+  const params: Record<string, any> = { tail_lines: options?.tailLines ?? 200 }
+  if (options?.container) params.container = options.container
+  if (options?.previous) params.previous = true
+  if (options?.timestamps) params.timestamps = true
+  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/logs`, { params }).then((res: { text?: string; logs?: string }) => ({
     logs: res.text || res.logs || '',
   }))
 }
@@ -80,6 +89,40 @@ export function getPodEvents(clusterId: number, namespace: string, name: string,
   }).then((res: any) => {
     const list = res?.list || res?.items || (Array.isArray(res) ? res : [])
     return list
+  })
+}
+
+/** 创建 WebSocket 日志流会话（follow 模式） */
+export function createPodLogSession(
+  clusterId: number,
+  namespace: string,
+  name: string,
+  options?: { container?: string; tailLines?: number; follow?: boolean; previous?: boolean },
+): Promise<{ sessionId: string; wsUrl: string }> {
+  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/logs/session`, {
+    method: 'POST',
+    data: {
+      container: options?.container,
+      tail_lines: options?.tailLines ?? 200,
+      follow: options?.follow ?? true,
+      previous: options?.previous ?? false,
+    },
+  }).then((res: { session_id?: string; ws_url?: string }) => ({
+    sessionId: res.session_id || '',
+    wsUrl: res.ws_url || '',
+  }))
+}
+
+/** 获取 PodMetrics 列表（资源使用率） */
+export function listPodMetrics(clusterId: number, namespace?: string, signal?: AbortSignal): Promise<any[]> {
+  return request(`/api/v1/clusters/${clusterId}/podmetrics`, {
+    params: namespace ? { namespace } : undefined,
+    signal,
+  }).then((res: any) => {
+    if (Array.isArray(res)) return res
+    if (Array.isArray(res?.items)) return res.items
+    if (Array.isArray(res?.list)) return res.list
+    return []
   })
 }
 

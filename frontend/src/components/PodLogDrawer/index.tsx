@@ -30,7 +30,7 @@ export const PodLogDrawer: React.FC<PodLogDrawerProps> = ({
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['pod-logs', clusterId, namespace, podName, tailLines],
-    queryFn: () => getPodLogs(clusterId, namespace, podName, tailLines),
+    queryFn: () => getPodLogs(clusterId, namespace, podName, { tailLines }),
     enabled: open && !!clusterId,
     refetchInterval: open ? 5000 : false,
   })
