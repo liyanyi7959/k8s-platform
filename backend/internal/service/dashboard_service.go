@@ -169,6 +169,7 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 	k8sVersion := ""
 	podsTotal, podsRunning, podsPending, podsFailed, podsSucceeded := 0, 0, 0, 0, 0
 	nsPods := map[string]int{}
+	var unscheduledPods []map[string]any
 
 	var (
 		deployments    []any
@@ -178,6 +179,7 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 		memUsedPercent int
 		failedPods     []map[string]any
 		nodeItems      []corev1.Node // shared between health check & usage calc — used below in post-process
+		recentEvents   []map[string]any
 		wg             sync.WaitGroup
 		nodeItemsReady = make(chan struct{})
 		mu             sync.Mutex // protects ready, total, nodeItems
@@ -245,6 +247,11 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 						podsRunning++
 					case corev1.PodPending:
 						podsPending++
+						if p.Spec.NodeName == "" && len(unscheduledPods) < 10 {
+							unscheduledPods = append(unscheduledPods, map[string]any{
+								"name": p.Name, "namespace": p.Namespace, "reason": "Unschedulable",
+							})
+						}
 					case corev1.PodFailed:
 						podsFailed++
 						if len(failedPods) < 10 {
@@ -293,6 +300,11 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 					podsRunning++
 				case corev1.PodPending:
 					podsPending++
+					if p.Spec.NodeName == "" && len(unscheduledPods) < 10 {
+						unscheduledPods = append(unscheduledPods, map[string]any{
+							"name": p.Name, "namespace": p.Namespace, "reason": "Unschedulable",
+						})
+					}
 				case corev1.PodFailed:
 					podsFailed++
 					if len(failedPods) < 10 {
@@ -368,6 +380,49 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 	go func() {
 		defer wg.Done()
 		daemonsets, _ = s.k8sSvc.List(ctx, clusterID, schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}, "", "", "", nil)
+	}()
+
+	// 2.5. Recent Events — 拉取最近 1 小时内的 Warning 事件
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		cs, err := s.k8sSvc.typedClient(ctx, clusterID)
+		if err != nil {
+			return
+		}
+		evList, err := cs.CoreV1().Events("").List(ctx, metav1.ListOptions{
+			FieldSelector: "type=Warning",
+			Limit:         50,
+		})
+		if err != nil {
+			return
+		}
+		for i := range evList.Items {
+			if len(recentEvents) >= 20 {
+				break
+			}
+			ev := &evList.Items[i]
+			// 过滤最近 1 小时内的事件
+			ts := ev.LastTimestamp.Time
+			if ts.IsZero() {
+				ts = ev.EventTime.Time
+			}
+			if ts.IsZero() {
+				continue
+			}
+			if time.Since(ts) > time.Hour {
+				continue
+			}
+			recentEvents = append(recentEvents, map[string]any{
+				"type":           ev.Type,
+				"reason":         ev.Reason,
+				"message":        ev.Message,
+				"namespace":      ev.Namespace,
+				"lastTimestamp":  ts.Format(time.RFC3339),
+				"count":          ev.Count,
+				"involvedObject": fmt.Sprintf("%s/%s", ev.InvolvedObject.Kind, ev.InvolvedObject.Name),
+			})
+		}
 	}()
 
 	// 3. Usage — reuse nodeItems from health check goroutine
@@ -511,8 +566,27 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 			"node_ready":         map[string]any{"ready": ready, "total": total},
 		},
 		"anomalies": map[string]any{
-			"failed_pods": failedPods,
+			"failed_pods":      failedPods,
+			"unscheduled_pods": unscheduledPods,
 		},
+		"events": recentEvents,
+		// 数据溯源：标注采集来源与更新时间
+		"meta": map[string]any{
+			"source":     "k8s-api",
+			"updated_at": time.Now().Format(time.RFC3339),
+			"cached":     false,
+		},
+	}
+
+	// 提取 Top5 工作负载快照（按副本数排序）
+	topWorkloads := s.extractTopWorkloads(deployments, statefulsets, daemonsets)
+	if len(topWorkloads) > 0 {
+		out["top_workloads"] = topWorkloads
+	}
+
+	// 内联证书风险（不阻塞首屏，失败时忽略）
+	if certRisks, err := s.GetClusterCertificateRisks(ctx, clusterID); err == nil && len(certRisks) > 0 {
+		out["risks"] = map[string]any{"certificates": certRisks}
 	}
 
 	if s.cache != nil && s.cache.Enabled() {
@@ -526,6 +600,76 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 	}
 
 	return out, nil
+}
+
+// extractTopWorkloads 从工作负载列表中提取 Top5 快照（按副本数排序）
+func (s *DashboardService) extractTopWorkloads(deployments, statefulsets, daemonsets []any) []map[string]any {
+	type wl struct {
+		name      string
+		namespace string
+		kind      string
+		replicas  int32
+		ready     int32
+	}
+	var all []wl
+
+	extract := func(items []any, kind string) {
+		for _, item := range items {
+			m, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			name, _ := m["name"].(string)
+			if name == "" {
+				if meta, ok := m["metadata"].(map[string]any); ok {
+					name, _ = meta["name"].(string)
+				}
+			}
+			if name == "" {
+				continue
+			}
+			ns := ""
+			if meta, ok := m["metadata"].(map[string]any); ok {
+				ns, _ = meta["namespace"].(string)
+			}
+			var replicas, ready int32
+			if spec, ok := m["spec"].(map[string]any); ok {
+				if r, ok := spec["replicas"].(int64); ok {
+					replicas = int32(r)
+				}
+			}
+			if status, ok := m["status"].(map[string]any); ok {
+				if r, ok := status["readyReplicas"].(int64); ok {
+					ready = int32(r)
+				}
+			}
+			all = append(all, wl{name: name, namespace: ns, kind: kind, replicas: replicas, ready: ready})
+		}
+	}
+
+	extract(deployments, "Deployment")
+	extract(statefulsets, "StatefulSet")
+	extract(daemonsets, "DaemonSet")
+
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].replicas > all[j].replicas
+	})
+
+	if len(all) > 5 {
+		all = all[:5]
+	}
+
+	result := make([]map[string]any, 0, len(all))
+	for _, w := range all {
+		result = append(result, map[string]any{
+			"name":      w.name,
+			"namespace": w.namespace,
+			"kind":      w.kind,
+			"replicas":  w.replicas,
+			"ready":     w.ready,
+		})
+	}
+	return result
 }
 
 func (s *DashboardService) GetClusterCertificateRisks(ctx context.Context, clusterID uint64) ([]map[string]any, error) {

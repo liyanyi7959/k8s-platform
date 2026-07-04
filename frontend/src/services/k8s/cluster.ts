@@ -167,7 +167,10 @@ export interface ClusterOverview {
   }
   anomalies?: {
     failed_pods?: Array<{ name: string; namespace: string; reason: string }>
+    unscheduled_pods?: Array<{ name: string; namespace: string; reason: string }>
   }
+  top_workloads?: Array<{ name: string; namespace: string; kind: string; replicas: number; ready: number }>
+  meta?: { source: string; updated_at: string; cached: boolean }
   events?: K8sEvent[]
 }
 

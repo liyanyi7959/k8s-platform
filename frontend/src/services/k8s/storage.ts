@@ -3,11 +3,8 @@
  */
 import { request } from '@umijs/max'
 import type {
-  PersistentVolume,
   PersistentVolumeList,
-  PersistentVolumeClaim,
   PersistentVolumeClaimList,
-  StorageClass,
   StorageClassList,
 } from '@/types'
 import { mapPV, mapPVC, mapStorageClass, extractMappedList } from './shared'

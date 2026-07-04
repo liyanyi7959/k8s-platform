@@ -19,21 +19,44 @@ type AuthController struct {
 	rbacSvc *service.RbacService
 	// auditSvc 负责记录登录/退出等认证类审计日志。
 	auditSvc *service.AuditService
+	// captchaSvc 负责滑块验证码生成与校验。
+	captchaSvc *service.CaptchaService
+	// loginAttemptSvc 负责登录失败计数与账号锁定。
+	loginAttemptSvc *service.LoginAttemptService
+	// pwdResetSvc 负责找回密码 token 生成与重置。
+	pwdResetSvc *service.PasswordResetService
 	// tokenTTL 为 access token 的有效期（由配置注入）。
 	tokenTTL time.Duration
 }
 
-func NewAuthController(jwtMgr *auth.Manager, rbacSvc *service.RbacService, auditSvc *service.AuditService, tokenTTL time.Duration) *AuthController {
-	// NewAuthController 通过依赖注入方式组装鉴权控制器，避免使用包级全局变量。
+func NewAuthController(
+	jwtMgr *auth.Manager,
+	rbacSvc *service.RbacService,
+	auditSvc *service.AuditService,
+	captchaSvc *service.CaptchaService,
+	loginAttemptSvc *service.LoginAttemptService,
+	pwdResetSvc *service.PasswordResetService,
+	tokenTTL time.Duration,
+) *AuthController {
 	if tokenTTL <= 0 {
 		tokenTTL = 7 * 24 * time.Hour
 	}
-	return &AuthController{jwtMgr: jwtMgr, rbacSvc: rbacSvc, auditSvc: auditSvc, tokenTTL: tokenTTL}
+	return &AuthController{
+		jwtMgr:          jwtMgr,
+		rbacSvc:         rbacSvc,
+		auditSvc:        auditSvc,
+		captchaSvc:      captchaSvc,
+		loginAttemptSvc: loginAttemptSvc,
+		pwdResetSvc:     pwdResetSvc,
+		tokenTTL:        tokenTTL,
+	}
 }
 
 type loginReq struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	CaptchaToken string `json:"captcha_token"`
+	CaptchaX     int    `json:"captcha_x"`
 }
 
 type LoginUser struct {
@@ -112,29 +135,60 @@ func (ac *AuthController) Login(c *gin.Context) {
 		return
 	}
 
+	// ── 账号锁定检查 ──
+	if ac.loginAttemptSvc != nil {
+		if locked, remain := ac.loginAttemptSvc.IsLocked(c.Request.Context(), username); locked {
+			ac.recordAuthAudit(c, 0, username, "login", 4000, "账号已锁定")
+			resp.Fail(c, 4003, service.FormatLockMessage(remain))
+			return
+		}
+	}
+
+	// ── 滑块验证码校验（前端传入 captcha_token 时才校验） ──
+	if ac.captchaSvc != nil && ac.captchaSvc.CacheEnabled() && req.CaptchaToken != "" {
+		if err := ac.captchaSvc.Verify(c.Request.Context(), req.CaptchaToken, req.CaptchaX); err != nil {
+			ac.recordAuthAudit(c, 0, username, "login", 4000, "验证码校验失败")
+			resp.Fail(c, 4004, "验证码校验失败，请重试")
+			return
+		}
+	}
+
 	// 账号密码校验由 service 统一处理：
 	// - 用户不存在/密码不匹配/用户被禁用时都返回错误（对外统一表现为 unauthorized）
 	// - 成功时返回用户信息及其 roles/perms（用于写入 token）
 	u, err := ac.rbacSvc.Authenticate(c.Request.Context(), username, password)
 	if err != nil {
+		// ── 登录失败计数（密码错误时触发） ──
+		if ac.loginAttemptSvc != nil && (err == service.ErrAuthPasswordIncorrect || err == service.ErrAuthUserNotFound) {
+			if locked, remain := ac.loginAttemptSvc.RecordFailure(c.Request.Context(), username); locked {
+				ac.recordAuthAudit(c, 0, username, "login", 4003, "账号已锁定")
+				resp.Fail(c, 4003, service.FormatLockMessage(remain))
+				return
+			}
+		}
 		switch err {
 		case service.ErrInvalidParams:
 			ac.recordAuthAudit(c, 0, username, "login", 4000, "参数错误")
 			resp.Fail(c, 4000, "参数错误")
 		case service.ErrAuthUserNotFound:
 			ac.recordAuthAudit(c, 0, username, "login", 4000, "用户不存在")
-			resp.Fail(c, 4000, "用户不存在")
+			resp.Fail(c, 4000, "用户名或密码错误")
 		case service.ErrAuthUserDisabled:
 			ac.recordAuthAudit(c, 0, username, "login", 4000, "账号已被禁用")
 			resp.Fail(c, 4000, "账号已被禁用")
 		case service.ErrAuthPasswordIncorrect:
 			ac.recordAuthAudit(c, 0, username, "login", 4000, "密码不正确")
-			resp.Fail(c, 4000, "密码不正确")
+			resp.Fail(c, 4000, "用户名或密码错误")
 		default:
 			ac.recordAuthAudit(c, 0, username, "login", 5000, "内部错误")
 			resp.Fail(c, 5000, "内部错误")
 		}
 		return
+	}
+
+	// ── 登录成功，清零失败计数 ──
+	if ac.loginAttemptSvc != nil {
+		ac.loginAttemptSvc.ResetFailures(c.Request.Context(), username)
 	}
 
 	// 将当前 roles/perms 作为“快照”写入 token，后续请求无需每次查库即可鉴权。
@@ -303,4 +357,123 @@ func (ac *AuthController) ChangePassword(c *gin.Context) {
 		return
 	}
 	resp.OK(c, gin.H{})
+}
+
+// ── 滑块验证码 ──
+
+// @Summary 获取滑块验证码
+// @Description 生成滑块验证码 puzzle，返回 token 与目标偏移量
+// @Tags 认证接口
+// @Produce json
+// @Success 200 {object} resp.Result "生成成功"
+// @Router /auth/captcha [get]
+func (ac *AuthController) GetCaptcha(c *gin.Context) {
+	if ac.captchaSvc == nil || !ac.captchaSvc.CacheEnabled() {
+		resp.OK(c, gin.H{"enabled": false})
+		return
+	}
+	puzzle, err := ac.captchaSvc.Generate(c.Request.Context())
+	if err != nil {
+		resp.Fail(c, 5000, "验证码生成失败")
+		return
+	}
+	resp.OK(c, gin.H{
+		"enabled":     true,
+		"token":       puzzle.Token,
+		"target_x":    puzzle.TargetX,
+		"track_width": puzzle.TrackWidth,
+	})
+}
+
+// ── 找回密码 ──
+
+type requestResetReq struct {
+	Identifier string `json:"identifier"` // 用户名或邮箱
+}
+
+type resetPasswordReq struct {
+	Token       string `json:"token"`
+	NewPassword string `json:"new_password"`
+}
+
+// @Summary 请求密码重置
+// @Description 通过用户名或邮箱生成重置 token（10 分钟有效）
+// @Tags 认证接口
+// @Accept json
+// @Produce json
+// @Param body body requestResetReq true "用户名或邮箱"
+// @Success 200 {object} resp.Result "请求成功"
+// @Router /auth/password-reset/request [post]
+func (ac *AuthController) RequestPasswordReset(c *gin.Context) {
+	if ac.pwdResetSvc == nil {
+		resp.Fail(c, 5000, "密码重置服务不可用")
+		return
+	}
+	var req requestResetReq
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.Identifier) == "" {
+		resp.Fail(c, 4000, "请输入用户名或邮箱")
+		return
+	}
+	token, username, err := ac.pwdResetSvc.RequestReset(c.Request.Context(), req.Identifier)
+	if err != nil {
+		switch err {
+		case service.ErrNotFound:
+			// 安全考虑：不暴露用户是否存在，统一返回成功
+			resp.OK(c, gin.H{"message": "如果该账号存在，重置链接已生成"})
+		case service.ErrAuthUserDisabled:
+			resp.Fail(c, 4000, "账号已被禁用")
+		default:
+			resp.Fail(c, 5000, "内部错误")
+		}
+		return
+	}
+	// 无邮件服务时直接返回 token（前端展示重置表单）
+	// 有邮件服务时此处应发送邮件，不返回 token
+	ac.recordAuthAudit(c, 0, username, "password-reset-request", 0, "请求密码重置")
+	resp.OK(c, gin.H{
+		"token":    token,
+		"username": username,
+		"message":  "重置 token 已生成，请使用该 token 设置新密码",
+	})
+}
+
+// @Summary 通过 token 重置密码
+// @Description 校验重置 token 并设置新密码
+// @Tags 认证接口
+// @Accept json
+// @Produce json
+// @Param body body resetPasswordReq true "重置 token 与新密码"
+// @Success 200 {object} resp.Result "重置成功"
+// @Router /auth/password-reset/confirm [post]
+func (ac *AuthController) ConfirmPasswordReset(c *gin.Context) {
+	if ac.pwdResetSvc == nil {
+		resp.Fail(c, 5000, "密码重置服务不可用")
+		return
+	}
+	var req resetPasswordReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+	if strings.TrimSpace(req.Token) == "" || strings.TrimSpace(req.NewPassword) == "" {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+	if len(req.NewPassword) < 6 {
+		resp.Fail(c, 4000, "密码长度至少 6 位")
+		return
+	}
+	if err := ac.pwdResetSvc.ResetPasswordByToken(c.Request.Context(), req.Token, req.NewPassword); err != nil {
+		switch err {
+		case service.ErrResetTokenNotFound:
+			resp.Fail(c, 4004, "重置链接已过期或不存在，请重新申请")
+		case service.ErrResetTokenUsed:
+			resp.Fail(c, 4004, "该重置链接已被使用")
+		default:
+			resp.Fail(c, 5000, "内部错误")
+		}
+		return
+	}
+	ac.recordAuthAudit(c, 0, "", "password-reset-confirm", 0, "密码重置成功")
+	resp.OK(c, gin.H{"message": "密码重置成功，请使用新密码登录"})
 }

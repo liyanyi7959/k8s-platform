@@ -30,6 +30,7 @@ type Config struct {
 	Log     LogConfig     `yaml:"log"`
 	K8s     K8sConfig     `yaml:"k8s"`
 	AI      AIConfig      `yaml:"ai"`
+	Mail    MailConfig    `yaml:"mail"`
 }
 
 // ServerConfig 描述 HTTP Server 的启动参数。
@@ -103,6 +104,18 @@ type AIConfig struct {
 	ToolTimeout            string `yaml:"tool_timeout"`
 }
 
+// MailConfig 描述 SMTP 邮件服务配置，用于找回密码邮件发送。
+type MailConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	From     string `yaml:"from"` // 发件人地址，默认使用 username
+	StartTLS bool   `yaml:"starttls"`
+	SSL      bool   `yaml:"ssl"`
+}
+
 // Default 返回一份“可运行的默认配置骨架”。
 // 说明：生产环境务必通过 config.yaml 或环境变量覆盖敏感信息（如 JWT secret、DB DSN 等）。
 func Default() Config {
@@ -148,6 +161,16 @@ func Default() Config {
 			MaskSecrets:            true,
 			AllowExternalModelData: false,
 			ToolTimeout:            "20s",
+		},
+		Mail: MailConfig{
+			Enabled:  false,
+			Host:     "smtp.qq.com",
+			Port:     587,
+			Username: "",
+			Password: "",
+			From:     "",
+			StartTLS: true,
+			SSL:      false,
 		},
 	}
 }
@@ -379,5 +402,39 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := os.Getenv("AI_TOOL_TIMEOUT"); v != "" {
 		cfg.AI.ToolTimeout = v
+	}
+
+	// ── Mail 环境变量覆盖 ──
+	if v := os.Getenv("MAIL_ENABLED"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			cfg.Mail.Enabled = b
+		}
+	}
+	if v := os.Getenv("MAIL_HOST"); v != "" {
+		cfg.Mail.Host = v
+	}
+	if v := os.Getenv("MAIL_PORT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.Mail.Port = n
+		}
+	}
+	if v := os.Getenv("MAIL_USERNAME"); v != "" {
+		cfg.Mail.Username = v
+	}
+	if v := os.Getenv("MAIL_PASSWORD"); v != "" {
+		cfg.Mail.Password = v
+	}
+	if v := os.Getenv("MAIL_FROM"); v != "" {
+		cfg.Mail.From = v
+	}
+	if v := os.Getenv("MAIL_STARTTLS"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			cfg.Mail.StartTLS = b
+		}
+	}
+	if v := os.Getenv("MAIL_SSL"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			cfg.Mail.SSL = b
+		}
 	}
 }

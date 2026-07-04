@@ -122,6 +122,9 @@ func registerRoutes(
 	api.POST("/auth/login", d.AuthCtl.Login)
 	api.POST("/auth/logout", d.AuthCtl.Logout)
 	api.GET("/auth/me", d.AuthCtl.Me)
+	api.GET("/auth/captcha", d.AuthCtl.GetCaptcha)
+	api.POST("/auth/password-reset/request", d.AuthCtl.RequestPasswordReset)
+	api.POST("/auth/password-reset/confirm", d.AuthCtl.ConfirmPasswordReset)
 
 	// ── 需认证接口 ──
 	authed := api.Group("")

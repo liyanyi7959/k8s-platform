@@ -20,7 +20,7 @@ auth:
 crypto:
   master_key: ""
 redis:
-  enabled: false
+  enabled: true
   addr: "127.0.0.1:6379"
   password: ""
   db: 0
@@ -38,3 +38,14 @@ ai:
   mask_secrets: true
   allow_external_model_data: false
   tool_timeout: "20s"
+# 邮件服务配置（用于找回密码邮件发送）
+# enabled: true 时启用邮件发送功能
+mail:
+  enabled: true
+  host: "smtp.qq.com"
+  port: 587
+  username: "1097616837@qq.com"
+  password: "myjaicxrqfqcicda"
+  from: "1097616837@qq.com"
+  starttls: true
+  ssl: false

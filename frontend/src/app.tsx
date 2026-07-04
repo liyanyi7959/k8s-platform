@@ -1,5 +1,5 @@
 import { history, useModel, type RequestConfig } from '@umijs/max'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   App as AntdApp,
   Avatar,
@@ -23,6 +23,7 @@ import {
   DownOutlined,
   FileSearchOutlined,
   HddOutlined,
+  LockOutlined,
   LogoutOutlined,
   NodeIndexOutlined,
   PlusOutlined,
@@ -35,6 +36,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { getCurrentUser, logout as requestLogout } from '@/services/auth'
 import { listClusters } from '@/services/clusters'
+import { ChangePasswordModal } from '@/components'
 import type { User } from '@/types'
 import type { Cluster as ModelCluster } from '@/models/cluster'
 import defaultSettings from '../config/defaultSettings'
@@ -478,6 +480,7 @@ const getUserDisplayName = (user?: Partial<User> & { name?: string }) =>
 // ============================================================
 export const layout = ({ initialState, setInitialState }: any) => {
   const { currentCluster, setCurrentCluster, setClusterList } = useModel('cluster')
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
 
   // 使用真实后端 API 获取集群列表（替代 mock 数据）
   const { data: clusterListRes } = useQuery({
@@ -552,6 +555,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
     },
     { type: 'divider' },
     { key: 'admin', label: '管理后台', icon: <UserOutlined /> },
+    { key: 'change-password', label: '修改密码', icon: <LockOutlined /> },
     { type: 'divider' },
     { key: 'logout', label: '退出登录', icon: <LogoutOutlined />, danger: true },
   ]
@@ -559,6 +563,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
   const handleUserMenuClick: MenuProps['onClick'] = ({ key }) => {
     if (key === 'logout') { handleLogout(); return }
     if (key === 'admin') { history.push('/config/users'); return }
+    if (key === 'change-password') { setChangePasswordOpen(true); return }
   }
 
   return {
@@ -692,6 +697,11 @@ export const layout = ({ initialState, setInitialState }: any) => {
             <DownOutlined className="app-layout-user-trigger__arrow" />
           </button>
         </Dropdown>
+        <ChangePasswordModal
+          open={changePasswordOpen}
+          onClose={() => setChangePasswordOpen(false)}
+          onSuccess={handleLogout}
+        />
       </Space>
     ),
 

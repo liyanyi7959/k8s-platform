@@ -1,4 +1,4 @@
-﻿// 程序入口（HTTP API 服务）。
+// 程序入口（HTTP API 服务）。
 //
 // 该文件负责：
 // - 读取配置（支持文件与环境变量覆盖）
@@ -86,6 +86,10 @@ func main() {
 
 	rbacSvc := service.NewRbacService(gdb, cacheStore, 15*time.Minute)
 	auditSvc := service.NewAuditService(gdb)
+	captchaSvc := service.NewCaptchaService(cacheStore)
+	loginAttemptSvc := service.NewLoginAttemptService(cacheStore)
+	mailSvc := service.NewMailService(cfg.Mail)
+	pwdResetSvc := service.NewPasswordResetService(gdb, cacheStore, mailSvc)
 	// 内置初始化：首次启动自动创建管理员用户/角色/权限点，确保系统可登录可用。
 	if err := service.EnsureBuiltinRBAC(gdb, cfg.Auth.AdminUsername, cfg.Auth.AdminPassword); err != nil {
 		zap.L().Fatal("ensure_builtin_rbac_failed", zap.Error(err))
@@ -93,7 +97,7 @@ func main() {
 	if err := rbacSvc.InvalidateRoleUsersPerms(context.Background(), "admin"); err != nil {
 		zap.L().Warn("invalidate_builtin_rbac_cache_failed", zap.Error(err))
 	}
-	authCtl := controller.NewAuthController(jwtMgr, rbacSvc, auditSvc, cfg.ParsedTokenTTL())
+	authCtl := controller.NewAuthController(jwtMgr, rbacSvc, auditSvc, captchaSvc, loginAttemptSvc, pwdResetSvc, cfg.ParsedTokenTTL())
 
 	r, err := router.New(router.Deps{
 		DB:             gdb,

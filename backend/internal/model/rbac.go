@@ -7,6 +7,8 @@ type User struct {
 	ID uint64 `gorm:"column:id;primaryKey;autoIncrement"`
 	// Username 为登录名，全局唯一。
 	Username string `gorm:"column:username;type:varchar(80);not null;uniqueIndex:uk_users_username"`
+	// Email 为用户邮箱，用于找回密码，可为空。
+	Email string `gorm:"column:email;type:varchar(120);uniqueIndex:uk_users_email"`
 	// PasswordHash 存储 bcrypt hash，不存储明文密码。
 	PasswordHash string `gorm:"column:password_hash;type:varchar(255);not null"`
 	// Status 代表用户状态：active/disabled。

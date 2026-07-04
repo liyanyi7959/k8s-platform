@@ -91,3 +91,35 @@ export async function logout(): Promise<void> {
   }
   return request('/api/v1/auth/logout', { method: 'POST' })
 }
+
+/** 修改当前登录用户密码 */
+export async function changePassword(data: { oldPassword: string; newPassword: string }): Promise<void> {
+  return request('/api/v1/auth/change-password', {
+    method: 'POST',
+    data: {
+      old_password: data.oldPassword,
+      new_password: data.newPassword,
+    },
+  })
+}
+
+/** 获取滑块验证码 */
+export async function getCaptcha(): Promise<{ enabled: boolean; token?: string; target_x?: number; track_width?: number }> {
+  return request('/api/v1/auth/captcha')
+}
+
+/** 请求密码重置 */
+export async function requestPasswordReset(identifier: string): Promise<{ token?: string; username?: string; message: string }> {
+  return request('/api/v1/auth/password-reset/request', {
+    method: 'POST',
+    data: { identifier },
+  })
+}
+
+/** 通过 token 重置密码 */
+export async function confirmPasswordReset(token: string, newPassword: string): Promise<{ message: string }> {
+  return request('/api/v1/auth/password-reset/confirm', {
+    method: 'POST',
+    data: { token, new_password: newPassword },
+  })
+}
