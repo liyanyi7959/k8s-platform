@@ -4,6 +4,7 @@
  */
 import type {
   Pod,
+  PodVolume,
   Deployment,
   K8sService,
   ConfigMap,
@@ -91,18 +92,67 @@ export function mapPod(raw: any): Pod {
     ownerKind: ownerRef?.kind || '',
     qosClass: s.qosClass || '',
     annotations: m.annotations || {},
-    containers: Array.isArray(spec.containers) ? spec.containers.map((c: any) => ({
-      name: c.name || '',
-      image: c.image || '',
-      ready: Array.isArray(s.containerStatuses) ? s.containerStatuses.find((cs: any) => cs.name === c.name)?.ready : undefined,
-      restartCount: Array.isArray(s.containerStatuses) ? s.containerStatuses.find((cs: any) => cs.name === c.name)?.restartCount : undefined,
-    })) : [],
+    containers: Array.isArray(spec.containers) ? spec.containers.map((c: any) => {
+      const cs = Array.isArray(s.containerStatuses) ? s.containerStatuses.find((cs: any) => cs.name === c.name) : undefined
+      const res = c.resources || {}
+      const req = res.requests || {}
+      const lim = res.limits || {}
+      return {
+        name: c.name || '',
+        image: c.image || '',
+        ready: cs?.ready,
+        restartCount: cs?.restartCount,
+        state: cs?.state ? Object.keys(cs.state)[0] : undefined,
+        cpuRequest: req.cpu,
+        cpuLimit: lim.cpu,
+        memoryRequest: req.memory,
+        memoryLimit: lim.memory,
+        ports: Array.isArray(c.ports) ? c.ports.map((p: any) => ({ containerPort: p.containerPort, protocol: p.protocol })) : undefined,
+      }
+    }) : [],
     conditions: Array.isArray(s.conditions) ? s.conditions.map((c: any) => ({
       type: c.type || '',
       status: c.status || '',
       lastTransitionTime: c.lastTransitionTime || '',
     })) : [],
+    volumes: extractVolumes(spec),
   }
+}
+
+/** 从 spec.volumes + spec.containers.volumeMounts 提取卷挂载信息 */
+function extractVolumes(spec: any): PodVolume[] {
+  if (!Array.isArray(spec.volumes)) return []
+  const mounts: Record<string, Array<{ name: string; path: string; readOnly?: boolean }>> = {}
+  if (Array.isArray(spec.containers)) {
+    for (const c of spec.containers) {
+      if (Array.isArray(c.volumeMounts)) {
+        for (const vm of c.volumeMounts) {
+          const name = vm.name || ''
+          if (!mounts[name]) mounts[name] = []
+          mounts[name].push({ name: c.name, path: vm.mountPath || '', readOnly: vm.readOnly })
+        }
+      }
+    }
+  }
+  return spec.volumes.map((v: any) => {
+    let type = 'unknown'
+    let source = ''
+    if (v.configMap) { type = 'ConfigMap'; source = v.configMap.name || '' }
+    else if (v.secret) { type = 'Secret'; source = v.secretName || '' }
+    else if (v.emptyDir) { type = 'emptyDir' }
+    else if (v.persistentVolumeClaim) { type = 'PVC'; source = v.persistentVolumeClaim.claimName || '' }
+    else if (v.hostPath) { type = 'hostPath'; source = v.hostPath.path || '' }
+    else if (v.projected) { type = 'projected' }
+    else if (v.downwardAPI) { type = 'downwardAPI' }
+    else if (v.serviceAccountToken) { type = 'serviceAccountToken' }
+    else if (v.ephemeral) { type = 'ephemeral' }
+    return {
+      name: v.name || '',
+      type,
+      source,
+      mountPaths: mounts[v.name || ''],
+    }
+  })
 }
 
 /** 映射原始 K8s Deployment 对象 → 前端 Deployment 类型 */

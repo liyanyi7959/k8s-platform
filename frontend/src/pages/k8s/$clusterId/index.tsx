@@ -333,18 +333,46 @@ const K8sDashboardPage: React.FC = () => {
       {/* ═══ Zone 4: CPU/内存趋势（全宽） ═══ */}
       <Row gutter={12} style={{ marginBottom: 12 }}>
         <Col span={24}>
-          <Card title={<Space><DashboardOutlined style={{ color: COLOR.cyan }} /> CPU / 内存 24h 趋势</Space>} size="small">
-            <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>
-              <LazyLine data={cpuMemData} xField="time" yField="value" colorField="type" color={[COLOR.cyan, COLOR.purple]}
-                smooth height={240} point={{ size: 2 }}
-                xAxis={{ label: { autoRotate: true, style: { fontSize: 10 } } }}
-                yAxis={{ min: 0, max: 100, label: { formatter: (v: number) => `${v}%` } }}
-                legend={{ position: 'topRight' }}
-                annotations={[
-                  { type: 'line', yField: 80, style: { stroke: COLOR.warning, lineDash: [4, 4] }, label: { text: '80%', position: 'end', style: { fill: COLOR.warning, fontSize: 10 } } },
-                  { type: 'line', yField: 90, style: { stroke: COLOR.critical, lineDash: [4, 4] }, label: { text: '90%', position: 'end', style: { fill: COLOR.critical, fontSize: 10 } } },
-                ]} />
-            </Suspense>
+          <Card
+            title={
+              <Space>
+                <DashboardOutlined style={{ color: COLOR.cyan }} />
+                CPU / 内存 24h 趋势
+                {!overview.cluster.api_ok && (
+                  <Tag color="error" style={{ fontSize: 10 }}>集群 API 不可达</Tag>
+                )}
+              </Space>
+            }
+            size="small"
+          >
+            {overview.cluster.api_ok && cpuMemData.some((d) => d.value > 0) ? (
+              <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>
+                <LazyLine data={cpuMemData} xField="time" yField="value" colorField="type" color={[COLOR.cyan, COLOR.purple]}
+                  smooth height={240} point={{ size: 2 }}
+                  xAxis={{ label: { autoRotate: true, style: { fontSize: 10 } } }}
+                  yAxis={{ min: 0, max: 100, label: { formatter: (v: number) => `${v}%` } }}
+                  legend={{ position: 'topRight' }}
+                  annotations={[
+                    { type: 'line', yField: 80, style: { stroke: COLOR.warning, lineDash: [4, 4] }, label: { text: '80%', position: 'end', style: { fill: COLOR.warning, fontSize: 10 } } },
+                    { type: 'line', yField: 90, style: { stroke: COLOR.critical, lineDash: [4, 4] }, label: { text: '90%', position: 'end', style: { fill: COLOR.critical, fontSize: 10 } } },
+                  ]} />
+              </Suspense>
+            ) : (
+              <div style={{ height: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <DashboardOutlined style={{ fontSize: 36, color: COLOR.idle }} />
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  {!overview.cluster.api_ok ? '集群 API 不可达，无法获取监控数据' : '暂无监控数据'}
+                </Text>
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  {!overview.cluster.api_ok
+                    ? '请检查集群连接状态或 kubeconfig 配置'
+                    : 'metrics.k8s.io 指标服务可能未部署或暂无数据'}
+                </Text>
+                <Button size="small" icon={<ReloadOutlined />} onClick={() => refetch()} style={{ marginTop: 4 }}>
+                  重新获取
+                </Button>
+              </div>
+            )}
           </Card>
         </Col>
       </Row>
@@ -362,56 +390,74 @@ const K8sDashboardPage: React.FC = () => {
         }
         size="small"
         style={{ marginBottom: 12 }}
-        bodyStyle={{ maxHeight: 320, overflowY: 'auto', overflowX: 'hidden', padding: '8px 12px' }}
+        bodyStyle={{ padding: 0 }}
       >
         {warningEvents.length === 0 ? (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="集群运行正常，无告警事件" style={{ margin: '40px 0' }} />
         ) : (
-          warningEvents.map((e, idx) => {
-            const isError = e.reason === 'Unhealthy' || e.reason === 'CrashLoopBackOff' || e.reason === 'Failed'
-            const borderColor = isError ? COLOR.critical : COLOR.warning
-            const bgColor = isError ? '#fff2f0' : '#fffbe6'
-            return (
-              <div
-                key={idx}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 10,
-                  padding: '8px 12px',
-                  marginBottom: 6,
-                  background: bgColor,
-                  borderLeft: `3px solid ${borderColor}`,
-                  borderRadius: 4,
-                  wordBreak: 'break-word',
-                  overflowWrap: 'break-word',
-                }}
-              >
-                {/* 左侧：等级标签 */}
-                <Tag
-                  color={isError ? 'error' : 'warning'}
-                  style={{ fontSize: 11, flexShrink: 0, margin: 0, lineHeight: '20px', height: 22 }}
-                >
-                  {e.reason}
-                </Tag>
-                {/* 中间：消息内容（自动换行） */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontSize: 13, lineHeight: '20px', wordBreak: 'break-word', display: 'block' }}>
-                    {e.message}
+          <Table
+            dataSource={warningEvents}
+            rowKey={(_, idx) => String(idx)}
+            pagination={false}
+            size="small"
+            scroll={{ y: 320 }}
+            style={{ wordBreak: 'break-word' }}
+            columns={[
+              {
+                title: '级别',
+                dataIndex: 'reason',
+                width: 140,
+                render: (reason: string) => {
+                  const isError = reason === 'Unhealthy' || reason === 'CrashLoopBackOff' || reason === 'Failed'
+                  return (
+                    <Space size={4}>
+                      <span style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: isError ? COLOR.critical : COLOR.warning,
+                        flexShrink: 0, boxShadow: `0 0 4px ${isError ? COLOR.critical : COLOR.warning}`,
+                      }} />
+                      <Tag color={isError ? 'error' : 'warning'} style={{ margin: 0, fontSize: 11, whiteSpace: 'normal', lineHeight: '18px' }}>
+                        {reason}
+                      </Tag>
+                    </Space>
+                  )
+                },
+              },
+              {
+                title: '事件详情',
+                dataIndex: 'message',
+                render: (msg: string) => (
+                  <Text style={{ fontSize: 13, wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'normal' }}>
+                    {msg}
                   </Text>
-                  {e.involvedObject && (
-                    <Text type="secondary" style={{ fontSize: 11, lineHeight: '18px', display: 'block', marginTop: 2 }}>
-                      关联资源：{e.involvedObject}
-                    </Text>
-                  )}
-                </div>
-                {/* 右侧：时间 */}
-                <Text type="secondary" style={{ fontSize: 11, flexShrink: 0, whiteSpace: 'nowrap', lineHeight: '20px' }}>
-                  {timeAgo(e.lastTimestamp)}
-                </Text>
-              </div>
-            )
-          })
+                ),
+              },
+              {
+                title: '关联资源',
+                dataIndex: 'involvedObject',
+                width: 180,
+                render: (obj: string) => (
+                  obj ? (
+                    <Tooltip title={obj}>
+                      <Text type="secondary" style={{ fontSize: 12, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {obj}
+                      </Text>
+                    </Tooltip>
+                  ) : <Text type="secondary" style={{ fontSize: 12 }}>-</Text>
+                ),
+              },
+              {
+                title: '时间',
+                dataIndex: 'lastTimestamp',
+                width: 80,
+                render: (ts: string) => (
+                  <Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+                    {timeAgo(ts)}
+                  </Text>
+                ),
+              },
+            ]}
+          />
         )}
       </Card>
 

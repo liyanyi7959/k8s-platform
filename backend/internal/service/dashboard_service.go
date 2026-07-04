@@ -602,6 +602,22 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 	return out, nil
 }
 
+// toInt32 从 any 安全转 int32，兼容 json 解析后的 float64 / int64 / json.Number
+func toInt32(v any) int32 {
+	switch n := v.(type) {
+	case int:
+		return int32(n)
+	case int64:
+		return int32(n)
+	case float64:
+		return int32(n)
+	case int32:
+		return n
+	default:
+		return 0
+	}
+}
+
 // extractTopWorkloads 从工作负载列表中提取 Top5 快照（按副本数排序）
 func (s *DashboardService) extractTopWorkloads(deployments, statefulsets, daemonsets []any) []map[string]any {
 	type wl struct {
@@ -634,14 +650,10 @@ func (s *DashboardService) extractTopWorkloads(deployments, statefulsets, daemon
 			}
 			var replicas, ready int32
 			if spec, ok := m["spec"].(map[string]any); ok {
-				if r, ok := spec["replicas"].(int64); ok {
-					replicas = int32(r)
-				}
+				replicas = toInt32(spec["replicas"])
 			}
 			if status, ok := m["status"].(map[string]any); ok {
-				if r, ok := status["readyReplicas"].(int64); ok {
-					ready = int32(r)
-				}
+				ready = toInt32(status["readyReplicas"])
 			}
 			all = append(all, wl{name: name, namespace: ns, kind: kind, replicas: replicas, ready: ready})
 		}

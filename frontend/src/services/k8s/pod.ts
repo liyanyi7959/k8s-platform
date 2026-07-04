@@ -37,8 +37,11 @@ export function getPodYaml(
 }
 
 /** 删除 Pod */
-export function deletePod(clusterId: number, namespace: string, name: string, _force?: boolean): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}`, { method: 'DELETE' })
+export function deletePod(clusterId: number, namespace: string, name: string, force?: boolean): Promise<void> {
+  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}`, {
+    method: 'DELETE',
+    params: force ? { force: true, grace_period_seconds: 0 } : undefined,
+  })
 }
 
 /** 获取 Pod 日志 */
@@ -67,6 +70,17 @@ export function getPodInspection(clusterId: number, namespace: string, name: str
   return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/inspection`, { signal }).then((res: any) => ({
     text: res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
   }))
+}
+
+/** 获取 Pod 关联事件 */
+export function getPodEvents(clusterId: number, namespace: string, name: string, signal?: AbortSignal): Promise<any[]> {
+  return request(`/api/v1/clusters/${clusterId}/events`, {
+    params: { namespace, field_selector: `involvedObject.name=${name}` },
+    signal,
+  }).then((res: any) => {
+    const list = res?.list || res?.items || (Array.isArray(res) ? res : [])
+    return list
+  })
 }
 
 /** 获取 Pod 列表（兼容拓扑图页面调用签名） */

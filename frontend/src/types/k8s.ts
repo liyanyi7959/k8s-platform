@@ -45,8 +45,29 @@ export interface Pod {
   ownerKind?: string
   qosClass?: string
   annotations?: Record<string, string>
-  containers?: Array<{ name: string; image: string; ready?: boolean; restartCount?: number; state?: string }>
+  containers?: PodContainer[]
   conditions?: Array<{ type: string; status: string; lastTransitionTime?: string }>
+  volumes?: PodVolume[]
+}
+
+export interface PodContainer {
+  name: string
+  image: string
+  ready?: boolean
+  restartCount?: number
+  state?: string
+  cpuRequest?: string
+  cpuLimit?: string
+  memoryRequest?: string
+  memoryLimit?: string
+  ports?: Array<{ containerPort: number; protocol?: string }>
+}
+
+export interface PodVolume {
+  name: string
+  type: string          // configMap / secret / emptyDir / pvc / hostPath 等
+  source?: string       // 来源名称
+  mountPaths?: Array<{ name: string; path: string; readOnly?: boolean }>
 }
 
 export interface PodListParams {
