@@ -324,6 +324,11 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            1,
             0
           ]
         },
@@ -719,7 +724,20 @@
             55,
             67,
             36,
-            73
+            73,
+            33,
+            122,
+            46,
+            49,
+            85,
+            34,
+            57,
+            66,
+            42,
+            35,
+            93,
+            35,
+            81
           ]
         },
         "register": 1
@@ -908,7 +926,12 @@
             18,
             25,
             25,
-            18
+            18,
+            20,
+            33,
+            26,
+            20,
+            24
           ]
         },
         "register": 26
@@ -949,6 +972,11 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -1277,6 +1305,11 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -1722,6 +1755,19 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -2978,7 +3024,12 @@
             1,
             1,
             1,
-            0
+            0,
+            1,
+            1,
+            1,
+            0,
+            1
           ],
           "addRuntimePlugin": [
             0,
@@ -3150,6 +3201,11 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            1,
             0
           ]
         },
@@ -3233,6 +3289,11 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -3735,6 +3796,16 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -3937,7 +4008,12 @@
             32,
             46,
             51,
-            25
+            25,
+            20,
+            33,
+            23,
+            23,
+            31
           ],
           "addPolyfillImports": [
             0,
@@ -4279,7 +4355,17 @@
             0,
             0,
             0,
-            0
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
           ]
         },
         "register": 3
@@ -4295,6 +4381,16 @@
       "time": {
         "hooks": {
           "addPolyfillImports": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -4820,6 +4916,11 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -5032,6 +5133,11 @@
             0,
             1,
             1,
+            1,
+            1,
+            1,
+            0,
+            0,
             1
           ],
           "addBeforeMiddlewares": [
@@ -5391,7 +5497,17 @@
             176,
             8,
             120,
-            9
+            9,
+            114,
+            8,
+            204,
+            12,
+            143,
+            8,
+            159,
+            8,
+            138,
+            10
           ]
         },
         "register": 7
@@ -5615,7 +5731,12 @@
             9,
             17,
             12,
-            8
+            8,
+            10,
+            15,
+            8,
+            7,
+            10
           ]
         },
         "register": 6
@@ -5869,7 +5990,12 @@
             1,
             1,
             1,
-            0
+            0,
+            1,
+            1,
+            2,
+            1,
+            1
           ]
         },
         "register": 2
@@ -6597,6 +6723,11 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -6768,6 +6899,11 @@
             1,
             1,
             1,
+            1,
+            1,
+            1,
+            2,
+            2,
             1,
             1
           ],
@@ -7151,6 +7287,16 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePlugin": [
@@ -7323,9 +7469,19 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -7667,7 +7823,12 @@
             2,
             2,
             2,
-            1
+            1,
+            1,
+            2,
+            2,
+            1,
+            2
           ],
           "addExtraBabelPlugins": [
             0
@@ -7871,9 +8032,19 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -8215,6 +8386,11 @@
             2,
             1,
             0,
+            1,
+            1,
+            2,
+            0,
+            1,
             1
           ],
           "addExtraModels": [
@@ -8367,6 +8543,11 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -8578,12 +8759,22 @@
             0,
             0,
             0,
-            0
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
           ],
           "modifyAppData": [
             1
           ],
           "addRuntimePlugin": [
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -8823,6 +9014,11 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -9097,7 +9293,12 @@
             4,
             3,
             4,
-            3
+            3,
+            4,
+            5,
+            4,
+            5,
+            4
           ]
         },
         "register": 3
@@ -9158,6 +9359,11 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -9481,7 +9687,12 @@
             75,
             103,
             81,
-            88
+            88,
+            84,
+            120,
+            89,
+            86,
+            89
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -9575,6 +9786,11 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -9899,6 +10115,11 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePlugin": [
@@ -10071,9 +10292,19 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -10415,6 +10646,11 @@
             3,
             2,
             2,
+            2,
+            1,
+            3,
+            2,
+            1,
             2
           ]
         },
@@ -10432,6 +10668,11 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -10770,6 +11011,11 @@
             1,
             2,
             1,
+            2,
+            2,
+            2,
+            2,
+            2,
             2,
             2,
             2,
@@ -14314,7 +14560,7 @@
       "parentId": "83",
       "id": "109",
       "absPath": "/k8s/:clusterId/storage-classes",
-      "__content": "import React, { useState } from 'react'\r\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\r\nimport { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Typography, Input, Button, Table } from 'antd'\r\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'\r\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\r\nimport { listStorageClasses, deleteStorageClass } from '@/services/k8s'\r\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\r\nimport { AppPage } from '@/components'\r\nimport { useClusterId } from '@/hooks/useClusterId'\r\nimport { formatDate } from '@/utils'\r\nimport type { StorageClass } from '@/types'\r\n\r\nconst { Text } = Typography\r\n\r\nconst StorageClassesPage: React.FC = () => {\r\n  const clusterId = useClusterId()\r\n  const queryClient = useQueryClient()\r\n  const [keyword, setKeyword] = useState('')\r\n  const [detailSC, setDetailSC] = useState<StorageClass | null>(null)\r\n  const yamlDrawer = useYamlDrawer()\r\n\r\n  const { data, isLoading, refetch } = useQuery({\r\n    queryKey: ['k8s-storageclasses', clusterId],\r\n    queryFn: ({ signal }) => listStorageClasses(clusterId, signal),\r\n    enabled: !!clusterId,\r\n    refetchInterval: detailSC ? false : 30_000,\r\n  })\r\n\r\n  const deleteMutation = useMutation({\r\n    mutationFn: (name: string) => deleteStorageClass(clusterId, name),\r\n    onSuccess: () => {\r\n      message.success('StorageClass 已删除')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-storageclasses', clusterId] })\r\n    },\r\n  })\r\n\r\n  const filteredData = (data?.items || []).filter((item) =>\r\n    item.name.toLowerCase().includes(keyword.toLowerCase())\r\n  )\r\n\r\n  const columns: ProColumns<StorageClass>[] = [\r\n    { title: '名称', dataIndex: 'name', width: 160, ellipsis: true, copyable: true, render: (_, r) => <Text strong>{r.name}</Text> },\r\n    { title: 'Provisioner', dataIndex: 'provisioner', width: 200, ellipsis: true, search: false },\r\n    { title: '回收策略', dataIndex: 'reclaimPolicy', width: 120, search: false, align: 'center' as const },\r\n    {\r\n      title: '绑定模式',\r\n      dataIndex: 'volumeBindingMode',\r\n      width: 140,\r\n      align: 'center' as const,\r\n      search: false,\r\n      render: (_, record) => <Tag>{record.volumeBindingMode}</Tag>,\r\n    },\r\n    {\r\n      title: '默认',\r\n      width: 80,\r\n      search: false,\r\n      align: 'center' as const,\r\n      render: (_, record) => (record.isDefault ? <Tag color=\"blue\">是</Tag> : '-'),\r\n    },\r\n    {\r\n      title: 'Age',\r\n      dataIndex: 'createdAt',\r\n      width: 110,\r\n      align: 'center' as const,\r\n      search: false,\r\n      ellipsis: true,\r\n      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),\r\n      render: (_, r) => r.createdAt ? formatDate(r.createdAt) : '-',\r\n    },\r\n    {\r\n      title: '操作',\r\n      valueType: 'option',\r\n      width: 140,\r\n      fixed: 'right',\r\n      render: (_, record) => (\r\n        <Space\r\n          size=\"small\"\r\n          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}\r\n        >\r\n          <Tooltip title=\"详情\">\r\n            <a onClick={() => setDetailSC(record)}>\r\n              <EyeOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"查看 YAML\">\r\n            <a onClick={() => yamlDrawer.openYaml(record.name)}>\r\n              <ProfileOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Popconfirm\r\n            title=\"确定删除该 StorageClass？\"\r\n            onConfirm={() => deleteMutation.mutate(record.name)}\r\n          >\r\n            <Tooltip title=\"删除\">\r\n              <a style={{ color: '#ff4d4f' }}>\r\n                <DeleteOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n        </Space>\r\n      ),\r\n    },\r\n  ]\r\n\r\n  return (\r\n    <AppPage>\r\n      <ProTable<StorageClass>\r\n        columns={columns}\r\n        dataSource={filteredData}\r\n        loading={isLoading}\r\n        rowKey=\"name\"\r\n        search={false}\r\n        options={{ reload: false }}\r\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\r\n        scroll={{ x: 1000 }}\r\n        headerTitle={<Text strong>StorageClass 列表</Text>}\r\n        toolBarRender={() => [\r\n          <Input.Search\r\n            key=\"search\"\r\n            placeholder=\"按名称搜索\"\r\n            allowClear\r\n            value={keyword}\r\n            onChange={(e) => setKeyword(e.target.value)}\r\n            style={{ width: 180 }}\r\n            prefix={<SearchOutlined />}\r\n          />,\r\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\r\n        ]}\r\n      />\r\n\r\n      {/* 详情抽屉 */}\r\n      <Drawer\r\n        title={`StorageClass 详情 - ${detailSC?.name}`}\r\n        open={!!detailSC}\r\n        onClose={() => setDetailSC(null)}\r\n        width={720}\r\n        destroyOnClose\r\n      >\r\n        {detailSC && (\r\n          <Space direction=\"vertical\" style={{ width: '100%' }} size=\"middle\">\r\n            <Descriptions bordered column={2} size=\"small\">\r\n              <Descriptions.Item label=\"名称\">{detailSC.name}</Descriptions.Item>\r\n              <Descriptions.Item label=\"Provisioner\">{detailSC.provisioner}</Descriptions.Item>\r\n              <Descriptions.Item label=\"回收策略\">\r\n                <Tag color=\"blue\">{detailSC.reclaimPolicy}</Tag>\r\n              </Descriptions.Item>\r\n              <Descriptions.Item label=\"绑定模式\">\r\n                <Tag>{detailSC.volumeBindingMode}</Tag>\r\n              </Descriptions.Item>\r\n              <Descriptions.Item label=\"允许扩容\">\r\n                {detailSC.allowVolumeExpansion ? <Tag color=\"green\">是</Tag> : <Tag>否</Tag>}\r\n              </Descriptions.Item>\r\n              <Descriptions.Item label=\"默认\">\r\n                {detailSC.isDefault ? <Tag color=\"blue\">是</Tag> : '否'}\r\n              </Descriptions.Item>\r\n              <Descriptions.Item label=\"创建时间\" span={2}>\r\n                {formatDate(detailSC.createdAt)}\r\n              </Descriptions.Item>\r\n            </Descriptions>\r\n\r\n            <Table\r\n              size=\"small\"\r\n              title={() => `参数 (${Object.keys(detailSC.parameters || {}).length})`}\r\n              rowKey={(r) => r.key}\r\n              pagination={false}\r\n              dataSource={Object.entries(detailSC.parameters || {}).map(([k, v]) => ({ key: k, value: v }))}\r\n              columns={[\r\n                { title: '键', dataIndex: 'key', width: 200, ellipsis: true },\r\n                { title: '值', dataIndex: 'value', ellipsis: true },\r\n              ]}\r\n            />\r\n          </Space>\r\n        )}\r\n      </Drawer>\r\n\r\n      <YamlDrawer\r\n        clusterId={clusterId}\r\n        resourceType=\"storageclasses\"\r\n        name={yamlDrawer.name}\r\n        open={yamlDrawer.open}\r\n        onClose={yamlDrawer.closeYaml}\r\n      />\r\n    </AppPage>\r\n  )\r\n}\r\n\r\nexport default StorageClassesPage\r\n",
+      "__content": "import React, { useState } from 'react'\r\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\r\nimport { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Typography, Input, Button, Table } from 'antd'\r\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'\r\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\r\nimport { listStorageClasses, deleteStorageClass } from '@/services/k8s'\r\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\r\nimport { AppPage } from '@/components'\r\nimport { useClusterId } from '@/hooks/useClusterId'\r\nimport { formatDate } from '@/utils'\r\nimport type { StorageClass } from '@/types'\r\n\r\nconst { Text } = Typography\r\n\r\nconst StorageClassesPage: React.FC = () => {\r\n  const clusterId = useClusterId()\r\n  const queryClient = useQueryClient()\r\n  const [keyword, setKeyword] = useState('')\r\n  const [detailSC, setDetailSC] = useState<StorageClass | null>(null)\r\n  const yamlDrawer = useYamlDrawer()\r\n\r\n  const { data, isLoading, refetch } = useQuery({\r\n    queryKey: ['k8s-storageclasses', clusterId],\r\n    queryFn: ({ signal }) => listStorageClasses(clusterId, signal),\r\n    enabled: !!clusterId,\r\n    refetchInterval: detailSC ? false : 30_000,\r\n  })\r\n\r\n  const deleteMutation = useMutation({\r\n    mutationFn: (name: string) => deleteStorageClass(clusterId, name),\r\n    onSuccess: () => {\r\n      message.success('StorageClass 已删除')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-storageclasses', clusterId] })\r\n    },\r\n  })\r\n\r\n  const filteredData = (data?.items || []).filter((item) =>\r\n    item.name.toLowerCase().includes(keyword.toLowerCase())\r\n  )\r\n\r\n  const columns: ProColumns<StorageClass>[] = [\r\n    { title: '名称', dataIndex: 'name', width: 160, ellipsis: true, copyable: true, render: (_, r) => <Text strong>{r.name}</Text> },\r\n    { title: 'Provisioner', dataIndex: 'provisioner', width: 200, ellipsis: true, search: false },\r\n    { title: '回收策略', dataIndex: 'reclaimPolicy', width: 120, search: false, align: 'center' as const },\r\n    {\r\n      title: '绑定模式',\r\n      dataIndex: 'volumeBindingMode',\r\n      width: 140,\r\n      align: 'center' as const,\r\n      search: false,\r\n      render: (_, record) => <Tag>{record.volumeBindingMode}</Tag>,\r\n    },\r\n    {\r\n      title: '默认',\r\n      width: 80,\r\n      search: false,\r\n      align: 'center' as const,\r\n      render: (_, record) => (record.isDefault ? <Tag color=\"blue\">是</Tag> : '-'),\r\n    },\r\n    {\r\n      title: 'Age',\r\n      dataIndex: 'createdAt',\r\n      width: 110,\r\n      align: 'center' as const,\r\n      search: false,\r\n      ellipsis: true,\r\n      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),\r\n      render: (_, r) => r.createdAt ? formatDate(r.createdAt) : '-',\r\n    },\r\n    {\r\n      title: '操作',\r\n      valueType: 'option',\r\n      width: 140,\r\n      fixed: 'right',\r\n      align: 'center' as const,\r\n      render: (_, record) => (\r\n        <Space\r\n          size=\"small\"\r\n          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}\r\n        >\r\n          <Tooltip title=\"详情\">\r\n            <a onClick={() => setDetailSC(record)}>\r\n              <EyeOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"查看 YAML\">\r\n            <a onClick={() => yamlDrawer.openYaml(record.name)}>\r\n              <ProfileOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Popconfirm\r\n            title=\"确定删除该 StorageClass？\"\r\n            onConfirm={() => deleteMutation.mutate(record.name)}\r\n          >\r\n            <Tooltip title=\"删除\">\r\n              <a style={{ color: '#ff4d4f' }}>\r\n                <DeleteOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n        </Space>\r\n      ),\r\n    },\r\n  ]\r\n\r\n  return (\r\n    <AppPage>\r\n      <ProTable<StorageClass>\r\n        columns={columns}\r\n        dataSource={filteredData}\r\n        loading={isLoading}\r\n        rowKey=\"name\"\r\n        search={false}\r\n        options={{ reload: false }}\r\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\r\n        scroll={{ x: 1000 }}\r\n        headerTitle={<Text strong>StorageClass 列表</Text>}\r\n        toolBarRender={() => [\r\n          <Input.Search\r\n            key=\"search\"\r\n            placeholder=\"按名称搜索\"\r\n            allowClear\r\n            value={keyword}\r\n            onChange={(e) => setKeyword(e.target.value)}\r\n            style={{ width: 180 }}\r\n            prefix={<SearchOutlined />}\r\n          />,\r\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\r\n        ]}\r\n      />\r\n\r\n      {/* 详情抽屉 */}\r\n      <Drawer\r\n        title={`StorageClass 详情 - ${detailSC?.name}`}\r\n        open={!!detailSC}\r\n        onClose={() => setDetailSC(null)}\r\n        width={720}\r\n        destroyOnClose\r\n      >\r\n        {detailSC && (\r\n          <Space direction=\"vertical\" style={{ width: '100%' }} size=\"middle\">\r\n            <Descriptions bordered column={2} size=\"small\">\r\n              <Descriptions.Item label=\"名称\">{detailSC.name}</Descriptions.Item>\r\n              <Descriptions.Item label=\"Provisioner\">{detailSC.provisioner}</Descriptions.Item>\r\n              <Descriptions.Item label=\"回收策略\">\r\n                <Tag color=\"blue\">{detailSC.reclaimPolicy}</Tag>\r\n              </Descriptions.Item>\r\n              <Descriptions.Item label=\"绑定模式\">\r\n                <Tag>{detailSC.volumeBindingMode}</Tag>\r\n              </Descriptions.Item>\r\n              <Descriptions.Item label=\"允许扩容\">\r\n                {detailSC.allowVolumeExpansion ? <Tag color=\"green\">是</Tag> : <Tag>否</Tag>}\r\n              </Descriptions.Item>\r\n              <Descriptions.Item label=\"默认\">\r\n                {detailSC.isDefault ? <Tag color=\"blue\">是</Tag> : '否'}\r\n              </Descriptions.Item>\r\n              <Descriptions.Item label=\"创建时间\" span={2}>\r\n                {formatDate(detailSC.createdAt)}\r\n              </Descriptions.Item>\r\n            </Descriptions>\r\n\r\n            <Table\r\n              size=\"small\"\r\n              title={() => `参数 (${Object.keys(detailSC.parameters || {}).length})`}\r\n              rowKey={(r) => r.key}\r\n              pagination={false}\r\n              dataSource={Object.entries(detailSC.parameters || {}).map(([k, v]) => ({ key: k, value: v }))}\r\n              columns={[\r\n                { title: '键', dataIndex: 'key', width: 200, ellipsis: true },\r\n                { title: '值', dataIndex: 'value', ellipsis: true },\r\n              ]}\r\n            />\r\n          </Space>\r\n        )}\r\n      </Drawer>\r\n\r\n      <YamlDrawer\r\n        clusterId={clusterId}\r\n        resourceType=\"storageclasses\"\r\n        name={yamlDrawer.name}\r\n        open={yamlDrawer.open}\r\n        onClose={yamlDrawer.closeYaml}\r\n      />\r\n    </AppPage>\r\n  )\r\n}\r\n\r\nexport default StorageClassesPage\r\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/storage-classes.tsx"
     },
@@ -14325,7 +14571,7 @@
       "parentId": "83",
       "id": "110",
       "absPath": "/k8s/:clusterId/csi-drivers",
-      "__content": "import GenericResourceList, { rawColumn } from '@/components/GenericResourceList'\n\nexport default function CSIDriversPage() {\n  return (\n    <GenericResourceList\n      resource=\"csidrivers\"\n      title=\"CSIDrivers\"\n      creatable={false}\n      extraColumns={[\n        rawColumn('CSI Driver', 'spec.csiDriverName', { width: 200 }),\n        rawColumn('拓扑', 'spec.requiresRepublish', {\n          width: 80,\n          render: (val) => (val ? '是' : '-'),\n        }),\n      ]}\n    />\n  )\n}\n",
+      "__content": "import GenericResourceList, { rawColumn, rawField } from '@/components/GenericResourceList'\nimport type { GenericResourceItem } from '@/services/k8s'\nimport { Descriptions, Tag, Space } from 'antd'\nimport { formatDate } from '@/utils'\n\nconst renderDetail = (record: GenericResourceItem) => {\n  const spec = (rawField(record, 'spec') as any) || {}\n  return (\n    <Space direction=\"vertical\" style={{ width: '100%' }} size=\"middle\">\n      <Descriptions bordered column={2} size=\"small\">\n        <Descriptions.Item label=\"名称\">{record.name}</Descriptions.Item>\n        <Descriptions.Item label=\"CSI Driver\"><Tag color=\"blue\">{spec.csiDriverName || '-'}</Tag></Descriptions.Item>\n        <Descriptions.Item label=\"拓扑要求\">{spec.requiresRepublish ? '是' : '否'}</Descriptions.Item>\n        <Descriptions.Item label=\"存储容量\">{spec.attachRequired ? '需要' : '不需要'}</Descriptions.Item>\n        {record.createdAt && <Descriptions.Item label=\"创建时间\" span={2}>{formatDate(record.createdAt)}</Descriptions.Item>}\n      </Descriptions>\n    </Space>\n  )\n}\n\nexport default function CSIDriversPage() {\n  return (\n    <GenericResourceList\n      resource=\"csidrivers\"\n      title=\"CSIDrivers\"\n      creatable={false}\n      deletable={false}\n      renderDetail={renderDetail}\n      extraColumns={[\n        rawColumn('CSI Driver', 'spec.csiDriverName', { width: 200 }),\n        rawColumn('拓扑', 'spec.requiresRepublish', {\n          width: 80,\n          align: 'center',\n          render: (val) => (val ? '是' : '-'),\n        }),\n      ]}\n    />\n  )\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/csidrivers.tsx"
     },
@@ -14336,7 +14582,7 @@
       "parentId": "83",
       "id": "111",
       "absPath": "/k8s/:clusterId/csi-nodes",
-      "__content": "import GenericResourceList, { rawColumn } from '@/components/GenericResourceList'\n\nexport default function CSINodesPage() {\n  return (\n    <GenericResourceList\n      resource=\"csinodes\"\n      title=\"CSINodes\"\n      creatable={false}\n      extraColumns={[\n        rawColumn('Node', 'spec.nodeID', { width: 200 }),\n        rawColumn('Drivers', 'spec.drivers', {\n          width: 100,\n          render: (val) => {\n            const drivers = val as Array<unknown>\n            return drivers?.length || 0\n          },\n        }),\n      ]}\n    />\n  )\n}\n",
+      "__content": "import GenericResourceList, { rawColumn, rawField } from '@/components/GenericResourceList'\nimport type { GenericResourceItem } from '@/services/k8s'\nimport { Descriptions, Tag, Space, Table } from 'antd'\n\nconst renderDetail = (record: GenericResourceItem) => {\n  const spec = (rawField(record, 'spec') as any) || {}\n  const drivers = (spec.drivers || []) as any[]\n  const driverData = drivers.map((d, i) => ({\n    key: i,\n    name: d.name || '-',\n    nodeID: d.nodeID || '-',\n    allocatable: d.allocatable ? Object.entries(d.allocatable).map(([k, v]) => `${k}=${v}`).join(', ') : '-',\n    capacity: d.capacity ? Object.entries(d.capacity).map(([k, v]) => `${k}=${v}`).join(', ') : '-',\n  }))\n  return (\n    <Space direction=\"vertical\" style={{ width: '100%' }} size=\"middle\">\n      <Descriptions bordered column={2} size=\"small\">\n        <Descriptions.Item label=\"名称\">{record.name}</Descriptions.Item>\n        <Descriptions.Item label=\"驱动数\">{drivers.length}</Descriptions.Item>\n      </Descriptions>\n      <Table size=\"small\" title={() => `CSI 驱动 (${driverData.length})`} rowKey=\"key\" pagination={false}\n        dataSource={driverData}\n        columns={[\n          { title: '驱动名称', dataIndex: 'name', ellipsis: true },\n          { title: 'Node ID', dataIndex: 'nodeID', ellipsis: true },\n          { title: '可分配', dataIndex: 'allocatable', ellipsis: true },\n          { title: '容量', dataIndex: 'capacity', ellipsis: true },\n        ]}\n      />\n    </Space>\n  )\n}\n\nexport default function CSINodesPage() {\n  return (\n    <GenericResourceList\n      resource=\"csinodes\"\n      title=\"CSINodes\"\n      creatable={false}\n      deletable={false}\n      renderDetail={renderDetail}\n      extraColumns={[\n        rawColumn('Node', 'spec.nodeID', { width: 200 }),\n        rawColumn('Drivers', 'spec.drivers', {\n          width: 100,\n          align: 'center',\n          render: (val) => {\n            const drivers = val as Array<unknown>\n            return drivers?.length || 0\n          },\n        }),\n      ]}\n    />\n  )\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/csinodes.tsx"
     },
@@ -14347,7 +14593,7 @@
       "parentId": "83",
       "id": "112",
       "absPath": "/k8s/:clusterId/csi-storage-capacities",
-      "__content": "import GenericResourceList, { rawColumn } from '@/components/GenericResourceList'\n\nexport default function CSIStorageCapacitiesPage() {\n  return (\n    <GenericResourceList\n      resource=\"csistoragecapacities\"\n      title=\"CSIStorageCapacities\"\n      namespaced\n      creatable={false}\n      deletable={false}\n      extraColumns={[\n        rawColumn('StorageClass', 'storageClassName', { width: 180 }),\n        rawColumn('容量', 'capacity.storage', { width: 120 }),\n      ]}\n    />\n  )\n}\n",
+      "__content": "import GenericResourceList, { rawColumn, rawField } from '@/components/GenericResourceList'\nimport type { GenericResourceItem } from '@/services/k8s'\nimport { Descriptions, Tag, Space } from 'antd'\nimport { formatDate } from '@/utils'\n\nconst renderDetail = (record: GenericResourceItem) => {\n  const sc = rawField(record, 'storageClassName') as string\n  const capacity = (rawField(record, 'capacity') as any) || {}\n  return (\n    <Space direction=\"vertical\" style={{ width: '100%' }} size=\"middle\">\n      <Descriptions bordered column={2} size=\"small\">\n        <Descriptions.Item label=\"名称\">{record.name}</Descriptions.Item>\n        <Descriptions.Item label=\"Namespace\"><Tag>{record.namespace}</Tag></Descriptions.Item>\n        <Descriptions.Item label=\"StorageClass\"><Tag color=\"blue\">{sc || '-'}</Tag></Descriptions.Item>\n        <Descriptions.Item label=\"容量\">{capacity.storage || '-'}</Descriptions.Item>\n        {record.createdAt && <Descriptions.Item label=\"创建时间\" span={2}>{formatDate(record.createdAt)}</Descriptions.Item>}\n      </Descriptions>\n    </Space>\n  )\n}\n\nexport default function CSIStorageCapacitiesPage() {\n  return (\n    <GenericResourceList\n      resource=\"csistoragecapacities\"\n      title=\"CSIStorageCapacities\"\n      namespaced\n      creatable={false}\n      deletable={false}\n      renderDetail={renderDetail}\n      extraColumns={[\n        rawColumn('StorageClass', 'storageClassName', { width: 180 }),\n        rawColumn('容量', 'capacity.storage', { width: 120, align: 'center' }),\n      ]}\n    />\n  )\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/csistoragecapacities.tsx"
     },
@@ -14358,7 +14604,7 @@
       "parentId": "83",
       "id": "113",
       "absPath": "/k8s/:clusterId/volume-attachments",
-      "__content": "import GenericResourceList, { rawColumn } from '@/components/GenericResourceList'\nimport { Tag } from 'antd'\n\nexport default function VolumeAttachmentsPage() {\n  return (\n    <GenericResourceList\n      resource=\"volumeattachments\"\n      title=\"VolumeAttachments\"\n      creatable={false}\n      extraColumns={[\n        rawColumn('PV', 'spec.source.persistentVolumeName', { width: 200 }),\n        rawColumn('Node', 'spec.nodeName', { width: 150 }),\n        rawColumn('已挂载', 'status.attached', {\n          width: 80,\n          render: (val) => <Tag color={val ? 'green' : 'default'}>{val ? '是' : '否'}</Tag>,\n        }),\n      ]}\n    />\n  )\n}\n",
+      "__content": "import GenericResourceList, { rawColumn, rawField } from '@/components/GenericResourceList'\nimport type { GenericResourceItem } from '@/services/k8s'\nimport { Descriptions, Tag, Space } from 'antd'\nimport { formatDate } from '@/utils'\n\nconst renderDetail = (record: GenericResourceItem) => {\n  const spec = (rawField(record, 'spec') as any) || {}\n  const status = (rawField(record, 'status') as any) || {}\n  return (\n    <Space direction=\"vertical\" style={{ width: '100%' }} size=\"middle\">\n      <Descriptions bordered column={2} size=\"small\">\n        <Descriptions.Item label=\"名称\">{record.name}</Descriptions.Item>\n        <Descriptions.Item label=\"PV\"><Tag color=\"blue\">{spec.source?.persistentVolumeName || '-'}</Tag></Descriptions.Item>\n        <Descriptions.Item label=\"Node\">{spec.nodeName || '-'}</Descriptions.Item>\n        <Descriptions.Item label=\"已挂载\">\n          <Tag color={status.attached ? 'green' : 'red'}>{status.attached ? '是' : '否'}</Tag>\n        </Descriptions.Item>\n        {status.attachError && (\n          <Descriptions.Item label=\"挂载错误\" span={2}>\n            <Tag color=\"red\">{typeof status.attachError.message === 'string' ? status.attachError.message : JSON.stringify(status.attachError)}</Tag>\n          </Descriptions.Item>\n        )}\n        {record.createdAt && <Descriptions.Item label=\"创建时间\" span={2}>{formatDate(record.createdAt)}</Descriptions.Item>}\n      </Descriptions>\n    </Space>\n  )\n}\n\nexport default function VolumeAttachmentsPage() {\n  return (\n    <GenericResourceList\n      resource=\"volumeattachments\"\n      title=\"VolumeAttachments\"\n      creatable={false}\n      deletable={false}\n      renderDetail={renderDetail}\n      extraColumns={[\n        rawColumn('PV', 'spec.source.persistentVolumeName', { width: 200 }),\n        rawColumn('Node', 'spec.nodeName', { width: 150 }),\n        rawColumn('已挂载', 'status.attached', {\n          width: 80,\n          align: 'center',\n          render: (val) => <Tag color={val ? 'green' : 'default'}>{val ? '是' : '否'}</Tag>,\n        }),\n      ]}\n    />\n  )\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/volumeattachments.tsx"
     },
@@ -14369,7 +14615,7 @@
       "parentId": "83",
       "id": "114",
       "absPath": "/k8s/:clusterId/resource-quotas",
-      "__content": "import React, { useState } from 'react'\r\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\r\nimport { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Button, Input, Typography } from 'antd'\r\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'\r\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\r\nimport { listResourceQuotas, deleteResourceQuota } from '@/services/k8s'\r\nimport { AppPage, NamespaceSelector, EllipsisText } from '@/components'\r\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\r\nimport { useClusterId } from '@/hooks/useClusterId'\r\nimport { formatDate } from '@/utils'\r\nimport type { ResourceQuota } from '@/types'\r\n\r\nconst ResourceQuotasPage: React.FC = () => {\r\n  const clusterId = useClusterId()\r\n  const queryClient = useQueryClient()\r\n  const [namespace, setNamespace] = useState<string>('')\r\n  const [detailQuota, setDetailQuota] = useState<ResourceQuota | null>(null)\r\n  const yamlDrawer = useYamlDrawer()\r\n\r\n  const { data, isLoading } = useQuery({\r\n    queryKey: ['k8s-resourcequotas', clusterId, namespace],\r\n    queryFn: () => listResourceQuotas(clusterId, namespace),\r\n    enabled: !!clusterId,\r\n  })\r\n\r\n  const deleteMutation = useMutation({\r\n    mutationFn: (record: ResourceQuota) =>\r\n      deleteResourceQuota(clusterId, record.namespace || namespace, record.name),\r\n    onSuccess: () => {\r\n      message.success('ResourceQuota 已删除')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-resourcequotas', clusterId] })\r\n    },\r\n  })\r\n\r\n  const columns: ProColumns<ResourceQuota>[] = [\r\n    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },\r\n    {\r\n      title: 'Namespace',\r\n      dataIndex: 'namespace',\r\n      width: 140,\r\n      ellipsis: true,\r\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\r\n    },\r\n    {\r\n      title: '硬限制',\r\n      dataIndex: 'hard',\r\n      width: 250,\r\n      search: false,\r\n      ellipsis: true,\r\n      render: (_, record) => {\r\n        const hard = record.hard || {}\r\n        return Object.entries(hard).map(([k, v]) => (\r\n          <Tag key={k} color=\"blue\" style={{ marginBottom: 2 }}>\r\n            {k}: {v}\r\n          </Tag>\r\n        ))\r\n      },\r\n    },\r\n    {\r\n      title: '已使用',\r\n      dataIndex: 'used',\r\n      width: 250,\r\n      search: false,\r\n      ellipsis: true,\r\n      render: (_, record) => {\r\n        const used = record.used || {}\r\n        return Object.entries(used).map(([k, v]) => (\r\n          <Tag key={k} color=\"orange\" style={{ marginBottom: 2 }}>\r\n            {k}: {v}\r\n          </Tag>\r\n        ))\r\n      },\r\n    },\r\n    {\r\n      title: '创建时间',\r\n      dataIndex: 'createdAt',\r\n      width: 180,\r\n      search: false,\r\n      render: (_, record) => formatDate(record.createdAt),\r\n    },\r\n    {\r\n      title: '操作',\r\n      valueType: 'option',\r\n      width: 140,\r\n      fixed: 'right',\r\n      render: (_, record) => (\r\n        <Space\r\n          size=\"small\"\r\n          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}\r\n        >\r\n          <Tooltip title=\"详情\">\r\n            <a onClick={() => setDetailQuota(record)}>\r\n              <EyeOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"查看 YAML\">\r\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\r\n              <ProfileOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Popconfirm\r\n            title=\"确定删除该 ResourceQuota？\"\r\n            onConfirm={() => deleteMutation.mutate(record)}\r\n          >\r\n            <Tooltip title=\"删除\">\r\n              <a style={{ color: '#ff4d4f' }}>\r\n                <DeleteOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n        </Space>\r\n      ),\r\n    },\r\n  ]\r\n\r\n  return (\r\n    <AppPage>\r\n      <ProTable<ResourceQuota>\r\n        columns={columns}\r\n        dataSource={filteredData}\r\n        loading={isLoading}\r\n        rowKey={(r) => `${r.namespace}/${r.name}`}\r\n        search={false}\r\n        options={{ reload: false }}\r\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\r\n        scroll={{ x: 900 }}\r\n        headerTitle={<Text strong>ResourceQuota 列表</Text>}\r\n        toolBarRender={() => [\r\n          <Input.Search\r\n            key=\"search\"\r\n            placeholder=\"按名称搜索\"\r\n            allowClear\r\n            value={keyword}\r\n            onChange={(e) => setKeyword(e.target.value)}\r\n            style={{ width: 180 }}\r\n            prefix={<SearchOutlined />}\r\n          />,\r\n          <NamespaceSelector\r\n            key=\"ns\"\r\n            clusterId={clusterId}\r\n            value={namespace}\r\n            onChange={setNamespace}\r\n            style={{ width: 180 }}\r\n          />,\r\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\r\n        ]}\r\n      />\r\n      <YamlDrawer\r\n        clusterId={clusterId}\r\n        resourceType=\"resourcequotas\"\r\n        namespace={yamlDrawer.namespace}\r\n        name={yamlDrawer.name}\r\n        open={yamlDrawer.open}\r\n        onClose={yamlDrawer.closeYaml}\r\n      />\r\n      <Drawer\r\n        title=\"资源配额详情\"\r\n        open={!!detailQuota}\r\n        onClose={() => setDetailQuota(null)}\r\n        width={600}\r\n      >\r\n        {detailQuota && (\r\n          <Descriptions column={1} bordered size=\"small\">\r\n            <Descriptions.Item label=\"名称\">{detailQuota.name}</Descriptions.Item>\r\n            <Descriptions.Item label=\"Namespace\">\r\n              {detailQuota.namespace || namespace}\r\n            </Descriptions.Item>\r\n            <Descriptions.Item label=\"硬限制\">\r\n              {Object.entries(detailQuota.hard || {}).map(([k, v]) => (\r\n                <Tag key={k} color=\"blue\" style={{ marginBottom: 2 }}>\r\n                  {k}: {v}\r\n                </Tag>\r\n              ))}\r\n            </Descriptions.Item>\r\n            <Descriptions.Item label=\"已使用\">\r\n              {Object.entries(detailQuota.used || {}).map(([k, v]) => (\r\n                <Tag key={k} color=\"orange\" style={{ marginBottom: 2 }}>\r\n                  {k}: {v}\r\n                </Tag>\r\n              ))}\r\n            </Descriptions.Item>\r\n            <Descriptions.Item label=\"创建时间\">\r\n              {formatDate(detailQuota.createdAt)}\r\n            </Descriptions.Item>\r\n          </Descriptions>\r\n        )}\r\n      </Drawer>\r\n    </AppPage>\r\n  )\r\n}\r\n\r\nexport default ResourceQuotasPage\r\n",
+      "__content": "import React, { useState } from 'react'\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Button, Input, Typography, Tabs, Table } from 'antd'\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { listResourceQuotas, deleteResourceQuota } from '@/services/k8s'\nimport { AppPage, NamespaceSelector, EllipsisText } from '@/components'\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport type { ResourceQuota } from '@/types'\n\nconst { Text } = Typography\n\nconst ResourceQuotasPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [keyword, setKeyword] = useState('')\n  const [detailQuota, setDetailQuota] = useState<ResourceQuota | null>(null)\n  const yamlDrawer = useYamlDrawer()\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-resourcequotas', clusterId, namespace],\n    queryFn: ({ signal }) => listResourceQuotas(clusterId, namespace, signal),\n    enabled: !!clusterId,\n    refetchInterval: detailQuota ? false : 30_000,\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (record: ResourceQuota) =>\n      deleteResourceQuota(clusterId, record.namespace || namespace, record.name),\n    onSuccess: () => {\n      message.success('ResourceQuota 已删除')\n      queryClient.invalidateQueries({ queryKey: ['k8s-resourcequotas', clusterId] })\n    },\n  })\n\n  const filteredData = (data?.items || []).filter((item) => {\n    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())\n  })\n\n  const columns: ProColumns<ResourceQuota>[] = [\n    {\n      title: '名称',\n      dataIndex: 'name',\n      width: 160,\n      ellipsis: true,\n      copyable: true,\n      render: (_, record) => <Text strong>{record.name}</Text>,\n    },\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 140,\n      ellipsis: true,\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\n    },\n    {\n      title: '硬限制',\n      dataIndex: 'hard',\n      width: 250,\n      search: false,\n      ellipsis: true,\n      render: (_, record) => {\n        const text =\n          Object.entries(record.hard || {})\n            .map(([k, v]) => `${k}: ${v}`)\n            .join(', ') || '-'\n        return <Tooltip title={text}>{text}</Tooltip>\n      },\n    },\n    {\n      title: '已使用',\n      dataIndex: 'used',\n      width: 250,\n      search: false,\n      ellipsis: true,\n      render: (_, record) => {\n        const text =\n          Object.entries(record.used || {})\n            .map(([k, v]) => `${k}: ${v}`)\n            .join(', ') || '-'\n        return <Tooltip title={text}>{text}</Tooltip>\n      },\n    },\n    {\n      title: 'Age',\n      dataIndex: 'createdAt',\n      width: 110,\n      align: 'center' as const,\n      ellipsis: true,\n      search: false,\n      render: (_, record) => formatDate(record.createdAt),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 140,\n      align: 'center' as const,\n      fixed: 'right',\n      render: (_, record) => (\n        <Space\n          size=\"small\"\n          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}\n        >\n          <Tooltip title=\"详情\">\n            <a onClick={() => setDetailQuota(record)}>\n              <EyeOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm\n            title=\"确定删除该 ResourceQuota？\"\n            onConfirm={() => deleteMutation.mutate(record)}\n          >\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <AppPage>\n      <ProTable<ResourceQuota>\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        options={{ reload: false }}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n        scroll={{ x: 900 }}\n        headerTitle={<Text strong>ResourceQuota 列表</Text>}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            placeholder=\"按名称搜索\"\n            allowClear\n            value={keyword}\n            onChange={(e) => setKeyword(e.target.value)}\n            style={{ width: 180 }}\n            prefix={<SearchOutlined />}\n          />,\n          <NamespaceSelector\n            key=\"ns\"\n            clusterId={clusterId}\n            value={namespace}\n            onChange={setNamespace}\n            style={{ width: 180 }}\n          />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\n        ]}\n      />\n      <YamlDrawer\n        clusterId={clusterId}\n        resourceType=\"resourcequotas\"\n        namespace={yamlDrawer.namespace}\n        name={yamlDrawer.name}\n        open={yamlDrawer.open}\n        onClose={yamlDrawer.closeYaml}\n      />\n      <Drawer\n        title=\"资源配额详情\"\n        open={!!detailQuota}\n        onClose={() => setDetailQuota(null)}\n        width={700}\n        destroyOnClose\n      >\n        {detailQuota && (\n          <Tabs\n            items={[\n              {\n                key: 'overview',\n                label: '概览',\n                children: (\n                  <Descriptions column={2} bordered size=\"small\">\n                    <Descriptions.Item label=\"名称\">{detailQuota.name}</Descriptions.Item>\n                    <Descriptions.Item label=\"Namespace\">\n                      {detailQuota.namespace || namespace}\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"硬限制\">\n                      {Object.entries(detailQuota.hard || {}).map(([k, v]) => (\n                        <Tag key={k} color=\"blue\" style={{ marginBottom: 2 }}>\n                          {k}: {v}\n                        </Tag>\n                      ))}\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"已使用\">\n                      {Object.entries(detailQuota.used || {}).map(([k, v]) => (\n                        <Tag key={k} color=\"orange\" style={{ marginBottom: 2 }}>\n                          {k}: {v}\n                        </Tag>\n                      ))}\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"创建时间\" span={2}>\n                      {formatDate(detailQuota.createdAt)}\n                    </Descriptions.Item>\n                  </Descriptions>\n                ),\n              },\n              {\n                key: 'usage',\n                label: '配额使用',\n                children: (\n                  <Table\n                    size=\"small\"\n                    rowKey=\"resource\"\n                    pagination={false}\n                    dataSource={Object.entries(detailQuota.hard || {}).map(([key, hardLimit]) => ({\n                      key,\n                      resource: key,\n                      hard: hardLimit,\n                      used: (detailQuota.used || {})[key] || '-',\n                      percentage:\n                        hardLimit && detailQuota.used?.[key]\n                          ? Math.round(\n                              (parseInt(String(detailQuota.used[key])) / parseInt(String(hardLimit))) * 100,\n                            )\n                          : 0,\n                    }))}\n                    columns={[\n                      { title: '资源', dataIndex: 'resource' },\n                      { title: '硬限制', dataIndex: 'hard' },\n                      { title: '已使用', dataIndex: 'used' },\n                      {\n                        title: '使用率',\n                        dataIndex: 'percentage',\n                        align: 'center' as const,\n                        render: (val: number) => {\n                          const color = val > 80 ? 'red' : val > 50 ? 'orange' : 'green'\n                          return <Tag color={color}>{val}%</Tag>\n                        },\n                      },\n                    ]}\n                  />\n                ),\n              },\n            ]}\n          />\n        )}\n      </Drawer>\n    </AppPage>\n  )\n}\n\nexport default ResourceQuotasPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/resource-quotas.tsx"
     },
@@ -14380,7 +14626,7 @@
       "parentId": "83",
       "id": "115",
       "absPath": "/k8s/:clusterId/limit-ranges",
-      "__content": "import GenericResourceList, { rawColumn } from '@/components/GenericResourceList'\n\nexport default function LimitRangesPage() {\n  return (\n    <GenericResourceList\n      resource=\"limitranges\"\n      title=\"LimitRanges\"\n      namespaced\n      creatable={false}\n      extraColumns={[\n        rawColumn('限制项数', 'spec.limits', {\n          width: 90,\n          render: (val) => {\n            const limits = val as Array<unknown>\n            return limits?.length || 0\n          },\n        }),\n      ]}\n    />\n  )\n}\n",
+      "__content": "import GenericResourceList, { rawColumn, rawField } from '@/components/GenericResourceList'\nimport type { GenericResourceItem } from '@/services/k8s'\nimport { Descriptions, Tag, Space, Table } from 'antd'\n\nconst renderDetail = (record: GenericResourceItem) => {\n  const limits = (rawField(record, 'spec.limits') as any[]) || []\n  const limitData = limits.map((l, i) => ({\n    key: i,\n    type: l.type || '-',\n    max: l.max ? Object.entries(l.max).map(([k, v]) => `${k}=${v}`).join(', ') : '-',\n    min: l.min ? Object.entries(l.min).map(([k, v]) => `${k}=${v}`).join(', ') : '-',\n    default: l.default ? Object.entries(l.default).map(([k, v]) => `${k}=${v}`).join(', ') : '-',\n    defaultRequest: l.defaultRequest ? Object.entries(l.defaultRequest).map(([k, v]) => `${k}=${v}`).join(', ') : '-',\n  }))\n  return (\n    <Space direction=\"vertical\" style={{ width: '100%' }} size=\"middle\">\n      <Descriptions bordered column={2} size=\"small\">\n        <Descriptions.Item label=\"名称\">{record.name}</Descriptions.Item>\n        <Descriptions.Item label=\"Namespace\"><Tag>{record.namespace}</Tag></Descriptions.Item>\n      </Descriptions>\n      <Table size=\"small\" title={() => `限制项 (${limitData.length})`} rowKey=\"key\" pagination={false}\n        dataSource={limitData}\n        columns={[\n          { title: '类型', dataIndex: 'type', width: 100 },\n          { title: 'Max', dataIndex: 'max', ellipsis: true },\n          { title: 'Min', dataIndex: 'min', ellipsis: true },\n          { title: 'Default', dataIndex: 'default', ellipsis: true },\n          { title: 'DefaultRequest', dataIndex: 'defaultRequest', ellipsis: true },\n        ]}\n      />\n    </Space>\n  )\n}\n\nexport default function LimitRangesPage() {\n  return (\n    <GenericResourceList\n      resource=\"limitranges\"\n      title=\"LimitRanges\"\n      namespaced\n      creatable={false}\n      deletable={false}\n      renderDetail={renderDetail}\n      extraColumns={[\n        rawColumn('限制项数', 'spec.limits', {\n          width: 90,\n          align: 'center',\n          render: (val) => {\n            const limits = val as Array<unknown>\n            return limits?.length || 0\n          },\n        }),\n      ]}\n    />\n  )\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/limitranges.tsx"
     },
@@ -20091,12 +20337,22 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/csidrivers.tsx": {
-            "bytes": 491,
+            "bytes": 1568,
             "imports": [
               {
                 "path": "src/components/GenericResourceList/index.tsx",
                 "kind": "import-statement",
                 "original": "@/components/GenericResourceList"
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/utils/index.ts",
+                "kind": "import-statement",
+                "original": "@/utils"
               },
               {
                 "path": "react/jsx-runtime",
@@ -20107,39 +20363,7 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/csinodes.tsx": {
-            "bytes": 548,
-            "imports": [
-              {
-                "path": "src/components/GenericResourceList/index.tsx",
-                "kind": "import-statement",
-                "original": "@/components/GenericResourceList"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/k8s/$clusterId/csistoragecapacities.tsx": {
-            "bytes": 490,
-            "imports": [
-              {
-                "path": "src/components/GenericResourceList/index.tsx",
-                "kind": "import-statement",
-                "original": "@/components/GenericResourceList"
-              },
-              {
-                "path": "react/jsx-runtime",
-                "kind": "import-statement",
-                "external": true
-              }
-            ],
-            "format": "esm"
-          },
-          "src/pages/k8s/$clusterId/volumeattachments.tsx": {
-            "bytes": 648,
+            "bytes": 2050,
             "imports": [
               {
                 "path": "src/components/GenericResourceList/index.tsx",
@@ -20159,8 +20383,60 @@
             ],
             "format": "esm"
           },
+          "src/pages/k8s/$clusterId/csistoragecapacities.tsx": {
+            "bytes": 1546,
+            "imports": [
+              {
+                "path": "src/components/GenericResourceList/index.tsx",
+                "kind": "import-statement",
+                "original": "@/components/GenericResourceList"
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/utils/index.ts",
+                "kind": "import-statement",
+                "original": "@/utils"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
+          "src/pages/k8s/$clusterId/volumeattachments.tsx": {
+            "bytes": 2080,
+            "imports": [
+              {
+                "path": "src/components/GenericResourceList/index.tsx",
+                "kind": "import-statement",
+                "original": "@/components/GenericResourceList"
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "src/utils/index.ts",
+                "kind": "import-statement",
+                "original": "@/utils"
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
           "src/pages/k8s/$clusterId/resource-quotas.tsx": {
-            "bytes": 6611,
+            "bytes": 8894,
             "imports": [
               {
                 "path": "react",
@@ -20221,12 +20497,17 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/limitranges.tsx": {
-            "bytes": 517,
+            "bytes": 2190,
             "imports": [
               {
                 "path": "src/components/GenericResourceList/index.tsx",
                 "kind": "import-statement",
                 "original": "@/components/GenericResourceList"
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
               },
               {
                 "path": "react/jsx-runtime",
@@ -23735,12 +24016,27 @@
                 "external": true
               },
               {
-                "path": "react/jsx-runtime",
+                "path": "antd",
                 "kind": "import-statement",
                 "external": true
               },
               {
                 "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
                 "kind": "import-statement",
                 "external": true
               },
@@ -23786,6 +24082,11 @@
               },
               {
                 "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "antd",
                 "kind": "import-statement",
                 "external": true
               },
@@ -25428,7 +25729,7 @@
                 "bytesInOutput": 2911
               },
               "src/components/EllipsisText/index.tsx": {
-                "bytesInOutput": 1372
+                "bytesInOutput": 1362
               },
               "src/components/YamlDrawer.tsx": {
                 "bytesInOutput": 3370
@@ -25452,7 +25753,7 @@
                 "bytesInOutput": 163
               },
               "src/components/GenericResourceList/index.tsx": {
-                "bytesInOutput": 10523
+                "bytesInOutput": 10526
               },
               "src/components/AppPage/index.tsx": {
                 "bytesInOutput": 1055
@@ -25638,7 +25939,7 @@
                 "bytesInOutput": 8747
               },
               "src/pages/deploy/index.tsx": {
-                "bytesInOutput": 14536
+                "bytesInOutput": 14527
               },
               "src/pages/deploy/create.tsx": {
                 "bytesInOutput": 25365
@@ -25677,7 +25978,7 @@
                 "bytesInOutput": 53328
               },
               "src/pages/k8s/$clusterId/podmetrics.tsx": {
-                "bytesInOutput": 5521
+                "bytesInOutput": 5523
               },
               "src/pages/k8s/$clusterId/workloads.tsx": {
                 "bytesInOutput": 47506
@@ -25743,22 +26044,22 @@
                 "bytesInOutput": 8973
               },
               "src/pages/k8s/$clusterId/csidrivers.tsx": {
-                "bytesInOutput": 718
+                "bytesInOutput": 2010
               },
               "src/pages/k8s/$clusterId/csinodes.tsx": {
-                "bytesInOutput": 742
+                "bytesInOutput": 2555
               },
               "src/pages/k8s/$clusterId/csistoragecapacities.tsx": {
-                "bytesInOutput": 774
+                "bytesInOutput": 2034
               },
               "src/pages/k8s/$clusterId/volumeattachments.tsx": {
-                "bytesInOutput": 959
+                "bytesInOutput": 2597
               },
               "src/pages/k8s/$clusterId/resource-quotas.tsx": {
-                "bytesInOutput": 8277
+                "bytesInOutput": 11058
               },
               "src/pages/k8s/$clusterId/limitranges.tsx": {
-                "bytesInOutput": 745
+                "bytesInOutput": 2764
               },
               "src/pages/k8s/$clusterId/configmaps.tsx": {
                 "bytesInOutput": 10062
@@ -25851,7 +26152,7 @@
                 "bytesInOutput": 2108
               }
             },
-            "bytes": 1071565
+            "bytes": 1082354
           }
         }
       }

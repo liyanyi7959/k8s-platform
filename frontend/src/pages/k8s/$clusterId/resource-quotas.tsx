@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Button, Input, Typography } from 'antd'
+import { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Button, Input, Typography, Tabs, Table } from 'antd'
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listResourceQuotas, deleteResourceQuota } from '@/services/k8s'
@@ -10,17 +10,21 @@ import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { ResourceQuota } from '@/types'
 
+const { Text } = Typography
+
 const ResourceQuotasPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
   const [detailQuota, setDetailQuota] = useState<ResourceQuota | null>(null)
   const yamlDrawer = useYamlDrawer()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-resourcequotas', clusterId, namespace],
-    queryFn: () => listResourceQuotas(clusterId, namespace),
+    queryFn: ({ signal }) => listResourceQuotas(clusterId, namespace, signal),
     enabled: !!clusterId,
+    refetchInterval: detailQuota ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -32,8 +36,19 @@ const ResourceQuotasPage: React.FC = () => {
     },
   })
 
+  const filteredData = (data?.items || []).filter((item) => {
+    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  })
+
   const columns: ProColumns<ResourceQuota>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      width: 160,
+      ellipsis: true,
+      copyable: true,
+      render: (_, record) => <Text strong>{record.name}</Text>,
+    },
     {
       title: 'Namespace',
       dataIndex: 'namespace',
@@ -48,12 +63,11 @@ const ResourceQuotasPage: React.FC = () => {
       search: false,
       ellipsis: true,
       render: (_, record) => {
-        const hard = record.hard || {}
-        return Object.entries(hard).map(([k, v]) => (
-          <Tag key={k} color="blue" style={{ marginBottom: 2 }}>
-            {k}: {v}
-          </Tag>
-        ))
+        const text =
+          Object.entries(record.hard || {})
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(', ') || '-'
+        return <Tooltip title={text}>{text}</Tooltip>
       },
     },
     {
@@ -63,18 +77,19 @@ const ResourceQuotasPage: React.FC = () => {
       search: false,
       ellipsis: true,
       render: (_, record) => {
-        const used = record.used || {}
-        return Object.entries(used).map(([k, v]) => (
-          <Tag key={k} color="orange" style={{ marginBottom: 2 }}>
-            {k}: {v}
-          </Tag>
-        ))
+        const text =
+          Object.entries(record.used || {})
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(', ') || '-'
+        return <Tooltip title={text}>{text}</Tooltip>
       },
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
+      ellipsis: true,
       search: false,
       render: (_, record) => formatDate(record.createdAt),
     },
@@ -82,6 +97,7 @@ const ResourceQuotasPage: React.FC = () => {
       title: '操作',
       valueType: 'option',
       width: 140,
+      align: 'center' as const,
       fixed: 'right',
       render: (_, record) => (
         <Space
@@ -157,32 +173,80 @@ const ResourceQuotasPage: React.FC = () => {
         title="资源配额详情"
         open={!!detailQuota}
         onClose={() => setDetailQuota(null)}
-        width={600}
+        width={700}
+        destroyOnClose
       >
         {detailQuota && (
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="名称">{detailQuota.name}</Descriptions.Item>
-            <Descriptions.Item label="Namespace">
-              {detailQuota.namespace || namespace}
-            </Descriptions.Item>
-            <Descriptions.Item label="硬限制">
-              {Object.entries(detailQuota.hard || {}).map(([k, v]) => (
-                <Tag key={k} color="blue" style={{ marginBottom: 2 }}>
-                  {k}: {v}
-                </Tag>
-              ))}
-            </Descriptions.Item>
-            <Descriptions.Item label="已使用">
-              {Object.entries(detailQuota.used || {}).map(([k, v]) => (
-                <Tag key={k} color="orange" style={{ marginBottom: 2 }}>
-                  {k}: {v}
-                </Tag>
-              ))}
-            </Descriptions.Item>
-            <Descriptions.Item label="创建时间">
-              {formatDate(detailQuota.createdAt)}
-            </Descriptions.Item>
-          </Descriptions>
+          <Tabs
+            items={[
+              {
+                key: 'overview',
+                label: '概览',
+                children: (
+                  <Descriptions column={2} bordered size="small">
+                    <Descriptions.Item label="名称">{detailQuota.name}</Descriptions.Item>
+                    <Descriptions.Item label="Namespace">
+                      {detailQuota.namespace || namespace}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="硬限制">
+                      {Object.entries(detailQuota.hard || {}).map(([k, v]) => (
+                        <Tag key={k} color="blue" style={{ marginBottom: 2 }}>
+                          {k}: {v}
+                        </Tag>
+                      ))}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="已使用">
+                      {Object.entries(detailQuota.used || {}).map(([k, v]) => (
+                        <Tag key={k} color="orange" style={{ marginBottom: 2 }}>
+                          {k}: {v}
+                        </Tag>
+                      ))}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="创建时间" span={2}>
+                      {formatDate(detailQuota.createdAt)}
+                    </Descriptions.Item>
+                  </Descriptions>
+                ),
+              },
+              {
+                key: 'usage',
+                label: '配额使用',
+                children: (
+                  <Table
+                    size="small"
+                    rowKey="resource"
+                    pagination={false}
+                    dataSource={Object.entries(detailQuota.hard || {}).map(([key, hardLimit]) => ({
+                      key,
+                      resource: key,
+                      hard: hardLimit,
+                      used: (detailQuota.used || {})[key] || '-',
+                      percentage:
+                        hardLimit && detailQuota.used?.[key]
+                          ? Math.round(
+                              (parseInt(String(detailQuota.used[key])) / parseInt(String(hardLimit))) * 100,
+                            )
+                          : 0,
+                    }))}
+                    columns={[
+                      { title: '资源', dataIndex: 'resource' },
+                      { title: '硬限制', dataIndex: 'hard' },
+                      { title: '已使用', dataIndex: 'used' },
+                      {
+                        title: '使用率',
+                        dataIndex: 'percentage',
+                        align: 'center' as const,
+                        render: (val: number) => {
+                          const color = val > 80 ? 'red' : val > 50 ? 'orange' : 'green'
+                          return <Tag color={color}>{val}%</Tag>
+                        },
+                      },
+                    ]}
+                  />
+                ),
+              },
+            ]}
+          />
         )}
       </Drawer>
     </AppPage>
