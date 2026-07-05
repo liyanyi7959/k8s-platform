@@ -39,6 +39,7 @@ import { useState } from 'react'
 import {
   getNodes,
   getNodeDetail,
+  getPodEvents,
   cordonNode,
   uncordonNode,
   drainNode,
@@ -47,6 +48,7 @@ import {
 import { AppPage } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
+import { formatDate } from '@/utils'
 
 const { Text } = Typography
 
@@ -65,6 +67,13 @@ export default function NodesPage() {
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['node-detail', clusterId, detailDrawer.name],
     queryFn: ({ signal }) => getNodeDetail(clusterId, detailDrawer.name!, signal),
+    enabled: detailDrawer.open && !!detailDrawer.name,
+  })
+
+  // ═══ Events ═══
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['node-events', clusterId, detailDrawer.name],
+    queryFn: ({ signal }) => getPodEvents(clusterId, '', detailDrawer.name || '', signal),
     enabled: detailDrawer.open && !!detailDrawer.name,
   })
 
@@ -488,6 +497,51 @@ export default function NodesPage() {
                     />
                   ) : (
                     <Text type="secondary">暂无镜像数据</Text>
+                  ),
+                },
+                {
+                  key: 'labels',
+                  label: '标签/注解',
+                  children: (
+                    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                      <Descriptions bordered column={1} size="small" title="Labels">
+                        {detail.labels && Object.keys(detail.labels).length > 0
+                          ? Object.entries(detail.labels).map(([k, v]) => (
+                              <Descriptions.Item key={k} label={k}><Tag color="blue">{String(v)}</Tag></Descriptions.Item>
+                            ))
+                          : <Descriptions.Item label="-"><Text type="secondary">暂无标签</Text></Descriptions.Item>}
+                      </Descriptions>
+                      <Descriptions bordered column={1} size="small" title="Annotations">
+                        {detail.annotations && Object.keys(detail.annotations).length > 0
+                          ? Object.entries(detail.annotations).map(([k, v]) => (
+                              <Descriptions.Item key={k} label={k}>
+                                <Tooltip title={String(v)}>
+                                  <Text style={{ fontSize: 12 }} ellipsis>{String(v)}</Text>
+                                </Tooltip>
+                              </Descriptions.Item>
+                            ))
+                          : <Descriptions.Item label="-"><Text type="secondary">暂无注解</Text></Descriptions.Item>}
+                      </Descriptions>
+                    </Space>
+                  ),
+                },
+                {
+                  key: 'events',
+                  label: '事件',
+                  children: (
+                    <Table
+                      size="small"
+                      rowKey={(_, i) => String(i)}
+                      loading={eventsLoading}
+                      pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+                      dataSource={eventsData || []}
+                      columns={[
+                        { title: '类型', dataIndex: 'type', width: 90, render: (v) => <Tag color={v === 'Warning' ? 'warning' : 'success'}>{v || 'Normal'}</Tag> },
+                        { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true },
+                        { title: '消息', dataIndex: 'message', ellipsis: true },
+                        { title: '时间', dataIndex: 'lastTimestamp', width: 160, render: (v) => v ? formatDate(v) : '-' },
+                      ]}
+                    />
                   ),
                 },
               ]}

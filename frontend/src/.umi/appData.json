@@ -377,6 +377,9 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -882,7 +885,13 @@
             35,
             80,
             37,
-            56
+            56,
+            36,
+            84,
+            40,
+            65,
+            40,
+            83
           ]
         },
         "register": 1
@@ -1124,7 +1133,10 @@
             21,
             22,
             22,
-            23
+            23,
+            29,
+            30,
+            22
           ]
         },
         "register": 26
@@ -1165,6 +1177,9 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -1599,6 +1614,9 @@
             1,
             0,
             1,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -2163,6 +2181,12 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
             0
           ]
         },
@@ -3257,6 +3281,8 @@
             1,
             0,
             0,
+            0,
+            0,
             0
           ]
         },
@@ -3496,6 +3522,9 @@
             0,
             1,
             0,
+            1,
+            1,
+            1,
             1
           ],
           "addRuntimePlugin": [
@@ -3721,6 +3750,9 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -3804,6 +3836,9 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -4465,6 +4500,12 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -4720,7 +4761,10 @@
             30,
             26,
             35,
-            30
+            30,
+            81,
+            35,
+            27
           ],
           "addPolyfillImports": [
             0,
@@ -5168,6 +5212,12 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -5184,6 +5234,12 @@
       "time": {
         "hooks": {
           "addPolyfillImports": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -5868,6 +5924,9 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -6132,6 +6191,9 @@
             0,
             0,
             1,
+            0,
+            1,
+            0,
             0,
             1
           ],
@@ -6598,7 +6660,13 @@
             139,
             10,
             164,
-            12
+            12,
+            178,
+            10,
+            171,
+            13,
+            158,
+            11
           ]
         },
         "register": 7
@@ -6875,7 +6943,10 @@
             9,
             10,
             10,
-            10
+            10,
+            10,
+            10,
+            12
           ]
         },
         "register": 6
@@ -7182,7 +7253,10 @@
             1,
             1,
             1,
-            2
+            2,
+            2,
+            2,
+            1
           ]
         },
         "register": 2
@@ -7398,6 +7472,8 @@
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -7997,7 +8073,10 @@
             0,
             0,
             0,
-            1
+            1,
+            0,
+            0,
+            0
           ],
           "onGenerateFiles": [
             3,
@@ -8222,7 +8301,10 @@
             1,
             1,
             1,
-            2
+            2,
+            2,
+            1,
+            1
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -8710,6 +8792,12 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePlugin": [
@@ -8935,9 +9023,15 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -9385,6 +9479,9 @@
             2,
             1,
             1,
+            2,
+            2,
+            2,
             2
           ],
           "addExtraBabelPlugins": [
@@ -9642,9 +9739,15 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -10092,6 +10195,9 @@
             0,
             1,
             1,
+            1,
+            1,
+            1,
             1
           ],
           "addExtraModels": [
@@ -10314,6 +10420,9 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -10561,12 +10670,18 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
             0
           ],
           "modifyAppData": [
             1
           ],
           "addRuntimePlugin": [
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -10859,6 +10974,9 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -11239,7 +11357,10 @@
             3,
             3,
             3,
-            4
+            4,
+            4,
+            3,
+            3
           ]
         },
         "register": 3
@@ -11300,6 +11421,9 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -11729,7 +11853,10 @@
             93,
             83,
             90,
-            101
+            101,
+            101,
+            120,
+            98
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -11823,6 +11950,9 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -12253,6 +12383,9 @@
             1,
             0,
             0,
+            1,
+            0,
+            0,
             1
           ],
           "addRuntimePlugin": [
@@ -12478,9 +12611,15 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -12928,7 +13067,10 @@
             2,
             5,
             2,
-            4
+            4,
+            3,
+            2,
+            3
           ]
         },
         "register": 1
@@ -12945,6 +13087,9 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -13392,7 +13537,10 @@
             2,
             2,
             2,
-            4
+            4,
+            3,
+            4,
+            2
           ]
         },
         "register": 1
@@ -17098,7 +17246,7 @@
       "parentId": "83",
       "id": "124",
       "absPath": "/k8s/:clusterId/nodes",
-      "__content": "import { ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components'\r\nimport {\r\n  Button,\r\n  Tag,\r\n  Space,\r\n  Popconfirm,\r\n  message,\r\n  Drawer,\r\n  Descriptions,\r\n  Tabs,\r\n  Progress,\r\n  Badge,\r\n  Modal,\r\n  Switch,\r\n  InputNumber,\r\n  Typography,\r\n  Row,\r\n  Col,\r\n  Card,\r\n  Alert,\r\n  Tooltip,\r\n} from 'antd'\r\nimport {\r\n  ReloadOutlined,\r\n  ProfileOutlined,\r\n  DeleteOutlined,\r\n  StopOutlined,\r\n  PlayCircleOutlined,\r\n  ExclamationCircleOutlined,\r\n  InfoCircleOutlined,\r\n  EyeOutlined,\r\n  CloudServerOutlined,\r\n} from '@ant-design/icons'\r\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\r\nimport { useRef, useState } from 'react'\r\nimport {\r\n  getNodes,\r\n  getNodeDetail,\r\n  getNodeYaml,\r\n  cordonNode,\r\n  uncordonNode,\r\n  drainNode,\r\n  deleteNode,\r\n} from '@/services/k8s'\r\nimport { AppPage } from '@/components'\r\nimport { useClusterId } from '@/hooks/useClusterId'\r\n\r\nconst { Text } = Typography\r\n\r\nexport default function NodesPage() {\r\n  const clusterId = useClusterId()\r\n  const actionRef = useRef<ActionType>()\r\n  const qc = useQueryClient()\r\n\r\n  // ═══ YAML Drawer ═══\r\n  const [yamlDrawer, setYamlDrawer] = useState<{ open: boolean; name?: string }>({ open: false })\r\n  const { data: yamlData, isLoading: yamlLoading } = useQuery({\r\n    queryKey: ['node-yaml', clusterId, yamlDrawer.name],\r\n    queryFn: ({ signal }) => getNodeYaml(clusterId, yamlDrawer.name!, signal),\r\n    enabled: yamlDrawer.open && !!yamlDrawer.name,\r\n  })\r\n\r\n  // ═══ Detail Drawer ═══\r\n  const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; name?: string }>({\r\n    open: false,\r\n  })\r\n  const { data: detail, isLoading: detailLoading } = useQuery({\r\n    queryKey: ['node-detail', clusterId, detailDrawer.name],\r\n    queryFn: ({ signal }) => getNodeDetail(clusterId, detailDrawer.name!, signal),\r\n    enabled: detailDrawer.open && !!detailDrawer.name,\r\n  })\r\n\r\n  // ═══ Drain Modal ═══\r\n  const [drainModal, setDrainModal] = useState<{\r\n    open: boolean\r\n    name?: string\r\n    force: boolean\r\n    timeout: number\r\n  }>({ open: false, force: false, timeout: 300 })\r\n\r\n  // ═══ Mutations ═══\r\n  const cordonMutation = useMutation({\r\n    mutationFn: (name: string) => cordonNode(clusterId, name),\r\n    onSuccess: () => {\r\n      message.success('已停止调度')\r\n      qc.invalidateQueries({ queryKey: ['k8s-nodes', clusterId] })\r\n    },\r\n    onError: () => message.error('停止调度失败'),\r\n  })\r\n\r\n  const uncordonMutation = useMutation({\r\n    mutationFn: (name: string) => uncordonNode(clusterId, name),\r\n    onSuccess: () => {\r\n      message.success('已恢复调度')\r\n      qc.invalidateQueries({ queryKey: ['k8s-nodes', clusterId] })\r\n    },\r\n    onError: () => message.error('恢复调度失败'),\r\n  })\r\n\r\n  const drainMutation = useMutation({\r\n    mutationFn: ({ name, force, timeout }: { name: string; force: boolean; timeout: number }) =>\r\n      drainNode(clusterId, name, { force, timeout_seconds: timeout, ignore_daemonsets: true }),\r\n    onSuccess: () => {\r\n      message.success('驱逐完成')\r\n      qc.invalidateQueries({ queryKey: ['k8s-nodes', clusterId] })\r\n      setDrainModal({ open: false, force: false, timeout: 300 })\r\n    },\r\n    onError: () => message.error('驱逐失败'),\r\n  })\r\n\r\n  const deleteMutation = useMutation({\r\n    mutationFn: (name: string) => deleteNode(clusterId, name),\r\n    onSuccess: () => {\r\n      message.success('删除成功')\r\n      qc.invalidateQueries({ queryKey: ['k8s-nodes', clusterId] })\r\n    },\r\n    onError: () => message.error('删除失败'),\r\n  })\r\n\r\n  // ═══ Status helpers ═══\r\n  const isCordoned = (status: string) =>\r\n    status === 'SchedulingDisabled' || status?.includes('SchedulingDisabled')\r\n\r\n  const statusColor = (status: string) => {\r\n    if (status === 'Ready') return 'success'\r\n    if (status === 'SchedulingDisabled' || status?.includes('SchedulingDisabled')) return 'warning'\r\n    return 'error'\r\n  }\r\n\r\n  // ═══ Columns ═══\r\n  const columns: ProColumns[] = [\r\n    { title: '名称', dataIndex: 'name', width: 200, ellipsis: true, fixed: 'left', render: (_, record) => <Text strong>{record.name}</Text> },\r\n    {\r\n      title: '状态',\r\n      dataIndex: 'status',\r\n      width: 140,\r\n      render: (_, r) => (\r\n        <Badge\r\n          status={statusColor(r.status) as any}\r\n          text={\r\n            <Space size={4}>\r\n              <Tag color={statusColor(r.status)}>{r.status}</Tag>\r\n              {isCordoned(r.status) && <Tag color=\"warning\">调度已停止</Tag>}\r\n            </Space>\r\n          }\r\n        />\r\n      ),\r\n      filters: true,\r\n      onFilter: true,\r\n      valueEnum: {\r\n        Ready: { text: 'Ready' },\r\n        NotReady: { text: 'NotReady' },\r\n        SchedulingDisabled: { text: 'SchedulingDisabled' },\r\n      },\r\n    },\r\n    {\r\n      title: 'Roles',\r\n      dataIndex: 'roles',\r\n      width: 100,\r\n      render: (_, r) => {\r\n        const roles = Array.isArray(r.roles) && r.roles.length > 0 ? r.roles.join(', ') : 'worker'\r\n        return <Tag>{roles}</Tag>\r\n      },\r\n    },\r\n    { title: 'InternalIP', dataIndex: 'ip', width: 130 },\r\n    {\r\n      title: 'CPU',\r\n      width: 140,\r\n      render: (_, r) => (\r\n        <Space direction=\"vertical\" size={0} style={{ width: '100%' }}>\r\n          <Text style={{ fontSize: 11 }}>{r.cpu || '-'}</Text>\r\n          <Progress\r\n            percent={r.cpuPercent || 0}\r\n            size=\"small\"\r\n            showInfo={false}\r\n            strokeColor={(r.cpuPercent || 0) > 80 ? '#ff4d4f' : '#0891b2'}\r\n          />\r\n          <Text type=\"secondary\" style={{ fontSize: 10 }}>\r\n            {r.cpuPercent || 0}%\r\n          </Text>\r\n        </Space>\r\n      ),\r\n    },\r\n    {\r\n      title: '内存',\r\n      width: 140,\r\n      render: (_, r) => (\r\n        <Space direction=\"vertical\" size={0} style={{ width: '100%' }}>\r\n          <Text style={{ fontSize: 11 }}>{r.memory || '-'}</Text>\r\n          <Progress\r\n            percent={r.memoryPercent || 0}\r\n            size=\"small\"\r\n            showInfo={false}\r\n            strokeColor={(r.memoryPercent || 0) > 80 ? '#ff4d4f' : '#7c3aed'}\r\n          />\r\n          <Text type=\"secondary\" style={{ fontSize: 10 }}>\r\n            {r.memoryPercent || 0}%\r\n          </Text>\r\n        </Space>\r\n      ),\r\n    },\r\n    {\r\n      title: 'Pods',\r\n      dataIndex: 'podCount',\r\n      width: 70,\r\n      align: 'center' as const,\r\n      render: (_, r) => <Text>{r.podCount || 0}</Text>,\r\n    },\r\n    {\r\n      title: 'Taints',\r\n      dataIndex: 'taints',\r\n      width: 90,\r\n      align: 'center' as const,\r\n      render: (_, r) =>\r\n        r.taints && r.taints.length > 0 ? (\r\n          <Tag color=\"warning\">{r.taints.length} 个</Tag>\r\n        ) : (\r\n          <Text type=\"secondary\">无</Text>\r\n        ),\r\n    },\r\n    { title: 'kubelet', dataIndex: 'kubeletVersion', width: 120, ellipsis: true },\r\n    { title: 'OS', dataIndex: 'osImage', width: 140, ellipsis: true },\r\n    { title: 'PodCIDR', dataIndex: 'podCIDR', width: 140, ellipsis: true, hideInSearch: true },\r\n    { title: 'Age', dataIndex: 'age', width: 110, align: 'center' as const, ellipsis: true },\r\n    {\r\n      title: '操作',\r\n      valueType: 'option',\r\n      width: 180,\r\n      fixed: 'right',\r\n      align: 'center' as const,\r\n      render: (_, record) => (\r\n        <Space size={8} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\r\n          <Tooltip title=\"详情\">\r\n            <a onClick={() => setDetailDrawer({ open: true, name: record.name })}>\r\n              <EyeOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"查看 YAML\">\r\n            <a onClick={() => setYamlDrawer({ open: true, name: record.name })}>\r\n              <ProfileOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          {isCordoned(record.status) ? (\r\n            <Popconfirm\r\n              title=\"确定恢复该节点调度？\"\r\n              onConfirm={() => uncordonMutation.mutate(record.name)}\r\n            >\r\n              <Tooltip title=\"恢复调度\">\r\n                <a style={{ color: '#52c41a' }}>\r\n                  <PlayCircleOutlined />\r\n                </a>\r\n              </Tooltip>\r\n            </Popconfirm>\r\n          ) : (\r\n            <Popconfirm\r\n              title=\"确定停止该节点调度？\"\r\n              onConfirm={() => cordonMutation.mutate(record.name)}\r\n            >\r\n              <Tooltip title=\"停止调度\">\r\n                <a style={{ color: '#faad14' }}>\r\n                  <StopOutlined />\r\n                </a>\r\n              </Tooltip>\r\n            </Popconfirm>\r\n          )}\r\n          <Popconfirm\r\n            title=\"确定驱逐该节点上的所有 Pod？\"\r\n            description=\"将忽略 DaemonSet 管理的 Pod\"\r\n            onConfirm={() =>\r\n              setDrainModal({ open: true, name: record.name, force: false, timeout: 300 })\r\n            }\r\n          >\r\n            <Tooltip title=\"驱逐\">\r\n              <a style={{ color: '#ff4d4f' }}>\r\n                <ExclamationCircleOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n          <Popconfirm title=\"确定删除该节点？\" onConfirm={() => deleteMutation.mutate(record.name)}>\r\n            <Tooltip title=\"删除\">\r\n              <a style={{ color: '#ff4d4f' }}>\r\n                <DeleteOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n        </Space>\r\n      ),\r\n    },\r\n  ]\r\n\r\n  return (\r\n    <AppPage>\r\n      <ProTable\r\n        headerTitle={\r\n          <Space>\r\n            <CloudServerOutlined />\r\n            节点管理\r\n          </Space>\r\n        }\r\n        actionRef={actionRef}\r\n        rowKey=\"name\"\r\n        search={{ labelWidth: 80 }}\r\n        options={{ reload: false }}\r\n        toolBarRender={() => [\r\n          <Button\r\n            key=\"refresh\"\r\n            icon={<ReloadOutlined />}\r\n            onClick={() => actionRef.current?.reload()}\r\n          >\r\n            刷新\r\n          </Button>,\r\n        ]}\r\n        request={async (params) => {\r\n          const data = await getNodes(clusterId)\r\n          let items = data.items || data || []\r\n          if (params.name) items = items.filter((i: any) => i.name?.includes(params.name))\r\n          if (params.status) items = items.filter((i: any) => i.status === params.status)\r\n          return { data: items, success: true }\r\n        }}\r\n        columns={columns}\r\n        scroll={{ x: 1800 }}\r\n      />\r\n\r\n      {/* ═══ YAML Drawer ═══ */}\r\n      <Drawer\r\n        title={`YAML - ${yamlDrawer.name}`}\r\n        open={yamlDrawer.open}\r\n        onClose={() => setYamlDrawer({ open: false })}\r\n        width={800}\r\n      >\r\n        <pre\r\n          style={{\r\n            background: '#1e1e1e',\r\n            color: '#d4d4d4',\r\n            padding: 16,\r\n            borderRadius: 8,\r\n            height: 'calc(100vh - 200px)',\r\n            overflow: 'auto',\r\n            fontSize: 13,\r\n            lineHeight: 1.6,\r\n            fontFamily: 'Consolas, Monaco, monospace',\r\n          }}\r\n        >\r\n          {yamlLoading\r\n            ? '加载中...'\r\n            : (typeof yamlData === 'string' ? yamlData : JSON.stringify(yamlData, null, 2)) ||\r\n              '暂无数据'}\r\n        </pre>\r\n      </Drawer>\r\n\r\n      {/* ═══ Detail Drawer ═══ */}\r\n      <Drawer\r\n        title={`节点详情 - ${detailDrawer.name}`}\r\n        open={detailDrawer.open}\r\n        onClose={() => setDetailDrawer({ open: false })}\r\n        width={780}\r\n      >\r\n        {detailLoading ? (\r\n          <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>\r\n        ) : (\r\n          detail && (\r\n            <Tabs\r\n              items={[\r\n                {\r\n                  key: 'overview',\r\n                  label: '概览',\r\n                  children: (\r\n                    <Descriptions column={2} bordered size=\"small\">\r\n                      <Descriptions.Item label=\"名称\">{detail.name}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"状态\">\r\n                        <Badge status={statusColor(detail.status) as any} text={detail.status} />\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"Roles\">\r\n                        {Array.isArray(detail.roles) && detail.roles.length > 0\r\n                          ? detail.roles.join(', ')\r\n                          : 'worker'}\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"InternalIP\">{detail.ip}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"kubelet 版本\">\r\n                        {detail.kubeletVersion || '-'}\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"OS Image\">\r\n                        {detail.osImage || '-'}\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"PodCIDR\">{detail.podCIDR || '-'}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"Age\">{detail.age}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"CPU\" span={1}>\r\n                        <Text>{detail.cpu}</Text>\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"内存\" span={1}>\r\n                        <Text>{detail.memory}</Text>\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"Taints\" span={2}>\r\n                        {detail.taints && detail.taints.length > 0 ? (\r\n                          detail.taints.map((t: any, i: number) => (\r\n                            <Tag key={i} color={t.effect === 'NoSchedule' ? 'error' : 'warning'}>\r\n                              {t.key}={t.value}:{t.effect}\r\n                            </Tag>\r\n                          ))\r\n                        ) : (\r\n                          <Text type=\"secondary\">无</Text>\r\n                        )}\r\n                      </Descriptions.Item>\r\n                    </Descriptions>\r\n                  ),\r\n                },\r\n                {\r\n                  key: 'conditions',\r\n                  label: '条件',\r\n                  children: detail.conditions ? (\r\n                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>\r\n                      <thead>\r\n                        <tr style={{ background: '#fafafa' }}>\r\n                          {['类型', '状态', '原因', '信息', '上次转换'].map((h) => (\r\n                            <th\r\n                              key={h}\r\n                              style={{\r\n                                padding: '8px 12px',\r\n                                borderBottom: '1px solid #f0f0f0',\r\n                                textAlign: 'left',\r\n                                fontSize: 12,\r\n                              }}\r\n                            >\r\n                              {h}\r\n                            </th>\r\n                          ))}\r\n                        </tr>\r\n                      </thead>\r\n                      <tbody>\r\n                        {detail.conditions.map((c: any, i: number) => (\r\n                          <tr\r\n                            key={i}\r\n                            style={{\r\n                              background:\r\n                                c.status !== 'True' && c.type !== 'Ready' ? undefined : undefined,\r\n                            }}\r\n                          >\r\n                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                              <Tag>{c.type}</Tag>\r\n                            </td>\r\n                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                              <Badge\r\n                                status={c.status === 'True' ? 'success' : 'error'}\r\n                                text={c.status}\r\n                              />\r\n                            </td>\r\n                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                              {c.reason || '-'}\r\n                            </td>\r\n                            <td\r\n                              style={{\r\n                                padding: '8px 12px',\r\n                                borderBottom: '1px solid #f0f0f0',\r\n                                maxWidth: 200,\r\n                                overflow: 'hidden',\r\n                                textOverflow: 'ellipsis',\r\n                                whiteSpace: 'nowrap',\r\n                              }}\r\n                            >\r\n                              {c.message || '-'}\r\n                            </td>\r\n                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                              {c.lastTransitionTime || '-'}\r\n                            </td>\r\n                          </tr>\r\n                        ))}\r\n                      </tbody>\r\n                    </table>\r\n                  ) : (\r\n                    <Text type=\"secondary\">暂无条件数据</Text>\r\n                  ),\r\n                },\r\n                {\r\n                  key: 'addresses',\r\n                  label: '地址',\r\n                  children: detail.addresses ? (\r\n                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>\r\n                      <thead>\r\n                        <tr style={{ background: '#fafafa' }}>\r\n                          <th style={{ padding: '8px 12px', textAlign: 'left' }}>类型</th>\r\n                          <th style={{ padding: '8px 12px', textAlign: 'left' }}>地址</th>\r\n                        </tr>\r\n                      </thead>\r\n                      <tbody>\r\n                        {detail.addresses.map((a: any, i: number) => (\r\n                          <tr key={i}>\r\n                            <td style={{ padding: '8px 12px' }}>\r\n                              <Tag>{a.type}</Tag>\r\n                            </td>\r\n                            <td style={{ padding: '8px 12px' }}>{a.address}</td>\r\n                          </tr>\r\n                        ))}\r\n                      </tbody>\r\n                    </table>\r\n                  ) : (\r\n                    <Text type=\"secondary\">暂无地址数据</Text>\r\n                  ),\r\n                },\r\n                {\r\n                  key: 'capacity',\r\n                  label: '容量',\r\n                  children: (\r\n                    <Row gutter={16}>\r\n                      <Col span={12}>\r\n                        <Card title=\"Capacity\" size=\"small\">\r\n                          {detail.capacity ? (\r\n                            Object.entries(detail.capacity).map(([k, v]) => (\r\n                              <Descriptions.Item key={k} label={k}>\r\n                                <Text>{String(v)}</Text>\r\n                              </Descriptions.Item>\r\n                            ))\r\n                          ) : (\r\n                            <Text type=\"secondary\">-</Text>\r\n                          )}\r\n                        </Card>\r\n                      </Col>\r\n                      <Col span={12}>\r\n                        <Card title=\"Allocatable\" size=\"small\">\r\n                          {detail.allocatable ? (\r\n                            Object.entries(detail.allocatable).map(([k, v]) => (\r\n                              <Descriptions.Item key={k} label={k}>\r\n                                <Text>{String(v)}</Text>\r\n                              </Descriptions.Item>\r\n                            ))\r\n                          ) : (\r\n                            <Text type=\"secondary\">-</Text>\r\n                          )}\r\n                        </Card>\r\n                      </Col>\r\n                    </Row>\r\n                  ),\r\n                },\r\n                {\r\n                  key: 'images',\r\n                  label: '镜像',\r\n                  children: detail.images ? (\r\n                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>\r\n                      <thead>\r\n                        <tr style={{ background: '#fafafa' }}>\r\n                          <th style={{ padding: '8px 12px', textAlign: 'left' }}>镜像名称</th>\r\n                          <th style={{ padding: '8px 12px', textAlign: 'left' }}>大小</th>\r\n                        </tr>\r\n                      </thead>\r\n                      <tbody>\r\n                        {detail.images.map((img: any, i: number) => (\r\n                          <tr key={i}>\r\n                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                              {img.names?.map((n: string, j: number) => (\r\n                                <Tag key={j} style={{ marginBottom: 2 }}>\r\n                                  {n}\r\n                                </Tag>\r\n                              ))}\r\n                            </td>\r\n                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                              {img.sizeBytes\r\n                                ? `${(img.sizeBytes / 1024 / 1024).toFixed(1)} MB`\r\n                                : '-'}\r\n                            </td>\r\n                          </tr>\r\n                        ))}\r\n                      </tbody>\r\n                    </table>\r\n                  ) : (\r\n                    <Text type=\"secondary\">暂无镜像数据</Text>\r\n                  ),\r\n                },\r\n              ]}\r\n            />\r\n          )\r\n        )}\r\n      </Drawer>\r\n\r\n      {/* ═══ Drain Modal ═══ */}\r\n      <Modal\r\n        title={`驱逐节点 - ${drainModal.name}`}\r\n        open={drainModal.open}\r\n        onCancel={() => setDrainModal({ open: false, force: false, timeout: 300 })}\r\n        onOk={() =>\r\n          drainMutation.mutate({\r\n            name: drainModal.name!,\r\n            force: drainModal.force,\r\n            timeout: drainModal.timeout,\r\n          })\r\n        }\r\n        confirmLoading={drainMutation.isPending}\r\n        okText=\"确认驱逐\"\r\n        okButtonProps={{ danger: true }}\r\n      >\r\n        <Alert\r\n          type=\"warning\"\r\n          showIcon\r\n          message=\"驱逐将清除节点上所有非 DaemonSet Pod，请确认操作。\"\r\n          style={{ marginBottom: 16 }}\r\n        />\r\n        <Descriptions column={1} size=\"small\">\r\n          <Descriptions.Item label=\"强制驱逐\">\r\n            <Switch\r\n              checked={drainModal.force}\r\n              onChange={(v) => setDrainModal((s) => ({ ...s, force: v }))}\r\n            />\r\n          </Descriptions.Item>\r\n          <Descriptions.Item label=\"超时时间（秒）\">\r\n            <InputNumber\r\n              min={30}\r\n              max={3600}\r\n              value={drainModal.timeout}\r\n              onChange={(v) => setDrainModal((s) => ({ ...s, timeout: v || 300 }))}\r\n            />\r\n          </Descriptions.Item>\r\n        </Descriptions>\r\n      </Modal>\r\n    </AppPage>\r\n  )\r\n}\r\n",
+      "__content": "import { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport {\n  Button,\n  Tag,\n  Space,\n  Popconfirm,\n  message,\n  Drawer,\n  Descriptions,\n  Tabs,\n  Progress,\n  Badge,\n  Modal,\n  Switch,\n  InputNumber,\n  Typography,\n  Row,\n  Col,\n  Card,\n  Alert,\n  Tooltip,\n  Input,\n  Table,\n} from 'antd'\nimport {\n  ReloadOutlined,\n  ProfileOutlined,\n  DeleteOutlined,\n  StopOutlined,\n  PlayCircleOutlined,\n  ExclamationCircleOutlined,\n  InfoCircleOutlined,\n  EyeOutlined,\n  CloudServerOutlined,\n  SearchOutlined,\n} from '@ant-design/icons'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { useState } from 'react'\nimport {\n  getNodes,\n  getNodeDetail,\n  getPodEvents,\n  cordonNode,\n  uncordonNode,\n  drainNode,\n  deleteNode,\n} from '@/services/k8s'\nimport { AppPage } from '@/components'\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\n\nconst { Text } = Typography\n\nexport default function NodesPage() {\n  const clusterId = useClusterId()\n  const qc = useQueryClient()\n  const [keyword, setKeyword] = useState('')\n\n  // ═══ YAML Drawer ═══\n  const yamlDrawer = useYamlDrawer()\n\n  // ═══ Detail Drawer ═══\n  const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; name?: string }>({\n    open: false,\n  })\n  const { data: detail, isLoading: detailLoading } = useQuery({\n    queryKey: ['node-detail', clusterId, detailDrawer.name],\n    queryFn: ({ signal }) => getNodeDetail(clusterId, detailDrawer.name!, signal),\n    enabled: detailDrawer.open && !!detailDrawer.name,\n  })\n\n  // ═══ Events ═══\n  const { data: eventsData, isLoading: eventsLoading } = useQuery({\n    queryKey: ['node-events', clusterId, detailDrawer.name],\n    queryFn: ({ signal }) => getPodEvents(clusterId, '', detailDrawer.name || '', signal),\n    enabled: detailDrawer.open && !!detailDrawer.name,\n  })\n\n  // ═══ Drain Modal ═══\n  const [drainModal, setDrainModal] = useState<{\n    open: boolean\n    name?: string\n    force: boolean\n    timeout: number\n  }>({ open: false, force: false, timeout: 300 })\n\n  // ═══ Nodes Query ═══\n  const { data: nodesData, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-nodes', clusterId],\n    queryFn: ({ signal }) => getNodes(clusterId, signal),\n    enabled: !!clusterId,\n    refetchInterval: detailDrawer.open || yamlDrawer.open || drainModal.open ? false : 30_000,\n  })\n\n  const filteredData = (() => {\n    let items = nodesData?.items || nodesData || []\n    if (keyword)\n      items = items.filter((i: any) => i.name?.toLowerCase().includes(keyword.toLowerCase()))\n    return items\n  })()\n\n  // ═══ Mutations ═══\n  const cordonMutation = useMutation({\n    mutationFn: (name: string) => cordonNode(clusterId, name),\n    onSuccess: () => {\n      message.success('已停止调度')\n      qc.invalidateQueries({ queryKey: ['k8s-nodes', clusterId] })\n    },\n    onError: () => message.error('停止调度失败'),\n  })\n\n  const uncordonMutation = useMutation({\n    mutationFn: (name: string) => uncordonNode(clusterId, name),\n    onSuccess: () => {\n      message.success('已恢复调度')\n      qc.invalidateQueries({ queryKey: ['k8s-nodes', clusterId] })\n    },\n    onError: () => message.error('恢复调度失败'),\n  })\n\n  const drainMutation = useMutation({\n    mutationFn: ({ name, force, timeout }: { name: string; force: boolean; timeout: number }) =>\n      drainNode(clusterId, name, { force, timeout_seconds: timeout, ignore_daemonsets: true }),\n    onSuccess: () => {\n      message.success('驱逐完成')\n      qc.invalidateQueries({ queryKey: ['k8s-nodes', clusterId] })\n      setDrainModal({ open: false, force: false, timeout: 300 })\n    },\n    onError: () => message.error('驱逐失败'),\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (name: string) => deleteNode(clusterId, name),\n    onSuccess: () => {\n      message.success('删除成功')\n      qc.invalidateQueries({ queryKey: ['k8s-nodes', clusterId] })\n    },\n    onError: () => message.error('删除失败'),\n  })\n\n  // ═══ Status helpers ═══\n  const isCordoned = (status: string) =>\n    status === 'SchedulingDisabled' || status?.includes('SchedulingDisabled')\n\n  const statusColor = (status: string) => {\n    if (status === 'Ready') return 'success'\n    if (status === 'SchedulingDisabled' || status?.includes('SchedulingDisabled')) return 'warning'\n    return 'error'\n  }\n\n  // ═══ Columns ═══\n  const columns: ProColumns[] = [\n    { title: '名称', dataIndex: 'name', width: 200, ellipsis: true, fixed: 'left', render: (_, record) => <Text strong>{record.name}</Text> },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 140,\n      render: (_, r) => (\n        <Badge\n          status={statusColor(r.status) as any}\n          text={\n            <Space size={4}>\n              <Tag color={statusColor(r.status)}>{r.status}</Tag>\n              {isCordoned(r.status) && <Tag color=\"warning\">调度已停止</Tag>}\n            </Space>\n          }\n        />\n      ),\n      filters: true,\n      onFilter: true,\n      valueEnum: {\n        Ready: { text: 'Ready' },\n        NotReady: { text: 'NotReady' },\n        SchedulingDisabled: { text: 'SchedulingDisabled' },\n      },\n    },\n    {\n      title: 'Roles',\n      dataIndex: 'roles',\n      width: 100,\n      render: (_, r) => {\n        const roles = Array.isArray(r.roles) && r.roles.length > 0 ? r.roles.join(', ') : 'worker'\n        return <Tag>{roles}</Tag>\n      },\n    },\n    { title: 'InternalIP', dataIndex: 'ip', width: 130 },\n    {\n      title: 'CPU',\n      width: 140,\n      render: (_, r) => (\n        <Space direction=\"vertical\" size={0} style={{ width: '100%' }}>\n          <Text style={{ fontSize: 11 }}>{r.cpu || '-'}</Text>\n          <Progress\n            percent={r.cpuPercent || 0}\n            size=\"small\"\n            showInfo={false}\n            strokeColor={(r.cpuPercent || 0) > 80 ? '#ff4d4f' : '#0891b2'}\n          />\n          <Text type=\"secondary\" style={{ fontSize: 10 }}>\n            {r.cpuPercent || 0}%\n          </Text>\n        </Space>\n      ),\n    },\n    {\n      title: '内存',\n      width: 140,\n      render: (_, r) => (\n        <Space direction=\"vertical\" size={0} style={{ width: '100%' }}>\n          <Text style={{ fontSize: 11 }}>{r.memory || '-'}</Text>\n          <Progress\n            percent={r.memoryPercent || 0}\n            size=\"small\"\n            showInfo={false}\n            strokeColor={(r.memoryPercent || 0) > 80 ? '#ff4d4f' : '#7c3aed'}\n          />\n          <Text type=\"secondary\" style={{ fontSize: 10 }}>\n            {r.memoryPercent || 0}%\n          </Text>\n        </Space>\n      ),\n    },\n    {\n      title: 'Pods',\n      dataIndex: 'podCount',\n      width: 70,\n      align: 'center' as const,\n      render: (_, r) => <Text>{r.podCount || 0}</Text>,\n    },\n    {\n      title: 'Taints',\n      dataIndex: 'taints',\n      width: 90,\n      align: 'center' as const,\n      render: (_, r) =>\n        r.taints && r.taints.length > 0 ? (\n          <Tag color=\"warning\">{r.taints.length} 个</Tag>\n        ) : (\n          <Text type=\"secondary\">无</Text>\n        ),\n    },\n    { title: 'kubelet', dataIndex: 'kubeletVersion', width: 120, ellipsis: true },\n    { title: 'OS', dataIndex: 'osImage', width: 140, ellipsis: true },\n    { title: 'PodCIDR', dataIndex: 'podCIDR', width: 140, ellipsis: true, hideInSearch: true },\n    { title: 'Age', dataIndex: 'age', width: 110, align: 'center' as const, ellipsis: true },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 180,\n      fixed: 'right',\n      align: 'center' as const,\n      render: (_, record) => (\n        <Space size={8} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\n          <Tooltip title=\"详情\">\n            <a onClick={() => setDetailDrawer({ open: true, name: record.name })}>\n              <EyeOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => yamlDrawer.openYaml(record.name)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          {isCordoned(record.status) ? (\n            <Popconfirm\n              title=\"确定恢复该节点调度？\"\n              onConfirm={() => uncordonMutation.mutate(record.name)}\n            >\n              <Tooltip title=\"恢复调度\">\n                <a style={{ color: '#52c41a' }}>\n                  <PlayCircleOutlined />\n                </a>\n              </Tooltip>\n            </Popconfirm>\n          ) : (\n            <Popconfirm\n              title=\"确定停止该节点调度？\"\n              onConfirm={() => cordonMutation.mutate(record.name)}\n            >\n              <Tooltip title=\"停止调度\">\n                <a style={{ color: '#faad14' }}>\n                  <StopOutlined />\n                </a>\n              </Tooltip>\n            </Popconfirm>\n          )}\n          <Popconfirm\n            title=\"确定驱逐该节点上的所有 Pod？\"\n            description=\"将忽略 DaemonSet 管理的 Pod\"\n            onConfirm={() =>\n              setDrainModal({ open: true, name: record.name, force: false, timeout: 300 })\n            }\n          >\n            <Tooltip title=\"驱逐\">\n              <a style={{ color: '#ff4d4f' }}>\n                <ExclamationCircleOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n          <Popconfirm title=\"确定删除该节点？\" onConfirm={() => deleteMutation.mutate(record.name)}>\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <AppPage>\n      <ProTable\n        headerTitle={\n          <Space>\n            <CloudServerOutlined />\n            节点管理\n          </Space>\n        }\n        rowKey=\"name\"\n        search={false}\n        options={{ reload: false }}\n        dataSource={filteredData}\n        loading={isLoading}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            placeholder=\"按名称搜索\"\n            allowClear\n            value={keyword}\n            onChange={(e) => setKeyword(e.target.value)}\n            style={{ width: 180 }}\n            prefix={<SearchOutlined />}\n          />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>\n            刷新\n          </Button>,\n        ]}\n        columns={columns}\n        scroll={{ x: 1800 }}\n      />\n\n      {/* ═══ YAML Drawer ═══ */}\n      <YamlDrawer\n        clusterId={clusterId}\n        resourceType=\"nodes\"\n        name={yamlDrawer.name}\n        open={yamlDrawer.open}\n        onClose={yamlDrawer.closeYaml}\n      />\n\n      {/* ═══ Detail Drawer ═══ */}\n      <Drawer\n        title={`节点详情 - ${detailDrawer.name}`}\n        open={detailDrawer.open}\n        onClose={() => setDetailDrawer({ open: false })}\n        width={780}\n      >\n        {detailLoading ? (\n          <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>\n        ) : (\n          detail && (\n            <Tabs\n              items={[\n                {\n                  key: 'overview',\n                  label: '概览',\n                  children: (\n                    <Descriptions column={2} bordered size=\"small\">\n                      <Descriptions.Item label=\"名称\">{detail.name}</Descriptions.Item>\n                      <Descriptions.Item label=\"状态\">\n                        <Badge status={statusColor(detail.status) as any} text={detail.status} />\n                      </Descriptions.Item>\n                      <Descriptions.Item label=\"Roles\">\n                        {Array.isArray(detail.roles) && detail.roles.length > 0\n                          ? detail.roles.join(', ')\n                          : 'worker'}\n                      </Descriptions.Item>\n                      <Descriptions.Item label=\"InternalIP\">{detail.ip}</Descriptions.Item>\n                      <Descriptions.Item label=\"kubelet 版本\">\n                        {detail.kubeletVersion || '-'}\n                      </Descriptions.Item>\n                      <Descriptions.Item label=\"OS Image\">\n                        {detail.osImage || '-'}\n                      </Descriptions.Item>\n                      <Descriptions.Item label=\"PodCIDR\">{detail.podCIDR || '-'}</Descriptions.Item>\n                      <Descriptions.Item label=\"Age\">{detail.age}</Descriptions.Item>\n                      <Descriptions.Item label=\"CPU\" span={1}>\n                        <Text>{detail.cpu}</Text>\n                      </Descriptions.Item>\n                      <Descriptions.Item label=\"内存\" span={1}>\n                        <Text>{detail.memory}</Text>\n                      </Descriptions.Item>\n                      <Descriptions.Item label=\"Taints\" span={2}>\n                        {detail.taints && detail.taints.length > 0 ? (\n                          detail.taints.map((t: any, i: number) => (\n                            <Tag key={i} color={t.effect === 'NoSchedule' ? 'error' : 'warning'}>\n                              {t.key}={t.value}:{t.effect}\n                            </Tag>\n                          ))\n                        ) : (\n                          <Text type=\"secondary\">无</Text>\n                        )}\n                      </Descriptions.Item>\n                    </Descriptions>\n                  ),\n                },\n                {\n                  key: 'conditions',\n                  label: '条件',\n                  children: detail.conditions ? (\n                    <Table\n                      size=\"small\"\n                      rowKey={(_, i) => String(i)}\n                      pagination={false}\n                      dataSource={detail.conditions}\n                      columns={[\n                        { title: '类型', dataIndex: 'type', width: 120, render: (v) => <Tag>{v}</Tag> },\n                        { title: '状态', dataIndex: 'status', width: 80, align: 'center' as const, render: (v) => <Badge status={v === 'True' ? 'success' : 'error'} text={v} /> },\n                        { title: '原因', dataIndex: 'reason', ellipsis: true },\n                        { title: '信息', dataIndex: 'message', ellipsis: true },\n                        { title: '上次转换', dataIndex: 'lastTransitionTime', width: 180 },\n                      ]}\n                    />\n                  ) : (\n                    <Text type=\"secondary\">暂无条件数据</Text>\n                  ),\n                },\n                {\n                  key: 'addresses',\n                  label: '地址',\n                  children: detail.addresses ? (\n                    <Table\n                      size=\"small\"\n                      rowKey={(_, i) => String(i)}\n                      pagination={false}\n                      dataSource={detail.addresses}\n                      columns={[\n                        { title: '类型', dataIndex: 'type', width: 150, render: (v) => <Tag>{v}</Tag> },\n                        { title: '地址', dataIndex: 'address' },\n                      ]}\n                    />\n                  ) : (\n                    <Text type=\"secondary\">暂无地址数据</Text>\n                  ),\n                },\n                {\n                  key: 'capacity',\n                  label: '容量',\n                  children: (\n                    <Row gutter={16}>\n                      <Col span={12}>\n                        <Card title=\"Capacity\" size=\"small\">\n                          {detail.capacity ? (\n                            Object.entries(detail.capacity).map(([k, v]) => (\n                              <Descriptions.Item key={k} label={k}>\n                                <Text>{String(v)}</Text>\n                              </Descriptions.Item>\n                            ))\n                          ) : (\n                            <Text type=\"secondary\">-</Text>\n                          )}\n                        </Card>\n                      </Col>\n                      <Col span={12}>\n                        <Card title=\"Allocatable\" size=\"small\">\n                          {detail.allocatable ? (\n                            Object.entries(detail.allocatable).map(([k, v]) => (\n                              <Descriptions.Item key={k} label={k}>\n                                <Text>{String(v)}</Text>\n                              </Descriptions.Item>\n                            ))\n                          ) : (\n                            <Text type=\"secondary\">-</Text>\n                          )}\n                        </Card>\n                      </Col>\n                    </Row>\n                  ),\n                },\n                {\n                  key: 'images',\n                  label: '镜像',\n                  children: detail.images ? (\n                    <Table\n                      size=\"small\"\n                      rowKey={(_, i) => String(i)}\n                      pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n                      dataSource={detail.images}\n                      columns={[\n                        { title: '镜像名称', dataIndex: 'names', render: (v: string[]) => v?.map((n, j) => <Tag key={j} style={{ marginBottom: 2 }}>{n}</Tag>) || '-', ellipsis: true },\n                        { title: '大小', dataIndex: 'sizeBytes', width: 100, align: 'center' as const, render: (v) => v ? `${(v / 1024 / 1024).toFixed(1)} MB` : '-' },\n                      ]}\n                    />\n                  ) : (\n                    <Text type=\"secondary\">暂无镜像数据</Text>\n                  ),\n                },\n              ]}\n            />\n          )\n        )}\n      </Drawer>\n\n      {/* ═══ Drain Modal ═══ */}\n      <Modal\n        title={`驱逐节点 - ${drainModal.name}`}\n        open={drainModal.open}\n        onCancel={() => setDrainModal({ open: false, force: false, timeout: 300 })}\n        onOk={() =>\n          drainMutation.mutate({\n            name: drainModal.name!,\n            force: drainModal.force,\n            timeout: drainModal.timeout,\n          })\n        }\n        confirmLoading={drainMutation.isPending}\n        okText=\"确认驱逐\"\n        okButtonProps={{ danger: true }}\n      >\n        <Alert\n          type=\"warning\"\n          showIcon\n          message=\"驱逐将清除节点上所有非 DaemonSet Pod，请确认操作。\"\n          style={{ marginBottom: 16 }}\n        />\n        <Descriptions column={1} size=\"small\">\n          <Descriptions.Item label=\"强制驱逐\">\n            <Switch\n              checked={drainModal.force}\n              onChange={(v) => setDrainModal((s) => ({ ...s, force: v }))}\n            />\n          </Descriptions.Item>\n          <Descriptions.Item label=\"超时时间（秒）\">\n            <InputNumber\n              min={30}\n              max={3600}\n              value={drainModal.timeout}\n              onChange={(v) => setDrainModal((s) => ({ ...s, timeout: v || 300 }))}\n            />\n          </Descriptions.Item>\n        </Descriptions>\n      </Modal>\n    </AppPage>\n  )\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/nodes.tsx"
     },
@@ -23299,7 +23447,7 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/nodes.tsx": {
-            "bytes": 19111,
+            "bytes": 22110,
             "imports": [
               {
                 "path": "@ant-design/pro-components",
@@ -23345,6 +23493,11 @@
                 "path": "src/hooks/useClusterId.ts",
                 "kind": "import-statement",
                 "original": "@/hooks/useClusterId"
+              },
+              {
+                "path": "src/utils/index.ts",
+                "kind": "import-statement",
+                "original": "@/utils"
               },
               {
                 "path": "react/jsx-runtime",
@@ -28569,7 +28722,7 @@
                 "bytesInOutput": 8855
               },
               "src/pages/k8s/$clusterId/nodes.tsx": {
-                "bytesInOutput": 20536
+                "bytesInOutput": 23400
               },
               "src/pages/k8s/$clusterId/leases.tsx": {
                 "bytesInOutput": 2083
@@ -28635,7 +28788,7 @@
                 "bytesInOutput": 2108
               }
             },
-            "bytes": 1103472
+            "bytes": 1106336
           }
         }
       }
