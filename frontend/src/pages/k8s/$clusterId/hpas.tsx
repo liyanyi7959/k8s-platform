@@ -6,7 +6,7 @@ import {
   ProFormText,
   ProFormDigit,
 } from '@ant-design/pro-components'
-import { Popconfirm, message, Space, Tag, Tooltip, Drawer, Descriptions, Button, Input, Typography } from 'antd'
+import { Popconfirm, message, Space, Tag, Tooltip, Drawer, Descriptions, Button, Input, Table, Typography } from 'antd'
 import {
   DeleteOutlined,
   ProfileOutlined,
@@ -16,6 +16,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
 } from '@ant-design/icons'
+import { history } from '@umijs/max'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listHPAs, deleteHPA, createHPA, updateHPA } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -97,7 +98,21 @@ const HPAsPage: React.FC = () => {
       copyable: true,
       render: (_, r) => <Text strong>{r.name}</Text>,
     },
-    { title: '目标', dataIndex: 'targetName', width: 160, ellipsis: true, search: false },
+    {
+      title: '目标',
+      dataIndex: 'targetName',
+      width: 160,
+      ellipsis: true,
+      search: false,
+      render: (_, r) =>
+        r.targetName ? (
+          <a onClick={() => r.targetKind === 'Deployment' && history.push(`/k8s/${clusterId}/deployments`)}>
+            <Tag color="blue">{r.targetKind || ''}</Tag> {r.targetName}
+          </a>
+        ) : (
+          '-'
+        ),
+    },
     {
       title: '最小副本',
       dataIndex: 'minReplicas',
@@ -121,6 +136,19 @@ const HPAsPage: React.FC = () => {
       align: 'center' as const,
       search: false,
       sorter: (a, b) => (a.currentReplicas || 0) - (b.currentReplicas || 0),
+    },
+    {
+      title: '当前CPU',
+      width: 90,
+      align: 'center' as const,
+      search: false,
+      sorter: (a, b) => (a.currentCPU || 0) - (b.currentCPU || 0),
+      render: (_, r) =>
+        r.currentCPU != null ? (
+          <Tag color={r.currentCPU >= (r.targetCPU || 100) ? 'red' : 'green'}>{r.currentCPU}%</Tag>
+        ) : (
+          '-'
+        ),
     },
     {
       title: 'CPU 目标',
@@ -191,7 +219,7 @@ const HPAsPage: React.FC = () => {
         search={false}
         options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
-        scroll={{ x: 1090 }}
+        scroll={{ x: 1180 }}
         toolBarRender={() => [
           <Input.Search
             key="search"
@@ -231,6 +259,7 @@ const HPAsPage: React.FC = () => {
         destroyOnClose
       >
         {detailHPA && (
+          <>
           <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="名称">{detailHPA.name}</Descriptions.Item>
             <Descriptions.Item label="Namespace"><Tag>{detailHPA.namespace}</Tag></Descriptions.Item>
@@ -238,11 +267,28 @@ const HPAsPage: React.FC = () => {
             <Descriptions.Item label="最小副本">{detailHPA.minReplicas}</Descriptions.Item>
             <Descriptions.Item label="最大副本">{detailHPA.maxReplicas}</Descriptions.Item>
             <Descriptions.Item label="当前副本">{detailHPA.currentReplicas ?? '-'}</Descriptions.Item>
+            <Descriptions.Item label="当前CPU">{detailHPA.currentCPU != null ? `${detailHPA.currentCPU}%` : '-'}</Descriptions.Item>
             <Descriptions.Item label="CPU 目标">
               {detailHPA.targetCPU ? <Tag color="blue">{detailHPA.targetCPU}%</Tag> : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="创建时间" span={2}>{formatDate(detailHPA.createdAt)}</Descriptions.Item>
           </Descriptions>
+          {detailHPA.conditions && detailHPA.conditions.length > 0 && (
+            <Table
+              style={{ marginTop: 16 }}
+              size="small"
+              rowKey="type"
+              pagination={false}
+              dataSource={detailHPA.conditions}
+              columns={[
+                { title: '条件', dataIndex: 'type', width: 140 },
+                { title: '状态', dataIndex: 'status', width: 80, align: 'center' as const, render: (v) => <Tag color={v === 'True' ? 'success' : 'default'}>{v}</Tag> },
+                { title: '原因', dataIndex: 'reason', ellipsis: true },
+                { title: '消息', dataIndex: 'message', ellipsis: true },
+              ]}
+            />
+          )}
+          </>
         )}
       </Drawer>
 

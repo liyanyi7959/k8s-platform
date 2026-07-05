@@ -342,6 +342,9 @@ export interface HPA {
   minReplicas?: number
   maxReplicas?: number
   currentReplicas?: number
+  currentCPU?: number
+  targetKind?: string
+  conditions?: Array<{ type: string; status: string; reason: string; message: string }>
 }
 
 export type HPAList = PageResult<HPA>

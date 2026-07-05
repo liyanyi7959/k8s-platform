@@ -204,7 +204,23 @@
             0,
             0,
             0,
-            1
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
           ]
         },
         "register": 1
@@ -330,7 +346,43 @@
             41,
             67,
             101,
-            89
+            89,
+            61,
+            55,
+            81,
+            91,
+            40,
+            88,
+            30,
+            91,
+            29,
+            75,
+            45,
+            78,
+            34,
+            56,
+            75,
+            49,
+            70,
+            116,
+            50,
+            102,
+            42,
+            54,
+            75,
+            119,
+            46,
+            48,
+            50,
+            85,
+            39,
+            54,
+            45,
+            55,
+            51,
+            80,
+            39,
+            50
           ]
         },
         "register": 1
@@ -399,6 +451,22 @@
             27,
             19,
             26,
+            25,
+            24,
+            17,
+            21,
+            24,
+            23,
+            21,
+            22,
+            31,
+            21,
+            24,
+            29,
+            30,
+            23,
+            24,
+            23,
             25
           ]
         },
@@ -440,6 +508,22 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -539,6 +623,20 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "onCheckCode": [
@@ -701,6 +799,40 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0
@@ -1716,6 +1848,16 @@
             0,
             0,
             0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -1782,7 +1924,23 @@
             2,
             1,
             1,
-            2
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1,
+            1,
+            2,
+            2,
+            1,
+            1,
+            1
           ],
           "addRuntimePlugin": [
             0,
@@ -1833,6 +1991,22 @@
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0
           ]
@@ -1957,9 +2131,57 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addEntryImports": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -2141,6 +2363,22 @@
             32,
             26,
             39,
+            41,
+            29,
+            33,
+            31,
+            38,
+            27,
+            36,
+            34,
+            84,
+            43,
+            37,
+            47,
+            37,
+            51,
+            25,
+            25,
             41
           ],
           "addPolyfillImports": [
@@ -2243,6 +2481,38 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -2259,6 +2529,38 @@
       "time": {
         "hooks": {
           "addPolyfillImports": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -2424,6 +2726,22 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -2516,7 +2834,23 @@
             1,
             0,
             0,
-            1
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            0,
+            2,
+            0,
+            2,
+            0,
+            0,
+            0
           ],
           "addBeforeMiddlewares": [
             0
@@ -2635,7 +2969,39 @@
             200,
             11,
             208,
-            12
+            12,
+            156,
+            8,
+            133,
+            8,
+            219,
+            7,
+            182,
+            10,
+            154,
+            10,
+            193,
+            8,
+            165,
+            9,
+            186,
+            13,
+            151,
+            10,
+            148,
+            10,
+            208,
+            15,
+            208,
+            11,
+            173,
+            12,
+            169,
+            13,
+            168,
+            9,
+            185,
+            11
           ]
         },
         "register": 7
@@ -2739,7 +3105,23 @@
             15,
             8,
             18,
-            21
+            21,
+            9,
+            13,
+            17,
+            16,
+            10,
+            15,
+            14,
+            19,
+            20,
+            13,
+            26,
+            15,
+            16,
+            12,
+            11,
+            16
           ]
         },
         "register": 6
@@ -2873,7 +3255,23 @@
             1,
             1,
             2,
-            1
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1,
+            2,
+            3,
+            1,
+            1,
+            2,
+            2,
+            1,
+            1,
+            1,
+            2
           ]
         },
         "register": 2
@@ -3024,7 +3422,17 @@
             0,
             0,
             0,
-            0
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            48
           ]
         },
         "register": 27
@@ -3434,6 +3842,22 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -3486,6 +3910,22 @@
             2,
             1,
             3,
+            1,
+            1,
+            1,
+            1,
+            3,
+            2,
+            2,
+            1,
+            2,
+            1,
+            1,
+            2,
+            2,
+            2,
+            2,
+            1,
             1
           ],
           "addTmpGenerateWatcherPaths": [
@@ -3628,6 +4068,38 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePlugin": [
@@ -3680,9 +4152,41 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -3784,6 +4288,22 @@
             2,
             3,
             3,
+            2,
+            2,
+            3,
+            2,
+            3,
+            2,
+            1,
+            3,
+            3,
+            2,
+            1,
+            2,
+            2,
+            2,
+            3,
+            4,
             2
           ],
           "addExtraBabelPlugins": [
@@ -3868,9 +4388,41 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -3972,7 +4524,23 @@
             3,
             1,
             1,
-            2
+            2,
+            1,
+            1,
+            1,
+            3,
+            1,
+            1,
+            2,
+            2,
+            3,
+            1,
+            2,
+            1,
+            1,
+            1,
+            2,
+            1
           ],
           "addExtraModels": [
             0,
@@ -4022,6 +4590,22 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
             0,
             0,
             0
@@ -4095,6 +4679,22 @@
             0,
             1,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "modifyAppData": [
@@ -4150,9 +4750,41 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -4254,7 +4886,23 @@
             10,
             4,
             6,
-            8
+            8,
+            3,
+            3,
+            4,
+            6,
+            4,
+            4,
+            9,
+            5,
+            6,
+            3,
+            9,
+            5,
+            5,
+            7,
+            4,
+            4
           ]
         },
         "register": 3
@@ -4346,6 +4994,22 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -4398,7 +5062,23 @@
             159,
             88,
             104,
-            100
+            100,
+            98,
+            78,
+            79,
+            123,
+            103,
+            100,
+            101,
+            111,
+            104,
+            99,
+            138,
+            125,
+            108,
+            125,
+            124,
+            108
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -4476,6 +5156,22 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
             0,
             0,
             0,
@@ -4576,7 +5272,23 @@
             0,
             0,
             0,
-            0
+            0,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
           ],
           "addRuntimePlugin": [
             0,
@@ -4628,9 +5340,41 @@
             0,
             0,
             0,
-            0
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
           ],
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -4732,7 +5476,23 @@
             3,
             2,
             3,
-            2
+            2,
+            1,
+            2,
+            2,
+            4,
+            2,
+            3,
+            1,
+            2,
+            1,
+            2,
+            4,
+            2,
+            3,
+            2,
+            4,
+            3
           ]
         },
         "register": 1
@@ -4749,6 +5509,22 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -4850,7 +5626,23 @@
             2,
             1,
             2,
-            3
+            3,
+            2,
+            2,
+            2,
+            2,
+            4,
+            3,
+            2,
+            3,
+            2,
+            4,
+            3,
+            2,
+            3,
+            3,
+            4,
+            2
           ]
         },
         "register": 1
@@ -8171,7 +8963,7 @@
       "parentId": "83",
       "id": "89",
       "absPath": "/k8s/:clusterId/workloads",
-      "__content": "/**\r\n * 工作负载管理页\r\n * 完整功能：Deployment/DaemonSet/StatefulSet 列表+创建+编辑+扩缩容+重启+镜像更新+暂停恢复+版本历史+YAML+删除\r\n */\r\nimport { useState, useRef } from 'react'\r\nimport {\r\n  ProTable,\r\n  ModalForm,\r\n  ProFormText,\r\n  ProFormDigit,\r\n  ProFormSelect,\r\n  ProFormTextArea,\r\n  type ActionType,\r\n  type ProColumns,\r\n} from '@ant-design/pro-components'\r\nimport {\r\n  Button,\r\n  Space,\r\n  message,\r\n  Popconfirm,\r\n  Tag,\r\n  Tooltip,\r\n  Drawer,\r\n  Descriptions,\r\n  Tabs,\r\n  Badge,\r\n  Typography,\r\n  Modal,\r\n  Input,\r\n  Select,\r\n  Table,\r\n} from 'antd'\r\nimport {\r\n  PlusOutlined,\r\n  ReloadOutlined,\r\n  DeleteOutlined,\r\n  EditOutlined,\r\n  ProfileOutlined,\r\n  PauseCircleOutlined,\r\n  PlayCircleOutlined,\r\n  HistoryOutlined,\r\n  SyncOutlined,\r\n  ColumnHeightOutlined,\r\n  CloudSyncOutlined,\r\n  CheckOutlined,\r\n  CloseOutlined,\r\n  SearchOutlined,\r\n  RollbackOutlined,\r\n  EyeOutlined,\r\n} from '@ant-design/icons'\r\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\r\nimport {\r\n  getDeployments,\r\n  createDeployment,\r\n  updateDeployment,\r\n  deleteDeployment,\r\n  scaleDeployment,\r\n  restartDeployment,\r\n  getDeploymentYaml,\r\n  getDeploymentHistory,\r\n  updateWorkloadImage,\r\n  updateWorkloadPaused,\r\n  rollbackDeployment,\r\n  applyYaml,\r\n  listPods,\r\n  getPodEvents,\r\n} from '@/services/k8s'\r\nimport { useClusterId } from '@/hooks/useClusterId'\r\nimport { AppPage, NamespaceSelector, EllipsisText, YamlEditor } from '@/components'\r\nimport { formatDate } from '@/utils'\r\nimport { history } from '@umijs/max'\r\n\r\nconst { Text } = Typography\r\n\r\ntype WorkloadKind = 'Deployment' | 'DaemonSet' | 'StatefulSet'\r\n\r\ntype WorkloadsPageProps = {\r\n  fixedKind?: WorkloadKind\r\n}\r\n\r\nexport default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {\r\n  const clusterId = useClusterId()\r\n  const queryClient = useQueryClient()\r\n  const actionRef = useRef<ActionType>()\r\n  const [namespace, setNamespace] = useState<string>('')\r\n  const [activeTab, setActiveTab] = useState<WorkloadKind>(fixedKind || 'Deployment')\r\n  const workloadKind = fixedKind || activeTab\r\n\r\n  // ═══ Drawers/Modals ═══\r\n  const [keyword, setKeyword] = useState('')\r\n  const [statusFilter, setStatusFilter] = useState<string>('all')\r\n  const [createModal, setCreateModal] = useState(false)\r\n  const [editDrawer, setEditDrawer] = useState<{ open: boolean; record?: any }>({ open: false })\r\n  const [scaleModal, setScaleModal] = useState<{\r\n    open: boolean\r\n    name?: string\r\n    ns?: string\r\n    current?: number\r\n  }>({ open: false })\r\n  const [yamlDrawer, setYamlDrawer] = useState<{\r\n    open: boolean\r\n    name?: string\r\n    yaml?: string\r\n    loading: boolean\r\n    editing: boolean\r\n    yamlOriginal?: string\r\n  }>({ open: false, loading: false, editing: false })\r\n  const [historyDrawer, setHistoryDrawer] = useState<{\r\n    open: boolean\r\n    name?: string\r\n    ns?: string\r\n    history?: any[]\r\n    loading: boolean\r\n  }>({ open: false, loading: false })\r\n  const [imageModal, setImageModal] = useState<{\r\n    open: boolean\r\n    kind?: string\r\n    name?: string\r\n    ns?: string\r\n    containers?: any[]\r\n    newImage: string\r\n  }>({ open: false, newImage: '' })\r\n  const [pauseModal, setPauseModal] = useState<{\r\n    open: boolean\r\n    name?: string\r\n    ns?: string\r\n    paused: boolean\r\n  }>({ open: false, paused: false })\r\n  const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; record?: any }>({ open: false })\r\n  const [detailYamlEditing, setDetailYamlEditing] = useState(false)\r\n  const [detailYamlValue, setDetailYamlValue] = useState('')\r\n  const [selectedKeys, setSelectedKeys] = useState<string[]>([])\r\n  const [batchLoading, setBatchLoading] = useState(false)\r\n\r\n  // 任意 Drawer/Modal 打开时暂停轮询\r\n  const anyOverlayOpen =\r\n    createModal ||\r\n    editDrawer.open ||\r\n    scaleModal.open ||\r\n    yamlDrawer.open ||\r\n    historyDrawer.open ||\r\n    imageModal.open ||\r\n    pauseModal.open ||\r\n    detailDrawer.open\r\n\r\n  // ═══ Queries ═══\r\n  const { data, isLoading, refetch } = useQuery({\r\n    queryKey: ['k8s-workloads', clusterId, namespace, workloadKind],\r\n    queryFn: ({ signal }) => getDeployments(clusterId, namespace || undefined, signal, workloadKind),\r\n    enabled: !!clusterId,\r\n    refetchInterval: anyOverlayOpen ? false : 30000,\r\n  })\r\n\r\n  // 详情抽屉：关联 Pod 列表\r\n  const { data: podsData, isLoading: podsLoading } = useQuery({\r\n    queryKey: ['k8s-detail-pods', clusterId, detailDrawer.record?.namespace],\r\n    queryFn: ({ signal }) => listPods(clusterId, { namespace: detailDrawer.record?.namespace }, signal),\r\n    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace,\r\n  })\r\n\r\n  // 详情抽屉：关联事件\r\n  const { data: eventsData, isLoading: eventsLoading } = useQuery({\r\n    queryKey: ['k8s-detail-events', clusterId, detailDrawer.record?.namespace, detailDrawer.record?.name],\r\n    queryFn: ({ signal }) =>\r\n      getPodEvents(clusterId, detailDrawer.record?.namespace || '', detailDrawer.record?.name || '', signal),\r\n    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,\r\n  })\r\n\r\n  // 详情抽屉：版本历史\r\n  const { data: detailHistoryData, isLoading: detailHistoryLoading } = useQuery({\r\n    queryKey: ['k8s-detail-history', clusterId, detailDrawer.record?.namespace, detailDrawer.record?.name],\r\n    queryFn: ({ signal }) => getDeploymentHistory(clusterId, detailDrawer.record?.namespace || '', detailDrawer.record?.name || ''),\r\n    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,\r\n  })\r\n\r\n  // 详情抽屉：YAML\r\n  const { data: detailYamlData, isLoading: detailYamlLoading } = useQuery({\r\n    queryKey: ['k8s-detail-yaml', clusterId, detailDrawer.record?.namespace, detailDrawer.record?.name, workloadKind],\r\n    queryFn: async ({ signal }) => {\r\n      const res = await getDeploymentYaml(clusterId, detailDrawer.record?.namespace || '', detailDrawer.record?.name || '', undefined, workloadKind)\r\n      return res.yaml || ''\r\n    },\r\n    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,\r\n  })\r\n\r\n  // 过滤后的数据（按 keyword 和 statusFilter 过滤）\r\n  const filteredData = (data?.items || []).filter((item: any) => {\r\n    const matchKeyword = !keyword || String(item.name || '').toLowerCase().includes(keyword.toLowerCase())\r\n    const ready = item.readyReplicas || Number(String(item.ready || '0/0').split('/')[0] || 0)\r\n    const desired = item.replicas || 0\r\n    const isReady = ready === desired\r\n    let matchStatus = true\r\n    if (statusFilter === 'ready') matchStatus = isReady\r\n    else if (statusFilter === 'notReady') matchStatus = !isReady\r\n    else if (statusFilter === 'paused') matchStatus = !!item.paused\r\n    return matchKeyword && matchStatus\r\n  })\r\n\r\n  // 详情抽屉：关联 Pod（ownerKind 为 ReplicaSet 且 ownerName 以 deployment 名称开头）\r\n  const relatedPods = (podsData?.items || []).filter((pod: any) => {\r\n    return (\r\n      pod.ownerKind === 'ReplicaSet' &&\r\n      (pod.ownerName || '').startsWith(detailDrawer.record?.name + '-')\r\n    )\r\n  })\r\n\r\n  // ═══ Mutations ═══\r\n  const createMutation = useMutation({\r\n    mutationFn: (values: any) =>\r\n      createDeployment(clusterId, values.namespace || 'default', values, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('创建成功')\r\n      setCreateModal(false)\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('创建失败'),\r\n  })\r\n\r\n  const deleteMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace }: { name: string; namespace: string }) =>\r\n      deleteDeployment(clusterId, recordNamespace, name, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('删除成功')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('删除失败'),\r\n  })\r\n\r\n  const scaleMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace, replicas }: { name: string; namespace: string; replicas: number }) =>\r\n      scaleDeployment(clusterId, recordNamespace, name, replicas, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('扩缩容成功')\r\n      setScaleModal({ open: false })\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('扩缩容失败'),\r\n  })\r\n\r\n  const restartMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace }: { name: string; namespace: string }) =>\r\n      restartDeployment(clusterId, recordNamespace, name, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('已触发重新部署')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('重新部署失败'),\r\n  })\r\n\r\n  const updateMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace, data }: { name: string; namespace: string; data: any }) =>\r\n      updateDeployment(clusterId, recordNamespace, name, { ...data, kind: workloadKind }),\r\n    onSuccess: () => {\r\n      message.success('更新成功')\r\n      setEditDrawer({ open: false })\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('更新失败'),\r\n  })\r\n\r\n  const updateImageMutation = useMutation({\r\n    mutationFn: ({ namespace: recordNamespace, name, container, image }: { namespace: string; name: string; container: string; image: string }) =>\r\n      updateWorkloadImage(clusterId, recordNamespace, name, container, image, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('镜像更新成功')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('镜像更新失败'),\r\n  })\r\n\r\n  const pauseMutation = useMutation({\r\n    mutationFn: ({ namespace: recordNamespace, name, paused }: { namespace: string; name: string; paused: boolean }) =>\r\n      updateWorkloadPaused(clusterId, recordNamespace, name, paused),\r\n    onSuccess: () => {\r\n      message.success('更新成功')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('更新失败'),\r\n  })\r\n\r\n  const rollbackMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace, revision }: { name: string; namespace: string; revision: number }) =>\r\n      rollbackDeployment(clusterId, recordNamespace, name, revision),\r\n    onSuccess: () => {\r\n      message.success('回滚成功')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-detail-history', clusterId] })\r\n      setHistoryDrawer({ open: false, loading: false })\r\n      setDetailDrawer({ open: false })\r\n    },\r\n    onError: () => message.error('回滚失败'),\r\n  })\r\n\r\n  const applyYamlMutation = useMutation({\r\n    mutationFn: (yaml: string) => applyYaml(clusterId, yaml),\r\n    onSuccess: (res) => {\r\n      if (res?.success) {\r\n        message.success('YAML 应用成功')\r\n        setYamlDrawer((p) => ({ ...p, editing: false }))\r\n        setDetailYamlEditing(false)\r\n      } else {\r\n        message.error(res?.message || '应用失败')\r\n      }\r\n    },\r\n    onError: () => message.error('YAML 应用失败'),\r\n  })\r\n\r\n  // ═══ Handlers ═══\r\n  const handleViewYaml = async (record: any) => {\r\n    setYamlDrawer({ open: true, name: record.name, loading: true, editing: false })\r\n    try {\r\n      const res = await getDeploymentYaml(clusterId, record.namespace, record.name, undefined, workloadKind)\r\n      setYamlDrawer((prev) => ({\r\n        ...prev,\r\n        yaml: res.yaml,\r\n        yamlOriginal: res.yaml,\r\n        loading: false,\r\n      }))\r\n    } catch {\r\n      setYamlDrawer((prev) => ({ ...prev, yaml: '获取 YAML 失败', loading: false }))\r\n    }\r\n  }\r\n\r\n  const handleViewHistory = async (record: any) => {\r\n    setHistoryDrawer({ open: true, name: record.name, ns: record.namespace, history: [], loading: true })\r\n    try {\r\n      const res = await getDeploymentHistory(clusterId, record.namespace, record.name)\r\n      setHistoryDrawer((prev) => ({ ...prev, history: res || [], loading: false }))\r\n    } catch {\r\n      setHistoryDrawer((prev) => ({ ...prev, history: [], loading: false }))\r\n    }\r\n  }\r\n\r\n  // 批量删除\r\n  const handleBatchDelete = async () => {\r\n    const rows = filteredData.filter((r: any) => selectedKeys.includes(r.name))\r\n    setBatchLoading(true)\r\n    try {\r\n      await Promise.all(\r\n        rows.map((r: any) => deleteMutation.mutateAsync({ name: r.name, namespace: r.namespace })),\r\n      )\r\n    } finally {\r\n      setBatchLoading(false)\r\n      setSelectedKeys([])\r\n    }\r\n  }\r\n\r\n  // 批量重启\r\n  const handleBatchRestart = async () => {\r\n    const rows = filteredData.filter((r: any) => selectedKeys.includes(r.name))\r\n    setBatchLoading(true)\r\n    try {\r\n      await Promise.all(\r\n        rows.map((r: any) => restartMutation.mutateAsync({ name: r.name, namespace: r.namespace })),\r\n      )\r\n    } finally {\r\n      setBatchLoading(false)\r\n      setSelectedKeys([])\r\n    }\r\n  }\r\n\r\n  // ═══ Columns ═══\r\n  const columns: ProColumns[] = [\r\n    {\r\n      title: 'Namespace',\r\n      dataIndex: 'namespace',\r\n      width: 140,\r\n      ellipsis: true,\r\n      render: (_, r) => <EllipsisText text={r.namespace} tag />,\r\n    },\r\n    {\r\n      title: '名称',\r\n      dataIndex: 'name',\r\n      width: 160,\r\n      ellipsis: true,\r\n      render: (_, r) => (\r\n        <a onClick={() => setDetailDrawer({ open: true, record: r })}>\r\n          <Text strong>{r.name}</Text>\r\n        </a>\r\n      ),\r\n    },\r\n    {\r\n      title: 'READY',\r\n      width: 120,\r\n      align: 'center' as const,\r\n      sorter: (a, b) => (a.readyReplicas || 0) - (b.readyReplicas || 0),\r\n      render: (_, r) => {\r\n        const ready = r.readyReplicas || Number(String(r.ready || '0/0').split('/')[0] || 0)\r\n        const desired = r.replicas || 0\r\n        const ok = ready === desired\r\n        return <Badge status={ok ? 'success' : 'processing'} text={`${ready}/${desired}`} />\r\n      },\r\n    },\r\n    {\r\n      title: 'UP-TO-DATE',\r\n      dataIndex: 'upToDate',\r\n      width: 110,\r\n      align: 'center' as const,\r\n      render: (_, r) => <Text>{r.upToDate ?? 0}</Text>,\r\n    },\r\n    {\r\n      title: 'AVAILABLE',\r\n      dataIndex: 'available',\r\n      width: 110,\r\n      align: 'center' as const,\r\n      render: (_, r) => <Text>{r.available ?? 0}</Text>,\r\n    },\r\n    {\r\n      title: '策略',\r\n      width: 120,\r\n      render: (_, r) => <Tag>{r.strategy || 'RollingUpdate'}</Tag>,\r\n    },\r\n    {\r\n      title: '镜像',\r\n      width: 200,\r\n      ellipsis: true,\r\n      render: (_, r) => {\r\n        const images = r.images || []\r\n        return images.length > 0 ? (\r\n          <Tooltip title={images.join('\\n')}>\r\n            <Text style={{ fontSize: 11 }}>{images[0]}</Text>\r\n          </Tooltip>\r\n        ) : (\r\n          '-'\r\n        )\r\n      },\r\n    },\r\n    {\r\n      title: '暂停',\r\n      width: 70,\r\n      align: 'center' as const,\r\n      render: (_, r) =>\r\n        r.paused ? <Tag color=\"warning\">是</Tag> : <Text type=\"secondary\">否</Text>,\r\n    },\r\n    {\r\n      title: 'Age',\r\n      dataIndex: 'age',\r\n      width: 110,\r\n      align: 'center' as const,\r\n      ellipsis: true,\r\n      sorter: (a, b) => new Date(a.age || 0).getTime() - new Date(b.age || 0).getTime(),\r\n      render: (_, r) => (r.age ? formatDate(r.age) : '-'),\r\n    },\r\n    {\r\n      title: '操作',\r\n      valueType: 'option',\r\n      width: 250,\r\n      fixed: 'right',\r\n      render: (_, record) => (\r\n        <Space size={8} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\r\n          <Tooltip title=\"详情\">\r\n            <a onClick={() => setDetailDrawer({ open: true, record })}>\r\n              <EyeOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"编辑\">\r\n            <a onClick={() => setEditDrawer({ open: true, record })}>\r\n              <EditOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"扩缩容\">\r\n            <a\r\n              onClick={() =>\r\n                setScaleModal({\r\n                  open: true,\r\n                  name: record.name,\r\n                  ns: record.namespace,\r\n                  current: record.replicas,\r\n                })\r\n              }\r\n            >\r\n              <ColumnHeightOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Popconfirm\r\n            title=\"确定重新部署？\"\r\n            onConfirm={() => restartMutation.mutate({ name: record.name, namespace: record.namespace })}\r\n          >\r\n            <Tooltip title=\"重部署\">\r\n              <a>\r\n                <SyncOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n          <Tooltip title=\"镜像\">\r\n            <a\r\n              onClick={() =>\r\n                setImageModal({\r\n                  open: true,\r\n                  kind: workloadKind,\r\n                  name: record.name,\r\n                  ns: record.namespace,\r\n                  containers: (record.images || []).map((image: string, index: number) => ({\r\n                    name: `${record.name}-${index + 1}`,\r\n                    image,\r\n                  })),\r\n                  newImage: '',\r\n                })\r\n              }\r\n            >\r\n              <CloudSyncOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title={workloadKind === 'Deployment' ? (record.paused ? '恢复' : '暂停') : '仅 Deployment 支持暂停'}>\r\n            <a\r\n              style={{ color: workloadKind === 'Deployment' ? undefined : '#bfbfbf', pointerEvents: workloadKind === 'Deployment' ? undefined : 'none' }}\r\n              onClick={() =>\r\n                setPauseModal({\r\n                  open: true,\r\n                  name: record.name,\r\n                  ns: record.namespace,\r\n                  paused: !record.paused,\r\n                })\r\n              }\r\n            >\r\n              {record.paused ? <PlayCircleOutlined /> : <PauseCircleOutlined />}\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"历史\">\r\n            <a\r\n              style={{ color: workloadKind === 'Deployment' ? undefined : '#bfbfbf', pointerEvents: workloadKind === 'Deployment' ? undefined : 'none' }}\r\n              onClick={() => handleViewHistory(record)}\r\n            >\r\n              <HistoryOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"查看 YAML\">\r\n            <a onClick={() => handleViewYaml(record)}>\r\n              <ProfileOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Popconfirm\r\n            title=\"确定删除？\"\r\n            onConfirm={() => deleteMutation.mutate({ name: record.name, namespace: record.namespace })}\r\n          >\r\n            <Tooltip title=\"删除\">\r\n              <a style={{ color: '#ff4d4f' }}>\r\n                <DeleteOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n        </Space>\r\n      ),\r\n    },\r\n  ]\r\n\r\n  return (\r\n    <AppPage>\r\n      {!fixedKind && (\r\n        <Tabs\r\n          activeKey={activeTab}\r\n          onChange={(k) => setActiveTab(k as WorkloadKind)}\r\n          items={[\r\n            { key: 'Deployment', label: 'Deployment' },\r\n            { key: 'DaemonSet', label: 'DaemonSet' },\r\n            { key: 'StatefulSet', label: 'StatefulSet' },\r\n          ]}\r\n          style={{ marginBottom: 0 }}\r\n        />\r\n      )}\r\n\r\n      <ProTable\r\n        headerTitle={`${workloadKind} 列表`}\r\n        actionRef={actionRef}\r\n        rowKey=\"name\"\r\n        rowSelection={{\r\n          selectedRowKeys: selectedKeys,\r\n          onChange: (keys) => setSelectedKeys(keys as string[]),\r\n        }}\r\n        tableAlertRender={() => (\r\n          <Space size={12}>\r\n            <Text type=\"secondary\">已选择 {selectedKeys.length} 项</Text>\r\n            <Popconfirm title=\"确定批量删除选中的工作负载？\" onConfirm={handleBatchDelete}>\r\n              <Button danger icon={<DeleteOutlined />} loading={batchLoading} size=\"small\">\r\n                批量删除\r\n              </Button>\r\n            </Popconfirm>\r\n            <Popconfirm title=\"确定批量重启选中的工作负载？\" onConfirm={handleBatchRestart}>\r\n              <Button icon={<SyncOutlined />} loading={batchLoading} size=\"small\">\r\n                批量重启\r\n              </Button>\r\n            </Popconfirm>\r\n          </Space>\r\n        )}\r\n        search={false}\r\n        loading={isLoading}\r\n        dataSource={filteredData}\r\n        pagination={{\r\n          defaultPageSize: 20,\r\n          showSizeChanger: true,\r\n          showTotal: (t) => `共 ${t} 条`,\r\n        }}\r\n        toolBarRender={() => [\r\n          <Input.Search\r\n            key=\"search\"\r\n            placeholder=\"按名称搜索\"\r\n            allowClear\r\n            value={keyword}\r\n            onChange={(e) => setKeyword(e.target.value)}\r\n            style={{ width: 180 }}\r\n            prefix={<SearchOutlined />}\r\n          />,\r\n          <Select\r\n            key=\"status\"\r\n            value={statusFilter}\r\n            onChange={setStatusFilter}\r\n            style={{ width: 120 }}\r\n            options={[\r\n              { value: 'all', label: '全部' },\r\n              { value: 'ready', label: 'Ready' },\r\n              { value: 'notReady', label: '未就绪' },\r\n              { value: 'paused', label: '已暂停' },\r\n            ]}\r\n          />,\r\n          <NamespaceSelector\r\n            key=\"ns\"\r\n            clusterId={clusterId}\r\n            value={namespace}\r\n            onChange={(v) => {\r\n              setNamespace(v)\r\n            }}\r\n          />,\r\n          <Button\r\n            key=\"create\"\r\n            type=\"primary\"\r\n            icon={<PlusOutlined />}\r\n            onClick={() => setCreateModal(true)}\r\n          >\r\n            创建 {workloadKind}\r\n          </Button>,\r\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>\r\n            刷新\r\n          </Button>,\r\n        ]}\r\n        columns={columns}\r\n        scroll={{ x: 1400 }}\r\n      />\r\n\r\n      {/* ═══ 创建 ModalForm ═══ */}\r\n      <ModalForm\r\n        title={`创建 ${workloadKind}`}\r\n        open={createModal}\r\n        onOpenChange={setCreateModal}\r\n        onFinish={async (values) => {\r\n          createMutation.mutate(values)\r\n          return true\r\n        }}\r\n        width={600}\r\n      >\r\n        <ProFormText name=\"name\" label=\"名称\" rules={[{ required: true }]} />\r\n        <ProFormText name=\"namespace\" label=\"命名空间\" initialValue=\"default\" />\r\n        <ProFormDigit\r\n          name=\"replicas\"\r\n          label=\"副本数\"\r\n          initialValue={3}\r\n          min={0}\r\n          max={100}\r\n          rules={[{ required: true }]}\r\n          hidden={workloadKind === 'DaemonSet'}\r\n        />\r\n        <ProFormText\r\n          name=\"image\"\r\n          label=\"镜像\"\r\n          rules={[{ required: true }]}\r\n          placeholder=\"nginx:1.24\"\r\n        />\r\n        <ProFormText name=\"port\" label=\"容器端口\" placeholder=\"80\" />\r\n        <ProFormSelect\r\n          name=\"strategy\"\r\n          label=\"部署策略\"\r\n          initialValue=\"RollingUpdate\"\r\n          options={[\r\n            { value: 'RollingUpdate', label: 'RollingUpdate' },\r\n            { value: 'Recreate', label: 'Recreate' },\r\n          ]}\r\n        />\r\n        <ProFormTextArea name=\"labels\" label=\"标签 (JSON)\" placeholder='{\"app\":\"nginx\"}' />\r\n      </ModalForm>\r\n\r\n      {/* ═══ 编辑 ModalForm ═══ */}\r\n      <ModalForm\r\n        title={`编辑 ${workloadKind} - ${editDrawer.record?.name}`}\r\n        open={editDrawer.open}\r\n        onOpenChange={(v) => !v && setEditDrawer({ open: false })}\r\n        onFinish={async (values) => {\r\n          if (!editDrawer.record) return false\r\n          updateMutation.mutate({\r\n            name: editDrawer.record.name,\r\n            namespace: editDrawer.record.namespace,\r\n            data: values,\r\n          })\r\n          return true\r\n        }}\r\n        initialValues={\r\n          editDrawer.record\r\n            ? {\r\n                replicas: editDrawer.record.replicas,\r\n                image: editDrawer.record.images?.[0],\r\n                strategy: editDrawer.record.strategy,\r\n              }\r\n            : undefined\r\n        }\r\n        width={500}\r\n      >\r\n        <ProFormText name=\"name\" label=\"名称\" disabled initialValue={editDrawer.record?.name} />\r\n        <ProFormText name=\"namespace\" label=\"命名空间\" disabled initialValue={editDrawer.record?.namespace} />\r\n        <ProFormDigit name=\"replicas\" label=\"副本数\" min={0} max={100} />\r\n        <ProFormText name=\"image\" label=\"镜像\" />\r\n        <ProFormSelect\r\n          name=\"strategy\"\r\n          label=\"部署策略\"\r\n          options={[\r\n            { value: 'RollingUpdate', label: 'RollingUpdate' },\r\n            { value: 'Recreate', label: 'Recreate' },\r\n          ]}\r\n        />\r\n      </ModalForm>\r\n\r\n      {/* ═══ 扩缩容 Modal ═══ */}\r\n      <Modal\r\n        title={`扩缩容 - ${scaleModal.name}`}\r\n        open={scaleModal.open}\r\n        onCancel={() => setScaleModal({ open: false })}\r\n        onOk={() =>\r\n          scaleMutation.mutate({ name: scaleModal.name!, namespace: scaleModal.ns!, replicas: scaleModal.current || 0 })\r\n        }\r\n        confirmLoading={scaleMutation.isPending}\r\n      >\r\n        <Descriptions column={1} size=\"small\">\r\n          <Descriptions.Item label=\"当前副本数\">{scaleModal.current}</Descriptions.Item>\r\n          <Descriptions.Item label=\"目标副本数\">\r\n            <Input\r\n              type=\"number\"\r\n              min={0}\r\n              max={100}\r\n              value={scaleModal.current}\r\n              onChange={(e) => setScaleModal((s) => ({ ...s, current: Number(e.target.value) }))}\r\n            />\r\n          </Descriptions.Item>\r\n        </Descriptions>\r\n      </Modal>\r\n\r\n      {/* ═══ 镜像更新 Modal ═══ */}\r\n      <Modal\r\n        title={`更新镜像 - ${imageModal.name}`}\r\n        open={imageModal.open}\r\n        onCancel={() => setImageModal({ open: false, newImage: '' })}\r\n        onOk={() => {\r\n          const containerName = imageModal.containers?.[0]?.name\r\n          const newImage = imageModal.newImage\r\n          if (containerName && newImage) {\r\n            updateImageMutation.mutate({\r\n              name: imageModal.name!,\r\n              namespace: imageModal.ns!,\r\n              container: containerName,\r\n              image: newImage,\r\n            })\r\n            setImageModal({ open: false, newImage: '' })\r\n          }\r\n        }}\r\n      >\r\n        <Descriptions column={1} size=\"small\">\r\n          <Descriptions.Item label=\"当前镜像\">\r\n            {imageModal.containers?.map((c: any) => (\r\n              <Tag key={c.name}>\r\n                {c.name}: {c.image}\r\n              </Tag>\r\n            ))}\r\n          </Descriptions.Item>\r\n          <Descriptions.Item label=\"新镜像\">\r\n            <Input\r\n              placeholder=\"nginx:1.25\"\r\n              value={imageModal.newImage || ''}\r\n              onChange={(e) => setImageModal((s) => ({ ...s, newImage: e.target.value }))}\r\n            />\r\n          </Descriptions.Item>\r\n        </Descriptions>\r\n      </Modal>\r\n\r\n      {/* ═══ 暂停/恢复确认 ═══ */}\r\n      <Modal\r\n        title={pauseModal.paused ? `恢复 ${pauseModal.name}` : `暂停 ${pauseModal.name}`}\r\n        open={pauseModal.open}\r\n        onCancel={() => setPauseModal({ open: false, paused: false })}\r\n        onOk={() => {\r\n          pauseMutation.mutate({ name: pauseModal.name!, namespace: pauseModal.ns!, paused: pauseModal.paused })\r\n          setPauseModal({ open: false, paused: false })\r\n        }}\r\n      >\r\n        <Text>\r\n          {pauseModal.paused\r\n            ? '恢复后将自动触发新的部署流程。'\r\n            : '暂停后将停止滚动更新，当前运行的 Pod 不受影响。'}\r\n        </Text>\r\n      </Modal>\r\n\r\n      {/* ═══ YAML Drawer ═══ */}\r\n      <Drawer\r\n        title={`YAML - ${yamlDrawer.name}`}\r\n        open={yamlDrawer.open}\r\n        onClose={() => setYamlDrawer({ open: false, loading: false, editing: false })}\r\n        width={800}\r\n        extra={\r\n          yamlDrawer.editing ? (\r\n            <Space>\r\n              <Button\r\n                icon={<CheckOutlined />}\r\n                type=\"primary\"\r\n                loading={applyYamlMutation.isPending}\r\n                onClick={() => applyYamlMutation.mutate(yamlDrawer.yaml || '')}\r\n              >\r\n                应用\r\n              </Button>\r\n              <Button\r\n                icon={<CloseOutlined />}\r\n                onClick={() =>\r\n                  setYamlDrawer((p) => ({ ...p, yaml: p.yamlOriginal, editing: false }))\r\n                }\r\n              >\r\n                取消\r\n              </Button>\r\n            </Space>\r\n          ) : (\r\n            <Button\r\n              icon={<EditOutlined />}\r\n              onClick={() => setYamlDrawer((p) => ({ ...p, editing: true }))}\r\n            >\r\n              编辑\r\n            </Button>\r\n          )\r\n        }\r\n      >\r\n        {yamlDrawer.loading ? (\r\n          <Text type=\"secondary\">加载中...</Text>\r\n        ) : (\r\n          <YamlEditor\r\n            value={yamlDrawer.yaml || ''}\r\n            readOnly={!yamlDrawer.editing}\r\n            height={Math.max(window.innerHeight - 220, 400)}\r\n            onChange={(val) => setYamlDrawer((p) => ({ ...p, yaml: val }))}\r\n          />\r\n        )}\r\n      </Drawer>\r\n\r\n      {/* ═══ 版本历史 Drawer ═══ */}\r\n      <Drawer\r\n        title={`版本历史 - ${historyDrawer.name}`}\r\n        open={historyDrawer.open}\r\n        onClose={() => setHistoryDrawer({ open: false, loading: false })}\r\n        width={700}\r\n      >\r\n        {historyDrawer.loading ? (\r\n          <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>\r\n        ) : (\r\n          <table style={{ width: '100%', borderCollapse: 'collapse' }}>\r\n            <thead>\r\n              <tr style={{ background: '#fafafa' }}>\r\n                {['版本', '变更原因', '镜像', '时间', '状态', '操作'].map((h) => (\r\n                  <th\r\n                    key={h}\r\n                    style={{\r\n                      padding: '8px 12px',\r\n                      borderBottom: '1px solid #f0f0f0',\r\n                      textAlign: 'left',\r\n                      fontSize: 12,\r\n                    }}\r\n                  >\r\n                    {h}\r\n                  </th>\r\n                ))}\r\n              </tr>\r\n            </thead>\r\n            <tbody>\r\n              {(historyDrawer.history || []).map((rev: any, i: number) => (\r\n                <tr key={i}>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    <Tag>v{rev.revision || i + 1}</Tag>\r\n                  </td>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    {rev.changeCause || '-'}\r\n                  </td>\r\n                  <td\r\n                    style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', fontSize: 11 }}\r\n                  >\r\n                    {rev.images?.join(', ') || rev.image || '-'}\r\n                  </td>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    {rev.created_at || rev.createdAt || rev.date || '-'}\r\n                  </td>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    <Tag color={rev.is_current ? 'success' : 'processing'}>\r\n                      {rev.is_current ? '当前版本' : '历史版本'}\r\n                    </Tag>\r\n                  </td>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    {rev.is_current ? (\r\n                      '-'\r\n                    ) : (\r\n                      <Popconfirm\r\n                        title=\"确定回滚到此版本？\"\r\n                        onConfirm={() =>\r\n                          rollbackMutation.mutate({\r\n                            name: historyDrawer.name!,\r\n                            namespace: historyDrawer.ns!,\r\n                            revision: rev.revision,\r\n                          })\r\n                        }\r\n                      >\r\n                        <Button type=\"link\" size=\"small\" icon={<RollbackOutlined />}>\r\n                          回滚到此版本\r\n                        </Button>\r\n                      </Popconfirm>\r\n                    )}\r\n                  </td>\r\n                </tr>\r\n              ))}\r\n              {(!historyDrawer.history || historyDrawer.history.length === 0) && (\r\n                <tr>\r\n                  <td colSpan={6} style={{ padding: 20, textAlign: 'center' }}>\r\n                    <Text type=\"secondary\">暂无版本历史</Text>\r\n                  </td>\r\n                </tr>\r\n              )}\r\n            </tbody>\r\n          </table>\r\n        )}\r\n      </Drawer>\r\n\r\n      {/* ═══ 详情 Drawer ═══ */}\r\n      <Drawer\r\n        title={`详情 - ${detailDrawer.record?.name}`}\r\n        open={detailDrawer.open}\r\n        onClose={() => { setDetailDrawer({ open: false }); setDetailYamlEditing(false) }}\r\n        width={720}\r\n      >\r\n        {detailDrawer.record && (\r\n          <Tabs\r\n            defaultActiveKey=\"overview\"\r\n            items={[\r\n              {\r\n                key: 'overview',\r\n                label: '概览',\r\n                children: (\r\n                  <>\r\n                    <div style={{ marginBottom: 16 }}>\r\n                      <Space size={4} wrap>\r\n                        <Text strong>关联 Pod：</Text>\r\n                        <Text>共 {relatedPods.length} 个</Text>\r\n                        <Text type=\"secondary\">|</Text>\r\n                        <Tag color=\"success\">Running {relatedPods.filter((p: any) => p.status === 'Running').length}</Tag>\r\n                        <Tag color=\"processing\">Pending {relatedPods.filter((p: any) => p.status === 'Pending').length}</Tag>\r\n                        <Tag color=\"error\">Failed {relatedPods.filter((p: any) => p.status === 'Failed').length}</Tag>\r\n                        <Tag>Succeeded {relatedPods.filter((p: any) => p.status === 'Succeeded').length}</Tag>\r\n                      </Space>\r\n                    </div>\r\n                    <Descriptions column={2} size=\"small\" bordered>\r\n                      <Descriptions.Item label=\"名称\">{detailDrawer.record.name}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"命名空间\">{detailDrawer.record.namespace}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"副本数\">\r\n                        {detailDrawer.record.readyReplicas ?? detailDrawer.record.replicas ?? 0}/\r\n                        {detailDrawer.record.replicas ?? 0}\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"策略\">{detailDrawer.record.strategy || 'RollingUpdate'}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"镜像\" span={2}>\r\n                        {(detailDrawer.record.images || []).map((img: string, i: number) => (\r\n                          <Tag key={i}>{img}</Tag>\r\n                        ))}\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"暂停状态\">\r\n                        {detailDrawer.record.paused ? <Tag color=\"warning\">已暂停</Tag> : <Text type=\"secondary\">否</Text>}\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"创建时间\">\r\n                        {detailDrawer.record.age ? formatDate(detailDrawer.record.age) : '-'}\r\n                      </Descriptions.Item>\r\n                    </Descriptions>\r\n                    <Table\r\n                      style={{ marginTop: 16 }}\r\n                      size=\"small\"\r\n                      rowKey={(_, i) => String(i)}\r\n                      pagination={false}\r\n                      dataSource={(detailDrawer.record.images || []).map((image: string, index: number) => ({\r\n                        key: index,\r\n                        name: `${detailDrawer.record.name}-${index + 1}`,\r\n                        image,\r\n                      }))}\r\n                      columns={[\r\n                        { title: '容器名称', dataIndex: 'name' },\r\n                        { title: '镜像', dataIndex: 'image' },\r\n                      ]}\r\n                    />\r\n                  </>\r\n                ),\r\n              },\r\n              {\r\n                key: 'pods',\r\n                label: '关联 Pod',\r\n                children: (\r\n                  <>\r\n                    <div style={{ marginBottom: 16 }}>\r\n                      <Space size={4} wrap>\r\n                        <Text strong>共 {relatedPods.length} 个 Pod</Text>\r\n                        <Text type=\"secondary\">|</Text>\r\n                        <Tag color=\"success\">Running {relatedPods.filter((p: any) => p.status === 'Running').length}</Tag>\r\n                        <Tag color=\"processing\">Pending {relatedPods.filter((p: any) => p.status === 'Pending').length}</Tag>\r\n                        <Tag color=\"error\">Failed {relatedPods.filter((p: any) => p.status === 'Failed').length}</Tag>\r\n                      </Space>\r\n                    </div>\r\n                    <Table\r\n                      size=\"small\"\r\n                      rowKey=\"name\"\r\n                      loading={podsLoading}\r\n                      pagination={false}\r\n                      dataSource={relatedPods}\r\n                      columns={[\r\n                        {\r\n                          title: '名称',\r\n                          dataIndex: 'name',\r\n                          ellipsis: true,\r\n                          render: (_, r) => (\r\n                            <a onClick={() => history.push(`/k8s/${clusterId}/pods`)}>\r\n                              <Text strong>{r.name}</Text>\r\n                            </a>\r\n                          ),\r\n                        },\r\n                        {\r\n                          title: '状态',\r\n                          dataIndex: 'status',\r\n                          width: 100,\r\n                          render: (_, r) => {\r\n                            const colorMap: Record<string, string> = {\r\n                              Running: 'success',\r\n                              Pending: 'processing',\r\n                              Failed: 'error',\r\n                              Succeeded: 'default',\r\n                            }\r\n                            return <Tag color={colorMap[r.status] || 'default'}>{r.status}</Tag>\r\n                          },\r\n                        },\r\n                        { title: '节点', dataIndex: 'nodeName', ellipsis: true },\r\n                        { title: '重启次数', dataIndex: 'restarts', width: 90, align: 'center' as const },\r\n                        {\r\n                          title: 'Age',\r\n                          dataIndex: 'createdAt',\r\n                          width: 110,\r\n                          render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),\r\n                        },\r\n                      ]}\r\n                    />\r\n                  </>\r\n                ),\r\n              },\r\n              {\r\n                key: 'events',\r\n                label: '事件',\r\n                children: (\r\n                  <Table\r\n                    size=\"small\"\r\n                    rowKey={(_, i) => String(i)}\r\n                    loading={eventsLoading}\r\n                    pagination={false}\r\n                    dataSource={eventsData || []}\r\n                    columns={[\r\n                      {\r\n                        title: '类型',\r\n                        dataIndex: 'type',\r\n                        width: 90,\r\n                        render: (_, r) => (\r\n                          <Tag color={r.type === 'Warning' ? 'warning' : 'success'}>{r.type || 'Normal'}</Tag>\r\n                        ),\r\n                      },\r\n                      { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true },\r\n                      { title: '消息', dataIndex: 'message', ellipsis: true },\r\n                      {\r\n                        title: '时间',\r\n                        dataIndex: 'lastTimestamp',\r\n                        width: 150,\r\n                        render: (_, r) =>\r\n                          formatDate(r.lastTimestamp || r.firstTimestamp || r.metadata?.creationTimestamp || ''),\r\n                      },\r\n                    ]}\r\n                  />\r\n                ),\r\n              },\r\n              ...(workloadKind === 'Deployment'\r\n                ? [\r\n                    {\r\n                      key: 'history',\r\n                      label: '版本历史',\r\n                      children: (\r\n                        <Table\r\n                          size=\"small\"\r\n                          rowKey={(_, i) => String(i)}\r\n                          loading={detailHistoryLoading}\r\n                          pagination={false}\r\n                          dataSource={detailHistoryData || []}\r\n                          columns={[\r\n                            { title: '版本', dataIndex: 'revision', width: 70, render: (v, r: any, i: number) => <Tag>v{v || i + 1}</Tag> },\r\n                            { title: '变更原因', dataIndex: 'changeCause', ellipsis: true, render: (v) => v || '-' },\r\n                            { title: '镜像', dataIndex: 'images', ellipsis: true, render: (v, r: any) => r.images?.join(', ') || r.image || '-' },\r\n                            { title: '时间', dataIndex: 'created_at', width: 150, render: (v, r: any) => v || r.createdAt || r.date || '-' },\r\n                            { title: '状态', width: 90, render: (_, r: any) => <Tag color={r.is_current ? 'success' : 'processing'}>{r.is_current ? '当前' : '历史'}</Tag> },\r\n                            { title: '操作', width: 120, render: (_, r: any) => r.is_current ? '-' : (\r\n                              <Popconfirm title=\"确定回滚到此版本？\" onConfirm={() => rollbackMutation.mutate({ name: detailDrawer.record.name, namespace: detailDrawer.record.namespace, revision: r.revision })}>\r\n                                <Button type=\"link\" size=\"small\" icon={<RollbackOutlined />}>回滚</Button>\r\n                              </Popconfirm>\r\n                            )},\r\n                          ]}\r\n                        />\r\n                      ),\r\n                    },\r\n                  ]\r\n                : []),\r\n              {\r\n                key: 'yaml',\r\n                label: 'YAML',\r\n                children: (\r\n                  <>\r\n                    <div style={{ marginBottom: 12 }}>\r\n                      <Space>\r\n                        {detailYamlEditing ? (\r\n                          <>\r\n                            <Button\r\n                              icon={<CheckOutlined />}\r\n                              type=\"primary\"\r\n                              loading={applyYamlMutation.isPending}\r\n                              onClick={() => applyYamlMutation.mutate(detailYamlValue)}\r\n                            >\r\n                              应用\r\n                            </Button>\r\n                            <Button\r\n                              icon={<CloseOutlined />}\r\n                              onClick={() => {\r\n                                setDetailYamlEditing(false)\r\n                                setDetailYamlValue('')\r\n                              }}\r\n                            >\r\n                              取消\r\n                            </Button>\r\n                          </>\r\n                        ) : (\r\n                          <Button\r\n                            icon={<EditOutlined />}\r\n                            onClick={() => {\r\n                              setDetailYamlEditing(true)\r\n                              setDetailYamlValue(detailYamlData || '')\r\n                            }}\r\n                          >\r\n                            编辑\r\n                          </Button>\r\n                        )}\r\n                      </Space>\r\n                    </div>\r\n                    {detailYamlLoading ? (\r\n                      <Text type=\"secondary\">加载中...</Text>\r\n                    ) : (\r\n                      <YamlEditor\r\n                        value={detailYamlEditing ? detailYamlValue : (detailYamlData || '')}\r\n                        readOnly={!detailYamlEditing}\r\n                        height={Math.max(window.innerHeight - 280, 400)}\r\n                        onChange={(val) => setDetailYamlValue(val)}\r\n                      />\r\n                    )}\r\n                  </>\r\n                ),\r\n              },\r\n            ]}\r\n          />\r\n        )}\r\n      </Drawer>\r\n    </AppPage>\r\n  )\r\n}\r\n",
+      "__content": "/**\r\n * 工作负载管理页\r\n * 完整功能：Deployment/DaemonSet/StatefulSet 列表+创建+编辑+扩缩容+重启+镜像更新+暂停恢复+版本历史+YAML+删除\r\n */\r\nimport { useState, useRef } from 'react'\r\nimport {\r\n  ProTable,\r\n  ModalForm,\r\n  ProFormText,\r\n  ProFormDigit,\r\n  ProFormSelect,\r\n  ProFormTextArea,\r\n  type ActionType,\r\n  type ProColumns,\r\n} from '@ant-design/pro-components'\r\nimport {\r\n  Button,\r\n  Space,\r\n  message,\r\n  Popconfirm,\r\n  Tag,\r\n  Tooltip,\r\n  Drawer,\r\n  Descriptions,\r\n  Tabs,\r\n  Badge,\r\n  Typography,\r\n  Modal,\r\n  Input,\r\n  Select,\r\n  Table,\r\n} from 'antd'\r\nimport {\r\n  PlusOutlined,\r\n  ReloadOutlined,\r\n  DeleteOutlined,\r\n  EditOutlined,\r\n  ProfileOutlined,\r\n  PauseCircleOutlined,\r\n  PlayCircleOutlined,\r\n  HistoryOutlined,\r\n  SyncOutlined,\r\n  ColumnHeightOutlined,\r\n  CloudSyncOutlined,\r\n  CheckOutlined,\r\n  CloseOutlined,\r\n  SearchOutlined,\r\n  RollbackOutlined,\r\n  EyeOutlined,\r\n} from '@ant-design/icons'\r\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\r\nimport {\r\n  getDeployments,\r\n  createDeployment,\r\n  updateDeployment,\r\n  deleteDeployment,\r\n  scaleDeployment,\r\n  restartDeployment,\r\n  getDeploymentYaml,\r\n  getDeploymentHistory,\r\n  updateWorkloadImage,\r\n  updateWorkloadPaused,\r\n  rollbackDeployment,\r\n  applyYaml,\r\n  listPods,\r\n  getPodEvents,\r\n} from '@/services/k8s'\r\nimport { useClusterId } from '@/hooks/useClusterId'\r\nimport { AppPage, NamespaceSelector, EllipsisText, YamlEditor } from '@/components'\r\nimport { formatDate } from '@/utils'\r\nimport { history } from '@umijs/max'\r\n\r\nconst { Text } = Typography\r\n\r\ntype WorkloadKind = 'Deployment' | 'DaemonSet' | 'StatefulSet'\r\n\r\ntype WorkloadsPageProps = {\r\n  fixedKind?: WorkloadKind\r\n}\r\n\r\nexport default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {\r\n  const clusterId = useClusterId()\r\n  const queryClient = useQueryClient()\r\n  const actionRef = useRef<ActionType>()\r\n  const [namespace, setNamespace] = useState<string>('')\r\n  const [activeTab, setActiveTab] = useState<WorkloadKind>(fixedKind || 'Deployment')\r\n  const workloadKind = fixedKind || activeTab\r\n\r\n  // ═══ Drawers/Modals ═══\r\n  const [keyword, setKeyword] = useState('')\r\n  const [statusFilter, setStatusFilter] = useState<string>('all')\r\n  const [createModal, setCreateModal] = useState(false)\r\n  const [editDrawer, setEditDrawer] = useState<{ open: boolean; record?: any }>({ open: false })\r\n  const [scaleModal, setScaleModal] = useState<{\r\n    open: boolean\r\n    name?: string\r\n    ns?: string\r\n    current?: number\r\n  }>({ open: false })\r\n  const [yamlDrawer, setYamlDrawer] = useState<{\r\n    open: boolean\r\n    name?: string\r\n    yaml?: string\r\n    loading: boolean\r\n    editing: boolean\r\n    yamlOriginal?: string\r\n  }>({ open: false, loading: false, editing: false })\r\n  const [historyDrawer, setHistoryDrawer] = useState<{\r\n    open: boolean\r\n    name?: string\r\n    ns?: string\r\n    history?: any[]\r\n    loading: boolean\r\n  }>({ open: false, loading: false })\r\n  const [imageModal, setImageModal] = useState<{\r\n    open: boolean\r\n    kind?: string\r\n    name?: string\r\n    ns?: string\r\n    containers?: any[]\r\n    newImage: string\r\n  }>({ open: false, newImage: '' })\r\n  const [pauseModal, setPauseModal] = useState<{\r\n    open: boolean\r\n    name?: string\r\n    ns?: string\r\n    paused: boolean\r\n  }>({ open: false, paused: false })\r\n  const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; record?: any }>({ open: false })\r\n  const [detailYamlEditing, setDetailYamlEditing] = useState(false)\r\n  const [detailYamlValue, setDetailYamlValue] = useState('')\r\n  const [selectedKeys, setSelectedKeys] = useState<string[]>([])\r\n  const [batchLoading, setBatchLoading] = useState(false)\r\n\r\n  // 任意 Drawer/Modal 打开时暂停轮询\r\n  const anyOverlayOpen =\r\n    createModal ||\r\n    editDrawer.open ||\r\n    scaleModal.open ||\r\n    yamlDrawer.open ||\r\n    historyDrawer.open ||\r\n    imageModal.open ||\r\n    pauseModal.open ||\r\n    detailDrawer.open\r\n\r\n  // ═══ Queries ═══\r\n  const { data, isLoading, refetch } = useQuery({\r\n    queryKey: ['k8s-workloads', clusterId, namespace, workloadKind],\r\n    queryFn: ({ signal }) => getDeployments(clusterId, namespace || undefined, signal, workloadKind),\r\n    enabled: !!clusterId,\r\n    refetchInterval: anyOverlayOpen ? false : 30000,\r\n  })\r\n\r\n  // 详情抽屉：关联 Pod 列表\r\n  const { data: podsData, isLoading: podsLoading } = useQuery({\r\n    queryKey: ['k8s-detail-pods', clusterId, detailDrawer.record?.namespace],\r\n    queryFn: ({ signal }) => listPods(clusterId, { namespace: detailDrawer.record?.namespace }, signal),\r\n    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace,\r\n  })\r\n\r\n  // 详情抽屉：关联事件\r\n  const { data: eventsData, isLoading: eventsLoading } = useQuery({\r\n    queryKey: ['k8s-detail-events', clusterId, detailDrawer.record?.namespace, detailDrawer.record?.name],\r\n    queryFn: ({ signal }) =>\r\n      getPodEvents(clusterId, detailDrawer.record?.namespace || '', detailDrawer.record?.name || '', signal),\r\n    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,\r\n  })\r\n\r\n  // 详情抽屉：版本历史\r\n  const { data: detailHistoryData, isLoading: detailHistoryLoading } = useQuery({\r\n    queryKey: ['k8s-detail-history', clusterId, detailDrawer.record?.namespace, detailDrawer.record?.name],\r\n    queryFn: ({ signal }) => getDeploymentHistory(clusterId, detailDrawer.record?.namespace || '', detailDrawer.record?.name || ''),\r\n    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,\r\n  })\r\n\r\n  // 详情抽屉：YAML\r\n  const { data: detailYamlData, isLoading: detailYamlLoading } = useQuery({\r\n    queryKey: ['k8s-detail-yaml', clusterId, detailDrawer.record?.namespace, detailDrawer.record?.name, workloadKind],\r\n    queryFn: async ({ signal }) => {\r\n      const res = await getDeploymentYaml(clusterId, detailDrawer.record?.namespace || '', detailDrawer.record?.name || '', undefined, workloadKind)\r\n      return res.yaml || ''\r\n    },\r\n    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,\r\n  })\r\n\r\n  // 过滤后的数据（按 keyword 和 statusFilter 过滤）\r\n  const filteredData = (data?.items || []).filter((item: any) => {\r\n    const matchKeyword = !keyword || String(item.name || '').toLowerCase().includes(keyword.toLowerCase())\r\n    const ready = item.readyReplicas || Number(String(item.ready || '0/0').split('/')[0] || 0)\r\n    const desired = item.replicas || 0\r\n    const isReady = ready === desired\r\n    let matchStatus = true\r\n    if (statusFilter === 'ready') matchStatus = isReady\r\n    else if (statusFilter === 'notReady') matchStatus = !isReady\r\n    else if (statusFilter === 'paused') matchStatus = !!item.paused\r\n    return matchKeyword && matchStatus\r\n  })\r\n\r\n  // 详情抽屉：关联 Pod（ownerKind 为 ReplicaSet 且 ownerName 以 deployment 名称开头）\r\n  const relatedPods = (podsData?.items || []).filter((pod: any) => {\r\n    return (\r\n      pod.ownerKind === 'ReplicaSet' &&\r\n      (pod.ownerName || '').startsWith(detailDrawer.record?.name + '-')\r\n    )\r\n  })\r\n\r\n  // ═══ Mutations ═══\r\n  const createMutation = useMutation({\r\n    mutationFn: (values: any) =>\r\n      createDeployment(clusterId, values.namespace || 'default', values, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('创建成功')\r\n      setCreateModal(false)\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('创建失败'),\r\n  })\r\n\r\n  const deleteMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace }: { name: string; namespace: string }) =>\r\n      deleteDeployment(clusterId, recordNamespace, name, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('删除成功')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('删除失败'),\r\n  })\r\n\r\n  const scaleMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace, replicas }: { name: string; namespace: string; replicas: number }) =>\r\n      scaleDeployment(clusterId, recordNamespace, name, replicas, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('扩缩容成功')\r\n      setScaleModal({ open: false })\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('扩缩容失败'),\r\n  })\r\n\r\n  const restartMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace }: { name: string; namespace: string }) =>\r\n      restartDeployment(clusterId, recordNamespace, name, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('已触发重新部署')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('重新部署失败'),\r\n  })\r\n\r\n  const updateMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace, data }: { name: string; namespace: string; data: any }) =>\r\n      updateDeployment(clusterId, recordNamespace, name, { ...data, kind: workloadKind }),\r\n    onSuccess: () => {\r\n      message.success('更新成功')\r\n      setEditDrawer({ open: false })\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('更新失败'),\r\n  })\r\n\r\n  const updateImageMutation = useMutation({\r\n    mutationFn: ({ namespace: recordNamespace, name, container, image }: { namespace: string; name: string; container: string; image: string }) =>\r\n      updateWorkloadImage(clusterId, recordNamespace, name, container, image, workloadKind),\r\n    onSuccess: () => {\r\n      message.success('镜像更新成功')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('镜像更新失败'),\r\n  })\r\n\r\n  const pauseMutation = useMutation({\r\n    mutationFn: ({ namespace: recordNamespace, name, paused }: { namespace: string; name: string; paused: boolean }) =>\r\n      updateWorkloadPaused(clusterId, recordNamespace, name, paused),\r\n    onSuccess: () => {\r\n      message.success('更新成功')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n    },\r\n    onError: () => message.error('更新失败'),\r\n  })\r\n\r\n  const rollbackMutation = useMutation({\r\n    mutationFn: ({ name, namespace: recordNamespace, revision }: { name: string; namespace: string; revision: number }) =>\r\n      rollbackDeployment(clusterId, recordNamespace, name, revision),\r\n    onSuccess: () => {\r\n      message.success('回滚成功')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-detail-history', clusterId] })\r\n      setHistoryDrawer({ open: false, loading: false })\r\n      setDetailDrawer({ open: false })\r\n    },\r\n    onError: () => message.error('回滚失败'),\r\n  })\r\n\r\n  const applyYamlMutation = useMutation({\r\n    mutationFn: (yaml: string) => applyYaml(clusterId, yaml),\r\n    onSuccess: (res) => {\r\n      if (res?.success) {\r\n        message.success('YAML 应用成功')\r\n        setYamlDrawer((p) => ({ ...p, editing: false }))\r\n        setDetailYamlEditing(false)\r\n      } else {\r\n        message.error(res?.message || '应用失败')\r\n      }\r\n    },\r\n    onError: () => message.error('YAML 应用失败'),\r\n  })\r\n\r\n  // ═══ Handlers ═══\r\n  const handleViewYaml = async (record: any) => {\r\n    setYamlDrawer({ open: true, name: record.name, loading: true, editing: false })\r\n    try {\r\n      const res = await getDeploymentYaml(clusterId, record.namespace, record.name, undefined, workloadKind)\r\n      setYamlDrawer((prev) => ({\r\n        ...prev,\r\n        yaml: res.yaml,\r\n        yamlOriginal: res.yaml,\r\n        loading: false,\r\n      }))\r\n    } catch {\r\n      setYamlDrawer((prev) => ({ ...prev, yaml: '获取 YAML 失败', loading: false }))\r\n    }\r\n  }\r\n\r\n  const handleViewHistory = async (record: any) => {\r\n    setHistoryDrawer({ open: true, name: record.name, ns: record.namespace, history: [], loading: true })\r\n    try {\r\n      const res = await getDeploymentHistory(clusterId, record.namespace, record.name)\r\n      setHistoryDrawer((prev) => ({ ...prev, history: res || [], loading: false }))\r\n    } catch {\r\n      setHistoryDrawer((prev) => ({ ...prev, history: [], loading: false }))\r\n    }\r\n  }\r\n\r\n  // 批量删除\r\n  const handleBatchDelete = async () => {\r\n    const rows = filteredData.filter((r: any) => selectedKeys.includes(r.name))\r\n    setBatchLoading(true)\r\n    try {\r\n      await Promise.all(\r\n        rows.map((r: any) => deleteMutation.mutateAsync({ name: r.name, namespace: r.namespace })),\r\n      )\r\n    } finally {\r\n      setBatchLoading(false)\r\n      setSelectedKeys([])\r\n    }\r\n  }\r\n\r\n  // 批量重启\r\n  const handleBatchRestart = async () => {\r\n    const rows = filteredData.filter((r: any) => selectedKeys.includes(r.name))\r\n    setBatchLoading(true)\r\n    try {\r\n      await Promise.all(\r\n        rows.map((r: any) => restartMutation.mutateAsync({ name: r.name, namespace: r.namespace })),\r\n      )\r\n    } finally {\r\n      setBatchLoading(false)\r\n      setSelectedKeys([])\r\n    }\r\n  }\r\n\r\n  // ═══ Columns ═══\r\n  const columns: ProColumns[] = [\r\n    {\r\n      title: 'Namespace',\r\n      dataIndex: 'namespace',\r\n      width: 140,\r\n      ellipsis: true,\r\n      render: (_, r) => <EllipsisText text={r.namespace} tag />,\r\n    },\r\n    {\r\n      title: '名称',\r\n      dataIndex: 'name',\r\n      width: 160,\r\n      ellipsis: true,\r\n      render: (_, r) => (\r\n        <a onClick={() => setDetailDrawer({ open: true, record: r })}>\r\n          <Text strong>{r.name}</Text>\r\n        </a>\r\n      ),\r\n    },\r\n    {\r\n      title: 'READY',\r\n      width: 120,\r\n      align: 'center' as const,\r\n      sorter: (a, b) => (a.readyReplicas || 0) - (b.readyReplicas || 0),\r\n      render: (_, r) => {\r\n        const ready = r.readyReplicas || Number(String(r.ready || '0/0').split('/')[0] || 0)\r\n        const desired = r.replicas || 0\r\n        const ok = ready === desired\r\n        return <Badge status={ok ? 'success' : 'processing'} text={`${ready}/${desired}`} />\r\n      },\r\n    },\r\n    {\r\n      title: 'UP-TO-DATE',\r\n      dataIndex: 'upToDate',\r\n      width: 110,\r\n      align: 'center' as const,\r\n      render: (_, r) => <Text>{r.upToDate ?? 0}</Text>,\r\n    },\r\n    {\r\n      title: 'AVAILABLE',\r\n      dataIndex: 'available',\r\n      width: 110,\r\n      align: 'center' as const,\r\n      render: (_, r) => <Text>{r.available ?? 0}</Text>,\r\n    },\r\n    {\r\n      title: '策略',\r\n      width: 120,\r\n      render: (_, r) => <Tag>{r.strategy || 'RollingUpdate'}</Tag>,\r\n    },\r\n    {\r\n      title: '镜像',\r\n      width: 200,\r\n      ellipsis: true,\r\n      render: (_, r) => {\r\n        const images = r.images || []\r\n        return images.length > 0 ? (\r\n          <Tooltip title={images.join('\\n')}>\r\n            <Text style={{ fontSize: 11 }}>{images[0]}</Text>\r\n          </Tooltip>\r\n        ) : (\r\n          '-'\r\n        )\r\n      },\r\n    },\r\n    {\r\n      title: '暂停',\r\n      width: 70,\r\n      align: 'center' as const,\r\n      render: (_, r) =>\r\n        r.paused ? <Tag color=\"warning\">是</Tag> : <Text type=\"secondary\">否</Text>,\r\n    },\r\n    {\r\n      title: 'Age',\r\n      dataIndex: 'age',\r\n      width: 110,\r\n      align: 'center' as const,\r\n      ellipsis: true,\r\n      sorter: (a, b) => new Date(a.age || 0).getTime() - new Date(b.age || 0).getTime(),\r\n      render: (_, r) => (r.age ? formatDate(r.age) : '-'),\r\n    },\r\n    {\r\n      title: '操作',\r\n      valueType: 'option',\r\n      width: 250,\r\n      fixed: 'right',\r\n      render: (_, record) => (\r\n        <Space size={8} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\r\n          <Tooltip title=\"详情\">\r\n            <a onClick={() => setDetailDrawer({ open: true, record })}>\r\n              <EyeOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"编辑\">\r\n            <a onClick={() => setEditDrawer({ open: true, record })}>\r\n              <EditOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"扩缩容\">\r\n            <a\r\n              onClick={() =>\r\n                setScaleModal({\r\n                  open: true,\r\n                  name: record.name,\r\n                  ns: record.namespace,\r\n                  current: record.replicas,\r\n                })\r\n              }\r\n            >\r\n              <ColumnHeightOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Popconfirm\r\n            title=\"确定重新部署？\"\r\n            onConfirm={() => restartMutation.mutate({ name: record.name, namespace: record.namespace })}\r\n          >\r\n            <Tooltip title=\"重部署\">\r\n              <a>\r\n                <SyncOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n          <Tooltip title=\"镜像\">\r\n            <a\r\n              onClick={() =>\r\n                setImageModal({\r\n                  open: true,\r\n                  kind: workloadKind,\r\n                  name: record.name,\r\n                  ns: record.namespace,\r\n                  containers: (record.images || []).map((image: string, index: number) => ({\r\n                    name: `${record.name}-${index + 1}`,\r\n                    image,\r\n                  })),\r\n                  newImage: '',\r\n                })\r\n              }\r\n            >\r\n              <CloudSyncOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title={workloadKind === 'Deployment' ? (record.paused ? '恢复' : '暂停') : '仅 Deployment 支持暂停'}>\r\n            <a\r\n              style={{ color: workloadKind === 'Deployment' ? undefined : '#bfbfbf', pointerEvents: workloadKind === 'Deployment' ? undefined : 'none' }}\r\n              onClick={() =>\r\n                setPauseModal({\r\n                  open: true,\r\n                  name: record.name,\r\n                  ns: record.namespace,\r\n                  paused: !record.paused,\r\n                })\r\n              }\r\n            >\r\n              {record.paused ? <PlayCircleOutlined /> : <PauseCircleOutlined />}\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"历史\">\r\n            <a\r\n              style={{ color: workloadKind === 'Deployment' ? undefined : '#bfbfbf', pointerEvents: workloadKind === 'Deployment' ? undefined : 'none' }}\r\n              onClick={() => handleViewHistory(record)}\r\n            >\r\n              <HistoryOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"查看 YAML\">\r\n            <a onClick={() => handleViewYaml(record)}>\r\n              <ProfileOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Popconfirm\r\n            title=\"确定删除？\"\r\n            onConfirm={() => deleteMutation.mutate({ name: record.name, namespace: record.namespace })}\r\n          >\r\n            <Tooltip title=\"删除\">\r\n              <a style={{ color: '#ff4d4f' }}>\r\n                <DeleteOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n        </Space>\r\n      ),\r\n    },\r\n  ]\r\n\r\n  return (\r\n    <AppPage>\r\n      {!fixedKind && (\r\n        <Tabs\r\n          activeKey={activeTab}\r\n          onChange={(k) => setActiveTab(k as WorkloadKind)}\r\n          items={[\r\n            { key: 'Deployment', label: 'Deployment' },\r\n            { key: 'DaemonSet', label: 'DaemonSet' },\r\n            { key: 'StatefulSet', label: 'StatefulSet' },\r\n          ]}\r\n          style={{ marginBottom: 0 }}\r\n        />\r\n      )}\r\n\r\n      <ProTable\r\n        headerTitle={`${workloadKind} 列表`}\r\n        actionRef={actionRef}\r\n        rowKey=\"name\"\r\n        rowSelection={{\r\n          selectedRowKeys: selectedKeys,\r\n          onChange: (keys) => setSelectedKeys(keys as string[]),\r\n        }}\r\n        tableAlertRender={() => (\r\n          <Space size={12}>\r\n            <Text type=\"secondary\">已选择 {selectedKeys.length} 项</Text>\r\n            <Popconfirm title=\"确定批量删除选中的工作负载？\" onConfirm={handleBatchDelete}>\r\n              <Button danger icon={<DeleteOutlined />} loading={batchLoading} size=\"small\">\r\n                批量删除\r\n              </Button>\r\n            </Popconfirm>\r\n            <Popconfirm title=\"确定批量重启选中的工作负载？\" onConfirm={handleBatchRestart}>\r\n              <Button icon={<SyncOutlined />} loading={batchLoading} size=\"small\">\r\n                批量重启\r\n              </Button>\r\n            </Popconfirm>\r\n          </Space>\r\n        )}\r\n        search={false}\r\n        options={{ reload: false }}\r\n        loading={isLoading}\r\n        dataSource={filteredData}\r\n        pagination={{\r\n          defaultPageSize: 20,\r\n          showSizeChanger: true,\r\n          showTotal: (t) => `共 ${t} 条`,\r\n        }}\r\n        toolBarRender={() => [\r\n          <Input.Search\r\n            key=\"search\"\r\n            placeholder=\"按名称搜索\"\r\n            allowClear\r\n            value={keyword}\r\n            onChange={(e) => setKeyword(e.target.value)}\r\n            style={{ width: 180 }}\r\n            prefix={<SearchOutlined />}\r\n          />,\r\n          <Select\r\n            key=\"status\"\r\n            value={statusFilter}\r\n            onChange={setStatusFilter}\r\n            style={{ width: 120 }}\r\n            options={[\r\n              { value: 'all', label: '全部' },\r\n              { value: 'ready', label: 'Ready' },\r\n              { value: 'notReady', label: '未就绪' },\r\n              { value: 'paused', label: '已暂停' },\r\n            ]}\r\n          />,\r\n          <NamespaceSelector\r\n            key=\"ns\"\r\n            clusterId={clusterId}\r\n            value={namespace}\r\n            onChange={(v) => {\r\n              setNamespace(v)\r\n            }}\r\n          />,\r\n          <Button\r\n            key=\"create\"\r\n            type=\"primary\"\r\n            icon={<PlusOutlined />}\r\n            onClick={() => setCreateModal(true)}\r\n          >\r\n            创建 {workloadKind}\r\n          </Button>,\r\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>\r\n            刷新\r\n          </Button>,\r\n        ]}\r\n        columns={columns}\r\n        scroll={{ x: 1400 }}\r\n      />\r\n\r\n      {/* ═══ 创建 ModalForm ═══ */}\r\n      <ModalForm\r\n        title={`创建 ${workloadKind}`}\r\n        open={createModal}\r\n        onOpenChange={setCreateModal}\r\n        onFinish={async (values) => {\r\n          createMutation.mutate(values)\r\n          return true\r\n        }}\r\n        width={600}\r\n      >\r\n        <ProFormText name=\"name\" label=\"名称\" rules={[{ required: true }]} />\r\n        <ProFormText name=\"namespace\" label=\"命名空间\" initialValue=\"default\" />\r\n        <ProFormDigit\r\n          name=\"replicas\"\r\n          label=\"副本数\"\r\n          initialValue={3}\r\n          min={0}\r\n          max={100}\r\n          rules={[{ required: true }]}\r\n          hidden={workloadKind === 'DaemonSet'}\r\n        />\r\n        <ProFormText\r\n          name=\"image\"\r\n          label=\"镜像\"\r\n          rules={[{ required: true }]}\r\n          placeholder=\"nginx:1.24\"\r\n        />\r\n        <ProFormText name=\"port\" label=\"容器端口\" placeholder=\"80\" />\r\n        <ProFormSelect\r\n          name=\"strategy\"\r\n          label=\"部署策略\"\r\n          initialValue=\"RollingUpdate\"\r\n          options={[\r\n            { value: 'RollingUpdate', label: 'RollingUpdate' },\r\n            { value: 'Recreate', label: 'Recreate' },\r\n          ]}\r\n        />\r\n        <ProFormTextArea name=\"labels\" label=\"标签 (JSON)\" placeholder='{\"app\":\"nginx\"}' />\r\n      </ModalForm>\r\n\r\n      {/* ═══ 编辑 ModalForm ═══ */}\r\n      <ModalForm\r\n        title={`编辑 ${workloadKind} - ${editDrawer.record?.name}`}\r\n        open={editDrawer.open}\r\n        onOpenChange={(v) => !v && setEditDrawer({ open: false })}\r\n        onFinish={async (values) => {\r\n          if (!editDrawer.record) return false\r\n          updateMutation.mutate({\r\n            name: editDrawer.record.name,\r\n            namespace: editDrawer.record.namespace,\r\n            data: values,\r\n          })\r\n          return true\r\n        }}\r\n        initialValues={\r\n          editDrawer.record\r\n            ? {\r\n                replicas: editDrawer.record.replicas,\r\n                image: editDrawer.record.images?.[0],\r\n                strategy: editDrawer.record.strategy,\r\n              }\r\n            : undefined\r\n        }\r\n        width={500}\r\n      >\r\n        <ProFormText name=\"name\" label=\"名称\" disabled initialValue={editDrawer.record?.name} />\r\n        <ProFormText name=\"namespace\" label=\"命名空间\" disabled initialValue={editDrawer.record?.namespace} />\r\n        <ProFormDigit name=\"replicas\" label=\"副本数\" min={0} max={100} />\r\n        <ProFormText name=\"image\" label=\"镜像\" />\r\n        <ProFormSelect\r\n          name=\"strategy\"\r\n          label=\"部署策略\"\r\n          options={[\r\n            { value: 'RollingUpdate', label: 'RollingUpdate' },\r\n            { value: 'Recreate', label: 'Recreate' },\r\n          ]}\r\n        />\r\n      </ModalForm>\r\n\r\n      {/* ═══ 扩缩容 Modal ═══ */}\r\n      <Modal\r\n        title={`扩缩容 - ${scaleModal.name}`}\r\n        open={scaleModal.open}\r\n        onCancel={() => setScaleModal({ open: false })}\r\n        onOk={() =>\r\n          scaleMutation.mutate({ name: scaleModal.name!, namespace: scaleModal.ns!, replicas: scaleModal.current || 0 })\r\n        }\r\n        confirmLoading={scaleMutation.isPending}\r\n      >\r\n        <Descriptions column={1} size=\"small\">\r\n          <Descriptions.Item label=\"当前副本数\">{scaleModal.current}</Descriptions.Item>\r\n          <Descriptions.Item label=\"目标副本数\">\r\n            <Input\r\n              type=\"number\"\r\n              min={0}\r\n              max={100}\r\n              value={scaleModal.current}\r\n              onChange={(e) => setScaleModal((s) => ({ ...s, current: Number(e.target.value) }))}\r\n            />\r\n          </Descriptions.Item>\r\n        </Descriptions>\r\n      </Modal>\r\n\r\n      {/* ═══ 镜像更新 Modal ═══ */}\r\n      <Modal\r\n        title={`更新镜像 - ${imageModal.name}`}\r\n        open={imageModal.open}\r\n        onCancel={() => setImageModal({ open: false, newImage: '' })}\r\n        onOk={() => {\r\n          const containerName = imageModal.containers?.[0]?.name\r\n          const newImage = imageModal.newImage\r\n          if (containerName && newImage) {\r\n            updateImageMutation.mutate({\r\n              name: imageModal.name!,\r\n              namespace: imageModal.ns!,\r\n              container: containerName,\r\n              image: newImage,\r\n            })\r\n            setImageModal({ open: false, newImage: '' })\r\n          }\r\n        }}\r\n      >\r\n        <Descriptions column={1} size=\"small\">\r\n          <Descriptions.Item label=\"当前镜像\">\r\n            {imageModal.containers?.map((c: any) => (\r\n              <Tag key={c.name}>\r\n                {c.name}: {c.image}\r\n              </Tag>\r\n            ))}\r\n          </Descriptions.Item>\r\n          <Descriptions.Item label=\"新镜像\">\r\n            <Input\r\n              placeholder=\"nginx:1.25\"\r\n              value={imageModal.newImage || ''}\r\n              onChange={(e) => setImageModal((s) => ({ ...s, newImage: e.target.value }))}\r\n            />\r\n          </Descriptions.Item>\r\n        </Descriptions>\r\n      </Modal>\r\n\r\n      {/* ═══ 暂停/恢复确认 ═══ */}\r\n      <Modal\r\n        title={pauseModal.paused ? `恢复 ${pauseModal.name}` : `暂停 ${pauseModal.name}`}\r\n        open={pauseModal.open}\r\n        onCancel={() => setPauseModal({ open: false, paused: false })}\r\n        onOk={() => {\r\n          pauseMutation.mutate({ name: pauseModal.name!, namespace: pauseModal.ns!, paused: pauseModal.paused })\r\n          setPauseModal({ open: false, paused: false })\r\n        }}\r\n      >\r\n        <Text>\r\n          {pauseModal.paused\r\n            ? '恢复后将自动触发新的部署流程。'\r\n            : '暂停后将停止滚动更新，当前运行的 Pod 不受影响。'}\r\n        </Text>\r\n      </Modal>\r\n\r\n      {/* ═══ YAML Drawer ═══ */}\r\n      <Drawer\r\n        title={`YAML - ${yamlDrawer.name}`}\r\n        open={yamlDrawer.open}\r\n        onClose={() => setYamlDrawer({ open: false, loading: false, editing: false })}\r\n        width={800}\r\n        extra={\r\n          yamlDrawer.editing ? (\r\n            <Space>\r\n              <Button\r\n                icon={<CheckOutlined />}\r\n                type=\"primary\"\r\n                loading={applyYamlMutation.isPending}\r\n                onClick={() => applyYamlMutation.mutate(yamlDrawer.yaml || '')}\r\n              >\r\n                应用\r\n              </Button>\r\n              <Button\r\n                icon={<CloseOutlined />}\r\n                onClick={() =>\r\n                  setYamlDrawer((p) => ({ ...p, yaml: p.yamlOriginal, editing: false }))\r\n                }\r\n              >\r\n                取消\r\n              </Button>\r\n            </Space>\r\n          ) : (\r\n            <Button\r\n              icon={<EditOutlined />}\r\n              onClick={() => setYamlDrawer((p) => ({ ...p, editing: true }))}\r\n            >\r\n              编辑\r\n            </Button>\r\n          )\r\n        }\r\n      >\r\n        {yamlDrawer.loading ? (\r\n          <Text type=\"secondary\">加载中...</Text>\r\n        ) : (\r\n          <YamlEditor\r\n            value={yamlDrawer.yaml || ''}\r\n            readOnly={!yamlDrawer.editing}\r\n            height={Math.max(window.innerHeight - 220, 400)}\r\n            onChange={(val) => setYamlDrawer((p) => ({ ...p, yaml: val }))}\r\n          />\r\n        )}\r\n      </Drawer>\r\n\r\n      {/* ═══ 版本历史 Drawer ═══ */}\r\n      <Drawer\r\n        title={`版本历史 - ${historyDrawer.name}`}\r\n        open={historyDrawer.open}\r\n        onClose={() => setHistoryDrawer({ open: false, loading: false })}\r\n        width={700}\r\n      >\r\n        {historyDrawer.loading ? (\r\n          <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>\r\n        ) : (\r\n          <table style={{ width: '100%', borderCollapse: 'collapse' }}>\r\n            <thead>\r\n              <tr style={{ background: '#fafafa' }}>\r\n                {['版本', '变更原因', '镜像', '时间', '状态', '操作'].map((h) => (\r\n                  <th\r\n                    key={h}\r\n                    style={{\r\n                      padding: '8px 12px',\r\n                      borderBottom: '1px solid #f0f0f0',\r\n                      textAlign: 'left',\r\n                      fontSize: 12,\r\n                    }}\r\n                  >\r\n                    {h}\r\n                  </th>\r\n                ))}\r\n              </tr>\r\n            </thead>\r\n            <tbody>\r\n              {(historyDrawer.history || []).map((rev: any, i: number) => (\r\n                <tr key={i}>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    <Tag>v{rev.revision || i + 1}</Tag>\r\n                  </td>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    {rev.changeCause || '-'}\r\n                  </td>\r\n                  <td\r\n                    style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', fontSize: 11 }}\r\n                  >\r\n                    {rev.images?.join(', ') || rev.image || '-'}\r\n                  </td>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    {rev.created_at || rev.createdAt || rev.date || '-'}\r\n                  </td>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    <Tag color={rev.is_current ? 'success' : 'processing'}>\r\n                      {rev.is_current ? '当前版本' : '历史版本'}\r\n                    </Tag>\r\n                  </td>\r\n                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>\r\n                    {rev.is_current ? (\r\n                      '-'\r\n                    ) : (\r\n                      <Popconfirm\r\n                        title=\"确定回滚到此版本？\"\r\n                        onConfirm={() =>\r\n                          rollbackMutation.mutate({\r\n                            name: historyDrawer.name!,\r\n                            namespace: historyDrawer.ns!,\r\n                            revision: rev.revision,\r\n                          })\r\n                        }\r\n                      >\r\n                        <Button type=\"link\" size=\"small\" icon={<RollbackOutlined />}>\r\n                          回滚到此版本\r\n                        </Button>\r\n                      </Popconfirm>\r\n                    )}\r\n                  </td>\r\n                </tr>\r\n              ))}\r\n              {(!historyDrawer.history || historyDrawer.history.length === 0) && (\r\n                <tr>\r\n                  <td colSpan={6} style={{ padding: 20, textAlign: 'center' }}>\r\n                    <Text type=\"secondary\">暂无版本历史</Text>\r\n                  </td>\r\n                </tr>\r\n              )}\r\n            </tbody>\r\n          </table>\r\n        )}\r\n      </Drawer>\r\n\r\n      {/* ═══ 详情 Drawer ═══ */}\r\n      <Drawer\r\n        title={`详情 - ${detailDrawer.record?.name}`}\r\n        open={detailDrawer.open}\r\n        onClose={() => { setDetailDrawer({ open: false }); setDetailYamlEditing(false) }}\r\n        width={720}\r\n      >\r\n        {detailDrawer.record && (\r\n          <Tabs\r\n            defaultActiveKey=\"overview\"\r\n            items={[\r\n              {\r\n                key: 'overview',\r\n                label: '概览',\r\n                children: (\r\n                  <>\r\n                    <div style={{ marginBottom: 16 }}>\r\n                      <Space size={4} wrap>\r\n                        <Text strong>关联 Pod：</Text>\r\n                        <Text>共 {relatedPods.length} 个</Text>\r\n                        <Text type=\"secondary\">|</Text>\r\n                        <Tag color=\"success\">Running {relatedPods.filter((p: any) => p.status === 'Running').length}</Tag>\r\n                        <Tag color=\"processing\">Pending {relatedPods.filter((p: any) => p.status === 'Pending').length}</Tag>\r\n                        <Tag color=\"error\">Failed {relatedPods.filter((p: any) => p.status === 'Failed').length}</Tag>\r\n                        <Tag>Succeeded {relatedPods.filter((p: any) => p.status === 'Succeeded').length}</Tag>\r\n                      </Space>\r\n                    </div>\r\n                    <Descriptions column={2} size=\"small\" bordered>\r\n                      <Descriptions.Item label=\"名称\">{detailDrawer.record.name}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"命名空间\">{detailDrawer.record.namespace}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"副本数\">\r\n                        {detailDrawer.record.readyReplicas ?? detailDrawer.record.replicas ?? 0}/\r\n                        {detailDrawer.record.replicas ?? 0}\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"策略\">{detailDrawer.record.strategy || 'RollingUpdate'}</Descriptions.Item>\r\n                      <Descriptions.Item label=\"镜像\" span={2}>\r\n                        {(detailDrawer.record.images || []).map((img: string, i: number) => (\r\n                          <Tag key={i}>{img}</Tag>\r\n                        ))}\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"暂停状态\">\r\n                        {detailDrawer.record.paused ? <Tag color=\"warning\">已暂停</Tag> : <Text type=\"secondary\">否</Text>}\r\n                      </Descriptions.Item>\r\n                      <Descriptions.Item label=\"创建时间\">\r\n                        {detailDrawer.record.age ? formatDate(detailDrawer.record.age) : '-'}\r\n                      </Descriptions.Item>\r\n                    </Descriptions>\r\n                    <Table\r\n                      style={{ marginTop: 16 }}\r\n                      size=\"small\"\r\n                      rowKey={(_, i) => String(i)}\r\n                      pagination={false}\r\n                      dataSource={(detailDrawer.record.images || []).map((image: string, index: number) => ({\r\n                        key: index,\r\n                        name: `${detailDrawer.record.name}-${index + 1}`,\r\n                        image,\r\n                      }))}\r\n                      columns={[\r\n                        { title: '容器名称', dataIndex: 'name' },\r\n                        { title: '镜像', dataIndex: 'image' },\r\n                      ]}\r\n                    />\r\n                  </>\r\n                ),\r\n              },\r\n              {\r\n                key: 'pods',\r\n                label: '关联 Pod',\r\n                children: (\r\n                  <>\r\n                    <div style={{ marginBottom: 16 }}>\r\n                      <Space size={4} wrap>\r\n                        <Text strong>共 {relatedPods.length} 个 Pod</Text>\r\n                        <Text type=\"secondary\">|</Text>\r\n                        <Tag color=\"success\">Running {relatedPods.filter((p: any) => p.status === 'Running').length}</Tag>\r\n                        <Tag color=\"processing\">Pending {relatedPods.filter((p: any) => p.status === 'Pending').length}</Tag>\r\n                        <Tag color=\"error\">Failed {relatedPods.filter((p: any) => p.status === 'Failed').length}</Tag>\r\n                      </Space>\r\n                    </div>\r\n                    <Table\r\n                      size=\"small\"\r\n                      rowKey=\"name\"\r\n                      loading={podsLoading}\r\n                      pagination={false}\r\n                      dataSource={relatedPods}\r\n                      columns={[\r\n                        {\r\n                          title: '名称',\r\n                          dataIndex: 'name',\r\n                          ellipsis: true,\r\n                          render: (_, r) => (\r\n                            <a onClick={() => history.push(`/k8s/${clusterId}/pods`)}>\r\n                              <Text strong>{r.name}</Text>\r\n                            </a>\r\n                          ),\r\n                        },\r\n                        {\r\n                          title: '状态',\r\n                          dataIndex: 'status',\r\n                          width: 100,\r\n                          render: (_, r) => {\r\n                            const colorMap: Record<string, string> = {\r\n                              Running: 'success',\r\n                              Pending: 'processing',\r\n                              Failed: 'error',\r\n                              Succeeded: 'default',\r\n                            }\r\n                            return <Tag color={colorMap[r.status] || 'default'}>{r.status}</Tag>\r\n                          },\r\n                        },\r\n                        { title: '节点', dataIndex: 'nodeName', ellipsis: true },\r\n                        { title: '重启次数', dataIndex: 'restarts', width: 90, align: 'center' as const },\r\n                        {\r\n                          title: 'Age',\r\n                          dataIndex: 'createdAt',\r\n                          width: 110,\r\n                          render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),\r\n                        },\r\n                      ]}\r\n                    />\r\n                  </>\r\n                ),\r\n              },\r\n              {\r\n                key: 'events',\r\n                label: '事件',\r\n                children: (\r\n                  <Table\r\n                    size=\"small\"\r\n                    rowKey={(_, i) => String(i)}\r\n                    loading={eventsLoading}\r\n                    pagination={false}\r\n                    dataSource={eventsData || []}\r\n                    columns={[\r\n                      {\r\n                        title: '类型',\r\n                        dataIndex: 'type',\r\n                        width: 90,\r\n                        render: (_, r) => (\r\n                          <Tag color={r.type === 'Warning' ? 'warning' : 'success'}>{r.type || 'Normal'}</Tag>\r\n                        ),\r\n                      },\r\n                      { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true },\r\n                      { title: '消息', dataIndex: 'message', ellipsis: true },\r\n                      {\r\n                        title: '时间',\r\n                        dataIndex: 'lastTimestamp',\r\n                        width: 150,\r\n                        render: (_, r) =>\r\n                          formatDate(r.lastTimestamp || r.firstTimestamp || r.metadata?.creationTimestamp || ''),\r\n                      },\r\n                    ]}\r\n                  />\r\n                ),\r\n              },\r\n              ...(workloadKind === 'Deployment'\r\n                ? [\r\n                    {\r\n                      key: 'history',\r\n                      label: '版本历史',\r\n                      children: (\r\n                        <Table\r\n                          size=\"small\"\r\n                          rowKey={(_, i) => String(i)}\r\n                          loading={detailHistoryLoading}\r\n                          pagination={false}\r\n                          dataSource={detailHistoryData || []}\r\n                          columns={[\r\n                            { title: '版本', dataIndex: 'revision', width: 70, render: (v, r: any, i: number) => <Tag>v{v || i + 1}</Tag> },\r\n                            { title: '变更原因', dataIndex: 'changeCause', ellipsis: true, render: (v) => v || '-' },\r\n                            { title: '镜像', dataIndex: 'images', ellipsis: true, render: (v, r: any) => r.images?.join(', ') || r.image || '-' },\r\n                            { title: '时间', dataIndex: 'created_at', width: 150, render: (v, r: any) => v || r.createdAt || r.date || '-' },\r\n                            { title: '状态', width: 90, render: (_, r: any) => <Tag color={r.is_current ? 'success' : 'processing'}>{r.is_current ? '当前' : '历史'}</Tag> },\r\n                            { title: '操作', width: 120, render: (_, r: any) => r.is_current ? '-' : (\r\n                              <Popconfirm title=\"确定回滚到此版本？\" onConfirm={() => rollbackMutation.mutate({ name: detailDrawer.record.name, namespace: detailDrawer.record.namespace, revision: r.revision })}>\r\n                                <Button type=\"link\" size=\"small\" icon={<RollbackOutlined />}>回滚</Button>\r\n                              </Popconfirm>\r\n                            )},\r\n                          ]}\r\n                        />\r\n                      ),\r\n                    },\r\n                  ]\r\n                : []),\r\n              {\r\n                key: 'yaml',\r\n                label: 'YAML',\r\n                children: (\r\n                  <>\r\n                    <div style={{ marginBottom: 12 }}>\r\n                      <Space>\r\n                        {detailYamlEditing ? (\r\n                          <>\r\n                            <Button\r\n                              icon={<CheckOutlined />}\r\n                              type=\"primary\"\r\n                              loading={applyYamlMutation.isPending}\r\n                              onClick={() => applyYamlMutation.mutate(detailYamlValue)}\r\n                            >\r\n                              应用\r\n                            </Button>\r\n                            <Button\r\n                              icon={<CloseOutlined />}\r\n                              onClick={() => {\r\n                                setDetailYamlEditing(false)\r\n                                setDetailYamlValue('')\r\n                              }}\r\n                            >\r\n                              取消\r\n                            </Button>\r\n                          </>\r\n                        ) : (\r\n                          <Button\r\n                            icon={<EditOutlined />}\r\n                            onClick={() => {\r\n                              setDetailYamlEditing(true)\r\n                              setDetailYamlValue(detailYamlData || '')\r\n                            }}\r\n                          >\r\n                            编辑\r\n                          </Button>\r\n                        )}\r\n                      </Space>\r\n                    </div>\r\n                    {detailYamlLoading ? (\r\n                      <Text type=\"secondary\">加载中...</Text>\r\n                    ) : (\r\n                      <YamlEditor\r\n                        value={detailYamlEditing ? detailYamlValue : (detailYamlData || '')}\r\n                        readOnly={!detailYamlEditing}\r\n                        height={Math.max(window.innerHeight - 280, 400)}\r\n                        onChange={(val) => setDetailYamlValue(val)}\r\n                      />\r\n                    )}\r\n                  </>\r\n                ),\r\n              },\r\n            ]}\r\n          />\r\n        )}\r\n      </Drawer>\r\n    </AppPage>\r\n  )\r\n}\r\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/workloads.tsx"
     },
@@ -8215,7 +9007,7 @@
       "parentId": "83",
       "id": "93",
       "absPath": "/k8s/:clusterId/replicasets",
-      "__content": "import React, { useState } from 'react'\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Button, Input, Table, Badge, Typography } from 'antd'\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'\nimport { history } from '@umijs/max'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { listReplicaSets, deleteReplicaSet } from '@/services/k8s'\nimport { AppPage, NamespaceSelector, EllipsisText } from '@/components'\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport type { ReplicaSet } from '@/types'\n\nconst { Text } = Typography\n\nconst ReplicaSetsPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [keyword, setKeyword] = useState('')\n  const [detailRS, setDetailRS] = useState<ReplicaSet | null>(null)\n  const yamlDrawer = useYamlDrawer()\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-replicasets', clusterId, namespace],\n    queryFn: ({ signal }) => listReplicaSets(clusterId, namespace, signal),\n    enabled: !!clusterId,\n    refetchInterval: detailRS ? false : 30_000,\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (record: ReplicaSet) =>\n      deleteReplicaSet(clusterId, record.namespace || namespace, record.name),\n    onSuccess: () => {\n      message.success('ReplicaSet 已删除')\n      queryClient.invalidateQueries({ queryKey: ['k8s-replicasets', clusterId] })\n    },\n  })\n\n  // 客户端按名称过滤\n  const filteredData = (data?.items || []).filter((item) => {\n    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())\n  })\n\n  const columns: ProColumns<ReplicaSet>[] = [\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 140,\n      ellipsis: true,\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\n    },\n    {\n      title: '名称',\n      dataIndex: 'name',\n      width: 160,\n      ellipsis: true,\n      copyable: true,\n      render: (_, r) => <Text strong>{r.name}</Text>,\n    },\n    {\n      title: '期望',\n      dataIndex: 'desired',\n      width: 80,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.desired || 0) - (b.desired || 0),\n    },\n    {\n      title: '当前',\n      dataIndex: 'current',\n      width: 80,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.current || 0) - (b.current || 0),\n    },\n    {\n      title: '就绪',\n      dataIndex: 'ready',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.ready || 0) - (b.ready || 0),\n      render: (_, r) => {\n        const ok = (r.ready || 0) === (r.desired || 0)\n        return <Badge status={ok ? 'success' : 'processing'} text={`${r.ready ?? 0}/${r.desired ?? 0}`} />\n      },\n    },\n    {\n      title: 'Owner',\n      width: 160,\n      search: false,\n      ellipsis: true,\n      render: (_, r) =>\n        r.ownerKind ? (\n          <Tooltip title={`${r.ownerKind} / ${r.ownerName}`}>\n            <Tag color=\"blue\">{r.ownerKind}</Tag>\n            <Text style={{ fontSize: 12 }}>{r.ownerName}</Text>\n          </Tooltip>\n        ) : (\n          <Text type=\"secondary\">-</Text>\n        ),\n    },\n    {\n      title: '镜像',\n      dataIndex: 'images',\n      width: 200,\n      ellipsis: true,\n      search: false,\n      render: (_, record) => {\n        const images = record.images || []\n        return images.length > 0 ? (\n          <Tooltip title={images.join('\\n')}>\n            <Text style={{ fontSize: 11 }}>{images[0]}</Text>\n          </Tooltip>\n        ) : (\n          '-'\n        )\n      },\n    },\n    {\n      title: 'Age',\n      dataIndex: 'createdAt',\n      width: 110,\n      align: 'center' as const,\n      search: false,\n      ellipsis: true,\n      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),\n      render: (_, record) => (record.createdAt ? formatDate(record.createdAt) : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 140,\n      fixed: 'right',\n      align: 'center' as const,\n      render: (_, record) => (\n        <Space size=\"small\" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\n          <Tooltip title=\"详情\">\n            <a onClick={() => setDetailRS(record)}>\n              <EyeOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm\n            title=\"确定删除该 ReplicaSet？\"\n            onConfirm={() => deleteMutation.mutate(record)}\n          >\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <AppPage>\n      <ProTable<ReplicaSet>\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n        scroll={{ x: 1160 }}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            placeholder=\"按名称搜索\"\n            allowClear\n            value={keyword}\n            onChange={(e) => setKeyword(e.target.value)}\n            style={{ width: 180 }}\n            prefix={<SearchOutlined />}\n          />,\n          <NamespaceSelector\n            key=\"ns\"\n            clusterId={clusterId}\n            value={namespace}\n            onChange={setNamespace}\n            style={{ width: 180 }}\n          />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\n        ]}\n        headerTitle={<Text strong>ReplicaSet 列表</Text>}\n      />\n\n      <YamlDrawer\n        clusterId={clusterId}\n        resourceType=\"replicasets\"\n        namespace={yamlDrawer.namespace}\n        name={yamlDrawer.name}\n        open={yamlDrawer.open}\n        onClose={yamlDrawer.closeYaml}\n      />\n\n      <Drawer\n        title={`详情 - ${detailRS?.name}`}\n        open={!!detailRS}\n        onClose={() => setDetailRS(null)}\n        width={640}\n      >\n        {detailRS && (\n          <>\n            <Descriptions column={2} size=\"small\" bordered>\n              <Descriptions.Item label=\"名称\">{detailRS.name}</Descriptions.Item>\n              <Descriptions.Item label=\"命名空间\">{detailRS.namespace || namespace}</Descriptions.Item>\n              <Descriptions.Item label=\"期望副本\">{detailRS.desired ?? 0}</Descriptions.Item>\n              <Descriptions.Item label=\"当前副本\">{detailRS.current ?? 0}</Descriptions.Item>\n              <Descriptions.Item label=\"就绪副本\">\n                <Badge\n                  status={detailRS.ready === detailRS.desired ? 'success' : 'processing'}\n                  text={`${detailRS.ready ?? 0}/${detailRS.desired ?? 0}`}\n                />\n              </Descriptions.Item>\n              <Descriptions.Item label=\"创建时间\">{formatDate(detailRS.createdAt)}</Descriptions.Item>\n              {detailRS.ownerKind && (\n                <Descriptions.Item label=\"Owner\" span={2}>\n                  <Tag color=\"blue\">{detailRS.ownerKind}</Tag>\n                  {detailRS.ownerKind === 'Deployment' ? (\n                    <a onClick={() => history.push(`/k8s/${clusterId}/deployments`)}>{detailRS.ownerName}</a>\n                  ) : (\n                    <Text>{detailRS.ownerName}</Text>\n                  )}\n                </Descriptions.Item>\n              )}\n              <Descriptions.Item label=\"镜像\" span={2}>\n                {(detailRS.images || []).map((img) => <Tag key={img}>{img}</Tag>)}\n              </Descriptions.Item>\n            </Descriptions>\n            <Table\n              style={{ marginTop: 16 }}\n              size=\"small\"\n              rowKey={(_, i) => String(i)}\n              pagination={false}\n              dataSource={(detailRS.images || []).map((image, index) => ({\n                key: index,\n                name: `${detailRS.name}-${index + 1}`,\n                image,\n              }))}\n              columns={[\n                { title: '容器名称', dataIndex: 'name' },\n                { title: '镜像', dataIndex: 'image' },\n              ]}\n            />\n          </>\n        )}\n      </Drawer>\n    </AppPage>\n  )\n}\n\nexport default ReplicaSetsPage\n",
+      "__content": "import React, { useState } from 'react'\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Button, Input, Table, Badge, Typography } from 'antd'\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'\nimport { history } from '@umijs/max'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { listReplicaSets, deleteReplicaSet } from '@/services/k8s'\nimport { AppPage, NamespaceSelector, EllipsisText } from '@/components'\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport type { ReplicaSet } from '@/types'\n\nconst { Text } = Typography\n\nconst ReplicaSetsPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [keyword, setKeyword] = useState('')\n  const [detailRS, setDetailRS] = useState<ReplicaSet | null>(null)\n  const yamlDrawer = useYamlDrawer()\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-replicasets', clusterId, namespace],\n    queryFn: ({ signal }) => listReplicaSets(clusterId, namespace, signal),\n    enabled: !!clusterId,\n    refetchInterval: detailRS ? false : 30_000,\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (record: ReplicaSet) =>\n      deleteReplicaSet(clusterId, record.namespace || namespace, record.name),\n    onSuccess: () => {\n      message.success('ReplicaSet 已删除')\n      queryClient.invalidateQueries({ queryKey: ['k8s-replicasets', clusterId] })\n    },\n  })\n\n  // 客户端按名称过滤\n  const filteredData = (data?.items || []).filter((item) => {\n    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())\n  })\n\n  const columns: ProColumns<ReplicaSet>[] = [\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 140,\n      ellipsis: true,\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\n    },\n    {\n      title: '名称',\n      dataIndex: 'name',\n      width: 160,\n      ellipsis: true,\n      copyable: true,\n      render: (_, r) => <Text strong>{r.name}</Text>,\n    },\n    {\n      title: '期望',\n      dataIndex: 'desired',\n      width: 80,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.desired || 0) - (b.desired || 0),\n    },\n    {\n      title: '当前',\n      dataIndex: 'current',\n      width: 80,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.current || 0) - (b.current || 0),\n    },\n    {\n      title: '就绪',\n      dataIndex: 'ready',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.ready || 0) - (b.ready || 0),\n      render: (_, r) => {\n        const ok = (r.ready || 0) === (r.desired || 0)\n        return <Badge status={ok ? 'success' : 'processing'} text={`${r.ready ?? 0}/${r.desired ?? 0}`} />\n      },\n    },\n    {\n      title: 'Owner',\n      width: 160,\n      search: false,\n      ellipsis: true,\n      render: (_, r) =>\n        r.ownerKind ? (\n          <Tooltip title={`${r.ownerKind} / ${r.ownerName}`}>\n            <Tag color=\"blue\">{r.ownerKind}</Tag>\n            <Text style={{ fontSize: 12 }}>{r.ownerName}</Text>\n          </Tooltip>\n        ) : (\n          <Text type=\"secondary\">-</Text>\n        ),\n    },\n    {\n      title: '镜像',\n      dataIndex: 'images',\n      width: 200,\n      ellipsis: true,\n      search: false,\n      render: (_, record) => {\n        const images = record.images || []\n        return images.length > 0 ? (\n          <Tooltip title={images.join('\\n')}>\n            <Text style={{ fontSize: 11 }}>{images[0]}</Text>\n          </Tooltip>\n        ) : (\n          '-'\n        )\n      },\n    },\n    {\n      title: 'Age',\n      dataIndex: 'createdAt',\n      width: 110,\n      align: 'center' as const,\n      search: false,\n      ellipsis: true,\n      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),\n      render: (_, record) => (record.createdAt ? formatDate(record.createdAt) : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 140,\n      fixed: 'right',\n      align: 'center' as const,\n      render: (_, record) => (\n        <Space size=\"small\" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\n          <Tooltip title=\"详情\">\n            <a onClick={() => setDetailRS(record)}>\n              <EyeOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm\n            title=\"确定删除该 ReplicaSet？\"\n            onConfirm={() => deleteMutation.mutate(record)}\n          >\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <AppPage>\n      <ProTable<ReplicaSet>\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        options={{ reload: false }}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n        scroll={{ x: 1160 }}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            placeholder=\"按名称搜索\"\n            allowClear\n            value={keyword}\n            onChange={(e) => setKeyword(e.target.value)}\n            style={{ width: 180 }}\n            prefix={<SearchOutlined />}\n          />,\n          <NamespaceSelector\n            key=\"ns\"\n            clusterId={clusterId}\n            value={namespace}\n            onChange={setNamespace}\n            style={{ width: 180 }}\n          />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\n        ]}\n        headerTitle={<Text strong>ReplicaSet 列表</Text>}\n      />\n\n      <YamlDrawer\n        clusterId={clusterId}\n        resourceType=\"replicasets\"\n        namespace={yamlDrawer.namespace}\n        name={yamlDrawer.name}\n        open={yamlDrawer.open}\n        onClose={yamlDrawer.closeYaml}\n      />\n\n      <Drawer\n        title={`详情 - ${detailRS?.name}`}\n        open={!!detailRS}\n        onClose={() => setDetailRS(null)}\n        width={640}\n      >\n        {detailRS && (\n          <>\n            <Descriptions column={2} size=\"small\" bordered>\n              <Descriptions.Item label=\"名称\">{detailRS.name}</Descriptions.Item>\n              <Descriptions.Item label=\"命名空间\">{detailRS.namespace || namespace}</Descriptions.Item>\n              <Descriptions.Item label=\"期望副本\">{detailRS.desired ?? 0}</Descriptions.Item>\n              <Descriptions.Item label=\"当前副本\">{detailRS.current ?? 0}</Descriptions.Item>\n              <Descriptions.Item label=\"就绪副本\">\n                <Badge\n                  status={detailRS.ready === detailRS.desired ? 'success' : 'processing'}\n                  text={`${detailRS.ready ?? 0}/${detailRS.desired ?? 0}`}\n                />\n              </Descriptions.Item>\n              <Descriptions.Item label=\"创建时间\">{formatDate(detailRS.createdAt)}</Descriptions.Item>\n              {detailRS.ownerKind && (\n                <Descriptions.Item label=\"Owner\" span={2}>\n                  <Tag color=\"blue\">{detailRS.ownerKind}</Tag>\n                  {detailRS.ownerKind === 'Deployment' ? (\n                    <a onClick={() => history.push(`/k8s/${clusterId}/deployments`)}>{detailRS.ownerName}</a>\n                  ) : (\n                    <Text>{detailRS.ownerName}</Text>\n                  )}\n                </Descriptions.Item>\n              )}\n              <Descriptions.Item label=\"镜像\" span={2}>\n                {(detailRS.images || []).map((img) => <Tag key={img}>{img}</Tag>)}\n              </Descriptions.Item>\n            </Descriptions>\n            <Table\n              style={{ marginTop: 16 }}\n              size=\"small\"\n              rowKey={(_, i) => String(i)}\n              pagination={false}\n              dataSource={(detailRS.images || []).map((image, index) => ({\n                key: index,\n                name: `${detailRS.name}-${index + 1}`,\n                image,\n              }))}\n              columns={[\n                { title: '容器名称', dataIndex: 'name' },\n                { title: '镜像', dataIndex: 'image' },\n              ]}\n            />\n          </>\n        )}\n      </Drawer>\n    </AppPage>\n  )\n}\n\nexport default ReplicaSetsPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/replicasets.tsx"
     },
@@ -8226,7 +9018,7 @@
       "parentId": "83",
       "id": "94",
       "absPath": "/k8s/:clusterId/pdbs",
-      "__content": "import React, { useState } from 'react'\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Typography } from 'antd'\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { listPDBs, deletePDB } from '@/services/k8s'\nimport { AppPage, NamespaceSelector, EllipsisText } from '@/components'\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport type { PDB } from '@/types'\n\nconst { Text } = Typography\n\nconst PDBsPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [keyword, setKeyword] = useState('')\n  const [detailPDB, setDetailPDB] = useState<PDB | null>(null)\n  const yamlDrawer = useYamlDrawer()\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-pdbs', clusterId, namespace],\n    queryFn: ({ signal }) => listPDBs(clusterId, namespace, signal),\n    enabled: !!clusterId,\n    refetchInterval: detailPDB ? false : 30_000,\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (record: PDB) => deletePDB(clusterId, record.namespace || namespace, record.name),\n    onSuccess: () => {\n      message.success('PDB 已删除')\n      queryClient.invalidateQueries({ queryKey: ['k8s-pdbs', clusterId] })\n    },\n  })\n\n  const filteredData = (data?.items || []).filter((item) => {\n    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())\n  })\n\n  const columns: ProColumns<PDB>[] = [\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 140,\n      ellipsis: true,\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\n    },\n    {\n      title: '名称',\n      dataIndex: 'name',\n      width: 160,\n      ellipsis: true,\n      copyable: true,\n      render: (_, r) => <Text strong>{r.name}</Text>,\n    },\n    {\n      title: '最小可用',\n      dataIndex: 'minAvailable',\n      width: 100,\n      align: 'center' as const,\n      search: false,\n      render: (_, r) => (r.minAvailable != null ? <Tag color=\"green\">{r.minAvailable}</Tag> : '-'),\n    },\n    {\n      title: '最大不可用',\n      dataIndex: 'maxUnavailable',\n      width: 110,\n      align: 'center' as const,\n      search: false,\n      render: (_, r) => (r.maxUnavailable != null ? <Tag color=\"orange\">{r.maxUnavailable}</Tag> : '-'),\n    },\n    {\n      title: '当前健康',\n      dataIndex: 'currentHealthy',\n      width: 100,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.currentHealthy || 0) - (b.currentHealthy || 0),\n    },\n    {\n      title: '期望健康',\n      dataIndex: 'desiredHealthy',\n      width: 100,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.desiredHealthy || 0) - (b.desiredHealthy || 0),\n    },\n    {\n      title: '允许中断',\n      dataIndex: 'allowedDisruptions',\n      width: 100,\n      align: 'center' as const,\n      search: false,\n    },\n    {\n      title: '状态',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      render: (_, r) => (\n        <Tag color={r.currentHealthy >= r.desiredHealthy ? 'success' : 'error'}>\n          {r.currentHealthy >= r.desiredHealthy ? '健康' : '异常'}\n        </Tag>\n      ),\n    },\n    {\n      title: 'Age',\n      dataIndex: 'createdAt',\n      width: 110,\n      align: 'center' as const,\n      search: false,\n      ellipsis: true,\n      render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 140,\n      fixed: 'right',\n      align: 'center' as const,\n      render: (_, record) => (\n        <Space size=\"small\" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\n          <Tooltip title=\"详情\">\n            <a onClick={() => setDetailPDB(record)}>\n              <EyeOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm title=\"确定删除该 PDB？\" onConfirm={() => deleteMutation.mutate(record)}>\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <AppPage>\n      <ProTable<PDB>\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n        scroll={{ x: 1160 }}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            placeholder=\"按名称搜索\"\n            allowClear\n            value={keyword}\n            onChange={(e) => setKeyword(e.target.value)}\n            style={{ width: 180 }}\n            prefix={<SearchOutlined />}\n          />,\n          <NamespaceSelector\n            key=\"ns\"\n            clusterId={clusterId}\n            value={namespace}\n            onChange={setNamespace}\n            style={{ width: 180 }}\n          />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\n        ]}\n        headerTitle={<Text strong>PDB 列表</Text>}\n      />\n\n      <Drawer\n        title={`PDB 详情 - ${detailPDB?.name}`}\n        open={!!detailPDB}\n        onClose={() => setDetailPDB(null)}\n        width={640}\n        destroyOnClose\n      >\n        {detailPDB && (\n          <Descriptions bordered column={2} size=\"small\">\n            <Descriptions.Item label=\"名称\">{detailPDB.name}</Descriptions.Item>\n            <Descriptions.Item label=\"Namespace\"><Tag>{detailPDB.namespace}</Tag></Descriptions.Item>\n            <Descriptions.Item label=\"最小可用\">\n              {detailPDB.minAvailable != null ? <Tag color=\"green\">{detailPDB.minAvailable}</Tag> : '-'}\n            </Descriptions.Item>\n            <Descriptions.Item label=\"最大不可用\">\n              {detailPDB.maxUnavailable != null ? <Tag color=\"orange\">{detailPDB.maxUnavailable}</Tag> : '-'}\n            </Descriptions.Item>\n            <Descriptions.Item label=\"当前健康\">{detailPDB.currentHealthy}</Descriptions.Item>\n            <Descriptions.Item label=\"期望健康\">{detailPDB.desiredHealthy}</Descriptions.Item>\n            <Descriptions.Item label=\"允许中断\">{detailPDB.allowedDisruptions}</Descriptions.Item>\n            <Descriptions.Item label=\"创建时间\">{formatDate(detailPDB.createdAt)}</Descriptions.Item>\n          </Descriptions>\n        )}\n      </Drawer>\n\n      <YamlDrawer\n        clusterId={clusterId}\n        resourceType=\"pdbs\"\n        namespace={yamlDrawer.namespace}\n        name={yamlDrawer.name}\n        open={yamlDrawer.open}\n        onClose={yamlDrawer.closeYaml}\n      />\n    </AppPage>\n  )\n}\n\nexport default PDBsPage\n",
+      "__content": "import React, { useState } from 'react'\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Table, Tabs, Typography } from 'antd'\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { listPDBs, deletePDB, listPods } from '@/services/k8s'\nimport { AppPage, NamespaceSelector, EllipsisText, ManifestApplyDrawer } from '@/components'\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport type { PDB } from '@/types'\n\nconst { Text } = Typography\n\nconst PDBsPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [keyword, setKeyword] = useState('')\n  const [detailPDB, setDetailPDB] = useState<PDB | null>(null)\n  const [createOpen, setCreateOpen] = useState(false)\n  const yamlDrawer = useYamlDrawer()\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-pdbs', clusterId, namespace],\n    queryFn: ({ signal }) => listPDBs(clusterId, namespace, signal),\n    enabled: !!clusterId,\n    refetchInterval: detailPDB ? false : 30_000,\n  })\n\n  const { data: podsData, isLoading: podsLoading } = useQuery({\n    queryKey: ['k8s-pdb-pods', clusterId, detailPDB?.namespace],\n    queryFn: ({ signal }) => listPods(clusterId, { namespace: detailPDB?.namespace }, signal),\n    enabled: !!clusterId && !!detailPDB && !!detailPDB.namespace,\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (record: PDB) => deletePDB(clusterId, record.namespace || namespace, record.name),\n    onSuccess: () => {\n      message.success('PDB 已删除')\n      queryClient.invalidateQueries({ queryKey: ['k8s-pdbs', clusterId] })\n    },\n  })\n\n  const filteredData = (data?.items || []).filter((item) => {\n    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())\n  })\n\n  const relatedPods = (podsData?.items || []).filter((pod) => {\n    if (!detailPDB?.selector || !pod.labels) return false\n    const selectorPairs = detailPDB.selector.split(',').filter(Boolean).map((s) => {\n      const [k, v] = s.split('=').map((x) => x.trim())\n      return [k, v]\n    })\n    return selectorPairs.every(([k, v]) => pod.labels?.[k] === v)\n  })\n\n  const columns: ProColumns<PDB>[] = [\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 140,\n      ellipsis: true,\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\n    },\n    {\n      title: '名称',\n      dataIndex: 'name',\n      width: 160,\n      ellipsis: true,\n      copyable: true,\n      render: (_, r) => <Text strong>{r.name}</Text>,\n    },\n    {\n      title: '最小可用',\n      dataIndex: 'minAvailable',\n      width: 100,\n      align: 'center' as const,\n      search: false,\n      render: (_, r) => (r.minAvailable != null ? <Tag color=\"green\">{r.minAvailable}</Tag> : '-'),\n    },\n    {\n      title: '最大不可用',\n      dataIndex: 'maxUnavailable',\n      width: 110,\n      align: 'center' as const,\n      search: false,\n      render: (_, r) => (r.maxUnavailable != null ? <Tag color=\"orange\">{r.maxUnavailable}</Tag> : '-'),\n    },\n    {\n      title: '当前健康',\n      dataIndex: 'currentHealthy',\n      width: 100,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.currentHealthy || 0) - (b.currentHealthy || 0),\n    },\n    {\n      title: '期望健康',\n      dataIndex: 'desiredHealthy',\n      width: 100,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.desiredHealthy || 0) - (b.desiredHealthy || 0),\n    },\n    {\n      title: '允许中断',\n      dataIndex: 'allowedDisruptions',\n      width: 100,\n      align: 'center' as const,\n      search: false,\n    },\n    {\n      title: '状态',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      render: (_, r) => (\n        <Tag color={r.currentHealthy >= r.desiredHealthy ? 'success' : 'error'}>\n          {r.currentHealthy >= r.desiredHealthy ? '健康' : '异常'}\n        </Tag>\n      ),\n    },\n    {\n      title: 'Age',\n      dataIndex: 'createdAt',\n      width: 110,\n      align: 'center' as const,\n      search: false,\n      ellipsis: true,\n      render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 140,\n      fixed: 'right',\n      align: 'center' as const,\n      render: (_, record) => (\n        <Space size=\"small\" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\n          <Tooltip title=\"详情\">\n            <a onClick={() => setDetailPDB(record)}>\n              <EyeOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm title=\"确定删除该 PDB？\" onConfirm={() => deleteMutation.mutate(record)}>\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <AppPage>\n      <ProTable<PDB>\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        options={{ reload: false }}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n        scroll={{ x: 1160 }}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            placeholder=\"按名称搜索\"\n            allowClear\n            value={keyword}\n            onChange={(e) => setKeyword(e.target.value)}\n            style={{ width: 180 }}\n            prefix={<SearchOutlined />}\n          />,\n          <NamespaceSelector\n            key=\"ns\"\n            clusterId={clusterId}\n            value={namespace}\n            onChange={setNamespace}\n            style={{ width: 180 }}\n          />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\n          <Button key=\"create\" type=\"primary\" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>创建 PDB</Button>,\n        ]}\n        headerTitle={<Text strong>PDB 列表</Text>}\n      />\n\n      <Drawer\n        title={`PDB 详情 - ${detailPDB?.name}`}\n        open={!!detailPDB}\n        onClose={() => setDetailPDB(null)}\n        width={720}\n        destroyOnClose\n      >\n        {detailPDB && (\n          <Tabs\n            items={[\n              {\n                key: 'overview',\n                label: '概览',\n                children: (\n                  <Descriptions bordered column={2} size=\"small\">\n                    <Descriptions.Item label=\"名称\">{detailPDB.name}</Descriptions.Item>\n                    <Descriptions.Item label=\"Namespace\"><Tag>{detailPDB.namespace}</Tag></Descriptions.Item>\n                    <Descriptions.Item label=\"最小可用\">\n                      {detailPDB.minAvailable != null ? <Tag color=\"green\">{detailPDB.minAvailable}</Tag> : '-'}\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"最大不可用\">\n                      {detailPDB.maxUnavailable != null ? <Tag color=\"orange\">{detailPDB.maxUnavailable}</Tag> : '-'}\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"当前健康\">{detailPDB.currentHealthy}</Descriptions.Item>\n                    <Descriptions.Item label=\"期望健康\">{detailPDB.desiredHealthy}</Descriptions.Item>\n                    <Descriptions.Item label=\"允许中断\">{detailPDB.allowedDisruptions}</Descriptions.Item>\n                    <Descriptions.Item label=\"创建时间\">{formatDate(detailPDB.createdAt)}</Descriptions.Item>\n                    {detailPDB.selector && (\n                      <Descriptions.Item label=\"Selector\" span={2}>\n                        <Tag color=\"blue\">{detailPDB.selector}</Tag>\n                      </Descriptions.Item>\n                    )}\n                  </Descriptions>\n                ),\n              },\n              {\n                key: 'pods',\n                label: '关联Pod',\n                children: (\n                  <Table\n                    size=\"small\"\n                    rowKey=\"name\"\n                    loading={podsLoading}\n                    pagination={false}\n                    dataSource={relatedPods}\n                    columns={[\n                      { title: '名称', dataIndex: 'name', ellipsis: true },\n                      {\n                        title: '状态',\n                        dataIndex: 'status',\n                        width: 100,\n                        render: (_, r) => {\n                          const colorMap: Record<string, string> = { Running: 'success', Pending: 'processing', Failed: 'error', Succeeded: 'default' }\n                          return <Tag color={colorMap[r.status] || 'default'}>{r.status}</Tag>\n                        },\n                      },\n                      { title: '节点', dataIndex: 'nodeName', ellipsis: true },\n                      { title: '重启', dataIndex: 'restarts', width: 80, align: 'center' as const },\n                      { title: 'Age', dataIndex: 'createdAt', width: 110, align: 'center' as const, render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-') },\n                    ]}\n                  />\n                ),\n              },\n            ]}\n          />\n        )}\n      </Drawer>\n\n      <YamlDrawer\n        clusterId={clusterId}\n        resourceType=\"pdbs\"\n        namespace={yamlDrawer.namespace}\n        name={yamlDrawer.name}\n        open={yamlDrawer.open}\n        onClose={yamlDrawer.closeYaml}\n      />\n    </AppPage>\n  )\n}\n\nexport default PDBsPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/pdbs.tsx"
     },
@@ -8237,7 +9029,7 @@
       "parentId": "83",
       "id": "95",
       "absPath": "/k8s/:clusterId/hpas",
-      "__content": "import React, { useState } from 'react'\nimport {\n  ProTable,\n  type ProColumns,\n  ModalForm,\n  ProFormText,\n  ProFormDigit,\n} from '@ant-design/pro-components'\nimport { Popconfirm, message, Space, Tag, Tooltip, Drawer, Descriptions, Button, Input, Typography } from 'antd'\nimport {\n  DeleteOutlined,\n  ProfileOutlined,\n  EditOutlined,\n  EyeOutlined,\n  PlusOutlined,\n  ReloadOutlined,\n  SearchOutlined,\n} from '@ant-design/icons'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { listHPAs, deleteHPA, createHPA, updateHPA } from '@/services/k8s'\nimport { AppPage, NamespaceSelector, EllipsisText } from '@/components'\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport type { HPA } from '@/types'\n\nconst { Text } = Typography\n\nconst HPAsPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [keyword, setKeyword] = useState('')\n  const [detailHPA, setDetailHPA] = useState<HPA | null>(null)\n  const [editOpen, setEditOpen] = useState(false)\n  const [editingHPA, setEditingHPA] = useState<HPA | null>(null)\n  const [createOpen, setCreateOpen] = useState(false)\n  const yamlDrawer = useYamlDrawer()\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-hpas', clusterId, namespace],\n    queryFn: ({ signal }) => listHPAs(clusterId, namespace, signal),\n    enabled: !!clusterId,\n    refetchInterval: detailHPA || editOpen || createOpen ? false : 30_000,\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (record: HPA) => deleteHPA(clusterId, record.namespace || namespace, record.name),\n    onSuccess: () => {\n      message.success('HPA 已删除')\n      queryClient.invalidateQueries({ queryKey: ['k8s-hpas', clusterId] })\n    },\n  })\n\n  const createMutation = useMutation({\n    mutationFn: async (values: Record<string, unknown>) => {\n      const ns = (values.namespace as string) || namespace || 'default'\n      return createHPA(clusterId, ns, values)\n    },\n    onSuccess: () => {\n      message.success('HPA 创建成功')\n      setCreateOpen(false)\n      queryClient.invalidateQueries({ queryKey: ['k8s-hpas', clusterId] })\n    },\n  })\n\n  const updateMutation = useMutation({\n    mutationFn: async (values: Record<string, unknown>) => {\n      if (!editingHPA) return\n      return updateHPA(clusterId, editingHPA.namespace || namespace, editingHPA.name, values)\n    },\n    onSuccess: () => {\n      message.success('HPA 更新成功')\n      setEditOpen(false)\n      setEditingHPA(null)\n      queryClient.invalidateQueries({ queryKey: ['k8s-hpas', clusterId] })\n    },\n  })\n\n  const filteredData = (data?.items || []).filter((item) => {\n    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())\n  })\n\n  const columns: ProColumns<HPA>[] = [\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 140,\n      ellipsis: true,\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\n    },\n    {\n      title: '名称',\n      dataIndex: 'name',\n      width: 160,\n      ellipsis: true,\n      copyable: true,\n      render: (_, r) => <Text strong>{r.name}</Text>,\n    },\n    { title: '目标', dataIndex: 'targetName', width: 160, ellipsis: true, search: false },\n    {\n      title: '最小副本',\n      dataIndex: 'minReplicas',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.minReplicas || 0) - (b.minReplicas || 0),\n    },\n    {\n      title: '最大副本',\n      dataIndex: 'maxReplicas',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.maxReplicas || 0) - (b.maxReplicas || 0),\n    },\n    {\n      title: '当前副本',\n      dataIndex: 'currentReplicas',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.currentReplicas || 0) - (b.currentReplicas || 0),\n    },\n    {\n      title: 'CPU 目标',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      render: (_, r) => (r.targetCPU ? <Tag color=\"blue\">{r.targetCPU}%</Tag> : '-'),\n    },\n    {\n      title: 'Age',\n      dataIndex: 'createdAt',\n      width: 110,\n      align: 'center' as const,\n      search: false,\n      ellipsis: true,\n      render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 150,\n      fixed: 'right',\n      align: 'center' as const,\n      render: (_, record) => (\n        <Space\n          size=\"small\"\n          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}\n        >\n          <Tooltip title=\"详情\">\n            <a onClick={() => setDetailHPA(record)}>\n              <EyeOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"编辑\">\n            <a\n              onClick={() => {\n                setEditingHPA(record)\n                setEditOpen(true)\n              }}\n            >\n              <EditOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm title=\"确定删除该 HPA？\" onConfirm={() => deleteMutation.mutate(record)}>\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <AppPage>\n      <ProTable<HPA>\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        options={{ reload: false }}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n        scroll={{ x: 1090 }}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            placeholder=\"按名称搜索\"\n            allowClear\n            value={keyword}\n            onChange={(e) => setKeyword(e.target.value)}\n            style={{ width: 180 }}\n            prefix={<SearchOutlined />}\n          />,\n          <NamespaceSelector\n            key=\"ns\"\n            clusterId={clusterId}\n            value={namespace}\n            onChange={setNamespace}\n            style={{ width: 180 }}\n          />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\n          <Button\n            key=\"create\"\n            type=\"primary\"\n            icon={<PlusOutlined />}\n            onClick={() => setCreateOpen(true)}\n          >\n            创建 HPA\n          </Button>,\n        ]}\n        headerTitle={<Text strong>HPA 列表</Text>}\n      />\n\n      {/* 详情抽屉 */}\n      <Drawer\n        title={`HPA 详情 - ${detailHPA?.name}`}\n        open={!!detailHPA}\n        onClose={() => setDetailHPA(null)}\n        width={640}\n        destroyOnClose\n      >\n        {detailHPA && (\n          <Descriptions bordered column={2} size=\"small\">\n            <Descriptions.Item label=\"名称\">{detailHPA.name}</Descriptions.Item>\n            <Descriptions.Item label=\"Namespace\"><Tag>{detailHPA.namespace}</Tag></Descriptions.Item>\n            <Descriptions.Item label=\"目标\" span={2}>{detailHPA.targetName || '-'}</Descriptions.Item>\n            <Descriptions.Item label=\"最小副本\">{detailHPA.minReplicas}</Descriptions.Item>\n            <Descriptions.Item label=\"最大副本\">{detailHPA.maxReplicas}</Descriptions.Item>\n            <Descriptions.Item label=\"当前副本\">{detailHPA.currentReplicas ?? '-'}</Descriptions.Item>\n            <Descriptions.Item label=\"CPU 目标\">\n              {detailHPA.targetCPU ? <Tag color=\"blue\">{detailHPA.targetCPU}%</Tag> : '-'}\n            </Descriptions.Item>\n            <Descriptions.Item label=\"创建时间\" span={2}>{formatDate(detailHPA.createdAt)}</Descriptions.Item>\n          </Descriptions>\n        )}\n      </Drawer>\n\n      {/* 创建 HPA 弹窗 */}\n      <ModalForm\n        title=\"创建 HPA\"\n        open={createOpen}\n        onOpenChange={setCreateOpen}\n        onFinish={async (values) => {\n          createMutation.mutate(values)\n          return true\n        }}\n        width={640}\n      >\n        <ProFormText name=\"name\" label=\"名称\" rules={[{ required: true, message: '请输入名称' }]} placeholder=\"my-hpa\" />\n        <ProFormText name=\"namespace\" label=\"Namespace\" initialValue=\"default\" rules={[{ required: true }]} />\n        <ProFormText name=\"targetName\" label=\"目标 Deployment\" rules={[{ required: true }]} placeholder=\"my-deployment\" />\n        <ProFormDigit name=\"minReplicas\" label=\"最小副本数\" rules={[{ required: true }]} min={0} initialValue={1} />\n        <ProFormDigit name=\"maxReplicas\" label=\"最大副本数\" rules={[{ required: true }]} min={1} initialValue={10} />\n        <ProFormDigit name=\"targetCPU\" label=\"CPU 目标 (%)\" min={1} max={100} initialValue={80} />\n      </ModalForm>\n\n      {/* 编辑 HPA 弹窗 */}\n      <ModalForm\n        title={`编辑 HPA - ${editingHPA?.name}`}\n        open={editOpen}\n        onOpenChange={(open) => {\n          setEditOpen(open)\n          if (!open) setEditingHPA(null)\n        }}\n        onFinish={async (values) => {\n          updateMutation.mutate(values)\n          return true\n        }}\n        width={640}\n        initialValues={\n          editingHPA\n            ? {\n                name: editingHPA.name,\n                namespace: editingHPA.namespace,\n                targetName: editingHPA.targetName,\n                minReplicas: editingHPA.minReplicas,\n                maxReplicas: editingHPA.maxReplicas,\n                targetCPU: editingHPA.targetCPU,\n              }\n            : {}\n        }\n        modalProps={{ destroyOnClose: true }}\n      >\n        <ProFormText name=\"name\" label=\"名称\" disabled />\n        <ProFormText name=\"namespace\" label=\"Namespace\" disabled />\n        <ProFormText name=\"targetName\" label=\"目标 Deployment\" disabled />\n        <ProFormDigit name=\"minReplicas\" label=\"最小副本数\" min={0} />\n        <ProFormDigit name=\"maxReplicas\" label=\"最大副本数\" min={1} />\n        <ProFormDigit name=\"targetCPU\" label=\"CPU 目标 (%)\" min={1} max={100} />\n      </ModalForm>\n\n      <YamlDrawer\n        clusterId={clusterId}\n        resourceType=\"hpas\"\n        namespace={yamlDrawer.namespace}\n        name={yamlDrawer.name}\n        open={yamlDrawer.open}\n        onClose={yamlDrawer.closeYaml}\n      />\n    </AppPage>\n  )\n}\n\nexport default HPAsPage\n",
+      "__content": "import React, { useState } from 'react'\nimport {\n  ProTable,\n  type ProColumns,\n  ModalForm,\n  ProFormText,\n  ProFormDigit,\n} from '@ant-design/pro-components'\nimport { Popconfirm, message, Space, Tag, Tooltip, Drawer, Descriptions, Button, Input, Table, Typography } from 'antd'\nimport {\n  DeleteOutlined,\n  ProfileOutlined,\n  EditOutlined,\n  EyeOutlined,\n  PlusOutlined,\n  ReloadOutlined,\n  SearchOutlined,\n} from '@ant-design/icons'\nimport { history } from '@umijs/max'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { listHPAs, deleteHPA, createHPA, updateHPA } from '@/services/k8s'\nimport { AppPage, NamespaceSelector, EllipsisText } from '@/components'\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport type { HPA } from '@/types'\n\nconst { Text } = Typography\n\nconst HPAsPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [keyword, setKeyword] = useState('')\n  const [detailHPA, setDetailHPA] = useState<HPA | null>(null)\n  const [editOpen, setEditOpen] = useState(false)\n  const [editingHPA, setEditingHPA] = useState<HPA | null>(null)\n  const [createOpen, setCreateOpen] = useState(false)\n  const yamlDrawer = useYamlDrawer()\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-hpas', clusterId, namespace],\n    queryFn: ({ signal }) => listHPAs(clusterId, namespace, signal),\n    enabled: !!clusterId,\n    refetchInterval: detailHPA || editOpen || createOpen ? false : 30_000,\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (record: HPA) => deleteHPA(clusterId, record.namespace || namespace, record.name),\n    onSuccess: () => {\n      message.success('HPA 已删除')\n      queryClient.invalidateQueries({ queryKey: ['k8s-hpas', clusterId] })\n    },\n  })\n\n  const createMutation = useMutation({\n    mutationFn: async (values: Record<string, unknown>) => {\n      const ns = (values.namespace as string) || namespace || 'default'\n      return createHPA(clusterId, ns, values)\n    },\n    onSuccess: () => {\n      message.success('HPA 创建成功')\n      setCreateOpen(false)\n      queryClient.invalidateQueries({ queryKey: ['k8s-hpas', clusterId] })\n    },\n  })\n\n  const updateMutation = useMutation({\n    mutationFn: async (values: Record<string, unknown>) => {\n      if (!editingHPA) return\n      return updateHPA(clusterId, editingHPA.namespace || namespace, editingHPA.name, values)\n    },\n    onSuccess: () => {\n      message.success('HPA 更新成功')\n      setEditOpen(false)\n      setEditingHPA(null)\n      queryClient.invalidateQueries({ queryKey: ['k8s-hpas', clusterId] })\n    },\n  })\n\n  const filteredData = (data?.items || []).filter((item) => {\n    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())\n  })\n\n  const columns: ProColumns<HPA>[] = [\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 140,\n      ellipsis: true,\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\n    },\n    {\n      title: '名称',\n      dataIndex: 'name',\n      width: 160,\n      ellipsis: true,\n      copyable: true,\n      render: (_, r) => <Text strong>{r.name}</Text>,\n    },\n    {\n      title: '目标',\n      dataIndex: 'targetName',\n      width: 160,\n      ellipsis: true,\n      search: false,\n      render: (_, r) =>\n        r.targetName ? (\n          <a onClick={() => r.targetKind === 'Deployment' && history.push(`/k8s/${clusterId}/deployments`)}>\n            <Tag color=\"blue\">{r.targetKind || ''}</Tag> {r.targetName}\n          </a>\n        ) : (\n          '-'\n        ),\n    },\n    {\n      title: '最小副本',\n      dataIndex: 'minReplicas',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.minReplicas || 0) - (b.minReplicas || 0),\n    },\n    {\n      title: '最大副本',\n      dataIndex: 'maxReplicas',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.maxReplicas || 0) - (b.maxReplicas || 0),\n    },\n    {\n      title: '当前副本',\n      dataIndex: 'currentReplicas',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.currentReplicas || 0) - (b.currentReplicas || 0),\n    },\n    {\n      title: '当前CPU',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      sorter: (a, b) => (a.currentCPU || 0) - (b.currentCPU || 0),\n      render: (_, r) =>\n        r.currentCPU != null ? (\n          <Tag color={r.currentCPU >= (r.targetCPU || 100) ? 'red' : 'green'}>{r.currentCPU}%</Tag>\n        ) : (\n          '-'\n        ),\n    },\n    {\n      title: 'CPU 目标',\n      width: 90,\n      align: 'center' as const,\n      search: false,\n      render: (_, r) => (r.targetCPU ? <Tag color=\"blue\">{r.targetCPU}%</Tag> : '-'),\n    },\n    {\n      title: 'Age',\n      dataIndex: 'createdAt',\n      width: 110,\n      align: 'center' as const,\n      search: false,\n      ellipsis: true,\n      render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 150,\n      fixed: 'right',\n      align: 'center' as const,\n      render: (_, record) => (\n        <Space\n          size=\"small\"\n          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}\n        >\n          <Tooltip title=\"详情\">\n            <a onClick={() => setDetailHPA(record)}>\n              <EyeOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"编辑\">\n            <a\n              onClick={() => {\n                setEditingHPA(record)\n                setEditOpen(true)\n              }}\n            >\n              <EditOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm title=\"确定删除该 HPA？\" onConfirm={() => deleteMutation.mutate(record)}>\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <AppPage>\n      <ProTable<HPA>\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        options={{ reload: false }}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n        scroll={{ x: 1180 }}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            placeholder=\"按名称搜索\"\n            allowClear\n            value={keyword}\n            onChange={(e) => setKeyword(e.target.value)}\n            style={{ width: 180 }}\n            prefix={<SearchOutlined />}\n          />,\n          <NamespaceSelector\n            key=\"ns\"\n            clusterId={clusterId}\n            value={namespace}\n            onChange={setNamespace}\n            style={{ width: 180 }}\n          />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\n          <Button\n            key=\"create\"\n            type=\"primary\"\n            icon={<PlusOutlined />}\n            onClick={() => setCreateOpen(true)}\n          >\n            创建 HPA\n          </Button>,\n        ]}\n        headerTitle={<Text strong>HPA 列表</Text>}\n      />\n\n      {/* 详情抽屉 */}\n      <Drawer\n        title={`HPA 详情 - ${detailHPA?.name}`}\n        open={!!detailHPA}\n        onClose={() => setDetailHPA(null)}\n        width={640}\n        destroyOnClose\n      >\n        {detailHPA && (\n          <>\n          <Descriptions bordered column={2} size=\"small\">\n            <Descriptions.Item label=\"名称\">{detailHPA.name}</Descriptions.Item>\n            <Descriptions.Item label=\"Namespace\"><Tag>{detailHPA.namespace}</Tag></Descriptions.Item>\n            <Descriptions.Item label=\"目标\" span={2}>{detailHPA.targetName || '-'}</Descriptions.Item>\n            <Descriptions.Item label=\"最小副本\">{detailHPA.minReplicas}</Descriptions.Item>\n            <Descriptions.Item label=\"最大副本\">{detailHPA.maxReplicas}</Descriptions.Item>\n            <Descriptions.Item label=\"当前副本\">{detailHPA.currentReplicas ?? '-'}</Descriptions.Item>\n            <Descriptions.Item label=\"当前CPU\">{detailHPA.currentCPU != null ? `${detailHPA.currentCPU}%` : '-'}</Descriptions.Item>\n            <Descriptions.Item label=\"CPU 目标\">\n              {detailHPA.targetCPU ? <Tag color=\"blue\">{detailHPA.targetCPU}%</Tag> : '-'}\n            </Descriptions.Item>\n            <Descriptions.Item label=\"创建时间\" span={2}>{formatDate(detailHPA.createdAt)}</Descriptions.Item>\n          </Descriptions>\n          {detailHPA.conditions && detailHPA.conditions.length > 0 && (\n            <Table\n              style={{ marginTop: 16 }}\n              size=\"small\"\n              rowKey=\"type\"\n              pagination={false}\n              dataSource={detailHPA.conditions}\n              columns={[\n                { title: '条件', dataIndex: 'type', width: 140 },\n                { title: '状态', dataIndex: 'status', width: 80, align: 'center' as const, render: (v) => <Tag color={v === 'True' ? 'success' : 'default'}>{v}</Tag> },\n                { title: '原因', dataIndex: 'reason', ellipsis: true },\n                { title: '消息', dataIndex: 'message', ellipsis: true },\n              ]}\n            />\n          )}\n          </>\n        )}\n      </Drawer>\n\n      {/* 创建 HPA 弹窗 */}\n      <ModalForm\n        title=\"创建 HPA\"\n        open={createOpen}\n        onOpenChange={setCreateOpen}\n        onFinish={async (values) => {\n          createMutation.mutate(values)\n          return true\n        }}\n        width={640}\n      >\n        <ProFormText name=\"name\" label=\"名称\" rules={[{ required: true, message: '请输入名称' }]} placeholder=\"my-hpa\" />\n        <ProFormText name=\"namespace\" label=\"Namespace\" initialValue=\"default\" rules={[{ required: true }]} />\n        <ProFormText name=\"targetName\" label=\"目标 Deployment\" rules={[{ required: true }]} placeholder=\"my-deployment\" />\n        <ProFormDigit name=\"minReplicas\" label=\"最小副本数\" rules={[{ required: true }]} min={0} initialValue={1} />\n        <ProFormDigit name=\"maxReplicas\" label=\"最大副本数\" rules={[{ required: true }]} min={1} initialValue={10} />\n        <ProFormDigit name=\"targetCPU\" label=\"CPU 目标 (%)\" min={1} max={100} initialValue={80} />\n      </ModalForm>\n\n      {/* 编辑 HPA 弹窗 */}\n      <ModalForm\n        title={`编辑 HPA - ${editingHPA?.name}`}\n        open={editOpen}\n        onOpenChange={(open) => {\n          setEditOpen(open)\n          if (!open) setEditingHPA(null)\n        }}\n        onFinish={async (values) => {\n          updateMutation.mutate(values)\n          return true\n        }}\n        width={640}\n        initialValues={\n          editingHPA\n            ? {\n                name: editingHPA.name,\n                namespace: editingHPA.namespace,\n                targetName: editingHPA.targetName,\n                minReplicas: editingHPA.minReplicas,\n                maxReplicas: editingHPA.maxReplicas,\n                targetCPU: editingHPA.targetCPU,\n              }\n            : {}\n        }\n        modalProps={{ destroyOnClose: true }}\n      >\n        <ProFormText name=\"name\" label=\"名称\" disabled />\n        <ProFormText name=\"namespace\" label=\"Namespace\" disabled />\n        <ProFormText name=\"targetName\" label=\"目标 Deployment\" disabled />\n        <ProFormDigit name=\"minReplicas\" label=\"最小副本数\" min={0} />\n        <ProFormDigit name=\"maxReplicas\" label=\"最大副本数\" min={1} />\n        <ProFormDigit name=\"targetCPU\" label=\"CPU 目标 (%)\" min={1} max={100} />\n      </ModalForm>\n\n      <YamlDrawer\n        clusterId={clusterId}\n        resourceType=\"hpas\"\n        namespace={yamlDrawer.namespace}\n        name={yamlDrawer.name}\n        open={yamlDrawer.open}\n        onClose={yamlDrawer.closeYaml}\n      />\n    </AppPage>\n  )\n}\n\nexport default HPAsPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/hpas.tsx"
     },
@@ -8734,11 +9526,9 @@
     "done": true,
     "progresses": [
       {
-        "percent": 0.5850999999999997,
-        "status": "building",
-        "details": [
-          "1/3 entries 441/465 dependencies 1100/187 modules"
-        ]
+        "percent": 1,
+        "status": "",
+        "details": []
       }
     ]
   },
@@ -10168,7 +10958,7 @@
             "format": "esm"
           },
           "src/services/k8s/shared.ts": {
-            "bytes": 24178,
+            "bytes": 24360,
             "imports": [],
             "format": "esm"
           },
@@ -10574,7 +11364,7 @@
             "format": "esm"
           },
           "src/components/YamlDrawer.tsx": {
-            "bytes": 1849,
+            "bytes": 3287,
             "imports": [
               {
                 "path": "react",
@@ -10587,9 +11377,19 @@
                 "external": true
               },
               {
+                "path": "@ant-design/icons",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
                 "path": "src/services/k8s/index.ts",
                 "kind": "import-statement",
                 "original": "@/services/k8s"
+              },
+              {
+                "path": "src/components/YamlEditor/index.tsx",
+                "kind": "import-statement",
+                "original": "@/components/YamlEditor"
               },
               {
                 "path": "react/jsx-runtime",
@@ -10663,7 +11463,7 @@
             "format": "esm"
           },
           "src/components/GenericResourceList/index.tsx": {
-            "bytes": 10240,
+            "bytes": 10276,
             "imports": [
               {
                 "path": "react",
@@ -13209,7 +14009,7 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/workloads.tsx": {
-            "bytes": 45358,
+            "bytes": 45395,
             "imports": [
               {
                 "path": "react",
@@ -13318,7 +14118,7 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/replicasets.tsx": {
-            "bytes": 8905,
+            "bytes": 8941,
             "imports": [
               {
                 "path": "react",
@@ -13384,7 +14184,7 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/pdbs.tsx": {
-            "bytes": 7358,
+            "bytes": 10675,
             "imports": [
               {
                 "path": "react",
@@ -13445,7 +14245,7 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/hpas.tsx": {
-            "bytes": 10781,
+            "bytes": 12403,
             "imports": [
               {
                 "path": "react",
@@ -13466,6 +14266,11 @@
                 "path": "@ant-design/icons",
                 "kind": "import-statement",
                 "external": true
+              },
+              {
+                "path": "src/.umi/exports.ts",
+                "kind": "import-statement",
+                "original": "@umijs/max"
               },
               {
                 "path": "@tanstack/react-query",
@@ -16195,6 +17000,11 @@
               },
               {
                 "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "@ant-design/icons",
                 "kind": "import-statement",
                 "external": true
               },
@@ -19349,7 +20159,7 @@
                 "bytesInOutput": 1001
               },
               "src/services/k8s/shared.ts": {
-                "bytesInOutput": 20497
+                "bytesInOutput": 20678
               },
               "src/services/k8s/generic.ts": {
                 "bytesInOutput": 6965
@@ -19400,7 +20210,7 @@
                 "bytesInOutput": 1362
               },
               "src/components/YamlDrawer.tsx": {
-                "bytesInOutput": 1735
+                "bytesInOutput": 3370
               },
               "src/hooks/useClusterId.ts": {
                 "bytesInOutput": 221
@@ -19421,7 +20231,7 @@
                 "bytesInOutput": 163
               },
               "src/components/GenericResourceList/index.tsx": {
-                "bytesInOutput": 10343
+                "bytesInOutput": 10383
               },
               "src/components/AppPage/index.tsx": {
                 "bytesInOutput": 1055
@@ -19436,7 +20246,7 @@
                 "bytesInOutput": 1055
               },
               "src/app.tsx": {
-                "bytesInOutput": 30021
+                "bytesInOutput": 30030
               },
               "src/.umi/core/helmetContext.ts": {
                 "bytesInOutput": 129
@@ -19526,7 +20336,7 @@
                 "bytesInOutput": 9565
               },
               "src/pages/clusters/index.tsx": {
-                "bytesInOutput": 19180
+                "bytesInOutput": 19194
               },
               "src/pages/clusters/detail.tsx": {
                 "bytesInOutput": 4491
@@ -19541,7 +20351,7 @@
                 "bytesInOutput": 6336
               },
               "src/pages/monitor/dashboard.tsx": {
-                "bytesInOutput": 11160
+                "bytesInOutput": 11163
               },
               "src/pages/monitor/alerts.tsx": {
                 "bytesInOutput": 9919
@@ -19562,7 +20372,7 @@
                 "bytesInOutput": 4798
               },
               "src/pages/system/users.tsx": {
-                "bytesInOutput": 20424
+                "bytesInOutput": 20442
               },
               "src/pages/system/roles.tsx": {
                 "bytesInOutput": 12700
@@ -19643,13 +20453,13 @@
                 "bytesInOutput": 3101
               },
               "src/pages/k8s/$clusterId/pods.tsx": {
-                "bytesInOutput": 53131
+                "bytesInOutput": 53169
               },
               "src/pages/k8s/$clusterId/podmetrics.tsx": {
                 "bytesInOutput": 5505
               },
               "src/pages/k8s/$clusterId/workloads.tsx": {
-                "bytesInOutput": 47368
+                "bytesInOutput": 47404
               },
               "src/pages/k8s/$clusterId/deployments.tsx": {
                 "bytesInOutput": 384
@@ -19661,13 +20471,13 @@
                 "bytesInOutput": 377
               },
               "src/pages/k8s/$clusterId/replicasets.tsx": {
-                "bytesInOutput": 11190
+                "bytesInOutput": 11230
               },
               "src/pages/k8s/$clusterId/pdbs.tsx": {
-                "bytesInOutput": 9397
+                "bytesInOutput": 13133
               },
               "src/pages/k8s/$clusterId/hpas.tsx": {
-                "bytesInOutput": 13991
+                "bytesInOutput": 16011
               },
               "src/pages/k8s/$clusterId/jobs.tsx": {
                 "bytesInOutput": 7552
@@ -19820,7 +20630,7 @@
                 "bytesInOutput": 2108
               }
             },
-            "bytes": 982603
+            "bytes": 990373
           }
         }
       }
