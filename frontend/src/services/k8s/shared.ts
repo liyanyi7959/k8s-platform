@@ -310,7 +310,9 @@ export function mapService(raw: any): K8sService {
   })) : []
   const externalIPs = s.externalIPs || st.loadBalancer?.ingress || []
   const externalIP = Array.isArray(externalIPs) && externalIPs.length > 0
-    ? (externalIPs[0].ip || externalIPs[0].hostname || '')
+    ? (typeof externalIPs[0] === 'string'
+        ? externalIPs[0]
+        : (externalIPs[0].ip || externalIPs[0].hostname || ''))
     : ''
   const sel = s.selector
   const selector = sel && typeof sel === 'object' && Object.keys(sel).length > 0 ? sel : undefined

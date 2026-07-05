@@ -2,7 +2,7 @@
  * Service 管理页
  * 完整功能：列表+筛选+创建+编辑+详情+YAML+删除
  */
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   ProTable,
   type ProColumns,
@@ -10,8 +10,9 @@ import {
   ProFormText,
   ProFormSelect,
   ProFormDigit,
+  ProFormList,
 } from '@ant-design/pro-components'
-import { Button, Space, message, Popconfirm, Tag, Tooltip, Drawer, Descriptions } from 'antd'
+import { Button, Space, message, Popconfirm, Tag, Tooltip, Drawer, Descriptions, Input, Tabs, Table, Typography, Select } from 'antd'
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -20,19 +21,26 @@ import {
   CopyOutlined,
   EyeOutlined,
   ProfileOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listServices, deleteService, createService, updateService } from '@/services/k8s'
+import { listServices, deleteService, createService, updateService, listPods, getPodEvents, listGenericResources } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { Service } from '@/types'
 
+const { Text } = Typography
+
 const ServicesPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
+  const [typeFilter, setTypeFilter] = useState<string>('')
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([])
+  const [batchLoading, setBatchLoading] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
@@ -41,10 +49,43 @@ const ServicesPage: React.FC = () => {
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['services', clusterId, namespace],
-    queryFn: () => listServices(clusterId, { namespace: namespace || '' }),
+    queryFn: ({ signal }) => listServices(clusterId, { namespace: namespace || '' }, signal),
     enabled: !!clusterId,
-    refetchInterval: 30_000,
+    refetchInterval: detailService || editOpen || createOpen ? false : 30_000,
   })
+
+  const { data: podsData, isLoading: podsLoading } = useQuery({
+    queryKey: ['k8s-service-pods', clusterId, detailService?.namespace],
+    queryFn: ({ signal }) => listPods(clusterId, { namespace: detailService?.namespace }, signal),
+    enabled: !!clusterId && !!detailService && !!detailService.namespace,
+  })
+
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['k8s-service-events', clusterId, detailService?.namespace, detailService?.name],
+    queryFn: ({ signal }) => getPodEvents(clusterId, detailService?.namespace || '', detailService?.name || '', signal),
+    enabled: !!clusterId && !!detailService && !!detailService.namespace && !!detailService.name,
+  })
+
+  // 获取 Endpoints 数据，构建 Service → Endpoint 数量映射
+  const { data: endpointsData } = useQuery({
+    queryKey: ['k8s-endpoints', clusterId, namespace],
+    queryFn: ({ signal }) => listGenericResources(clusterId, 'endpoints', namespace || undefined, signal),
+    enabled: !!clusterId,
+    refetchInterval: detailService || editOpen || createOpen ? false : 30_000,
+  })
+
+  const endpointsCountMap = useMemo(() => {
+    const map = new Map<string, number>()
+    ;(endpointsData?.items || []).forEach((ep) => {
+      const subsets = (ep.raw?.subsets || []) as any[]
+      let count = 0
+      subsets.forEach((subset) => {
+        count += (subset.addresses?.length || 0)
+      })
+      map.set(`${ep.namespace}/${ep.name}`, count)
+    })
+    return map
+  }, [endpointsData])
 
   const deleteMutation = useMutation({
     mutationFn: (params: { namespace: string; name: string }) =>
@@ -84,19 +125,32 @@ const ServicesPage: React.FC = () => {
     navigator.clipboard.writeText(ip).then(() => message.success('已复制'))
   }
 
+  const filteredData = (data?.items || []).filter((item) => {
+    const matchKeyword = !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+    const matchType = !typeFilter || item.type === typeFilter
+    return matchKeyword && matchType
+  })
+
+  const relatedPods = (podsData?.items || []).filter((pod: any) => {
+    if (!detailService?.selector || typeof detailService.selector !== 'object') return false
+    if (!pod.labels) return false
+    return Object.entries(detailService.selector).every(([k, v]) => pod.labels?.[k] === v)
+  })
+
   const columns: ProColumns<Service>[] = [
-    {
-      title: '名称',
-      dataIndex: 'name',
-      ellipsis: true,
-      render: (_, record) => <a style={{ fontWeight: 500 }}>{record.name}</a>,
-    },
     {
       title: 'Namespace',
       dataIndex: 'namespace',
       width: 140,
       ellipsis: true,
-      render: (t) => <EllipsisText text={t as string} tag />,
+      render: (_, r) => <EllipsisText text={String(r.namespace || '')} tag />,
+    },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      width: 160,
+      ellipsis: true,
+      render: (_, record) => <Text strong>{record.name}</Text>,
     },
     {
       title: '类型',
@@ -126,48 +180,59 @@ const ServicesPage: React.FC = () => {
       title: '外部 IP',
       dataIndex: 'externalIP',
       width: 150,
-      render: (t) => {
-        const v = t as string
-        return v ? (
+      render: (_, r) => {
+        const ip = r.externalIP
+        if (!ip || !ip.trim()) return '-'
+        return (
           <Space>
-            <Tag color="green">{v}</Tag>
+            <Tag color="green">{ip}</Tag>
             <Tooltip title="复制">
               <CopyOutlined
                 style={{ cursor: 'pointer', color: '#1677ff' }}
-                onClick={() => copyExternalIP(v)}
+                onClick={() => copyExternalIP(ip)}
               />
             </Tooltip>
           </Space>
-        ) : (
-          '-'
         )
       },
     },
     {
       title: '端口',
       dataIndex: 'ports',
-      width: 200,
+      width: 150,
       render: (_, record) => {
         if (!record.ports || (typeof record.ports === 'string' && record.ports.length === 0))
           return '-'
         if (typeof record.ports === 'string') return record.ports
-        return record.ports.map(
-          (p: { port: number; nodePort?: number; protocol?: string }, i: number) => (
-            <Tag key={i} color="blue">
-              {p.port}
-              {p.nodePort ? `:${p.nodePort}` : ''}/{p.protocol || 'TCP'}
-            </Tag>
-          ),
+        const ports = record.ports as Array<{ port: number; nodePort?: number; protocol?: string }>
+        const visible = ports.slice(0, 2)
+        const rest = ports.length - visible.length
+        return (
+          <Space size={4} wrap>
+            {visible.map((p, i) => (
+              <Tag key={i} color="blue">
+                {p.port}
+                {p.nodePort ? `:${p.nodePort}` : ''}/{p.protocol || 'TCP'}
+              </Tag>
+            ))}
+            {rest > 0 && (
+              <Tooltip title={ports.slice(2).map((p) => `${p.port}${p.nodePort ? `:${p.nodePort}` : ''}/${p.protocol || 'TCP'}`).join(', ')}>
+                <Tag>+{rest}</Tag>
+              </Tooltip>
+            )}
+          </Space>
         )
       },
     },
     {
       title: 'Endpoints',
-      dataIndex: 'endpointsCount',
       width: 100,
-      render: (t) => {
-        const v = typeof t === 'number' ? t : undefined
-        return <Tag>{v ?? '-'}</Tag>
+      align: 'center' as const,
+      search: false,
+      sorter: (a, b) => (endpointsCountMap.get(`${a.namespace}/${a.name}`) || 0) - (endpointsCountMap.get(`${b.namespace}/${b.name}`) || 0),
+      render: (_, r) => {
+        const count = endpointsCountMap.get(`${r.namespace}/${r.name}`)
+        return count != null ? <Tag color={count > 0 ? 'green' : 'red'}>{count}</Tag> : '-'
       },
     },
     {
@@ -179,23 +244,29 @@ const ServicesPage: React.FC = () => {
     {
       title: 'Selector',
       dataIndex: 'selector',
-      width: 180,
-      ellipsis: true,
+      width: 200,
+      search: false,
       render: (_, record) => {
         if (!record.selector || typeof record.selector !== 'object') return '-'
         const entries = Object.entries(record.selector)
         if (entries.length === 0) return '-'
-        return entries.map(([k, val]) => (
-          <Tag key={k} color="blue">
-            {k}={String(val)}
-          </Tag>
-        ))
+        const text = entries.map(([k, v]) => `${k}=${v}`).join(', ')
+        return (
+          <Tooltip title={text}>
+            <Text style={{ fontSize: 12 }} ellipsis>
+              {text}
+            </Text>
+          </Tooltip>
+        )
       },
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 170,
+      width: 110,
+      align: 'center' as const,
+      ellipsis: true,
+      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
       render: (_, record) => formatDate(record.createdAt),
     },
     {
@@ -250,18 +321,72 @@ const ServicesPage: React.FC = () => {
       <ProTable<Service>
         headerTitle="Service 列表"
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey={(r) => `${r.namespace}/${r.name}`}
         search={false}
-        pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 个 Service` }}
-        scroll={{ x: 1200 }}
+        options={{ reload: false }}
+        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+        scroll={{ x: 1600 }}
+        rowSelection={{
+          selectedRowKeys: selectedKeys,
+          onChange: (keys) => setSelectedKeys(keys as string[]),
+        }}
+        tableAlertRender={({ selectedRowKeys }) => (
+          <Space>
+            <span>已选 {selectedRowKeys.length} 个</span>
+            <Popconfirm title={`确定删除选中的 ${selectedRowKeys.length} 个 Service？`} onConfirm={async () => {
+              setBatchLoading(true)
+              try {
+                await Promise.all(
+                  (selectedRowKeys as string[]).map((key) => {
+                    const [ns, name] = key.split('/')
+                    return deleteService(clusterId, ns, name)
+                  })
+                )
+                message.success(`已删除 ${selectedRowKeys.length} 个 Service`)
+                setSelectedKeys([])
+                queryClient.invalidateQueries({ queryKey: ['services', clusterId] })
+              } catch {
+                message.error('批量删除失败')
+              } finally {
+                setBatchLoading(false)
+              }
+            }}>
+              <Button danger size="small" loading={batchLoading}>批量删除</Button>
+            </Popconfirm>
+          </Space>
+        )}
         toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
+          <Select
+            key="typeFilter"
+            placeholder="类型筛选"
+            allowClear
+            value={typeFilter || undefined}
+            onChange={(v) => setTypeFilter(v || '')}
+            style={{ width: 140 }}
+            options={[
+              { label: 'ClusterIP', value: 'ClusterIP' },
+              { label: 'NodePort', value: 'NodePort' },
+              { label: 'LoadBalancer', value: 'LoadBalancer' },
+              { label: 'ExternalName', value: 'ExternalName' },
+            ]}
+          />,
           <NamespaceSelector
             key="ns"
             clusterId={clusterId}
             value={namespace}
             onChange={setNamespace}
+            style={{ width: 180 }}
           />,
           <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>
             刷新
@@ -296,7 +421,7 @@ const ServicesPage: React.FC = () => {
         />
         <ProFormText
           name="namespace"
-          label="命名空间"
+          label="Namespace"
           initialValue="default"
           rules={[{ required: true }]}
         />
@@ -311,31 +436,19 @@ const ServicesPage: React.FC = () => {
             { label: 'LoadBalancer', value: 'LoadBalancer' },
           ]}
         />
-        <ProFormSelect
-          name="protocol"
-          label="协议"
-          initialValue="TCP"
-          options={[
-            { label: 'TCP', value: 'TCP' },
-            { label: 'UDP', value: 'UDP' },
-          ]}
-        />
-        <ProFormDigit
-          name="port"
-          label="服务端口"
-          rules={[{ required: true }]}
+        <ProFormList
+          name="ports"
+          label="端口配置"
+          initialValue={[{ port: 80, targetPort: 80, protocol: 'TCP' }]}
           min={1}
-          max={65535}
-          initialValue={80}
-        />
-        <ProFormDigit
-          name="targetPort"
-          label="目标端口"
-          rules={[{ required: true }]}
-          min={1}
-          max={65535}
-          initialValue={80}
-        />
+          creatorButtonProps={{ creatorButtonText: '添加端口' }}
+        >
+          <Space key="port-group">
+            <ProFormDigit name="port" label="服务端口" rules={[{ required: true }]} min={1} max={65535} />
+            <ProFormDigit name="targetPort" label="目标端口" rules={[{ required: true }]} min={1} max={65535} />
+            <ProFormSelect name="protocol" label="协议" options={[{ label: 'TCP', value: 'TCP' }, { label: 'UDP', value: 'UDP' }]} />
+          </Space>
+        </ProFormList>
         <ProFormText name="selector" label="选择器 (JSON)" placeholder='{"app": "my-app"}' />
       </ModalForm>
 
@@ -359,13 +472,21 @@ const ServicesPage: React.FC = () => {
                 namespace: editingService.namespace,
                 type: editingService.type,
                 clusterIP: editingService.clusterIP,
+                ports:
+                  Array.isArray(editingService.ports) && editingService.ports.length > 0
+                    ? editingService.ports.map((p: { port: number; nodePort?: number; protocol?: string }) => ({
+                        port: p.port,
+                        targetPort: p.port,
+                        protocol: p.protocol || 'TCP',
+                      }))
+                    : [{ port: 80, targetPort: 80, protocol: 'TCP' }],
               }
             : {}
         }
         modalProps={{ destroyOnClose: true }}
       >
         <ProFormText name="name" label="名称" disabled />
-        <ProFormText name="namespace" label="命名空间" disabled />
+        <ProFormText name="namespace" label="Namespace" disabled />
         <ProFormSelect
           name="type"
           label="类型"
@@ -376,16 +497,18 @@ const ServicesPage: React.FC = () => {
             { label: 'LoadBalancer', value: 'LoadBalancer' },
           ]}
         />
-        <ProFormSelect
-          name="protocol"
-          label="协议"
-          options={[
-            { label: 'TCP', value: 'TCP' },
-            { label: 'UDP', value: 'UDP' },
-          ]}
-        />
-        <ProFormDigit name="port" label="服务端口" min={1} max={65535} />
-        <ProFormDigit name="targetPort" label="目标端口" min={1} max={65535} />
+        <ProFormList
+          name="ports"
+          label="端口配置"
+          min={1}
+          creatorButtonProps={{ creatorButtonText: '添加端口' }}
+        >
+          <Space key="port-group">
+            <ProFormDigit name="port" label="服务端口" rules={[{ required: true }]} min={1} max={65535} />
+            <ProFormDigit name="targetPort" label="目标端口" rules={[{ required: true }]} min={1} max={65535} />
+            <ProFormSelect name="protocol" label="协议" options={[{ label: 'TCP', value: 'TCP' }, { label: 'UDP', value: 'UDP' }]} />
+          </Space>
+        </ProFormList>
         <ProFormText name="selector" label="选择器 (JSON)" placeholder='{"app": "my-app"}' />
       </ModalForm>
 
@@ -394,49 +517,135 @@ const ServicesPage: React.FC = () => {
         title={`Service 详情 - ${detailService?.name}`}
         open={!!detailService}
         onClose={() => setDetailService(null)}
-        width={640}
+        width={720}
         destroyOnClose
       >
         {detailService && (
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="名称">{detailService.name}</Descriptions.Item>
-            <Descriptions.Item label="命名空间">
-              <Tag>{detailService.namespace}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="类型">
-              <Tag color="blue">{detailService.type}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Cluster IP">
-              {typeof detailService.clusterIP === 'string' && detailService.clusterIP
-                ? detailService.clusterIP
-                : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="External IP">
-              {typeof detailService.externalIP === 'string' && detailService.externalIP
-                ? detailService.externalIP
-                : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="端口">
-              {typeof detailService.ports === 'string'
-                ? detailService.ports
-                : JSON.stringify(detailService.ports)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Selector">
-              {detailService.selector &&
-              typeof detailService.selector === 'object' &&
-              Object.keys(detailService.selector).length > 0
-                ? JSON.stringify(detailService.selector)
-                : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Session Affinity">
-              {typeof detailService.sessionAffinity === 'string'
-                ? detailService.sessionAffinity
-                : 'None'}
-            </Descriptions.Item>
-            <Descriptions.Item label="创建时间">
-              {formatDate(detailService.createdAt)}
-            </Descriptions.Item>
-          </Descriptions>
+          <Tabs
+            defaultActiveKey="overview"
+            items={[
+              {
+                key: 'overview',
+                label: '概览',
+                children: (
+                  <Descriptions bordered column={2} size="small">
+                    <Descriptions.Item label="名称">{detailService.name}</Descriptions.Item>
+                    <Descriptions.Item label="Namespace">
+                      <Tag>{detailService.namespace}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="类型">
+                      <Tag color="blue">{detailService.type}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Cluster IP">
+                      {typeof detailService.clusterIP === 'string' && detailService.clusterIP
+                        ? detailService.clusterIP
+                        : '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="External IP">
+                      {typeof detailService.externalIP === 'string' && detailService.externalIP
+                        ? detailService.externalIP
+                        : '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Session Affinity">
+                      {typeof detailService.sessionAffinity === 'string'
+                        ? detailService.sessionAffinity
+                        : 'None'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="端口" span={2}>
+                      {typeof detailService.ports === 'string'
+                        ? detailService.ports
+                        : JSON.stringify(detailService.ports)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Selector" span={2}>
+                      {detailService.selector &&
+                      typeof detailService.selector === 'object' &&
+                      Object.keys(detailService.selector).length > 0
+                        ? JSON.stringify(detailService.selector)
+                        : '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="创建时间" span={2}>
+                      {formatDate(detailService.createdAt)}
+                    </Descriptions.Item>
+                  </Descriptions>
+                ),
+              },
+              {
+                key: 'pods',
+                label: '关联 Pod',
+                children: (
+                  <Table
+                    size="small"
+                    rowKey="name"
+                    loading={podsLoading}
+                    pagination={false}
+                    dataSource={relatedPods}
+                    columns={[
+                      {
+                        title: '名称',
+                        dataIndex: 'name',
+                        ellipsis: true,
+                        render: (_, r) => <Text strong>{r.name}</Text>,
+                      },
+                      {
+                        title: '状态',
+                        dataIndex: 'status',
+                        width: 100,
+                        render: (_, r) => {
+                          const colorMap: Record<string, string> = {
+                            Running: 'success',
+                            Pending: 'processing',
+                            Failed: 'error',
+                            Succeeded: 'default',
+                          }
+                          return <Tag color={colorMap[r.status] || 'default'}>{r.status}</Tag>
+                        },
+                      },
+                      { title: '节点', dataIndex: 'nodeName', ellipsis: true },
+                      { title: '重启', dataIndex: 'restarts', width: 90, align: 'center' as const },
+                      {
+                        title: 'Age',
+                        dataIndex: 'createdAt',
+                        width: 110,
+                        render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),
+                      },
+                    ]}
+                  />
+                ),
+              },
+              {
+                key: 'events',
+                label: '事件',
+                children: (
+                  <Table
+                    size="small"
+                    rowKey={(_, i) => String(i)}
+                    loading={eventsLoading}
+                    pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+                    dataSource={eventsData || []}
+                    columns={[
+                      {
+                        title: '类型',
+                        dataIndex: 'type',
+                        width: 90,
+                        render: (_, r) => (
+                          <Tag color={r.type === 'Warning' ? 'warning' : 'success'}>{r.type || 'Normal'}</Tag>
+                        ),
+                      },
+                      { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true },
+                      { title: '消息', dataIndex: 'message', ellipsis: true },
+                      {
+                        title: '时间',
+                        dataIndex: 'lastTimestamp',
+                        width: 150,
+                        render: (_, r) =>
+                          formatDate(r.lastTimestamp || r.firstTimestamp || r.metadata?.creationTimestamp || ''),
+                      },
+                    ]}
+                  />
+                ),
+              },
+            ]}
+          />
         )}
       </Drawer>
 

@@ -7,9 +7,11 @@ export default function EndpointsPage() {
       title="Endpoints"
       namespaced
       creatable={false}
+      deletable={false}
       extraColumns={[
         rawColumn('地址数', 'subsets', {
           width: 100,
+          align: 'center',
           render: (val) => {
             const subsets = val as Array<{ addresses?: unknown[] }>
             const count = subsets?.reduce((sum, s) => sum + (s.addresses?.length || 0), 0) || 0

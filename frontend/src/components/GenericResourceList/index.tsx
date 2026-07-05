@@ -57,11 +57,12 @@ export function rawField(record: GenericResourceItem, path: string): unknown {
 export function rawColumn(
   title: string,
   path: string,
-  opts?: { width?: number; render?: (val: unknown) => React.ReactNode },
+  opts?: { width?: number; align?: 'left' | 'center' | 'right'; render?: (val: unknown) => React.ReactNode },
 ): ProColumns<GenericResourceItem> {
   return {
     title,
     width: opts?.width,
+    align: opts?.align,
     search: false,
     render: (_: unknown, record: GenericResourceItem) => {
       const val = rawField(record, path)
@@ -145,10 +146,12 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
     base.push(...extraColumns)
 
     base.push({
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 170,
+      width: 110,
+      align: 'center' as const,
       search: false,
+      ellipsis: true,
       render: (_, record) => (record.createdAt ? formatDate(record.createdAt) : '-'),
     })
 
