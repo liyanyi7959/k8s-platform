@@ -6,8 +6,8 @@ import {
   ProFormTextArea,
   type ProColumns,
 } from '@ant-design/pro-components'
-import { Space, message, Popconfirm, Tag, Modal, Button, Card, Tooltip } from 'antd'
-import { PlusOutlined, EyeOutlined, DeleteOutlined, ProfileOutlined } from '@ant-design/icons'
+import { Space, message, Popconfirm, Tag, Modal, Button, Card, Tooltip, Input, Typography } from 'antd'
+import { PlusOutlined, EyeOutlined, DeleteOutlined, ProfileOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listConfigMaps, deleteConfigMap, createConfigMap } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -16,17 +16,21 @@ import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { ConfigMap } from '@/types'
 
+const { Text } = Typography
+
 const ConfigMapsPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
   const [selectedCM, setSelectedCM] = useState<ConfigMap | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const yamlDrawer = useYamlDrawer()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['configmaps', clusterId, namespace],
-    queryFn: () => listConfigMaps(clusterId, { namespace }),
+    queryFn: ({ signal }) => listConfigMaps(clusterId, { namespace }, signal),
+    refetchInterval: selectedCM || createOpen ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -38,8 +42,11 @@ const ConfigMapsPage: React.FC = () => {
     },
   })
 
+  const filteredData = (data?.items || []).filter((item) => {
+    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  })
+
   const columns: ProColumns<ConfigMap>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
       title: 'Namespace',
       dataIndex: 'namespace',
@@ -48,8 +55,17 @@ const ConfigMapsPage: React.FC = () => {
       render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
     {
+      title: '名称',
+      dataIndex: 'name',
+      width: 160,
+      ellipsis: true,
+      copyable: true,
+      render: (_, r) => <Text strong>{r.name}</Text>,
+    },
+    {
       title: '数据项',
       width: 100,
+      align: 'center' as const,
       search: false,
       render: (_, record) => <Tag color="blue">{Object.keys(record.data || {}).length} 项</Tag>,
     },
@@ -61,17 +77,20 @@ const ConfigMapsPage: React.FC = () => {
       render: (_, record) => Object.keys(record.data || {}).join(', ') || '-',
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => formatDate(record.createdAt),
+      ellipsis: true,
+      render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),
     },
     {
       title: '操作',
       valueType: 'option',
       width: 140,
       fixed: 'right',
+      align: 'center' as const,
       render: (_, record) => (
         <Space
           size="small"
@@ -109,21 +128,32 @@ const ConfigMapsPage: React.FC = () => {
     <AppPage>
       <ProTable<ConfigMap>
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey="name"
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 900 }}
-        headerTitle={
+        headerTitle={<Text strong>ConfigMap 列表</Text>}
+        toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
           <NamespaceSelector
+            key="ns"
             clusterId={clusterId}
             value={namespace}
             onChange={setNamespace}
-            style={{ width: 200 }}
-          />
-        }
-        toolBarRender={() => [
+            style={{ width: 180 }}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
           <Button
             key="create"
             type="primary"

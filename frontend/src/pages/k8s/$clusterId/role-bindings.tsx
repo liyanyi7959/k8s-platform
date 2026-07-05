@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tabs, Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip } from 'antd'
-import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
+import { Tabs, Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Typography, Input, Button } from 'antd'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listRoleBindings,
@@ -15,24 +15,29 @@ import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { RBACRoleBinding } from '@/types'
 
+const { Text } = Typography
+
 const RoleBindingsPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
   const [activeTab, setActiveTab] = useState('rolebindings')
   const [detailBinding, setDetailBinding] = useState<RBACRoleBinding | null>(null)
   const yamlDrawer = useYamlDrawer()
 
-  const { data: roleBindings, isLoading: rbLoading } = useQuery({
+  const { data: roleBindings, isLoading: rbLoading, refetch: refetchRB } = useQuery({
     queryKey: ['k8s-rolebindings', clusterId, namespace],
-    queryFn: () => listRoleBindings(clusterId, namespace),
+    queryFn: ({ signal }) => listRoleBindings(clusterId, namespace, signal),
     enabled: !!clusterId && activeTab === 'rolebindings',
+    refetchInterval: detailBinding ? false : 30_000,
   })
 
-  const { data: clusterRoleBindings, isLoading: crbLoading } = useQuery({
+  const { data: clusterRoleBindings, isLoading: crbLoading, refetch: refetchCRB } = useQuery({
     queryKey: ['k8s-clusterrolebindings', clusterId],
-    queryFn: () => listClusterRoleBindings(clusterId),
+    queryFn: ({ signal }) => listClusterRoleBindings(clusterId, signal),
     enabled: !!clusterId && activeTab === 'clusterrolebindings',
+    refetchInterval: detailBinding ? false : 30_000,
   })
 
   const deleteRBMutation = useMutation({
@@ -52,14 +57,28 @@ const RoleBindingsPage: React.FC = () => {
     },
   })
 
+  const filteredRB = (roleBindings?.items || []).filter((item) => {
+    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  })
+
+  const filteredCRB = (clusterRoleBindings?.items || []).filter((item) => {
+    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  })
+
   const rbColumns: ProColumns<RBACRoleBinding>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
       title: 'Namespace',
       dataIndex: 'namespace',
       width: 140,
       ellipsis: true,
       render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
+    },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      ellipsis: true,
+      copyable: true,
+      render: (_, record) => <Text strong>{record.name}</Text>,
     },
     {
       title: '角色',
@@ -86,9 +105,11 @@ const RoleBindingsPage: React.FC = () => {
         )),
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
+      ellipsis: true,
       search: false,
       render: (_, record) => formatDate(record.createdAt),
     },
@@ -128,7 +149,13 @@ const RoleBindingsPage: React.FC = () => {
   ]
 
   const crbColumns: ProColumns<RBACRoleBinding>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      ellipsis: true,
+      copyable: true,
+      render: (_, record) => <Text strong>{record.name}</Text>,
+    },
     {
       title: '角色',
       dataIndex: 'roleRef',
@@ -154,9 +181,11 @@ const RoleBindingsPage: React.FC = () => {
         )),
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
+      ellipsis: true,
       search: false,
       render: (_, record) => formatDate(record.createdAt),
     },
@@ -207,24 +236,42 @@ const RoleBindingsPage: React.FC = () => {
             children: (
               <ProTable<RBACRoleBinding>
                 columns={rbColumns}
-                dataSource={roleBindings?.items || []}
+                dataSource={filteredRB}
                 loading={rbLoading}
                 rowKey={(r) => `${r.namespace}/${r.name}`}
                 search={false}
+                options={{ reload: false }}
                 pagination={{
                   defaultPageSize: 20,
                   showSizeChanger: true,
                   showTotal: (t) => `共 ${t} 条`,
                 }}
                 scroll={{ x: 800 }}
-                headerTitle={
+                toolBarRender={() => [
+                  <Input.Search
+                    key="search"
+                    placeholder="按名称搜索"
+                    allowClear
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    style={{ width: 180 }}
+                    prefix={<SearchOutlined />}
+                  />,
                   <NamespaceSelector
+                    key="ns"
                     clusterId={clusterId}
                     value={namespace}
                     onChange={setNamespace}
                     style={{ width: 200 }}
-                  />
-                }
+                  />,
+                  <Button
+                    key="refresh"
+                    icon={<ReloadOutlined />}
+                    onClick={() => refetchRB()}
+                  >
+                    刷新
+                  </Button>,
+                ]}
               />
             ),
           },
@@ -234,16 +281,35 @@ const RoleBindingsPage: React.FC = () => {
             children: (
               <ProTable<RBACRoleBinding>
                 columns={crbColumns}
-                dataSource={clusterRoleBindings?.items || []}
+                dataSource={filteredCRB}
                 loading={crbLoading}
                 rowKey="name"
                 search={false}
+                options={{ reload: false }}
                 pagination={{
                   defaultPageSize: 20,
                   showSizeChanger: true,
                   showTotal: (t) => `共 ${t} 条`,
                 }}
                 scroll={{ x: 700 }}
+                toolBarRender={() => [
+                  <Input.Search
+                    key="search"
+                    placeholder="按名称搜索"
+                    allowClear
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    style={{ width: 180 }}
+                    prefix={<SearchOutlined />}
+                  />,
+                  <Button
+                    key="refresh"
+                    icon={<ReloadOutlined />}
+                    onClick={() => refetchCRB()}
+                  >
+                    刷新
+                  </Button>,
+                ]}
               />
             ),
           },
@@ -266,7 +332,7 @@ const RoleBindingsPage: React.FC = () => {
         {detailBinding && (
           <Descriptions column={1} bordered size="small">
             <Descriptions.Item label="名称">{detailBinding.name}</Descriptions.Item>
-            <Descriptions.Item label="命名空间">
+            <Descriptions.Item label="Namespace">
               {detailBinding.namespace || '集群级'}
             </Descriptions.Item>
             <Descriptions.Item label="角色">

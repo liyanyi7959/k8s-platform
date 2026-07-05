@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Alert, Button, Space, Tag, Typography } from 'antd'
-import { ReloadOutlined } from '@ant-design/icons'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Alert, Button, Space, Tag, Typography, Input } from 'antd'
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import { useClusterId } from '@/hooks/useClusterId'
 import { listEvents } from '@/services/k8s'
@@ -13,22 +13,25 @@ const { Text } = Typography
 
 const EventsPage: React.FC = () => {
   const clusterId = useClusterId()
-  const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
   const [eventType, setEventType] = useState<string>('')
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-events', clusterId, namespace],
-    queryFn: () => listEvents(clusterId, namespace || undefined),
+    queryFn: ({ signal }) => listEvents(clusterId, namespace || undefined, signal),
     enabled: !!clusterId,
     refetchInterval: 30_000,
   })
 
   const filteredData = useMemo(() => {
     const items = data || []
-    if (!eventType) return items
-    return items.filter((item) => item.type === eventType)
-  }, [data, eventType])
+    return items.filter((item) => {
+      const matchType = !eventType || item.type === eventType
+      const matchKeyword = !keyword || (item.reason || '').toLowerCase().includes(keyword.toLowerCase())
+      return matchType && matchKeyword
+    })
+  }, [data, eventType, keyword])
 
   const columns: ProColumns<K8sEvent>[] = [
     {
@@ -70,12 +73,15 @@ const EventsPage: React.FC = () => {
       title: '次数',
       dataIndex: 'count',
       width: 90,
+      align: 'center' as const,
       render: (_, record) => record.count || 1,
     },
     {
-      title: '最近时间',
+      title: 'Age',
       dataIndex: 'lastTimestamp',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
+      ellipsis: true,
       render: (_, record) => formatDate(record.lastTimestamp || record.firstTimestamp),
     },
   ]
@@ -89,8 +95,18 @@ const EventsPage: React.FC = () => {
         loading={isLoading}
         rowKey={(record, index) => `${record.namespace}/${record.involvedObject}/${record.reason}/${index}`}
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按原因搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
           <NamespaceSelector
             key="namespace"
             clusterId={clusterId}
@@ -123,7 +139,7 @@ const EventsPage: React.FC = () => {
           <Button
             key="refresh"
             icon={<ReloadOutlined />}
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['k8s-events', clusterId] })}
+            onClick={() => refetch()}
           >
             刷新
           </Button>,

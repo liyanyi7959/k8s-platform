@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tabs, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from 'antd'
-import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
+import { Tabs, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Typography, Input, Button } from 'antd'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listRoles, listClusterRoles, deleteRole, deleteClusterRole } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -10,24 +10,29 @@ import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { RBACRole } from '@/types'
 
+const { Text } = Typography
+
 const RolesPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
   const [activeTab, setActiveTab] = useState('roles')
   const [detailRole, setDetailRole] = useState<RBACRole | null>(null)
   const yamlDrawer = useYamlDrawer()
 
-  const { data: roles, isLoading: rolesLoading } = useQuery({
+  const { data: roles, isLoading: rolesLoading, refetch: refetchRoles } = useQuery({
     queryKey: ['k8s-roles', clusterId, namespace],
-    queryFn: () => listRoles(clusterId, namespace),
+    queryFn: ({ signal }) => listRoles(clusterId, namespace, signal),
     enabled: !!clusterId && activeTab === 'roles',
+    refetchInterval: detailRole ? false : 30_000,
   })
 
-  const { data: clusterRoles, isLoading: clusterRolesLoading } = useQuery({
+  const { data: clusterRoles, isLoading: clusterRolesLoading, refetch: refetchClusterRoles } = useQuery({
     queryKey: ['k8s-clusterroles', clusterId],
-    queryFn: () => listClusterRoles(clusterId),
+    queryFn: ({ signal }) => listClusterRoles(clusterId, signal),
     enabled: !!clusterId && activeTab === 'clusterroles',
+    refetchInterval: detailRole ? false : 30_000,
   })
 
   const deleteRoleMutation = useMutation({
@@ -47,8 +52,15 @@ const RolesPage: React.FC = () => {
     },
   })
 
+  const filteredRoles = (roles?.items || []).filter((item) => {
+    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  })
+
+  const filteredClusterRoles = (clusterRoles?.items || []).filter((item) => {
+    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  })
+
   const roleColumns: ProColumns<RBACRole>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
       title: 'Namespace',
       dataIndex: 'namespace',
@@ -57,16 +69,26 @@ const RolesPage: React.FC = () => {
       render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
     {
+      title: '名称',
+      dataIndex: 'name',
+      ellipsis: true,
+      copyable: true,
+      render: (_, record) => <Text strong>{record.name}</Text>,
+    },
+    {
       title: '规则数',
       dataIndex: 'rules',
       width: 80,
+      align: 'center' as const,
       search: false,
       render: (_, r) => r.rules?.length || 0,
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
+      ellipsis: true,
       search: false,
       render: (_, record) => formatDate(record.createdAt),
     },
@@ -103,18 +125,27 @@ const RolesPage: React.FC = () => {
   ]
 
   const clusterRoleColumns: ProColumns<RBACRole>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      ellipsis: true,
+      copyable: true,
+      render: (_, record) => <Text strong>{record.name}</Text>,
+    },
     {
       title: '规则数',
       dataIndex: 'rules',
       width: 80,
+      align: 'center' as const,
       search: false,
       render: (_, r) => r.rules?.length || 0,
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
+      ellipsis: true,
       search: false,
       render: (_, record) => formatDate(record.createdAt),
     },
@@ -165,24 +196,42 @@ const RolesPage: React.FC = () => {
             children: (
               <ProTable<RBACRole>
                 columns={roleColumns}
-                dataSource={roles?.items || []}
+                dataSource={filteredRoles}
                 loading={rolesLoading}
                 rowKey={(r) => `${r.namespace}/${r.name}`}
                 search={false}
+                options={{ reload: false }}
                 pagination={{
                   defaultPageSize: 20,
                   showSizeChanger: true,
                   showTotal: (t) => `共 ${t} 条`,
                 }}
                 scroll={{ x: 800 }}
-                headerTitle={
+                toolBarRender={() => [
+                  <Input.Search
+                    key="search"
+                    placeholder="按名称搜索"
+                    allowClear
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    style={{ width: 180 }}
+                    prefix={<SearchOutlined />}
+                  />,
                   <NamespaceSelector
+                    key="ns"
                     clusterId={clusterId}
                     value={namespace}
                     onChange={setNamespace}
                     style={{ width: 200 }}
-                  />
-                }
+                  />,
+                  <Button
+                    key="refresh"
+                    icon={<ReloadOutlined />}
+                    onClick={() => refetchRoles()}
+                  >
+                    刷新
+                  </Button>,
+                ]}
               />
             ),
           },
@@ -192,16 +241,35 @@ const RolesPage: React.FC = () => {
             children: (
               <ProTable<RBACRole>
                 columns={clusterRoleColumns}
-                dataSource={clusterRoles?.items || []}
+                dataSource={filteredClusterRoles}
                 loading={clusterRolesLoading}
                 rowKey="name"
                 search={false}
+                options={{ reload: false }}
                 pagination={{
                   defaultPageSize: 20,
                   showSizeChanger: true,
                   showTotal: (t) => `共 ${t} 条`,
                 }}
                 scroll={{ x: 700 }}
+                toolBarRender={() => [
+                  <Input.Search
+                    key="search"
+                    placeholder="按名称搜索"
+                    allowClear
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    style={{ width: 180 }}
+                    prefix={<SearchOutlined />}
+                  />,
+                  <Button
+                    key="refresh"
+                    icon={<ReloadOutlined />}
+                    onClick={() => refetchClusterRoles()}
+                  >
+                    刷新
+                  </Button>,
+                ]}
               />
             ),
           },
@@ -219,7 +287,7 @@ const RolesPage: React.FC = () => {
         {detailRole && (
           <Descriptions bordered column={1} size="small">
             <Descriptions.Item label="名称">{detailRole.name}</Descriptions.Item>
-            <Descriptions.Item label="命名空间">
+            <Descriptions.Item label="Namespace">
               {detailRole.namespace || '集群级'}
             </Descriptions.Item>
             <Descriptions.Item label="规则数">{detailRole.rules?.length || 0}</Descriptions.Item>

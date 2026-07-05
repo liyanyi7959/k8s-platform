@@ -128,7 +128,7 @@ export default function NodesPage() {
 
   // ═══ Columns ═══
   const columns: ProColumns[] = [
-    { title: '名称', dataIndex: 'name', width: 200, ellipsis: true, fixed: 'left' },
+    { title: '名称', dataIndex: 'name', width: 200, ellipsis: true, fixed: 'left', render: (_, record) => <Text strong>{record.name}</Text> },
     {
       title: '状态',
       dataIndex: 'status',
@@ -202,6 +202,7 @@ export default function NodesPage() {
       title: 'Pods',
       dataIndex: 'podCount',
       width: 70,
+      align: 'center' as const,
       render: (_, r) => <Text>{r.podCount || 0}</Text>,
     },
     {
@@ -296,6 +297,7 @@ export default function NodesPage() {
         actionRef={actionRef}
         rowKey="name"
         search={{ labelWidth: 80 }}
+        options={{ reload: false }}
         toolBarRender={() => [
           <Button
             key="refresh"

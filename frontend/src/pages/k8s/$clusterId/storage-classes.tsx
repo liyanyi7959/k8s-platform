@@ -10,16 +10,20 @@ import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { StorageClass } from '@/types'
 
+const { Text } = Typography
+
 const StorageClassesPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
+  const [keyword, setKeyword] = useState('')
   const [detailSC, setDetailSC] = useState<StorageClass | null>(null)
   const yamlDrawer = useYamlDrawer()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-storageclasses', clusterId],
-    queryFn: () => listStorageClasses(clusterId),
+    queryFn: ({ signal }) => listStorageClasses(clusterId, signal),
     enabled: !!clusterId,
+    refetchInterval: detailSC ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -93,12 +97,26 @@ const StorageClassesPage: React.FC = () => {
     <AppPage>
       <ProTable<StorageClass>
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey="name"
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 1000 }}
+        headerTitle={<Text strong>StorageClass 列表</Text>}
+        toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
+        ]}
       />
 
       {/* 详情抽屉 */}

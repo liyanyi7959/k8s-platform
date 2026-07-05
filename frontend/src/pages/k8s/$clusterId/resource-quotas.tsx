@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip } from 'antd'
-import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
+import { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Button, Input, Typography } from 'antd'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listResourceQuotas, deleteResourceQuota } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -117,20 +117,33 @@ const ResourceQuotasPage: React.FC = () => {
     <AppPage>
       <ProTable<ResourceQuota>
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey={(r) => `${r.namespace}/${r.name}`}
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 900 }}
-        headerTitle={
+        headerTitle={<Text strong>ResourceQuota 列表</Text>}
+        toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
           <NamespaceSelector
+            key="ns"
             clusterId={clusterId}
             value={namespace}
             onChange={setNamespace}
-            style={{ width: 200 }}
-          />
-        }
+            style={{ width: 180 }}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
+        ]}
       />
       <YamlDrawer
         clusterId={clusterId}
@@ -149,7 +162,7 @@ const ResourceQuotasPage: React.FC = () => {
         {detailQuota && (
           <Descriptions column={1} bordered size="small">
             <Descriptions.Item label="名称">{detailQuota.name}</Descriptions.Item>
-            <Descriptions.Item label="命名空间">
+            <Descriptions.Item label="Namespace">
               {detailQuota.namespace || namespace}
             </Descriptions.Item>
             <Descriptions.Item label="硬限制">

@@ -722,7 +722,7 @@ const PodsPage: React.FC = () => {
       width: 90,
       render: (t) => <Tag>{(t as string) || 'BestEffort'}</Tag>,
     },
-    { title: 'Age', dataIndex: 'createdAt', width: 90, sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(), render: (_, r) => formatDate(r.createdAt) },
+    { title: 'Age', dataIndex: 'createdAt', width: 90, ellipsis: true, sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(), render: (_, r) => formatDate(r.createdAt) },
     {
       title: '操作',
       valueType: 'option',
@@ -794,6 +794,7 @@ const PodsPage: React.FC = () => {
         loading={isLoading}
         rowKey={(r) => `${r.namespace}/${r.name}`}
         search={false}
+        options={{ reload: false }}
         pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 个 Pod` }}
         scroll={{ x: 1500 }}
         rowSelection={{

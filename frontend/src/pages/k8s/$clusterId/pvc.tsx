@@ -1,13 +1,15 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from 'antd'
+import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Tabs, Table } from 'antd'
 import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listPersistentVolumeClaims, deletePersistentVolumeClaim } from '@/services/k8s'
+import { listPersistentVolumeClaims, deletePersistentVolumeClaim, getPodEvents, listPods } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import type { PersistentVolumeClaim } from '@/types'
+
+const { Text } = Typography
 
 const statusMap: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   Bound: 'success',
@@ -19,13 +21,15 @@ const PVCPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
   const [detailPVC, setDetailPVC] = useState<PersistentVolumeClaim | null>(null)
   const yamlDrawer = useYamlDrawer()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-pvcs', clusterId, namespace],
-    queryFn: () => listPersistentVolumeClaims(clusterId, namespace),
+    queryFn: ({ signal }) => listPersistentVolumeClaims(clusterId, namespace, signal),
     enabled: !!clusterId,
+    refetchInterval: detailPVC ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -35,6 +39,12 @@ const PVCPage: React.FC = () => {
       message.success('PVC 已删除')
       queryClient.invalidateQueries({ queryKey: ['k8s-pvcs', clusterId] })
     },
+  })
+
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['k8s-pvc-events', clusterId, detailPVC?.namespace, detailPVC?.name],
+    queryFn: ({ signal }) => getPodEvents(clusterId, detailPVC?.namespace || '', detailPVC?.name || '', signal),
+    enabled: !!clusterId && !!detailPVC && !!detailPVC.namespace && !!detailPVC.name,
   })
 
   const columns: ProColumns<PersistentVolumeClaim>[] = [
@@ -50,12 +60,13 @@ const PVCPage: React.FC = () => {
       title: '状态',
       dataIndex: 'status',
       width: 120,
+      align: 'center' as const,
       render: (_, record) => (
         <Badge status={statusMap[record.status] || 'default'} text={record.status} />
       ),
     },
     { title: 'Volume', dataIndex: 'volumeName', width: 150, search: false },
-    { title: '容量', dataIndex: 'capacity', width: 100, search: false },
+    { title: '容量', dataIndex: 'capacity', width: 100, search: false, align: 'center' as const },
     {
       title: '访问模式',
       dataIndex: 'accessModes',
@@ -122,26 +133,73 @@ const PVCPage: React.FC = () => {
         title={`PVC 详情 - ${detailPVC?.name}`}
         open={!!detailPVC}
         onClose={() => setDetailPVC(null)}
-        width={640}
+        width={720}
         destroyOnClose
       >
         {detailPVC && (
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="名称">{detailPVC.name}</Descriptions.Item>
-            <Descriptions.Item label="命名空间">
-              <Tag>{detailPVC.namespace}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Badge status={statusMap[detailPVC.status] || 'default'} text={detailPVC.status} />
-            </Descriptions.Item>
-            <Descriptions.Item label="Volume">{detailPVC.volumeName || '-'}</Descriptions.Item>
-            <Descriptions.Item label="容量">{detailPVC.capacity || '-'}</Descriptions.Item>
-            <Descriptions.Item label="访问模式">
-              {(detailPVC.accessModes || []).join(', ')}
-            </Descriptions.Item>
-            <Descriptions.Item label="StorageClass">{detailPVC.storageClass}</Descriptions.Item>
-            <Descriptions.Item label="Age">{detailPVC.age || '-'}</Descriptions.Item>
-          </Descriptions>
+          <Tabs
+            defaultActiveKey="overview"
+            items={[
+              {
+                key: 'overview',
+                label: '概览',
+                children: (
+                  <Descriptions bordered column={2} size="small">
+                    <Descriptions.Item label="名称">{detailPVC.name}</Descriptions.Item>
+                    <Descriptions.Item label="Namespace">
+                      <Tag>{detailPVC.namespace}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="状态">
+                      <Badge status={statusMap[detailPVC.status] || 'default'} text={detailPVC.status} />
+                    </Descriptions.Item>
+                    <Descriptions.Item label="容量">{detailPVC.capacity || '-'}</Descriptions.Item>
+                    <Descriptions.Item label="Volume" span={2}>
+                      {detailPVC.volumeName || '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="访问模式" span={2}>
+                      {(detailPVC.accessModes || []).map((m) => <Tag key={m} color="blue">{m}</Tag>)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="StorageClass" span={2}>
+                      {detailPVC.storageClass || '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Age">{detailPVC.age || '-'}</Descriptions.Item>
+                  </Descriptions>
+                ),
+              },
+              {
+                key: 'events',
+                label: '事件',
+                children: (
+                  <Table
+                    size="small"
+                    rowKey={(_, i) => String(i)}
+                    loading={eventsLoading}
+                    pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+                    dataSource={eventsData || []}
+                    columns={[
+                      {
+                        title: '类型',
+                        dataIndex: 'type',
+                        width: 90,
+                        render: (_, r) => (
+                          <Tag color={r.type === 'Warning' ? 'warning' : 'success'}>{r.type || 'Normal'}</Tag>
+                        ),
+                      },
+                      { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true },
+                      { title: '消息', dataIndex: 'message', ellipsis: true },
+                      {
+                        title: '时间',
+                        dataIndex: 'lastTimestamp',
+                        width: 150,
+                        render: (_, r) =>
+                          r.lastTimestamp || r.firstTimestamp || r.metadata?.creationTimestamp || '-',
+                      },
+                    ]}
+                  />
+                ),
+              },
+            ]}
+          />
         )}
       </Drawer>
 

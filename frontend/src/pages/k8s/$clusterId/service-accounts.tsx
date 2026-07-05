@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from 'antd'
-import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
+import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Typography } from 'antd'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listServiceAccounts, deleteServiceAccount } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -10,17 +10,21 @@ import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { ServiceAccount } from '@/types'
 
+const { Text } = Typography
+
 const ServiceAccountsPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
   const [detailSA, setDetailSA] = useState<ServiceAccount | null>(null)
   const yamlDrawer = useYamlDrawer()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-serviceaccounts', clusterId, namespace],
-    queryFn: () => listServiceAccounts(clusterId, namespace),
+    queryFn: ({ signal }) => listServiceAccounts(clusterId, namespace, signal),
     enabled: !!clusterId,
+    refetchInterval: detailSA ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -88,20 +92,33 @@ const ServiceAccountsPage: React.FC = () => {
     <AppPage>
       <ProTable<ServiceAccount>
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey={(r) => `${r.namespace}/${r.name}`}
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 700 }}
-        headerTitle={
+        headerTitle={<Text strong>ServiceAccount 列表</Text>}
+        toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
           <NamespaceSelector
+            key="ns"
             clusterId={clusterId}
             value={namespace}
             onChange={setNamespace}
-            style={{ width: 200 }}
-          />
-        }
+            style={{ width: 180 }}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
+        ]}
       />
 
       {/* 详情抽屉 */}

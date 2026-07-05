@@ -7,8 +7,8 @@ import {
   ProFormTextArea,
   type ProColumns,
 } from '@ant-design/pro-components'
-import { Space, message, Popconfirm, Tag, Modal, Button, Card, Tooltip } from 'antd'
-import { PlusOutlined, EyeOutlined, DeleteOutlined, ProfileOutlined } from '@ant-design/icons'
+import { Space, message, Popconfirm, Tag, Modal, Button, Card, Tooltip, Input, Typography } from 'antd'
+import { PlusOutlined, EyeOutlined, DeleteOutlined, ProfileOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listSecrets, deleteSecret, createSecret, getSecretReveal } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -16,6 +16,8 @@ import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { Secret } from '@/types'
+
+const { Text } = Typography
 
 const secretTypeOptions = [
   { label: 'Opaque', value: 'Opaque' },
@@ -136,21 +138,32 @@ const SecretsPage: React.FC = () => {
     <AppPage>
       <ProTable<Secret>
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey={(r) => `${r.namespace}/${r.name}`}
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 900 }}
-        headerTitle={
+        headerTitle={<Text strong>Secret 列表</Text>}
+        toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
           <NamespaceSelector
+            key="ns"
             clusterId={clusterId}
             value={namespace}
             onChange={setNamespace}
-            style={{ width: 200 }}
-          />
-        }
-        toolBarRender={() => [
+            style={{ width: 180 }}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
           <Button
             key="create"
             type="primary"

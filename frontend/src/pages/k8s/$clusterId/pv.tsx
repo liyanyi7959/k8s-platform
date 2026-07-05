@@ -1,14 +1,16 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from 'antd'
+import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Tabs, Table } from 'antd'
 import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listPersistentVolumes, deletePersistentVolume } from '@/services/k8s'
+import { listPersistentVolumes, deletePersistentVolume, getPodEvents, listPods } from '@/services/k8s'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { AppPage } from '@/components'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { PersistentVolume } from '@/types'
+
+const { Text } = Typography
 
 const statusMap: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   Available: 'success',
@@ -20,13 +22,15 @@ const statusMap: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
 const PVPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
+  const [keyword, setKeyword] = useState('')
   const [detailPV, setDetailPV] = useState<PersistentVolume | null>(null)
   const yamlDrawer = useYamlDrawer()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-pvs', clusterId],
-    queryFn: () => listPersistentVolumes(clusterId),
+    queryFn: ({ signal }) => listPersistentVolumes(clusterId, signal),
     enabled: !!clusterId,
+    refetchInterval: detailPV ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -37,17 +41,24 @@ const PVPage: React.FC = () => {
     },
   })
 
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['k8s-pv-events', clusterId, detailPV?.name],
+    queryFn: ({ signal }) => getPodEvents(clusterId, '', detailPV?.name || '', signal),
+    enabled: !!clusterId && !!detailPV && !!detailPV.name,
+  })
+
   const columns: ProColumns<PersistentVolume>[] = [
     { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
       title: '状态',
       dataIndex: 'status',
       width: 120,
+      align: 'center' as const,
       render: (_, record) => (
         <Badge status={statusMap[record.status] || 'default'} text={record.status} />
       ),
     },
-    { title: '容量', dataIndex: 'capacity', width: 100 },
+    { title: '容量', dataIndex: 'capacity', width: 100, align: 'center' as const },
     {
       title: '访问模式',
       dataIndex: 'accessModes',
@@ -107,12 +118,26 @@ const PVPage: React.FC = () => {
     <AppPage>
       <ProTable<PersistentVolume>
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey="name"
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 1100 }}
+        headerTitle={<Text strong>PV 列表</Text>}
+        toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
+        ]}
       />
 
       {/* 详情抽屉 */}
@@ -120,24 +145,75 @@ const PVPage: React.FC = () => {
         title={`PV 详情 - ${detailPV?.name}`}
         open={!!detailPV}
         onClose={() => setDetailPV(null)}
-        width={640}
+        width={720}
         destroyOnClose
       >
         {detailPV && (
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="名称">{detailPV.name}</Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Badge status={statusMap[detailPV.status] || 'default'} text={detailPV.status} />
-            </Descriptions.Item>
-            <Descriptions.Item label="容量">{detailPV.capacity}</Descriptions.Item>
-            <Descriptions.Item label="访问模式">
-              {(detailPV.accessModes || []).join(', ')}
-            </Descriptions.Item>
-            <Descriptions.Item label="回收策略">{detailPV.reclaimPolicy}</Descriptions.Item>
-            <Descriptions.Item label="StorageClass">{detailPV.storageClass}</Descriptions.Item>
-            <Descriptions.Item label="Claim">{detailPV.claim || '-'}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{formatDate(detailPV.createdAt)}</Descriptions.Item>
-          </Descriptions>
+          <Tabs
+            defaultActiveKey="overview"
+            items={[
+              {
+                key: 'overview',
+                label: '概览',
+                children: (
+                  <Descriptions bordered column={2} size="small">
+                    <Descriptions.Item label="名称">{detailPV.name}</Descriptions.Item>
+                    <Descriptions.Item label="状态">
+                      <Badge status={statusMap[detailPV.status] || 'default'} text={detailPV.status} />
+                    </Descriptions.Item>
+                    <Descriptions.Item label="容量">{detailPV.capacity}</Descriptions.Item>
+                    <Descriptions.Item label="回收策略">
+                      <Tag color="blue">{detailPV.reclaimPolicy}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="StorageClass" span={2}>
+                      {detailPV.storageClass || '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="访问模式" span={2}>
+                      {(detailPV.accessModes || []).map((m) => <Tag key={m} color="blue">{m}</Tag>)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Claim" span={2}>
+                      {detailPV.claim || '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="创建时间" span={2}>
+                      {formatDate(detailPV.createdAt)}
+                    </Descriptions.Item>
+                  </Descriptions>
+                ),
+              },
+              {
+                key: 'events',
+                label: '事件',
+                children: (
+                  <Table
+                    size="small"
+                    rowKey={(_, i) => String(i)}
+                    loading={eventsLoading}
+                    pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+                    dataSource={eventsData || []}
+                    columns={[
+                      {
+                        title: '类型',
+                        dataIndex: 'type',
+                        width: 90,
+                        render: (_, r) => (
+                          <Tag color={r.type === 'Warning' ? 'warning' : 'success'}>{r.type || 'Normal'}</Tag>
+                        ),
+                      },
+                      { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true },
+                      { title: '消息', dataIndex: 'message', ellipsis: true },
+                      {
+                        title: '时间',
+                        dataIndex: 'lastTimestamp',
+                        width: 150,
+                        render: (_, r) =>
+                          r.lastTimestamp || r.firstTimestamp || r.metadata?.creationTimestamp || '-',
+                      },
+                    ]}
+                  />
+                ),
+              },
+            ]}
+          />
         )}
       </Drawer>
 
