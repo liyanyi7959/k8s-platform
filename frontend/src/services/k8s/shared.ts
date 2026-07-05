@@ -646,6 +646,8 @@ export function mapNetworkPolicy(raw: any): NetworkPolicy {
     policyTypes: s.policyTypes || [],
     age: m.creationTimestamp || '',
     createdAt: m.creationTimestamp || '',
+    ingress: s.ingress,
+    egress: s.egress,
   }
 }
 

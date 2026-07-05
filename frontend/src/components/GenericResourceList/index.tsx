@@ -57,13 +57,19 @@ export function rawField(record: GenericResourceItem, path: string): unknown {
 export function rawColumn(
   title: string,
   path: string,
-  opts?: { width?: number; align?: 'left' | 'center' | 'right'; render?: (val: unknown) => React.ReactNode },
+  opts?: {
+    width?: number
+    align?: 'left' | 'center' | 'right'
+    sorter?: (a: GenericResourceItem, b: GenericResourceItem) => number
+    render?: (val: unknown) => React.ReactNode
+  },
 ): ProColumns<GenericResourceItem> {
   return {
     title,
     width: opts?.width,
     align: opts?.align,
     search: false,
+    sorter: opts?.sorter,
     render: (_: unknown, record: GenericResourceItem) => {
       const val = rawField(record, path)
       if (val == null || val === '') return '-'
@@ -138,6 +144,7 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
     base.push({
       title: '名称',
       dataIndex: 'name',
+      width: 160,
       ellipsis: true,
       copyable: true,
       render: (_, r) => <Text strong>{r.name}</Text>,

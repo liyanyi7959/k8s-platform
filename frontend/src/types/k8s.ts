@@ -451,6 +451,8 @@ export interface NetworkPolicy {
   policyTypes: string[]
   age: string
   createdAt: string
+  ingress?: any[]
+  egress?: any[]
 }
 
 export type NetworkPolicyList = PageResult<NetworkPolicy>
