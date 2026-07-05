@@ -400,6 +400,7 @@ export interface StorageClass {
   volumeBindingMode: string
   allowVolumeExpansion: boolean
   isDefault?: boolean
+  parameters: Record<string, string>
   age: string
   createdAt: string
 }

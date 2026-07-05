@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from 'antd'
-import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
+import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Typography, Input, Button, Table } from 'antd'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listStorageClasses, deleteStorageClass } from '@/services/k8s'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
@@ -34,14 +34,19 @@ const StorageClassesPage: React.FC = () => {
     },
   })
 
+  const filteredData = (data?.items || []).filter((item) =>
+    item.name.toLowerCase().includes(keyword.toLowerCase())
+  )
+
   const columns: ProColumns<StorageClass>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
-    { title: 'Provisioner', dataIndex: 'provisioner', ellipsis: true },
-    { title: '回收策略', dataIndex: 'reclaimPolicy', width: 120, search: false },
+    { title: '名称', dataIndex: 'name', width: 160, ellipsis: true, copyable: true, render: (_, r) => <Text strong>{r.name}</Text> },
+    { title: 'Provisioner', dataIndex: 'provisioner', width: 200, ellipsis: true, search: false },
+    { title: '回收策略', dataIndex: 'reclaimPolicy', width: 120, search: false, align: 'center' as const },
     {
       title: '绑定模式',
       dataIndex: 'volumeBindingMode',
       width: 140,
+      align: 'center' as const,
       search: false,
       render: (_, record) => <Tag>{record.volumeBindingMode}</Tag>,
     },
@@ -49,20 +54,25 @@ const StorageClassesPage: React.FC = () => {
       title: '默认',
       width: 80,
       search: false,
+      align: 'center' as const,
       render: (_, record) => (record.isDefault ? <Tag color="blue">是</Tag> : '-'),
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => formatDate(record.createdAt),
+      ellipsis: true,
+      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
+      render: (_, r) => r.createdAt ? formatDate(r.createdAt) : '-',
     },
     {
       title: '操作',
       valueType: 'option',
       width: 140,
       fixed: 'right',
+      align: 'center' as const,
       render: (_, record) => (
         <Space
           size="small"
@@ -124,18 +134,43 @@ const StorageClassesPage: React.FC = () => {
         title={`StorageClass 详情 - ${detailSC?.name}`}
         open={!!detailSC}
         onClose={() => setDetailSC(null)}
-        width={640}
+        width={720}
         destroyOnClose
       >
         {detailSC && (
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="名称">{detailSC.name}</Descriptions.Item>
-            <Descriptions.Item label="Provisioner">{detailSC.provisioner}</Descriptions.Item>
-            <Descriptions.Item label="回收策略">{detailSC.reclaimPolicy}</Descriptions.Item>
-            <Descriptions.Item label="绑定模式">{detailSC.volumeBindingMode}</Descriptions.Item>
-            <Descriptions.Item label="默认">{detailSC.isDefault ? '是' : '否'}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{formatDate(detailSC.createdAt)}</Descriptions.Item>
-          </Descriptions>
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="名称">{detailSC.name}</Descriptions.Item>
+              <Descriptions.Item label="Provisioner">{detailSC.provisioner}</Descriptions.Item>
+              <Descriptions.Item label="回收策略">
+                <Tag color="blue">{detailSC.reclaimPolicy}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="绑定模式">
+                <Tag>{detailSC.volumeBindingMode}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="允许扩容">
+                {detailSC.allowVolumeExpansion ? <Tag color="green">是</Tag> : <Tag>否</Tag>}
+              </Descriptions.Item>
+              <Descriptions.Item label="默认">
+                {detailSC.isDefault ? <Tag color="blue">是</Tag> : '否'}
+              </Descriptions.Item>
+              <Descriptions.Item label="创建时间" span={2}>
+                {formatDate(detailSC.createdAt)}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Table
+              size="small"
+              title={() => `参数 (${Object.keys(detailSC.parameters || {}).length})`}
+              rowKey={(r) => r.key}
+              pagination={false}
+              dataSource={Object.entries(detailSC.parameters || {}).map(([k, v]) => ({ key: k, value: v }))}
+              columns={[
+                { title: '键', dataIndex: 'key', width: 200, ellipsis: true },
+                { title: '值', dataIndex: 'value', ellipsis: true },
+              ]}
+            />
+          </Space>
         )}
       </Drawer>
 

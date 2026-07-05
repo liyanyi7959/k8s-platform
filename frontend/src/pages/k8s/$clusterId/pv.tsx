@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Tabs, Table } from 'antd'
-import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
+import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Tabs, Table, Typography, Input, Button } from 'antd'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listPersistentVolumes, deletePersistentVolume, getPodEvents, listPods } from '@/services/k8s'
+import { listPersistentVolumes, deletePersistentVolume, getPodEvents } from '@/services/k8s'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { AppPage } from '@/components'
 import { useClusterId } from '@/hooks/useClusterId'
@@ -47,8 +47,12 @@ const PVPage: React.FC = () => {
     enabled: !!clusterId && !!detailPV && !!detailPV.name,
   })
 
+  const filteredData = (data?.items || []).filter((item) =>
+    item.name.toLowerCase().includes(keyword.toLowerCase())
+  )
+
   const columns: ProColumns<PersistentVolume>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
+    { title: '名称', dataIndex: 'name', width: 160, ellipsis: true, copyable: true, render: (_, r) => <Text strong>{r.name}</Text> },
     {
       title: '状态',
       dataIndex: 'status',
@@ -63,10 +67,11 @@ const PVPage: React.FC = () => {
       title: '访问模式',
       dataIndex: 'accessModes',
       width: 180,
+      align: 'center' as const,
       search: false,
       render: (_, record) => (record.accessModes || []).map((m) => <Tag key={m}>{m}</Tag>),
     },
-    { title: '回收策略', dataIndex: 'reclaimPolicy', width: 120, search: false },
+    { title: '回收策略', dataIndex: 'reclaimPolicy', width: 120, search: false, align: 'center' as const },
     { title: 'StorageClass', dataIndex: 'storageClass', width: 130, search: false },
     {
       title: 'Claim',
@@ -76,17 +81,21 @@ const PVPage: React.FC = () => {
       render: (_, r) => r.claim || '-',
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => formatDate(record.createdAt),
+      ellipsis: true,
+      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
+      render: (_, r) => r.createdAt ? formatDate(r.createdAt) : '-',
     },
     {
       title: '操作',
       valueType: 'option',
       width: 140,
       fixed: 'right',
+      align: 'center' as const,
       render: (_, record) => (
         <Space
           size="small"
@@ -206,7 +215,7 @@ const PVPage: React.FC = () => {
                         dataIndex: 'lastTimestamp',
                         width: 150,
                         render: (_, r) =>
-                          r.lastTimestamp || r.firstTimestamp || r.metadata?.creationTimestamp || '-',
+                          r.lastTimestamp ? formatDate(r.lastTimestamp) : '-',
                       },
                     ]}
                   />

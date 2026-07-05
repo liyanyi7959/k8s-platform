@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Tabs, Table } from 'antd'
-import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
+import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Tabs, Table, Typography, Input, Button } from 'antd'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listPersistentVolumeClaims, deletePersistentVolumeClaim, getPodEvents, listPods } from '@/services/k8s'
+import { listPersistentVolumeClaims, deletePersistentVolumeClaim, getPodEvents } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
+import { formatDate } from '@/utils'
 import type { PersistentVolumeClaim } from '@/types'
 
 const { Text } = Typography
@@ -47,8 +48,11 @@ const PVCPage: React.FC = () => {
     enabled: !!clusterId && !!detailPVC && !!detailPVC.namespace && !!detailPVC.name,
   })
 
+  const filteredData = (data?.items || []).filter((item) =>
+    item.name.toLowerCase().includes(keyword.toLowerCase())
+  )
+
   const columns: ProColumns<PersistentVolumeClaim>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
       title: 'Namespace',
       dataIndex: 'namespace',
@@ -56,6 +60,7 @@ const PVCPage: React.FC = () => {
       ellipsis: true,
       render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
+    { title: '名称', dataIndex: 'name', width: 160, ellipsis: true, copyable: true, render: (_, r) => <Text strong>{r.name}</Text> },
     {
       title: '状态',
       dataIndex: 'status',
@@ -75,12 +80,13 @@ const PVCPage: React.FC = () => {
       render: (_, record) => (record.accessModes || []).map((m) => <Tag key={m}>{m}</Tag>),
     },
     { title: 'StorageClass', dataIndex: 'storageClass', width: 130, search: false },
-    { title: 'Age', dataIndex: 'age', width: 80, search: false },
+    { title: 'Age', dataIndex: 'createdAt', width: 110, align: 'center' as const, search: false, ellipsis: true, render: (_, r) => r.createdAt ? formatDate(r.createdAt) : '-' },
     {
       title: '操作',
       valueType: 'option',
       width: 140,
       fixed: 'right',
+      align: 'center' as const,
       render: (_, record) => (
         <Space
           size="small"
@@ -112,20 +118,33 @@ const PVCPage: React.FC = () => {
     <AppPage>
       <ProTable<PersistentVolumeClaim>
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey={(r) => `${r.namespace}/${r.name}`}
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
-        scroll={{ x: 1000 }}
-        headerTitle={
+        scroll={{ x: 1300 }}
+        headerTitle={<Text strong>PVC 列表</Text>}
+        toolBarRender={() => [
           <NamespaceSelector
+            key="namespace"
             clusterId={clusterId}
             value={namespace}
             onChange={setNamespace}
             style={{ width: 200 }}
-          />
-        }
+          />,
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
+        ]}
       />
 
       {/* 详情抽屉 */}
@@ -162,7 +181,7 @@ const PVCPage: React.FC = () => {
                     <Descriptions.Item label="StorageClass" span={2}>
                       {detailPVC.storageClass || '-'}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Age">{detailPVC.age || '-'}</Descriptions.Item>
+                    <Descriptions.Item label="Age">{formatDate(detailPVC.createdAt)}</Descriptions.Item>
                   </Descriptions>
                 ),
               },
@@ -192,7 +211,7 @@ const PVCPage: React.FC = () => {
                         dataIndex: 'lastTimestamp',
                         width: 150,
                         render: (_, r) =>
-                          r.lastTimestamp || r.firstTimestamp || r.metadata?.creationTimestamp || '-',
+                          r.lastTimestamp ? formatDate(r.lastTimestamp) : '-',
                       },
                     ]}
                   />

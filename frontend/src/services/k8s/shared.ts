@@ -602,6 +602,7 @@ export function mapStorageClass(raw: any): StorageClass {
     volumeBindingMode: raw?.volumeBindingMode || '',
     allowVolumeExpansion: raw?.allowVolumeExpansion || false,
     isDefault,
+    parameters: raw?.parameters || {},
     age: m.creationTimestamp || '',
     createdAt: m.creationTimestamp || '',
   }
