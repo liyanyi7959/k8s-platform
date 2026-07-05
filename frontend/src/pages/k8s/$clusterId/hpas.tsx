@@ -6,7 +6,7 @@ import {
   ProFormText,
   ProFormDigit,
 } from '@ant-design/pro-components'
-import { Popconfirm, message, Space, Tag, Tooltip, Drawer, Descriptions, Button } from 'antd'
+import { Popconfirm, message, Space, Tag, Tooltip, Drawer, Descriptions, Button, Input, Typography } from 'antd'
 import {
   DeleteOutlined,
   ProfileOutlined,
@@ -14,6 +14,7 @@ import {
   EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listHPAs, deleteHPA, createHPA, updateHPA } from '@/services/k8s'
@@ -23,20 +24,24 @@ import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { HPA } from '@/types'
 
+const { Text } = Typography
+
 const HPAsPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
   const [detailHPA, setDetailHPA] = useState<HPA | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [editingHPA, setEditingHPA] = useState<HPA | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const yamlDrawer = useYamlDrawer()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-hpas', clusterId, namespace],
-    queryFn: () => listHPAs(clusterId, namespace),
+    queryFn: ({ signal }) => listHPAs(clusterId, namespace, signal),
     enabled: !!clusterId,
+    refetchInterval: detailHPA || editOpen || createOpen ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -72,8 +77,11 @@ const HPAsPage: React.FC = () => {
     },
   })
 
+  const filteredData = (data?.items || []).filter((item) => {
+    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  })
+
   const columns: ProColumns<HPA>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
       title: 'Namespace',
       dataIndex: 'namespace',
@@ -81,28 +89,61 @@ const HPAsPage: React.FC = () => {
       ellipsis: true,
       render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
-    { title: '目标', dataIndex: 'targetName', ellipsis: true, search: false },
-    { title: '最小副本', dataIndex: 'minReplicas', width: 100, search: false },
-    { title: '最大副本', dataIndex: 'maxReplicas', width: 100, search: false },
-    { title: '当前副本', dataIndex: 'currentReplicas', width: 100, search: false },
     {
-      title: 'CPU 目标',
-      width: 100,
+      title: '名称',
+      dataIndex: 'name',
+      width: 160,
+      ellipsis: true,
+      copyable: true,
+      render: (_, r) => <Text strong>{r.name}</Text>,
+    },
+    { title: '目标', dataIndex: 'targetName', width: 160, ellipsis: true, search: false },
+    {
+      title: '最小副本',
+      dataIndex: 'minReplicas',
+      width: 90,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => (record.targetCPU ? `${record.targetCPU}%` : '-'),
+      sorter: (a, b) => (a.minReplicas || 0) - (b.minReplicas || 0),
     },
     {
-      title: '创建时间',
-      dataIndex: 'createdAt',
-      width: 180,
+      title: '最大副本',
+      dataIndex: 'maxReplicas',
+      width: 90,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => formatDate(record.createdAt),
+      sorter: (a, b) => (a.maxReplicas || 0) - (b.maxReplicas || 0),
+    },
+    {
+      title: '当前副本',
+      dataIndex: 'currentReplicas',
+      width: 90,
+      align: 'center' as const,
+      search: false,
+      sorter: (a, b) => (a.currentReplicas || 0) - (b.currentReplicas || 0),
+    },
+    {
+      title: 'CPU 目标',
+      width: 90,
+      align: 'center' as const,
+      search: false,
+      render: (_, r) => (r.targetCPU ? <Tag color="blue">{r.targetCPU}%</Tag> : '-'),
+    },
+    {
+      title: 'Age',
+      dataIndex: 'createdAt',
+      width: 110,
+      align: 'center' as const,
+      search: false,
+      ellipsis: true,
+      render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),
     },
     {
       title: '操作',
       valueType: 'option',
       width: 150,
       fixed: 'right',
+      align: 'center' as const,
       render: (_, record) => (
         <Space
           size="small"
@@ -144,28 +185,31 @@ const HPAsPage: React.FC = () => {
     <AppPage>
       <ProTable<HPA>
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey={(r) => `${r.namespace}/${r.name}`}
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
-        scroll={{ x: 1000 }}
-        headerTitle={
+        scroll={{ x: 1090 }}
+        toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
           <NamespaceSelector
+            key="ns"
             clusterId={clusterId}
             value={namespace}
             onChange={setNamespace}
-            style={{ width: 200 }}
-          />
-        }
-        toolBarRender={() => [
-          <Button
-            key="refresh"
-            icon={<ReloadOutlined />}
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['k8s-hpas', clusterId] })}
-          >
-            刷新
-          </Button>,
+            style={{ width: 180 }}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
           <Button
             key="create"
             type="primary"
@@ -175,6 +219,7 @@ const HPAsPage: React.FC = () => {
             创建 HPA
           </Button>,
         ]}
+        headerTitle={<Text strong>HPA 列表</Text>}
       />
 
       {/* 详情抽屉 */}
@@ -186,23 +231,17 @@ const HPAsPage: React.FC = () => {
         destroyOnClose
       >
         {detailHPA && (
-          <Descriptions bordered column={1} size="small">
+          <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="名称">{detailHPA.name}</Descriptions.Item>
-            <Descriptions.Item label="命名空间">
-              <Tag>{detailHPA.namespace}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="目标">{detailHPA.targetName || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Namespace"><Tag>{detailHPA.namespace}</Tag></Descriptions.Item>
+            <Descriptions.Item label="目标" span={2}>{detailHPA.targetName || '-'}</Descriptions.Item>
             <Descriptions.Item label="最小副本">{detailHPA.minReplicas}</Descriptions.Item>
             <Descriptions.Item label="最大副本">{detailHPA.maxReplicas}</Descriptions.Item>
-            <Descriptions.Item label="当前副本">
-              {detailHPA.currentReplicas ?? '-'}
-            </Descriptions.Item>
+            <Descriptions.Item label="当前副本">{detailHPA.currentReplicas ?? '-'}</Descriptions.Item>
             <Descriptions.Item label="CPU 目标">
-              {detailHPA.targetCPU ? `${detailHPA.targetCPU}%` : '-'}
+              {detailHPA.targetCPU ? <Tag color="blue">{detailHPA.targetCPU}%</Tag> : '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="创建时间">
-              {formatDate(detailHPA.createdAt)}
-            </Descriptions.Item>
+            <Descriptions.Item label="创建时间" span={2}>{formatDate(detailHPA.createdAt)}</Descriptions.Item>
           </Descriptions>
         )}
       </Drawer>
@@ -218,38 +257,11 @@ const HPAsPage: React.FC = () => {
         }}
         width={640}
       >
-        <ProFormText
-          name="name"
-          label="名称"
-          rules={[{ required: true, message: '请输入名称' }]}
-          placeholder="my-hpa"
-        />
-        <ProFormText
-          name="namespace"
-          label="命名空间"
-          initialValue="default"
-          rules={[{ required: true }]}
-        />
-        <ProFormText
-          name="targetName"
-          label="目标 Deployment"
-          rules={[{ required: true }]}
-          placeholder="my-deployment"
-        />
-        <ProFormDigit
-          name="minReplicas"
-          label="最小副本数"
-          rules={[{ required: true }]}
-          min={0}
-          initialValue={1}
-        />
-        <ProFormDigit
-          name="maxReplicas"
-          label="最大副本数"
-          rules={[{ required: true }]}
-          min={1}
-          initialValue={10}
-        />
+        <ProFormText name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]} placeholder="my-hpa" />
+        <ProFormText name="namespace" label="Namespace" initialValue="default" rules={[{ required: true }]} />
+        <ProFormText name="targetName" label="目标 Deployment" rules={[{ required: true }]} placeholder="my-deployment" />
+        <ProFormDigit name="minReplicas" label="最小副本数" rules={[{ required: true }]} min={0} initialValue={1} />
+        <ProFormDigit name="maxReplicas" label="最大副本数" rules={[{ required: true }]} min={1} initialValue={10} />
         <ProFormDigit name="targetCPU" label="CPU 目标 (%)" min={1} max={100} initialValue={80} />
       </ModalForm>
 
@@ -281,7 +293,7 @@ const HPAsPage: React.FC = () => {
         modalProps={{ destroyOnClose: true }}
       >
         <ProFormText name="name" label="名称" disabled />
-        <ProFormText name="namespace" label="命名空间" disabled />
+        <ProFormText name="namespace" label="Namespace" disabled />
         <ProFormText name="targetName" label="目标 Deployment" disabled />
         <ProFormDigit name="minReplicas" label="最小副本数" min={0} />
         <ProFormDigit name="maxReplicas" label="最大副本数" min={1} />

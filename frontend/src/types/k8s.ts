@@ -357,6 +357,7 @@ export interface PDB {
   desiredHealthy: number
   age: string
   createdAt: string
+  selector?: string
 }
 
 export type PDBList = PageResult<PDB>

@@ -169,6 +169,7 @@ const ReplicaSetsPage: React.FC = () => {
         loading={isLoading}
         rowKey={(r) => `${r.namespace}/${r.name}`}
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 1160 }}
         toolBarRender={() => [

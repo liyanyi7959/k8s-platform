@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions } from 'antd'
-import { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'
+import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Typography } from 'antd'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listPDBs, deletePDB } from '@/services/k8s'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
@@ -10,17 +10,21 @@ import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import type { PDB } from '@/types'
 
+const { Text } = Typography
+
 const PDBsPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
   const [detailPDB, setDetailPDB] = useState<PDB | null>(null)
   const yamlDrawer = useYamlDrawer()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-pdbs', clusterId, namespace],
-    queryFn: () => listPDBs(clusterId, namespace),
+    queryFn: ({ signal }) => listPDBs(clusterId, namespace, signal),
     enabled: !!clusterId,
+    refetchInterval: detailPDB ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -31,8 +35,11 @@ const PDBsPage: React.FC = () => {
     },
   })
 
+  const filteredData = (data?.items || []).filter((item) => {
+    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  })
+
   const columns: ProColumns<PDB>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
       title: 'Namespace',
       dataIndex: 'namespace',
@@ -41,49 +48,80 @@ const PDBsPage: React.FC = () => {
       render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
     {
+      title: '名称',
+      dataIndex: 'name',
+      width: 160,
+      ellipsis: true,
+      copyable: true,
+      render: (_, r) => <Text strong>{r.name}</Text>,
+    },
+    {
       title: '最小可用',
       dataIndex: 'minAvailable',
       width: 100,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => <Tag color="green">{record.minAvailable}</Tag>,
+      render: (_, r) => (r.minAvailable != null ? <Tag color="green">{r.minAvailable}</Tag> : '-'),
     },
     {
       title: '最大不可用',
       dataIndex: 'maxUnavailable',
       width: 110,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => <Tag color="orange">{record.maxUnavailable}</Tag>,
+      render: (_, r) => (r.maxUnavailable != null ? <Tag color="orange">{r.maxUnavailable}</Tag> : '-'),
     },
-    { title: '当前健康', dataIndex: 'currentHealthy', width: 100, search: false },
-    { title: '期望健康', dataIndex: 'desiredHealthy', width: 100, search: false },
-    { title: '允许中断', dataIndex: 'allowedDisruptions', width: 100, search: false },
+    {
+      title: '当前健康',
+      dataIndex: 'currentHealthy',
+      width: 100,
+      align: 'center' as const,
+      search: false,
+      sorter: (a, b) => (a.currentHealthy || 0) - (b.currentHealthy || 0),
+    },
+    {
+      title: '期望健康',
+      dataIndex: 'desiredHealthy',
+      width: 100,
+      align: 'center' as const,
+      search: false,
+      sorter: (a, b) => (a.desiredHealthy || 0) - (b.desiredHealthy || 0),
+    },
+    {
+      title: '允许中断',
+      dataIndex: 'allowedDisruptions',
+      width: 100,
+      align: 'center' as const,
+      search: false,
+    },
     {
       title: '状态',
-      width: 100,
+      width: 90,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => (
-        <Tag color={record.currentHealthy >= record.desiredHealthy ? 'success' : 'error'}>
-          {record.currentHealthy >= record.desiredHealthy ? '健康' : '异常'}
+      render: (_, r) => (
+        <Tag color={r.currentHealthy >= r.desiredHealthy ? 'success' : 'error'}>
+          {r.currentHealthy >= r.desiredHealthy ? '健康' : '异常'}
         </Tag>
       ),
     },
     {
-      title: '创建时间',
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => formatDate(record.createdAt),
+      ellipsis: true,
+      render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),
     },
     {
       title: '操作',
       valueType: 'option',
       width: 140,
       fixed: 'right',
+      align: 'center' as const,
       render: (_, record) => (
-        <Space
-          size="small"
-          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-        >
+        <Space size="small" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <Tooltip title="详情">
             <a onClick={() => setDetailPDB(record)}>
               <EyeOutlined />
@@ -110,23 +148,35 @@ const PDBsPage: React.FC = () => {
     <AppPage>
       <ProTable<PDB>
         columns={columns}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
         loading={isLoading}
         rowKey={(r) => `${r.namespace}/${r.name}`}
         search={false}
+        options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
-        scroll={{ x: 1000 }}
-        headerTitle={
+        scroll={{ x: 1160 }}
+        toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
           <NamespaceSelector
+            key="ns"
             clusterId={clusterId}
             value={namespace}
             onChange={setNamespace}
-            style={{ width: 200 }}
-          />
-        }
+            style={{ width: 180 }}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
+        ]}
+        headerTitle={<Text strong>PDB 列表</Text>}
       />
 
-      {/* 详情抽屉 */}
       <Drawer
         title={`PDB 详情 - ${detailPDB?.name}`}
         open={!!detailPDB}
@@ -135,23 +185,19 @@ const PDBsPage: React.FC = () => {
         destroyOnClose
       >
         {detailPDB && (
-          <Descriptions bordered column={1} size="small">
+          <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="名称">{detailPDB.name}</Descriptions.Item>
-            <Descriptions.Item label="命名空间">
-              <Tag>{detailPDB.namespace}</Tag>
-            </Descriptions.Item>
+            <Descriptions.Item label="Namespace"><Tag>{detailPDB.namespace}</Tag></Descriptions.Item>
             <Descriptions.Item label="最小可用">
-              <Tag color="green">{detailPDB.minAvailable}</Tag>
+              {detailPDB.minAvailable != null ? <Tag color="green">{detailPDB.minAvailable}</Tag> : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="最大不可用">
-              <Tag color="orange">{detailPDB.maxUnavailable}</Tag>
+              {detailPDB.maxUnavailable != null ? <Tag color="orange">{detailPDB.maxUnavailable}</Tag> : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="当前健康">{detailPDB.currentHealthy}</Descriptions.Item>
             <Descriptions.Item label="期望健康">{detailPDB.desiredHealthy}</Descriptions.Item>
             <Descriptions.Item label="允许中断">{detailPDB.allowedDisruptions}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">
-              {formatDate(detailPDB.createdAt)}
-            </Descriptions.Item>
+            <Descriptions.Item label="创建时间">{formatDate(detailPDB.createdAt)}</Descriptions.Item>
           </Descriptions>
         )}
       </Drawer>

@@ -206,6 +206,7 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
         loading={isLoading}
         rowKey={(r) => `${r.namespace || ''}/${r.name}`}
         search={false}
+        options={{ reload: false }}
         pagination={{
           defaultPageSize: 20,
           showSizeChanger: true,

@@ -665,6 +665,8 @@ export function mapPDB(raw: any): PDB {
   const m = raw?.metadata || {}
   const s = raw?.spec || {}
   const st = raw?.status || {}
+  const matchLabels = s.selector?.matchLabels || {}
+  const selectorStr = Object.entries(matchLabels).map(([k, v]) => `${k}=${v}`).join(', ')
   return {
     name: m.name || '',
     namespace: m.namespace || '',
@@ -675,6 +677,7 @@ export function mapPDB(raw: any): PDB {
     desiredHealthy: st.desiredHealthy || 0,
     age: m.creationTimestamp || '',
     createdAt: m.creationTimestamp || '',
+    selector: selectorStr || undefined,
   }
 }
 

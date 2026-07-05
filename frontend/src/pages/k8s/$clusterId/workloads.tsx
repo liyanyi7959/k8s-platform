@@ -583,6 +583,7 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
           </Space>
         )}
         search={false}
+        options={{ reload: false }}
         loading={isLoading}
         dataSource={filteredData}
         pagination={{
