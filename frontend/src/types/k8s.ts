@@ -308,6 +308,10 @@ export interface Job {
   status: string        // Active / Succeeded / Failed
   age: string
   createdAt: string
+  images?: string[]
+  labels?: Record<string, string>
+  ownerKind?: string
+  ownerName?: string
 }
 
 export type JobList = PageResult<Job>
@@ -322,6 +326,11 @@ export interface CronJob {
   lastScheduleTime: string
   age: string
   createdAt: string
+  images?: string[]
+  labels?: Record<string, string>
+  concurrencyPolicy?: string
+  successfulJobsHistoryLimit?: number
+  failedJobsHistoryLimit?: number
 }
 
 export type CronJobList = PageResult<CronJob>

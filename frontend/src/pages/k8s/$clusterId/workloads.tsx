@@ -1058,7 +1058,7 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
                     size="small"
                     rowKey={(_, i) => String(i)}
                     loading={eventsLoading}
-                    pagination={false}
+                    pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
                     dataSource={eventsData || []}
                     columns={[
                       {

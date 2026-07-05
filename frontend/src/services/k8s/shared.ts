@@ -485,6 +485,9 @@ export function mapJob(raw: any): Job {
   if (completed) status = 'Succeeded'
   else if (failed) status = 'Failed'
   else if (s.active > 0) status = 'Active'
+  const tplSpec = getNested(spec, 'template', 'spec') || {}
+  const images = Array.isArray(tplSpec.containers) ? tplSpec.containers.map((c: any) => c.image || '') : []
+  const ownerRef = Array.isArray(m.ownerReferences) ? m.ownerReferences[0] : undefined
   return {
     name: m.name || '',
     namespace: m.namespace || '',
@@ -493,6 +496,10 @@ export function mapJob(raw: any): Job {
     status,
     age: m.creationTimestamp || '',
     createdAt: m.creationTimestamp || '',
+    images,
+    labels: m.labels || undefined,
+    ownerKind: ownerRef?.kind || '',
+    ownerName: ownerRef?.name || '',
   }
 }
 
@@ -501,6 +508,8 @@ export function mapCronJob(raw: any): CronJob {
   const m = raw?.metadata || {}
   const s = raw?.spec || {}
   const st = raw?.status || {}
+  const tplSpec = getNested(s, 'jobTemplate', 'spec', 'template', 'spec') || {}
+  const images = Array.isArray(tplSpec.containers) ? tplSpec.containers.map((c: any) => c.image || '') : []
   return {
     name: m.name || '',
     namespace: m.namespace || '',
@@ -510,6 +519,11 @@ export function mapCronJob(raw: any): CronJob {
     lastScheduleTime: st.lastScheduleTime || '',
     age: m.creationTimestamp || '',
     createdAt: m.creationTimestamp || '',
+    images,
+    labels: m.labels || undefined,
+    concurrencyPolicy: s.concurrencyPolicy || 'Allow',
+    successfulJobsHistoryLimit: s.successfulJobsHistoryLimit,
+    failedJobsHistoryLimit: s.failedJobsHistoryLimit,
   }
 }
 

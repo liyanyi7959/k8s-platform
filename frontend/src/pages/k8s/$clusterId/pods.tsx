@@ -297,7 +297,7 @@ const PodEventsTab: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, po
       columns={columns}
       dataSource={events}
       loading={isLoading}
-      pagination={{ pageSize: 10, size: 'small' }}
+      pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
       scroll={{ y: 320 }}
     />
   )
