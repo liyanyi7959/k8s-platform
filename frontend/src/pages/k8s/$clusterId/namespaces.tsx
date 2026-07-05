@@ -16,6 +16,8 @@ const NamespacesPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [keyword, setKeyword] = useState('')
+  const [detailNS, setDetailNS] = useState<Namespace | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
   const yamlDrawer = useYamlDrawer()
 
   const { data: namespaces, isLoading, refetch } = useQuery({
@@ -83,13 +85,19 @@ const NamespacesPage: React.FC = () => {
     {
       title: '操作',
       valueType: 'option',
-      width: 120,
+      width: 140,
       fixed: 'right',
+      align: 'center' as const,
       render: (_, record) => (
         <Space
           size="small"
           style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
         >
+          <Tooltip title="详情">
+            <a onClick={() => setDetailNS(record)}>
+              <EyeOutlined />
+            </a>
+          </Tooltip>
           <Tooltip title="查看 YAML">
             <a onClick={() => yamlDrawer.openYaml(record.name)}>
               <ProfileOutlined />
@@ -128,6 +136,7 @@ const NamespacesPage: React.FC = () => {
         options={{ reload: false }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 800 }}
+        headerTitle={<Text strong>Namespace 列表</Text>}
         toolBarRender={() => [
           <Input.Search
             key="search"
@@ -145,8 +154,35 @@ const NamespacesPage: React.FC = () => {
           >
             刷新
           </Button>,
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            创建 Namespace
+          </Button>,
         ]}
       />
+
+      {/* 详情抽屉 */}
+      <Drawer
+        title={`Namespace 详情 - ${detailNS?.name}`}
+        open={!!detailNS}
+        onClose={() => setDetailNS(null)}
+        width={640}
+        destroyOnClose
+      >
+        {detailNS && (
+          <Descriptions bordered column={2} size="small">
+            <Descriptions.Item label="名称">{detailNS.name}</Descriptions.Item>
+            <Descriptions.Item label="状态">
+              <Badge status={detailNS.status === 'Active' ? 'success' : 'warning'} text={detailNS.status} />
+            </Descriptions.Item>
+            <Descriptions.Item label="创建时间" span={2}>{formatDate(detailNS.createdAt)}</Descriptions.Item>
+            <Descriptions.Item label="标签" span={2}>
+              {detailNS.labels && Object.keys(detailNS.labels).length > 0
+                ? Object.entries(detailNS.labels).map(([k, v]) => <Tag key={k}>{k}={v}</Tag>)
+                : '-'}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Drawer>
 
       <YamlDrawer
         clusterId={clusterId}
@@ -154,6 +190,14 @@ const NamespacesPage: React.FC = () => {
         name={yamlDrawer.name}
         open={yamlDrawer.open}
         onClose={yamlDrawer.closeYaml}
+      />
+
+      <ManifestApplyDrawer
+        clusterId={clusterId}
+        open={createOpen}
+        onClose={() => { setCreateOpen(false); queryClient.invalidateQueries({ queryKey: ['k8s-namespaces', clusterId] }) }}
+        title="创建 Namespace"
+        initialYaml={`apiVersion: v1\nkind: Namespace\nmetadata:\n  name: my-namespace\n`}
       />
     </AppPage>
   )

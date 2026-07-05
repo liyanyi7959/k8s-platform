@@ -1,4 +1,4 @@
-import { ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components'
+import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import {
   Button,
   Tag,
@@ -19,6 +19,8 @@ import {
   Card,
   Alert,
   Tooltip,
+  Input,
+  Table,
 } from 'antd'
 import {
   ReloadOutlined,
@@ -30,35 +32,31 @@ import {
   InfoCircleOutlined,
   EyeOutlined,
   CloudServerOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import {
   getNodes,
   getNodeDetail,
-  getNodeYaml,
   cordonNode,
   uncordonNode,
   drainNode,
   deleteNode,
 } from '@/services/k8s'
 import { AppPage } from '@/components'
+import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 
 const { Text } = Typography
 
 export default function NodesPage() {
   const clusterId = useClusterId()
-  const actionRef = useRef<ActionType>()
   const qc = useQueryClient()
+  const [keyword, setKeyword] = useState('')
 
   // ═══ YAML Drawer ═══
-  const [yamlDrawer, setYamlDrawer] = useState<{ open: boolean; name?: string }>({ open: false })
-  const { data: yamlData, isLoading: yamlLoading } = useQuery({
-    queryKey: ['node-yaml', clusterId, yamlDrawer.name],
-    queryFn: ({ signal }) => getNodeYaml(clusterId, yamlDrawer.name!, signal),
-    enabled: yamlDrawer.open && !!yamlDrawer.name,
-  })
+  const yamlDrawer = useYamlDrawer()
 
   // ═══ Detail Drawer ═══
   const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; name?: string }>({
@@ -77,6 +75,21 @@ export default function NodesPage() {
     force: boolean
     timeout: number
   }>({ open: false, force: false, timeout: 300 })
+
+  // ═══ Nodes Query ═══
+  const { data: nodesData, isLoading, refetch } = useQuery({
+    queryKey: ['k8s-nodes', clusterId],
+    queryFn: ({ signal }) => getNodes(clusterId, signal),
+    enabled: !!clusterId,
+    refetchInterval: detailDrawer.open || yamlDrawer.open || drainModal.open ? false : 30_000,
+  })
+
+  const filteredData = (() => {
+    let items = nodesData?.items || nodesData || []
+    if (keyword)
+      items = items.filter((i: any) => i.name?.toLowerCase().includes(keyword.toLowerCase()))
+    return items
+  })()
 
   // ═══ Mutations ═══
   const cordonMutation = useMutation({
@@ -236,7 +249,7 @@ export default function NodesPage() {
             </a>
           </Tooltip>
           <Tooltip title="查看 YAML">
-            <a onClick={() => setYamlDrawer({ open: true, name: record.name })}>
+            <a onClick={() => yamlDrawer.openYaml(record.name)}>
               <ProfileOutlined />
             </a>
           </Tooltip>
@@ -297,56 +310,38 @@ export default function NodesPage() {
             节点管理
           </Space>
         }
-        actionRef={actionRef}
         rowKey="name"
-        search={{ labelWidth: 80 }}
+        search={false}
         options={{ reload: false }}
+        dataSource={filteredData}
+        loading={isLoading}
+        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         toolBarRender={() => [
-          <Button
-            key="refresh"
-            icon={<ReloadOutlined />}
-            onClick={() => actionRef.current?.reload()}
-          >
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
+          <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>
             刷新
           </Button>,
         ]}
-        request={async (params) => {
-          const data = await getNodes(clusterId)
-          let items = data.items || data || []
-          if (params.name) items = items.filter((i: any) => i.name?.includes(params.name))
-          if (params.status) items = items.filter((i: any) => i.status === params.status)
-          return { data: items, success: true }
-        }}
         columns={columns}
         scroll={{ x: 1800 }}
       />
 
       {/* ═══ YAML Drawer ═══ */}
-      <Drawer
-        title={`YAML - ${yamlDrawer.name}`}
+      <YamlDrawer
+        clusterId={clusterId}
+        resourceType="nodes"
+        name={yamlDrawer.name}
         open={yamlDrawer.open}
-        onClose={() => setYamlDrawer({ open: false })}
-        width={800}
-      >
-        <pre
-          style={{
-            background: '#1e1e1e',
-            color: '#d4d4d4',
-            padding: 16,
-            borderRadius: 8,
-            height: 'calc(100vh - 200px)',
-            overflow: 'auto',
-            fontSize: 13,
-            lineHeight: 1.6,
-            fontFamily: 'Consolas, Monaco, monospace',
-          }}
-        >
-          {yamlLoading
-            ? '加载中...'
-            : (typeof yamlData === 'string' ? yamlData : JSON.stringify(yamlData, null, 2)) ||
-              '暂无数据'}
-        </pre>
-      </Drawer>
+        onClose={yamlDrawer.closeYaml}
+      />
 
       {/* ═══ Detail Drawer ═══ */}
       <Drawer
@@ -408,64 +403,19 @@ export default function NodesPage() {
                   key: 'conditions',
                   label: '条件',
                   children: detail.conditions ? (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ background: '#fafafa' }}>
-                          {['类型', '状态', '原因', '信息', '上次转换'].map((h) => (
-                            <th
-                              key={h}
-                              style={{
-                                padding: '8px 12px',
-                                borderBottom: '1px solid #f0f0f0',
-                                textAlign: 'left',
-                                fontSize: 12,
-                              }}
-                            >
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detail.conditions.map((c: any, i: number) => (
-                          <tr
-                            key={i}
-                            style={{
-                              background:
-                                c.status !== 'True' && c.type !== 'Ready' ? undefined : undefined,
-                            }}
-                          >
-                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                              <Tag>{c.type}</Tag>
-                            </td>
-                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                              <Badge
-                                status={c.status === 'True' ? 'success' : 'error'}
-                                text={c.status}
-                              />
-                            </td>
-                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                              {c.reason || '-'}
-                            </td>
-                            <td
-                              style={{
-                                padding: '8px 12px',
-                                borderBottom: '1px solid #f0f0f0',
-                                maxWidth: 200,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {c.message || '-'}
-                            </td>
-                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                              {c.lastTransitionTime || '-'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <Table
+                      size="small"
+                      rowKey={(_, i) => String(i)}
+                      pagination={false}
+                      dataSource={detail.conditions}
+                      columns={[
+                        { title: '类型', dataIndex: 'type', width: 120, render: (v) => <Tag>{v}</Tag> },
+                        { title: '状态', dataIndex: 'status', width: 80, align: 'center' as const, render: (v) => <Badge status={v === 'True' ? 'success' : 'error'} text={v} /> },
+                        { title: '原因', dataIndex: 'reason', ellipsis: true },
+                        { title: '信息', dataIndex: 'message', ellipsis: true },
+                        { title: '上次转换', dataIndex: 'lastTransitionTime', width: 180 },
+                      ]}
+                    />
                   ) : (
                     <Text type="secondary">暂无条件数据</Text>
                   ),
@@ -474,24 +424,16 @@ export default function NodesPage() {
                   key: 'addresses',
                   label: '地址',
                   children: detail.addresses ? (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ background: '#fafafa' }}>
-                          <th style={{ padding: '8px 12px', textAlign: 'left' }}>类型</th>
-                          <th style={{ padding: '8px 12px', textAlign: 'left' }}>地址</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detail.addresses.map((a: any, i: number) => (
-                          <tr key={i}>
-                            <td style={{ padding: '8px 12px' }}>
-                              <Tag>{a.type}</Tag>
-                            </td>
-                            <td style={{ padding: '8px 12px' }}>{a.address}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <Table
+                      size="small"
+                      rowKey={(_, i) => String(i)}
+                      pagination={false}
+                      dataSource={detail.addresses}
+                      columns={[
+                        { title: '类型', dataIndex: 'type', width: 150, render: (v) => <Tag>{v}</Tag> },
+                        { title: '地址', dataIndex: 'address' },
+                      ]}
+                    />
                   ) : (
                     <Text type="secondary">暂无地址数据</Text>
                   ),
@@ -534,32 +476,16 @@ export default function NodesPage() {
                   key: 'images',
                   label: '镜像',
                   children: detail.images ? (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ background: '#fafafa' }}>
-                          <th style={{ padding: '8px 12px', textAlign: 'left' }}>镜像名称</th>
-                          <th style={{ padding: '8px 12px', textAlign: 'left' }}>大小</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detail.images.map((img: any, i: number) => (
-                          <tr key={i}>
-                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                              {img.names?.map((n: string, j: number) => (
-                                <Tag key={j} style={{ marginBottom: 2 }}>
-                                  {n}
-                                </Tag>
-                              ))}
-                            </td>
-                            <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                              {img.sizeBytes
-                                ? `${(img.sizeBytes / 1024 / 1024).toFixed(1)} MB`
-                                : '-'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <Table
+                      size="small"
+                      rowKey={(_, i) => String(i)}
+                      pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+                      dataSource={detail.images}
+                      columns={[
+                        { title: '镜像名称', dataIndex: 'names', render: (v: string[]) => v?.map((n, j) => <Tag key={j} style={{ marginBottom: 2 }}>{n}</Tag>) || '-', ellipsis: true },
+                        { title: '大小', dataIndex: 'sizeBytes', width: 100, align: 'center' as const, render: (v) => v ? `${(v / 1024 / 1024).toFixed(1)} MB` : '-' },
+                      ]}
+                    />
                   ) : (
                     <Text type="secondary">暂无镜像数据</Text>
                   ),
