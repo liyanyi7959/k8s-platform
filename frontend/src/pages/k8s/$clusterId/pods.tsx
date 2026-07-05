@@ -672,7 +672,7 @@ const PodsPage: React.FC = () => {
       ),
     },
     {
-      title: '命名空间',
+      title: 'Namespace',
       dataIndex: 'namespace',
       width: 110,
       render: (t) => <Tag>{t as string}</Tag>,

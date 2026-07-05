@@ -34,7 +34,7 @@ const PDBsPage: React.FC = () => {
   const columns: ProColumns<PDB>[] = [
     { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
-      title: '命名空间',
+      title: 'Namespace',
       dataIndex: 'namespace',
       width: 140,
       ellipsis: true,

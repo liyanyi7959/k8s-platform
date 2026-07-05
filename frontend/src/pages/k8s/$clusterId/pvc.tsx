@@ -40,7 +40,7 @@ const PVCPage: React.FC = () => {
   const columns: ProColumns<PersistentVolumeClaim>[] = [
     { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
-      title: '命名空间',
+      title: 'Namespace',
       dataIndex: 'namespace',
       width: 140,
       ellipsis: true,

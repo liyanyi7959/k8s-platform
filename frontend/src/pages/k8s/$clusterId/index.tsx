@@ -487,7 +487,7 @@ const K8sDashboardPage: React.FC = () => {
                   { title: '#', width: 36, render: (_, __, idx) => <Text strong style={{ color: COLOR.primary }}>{idx + 1}</Text> },
                   { title: '名称', dataIndex: 'name', render: (v: string) => <EllipsisText text={v} /> },
                   { title: '类型', dataIndex: 'kind', width: 100, render: (v: string) => <Tag style={{ fontSize: 10 }}>{v}</Tag> },
-                  { title: '命名空间', dataIndex: 'namespace', width: 120, render: (v: string) => <EllipsisText text={v} tag /> },
+                  { title: 'Namespace', dataIndex: 'namespace', width: 120, render: (v: string) => <EllipsisText text={v} tag /> },
                   { title: '副本', dataIndex: 'replicas', width: 60, render: (v: number, r: any) => (
                     <Text strong style={{ color: r.ready >= v ? COLOR.healthy : COLOR.warning }}>{r.ready}/{v}</Text>
                   ) },

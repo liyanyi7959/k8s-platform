@@ -92,7 +92,7 @@ const ServicesPage: React.FC = () => {
       render: (_, record) => <a style={{ fontWeight: 500 }}>{record.name}</a>,
     },
     {
-      title: '命名空间',
+      title: 'Namespace',
       dataIndex: 'namespace',
       width: 140,
       ellipsis: true,

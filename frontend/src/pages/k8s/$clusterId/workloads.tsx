@@ -27,6 +27,8 @@ import {
   Typography,
   Modal,
   Input,
+  Select,
+  Table,
 } from 'antd'
 import {
   PlusOutlined,
@@ -40,6 +42,11 @@ import {
   SyncOutlined,
   ColumnHeightOutlined,
   CloudSyncOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  SearchOutlined,
+  RollbackOutlined,
+  EyeOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -53,9 +60,15 @@ import {
   getDeploymentHistory,
   updateWorkloadImage,
   updateWorkloadPaused,
+  rollbackDeployment,
+  applyYaml,
+  listPods,
+  getPodEvents,
 } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
-import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText, YamlEditor } from '@/components'
+import { formatDate } from '@/utils'
+import { history } from '@umijs/max'
 
 const { Text } = Typography
 
@@ -74,6 +87,8 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
   const workloadKind = fixedKind || activeTab
 
   // ═══ Drawers/Modals ═══
+  const [keyword, setKeyword] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [createModal, setCreateModal] = useState(false)
   const [editDrawer, setEditDrawer] = useState<{ open: boolean; record?: any }>({ open: false })
   const [scaleModal, setScaleModal] = useState<{
@@ -87,10 +102,13 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
     name?: string
     yaml?: string
     loading: boolean
-  }>({ open: false, loading: false })
+    editing: boolean
+    yamlOriginal?: string
+  }>({ open: false, loading: false, editing: false })
   const [historyDrawer, setHistoryDrawer] = useState<{
     open: boolean
     name?: string
+    ns?: string
     history?: any[]
     loading: boolean
   }>({ open: false, loading: false })
@@ -100,19 +118,90 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
     name?: string
     ns?: string
     containers?: any[]
-  }>({ open: false })
+    newImage: string
+  }>({ open: false, newImage: '' })
   const [pauseModal, setPauseModal] = useState<{
     open: boolean
     name?: string
     ns?: string
     paused: boolean
   }>({ open: false, paused: false })
+  const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; record?: any }>({ open: false })
+  const [detailYamlEditing, setDetailYamlEditing] = useState(false)
+  const [detailYamlValue, setDetailYamlValue] = useState('')
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([])
+  const [batchLoading, setBatchLoading] = useState(false)
+
+  // 任意 Drawer/Modal 打开时暂停轮询
+  const anyOverlayOpen =
+    createModal ||
+    editDrawer.open ||
+    scaleModal.open ||
+    yamlDrawer.open ||
+    historyDrawer.open ||
+    imageModal.open ||
+    pauseModal.open ||
+    detailDrawer.open
 
   // ═══ Queries ═══
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-workloads', clusterId, namespace, workloadKind],
     queryFn: ({ signal }) => getDeployments(clusterId, namespace || undefined, signal, workloadKind),
     enabled: !!clusterId,
+    refetchInterval: anyOverlayOpen ? false : 30000,
+  })
+
+  // 详情抽屉：关联 Pod 列表
+  const { data: podsData, isLoading: podsLoading } = useQuery({
+    queryKey: ['k8s-detail-pods', clusterId, detailDrawer.record?.namespace],
+    queryFn: ({ signal }) => listPods(clusterId, { namespace: detailDrawer.record?.namespace }, signal),
+    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace,
+  })
+
+  // 详情抽屉：关联事件
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['k8s-detail-events', clusterId, detailDrawer.record?.namespace, detailDrawer.record?.name],
+    queryFn: ({ signal }) =>
+      getPodEvents(clusterId, detailDrawer.record?.namespace || '', detailDrawer.record?.name || '', signal),
+    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,
+  })
+
+  // 详情抽屉：版本历史
+  const { data: detailHistoryData, isLoading: detailHistoryLoading } = useQuery({
+    queryKey: ['k8s-detail-history', clusterId, detailDrawer.record?.namespace, detailDrawer.record?.name],
+    queryFn: ({ signal }) => getDeploymentHistory(clusterId, detailDrawer.record?.namespace || '', detailDrawer.record?.name || ''),
+    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,
+  })
+
+  // 详情抽屉：YAML
+  const { data: detailYamlData, isLoading: detailYamlLoading } = useQuery({
+    queryKey: ['k8s-detail-yaml', clusterId, detailDrawer.record?.namespace, detailDrawer.record?.name, workloadKind],
+    queryFn: async ({ signal }) => {
+      const res = await getDeploymentYaml(clusterId, detailDrawer.record?.namespace || '', detailDrawer.record?.name || '', undefined, workloadKind)
+      return res.yaml || ''
+    },
+    enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,
+  })
+
+  // 过滤后的数据（按 keyword 和 statusFilter 过滤）
+  const filteredData = (data?.items || []).filter((item: any) => {
+    const matchKeyword = !keyword || String(item.name || '').toLowerCase().includes(keyword.toLowerCase())
+    const ready = item.readyReplicas || Number(String(item.ready || '0/0').split('/')[0] || 0)
+    const desired = item.replicas || 0
+    const isReady = ready === desired
+    let matchStatus = true
+    if (statusFilter === 'ready') matchStatus = isReady
+    else if (statusFilter === 'notReady') matchStatus = !isReady
+    else if (statusFilter === 'paused') matchStatus = !!item.paused
+    return matchKeyword && matchStatus
+  })
+
+  // 详情抽屉：关联 Pod（ownerKind 为 ReplicaSet 且 ownerName 以 deployment 名称开头）
+  const relatedPods = (podsData?.items || []).filter((pod: any) => {
+    return (
+      pod.ownerKind === 'ReplicaSet' &&
+      (pod.ownerName || '').startsWith(detailDrawer.record?.name + '-')
+    )
   })
 
   // ═══ Mutations ═══
@@ -189,14 +278,42 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
     onError: () => message.error('更新失败'),
   })
 
+  const rollbackMutation = useMutation({
+    mutationFn: ({ name, namespace: recordNamespace, revision }: { name: string; namespace: string; revision: number }) =>
+      rollbackDeployment(clusterId, recordNamespace, name, revision),
+    onSuccess: () => {
+      message.success('回滚成功')
+      queryClient.invalidateQueries({ queryKey: ['k8s-workloads', clusterId] })
+      queryClient.invalidateQueries({ queryKey: ['k8s-detail-history', clusterId] })
+      setHistoryDrawer({ open: false, loading: false })
+      setDetailDrawer({ open: false })
+    },
+    onError: () => message.error('回滚失败'),
+  })
+
+  const applyYamlMutation = useMutation({
+    mutationFn: (yaml: string) => applyYaml(clusterId, yaml),
+    onSuccess: (res) => {
+      if (res?.success) {
+        message.success('YAML 应用成功')
+        setYamlDrawer((p) => ({ ...p, editing: false }))
+        setDetailYamlEditing(false)
+      } else {
+        message.error(res?.message || '应用失败')
+      }
+    },
+    onError: () => message.error('YAML 应用失败'),
+  })
+
   // ═══ Handlers ═══
   const handleViewYaml = async (record: any) => {
-    setYamlDrawer({ open: true, name: record.name, loading: true })
+    setYamlDrawer({ open: true, name: record.name, loading: true, editing: false })
     try {
       const res = await getDeploymentYaml(clusterId, record.namespace, record.name, undefined, workloadKind)
       setYamlDrawer((prev) => ({
         ...prev,
         yaml: res.yaml,
+        yamlOriginal: res.yaml,
         loading: false,
       }))
     } catch {
@@ -205,12 +322,40 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
   }
 
   const handleViewHistory = async (record: any) => {
-    setHistoryDrawer({ open: true, name: record.name, history: [], loading: true })
+    setHistoryDrawer({ open: true, name: record.name, ns: record.namespace, history: [], loading: true })
     try {
       const res = await getDeploymentHistory(clusterId, record.namespace, record.name)
       setHistoryDrawer((prev) => ({ ...prev, history: res || [], loading: false }))
     } catch {
       setHistoryDrawer((prev) => ({ ...prev, history: [], loading: false }))
+    }
+  }
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    const rows = filteredData.filter((r: any) => selectedKeys.includes(r.name))
+    setBatchLoading(true)
+    try {
+      await Promise.all(
+        rows.map((r: any) => deleteMutation.mutateAsync({ name: r.name, namespace: r.namespace })),
+      )
+    } finally {
+      setBatchLoading(false)
+      setSelectedKeys([])
+    }
+  }
+
+  // 批量重启
+  const handleBatchRestart = async () => {
+    const rows = filteredData.filter((r: any) => selectedKeys.includes(r.name))
+    setBatchLoading(true)
+    try {
+      await Promise.all(
+        rows.map((r: any) => restartMutation.mutateAsync({ name: r.name, namespace: r.namespace })),
+      )
+    } finally {
+      setBatchLoading(false)
+      setSelectedKeys([])
     }
   }
 
@@ -223,10 +368,22 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
       ellipsis: true,
       render: (_, r) => <EllipsisText text={r.namespace} tag />,
     },
-    { title: '名称', dataIndex: 'name', ellipsis: true },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      width: 160,
+      ellipsis: true,
+      render: (_, r) => (
+        <a onClick={() => setDetailDrawer({ open: true, record: r })}>
+          <Text strong>{r.name}</Text>
+        </a>
+      ),
+    },
     {
       title: 'READY',
       width: 120,
+      align: 'center' as const,
+      sorter: (a, b) => (a.readyReplicas || 0) - (b.readyReplicas || 0),
       render: (_, r) => {
         const ready = r.readyReplicas || Number(String(r.ready || '0/0').split('/')[0] || 0)
         const desired = r.replicas || 0
@@ -238,12 +395,14 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
       title: 'UP-TO-DATE',
       dataIndex: 'upToDate',
       width: 110,
+      align: 'center' as const,
       render: (_, r) => <Text>{r.upToDate ?? 0}</Text>,
     },
     {
       title: 'AVAILABLE',
       dataIndex: 'available',
       width: 110,
+      align: 'center' as const,
       render: (_, r) => <Text>{r.available ?? 0}</Text>,
     },
     {
@@ -269,17 +428,31 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
     {
       title: '暂停',
       width: 70,
+      align: 'center' as const,
       render: (_, r) =>
         r.paused ? <Tag color="warning">是</Tag> : <Text type="secondary">否</Text>,
     },
-    { title: 'Age', dataIndex: 'age', width: 80 },
+    {
+      title: 'Age',
+      dataIndex: 'age',
+      width: 110,
+      align: 'center' as const,
+      ellipsis: true,
+      sorter: (a, b) => new Date(a.age || 0).getTime() - new Date(b.age || 0).getTime(),
+      render: (_, r) => (r.age ? formatDate(r.age) : '-'),
+    },
     {
       title: '操作',
       valueType: 'option',
-      width: 220,
+      width: 250,
       fixed: 'right',
       render: (_, record) => (
         <Space size={8} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Tooltip title="详情">
+            <a onClick={() => setDetailDrawer({ open: true, record })}>
+              <EyeOutlined />
+            </a>
+          </Tooltip>
           <Tooltip title="编辑">
             <a onClick={() => setEditDrawer({ open: true, record })}>
               <EditOutlined />
@@ -321,6 +494,7 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
                     name: `${record.name}-${index + 1}`,
                     image,
                   })),
+                  newImage: '',
                 })
               }
             >
@@ -389,10 +563,55 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
         headerTitle={`${workloadKind} 列表`}
         actionRef={actionRef}
         rowKey="name"
+        rowSelection={{
+          selectedRowKeys: selectedKeys,
+          onChange: (keys) => setSelectedKeys(keys as string[]),
+        }}
+        tableAlertRender={() => (
+          <Space size={12}>
+            <Text type="secondary">已选择 {selectedKeys.length} 项</Text>
+            <Popconfirm title="确定批量删除选中的工作负载？" onConfirm={handleBatchDelete}>
+              <Button danger icon={<DeleteOutlined />} loading={batchLoading} size="small">
+                批量删除
+              </Button>
+            </Popconfirm>
+            <Popconfirm title="确定批量重启选中的工作负载？" onConfirm={handleBatchRestart}>
+              <Button icon={<SyncOutlined />} loading={batchLoading} size="small">
+                批量重启
+              </Button>
+            </Popconfirm>
+          </Space>
+        )}
         search={false}
         loading={isLoading}
-        dataSource={data?.items || []}
+        dataSource={filteredData}
+        pagination={{
+          defaultPageSize: 20,
+          showSizeChanger: true,
+          showTotal: (t) => `共 ${t} 条`,
+        }}
         toolBarRender={() => [
+          <Input.Search
+            key="search"
+            placeholder="按名称搜索"
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 180 }}
+            prefix={<SearchOutlined />}
+          />,
+          <Select
+            key="status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: 120 }}
+            options={[
+              { value: 'all', label: '全部' },
+              { value: 'ready', label: 'Ready' },
+              { value: 'notReady', label: '未就绪' },
+              { value: 'paused', label: '已暂停' },
+            ]}
+          />,
           <NamespaceSelector
             key="ns"
             clusterId={clusterId}
@@ -414,7 +633,7 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
           </Button>,
         ]}
         columns={columns}
-        scroll={{ x: 1600 }}
+        scroll={{ x: 1400 }}
       />
 
       {/* ═══ 创建 ModalForm ═══ */}
@@ -458,47 +677,44 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
         <ProFormTextArea name="labels" label="标签 (JSON)" placeholder='{"app":"nginx"}' />
       </ModalForm>
 
-      {/* ═══ 编辑 Drawer ═══ */}
-      <Drawer
+      {/* ═══ 编辑 ModalForm ═══ */}
+      <ModalForm
         title={`编辑 ${workloadKind} - ${editDrawer.record?.name}`}
         open={editDrawer.open}
-        onClose={() => setEditDrawer({ open: false })}
-        width={600}
+        onOpenChange={(v) => !v && setEditDrawer({ open: false })}
+        onFinish={async (values) => {
+          if (!editDrawer.record) return false
+          updateMutation.mutate({
+            name: editDrawer.record.name,
+            namespace: editDrawer.record.namespace,
+            data: values,
+          })
+          return true
+        }}
+        initialValues={
+          editDrawer.record
+            ? {
+                replicas: editDrawer.record.replicas,
+                image: editDrawer.record.images?.[0],
+                strategy: editDrawer.record.strategy,
+              }
+            : undefined
+        }
+        width={500}
       >
-        {editDrawer.record && (
-          <ModalForm
-            open={editDrawer.open}
-            onOpenChange={(v) => !v && setEditDrawer({ open: false })}
-            onFinish={async (values) => {
-              updateMutation.mutate({ name: editDrawer.record.name, namespace: editDrawer.record.namespace, data: values })
-              return true
-            }}
-            initialValues={{
-              replicas: editDrawer.record.replicas,
-              image: editDrawer.record.images?.[0],
-              strategy: editDrawer.record.strategy,
-            }}
-          >
-            <ProFormText name="name" label="名称" disabled initialValue={editDrawer.record.name} />
-            <ProFormText
-              name="namespace"
-              label="命名空间"
-              disabled
-              initialValue={editDrawer.record.namespace}
-            />
-            <ProFormDigit name="replicas" label="副本数" min={0} max={100} />
-            <ProFormText name="image" label="镜像" />
-            <ProFormSelect
-              name="strategy"
-              label="部署策略"
-              options={[
-                { value: 'RollingUpdate', label: 'RollingUpdate' },
-                { value: 'Recreate', label: 'Recreate' },
-              ]}
-            />
-          </ModalForm>
-        )}
-      </Drawer>
+        <ProFormText name="name" label="名称" disabled initialValue={editDrawer.record?.name} />
+        <ProFormText name="namespace" label="命名空间" disabled initialValue={editDrawer.record?.namespace} />
+        <ProFormDigit name="replicas" label="副本数" min={0} max={100} />
+        <ProFormText name="image" label="镜像" />
+        <ProFormSelect
+          name="strategy"
+          label="部署策略"
+          options={[
+            { value: 'RollingUpdate', label: 'RollingUpdate' },
+            { value: 'Recreate', label: 'Recreate' },
+          ]}
+        />
+      </ModalForm>
 
       {/* ═══ 扩缩容 Modal ═══ */}
       <Modal
@@ -528,10 +744,10 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
       <Modal
         title={`更新镜像 - ${imageModal.name}`}
         open={imageModal.open}
-        onCancel={() => setImageModal({ open: false })}
+        onCancel={() => setImageModal({ open: false, newImage: '' })}
         onOk={() => {
           const containerName = imageModal.containers?.[0]?.name
-          const newImage = (document.getElementById('new-image-input') as HTMLInputElement)?.value
+          const newImage = imageModal.newImage
           if (containerName && newImage) {
             updateImageMutation.mutate({
               name: imageModal.name!,
@@ -539,7 +755,7 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
               container: containerName,
               image: newImage,
             })
-            setImageModal({ open: false })
+            setImageModal({ open: false, newImage: '' })
           }
         }}
       >
@@ -552,7 +768,11 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
             ))}
           </Descriptions.Item>
           <Descriptions.Item label="新镜像">
-            <Input id="new-image-input" placeholder="nginx:1.25" />
+            <Input
+              placeholder="nginx:1.25"
+              value={imageModal.newImage || ''}
+              onChange={(e) => setImageModal((s) => ({ ...s, newImage: e.target.value }))}
+            />
           </Descriptions.Item>
         </Descriptions>
       </Modal>
@@ -578,24 +798,48 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
       <Drawer
         title={`YAML - ${yamlDrawer.name}`}
         open={yamlDrawer.open}
-        onClose={() => setYamlDrawer({ open: false, loading: false })}
+        onClose={() => setYamlDrawer({ open: false, loading: false, editing: false })}
         width={800}
+        extra={
+          yamlDrawer.editing ? (
+            <Space>
+              <Button
+                icon={<CheckOutlined />}
+                type="primary"
+                loading={applyYamlMutation.isPending}
+                onClick={() => applyYamlMutation.mutate(yamlDrawer.yaml || '')}
+              >
+                应用
+              </Button>
+              <Button
+                icon={<CloseOutlined />}
+                onClick={() =>
+                  setYamlDrawer((p) => ({ ...p, yaml: p.yamlOriginal, editing: false }))
+                }
+              >
+                取消
+              </Button>
+            </Space>
+          ) : (
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => setYamlDrawer((p) => ({ ...p, editing: true }))}
+            >
+              编辑
+            </Button>
+          )
+        }
       >
-        <pre
-          style={{
-            background: '#1e1e1e',
-            color: '#d4d4d4',
-            padding: 16,
-            borderRadius: 8,
-            height: 'calc(100vh - 200px)',
-            overflow: 'auto',
-            fontSize: 13,
-            lineHeight: 1.6,
-            fontFamily: 'Consolas, Monaco, monospace',
-          }}
-        >
-          {yamlDrawer.loading ? '加载中...' : yamlDrawer.yaml || '暂无数据'}
-        </pre>
+        {yamlDrawer.loading ? (
+          <Text type="secondary">加载中...</Text>
+        ) : (
+          <YamlEditor
+            value={yamlDrawer.yaml || ''}
+            readOnly={!yamlDrawer.editing}
+            height={Math.max(window.innerHeight - 220, 400)}
+            onChange={(val) => setYamlDrawer((p) => ({ ...p, yaml: val }))}
+          />
+        )}
       </Drawer>
 
       {/* ═══ 版本历史 Drawer ═══ */}
@@ -611,7 +855,7 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#fafafa' }}>
-                {['版本', '变更原因', '镜像', '时间', '状态'].map((h) => (
+                {['版本', '变更原因', '镜像', '时间', '状态', '操作'].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -648,17 +892,279 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
                       {rev.is_current ? '当前版本' : '历史版本'}
                     </Tag>
                   </td>
+                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
+                    {rev.is_current ? (
+                      '-'
+                    ) : (
+                      <Popconfirm
+                        title="确定回滚到此版本？"
+                        onConfirm={() =>
+                          rollbackMutation.mutate({
+                            name: historyDrawer.name!,
+                            namespace: historyDrawer.ns!,
+                            revision: rev.revision,
+                          })
+                        }
+                      >
+                        <Button type="link" size="small" icon={<RollbackOutlined />}>
+                          回滚到此版本
+                        </Button>
+                      </Popconfirm>
+                    )}
+                  </td>
                 </tr>
               ))}
               {(!historyDrawer.history || historyDrawer.history.length === 0) && (
                 <tr>
-                  <td colSpan={5} style={{ padding: 20, textAlign: 'center' }}>
+                  <td colSpan={6} style={{ padding: 20, textAlign: 'center' }}>
                     <Text type="secondary">暂无版本历史</Text>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        )}
+      </Drawer>
+
+      {/* ═══ 详情 Drawer ═══ */}
+      <Drawer
+        title={`详情 - ${detailDrawer.record?.name}`}
+        open={detailDrawer.open}
+        onClose={() => { setDetailDrawer({ open: false }); setDetailYamlEditing(false) }}
+        width={720}
+      >
+        {detailDrawer.record && (
+          <Tabs
+            defaultActiveKey="overview"
+            items={[
+              {
+                key: 'overview',
+                label: '概览',
+                children: (
+                  <>
+                    <div style={{ marginBottom: 16 }}>
+                      <Space size={4} wrap>
+                        <Text strong>关联 Pod：</Text>
+                        <Text>共 {relatedPods.length} 个</Text>
+                        <Text type="secondary">|</Text>
+                        <Tag color="success">Running {relatedPods.filter((p: any) => p.status === 'Running').length}</Tag>
+                        <Tag color="processing">Pending {relatedPods.filter((p: any) => p.status === 'Pending').length}</Tag>
+                        <Tag color="error">Failed {relatedPods.filter((p: any) => p.status === 'Failed').length}</Tag>
+                        <Tag>Succeeded {relatedPods.filter((p: any) => p.status === 'Succeeded').length}</Tag>
+                      </Space>
+                    </div>
+                    <Descriptions column={2} size="small" bordered>
+                      <Descriptions.Item label="名称">{detailDrawer.record.name}</Descriptions.Item>
+                      <Descriptions.Item label="命名空间">{detailDrawer.record.namespace}</Descriptions.Item>
+                      <Descriptions.Item label="副本数">
+                        {detailDrawer.record.readyReplicas ?? detailDrawer.record.replicas ?? 0}/
+                        {detailDrawer.record.replicas ?? 0}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="策略">{detailDrawer.record.strategy || 'RollingUpdate'}</Descriptions.Item>
+                      <Descriptions.Item label="镜像" span={2}>
+                        {(detailDrawer.record.images || []).map((img: string, i: number) => (
+                          <Tag key={i}>{img}</Tag>
+                        ))}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="暂停状态">
+                        {detailDrawer.record.paused ? <Tag color="warning">已暂停</Tag> : <Text type="secondary">否</Text>}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="创建时间">
+                        {detailDrawer.record.age ? formatDate(detailDrawer.record.age) : '-'}
+                      </Descriptions.Item>
+                    </Descriptions>
+                    <Table
+                      style={{ marginTop: 16 }}
+                      size="small"
+                      rowKey={(_, i) => String(i)}
+                      pagination={false}
+                      dataSource={(detailDrawer.record.images || []).map((image: string, index: number) => ({
+                        key: index,
+                        name: `${detailDrawer.record.name}-${index + 1}`,
+                        image,
+                      }))}
+                      columns={[
+                        { title: '容器名称', dataIndex: 'name' },
+                        { title: '镜像', dataIndex: 'image' },
+                      ]}
+                    />
+                  </>
+                ),
+              },
+              {
+                key: 'pods',
+                label: '关联 Pod',
+                children: (
+                  <>
+                    <div style={{ marginBottom: 16 }}>
+                      <Space size={4} wrap>
+                        <Text strong>共 {relatedPods.length} 个 Pod</Text>
+                        <Text type="secondary">|</Text>
+                        <Tag color="success">Running {relatedPods.filter((p: any) => p.status === 'Running').length}</Tag>
+                        <Tag color="processing">Pending {relatedPods.filter((p: any) => p.status === 'Pending').length}</Tag>
+                        <Tag color="error">Failed {relatedPods.filter((p: any) => p.status === 'Failed').length}</Tag>
+                      </Space>
+                    </div>
+                    <Table
+                      size="small"
+                      rowKey="name"
+                      loading={podsLoading}
+                      pagination={false}
+                      dataSource={relatedPods}
+                      columns={[
+                        {
+                          title: '名称',
+                          dataIndex: 'name',
+                          ellipsis: true,
+                          render: (_, r) => (
+                            <a onClick={() => history.push(`/k8s/${clusterId}/pods`)}>
+                              <Text strong>{r.name}</Text>
+                            </a>
+                          ),
+                        },
+                        {
+                          title: '状态',
+                          dataIndex: 'status',
+                          width: 100,
+                          render: (_, r) => {
+                            const colorMap: Record<string, string> = {
+                              Running: 'success',
+                              Pending: 'processing',
+                              Failed: 'error',
+                              Succeeded: 'default',
+                            }
+                            return <Tag color={colorMap[r.status] || 'default'}>{r.status}</Tag>
+                          },
+                        },
+                        { title: '节点', dataIndex: 'nodeName', ellipsis: true },
+                        { title: '重启次数', dataIndex: 'restarts', width: 90, align: 'center' as const },
+                        {
+                          title: 'Age',
+                          dataIndex: 'createdAt',
+                          width: 110,
+                          render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),
+                        },
+                      ]}
+                    />
+                  </>
+                ),
+              },
+              {
+                key: 'events',
+                label: '事件',
+                children: (
+                  <Table
+                    size="small"
+                    rowKey={(_, i) => String(i)}
+                    loading={eventsLoading}
+                    pagination={false}
+                    dataSource={eventsData || []}
+                    columns={[
+                      {
+                        title: '类型',
+                        dataIndex: 'type',
+                        width: 90,
+                        render: (_, r) => (
+                          <Tag color={r.type === 'Warning' ? 'warning' : 'success'}>{r.type || 'Normal'}</Tag>
+                        ),
+                      },
+                      { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true },
+                      { title: '消息', dataIndex: 'message', ellipsis: true },
+                      {
+                        title: '时间',
+                        dataIndex: 'lastTimestamp',
+                        width: 150,
+                        render: (_, r) =>
+                          formatDate(r.lastTimestamp || r.firstTimestamp || r.metadata?.creationTimestamp || ''),
+                      },
+                    ]}
+                  />
+                ),
+              },
+              ...(workloadKind === 'Deployment'
+                ? [
+                    {
+                      key: 'history',
+                      label: '版本历史',
+                      children: (
+                        <Table
+                          size="small"
+                          rowKey={(_, i) => String(i)}
+                          loading={detailHistoryLoading}
+                          pagination={false}
+                          dataSource={detailHistoryData || []}
+                          columns={[
+                            { title: '版本', dataIndex: 'revision', width: 70, render: (v, r: any, i: number) => <Tag>v{v || i + 1}</Tag> },
+                            { title: '变更原因', dataIndex: 'changeCause', ellipsis: true, render: (v) => v || '-' },
+                            { title: '镜像', dataIndex: 'images', ellipsis: true, render: (v, r: any) => r.images?.join(', ') || r.image || '-' },
+                            { title: '时间', dataIndex: 'created_at', width: 150, render: (v, r: any) => v || r.createdAt || r.date || '-' },
+                            { title: '状态', width: 90, render: (_, r: any) => <Tag color={r.is_current ? 'success' : 'processing'}>{r.is_current ? '当前' : '历史'}</Tag> },
+                            { title: '操作', width: 120, render: (_, r: any) => r.is_current ? '-' : (
+                              <Popconfirm title="确定回滚到此版本？" onConfirm={() => rollbackMutation.mutate({ name: detailDrawer.record.name, namespace: detailDrawer.record.namespace, revision: r.revision })}>
+                                <Button type="link" size="small" icon={<RollbackOutlined />}>回滚</Button>
+                              </Popconfirm>
+                            )},
+                          ]}
+                        />
+                      ),
+                    },
+                  ]
+                : []),
+              {
+                key: 'yaml',
+                label: 'YAML',
+                children: (
+                  <>
+                    <div style={{ marginBottom: 12 }}>
+                      <Space>
+                        {detailYamlEditing ? (
+                          <>
+                            <Button
+                              icon={<CheckOutlined />}
+                              type="primary"
+                              loading={applyYamlMutation.isPending}
+                              onClick={() => applyYamlMutation.mutate(detailYamlValue)}
+                            >
+                              应用
+                            </Button>
+                            <Button
+                              icon={<CloseOutlined />}
+                              onClick={() => {
+                                setDetailYamlEditing(false)
+                                setDetailYamlValue('')
+                              }}
+                            >
+                              取消
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            icon={<EditOutlined />}
+                            onClick={() => {
+                              setDetailYamlEditing(true)
+                              setDetailYamlValue(detailYamlData || '')
+                            }}
+                          >
+                            编辑
+                          </Button>
+                        )}
+                      </Space>
+                    </div>
+                    {detailYamlLoading ? (
+                      <Text type="secondary">加载中...</Text>
+                    ) : (
+                      <YamlEditor
+                        value={detailYamlEditing ? detailYamlValue : (detailYamlData || '')}
+                        readOnly={!detailYamlEditing}
+                        height={Math.max(window.innerHeight - 280, 400)}
+                        onChange={(val) => setDetailYamlValue(val)}
+                      />
+                    )}
+                  </>
+                ),
+              },
+            ]}
+          />
         )}
       </Drawer>
     </AppPage>

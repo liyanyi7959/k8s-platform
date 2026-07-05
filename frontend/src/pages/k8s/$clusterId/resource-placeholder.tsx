@@ -129,7 +129,7 @@ const K8sResourcePlaceholder: React.FC = () => {
       render: (_: unknown, record: any) => <span style={{ fontWeight: 600 }}>{record.name || '-'}</span>,
     },
     canFilterNamespace ? {
-      title: '命名空间',
+      title: 'Namespace',
       dataIndex: 'namespace',
       width: 140,
       ellipsis: true,

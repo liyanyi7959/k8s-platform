@@ -31,7 +31,7 @@ const NamespacesPage: React.FC = () => {
 
   const columns: ProColumns<Namespace>[] = [
     {
-      title: '命名空间',
+      title: 'Namespace',
       dataIndex: 'name',
       ellipsis: true,
       copyable: true,

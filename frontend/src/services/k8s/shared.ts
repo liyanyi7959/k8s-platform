@@ -276,18 +276,19 @@ export function mapDeployment(raw: any): Deployment {
   const containers = Array.isArray(tplSpec.containers)
     ? tplSpec.containers.map((c: any) => ({ name: c.name || '', image: c.image || '' }))
     : []
-  const ready = s.readyReplicas || 0
-  const total = spec.replicas || 0
+  // 兼容 Deployment（readyReplicas/updatedReplicas）和 DaemonSet（numberReady/updatedNumberScheduled）
+  const ready = s.readyReplicas ?? s.numberReady ?? 0
+  const total = spec.replicas ?? s.desiredNumberScheduled ?? 0
   return {
     name: m.name || '',
     namespace: m.namespace || '',
     ready: `${ready}/${total}`,
-    upToDate: s.updatedReplicas || 0,
-    available: s.availableReplicas || 0,
+    upToDate: s.updatedReplicas ?? s.updatedNumberScheduled ?? 0,
+    available: s.availableReplicas ?? s.numberAvailable ?? 0,
     replicas: total,
     readyReplicas: ready,
     containers,
-    strategy: spec.strategy?.type || '',
+    strategy: spec.strategy?.type || spec.updateStrategy?.type || '',
     paused: spec.paused === true,
     age: m.creationTimestamp || '',
     images,
@@ -551,6 +552,7 @@ export function mapReplicaSet(raw: any): ReplicaSet {
   const spec = raw?.spec || {}
   const tplSpec = getNested(spec, 'template', 'spec') || {}
   const images = Array.isArray(tplSpec.containers) ? tplSpec.containers.map((c: any) => c.image || '') : []
+  const ownerRef = Array.isArray(m.ownerReferences) ? m.ownerReferences[0] : undefined
   return {
     name: m.name || '',
     namespace: m.namespace || '',
@@ -560,6 +562,8 @@ export function mapReplicaSet(raw: any): ReplicaSet {
     age: m.creationTimestamp || '',
     images,
     createdAt: m.creationTimestamp || '',
+    ownerKind: ownerRef?.kind || '',
+    ownerName: ownerRef?.name || '',
   }
 }
 

@@ -371,6 +371,8 @@ export interface ReplicaSet {
   age: string
   images: string[]
   createdAt: string
+  ownerKind?: string
+  ownerName?: string
 }
 
 export type ReplicaSetList = PageResult<ReplicaSet>

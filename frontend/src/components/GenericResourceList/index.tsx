@@ -121,19 +121,11 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
   }, [data?.items, keyword])
 
   const columns = useMemo<ProColumns<GenericResourceItem>[]>(() => {
-    const base: ProColumns<GenericResourceItem>[] = [
-      {
-        title: '名称',
-        dataIndex: 'name',
-        ellipsis: true,
-        copyable: true,
-        render: (_, r) => <Text strong>{r.name}</Text>,
-      },
-    ]
+    const base: ProColumns<GenericResourceItem>[] = []
 
     if (namespaced) {
       base.push({
-        title: '命名空间',
+        title: 'Namespace',
         dataIndex: 'namespace',
         width: 140,
         search: false,
@@ -141,6 +133,14 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
         render: (_, r) => <EllipsisText text={r.namespace} tag />,
       })
     }
+
+    base.push({
+      title: '名称',
+      dataIndex: 'name',
+      ellipsis: true,
+      copyable: true,
+      render: (_, r) => <Text strong>{r.name}</Text>,
+    })
 
     base.push(...extraColumns)
 
