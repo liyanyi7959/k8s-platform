@@ -6,7 +6,7 @@ import {
   ProFormTextArea,
   type ProColumns,
 } from '@ant-design/pro-components'
-import { Space, message, Popconfirm, Tag, Modal, Button, Card, Tooltip, Input, Typography } from 'antd'
+import { Space, message, Popconfirm, Tag, Button, Tooltip, Input, Typography, Drawer, Descriptions, Table } from 'antd'
 import { PlusOutlined, EyeOutlined, DeleteOutlined, ProfileOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listConfigMaps, deleteConfigMap, createConfigMap } from '@/services/k8s'
@@ -194,35 +194,39 @@ const ConfigMapsPage: React.FC = () => {
         />
       </ModalForm>
 
-      <Modal
-        title={
-          <span>
-            ConfigMap: <Tag color="blue">{selectedCM?.name}</Tag>
-          </span>
-        }
+      <Drawer
+        title={`ConfigMap 详情 - ${selectedCM?.name}`}
         open={!!selectedCM}
-        onCancel={() => setSelectedCM(null)}
-        footer={null}
-        width={700}
+        onClose={() => setSelectedCM(null)}
+        width={720}
+        destroyOnClose
       >
         {selectedCM && (
-          <Card size="small" title="数据内容" style={{ background: '#fafafa' }}>
-            <pre
-              style={{
-                margin: 0,
-                padding: 16,
-                background: '#f5f5f5',
-                borderRadius: 6,
-                overflow: 'auto',
-                maxHeight: 400,
-                fontSize: 13,
-              }}
-            >
-              {JSON.stringify(selectedCM.data, null, 2)}
-            </pre>
-          </Card>
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="名称">{selectedCM.name}</Descriptions.Item>
+              <Descriptions.Item label="Namespace"><Tag>{selectedCM.namespace}</Tag></Descriptions.Item>
+              <Descriptions.Item label="数据项" span={2}>{Object.keys(selectedCM.data || {}).length} 项</Descriptions.Item>
+              <Descriptions.Item label="创建时间" span={2}>{formatDate(selectedCM.createdAt)}</Descriptions.Item>
+            </Descriptions>
+            {Object.keys(selectedCM.data || {}).length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <Text type="secondary" style={{ fontSize: 13 }}>数据内容（{Object.keys(selectedCM.data || {}).length} 项）</Text>
+                {Object.entries(selectedCM.data || {}).map(([k, v]) => (
+                  <div key={k} style={{ border: '1px solid #d6e4ff', borderRadius: 6, overflow: 'hidden' }}>
+                    <div style={{ padding: '6px 12px', background: '#f0f5ff', borderBottom: '1px solid #d6e4ff' }}>
+                      <Tag color="blue" style={{ margin: 0, fontWeight: 500 }}>{k}</Tag>
+                    </div>
+                    <pre style={{ margin: 0, padding: 12, background: '#fafcff', fontSize: 13, fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 300, overflow: 'auto' }}>
+                      {String(v)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Space>
         )}
-      </Modal>
+      </Drawer>
 
       <YamlDrawer
         clusterId={clusterId}

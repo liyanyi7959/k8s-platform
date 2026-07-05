@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Typography } from 'antd'
-import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listServiceAccounts, deleteServiceAccount } from '@/services/k8s'
-import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
+import { AppPage, NamespaceSelector, EllipsisText, ManifestApplyDrawer } from '@/components'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -18,13 +18,14 @@ const ServiceAccountsPage: React.FC = () => {
   const [namespace, setNamespace] = useState<string>('')
   const [keyword, setKeyword] = useState('')
   const [detailSA, setDetailSA] = useState<ServiceAccount | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
   const yamlDrawer = useYamlDrawer()
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['k8s-serviceaccounts', clusterId, namespace],
     queryFn: ({ signal }) => listServiceAccounts(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailSA ? false : 30_000,
+    refetchInterval: detailSA || createOpen ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -36,8 +37,9 @@ const ServiceAccountsPage: React.FC = () => {
     },
   })
 
+  const filteredData = (data?.items || []).filter(item => !keyword || item.name.toLowerCase().includes(keyword.toLowerCase()))
+
   const columns: ProColumns<ServiceAccount>[] = [
-    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },
     {
       title: 'Namespace',
       dataIndex: 'namespace',
@@ -45,18 +47,30 @@ const ServiceAccountsPage: React.FC = () => {
       ellipsis: true,
       render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,
     },
-    { title: 'Secrets', dataIndex: 'secrets', width: 80, search: false },
     {
-      title: '创建时间',
+      title: '名称',
+      dataIndex: 'name',
+      width: 160,
+      ellipsis: true,
+      copyable: true,
+      render: (_, r) => <Text strong>{r.name}</Text>,
+    },
+    { title: 'Secrets', dataIndex: 'secrets', width: 80, align: 'center' as const, search: false },
+    {
+      title: 'Age',
       dataIndex: 'createdAt',
-      width: 180,
+      width: 110,
+      align: 'center' as const,
       search: false,
-      render: (_, record) => formatDate(record.createdAt),
+      ellipsis: true,
+      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
+      render: (_, r) => r.createdAt ? formatDate(r.createdAt) : '-',
     },
     {
       title: '操作',
       valueType: 'option',
       width: 140,
+      align: 'center' as const,
       fixed: 'right',
       render: (_, record) => (
         <Space
@@ -118,6 +132,9 @@ const ServiceAccountsPage: React.FC = () => {
             style={{ width: 180 }}
           />,
           <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            创建 ServiceAccount
+          </Button>,
         ]}
       />
 
@@ -126,18 +143,18 @@ const ServiceAccountsPage: React.FC = () => {
         title={`ServiceAccount 详情 - ${detailSA?.name}`}
         open={!!detailSA}
         onClose={() => setDetailSA(null)}
-        width={640}
+        width={720}
         destroyOnClose
       >
         {detailSA && (
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="名称">{detailSA.name}</Descriptions.Item>
-            <Descriptions.Item label="命名空间">
-              <Tag>{detailSA.namespace}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Secrets 数量">{detailSA.secrets ?? '-'}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{formatDate(detailSA.createdAt)}</Descriptions.Item>
-          </Descriptions>
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="名称">{detailSA.name}</Descriptions.Item>
+              <Descriptions.Item label="Namespace"><Tag>{detailSA.namespace}</Tag></Descriptions.Item>
+              <Descriptions.Item label="Secrets" span={2}>{detailSA.secrets ?? 0}</Descriptions.Item>
+              <Descriptions.Item label="创建时间" span={2}>{formatDate(detailSA.createdAt)}</Descriptions.Item>
+            </Descriptions>
+          </Space>
         )}
       </Drawer>
 
@@ -148,6 +165,14 @@ const ServiceAccountsPage: React.FC = () => {
         name={yamlDrawer.name}
         open={yamlDrawer.open}
         onClose={yamlDrawer.closeYaml}
+      />
+
+      <ManifestApplyDrawer
+        clusterId={clusterId}
+        open={createOpen}
+        onClose={() => { setCreateOpen(false); queryClient.invalidateQueries({ queryKey: ['k8s-serviceaccounts', clusterId] }) }}
+        title="创建 ServiceAccount"
+        initialYaml={`apiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: my-sa\n  namespace: ${namespace || 'default'}\n`}
       />
     </AppPage>
   )

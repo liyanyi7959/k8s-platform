@@ -28,6 +28,7 @@ import {
   PlayCircleOutlined,
   ExclamationCircleOutlined,
   InfoCircleOutlined,
+  EyeOutlined,
   CloudServerOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -209,6 +210,7 @@ export default function NodesPage() {
       title: 'Taints',
       dataIndex: 'taints',
       width: 90,
+      align: 'center' as const,
       render: (_, r) =>
         r.taints && r.taints.length > 0 ? (
           <Tag color="warning">{r.taints.length} 个</Tag>
@@ -219,17 +221,18 @@ export default function NodesPage() {
     { title: 'kubelet', dataIndex: 'kubeletVersion', width: 120, ellipsis: true },
     { title: 'OS', dataIndex: 'osImage', width: 140, ellipsis: true },
     { title: 'PodCIDR', dataIndex: 'podCIDR', width: 140, ellipsis: true, hideInSearch: true },
-    { title: 'Age', dataIndex: 'age', width: 80 },
+    { title: 'Age', dataIndex: 'age', width: 110, align: 'center' as const, ellipsis: true },
     {
       title: '操作',
       valueType: 'option',
       width: 180,
       fixed: 'right',
+      align: 'center' as const,
       render: (_, record) => (
         <Space size={8} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <Tooltip title="详情">
             <a onClick={() => setDetailDrawer({ open: true, name: record.name })}>
-              <InfoCircleOutlined />
+              <EyeOutlined />
             </a>
           </Tooltip>
           <Tooltip title="查看 YAML">

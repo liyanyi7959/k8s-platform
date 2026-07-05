@@ -71,6 +71,7 @@ const RolesPage: React.FC = () => {
     {
       title: '名称',
       dataIndex: 'name',
+      width: 160,
       ellipsis: true,
       copyable: true,
       render: (_, record) => <Text strong>{record.name}</Text>,
@@ -96,6 +97,7 @@ const RolesPage: React.FC = () => {
       title: '操作',
       valueType: 'option',
       width: 140,
+      align: 'center' as const,
       fixed: 'right',
       render: (_, record) => (
         <Space
@@ -128,6 +130,7 @@ const RolesPage: React.FC = () => {
     {
       title: '名称',
       dataIndex: 'name',
+      width: 160,
       ellipsis: true,
       copyable: true,
       render: (_, record) => <Text strong>{record.name}</Text>,
@@ -153,6 +156,7 @@ const RolesPage: React.FC = () => {
       title: '操作',
       valueType: 'option',
       width: 140,
+      align: 'center' as const,
       fixed: 'right',
       render: (_, record) => (
         <Space
