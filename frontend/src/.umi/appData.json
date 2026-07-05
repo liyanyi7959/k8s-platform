@@ -270,6 +270,7 @@
             1,
             0,
             0,
+            0,
             0
           ]
         },
@@ -544,7 +545,10 @@
             44,
             101,
             49,
-            99
+            99,
+            33,
+            79,
+            74
           ]
         },
         "register": 1
@@ -679,7 +683,8 @@
             24,
             19,
             21,
-            23
+            23,
+            25
           ]
         },
         "register": 26
@@ -720,6 +725,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -956,7 +962,9 @@
             0,
             1,
             0,
-            1
+            1,
+            1,
+            0
           ],
           "onCheckCode": [
             1,
@@ -1251,6 +1259,10 @@
             0,
             1,
             1,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -2430,6 +2442,7 @@
             1,
             1,
             1,
+            1,
             1
           ],
           "addRuntimePlugin": [
@@ -2492,6 +2505,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -2737,9 +2751,12 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addEntryImports": [
+            0,
+            0,
             0,
             0,
             0,
@@ -3119,7 +3136,8 @@
             33,
             22,
             31,
-            30
+            30,
+            32
           ],
           "addPolyfillImports": [
             0,
@@ -3353,6 +3371,8 @@
             0,
             0,
             0,
+            0,
+            0,
             0
           ]
         },
@@ -3369,6 +3389,8 @@
       "time": {
         "hooks": {
           "addPolyfillImports": [
+            0,
+            0,
             0,
             0,
             0,
@@ -3732,6 +3754,7 @@
             0,
             0,
             0,
+            0,
             0
           ]
         },
@@ -3889,6 +3912,7 @@
             0,
             0,
             1,
+            0,
             0,
             0
           ],
@@ -4141,7 +4165,9 @@
             138,
             10,
             140,
-            10
+            10,
+            143,
+            11
           ]
         },
         "register": 7
@@ -4311,7 +4337,8 @@
             9,
             14,
             14,
-            12
+            12,
+            11
           ]
         },
         "register": 6
@@ -4511,7 +4538,8 @@
             1,
             2,
             1,
-            1
+            1,
+            2
           ]
         },
         "register": 2
@@ -5156,6 +5184,7 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "onGenerateFiles": [
@@ -5274,7 +5303,8 @@
             2,
             1,
             2,
-            1
+            1,
+            2
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -5548,6 +5578,8 @@
             0,
             0,
             0,
+            0,
+            0,
             0
           ],
           "addRuntimePlugin": [
@@ -5666,9 +5698,11 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -5902,7 +5936,8 @@
             2,
             2,
             2,
-            2
+            2,
+            3
           ],
           "addExtraBabelPlugins": [
             0
@@ -6052,9 +6087,11 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -6288,6 +6325,7 @@
             1,
             1,
             1,
+            1,
             1
           ],
           "addExtraModels": [
@@ -6382,6 +6420,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -6543,12 +6582,14 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "modifyAppData": [
             1
           ],
           "addRuntimePlugin": [
+            0,
             0,
             0,
             0,
@@ -6734,6 +6775,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -6900,7 +6942,8 @@
             3,
             3,
             6,
-            4
+            4,
+            3
           ]
         },
         "register": 3
@@ -6961,6 +7004,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -7176,6 +7220,7 @@
             85,
             80,
             86,
+            85,
             85
           ],
           "addTmpGenerateWatcherPaths": [
@@ -7270,6 +7315,7 @@
             0,
             0,
             1,
+            0,
             0,
             0,
             0,
@@ -7486,6 +7532,7 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addRuntimePlugin": [
@@ -7604,9 +7651,11 @@
             0,
             0,
             0,
+            0,
             0
           ],
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -7840,6 +7889,7 @@
             2,
             1,
             2,
+            2,
             2
           ]
         },
@@ -7857,6 +7907,7 @@
       "time": {
         "hooks": {
           "addRuntimePluginKey": [
+            0,
             0,
             0,
             0,
@@ -8088,6 +8139,7 @@
             3,
             2,
             1,
+            2,
             2,
             2,
             2
@@ -11543,7 +11595,7 @@
       "parentId": "83",
       "id": "101",
       "absPath": "/k8s/:clusterId/network-policies",
-      "__content": "import React, { useState } from 'react'\r\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\r\nimport { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip } from 'antd'\r\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined } from '@ant-design/icons'\r\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\r\nimport { listNetworkPolicies, deleteNetworkPolicy } from '@/services/k8s'\r\nimport { AppPage, NamespaceSelector, EllipsisText } from '@/components'\r\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\r\nimport { useClusterId } from '@/hooks/useClusterId'\r\nimport { formatDate } from '@/utils'\r\nimport type { NetworkPolicy } from '@/types'\r\n\r\nconst NetworkPoliciesPage: React.FC = () => {\r\n  const clusterId = useClusterId()\r\n  const queryClient = useQueryClient()\r\n  const [namespace, setNamespace] = useState<string>('')\r\n  const [detailPolicy, setDetailPolicy] = useState<NetworkPolicy | null>(null)\r\n  const yamlDrawer = useYamlDrawer()\r\n\r\n  const { data, isLoading } = useQuery({\r\n    queryKey: ['k8s-networkpolicies', clusterId, namespace],\r\n    queryFn: () => listNetworkPolicies(clusterId, namespace),\r\n    enabled: !!clusterId,\r\n  })\r\n\r\n  const deleteMutation = useMutation({\r\n    mutationFn: (record: NetworkPolicy) =>\r\n      deleteNetworkPolicy(clusterId, record.namespace || namespace, record.name),\r\n    onSuccess: () => {\r\n      message.success('NetworkPolicy 已删除')\r\n      queryClient.invalidateQueries({ queryKey: ['k8s-networkpolicies', clusterId] })\r\n    },\r\n  })\r\n\r\n  const columns: ProColumns<NetworkPolicy>[] = [\r\n    { title: '名称', dataIndex: 'name', ellipsis: true, copyable: true },\r\n    {\r\n      title: 'Namespace',\r\n      dataIndex: 'namespace',\r\n      width: 140,\r\n      ellipsis: true,\r\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\r\n    },\r\n    {\r\n      title: 'Pod 选择器',\r\n      dataIndex: 'podSelector',\r\n      width: 200,\r\n      ellipsis: true,\r\n      search: false,\r\n      render: (_, record) => {\r\n        const ps = record.podSelector\r\n        if (!ps || Object.keys(ps).length === 0) return <Tag>全部 Pod</Tag>\r\n        return Object.entries(ps).map(([k, v]) => (\r\n          <Tag key={k}>\r\n            {k}={v}\r\n          </Tag>\r\n        ))\r\n      },\r\n    },\r\n    {\r\n      title: '策略类型',\r\n      dataIndex: 'policyTypes',\r\n      width: 180,\r\n      search: false,\r\n      render: (_, record) =>\r\n        (record.policyTypes || []).map((t) => (\r\n          <Tag key={t} color=\"blue\">\r\n            {t}\r\n          </Tag>\r\n        )),\r\n    },\r\n    {\r\n      title: '创建时间',\r\n      dataIndex: 'createdAt',\r\n      width: 180,\r\n      search: false,\r\n      render: (_, record) => formatDate(record.createdAt),\r\n    },\r\n    {\r\n      title: '操作',\r\n      valueType: 'option',\r\n      width: 140,\r\n      fixed: 'right',\r\n      render: (_, record) => (\r\n        <Space\r\n          size=\"small\"\r\n          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}\r\n        >\r\n          <Tooltip title=\"详情\">\r\n            <a onClick={() => setDetailPolicy(record)}>\r\n              <EyeOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Tooltip title=\"查看 YAML\">\r\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\r\n              <ProfileOutlined />\r\n            </a>\r\n          </Tooltip>\r\n          <Popconfirm\r\n            title=\"确定删除该 NetworkPolicy？\"\r\n            onConfirm={() => deleteMutation.mutate(record)}\r\n          >\r\n            <Tooltip title=\"删除\">\r\n              <a style={{ color: '#ff4d4f' }}>\r\n                <DeleteOutlined />\r\n              </a>\r\n            </Tooltip>\r\n          </Popconfirm>\r\n        </Space>\r\n      ),\r\n    },\r\n  ]\r\n\r\n  return (\r\n    <AppPage>\r\n      <ProTable<NetworkPolicy>\r\n        columns={columns}\r\n        dataSource={data?.items || []}\r\n        loading={isLoading}\r\n        rowKey={(r) => `${r.namespace}/${r.name}`}\r\n        search={false}\r\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\r\n        scroll={{ x: 800 }}\r\n        headerTitle={\r\n          <NamespaceSelector\r\n            clusterId={clusterId}\r\n            value={namespace}\r\n            onChange={setNamespace}\r\n            style={{ width: 200 }}\r\n          />\r\n        }\r\n      />\r\n      <YamlDrawer\r\n        clusterId={clusterId}\r\n        resourceType=\"networkpolicies\"\r\n        namespace={yamlDrawer.namespace}\r\n        name={yamlDrawer.name}\r\n        open={yamlDrawer.open}\r\n        onClose={yamlDrawer.closeYaml}\r\n      />\r\n      <Drawer\r\n        title=\"NetworkPolicy 详情\"\r\n        open={!!detailPolicy}\r\n        onClose={() => setDetailPolicy(null)}\r\n        width={600}\r\n      >\r\n        {detailPolicy && (\r\n          <Descriptions column={1} bordered size=\"small\">\r\n            <Descriptions.Item label=\"名称\">{detailPolicy.name}</Descriptions.Item>\r\n            <Descriptions.Item label=\"命名空间\">\r\n              {detailPolicy.namespace || namespace}\r\n            </Descriptions.Item>\r\n            <Descriptions.Item label=\"Pod 选择器\">\r\n              {Object.entries(detailPolicy.podSelector || {}).length === 0 ? (\r\n                <Tag>全部 Pod</Tag>\r\n              ) : (\r\n                Object.entries(detailPolicy.podSelector || {}).map(([k, v]) => (\r\n                  <Tag key={k}>\r\n                    {k}={v}\r\n                  </Tag>\r\n                ))\r\n              )}\r\n            </Descriptions.Item>\r\n            <Descriptions.Item label=\"策略类型\">\r\n              {(detailPolicy.policyTypes || []).map((t) => (\r\n                <Tag key={t} color=\"blue\">\r\n                  {t}\r\n                </Tag>\r\n              ))}\r\n            </Descriptions.Item>\r\n            <Descriptions.Item label=\"创建时间\">\r\n              {formatDate(detailPolicy.createdAt)}\r\n            </Descriptions.Item>\r\n          </Descriptions>\r\n        )}\r\n      </Drawer>\r\n    </AppPage>\r\n  )\r\n}\r\n\r\nexport default NetworkPoliciesPage\r\n",
+      "__content": "import React, { useState } from 'react'\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport { Tag, Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Button, Input, Table, Typography } from 'antd'\nimport { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { listNetworkPolicies, deleteNetworkPolicy } from '@/services/k8s'\nimport { AppPage, NamespaceSelector, EllipsisText, ManifestApplyDrawer } from '@/components'\nimport YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport type { NetworkPolicy } from '@/types'\n\nconst { Text } = Typography\n\n/** 格式化网络规则来源/目标 */\nfunction formatPeer(peer: any): string {\n  if (!peer) return '全部'\n  if (peer.podSelector?.matchLabels) {\n    const labels = Object.entries(peer.podSelector.matchLabels).map(([k, v]) => `${k}=${v}`).join(', ')\n    return `Pod: ${labels || '全部'}`\n  }\n  if (peer.namespaceSelector?.matchLabels) {\n    const labels = Object.entries(peer.namespaceSelector.matchLabels).map(([k, v]) => `${k}=${v}`).join(', ')\n    return `Namespace: ${labels}`\n  }\n  if (peer.ipBlock?.cidr) return `IP: ${peer.ipBlock.cidr}`\n  if (peer.ipBlock?.except) return `IP: ${peer.ipBlock.cidr} (排除 ${peer.ipBlock.except.join(', ')})`\n  return '全部'\n}\n\n/** 格式化端口 */\nfunction formatPorts(ports: any[]): string {\n  if (!ports || ports.length === 0) return '全部'\n  return ports.map((p) => `${p.protocol || 'TCP'}:${p.port || '*'}`).join(', ')\n}\n\nconst NetworkPoliciesPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [keyword, setKeyword] = useState('')\n  const [detailPolicy, setDetailPolicy] = useState<NetworkPolicy | null>(null)\n  const [createOpen, setCreateOpen] = useState(false)\n  const yamlDrawer = useYamlDrawer()\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-networkpolicies', clusterId, namespace],\n    queryFn: ({ signal }) => listNetworkPolicies(clusterId, namespace, signal),\n    enabled: !!clusterId,\n    refetchInterval: detailPolicy || createOpen ? false : 30_000,\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (record: NetworkPolicy) =>\n      deleteNetworkPolicy(clusterId, record.namespace || namespace, record.name),\n    onSuccess: () => {\n      message.success('NetworkPolicy 已删除')\n      queryClient.invalidateQueries({ queryKey: ['k8s-networkpolicies', clusterId] })\n    },\n  })\n\n  const filteredData = (data?.items || []).filter((item) => {\n    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())\n  })\n\n  const columns: ProColumns<NetworkPolicy>[] = [\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 140,\n      ellipsis: true,\n      render: (_, r) => <EllipsisText text={r.namespace || namespace} tag />,\n    },\n    {\n      title: '名称',\n      dataIndex: 'name',\n      width: 160,\n      ellipsis: true,\n      copyable: true,\n      render: (_, r) => <Text strong>{r.name}</Text>,\n    },\n    {\n      title: 'Pod 选择器',\n      dataIndex: 'podSelector',\n      width: 180,\n      ellipsis: true,\n      search: false,\n      render: (_, record) => {\n        const ps = record.podSelector\n        if (!ps || ps === '<none>' || ps === '') return <Tag>全部 Pod</Tag>\n        return <Text style={{ fontSize: 12 }}>{ps}</Text>\n      },\n    },\n    {\n      title: '策略类型',\n      dataIndex: 'policyTypes',\n      width: 150,\n      align: 'center' as const,\n      search: false,\n      render: (_, record) =>\n        (record.policyTypes || []).map((t) => (\n          <Tag key={t} color=\"blue\">{t}</Tag>\n        )),\n    },\n    {\n      title: 'Age',\n      dataIndex: 'createdAt',\n      width: 110,\n      align: 'center' as const,\n      search: false,\n      ellipsis: true,\n      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),\n      render: (_, r) => (r.createdAt ? formatDate(r.createdAt) : '-'),\n    },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 140,\n      fixed: 'right',\n      align: 'center' as const,\n      render: (_, record) => (\n        <Space size=\"small\" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\n          <Tooltip title=\"详情\">\n            <a onClick={() => setDetailPolicy(record)}>\n              <EyeOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => yamlDrawer.openYaml(record.name, record.namespace || namespace)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm title=\"确定删除该 NetworkPolicy？\" onConfirm={() => deleteMutation.mutate(record)}>\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  // 详情中 Ingress 规则数据\n  const ingressRules = (detailPolicy?.ingress || []).map((rule, i) => ({\n    key: i,\n    from: (rule.from || []).map(formatPeer).join(' | ') || '全部',\n    ports: formatPorts(rule.ports),\n  }))\n\n  // 详情中 Egress 规则数据\n  const egressRules = (detailPolicy?.egress || []).map((rule, i) => ({\n    key: i,\n    to: (rule.to || []).map(formatPeer).join(' | ') || '全部',\n    ports: formatPorts(rule.ports),\n  }))\n\n  return (\n    <AppPage>\n      <ProTable<NetworkPolicy>\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        options={{ reload: false }}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n        scroll={{ x: 890 }}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            placeholder=\"按名称搜索\"\n            allowClear\n            value={keyword}\n            onChange={(e) => setKeyword(e.target.value)}\n            style={{ width: 180 }}\n            prefix={<SearchOutlined />}\n          />,\n          <NamespaceSelector\n            key=\"ns\"\n            clusterId={clusterId}\n            value={namespace}\n            onChange={setNamespace}\n            style={{ width: 180 }}\n          />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,\n          <Button key=\"create\" type=\"primary\" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>\n            创建 NetworkPolicy\n          </Button>,\n        ]}\n        headerTitle={<Text strong>NetworkPolicy 列表</Text>}\n      />\n\n      <YamlDrawer\n        clusterId={clusterId}\n        resourceType=\"networkpolicies\"\n        namespace={yamlDrawer.namespace}\n        name={yamlDrawer.name}\n        open={yamlDrawer.open}\n        onClose={yamlDrawer.closeYaml}\n      />\n\n      <Drawer\n        title={`NetworkPolicy 详情 - ${detailPolicy?.name}`}\n        open={!!detailPolicy}\n        onClose={() => setDetailPolicy(null)}\n        width={720}\n        destroyOnClose\n      >\n        {detailPolicy && (\n          <Space direction=\"vertical\" style={{ width: '100%' }} size=\"middle\">\n            <Descriptions bordered column={2} size=\"small\">\n              <Descriptions.Item label=\"名称\">{detailPolicy.name}</Descriptions.Item>\n              <Descriptions.Item label=\"Namespace\"><Tag>{detailPolicy.namespace}</Tag></Descriptions.Item>\n              <Descriptions.Item label=\"Pod 选择器\" span={2}>\n                {detailPolicy.podSelector === '<none>' || !detailPolicy.podSelector\n                  ? <Tag>全部 Pod</Tag>\n                  : <Tag color=\"blue\">{detailPolicy.podSelector}</Tag>}\n              </Descriptions.Item>\n              <Descriptions.Item label=\"策略类型\" span={2}>\n                {(detailPolicy.policyTypes || []).map((t) => (\n                  <Tag key={t} color=\"blue\">{t}</Tag>\n                ))}\n              </Descriptions.Item>\n              <Descriptions.Item label=\"创建时间\" span={2}>{formatDate(detailPolicy.createdAt)}</Descriptions.Item>\n            </Descriptions>\n\n            {ingressRules.length > 0 && (\n              <Table\n                size=\"small\"\n                title={() => `入站规则 (Ingress, ${ingressRules.length} 条)`}\n                rowKey=\"key\"\n                pagination={false}\n                dataSource={ingressRules}\n                columns={[\n                  { title: '来源', dataIndex: 'from', ellipsis: true },\n                  { title: '端口', dataIndex: 'ports', width: 200 },\n                ]}\n              />\n            )}\n\n            {egressRules.length > 0 && (\n              <Table\n                size=\"small\"\n                title={() => `出站规则 (Egress, ${egressRules.length} 条)`}\n                rowKey=\"key\"\n                pagination={false}\n                dataSource={egressRules}\n                columns={[\n                  { title: '目标', dataIndex: 'to', ellipsis: true },\n                  { title: '端口', dataIndex: 'ports', width: 200 },\n                ]}\n              />\n            )}\n\n            {ingressRules.length === 0 && egressRules.length === 0 && (\n              <Text type=\"secondary\">无入站/出站规则（默认行为：根据策略类型决定）</Text>\n            )}\n          </Space>\n        )}\n      </Drawer>\n\n      <ManifestApplyDrawer\n        clusterId={clusterId}\n        open={createOpen}\n        onClose={() => { setCreateOpen(false); queryClient.invalidateQueries({ queryKey: ['k8s-networkpolicies', clusterId] }) }}\n        title=\"创建 NetworkPolicy\"\n        initialYaml={`apiVersion: networking.k8s.io/v1\\nkind: NetworkPolicy\\nmetadata:\\n  name: my-netpol\\n  namespace: ${namespace || 'default'}\\nspec:\\n  podSelector:\\n    matchLabels:\\n      app: my-app\\n  policyTypes:\\n  - Ingress\\n  - Egress\\n  ingress:\\n  - from:\\n    - podSelector:\\n        matchLabels:\\n          app: my-app\\n    ports:\\n    - protocol: TCP\\n      port: 80\\n`}\n      />\n    </AppPage>\n  )\n}\n\nexport default NetworkPoliciesPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/network-policies.tsx"
     },
@@ -13406,7 +13458,7 @@
             "format": "esm"
           },
           "src/services/k8s/shared.ts": {
-            "bytes": 25260,
+            "bytes": 25497,
             "imports": [],
             "format": "esm"
           },
@@ -17055,7 +17107,7 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/ingresses.tsx": {
-            "bytes": 10458,
+            "bytes": 13125,
             "imports": [
               {
                 "path": "react",
@@ -17103,6 +17155,11 @@
                 "original": "@/hooks/useClusterId"
               },
               {
+                "path": "src/utils/index.ts",
+                "kind": "import-statement",
+                "original": "@/utils"
+              },
+              {
                 "path": "react/jsx-runtime",
                 "kind": "import-statement",
                 "external": true
@@ -17111,12 +17168,22 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/ingressclasses.tsx": {
-            "bytes": 473,
+            "bytes": 2283,
             "imports": [
+              {
+                "path": "react",
+                "kind": "import-statement",
+                "external": true
+              },
               {
                 "path": "src/components/GenericResourceList/index.tsx",
                 "kind": "import-statement",
                 "original": "@/components/GenericResourceList"
+              },
+              {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
               },
               {
                 "path": "react/jsx-runtime",
@@ -20877,6 +20944,11 @@
                 "external": true
               },
               {
+                "path": "antd",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
                 "path": "react/jsx-runtime",
                 "kind": "import-statement",
                 "external": true
@@ -22637,7 +22709,7 @@
                 "bytesInOutput": 1001
               },
               "src/services/k8s/shared.ts": {
-                "bytesInOutput": 21546
+                "bytesInOutput": 21770
               },
               "src/services/k8s/generic.ts": {
                 "bytesInOutput": 6965
@@ -22976,10 +23048,10 @@
                 "bytesInOutput": 12564
               },
               "src/pages/k8s/$clusterId/ingresses.tsx": {
-                "bytesInOutput": 13219
+                "bytesInOutput": 16668
               },
               "src/pages/k8s/$clusterId/ingressclasses.tsx": {
-                "bytesInOutput": 720
+                "bytesInOutput": 2756
               },
               "src/pages/k8s/$clusterId/pvc.tsx": {
                 "bytesInOutput": 6923
@@ -23108,7 +23180,7 @@
                 "bytesInOutput": 2108
               }
             },
-            "bytes": 1036414
+            "bytes": 1042123
           }
         }
       }

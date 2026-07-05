@@ -226,10 +226,12 @@ export interface Ingress {
   ingressClass: string
   hosts: string[]
   addresses: string[]
-  ports: string         // 如 "80, 443"
+  ports: string
   age: string
   createdAt: string
   tls?: boolean
+  rules?: any[]
+  tlsConfigs?: Array<{ hosts: string[]; secretName: string }>
 }
 
 export type IngressList = PageResult<Ingress>

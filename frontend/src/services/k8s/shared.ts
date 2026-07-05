@@ -436,6 +436,12 @@ export function mapIngress(raw: any): Ingress {
     ports,
     age: m.creationTimestamp || '',
     createdAt: m.creationTimestamp || '',
+    tls: Array.isArray(s.tls) && s.tls.length > 0,
+    rules: rules,
+    tlsConfigs: Array.isArray(s.tls) ? s.tls.map((t: any) => ({
+      hosts: Array.isArray(t.hosts) ? t.hosts : [],
+      secretName: t.secretName || '',
+    })) : [],
   }
 }
 
