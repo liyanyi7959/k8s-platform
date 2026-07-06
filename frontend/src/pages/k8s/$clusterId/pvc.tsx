@@ -22,7 +22,8 @@ const PVCPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'status' | 'label'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [detailPVC, setDetailPVC] = useState<PersistentVolumeClaim | null>(null)
   const yamlDrawer = useYamlDrawer()
 
@@ -48,9 +49,14 @@ const PVCPage: React.FC = () => {
     enabled: !!clusterId && !!detailPVC && !!detailPVC.namespace && !!detailPVC.name,
   })
 
-  const filteredData = (data?.items || []).filter((item) =>
-    item.name.toLowerCase().includes(keyword.toLowerCase())
-  )
+  const filteredData = (data?.items || []).filter((item) => {
+    if (!searchValue) return true
+    const v = searchValue.toLowerCase()
+    if (searchType === 'name') return item.name.toLowerCase().includes(v)
+    if (searchType === 'status') return item.status?.toLowerCase().includes(v)
+    return item.labels && Object.entries(item.labels).some(([k, val]) =>
+      `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))
+  })
 
   const columns: ProColumns<PersistentVolumeClaim>[] = [
     {
@@ -136,11 +142,13 @@ const PVCPage: React.FC = () => {
           />,
           <Input.Search
             key="search"
-            placeholder="按名称搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : searchType === 'status' ? '按状态搜索' : '按标签搜索'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'status', label: '状态' }, { value: 'label', label: '标签' }]} />}
             prefix={<SearchOutlined />}
           />,
           <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,

@@ -28,6 +28,13 @@ export interface Node {
   ip?: string
   podCIDR?: string
   taints?: Array<{ key: string; effect: string; value?: string }>
+  conditions?: Array<{ type: string; status: string; reason: string; message: string; lastTransitionTime: string }>
+  addresses?: Array<{ type: string; address: string }>
+  images?: Array<{ names: string[]; sizeBytes: number }>
+  allocatable?: Record<string, string>
+  capacity?: Record<string, string>
+  labels?: Record<string, string>
+  annotations?: Record<string, string>
 }
 
 /** Pod */
@@ -414,6 +421,7 @@ export interface ServiceAccount {
   secrets: number
   age: string
   createdAt: string
+  labels?: Record<string, string>
 }
 
 export type ServiceAccountList = PageResult<ServiceAccount>
@@ -456,6 +464,7 @@ export interface NetworkPolicy {
   createdAt: string
   ingress?: any[]
   egress?: any[]
+  labels?: Record<string, string>
 }
 
 export type NetworkPolicyList = PageResult<NetworkPolicy>
@@ -468,6 +477,7 @@ export interface ResourceQuota {
   used: Record<string, string>
   age: string
   createdAt: string
+  labels?: Record<string, string>
 }
 
 export type ResourceQuotaList = PageResult<ResourceQuota>

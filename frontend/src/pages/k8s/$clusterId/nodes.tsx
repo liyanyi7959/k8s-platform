@@ -20,6 +20,7 @@ import {
   Alert,
   Tooltip,
   Input,
+  Select,
   Table,
 } from 'antd'
 import {
@@ -35,11 +36,11 @@ import {
   SearchOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   getNodes,
-  getNodeDetail,
   getPodEvents,
+  listPods,
   cordonNode,
   uncordonNode,
   drainNode,
@@ -55,7 +56,8 @@ const { Text } = Typography
 export default function NodesPage() {
   const clusterId = useClusterId()
   const qc = useQueryClient()
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'status' | 'role'>('name')
+  const [searchValue, setSearchValue] = useState('')
 
   // ═══ YAML Drawer ═══
   const yamlDrawer = useYamlDrawer()
@@ -64,11 +66,6 @@ export default function NodesPage() {
   const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; name?: string }>({
     open: false,
   })
-  const { data: detail, isLoading: detailLoading } = useQuery({
-    queryKey: ['node-detail', clusterId, detailDrawer.name],
-    queryFn: ({ signal }) => getNodeDetail(clusterId, detailDrawer.name!, signal),
-    enabled: detailDrawer.open && !!detailDrawer.name,
-  })
 
   // ═══ Events ═══
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
@@ -76,6 +73,15 @@ export default function NodesPage() {
     queryFn: ({ signal }) => getPodEvents(clusterId, '', detailDrawer.name || '', signal),
     enabled: detailDrawer.open && !!detailDrawer.name,
   })
+
+  // ═══ Node Pods ═══
+  const { data: podsData, isLoading: podsLoading } = useQuery({
+    queryKey: ['node-pods', clusterId, detailDrawer.name],
+    queryFn: ({ signal }) => listPods(clusterId, {}, signal),
+    enabled: detailDrawer.open && !!detailDrawer.name,
+  })
+
+  const nodePods = (podsData?.items || []).filter((p: any) => p.nodeName === detailDrawer.name)
 
   // ═══ Drain Modal ═══
   const [drainModal, setDrainModal] = useState<{
@@ -93,12 +99,39 @@ export default function NodesPage() {
     refetchInterval: detailDrawer.open || yamlDrawer.open || drainModal.open ? false : 30_000,
   })
 
+  // ═══ All Pods (for pod count per node) ═══
+  const { data: allPodsData } = useQuery({
+    queryKey: ['k8s-all-pods', clusterId],
+    queryFn: ({ signal }) => listPods(clusterId, {}, signal),
+    enabled: !!clusterId,
+    refetchInterval: detailDrawer.open || yamlDrawer.open || drainModal.open ? false : 30_000,
+  })
+
+  const nodePodCountMap = useMemo(() => {
+    const map = new Map<string, number>()
+    ;(allPodsData?.items || []).forEach((pod: any) => {
+      if (pod.nodeName) {
+        map.set(pod.nodeName, (map.get(pod.nodeName) || 0) + 1)
+      }
+    })
+    return map
+  }, [allPodsData])
+
   const filteredData = (() => {
     let items = nodesData?.items || nodesData || []
-    if (keyword)
-      items = items.filter((i: any) => i.name?.toLowerCase().includes(keyword.toLowerCase()))
+    if (searchValue) {
+      const v = searchValue.toLowerCase()
+      items = items.filter((i: any) => {
+        if (searchType === 'name') return i.name?.toLowerCase().includes(v)
+        if (searchType === 'status') return i.status?.toLowerCase().includes(v)
+        // role
+        return Array.isArray(i.roles) && i.roles.some((r: string) => r.toLowerCase().includes(v))
+      })
+    }
     return items
   })()
+
+  const detail = detailDrawer.name ? filteredData.find((n: any) => n.name === detailDrawer.name) || null : null
 
   // ═══ Mutations ═══
   const cordonMutation = useMutation({
@@ -155,17 +188,12 @@ export default function NodesPage() {
     {
       title: '状态',
       dataIndex: 'status',
-      width: 140,
+      width: 120,
       render: (_, r) => (
-        <Badge
-          status={statusColor(r.status) as any}
-          text={
-            <Space size={4}>
-              <Tag color={statusColor(r.status)}>{r.status}</Tag>
-              {isCordoned(r.status) && <Tag color="warning">调度已停止</Tag>}
-            </Space>
-          }
-        />
+        <Space size={4}>
+          <Badge status={statusColor(r.status) as any} text={<Text style={{ fontSize: 12 }}>{r.status}</Text>} />
+          {isCordoned(r.status) && <Text type="warning" style={{ fontSize: 11 }}>调度已停止</Text>}
+        </Space>
       ),
       filters: true,
       onFilter: true,
@@ -179,54 +207,59 @@ export default function NodesPage() {
       title: 'Roles',
       dataIndex: 'roles',
       width: 100,
+      ellipsis: true,
       render: (_, r) => {
         const roles = Array.isArray(r.roles) && r.roles.length > 0 ? r.roles.join(', ') : 'worker'
-        return <Tag>{roles}</Tag>
+        return <Text style={{ fontSize: 12 }}>{roles}</Text>
       },
     },
     { title: 'InternalIP', dataIndex: 'ip', width: 130 },
     {
       title: 'CPU',
-      width: 140,
-      render: (_, r) => (
-        <Space direction="vertical" size={0} style={{ width: '100%' }}>
-          <Text style={{ fontSize: 11 }}>{r.cpu || '-'}</Text>
-          <Progress
-            percent={r.cpuPercent || 0}
-            size="small"
-            showInfo={false}
-            strokeColor={(r.cpuPercent || 0) > 80 ? '#ff4d4f' : '#0891b2'}
-          />
-          <Text type="secondary" style={{ fontSize: 10 }}>
-            {r.cpuPercent || 0}%
-          </Text>
-        </Space>
-      ),
+      width: 80,
+      align: 'center' as const,
+      render: (_, r) => {
+        const cap = parseInt(r.capacity?.cpu || '0')
+        const alloc = parseInt(r.allocatable?.cpu || '0')
+        return (
+          <Tooltip title={`总量 ${cap} 核，可分配 ${alloc} 核`}>
+            <Text style={{ fontSize: 12 }}>{cap || '-'} 核</Text>
+          </Tooltip>
+        )
+      },
     },
     {
       title: '内存',
-      width: 140,
-      render: (_, r) => (
-        <Space direction="vertical" size={0} style={{ width: '100%' }}>
-          <Text style={{ fontSize: 11 }}>{r.memory || '-'}</Text>
-          <Progress
-            percent={r.memoryPercent || 0}
-            size="small"
-            showInfo={false}
-            strokeColor={(r.memoryPercent || 0) > 80 ? '#ff4d4f' : '#7c3aed'}
-          />
-          <Text type="secondary" style={{ fontSize: 10 }}>
-            {r.memoryPercent || 0}%
-          </Text>
-        </Space>
-      ),
+      width: 90,
+      align: 'center' as const,
+      render: (_, r) => {
+        const fmtMem = (v?: string) => {
+          if (!v) return '-'
+          if (v.endsWith('Ki')) return `${(parseInt(v) / 1024 / 1024).toFixed(0)} Gi`
+          if (v.endsWith('Mi')) return `${(parseInt(v) / 1024).toFixed(0)} Gi`
+          if (v.endsWith('Gi')) return v
+          return v
+        }
+        return (
+          <Tooltip title={`总量 ${fmtMem(r.capacity?.memory)}，可分配 ${fmtMem(r.allocatable?.memory)}`}>
+            <Text style={{ fontSize: 12 }}>{fmtMem(r.capacity?.memory)}</Text>
+          </Tooltip>
+        )
+      },
     },
     {
       title: 'Pods',
-      dataIndex: 'podCount',
-      width: 70,
+      width: 80,
       align: 'center' as const,
-      render: (_, r) => <Text>{r.podCount || 0}</Text>,
+      render: (_, r) => {
+        const used = nodePodCountMap.get(r.name) || 0
+        const total = r.capacity?.pods || '-'
+        return (
+          <Tooltip title={`已运行 ${used} 个，最大 ${total} 个`}>
+            <Text style={{ fontSize: 12 }}>{used} / {total}</Text>
+          </Tooltip>
+        )
+      },
     },
     {
       title: 'Taints',
@@ -235,9 +268,9 @@ export default function NodesPage() {
       align: 'center' as const,
       render: (_, r) =>
         r.taints && r.taints.length > 0 ? (
-          <Tag color="warning">{r.taints.length} 个</Tag>
+          <Text type="warning" style={{ fontSize: 12 }}>{r.taints.length} 个</Text>
         ) : (
-          <Text type="secondary">无</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>无</Text>
         ),
     },
     { title: 'kubelet', dataIndex: 'kubeletVersion', width: 120, ellipsis: true },
@@ -328,11 +361,13 @@ export default function NodesPage() {
         toolBarRender={() => [
           <Input.Search
             key="search"
-            placeholder="按名称搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : searchType === 'status' ? '按状态搜索' : '按角色搜索'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'status', label: '状态' }, { value: 'role', label: '角色' }]} />}
             prefix={<SearchOutlined />}
           />,
           <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>
@@ -359,8 +394,8 @@ export default function NodesPage() {
         onClose={() => setDetailDrawer({ open: false })}
         width={780}
       >
-        {detailLoading ? (
-          <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>
+        {!detail ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>暂无数据</div>
         ) : (
           detail && (
             <Tabs
@@ -414,6 +449,7 @@ export default function NodesPage() {
                   children: detail.conditions ? (
                     <Table
                       size="small"
+                      tableLayout="fixed"
                       rowKey={(_, i) => String(i)}
                       pagination={false}
                       dataSource={detail.conditions}
@@ -450,36 +486,46 @@ export default function NodesPage() {
                 {
                   key: 'capacity',
                   label: '容量',
-                  children: (
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <Card title="Capacity" size="small">
-                          {detail.capacity ? (
-                            Object.entries(detail.capacity).map(([k, v]) => (
-                              <Descriptions.Item key={k} label={k}>
-                                <Text>{String(v)}</Text>
-                              </Descriptions.Item>
-                            ))
-                          ) : (
-                            <Text type="secondary">-</Text>
-                          )}
-                        </Card>
-                      </Col>
-                      <Col span={12}>
-                        <Card title="Allocatable" size="small">
-                          {detail.allocatable ? (
-                            Object.entries(detail.allocatable).map(([k, v]) => (
-                              <Descriptions.Item key={k} label={k}>
-                                <Text>{String(v)}</Text>
-                              </Descriptions.Item>
-                            ))
-                          ) : (
-                            <Text type="secondary">-</Text>
-                          )}
-                        </Card>
-                      </Col>
-                    </Row>
-                  ),
+                  children: (() => {
+                    const fmt = (k: string, v: string) => {
+                      if (k === 'cpu') return `${v} 核`
+                      if (k === 'pods') return `${v} 个`
+                      // 存储/内存类资源：统一转换为 Gi
+                      if (k === 'memory' || k === 'ephemeral-storage' || k === 'storage') {
+                        // 纯数字（字节）
+                        if (/^\d+$/.test(v)) {
+                          const bytes = parseInt(v)
+                          if (bytes >= 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} Gi`
+                          if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} Mi`
+                          return `${v} B`
+                        }
+                        // 带单位的
+                        if (v.endsWith('Ki')) return `${(parseInt(v) / 1024 / 1024).toFixed(1)} Gi`
+                        if (v.endsWith('Mi')) return `${(parseInt(v) / 1024).toFixed(1)} Gi`
+                        if (v.endsWith('Gi')) return v
+                        return v
+                      }
+                      return v
+                    }
+                    const keys = Object.keys(detail.capacity || {})
+                    return (
+                      <Table
+                        size="small"
+                        rowKey="resource"
+                        pagination={false}
+                        dataSource={keys.map(k => ({
+                          resource: k,
+                          capacity: fmt(k, String(detail.capacity?.[k] || '-')),
+                          allocatable: fmt(k, String(detail.allocatable?.[k] || '-')),
+                        }))}
+                        columns={[
+                          { title: '资源', dataIndex: 'resource', width: 120 },
+                          { title: 'Capacity', dataIndex: 'capacity', align: 'center' as const },
+                          { title: 'Allocatable', dataIndex: 'allocatable', align: 'center' as const },
+                        ]}
+                      />
+                    )
+                  })(),
                 },
                 {
                   key: 'images',
@@ -487,16 +533,47 @@ export default function NodesPage() {
                   children: detail.images ? (
                     <Table
                       size="small"
+                      tableLayout="fixed"
                       rowKey={(_, i) => String(i)}
                       pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
                       dataSource={detail.images}
                       columns={[
-                        { title: '镜像名称', dataIndex: 'names', render: (v: string[]) => v?.map((n, j) => <Tag key={j} style={{ marginBottom: 2 }}>{n}</Tag>) || '-', ellipsis: true },
-                        { title: '大小', dataIndex: 'sizeBytes', width: 100, align: 'center' as const, render: (v) => v ? `${(v / 1024 / 1024).toFixed(1)} MB` : '-' },
+                        { title: '#', width: 45, align: 'center' as const, render: (_, __, i) => i + 1 },
+                        { title: '镜像名称', dataIndex: 'names', render: (v: string[]) =>
+                          v?.length > 0 ? (
+                            <Space size={4} wrap>
+                              {v.map((n, j) => <Tooltip key={j} title={n}><Text style={{ fontSize: 11 }}>{n}</Text></Tooltip>)}
+                            </Space>
+                          ) : '-'
+                        },
+                        { title: '大小', dataIndex: 'sizeBytes', width: 90, align: 'center' as const, render: (v) => v ? `${(v / 1024 / 1024).toFixed(0)} MB` : '-' },
                       ]}
                     />
                   ) : (
                     <Text type="secondary">暂无镜像数据</Text>
+                  ),
+                },
+                {
+                  key: 'pods',
+                  label: `Pods (${nodePods.length})`,
+                  children: (
+                    <Table
+                      size="small"
+                      rowKey={(r: any) => `${r.namespace}/${r.name}`}
+                      loading={podsLoading}
+                      pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+                      dataSource={nodePods}
+                      columns={[
+                        { title: 'Namespace', dataIndex: 'namespace', width: 120, ellipsis: true },
+                        { title: '名称', dataIndex: 'name', ellipsis: true },
+                        { title: '状态', dataIndex: 'status', width: 100, align: 'center' as const, render: (v: string) => {
+                          const colorMap: Record<string, string> = { Running: 'success', Pending: 'processing', Failed: 'error', Succeeded: 'default' }
+                          return <Badge status={colorMap[v] as any || 'default'} text={v} />
+                        }},
+                        { title: '重启', dataIndex: 'restarts', width: 70, align: 'center' as const },
+                        { title: 'Age', dataIndex: 'createdAt', width: 110, align: 'center' as const, ellipsis: true, render: (v: string) => v ? formatDate(v) : '-' },
+                      ]}
+                    />
                   ),
                 },
                 {

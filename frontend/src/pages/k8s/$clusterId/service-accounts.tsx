@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Typography } from 'antd'
+import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Select, Typography } from 'antd'
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listServiceAccounts, deleteServiceAccount } from '@/services/k8s'
@@ -16,7 +16,8 @@ const ServiceAccountsPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'label'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [detailSA, setDetailSA] = useState<ServiceAccount | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const yamlDrawer = useYamlDrawer()
@@ -37,7 +38,13 @@ const ServiceAccountsPage: React.FC = () => {
     },
   })
 
-  const filteredData = (data?.items || []).filter(item => !keyword || item.name.toLowerCase().includes(keyword.toLowerCase()))
+  const filteredData = (data?.items || []).filter((item) => {
+    if (!searchValue) return true
+    const v = searchValue.toLowerCase()
+    if (searchType === 'name') return item.name.toLowerCase().includes(v)
+    return item.labels && Object.entries(item.labels).some(([k, val]) =>
+      `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))
+  })
 
   const columns: ProColumns<ServiceAccount>[] = [
     {
@@ -117,11 +124,13 @@ const ServiceAccountsPage: React.FC = () => {
         toolBarRender={() => [
           <Input.Search
             key="search"
-            placeholder="按名称搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : '按标签搜索'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'label', label: '标签' }]} />}
             prefix={<SearchOutlined />}
           />,
           <NamespaceSelector

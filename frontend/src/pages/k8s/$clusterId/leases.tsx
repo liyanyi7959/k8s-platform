@@ -9,7 +9,7 @@ const renderDetail = (record: GenericResourceItem) => {
     <Space direction="vertical" style={{ width: '100%' }} size="middle">
       <Descriptions bordered column={2} size="small">
         <Descriptions.Item label="名称">{record.name}</Descriptions.Item>
-        <Descriptions.Item label="Namespace"><Tag>{record.namespace}</Tag></Descriptions.Item>
+        <Descriptions.Item label="Namespace">{record.namespace || '-'}</Descriptions.Item>
         <Descriptions.Item label="Holder">{spec.holderIdentity || '-'}</Descriptions.Item>
         <Descriptions.Item label="租期(秒)">{spec.leaseDurationSeconds || '-'}</Descriptions.Item>
         <Descriptions.Item label="获取时间" span={2}>{spec.acquireTime || '-'}</Descriptions.Item>

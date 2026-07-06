@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Badge, Space, Tooltip, Popconfirm, message, Button, Typography, Input, Drawer, Descriptions } from 'antd'
+import { Badge, Space, Tooltip, Popconfirm, message, Button, Typography, Input, Drawer, Descriptions, Tabs, Table, Select } from 'antd'
 import { ProfileOutlined, DeleteOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listNamespaces, deleteNamespace } from '@/services/k8s'
+import { listNamespaces, deleteNamespace, listResourceQuotas, listPods, listGenericResources, getPodEvents } from '@/services/k8s'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { AppPage, ManifestApplyDrawer } from '@/components'
 import { useClusterId } from '@/hooks/useClusterId'
@@ -15,16 +15,42 @@ const { Text } = Typography
 const NamespacesPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'label'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [detailNS, setDetailNS] = useState<Namespace | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const yamlDrawer = useYamlDrawer()
+
+  // ═══ Detail: ResourceQuotas / LimitRanges / Pods ═══
+  const { data: rqData } = useQuery({
+    queryKey: ['ns-resourcequotas', clusterId, detailNS?.name],
+    queryFn: ({ signal }) => listResourceQuotas(clusterId, detailNS!.name, signal),
+    enabled: !!detailNS,
+  })
+
+  const { data: lrData } = useQuery({
+    queryKey: ['ns-limitranges', clusterId, detailNS?.name],
+    queryFn: ({ signal }) => listGenericResources(clusterId, 'limitranges', detailNS!.name, signal),
+    enabled: !!detailNS,
+  })
+
+  const { data: nsPodsData } = useQuery({
+    queryKey: ['ns-pods', clusterId, detailNS?.name],
+    queryFn: ({ signal }) => listPods(clusterId, { namespace: detailNS!.name }, signal),
+    enabled: !!detailNS,
+  })
+
+  const { data: nsEventsData } = useQuery({
+    queryKey: ['ns-events', clusterId, detailNS?.name],
+    queryFn: ({ signal }) => getPodEvents(clusterId, detailNS!.name, '', signal),
+    enabled: !!detailNS,
+  })
 
   const { data: namespaces, isLoading, refetch } = useQuery({
     queryKey: ['k8s-namespaces', clusterId],
     queryFn: ({ signal }) => listNamespaces(clusterId, signal),
     enabled: !!clusterId,
-    refetchInterval: 30_000,
+    refetchInterval: detailNS || createOpen ? false : 30_000,
   })
 
   const deleteMutation = useMutation({
@@ -36,7 +62,16 @@ const NamespacesPage: React.FC = () => {
   })
 
   const filteredData = (namespaces || []).filter((item) => {
-    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+    if (!searchValue) return true
+    const v = searchValue.toLowerCase()
+    if (searchType === 'name') {
+      return item.name.toLowerCase().includes(v)
+    }
+    return item.labels && Object.entries(item.labels).some(([k, val]) =>
+      `${k}=${val}`.toLowerCase().includes(v) ||
+      k.toLowerCase().includes(v) ||
+      String(val).toLowerCase().includes(v)
+    )
   })
 
   const columns: ProColumns<Namespace>[] = [
@@ -64,13 +99,8 @@ const NamespacesPage: React.FC = () => {
       render: (_, record) => {
         const labels = record.labels
         if (!labels || Object.keys(labels).length === 0) return '-'
-        return Object.entries(labels)
-          .slice(0, 3)
-          .map(([k, v]) => (
-            <Tag key={k}>
-              {k}={v}
-            </Tag>
-          ))
+        const text = Object.entries(labels).slice(0, 3).map(([k, v]) => `${k}=${v}`).join(', ')
+        return <Text style={{ fontSize: 12 }}>{text}</Text>
       },
     },
     {
@@ -140,11 +170,22 @@ const NamespacesPage: React.FC = () => {
         toolBarRender={() => [
           <Input.Search
             key="search"
-            placeholder="按名称搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : '按标签搜索 (如 kubernetes.io)'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={
+              <Select
+                value={searchType}
+                onChange={(v) => setSearchType(v)}
+                style={{ width: 70 }}
+                options={[
+                  { value: 'name', label: '名称' },
+                  { value: 'label', label: '标签' },
+                ]}
+              />
+            }
             prefix={<SearchOutlined />}
           />,
           <Button
@@ -165,22 +206,126 @@ const NamespacesPage: React.FC = () => {
         title={`Namespace 详情 - ${detailNS?.name}`}
         open={!!detailNS}
         onClose={() => setDetailNS(null)}
-        width={640}
+        width={720}
         destroyOnClose
       >
         {detailNS && (
-          <Descriptions bordered column={2} size="small">
-            <Descriptions.Item label="名称">{detailNS.name}</Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Badge status={detailNS.status === 'Active' ? 'success' : 'warning'} text={detailNS.status} />
-            </Descriptions.Item>
-            <Descriptions.Item label="创建时间" span={2}>{formatDate(detailNS.createdAt)}</Descriptions.Item>
-            <Descriptions.Item label="标签" span={2}>
-              {detailNS.labels && Object.keys(detailNS.labels).length > 0
-                ? Object.entries(detailNS.labels).map(([k, v]) => <Tag key={k}>{k}={v}</Tag>)
-                : '-'}
-            </Descriptions.Item>
-          </Descriptions>
+          <Tabs
+            items={[
+              {
+                key: 'overview',
+                label: '概览',
+                children: (
+                  <Descriptions bordered column={2} size="small">
+                    <Descriptions.Item label="名称">{detailNS.name}</Descriptions.Item>
+                    <Descriptions.Item label="状态">
+                      <Badge status={detailNS.status === 'Active' ? 'success' : 'warning'} text={detailNS.status} />
+                    </Descriptions.Item>
+                    <Descriptions.Item label="创建时间" span={2}>{formatDate(detailNS.createdAt)}</Descriptions.Item>
+                    <Descriptions.Item label="标签" span={2}>
+                      {detailNS.labels && Object.keys(detailNS.labels).length > 0
+                        ? Object.entries(detailNS.labels).map(([k, v]) => <Text key={k} style={{ fontSize: 12 }}>{k}={v}; </Text>)
+                        : '-'}
+                    </Descriptions.Item>
+                  </Descriptions>
+                ),
+              },
+              {
+                key: 'quotas',
+                label: `配额 (${rqData?.items?.length || 0})`,
+                children: (rqData?.items || []).length > 0 ? (
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    {(rqData?.items || []).map((rq: any) => (
+                      <div key={rq.name}>
+                        <Table
+                          size="small"
+                          title={() => rq.name}
+                          rowKey="resource"
+                          pagination={false}
+                          dataSource={Object.keys(rq.hard || {}).map(k => ({
+                            resource: k,
+                            hard: rq.hard?.[k] || '-',
+                            used: rq.used?.[k] || '-',
+                          }))}
+                          columns={[
+                            { title: '资源', dataIndex: 'resource', width: 160, ellipsis: true },
+                            { title: '硬限制', dataIndex: 'hard', align: 'center' },
+                            { title: '已使用', dataIndex: 'used', align: 'center' },
+                          ]}
+                        />
+                      </div>
+                    ))}
+                  </Space>
+                ) : <Text type="secondary">该命名空间暂无 ResourceQuota</Text>,
+              },
+              {
+                key: 'limits',
+                label: `限制范围 (${lrData?.items?.length || 0})`,
+                children: (lrData?.items || []).length > 0 ? (
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    {(lrData?.items || []).map((lr: any) => {
+                      const limits = lr.raw?.spec?.limits || []
+                      return (
+                        <Table
+                          key={lr.name}
+                          size="small"
+                          title={() => lr.name}
+                          rowKey={(_, i) => String(i)}
+                          pagination={false}
+                          dataSource={limits}
+                          columns={[
+                            { title: '类型', dataIndex: 'type', width: 100 },
+                            { title: 'Max', render: (_, r) => r.max ? Object.entries(r.max).map(([k, v]) => `${k}=${v}`).join(', ') : '-', ellipsis: true },
+                            { title: 'Min', render: (_, r) => r.min ? Object.entries(r.min).map(([k, v]) => `${k}=${v}`).join(', ') : '-', ellipsis: true },
+                            { title: 'Default', render: (_, r) => r.default ? Object.entries(r.default).map(([k, v]) => `${k}=${v}`).join(', ') : '-', ellipsis: true },
+                          ]}
+                        />
+                      )
+                    })}
+                  </Space>
+                ) : <Text type="secondary">该命名空间暂无 LimitRange</Text>,
+              },
+              {
+                key: 'pods',
+                label: `Pods (${nsPodsData?.items?.length || 0})`,
+                children: (nsPodsData?.items || []).length > 0 ? (
+                  <Table
+                    size="small"
+                    rowKey={(r: any) => `${r.namespace}/${r.name}`}
+                    pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+                    dataSource={nsPodsData?.items || []}
+                    columns={[
+                      { title: '名称', dataIndex: 'name', ellipsis: true },
+                      { title: '状态', dataIndex: 'status', width: 100, align: 'center' as const, render: (v: string) => {
+                        const colorMap: Record<string, string> = { Running: 'success', Pending: 'processing', Failed: 'error', Succeeded: 'default' }
+                        return <Badge status={colorMap[v] as any || 'default'} text={v} />
+                      }},
+                      { title: '重启', dataIndex: 'restarts', width: 70, align: 'center' as const },
+                      { title: 'Age', dataIndex: 'createdAt', width: 110, align: 'center' as const, ellipsis: true, render: (v: string) => v ? formatDate(v) : '-' },
+                    ]}
+                  />
+                ) : <Text type="secondary">该命名空间暂无 Pod</Text>,
+              },
+              {
+                key: 'events',
+                label: `事件 (${nsEventsData?.length || 0})`,
+                children: (nsEventsData || []).length > 0 ? (
+                  <Table
+                    size="small"
+                    rowKey={(_, i) => String(i)}
+                    pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+                    dataSource={nsEventsData || []}
+                    columns={[
+                      { title: '类型', dataIndex: 'type', width: 80, align: 'center' as const, render: (v) => <Badge status={v === 'Warning' ? 'warning' : 'success'} text={v || 'Normal'} /> },
+                      { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true },
+                      { title: '消息', dataIndex: 'message', ellipsis: true },
+                      { title: '时间', dataIndex: 'lastTimestamp', width: 160, render: (v) => v ? formatDate(v) : '-' },
+                    ]}
+                  />
+                ) : <Text type="secondary">该命名空间暂无事件</Text>,
+              },
+            ]}
+          />
         )}
       </Drawer>
 

@@ -14,7 +14,8 @@ const { Text } = Typography
 const EventsPage: React.FC = () => {
   const clusterId = useClusterId()
   const [namespace, setNamespace] = useState<string>('')
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'type' | 'reason'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [eventType, setEventType] = useState<string>('')
 
   const { data, isLoading, refetch } = useQuery({
@@ -28,10 +29,16 @@ const EventsPage: React.FC = () => {
     const items = data || []
     return items.filter((item) => {
       const matchType = !eventType || item.type === eventType
-      const matchKeyword = !keyword || (item.reason || '').toLowerCase().includes(keyword.toLowerCase())
-      return matchType && matchKeyword
+      let matchSearch = true
+      if (searchValue) {
+        const v = searchValue.toLowerCase()
+        if (searchType === 'name') matchSearch = (item.involvedObject || '').toLowerCase().includes(v)
+        else if (searchType === 'type') matchSearch = (item.type || '').toLowerCase().includes(v)
+        else matchSearch = (item.reason || '').toLowerCase().includes(v)
+      }
+      return matchType && matchSearch
     })
-  }, [data, eventType, keyword])
+  }, [data, eventType, searchType, searchValue])
 
   const columns: ProColumns<K8sEvent>[] = [
     {
@@ -100,11 +107,13 @@ const EventsPage: React.FC = () => {
         toolBarRender={() => [
           <Input.Search
             key="search"
-            placeholder="按原因搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : searchType === 'type' ? '按类型搜索' : '按原因搜索'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'type', label: '类型' }, { value: 'reason', label: '原因' }]} />}
             prefix={<SearchOutlined />}
           />,
           <NamespaceSelector

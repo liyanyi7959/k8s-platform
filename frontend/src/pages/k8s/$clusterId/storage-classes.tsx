@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Typography, Input, Button, Table } from 'antd'
+import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Typography, Input, Select, Button, Table } from 'antd'
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listStorageClasses, deleteStorageClass } from '@/services/k8s'
@@ -15,7 +15,8 @@ const { Text } = Typography
 const StorageClassesPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'provisioner'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [detailSC, setDetailSC] = useState<StorageClass | null>(null)
   const yamlDrawer = useYamlDrawer()
 
@@ -34,9 +35,12 @@ const StorageClassesPage: React.FC = () => {
     },
   })
 
-  const filteredData = (data?.items || []).filter((item) =>
-    item.name.toLowerCase().includes(keyword.toLowerCase())
-  )
+  const filteredData = (data?.items || []).filter((item) => {
+    if (!searchValue) return true
+    const v = searchValue.toLowerCase()
+    if (searchType === 'name') return item.name.toLowerCase().includes(v)
+    return item.provisioner?.toLowerCase().includes(v)
+  })
 
   const columns: ProColumns<StorageClass>[] = [
     { title: '名称', dataIndex: 'name', width: 160, ellipsis: true, copyable: true, render: (_, r) => <Text strong>{r.name}</Text> },
@@ -118,11 +122,13 @@ const StorageClassesPage: React.FC = () => {
         toolBarRender={() => [
           <Input.Search
             key="search"
-            placeholder="按名称搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : '按 Provisioner 搜索'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'provisioner', label: 'Provisioner' }]} />}
             prefix={<SearchOutlined />}
           />,
           <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Typography, Table, Tabs } from 'antd'
+import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Select, Typography, Table, Tabs } from 'antd'
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, ClearOutlined, SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listJobs, deleteJob, deleteCompletedJobs, listPods, getPodEvents } from '@/services/k8s'
@@ -23,7 +23,8 @@ const JobsPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'label'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [detailJob, setDetailJob] = useState<Job | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const yamlDrawer = useYamlDrawer()
@@ -64,8 +65,12 @@ const JobsPage: React.FC = () => {
     onError: () => message.error('清理失败'),
   })
 
-  const filteredData = (data?.items || []).filter((item) => {
-    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  const filteredData = (data?.items || []).filter((item: any) => {
+    if (!searchValue) return true
+    const v = searchValue.toLowerCase()
+    if (searchType === 'name') return item.name.toLowerCase().includes(v)
+    return item.labels && Object.entries(item.labels).some(([k, val]) =>
+      `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))
   })
 
   const relatedPods = (podsData?.items || []).filter((pod: any) => {
@@ -175,11 +180,13 @@ const JobsPage: React.FC = () => {
         toolBarRender={() => [
           <Input.Search
             key="search"
-            placeholder="按名称搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : '按标签搜索'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'label', label: '标签' }]} />}
             prefix={<SearchOutlined />}
           />,
           <NamespaceSelector

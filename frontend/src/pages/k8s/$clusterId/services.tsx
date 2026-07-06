@@ -37,7 +37,8 @@ const ServicesPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'type' | 'label'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [batchLoading, setBatchLoading] = useState(false)
@@ -126,7 +127,14 @@ const ServicesPage: React.FC = () => {
   }
 
   const filteredData = (data?.items || []).filter((item) => {
-    const matchKeyword = !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+    const matchKeyword = !searchValue || (() => {
+      const v = searchValue.toLowerCase()
+      if (searchType === 'name') return item.name.toLowerCase().includes(v)
+      if (searchType === 'type') return item.type?.toLowerCase().includes(v)
+      // label（Service 没有 labels，使用 selector 代替）
+      return item.selector && Object.entries(item.selector).some(([k, val]) =>
+        `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))
+    })()
     const matchType = !typeFilter || item.type === typeFilter
     return matchKeyword && matchType
   })
@@ -360,11 +368,13 @@ const ServicesPage: React.FC = () => {
         toolBarRender={() => [
           <Input.Search
             key="search"
-            placeholder="按名称搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : searchType === 'type' ? '按类型搜索' : '按标签搜索'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'type', label: '类型' }, { value: 'label', label: '标签' }]} />}
             prefix={<SearchOutlined />}
           />,
           <Select

@@ -87,7 +87,8 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
   const workloadKind = fixedKind || activeTab
 
   // ═══ Drawers/Modals ═══
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'label'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [createModal, setCreateModal] = useState(false)
   const [editDrawer, setEditDrawer] = useState<{ open: boolean; record?: any }>({ open: false })
@@ -183,9 +184,18 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
     enabled: !!clusterId && detailDrawer.open && !!detailDrawer.record?.namespace && !!detailDrawer.record?.name,
   })
 
-  // 过滤后的数据（按 keyword 和 statusFilter 过滤）
+  // 过滤后的数据（按 searchType/searchValue 和 statusFilter 过滤）
   const filteredData = (data?.items || []).filter((item: any) => {
-    const matchKeyword = !keyword || String(item.name || '').toLowerCase().includes(keyword.toLowerCase())
+    let matchSearch = true
+    if (searchValue) {
+      const v = searchValue.toLowerCase()
+      if (searchType === 'name') {
+        matchSearch = String(item.name || '').toLowerCase().includes(v)
+      } else {
+        matchSearch = item.labels && Object.entries(item.labels).some(([k, val]) =>
+          `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))
+      }
+    }
     const ready = item.readyReplicas || Number(String(item.ready || '0/0').split('/')[0] || 0)
     const desired = item.replicas || 0
     const isReady = ready === desired
@@ -193,7 +203,7 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
     if (statusFilter === 'ready') matchStatus = isReady
     else if (statusFilter === 'notReady') matchStatus = !isReady
     else if (statusFilter === 'paused') matchStatus = !!item.paused
-    return matchKeyword && matchStatus
+    return matchSearch && matchStatus
   })
 
   // 详情抽屉：关联 Pod（ownerKind 为 ReplicaSet 且 ownerName 以 deployment 名称开头）
@@ -594,11 +604,13 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
         toolBarRender={() => [
           <Input.Search
             key="search"
-            placeholder="按名称搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : '按标签搜索'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'label', label: '标签' }]} />}
             prefix={<SearchOutlined />}
           />,
           <Select

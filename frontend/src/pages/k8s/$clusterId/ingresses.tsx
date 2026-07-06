@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns, ModalForm, ProFormText } from '@ant-design/pro-components'
-import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Table, Typography } from 'antd'
+import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button, Input, Table, Typography, Select } from 'antd'
 import { DeleteOutlined, ProfileOutlined, EditOutlined, EyeOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listIngresses, deleteIngress, createIngress, updateIngress } from '@/services/k8s'
@@ -16,7 +16,8 @@ const IngressesPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'label'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [detailIngress, setDetailIngress] = useState<Ingress | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [editingIngress, setEditingIngress] = useState<Ingress | null>(null)
@@ -65,7 +66,11 @@ const IngressesPage: React.FC = () => {
   })
 
   const filteredData = (data?.items || []).filter((item) => {
-    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+    if (!searchValue) return true
+    const v = searchValue.toLowerCase()
+    if (searchType === 'name') return item.name.toLowerCase().includes(v)
+    return item.labels && Object.entries(item.labels).some(([k, val]) =>
+      `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))
   })
 
   const columns: ProColumns<Ingress>[] = [
@@ -202,8 +207,11 @@ const IngressesPage: React.FC = () => {
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
         scroll={{ x: 1170 }}
         toolBarRender={() => [
-          <Input.Search key="search" placeholder="按名称搜索" allowClear value={keyword}
-            onChange={(e) => setKeyword(e.target.value)} style={{ width: 180 }} prefix={<SearchOutlined />} />,
+          <Input.Search key="search" placeholder={searchType === 'name' ? '按名称搜索' : '按标签搜索'} allowClear value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)} style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'label', label: '标签' }]} />}
+            prefix={<SearchOutlined />} />,
           <NamespaceSelector key="ns" clusterId={clusterId} value={namespace} onChange={setNamespace} style={{ width: 180 }} />,
           <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>,
           <Button key="create" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>创建 Ingress</Button>,

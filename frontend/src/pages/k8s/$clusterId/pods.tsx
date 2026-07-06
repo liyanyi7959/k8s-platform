@@ -378,7 +378,8 @@ const PodsPage: React.FC = () => {
   const [namespace, setNamespace] = useState<string>('')
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   // 搜索筛选
-  const [keyword, setKeyword] = useState<string>('')
+  const [searchType, setSearchType] = useState<'name' | 'node' | 'label'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
 
   // ═══ 抽屉状态 ═══
@@ -425,10 +426,19 @@ const PodsPage: React.FC = () => {
   // 客户端搜索筛选
   const filteredData = useMemo(() => {
     let list = data?.items || []
-    if (keyword.trim()) list = list.filter((p) => p.name.includes(keyword.trim()))
+    if (searchValue.trim()) {
+      const v = searchValue.trim().toLowerCase()
+      list = list.filter((p) => {
+        if (searchType === 'name') return p.name.toLowerCase().includes(v)
+        if (searchType === 'node') return p.nodeName?.toLowerCase().includes(v)
+        // label
+        return p.labels && Object.entries(p.labels).some(([k, val]) =>
+          `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))
+      })
+    }
     if (statusFilter) list = list.filter((p) => p.status === statusFilter)
     return list
-  }, [data, keyword, statusFilter])
+  }, [data, searchValue, searchType, statusFilter])
 
   const selectedPods = useMemo(
     () => filteredData.filter((p) => selectedKeys.includes(`${p.namespace}/${p.name}`)),
@@ -827,11 +837,12 @@ const PodsPage: React.FC = () => {
           <Input.Search
             key="search"
             allowClear
-            placeholder="按名称搜索"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            onSearch={(v) => setKeyword(v)}
-            style={{ width: 180 }}
+            placeholder={searchType === 'name' ? '按名称搜索' : searchType === 'node' ? '按节点搜索' : '按标签搜索'}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'node', label: '节点' }, { value: 'label', label: '标签' }]} />}
             prefix={<SearchOutlined />}
           />,
           <Select

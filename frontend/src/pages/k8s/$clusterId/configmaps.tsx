@@ -6,7 +6,7 @@ import {
   ProFormTextArea,
   type ProColumns,
 } from '@ant-design/pro-components'
-import { Space, message, Popconfirm, Tag, Button, Tooltip, Input, Typography, Drawer, Descriptions, Table } from 'antd'
+import { Space, message, Popconfirm, Tag, Button, Tooltip, Input, Select, Typography, Drawer, Descriptions, Table } from 'antd'
 import { PlusOutlined, EyeOutlined, DeleteOutlined, ProfileOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listConfigMaps, deleteConfigMap, createConfigMap } from '@/services/k8s'
@@ -22,7 +22,8 @@ const ConfigMapsPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
   const [namespace, setNamespace] = useState<string>('')
-  const [keyword, setKeyword] = useState('')
+  const [searchType, setSearchType] = useState<'name' | 'label'>('name')
+  const [searchValue, setSearchValue] = useState('')
   const [selectedCM, setSelectedCM] = useState<ConfigMap | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const yamlDrawer = useYamlDrawer()
@@ -42,8 +43,11 @@ const ConfigMapsPage: React.FC = () => {
     },
   })
 
-  const filteredData = (data?.items || []).filter((item) => {
-    return !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
+  const filteredData = (data?.items || []).filter((item: any) => {
+    if (!searchValue) return true
+    const v = searchValue.toLowerCase()
+    if (searchType === 'name') return item.name.toLowerCase().includes(v)
+    return item.data && Object.keys(item.data).some(k => k.toLowerCase().includes(v))
   })
 
   const columns: ProColumns<ConfigMap>[] = [
@@ -139,11 +143,13 @@ const ConfigMapsPage: React.FC = () => {
         toolBarRender={() => [
           <Input.Search
             key="search"
-            placeholder="按名称搜索"
+            placeholder={searchType === 'name' ? '按名称搜索' : '按标签搜索'}
             allowClear
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ width: 180 }}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 280 }}
+            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
+              options={[{ value: 'name', label: '名称' }, { value: 'label', label: '标签' }]} />}
             prefix={<SearchOutlined />}
           />,
           <NamespaceSelector

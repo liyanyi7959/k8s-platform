@@ -395,6 +395,19 @@ export function mapNode(raw: any): Node {
     ip,
     podCIDR: spec.podCIDR || '',
     taints,
+    conditions: conditions.map((c: any) => ({
+      type: c.type || '',
+      status: c.status || '',
+      reason: c.reason || '',
+      message: c.message || '',
+      lastTransitionTime: c.lastTransitionTime || '',
+    })),
+    addresses: addresses.map((a: any) => ({ type: a.type || '', address: a.address || '' })),
+    images: Array.isArray(s.images) ? s.images.map((img: any) => ({ names: img.names || [], sizeBytes: img.sizeBytes || 0 })) : [],
+    capacity: s.capacity || {},
+    allocatable: s.allocatable || {},
+    labels: m.labels || {},
+    annotations: m.annotations || {},
   }
 }
 
@@ -442,6 +455,7 @@ export function mapIngress(raw: any): Ingress {
       hosts: Array.isArray(t.hosts) ? t.hosts : [],
       secretName: t.secretName || '',
     })) : [],
+    labels: m.labels || undefined,
   }
 }
 
@@ -670,6 +684,7 @@ export function mapResourceQuota(raw: any): ResourceQuota {
     used: u,
     age: m.creationTimestamp || '',
     createdAt: m.creationTimestamp || '',
+    labels: m.labels || undefined,
   }
 }
 
@@ -682,6 +697,7 @@ export function mapServiceAccount(raw: any): ServiceAccount {
     secrets: Array.isArray(raw?.secrets) ? raw.secrets.length : 0,
     age: m.creationTimestamp || '',
     createdAt: m.creationTimestamp || '',
+    labels: m.labels || undefined,
   }
 }
 
