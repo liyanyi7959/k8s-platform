@@ -259,7 +259,7 @@ const ClusterListPage: React.FC = () => {
           <Button
             type="link"
             size="small"
-            loading={healthMutation.isPending}
+            loading={healthMutation.isPending && healthMutation.variables === record.id}
             onClick={() => healthMutation.mutate(record.id)}
           >
             执行检查

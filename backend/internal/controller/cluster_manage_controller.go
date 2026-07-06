@@ -172,9 +172,7 @@ func (cc *ClusterManageController) CheckHealth(c *gin.Context) {
 	lastHealthAt := ""
 	if d, err := cc.svc.GetCluster(c.Request.Context(), uint64(id)); err == nil {
 		status = d.Status
-		if d.LastHealthAt != nil {
-			lastHealthAt = *d.LastHealthAt
-		}
+		lastHealthAt = d.LastHealthAt
 	}
 	if lastHealthAt == "" {
 		lastHealthAt = nowStr

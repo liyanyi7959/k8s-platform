@@ -45,7 +45,22 @@ const SecretsPage: React.FC = () => {
   const handleViewSecret = async (record: Secret) => {
     try {
       const res = await getSecretReveal(clusterId, record.namespace, record.name)
-      setSelectedSecret({ ...record, data: { __raw__: res.text } as Record<string, string> })
+      // 解析后端返回的 JSON 文本，提取 data/stringData 各键值
+      // JSON.parse 会将字面量 \n 还原为真实换行符，使 <pre> 能正确换行展示
+      let parsedData: Record<string, string> = {}
+      try {
+        const parsed = JSON.parse(res.text)
+        if (parsed?.data && typeof parsed.data === 'object') {
+          parsedData = { ...parsedData, ...parsed.data }
+        }
+        if (parsed?.stringData && typeof parsed.stringData === 'object') {
+          parsedData = { ...parsedData, ...parsed.stringData }
+        }
+      } catch {
+        // 解析失败时回退为原始文本展示
+        parsedData = { __raw__: res.text }
+      }
+      setSelectedSecret({ ...record, data: parsedData })
     } catch {
       setSelectedSecret(record)
       message.error('获取 Secret 明文失败')

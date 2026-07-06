@@ -12,13 +12,14 @@ import (
 )
 
 type ClusterItem struct {
-	ID         uint64 `json:"id"`
-	Name       string `json:"name"`
-	Type       string `json:"type"`
-	Status     string `json:"status"`
-	K8sVersion string `json:"k8s_version,omitempty"`
-	NodeCount  int    `json:"node_count"`
-	CreatedAt  string `json:"created_at,omitempty"`
+	ID           uint64 `json:"id"`
+	Name         string `json:"name"`
+	Type         string `json:"type"`
+	Status       string `json:"status"`
+	K8sVersion   string `json:"k8s_version,omitempty"`
+	NodeCount    int    `json:"node_count"`
+	CreatedAt    string `json:"created_at,omitempty"`
+	LastHealthAt string `json:"last_health_at,omitempty"`
 }
 
 type ClusterHealth struct {
@@ -29,8 +30,7 @@ type ClusterHealth struct {
 
 type ClusterDetail struct {
 	ClusterItem
-	LastHealthAt *string        `json:"last_health_at,omitempty"`
-	Health       *ClusterHealth `json:"health,omitempty"`
+	Health *ClusterHealth `json:"health,omitempty"`
 }
 
 type ListClustersRequest struct {
@@ -91,14 +91,19 @@ func (s *ClusterRegistryService) ListClusters(ctx context.Context, req ListClust
 
 	list := make([]ClusterItem, 0, len(rows))
 	for _, c := range rows {
+		lastHealth := ""
+		if c.LastHealthAt != nil {
+			lastHealth = c.LastHealthAt.UTC().Format(time.RFC3339)
+		}
 		list = append(list, ClusterItem{
-			ID:         c.ID,
-			Name:       c.Name,
-			Type:       c.Type,
-			Status:     c.Status,
-			K8sVersion: c.K8sVersion,
-			NodeCount:  c.NodeCount,
-			CreatedAt:  c.CreatedAt.UTC().Format(time.RFC3339),
+			ID:           c.ID,
+			Name:         c.Name,
+			Type:         c.Type,
+			Status:       c.Status,
+			K8sVersion:   c.K8sVersion,
+			NodeCount:    c.NodeCount,
+			CreatedAt:    c.CreatedAt.UTC().Format(time.RFC3339),
+			LastHealthAt: lastHealth,
 		})
 	}
 	return PageResult[ClusterItem]{List: list, Total: int(total), Page: page, PageSize: pageSize}, nil
@@ -157,21 +162,20 @@ func (s *ClusterRegistryService) GetCluster(ctx context.Context, id uint64) (Clu
 		}
 		return ClusterDetail{}, err
 	}
-	var last *string
+	lastHealth := ""
 	if c.LastHealthAt != nil {
-		v := c.LastHealthAt.UTC().Format(time.RFC3339)
-		last = &v
+		lastHealth = c.LastHealthAt.UTC().Format(time.RFC3339)
 	}
 	return ClusterDetail{
 		ClusterItem: ClusterItem{
-			ID:        c.ID,
-			Name:      c.Name,
-			Type:      c.Type,
-			Status:    c.Status,
-			CreatedAt: c.CreatedAt.UTC().Format(time.RFC3339),
+			ID:           c.ID,
+			Name:         c.Name,
+			Type:         c.Type,
+			Status:       c.Status,
+			CreatedAt:    c.CreatedAt.UTC().Format(time.RFC3339),
+			LastHealthAt: lastHealth,
 		},
-		LastHealthAt: last,
-		Health:       nil,
+		Health: nil,
 	}, nil
 }
 

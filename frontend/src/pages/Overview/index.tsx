@@ -145,7 +145,7 @@ const OverviewPage: React.FC = () => {
                       >
                         <List.Item.Meta
                           avatar={
-                            <Tag color={cluster.status === 'healthy' ? 'success' : 'error'}>
+                            <Tag color={cluster.status === 'healthy' || cluster.status === 'active' ? 'success' : 'error'}>
                               {cluster.status === 'healthy' || cluster.status === 'active' ? '健康' : '异常'}
                             </Tag>
                           }

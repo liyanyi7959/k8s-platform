@@ -592,10 +592,10 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 	if s.cache != nil && s.cache.Enabled() {
 		co := cachedOverview{
 			Data:      out,
-			ExpiresAt: time.Now().Add(60 * time.Second),
+			ExpiresAt: time.Now().Add(120 * time.Second),
 		}
 		if b, err := json.Marshal(co); err == nil {
-			_ = s.cache.Set(ctx, cacheKey, b, 60*time.Second)
+			_ = s.cache.Set(ctx, cacheKey, b, 120*time.Second)
 		}
 	}
 

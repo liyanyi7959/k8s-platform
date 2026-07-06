@@ -42,6 +42,8 @@ const ClusterDashboardPage: React.FC = () => {
   const { stats, charts, anomalies, risks } = data
   const healthLabel = stats.nodes.ready === stats.nodes.total ? '健康' : '异常'
   const healthTone: 'success' | 'warning' | 'danger' = stats.nodes.ready === stats.nodes.total ? 'success' : stats.nodes.ready === 0 ? 'danger' : 'warning'
+  // 后端 cluster.status 为小写（active/degraded），需大小写不敏感判断
+  const clusterHealthy = String(data.cluster.status || '').trim().toLowerCase() === 'active'
 
   const abnormalPods = anomalies?.failed_pods || []
   const certAlerts = risks?.certificates?.filter((c) => c.status !== 'ok') || []
@@ -88,8 +90,8 @@ const ClusterDashboardPage: React.FC = () => {
               {data.cluster.name} 集群详情
             </Title>
             <Space wrap>
-              <Tag color={data.cluster.status === 'Active' ? 'success' : 'error'}>
-                {data.cluster.status === 'Active' ? '健康' : '异常'}
+              <Tag color={clusterHealthy ? 'success' : 'error'}>
+                {clusterHealthy ? '健康' : '异常'}
               </Tag>
               <Text type="secondary">版本：{data.cluster.k8s_version || '-'}</Text>
               <Text type="secondary">集群 ID：{currentCluster.id}</Text>
