@@ -25,7 +25,8 @@ const PDBsPage: React.FC = () => {
     queryKey: ['k8s-pdbs', clusterId, namespace],
     queryFn: ({ signal }) => listPDBs(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailPDB ? false : 30_000,
+    refetchInterval: detailPDB ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const { data: podsData, isLoading: podsLoading } = useQuery({

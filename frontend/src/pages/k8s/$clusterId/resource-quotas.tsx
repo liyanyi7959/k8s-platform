@@ -25,7 +25,8 @@ const ResourceQuotasPage: React.FC = () => {
     queryKey: ['k8s-resourcequotas', clusterId, namespace],
     queryFn: ({ signal }) => listResourceQuotas(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailQuota ? false : 30_000,
+    refetchInterval: detailQuota ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

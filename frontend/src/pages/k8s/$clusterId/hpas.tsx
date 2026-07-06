@@ -42,7 +42,8 @@ const HPAsPage: React.FC = () => {
     queryKey: ['k8s-hpas', clusterId, namespace],
     queryFn: ({ signal }) => listHPAs(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailHPA || editOpen || createOpen ? false : 30_000,
+    refetchInterval: detailHPA || editOpen || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

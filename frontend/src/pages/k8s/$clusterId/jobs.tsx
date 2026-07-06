@@ -33,7 +33,8 @@ const JobsPage: React.FC = () => {
     queryKey: ['k8s-jobs', clusterId, namespace],
     queryFn: ({ signal }) => listJobs(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailJob || createOpen ? false : 30_000,
+    refetchInterval: detailJob || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const { data: podsData, isLoading: podsLoading } = useQuery({

@@ -50,7 +50,8 @@ const NamespacesPage: React.FC = () => {
     queryKey: ['k8s-namespaces', clusterId],
     queryFn: ({ signal }) => listNamespaces(clusterId, signal),
     enabled: !!clusterId,
-    refetchInterval: detailNS || createOpen ? false : 30_000,
+    refetchInterval: detailNS || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

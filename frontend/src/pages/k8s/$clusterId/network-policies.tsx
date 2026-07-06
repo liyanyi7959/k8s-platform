@@ -48,7 +48,8 @@ const NetworkPoliciesPage: React.FC = () => {
     queryKey: ['k8s-networkpolicies', clusterId, namespace],
     queryFn: ({ signal }) => listNetworkPolicies(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailPolicy || createOpen ? false : 30_000,
+    refetchInterval: detailPolicy || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

@@ -22,7 +22,8 @@ const EventsPage: React.FC = () => {
     queryKey: ['k8s-events', clusterId, namespace],
     queryFn: ({ signal }) => listEvents(clusterId, namespace || undefined, signal),
     enabled: !!clusterId,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
+    staleTime: 60_000,
   })
 
   const filteredData = useMemo(() => {

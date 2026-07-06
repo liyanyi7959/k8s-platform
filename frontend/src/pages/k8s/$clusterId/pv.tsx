@@ -31,7 +31,8 @@ const PVPage: React.FC = () => {
     queryKey: ['k8s-pvs', clusterId],
     queryFn: ({ signal }) => listPersistentVolumes(clusterId, signal),
     enabled: !!clusterId,
-    refetchInterval: detailPV ? false : 30_000,
+    refetchInterval: detailPV ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

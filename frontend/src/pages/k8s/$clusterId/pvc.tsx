@@ -31,7 +31,8 @@ const PVCPage: React.FC = () => {
     queryKey: ['k8s-pvcs', clusterId, namespace],
     queryFn: ({ signal }) => listPersistentVolumeClaims(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailPVC ? false : 30_000,
+    refetchInterval: detailPVC ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

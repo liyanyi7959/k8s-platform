@@ -25,14 +25,16 @@ const RolesPage: React.FC = () => {
     queryKey: ['k8s-roles', clusterId, namespace],
     queryFn: ({ signal }) => listRoles(clusterId, namespace, signal),
     enabled: !!clusterId && activeTab === 'roles',
-    refetchInterval: detailRole ? false : 30_000,
+    refetchInterval: detailRole ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const { data: clusterRoles, isLoading: clusterRolesLoading, refetch: refetchClusterRoles } = useQuery({
     queryKey: ['k8s-clusterroles', clusterId],
     queryFn: ({ signal }) => listClusterRoles(clusterId, signal),
     enabled: !!clusterId && activeTab === 'clusterroles',
-    refetchInterval: detailRole ? false : 30_000,
+    refetchInterval: detailRole ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteRoleMutation = useMutation({

@@ -29,6 +29,8 @@ const ClusterDashboardPage: React.FC = () => {
     queryKey: ['cluster-dashboard', currentCluster?.id],
     queryFn: () => getClusterOverview(Number(currentCluster!.id)),
     enabled: !!currentCluster,
+    // 与后端缓存对齐，避免 120s 内重复请求聚合接口
+    staleTime: 120_000,
   })
 
   if (!currentCluster) {

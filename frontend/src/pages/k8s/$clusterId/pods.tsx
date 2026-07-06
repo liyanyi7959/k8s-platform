@@ -420,7 +420,8 @@ const PodsPage: React.FC = () => {
     queryFn: ({ signal }) => listPods(clusterId, { namespace: namespace || undefined }, signal),
     enabled: !!clusterId,
     // 抽屉打开时暂停轮询，避免打断编辑/查看
-    refetchInterval: (detailDrawer.open || yamlDrawer.open || logDrawer.open) ? false : 30_000,
+    refetchInterval: (detailDrawer.open || yamlDrawer.open || logDrawer.open) ? false : 60_000,
+    staleTime: 60_000,
   })
 
   // 客户端搜索筛选

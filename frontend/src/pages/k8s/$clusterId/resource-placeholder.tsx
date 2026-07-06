@@ -103,7 +103,8 @@ const K8sResourcePlaceholder: React.FC = () => {
     queryKey: ['generic-resource-page', clusterId, resourceKey, namespace],
     queryFn: () => listGenericResources(clusterId, resourceKey, canFilterNamespace ? namespace || undefined : undefined),
     enabled: !!clusterId && !isPermissionAudit,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
+    staleTime: 60_000,
   })
 
   const { data: audits, isLoading: auditsLoading } = useQuery({

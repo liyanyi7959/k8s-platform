@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   ProTable,
   ModalForm,
@@ -26,6 +26,14 @@ const secretTypeOptions = [
   { label: 'kubernetes.io/service-account-token', value: 'kubernetes.io/service-account-token' },
 ]
 
+// Secret 类型 → 标签颜色（提到组件外避免每次渲染重建）
+const secretTypeColorMap: Record<string, string> = {
+  Opaque: 'default',
+  'kubernetes.io/tls': 'green',
+  'kubernetes.io/dockerconfigjson': 'purple',
+  'kubernetes.io/service-account-token': 'orange',
+}
+
 const SecretsPage: React.FC = () => {
   const clusterId = useClusterId()
   const queryClient = useQueryClient()
@@ -39,7 +47,8 @@ const SecretsPage: React.FC = () => {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['secrets', clusterId, namespace],
     queryFn: ({ signal }) => listSecrets(clusterId, namespace, signal),
-    refetchInterval: selectedSecret || createOpen ? false : 30_000,
+    refetchInterval: selectedSecret || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const handleViewSecret = async (record: Secret) => {
@@ -76,13 +85,13 @@ const SecretsPage: React.FC = () => {
     },
   })
 
-  const filteredData = (data?.items || []).filter((item: any) => {
+  const filteredData = useMemo(() => (data?.items || []).filter((item: any) => {
     if (!searchValue) return true
     const v = searchValue.toLowerCase()
     if (searchType === 'name') return item.name.toLowerCase().includes(v)
     if (searchType === 'type') return item.type?.toLowerCase().includes(v)
     return item.dataKeys && item.dataKeys.some((k: string) => k.toLowerCase().includes(v))
-  })
+  }), [data, searchValue, searchType])
 
   const columns: ProColumns<Secret>[] = [
     {
@@ -107,13 +116,7 @@ const SecretsPage: React.FC = () => {
       align: 'center' as const,
       render: (_, record) => {
         const type = record.type || 'Opaque'
-        const colorMap: Record<string, string> = {
-          Opaque: 'default',
-          'kubernetes.io/tls': 'green',
-          'kubernetes.io/dockerconfigjson': 'purple',
-          'kubernetes.io/service-account-token': 'orange',
-        }
-        return <Tag color={colorMap[type] || 'default'}>{type}</Tag>
+        return <Tag color={secretTypeColorMap[type] || 'default'}>{type}</Tag>
       },
     },
     {

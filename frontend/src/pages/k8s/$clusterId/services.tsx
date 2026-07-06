@@ -52,7 +52,8 @@ const ServicesPage: React.FC = () => {
     queryKey: ['services', clusterId, namespace],
     queryFn: ({ signal }) => listServices(clusterId, { namespace: namespace || '' }, signal),
     enabled: !!clusterId,
-    refetchInterval: detailService || editOpen || createOpen ? false : 30_000,
+    refetchInterval: detailService || editOpen || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const { data: podsData, isLoading: podsLoading } = useQuery({
@@ -72,7 +73,8 @@ const ServicesPage: React.FC = () => {
     queryKey: ['k8s-endpoints', clusterId, namespace],
     queryFn: ({ signal }) => listGenericResources(clusterId, 'endpoints', namespace || undefined, signal),
     enabled: !!clusterId,
-    refetchInterval: detailService || editOpen || createOpen ? false : 30_000,
+    refetchInterval: detailService || editOpen || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const endpointsCountMap = useMemo(() => {

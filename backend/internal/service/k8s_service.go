@@ -53,7 +53,7 @@ const k8sListPageLimit int64 = 500
 // NewK8sService 创建 K8sService。
 func NewK8sService(clusterReg *ClusterRegistryService, cacheStore CacheStore, podCacheTTL time.Duration, insecureSkipTLS ...bool) *K8sService {
 	if podCacheTTL <= 0 {
-		podCacheTTL = 20 * time.Second
+		podCacheTTL = 60 * time.Second
 	}
 	skip := false
 	if len(insecureSkipTLS) > 0 {

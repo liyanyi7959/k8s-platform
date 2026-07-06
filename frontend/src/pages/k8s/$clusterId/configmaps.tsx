@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   ProTable,
   ModalForm,
@@ -31,7 +31,8 @@ const ConfigMapsPage: React.FC = () => {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['configmaps', clusterId, namespace],
     queryFn: ({ signal }) => listConfigMaps(clusterId, { namespace }, signal),
-    refetchInterval: selectedCM || createOpen ? false : 30_000,
+    refetchInterval: selectedCM || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({
@@ -43,12 +44,12 @@ const ConfigMapsPage: React.FC = () => {
     },
   })
 
-  const filteredData = (data?.items || []).filter((item: any) => {
+  const filteredData = useMemo(() => (data?.items || []).filter((item: any) => {
     if (!searchValue) return true
     const v = searchValue.toLowerCase()
     if (searchType === 'name') return item.name.toLowerCase().includes(v)
     return item.data && Object.keys(item.data).some(k => k.toLowerCase().includes(v))
-  })
+  }), [data, searchValue, searchType])
 
   const columns: ProColumns<ConfigMap>[] = [
     {

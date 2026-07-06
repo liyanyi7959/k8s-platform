@@ -24,7 +24,8 @@ const StorageClassesPage: React.FC = () => {
     queryKey: ['k8s-storageclasses', clusterId],
     queryFn: ({ signal }) => listStorageClasses(clusterId, signal),
     enabled: !!clusterId,
-    refetchInterval: detailSC ? false : 30_000,
+    refetchInterval: detailSC ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

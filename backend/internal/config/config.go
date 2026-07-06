@@ -147,7 +147,7 @@ func Default() Config {
 			Addr:       "127.0.0.1:6379",
 			Password:   "",
 			DB:         0,
-			DefaultTTL: "20s",
+			DefaultTTL: "60s",
 		},
 		Log: LogConfig{
 			Level:  "info",
@@ -283,7 +283,7 @@ func (c Config) ParsedShutdownTimeout() time.Duration {
 	return parseDurationOrDefault(c.Server.ShutdownTimeout, 10*time.Second)
 }
 func (c Config) ParsedRedisDefaultTTL() time.Duration {
-	return parseDurationOrDefault(c.Redis.DefaultTTL, 20*time.Second)
+	return parseDurationOrDefault(c.Redis.DefaultTTL, 60*time.Second)
 }
 
 func (c Config) ParsedAIToolTimeout() time.Duration {

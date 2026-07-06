@@ -26,7 +26,8 @@ const ReplicaSetsPage: React.FC = () => {
     queryKey: ['k8s-replicasets', clusterId, namespace],
     queryFn: ({ signal }) => listReplicaSets(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailRS ? false : 30_000,
+    refetchInterval: detailRS ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

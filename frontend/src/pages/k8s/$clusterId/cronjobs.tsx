@@ -80,7 +80,8 @@ const CronJobsPage: React.FC = () => {
     queryKey: ['k8s-cronjobs', clusterId, namespace],
     queryFn: ({ signal }) => listCronJobs(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailCronJob || createOpen ? false : 30_000,
+    refetchInterval: detailCronJob || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const { data: jobsData, isLoading: jobsLoading } = useQuery({

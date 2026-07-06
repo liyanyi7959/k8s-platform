@@ -30,14 +30,16 @@ const RoleBindingsPage: React.FC = () => {
     queryKey: ['k8s-rolebindings', clusterId, namespace],
     queryFn: ({ signal }) => listRoleBindings(clusterId, namespace, signal),
     enabled: !!clusterId && activeTab === 'rolebindings',
-    refetchInterval: detailBinding ? false : 30_000,
+    refetchInterval: detailBinding ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const { data: clusterRoleBindings, isLoading: crbLoading, refetch: refetchCRB } = useQuery({
     queryKey: ['k8s-clusterrolebindings', clusterId],
     queryFn: ({ signal }) => listClusterRoleBindings(clusterId, signal),
     enabled: !!clusterId && activeTab === 'clusterrolebindings',
-    refetchInterval: detailBinding ? false : 30_000,
+    refetchInterval: detailBinding ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteRBMutation = useMutation({

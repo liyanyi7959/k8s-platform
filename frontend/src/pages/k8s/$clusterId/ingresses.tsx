@@ -28,7 +28,8 @@ const IngressesPage: React.FC = () => {
     queryKey: ['k8s-ingresses', clusterId, namespace],
     queryFn: ({ signal }) => listIngresses(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailIngress || editOpen || createOpen ? false : 30_000,
+    refetchInterval: detailIngress || editOpen || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

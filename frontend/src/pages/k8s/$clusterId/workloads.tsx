@@ -2,7 +2,7 @@
  * 工作负载管理页
  * 完整功能：Deployment/DaemonSet/StatefulSet 列表+创建+编辑+扩缩容+重启+镜像更新+暂停恢复+版本历史+YAML+删除
  */
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import {
   ProTable,
   ModalForm,
@@ -149,7 +149,8 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
     queryKey: ['k8s-workloads', clusterId, namespace, workloadKind],
     queryFn: ({ signal }) => getDeployments(clusterId, namespace || undefined, signal, workloadKind),
     enabled: !!clusterId,
-    refetchInterval: anyOverlayOpen ? false : 30000,
+    refetchInterval: anyOverlayOpen ? false : 60000,
+    staleTime: 60_000,
   })
 
   // 详情抽屉：关联 Pod 列表
@@ -185,7 +186,7 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
   })
 
   // 过滤后的数据（按 searchType/searchValue 和 statusFilter 过滤）
-  const filteredData = (data?.items || []).filter((item: any) => {
+  const filteredData = useMemo(() => (data?.items || []).filter((item: any) => {
     let matchSearch = true
     if (searchValue) {
       const v = searchValue.toLowerCase()
@@ -204,15 +205,15 @@ export default function WorkloadsPage({ fixedKind }: WorkloadsPageProps) {
     else if (statusFilter === 'notReady') matchStatus = !isReady
     else if (statusFilter === 'paused') matchStatus = !!item.paused
     return matchSearch && matchStatus
-  })
+  }), [data, searchValue, searchType, statusFilter])
 
   // 详情抽屉：关联 Pod（ownerKind 为 ReplicaSet 且 ownerName 以 deployment 名称开头）
-  const relatedPods = (podsData?.items || []).filter((pod: any) => {
+  const relatedPods = useMemo(() => (podsData?.items || []).filter((pod: any) => {
     return (
       pod.ownerKind === 'ReplicaSet' &&
       (pod.ownerName || '').startsWith(detailDrawer.record?.name + '-')
     )
-  })
+  }), [podsData, detailDrawer.record?.name])
 
   // ═══ Mutations ═══
   const createMutation = useMutation({

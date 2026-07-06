@@ -26,7 +26,8 @@ const ServiceAccountsPage: React.FC = () => {
     queryKey: ['k8s-serviceaccounts', clusterId, namespace],
     queryFn: ({ signal }) => listServiceAccounts(clusterId, namespace, signal),
     enabled: !!clusterId,
-    refetchInterval: detailSA || createOpen ? false : 30_000,
+    refetchInterval: detailSA || createOpen ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const deleteMutation = useMutation({

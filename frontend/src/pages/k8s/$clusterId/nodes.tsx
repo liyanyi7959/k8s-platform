@@ -96,7 +96,8 @@ export default function NodesPage() {
     queryKey: ['k8s-nodes', clusterId],
     queryFn: ({ signal }) => getNodes(clusterId, signal),
     enabled: !!clusterId,
-    refetchInterval: detailDrawer.open || yamlDrawer.open || drainModal.open ? false : 30_000,
+    refetchInterval: detailDrawer.open || yamlDrawer.open || drainModal.open ? false : 60_000,
+    staleTime: 60_000,
   })
 
   // ═══ All Pods (for pod count per node) ═══
@@ -104,7 +105,8 @@ export default function NodesPage() {
     queryKey: ['k8s-all-pods', clusterId],
     queryFn: ({ signal }) => listPods(clusterId, {}, signal),
     enabled: !!clusterId,
-    refetchInterval: detailDrawer.open || yamlDrawer.open || drainModal.open ? false : 30_000,
+    refetchInterval: detailDrawer.open || yamlDrawer.open || drainModal.open ? false : 60_000,
+    staleTime: 60_000,
   })
 
   const nodePodCountMap = useMemo(() => {
