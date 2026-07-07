@@ -142,7 +142,7 @@ export async function getRoutes() {
 '132': React.lazy(() => import(/* webpackChunkName: "p__k8s__$clusterId__mutatingwebhooks" */'@/pages/k8s/$clusterId/mutatingwebhooks.tsx')),
 '133': React.lazy(() => import(/* webpackChunkName: "p__k8s__$clusterId__validatingadmissionpolicies" */'@/pages/k8s/$clusterId/validatingadmissionpolicies.tsx')),
 '134': React.lazy(() => import(/* webpackChunkName: "p__k8s__$clusterId__validatingadmissionpolicybindings" */'@/pages/k8s/$clusterId/validatingadmissionpolicybindings.tsx')),
-'135': React.lazy(() => import(/* webpackChunkName: "p__k8s__$clusterId__resource-placeholder" */'@/pages/k8s/$clusterId/resource-placeholder.tsx')),
+'135': React.lazy(() => import(/* webpackChunkName: "p__k8s__$clusterId__permission-audits" */'@/pages/k8s/$clusterId/permission-audits.tsx')),
 '136': React.lazy(() => import(/* webpackChunkName: "p__k8s__$clusterId__topology" */'@/pages/k8s/$clusterId/topology.tsx')),
 '137': React.lazy(() => import(/* webpackChunkName: "p__403" */'@/pages/403.tsx')),
 '138': React.lazy(() => import(/* webpackChunkName: "p__404" */'@/pages/404.tsx')),

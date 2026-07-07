@@ -390,12 +390,12 @@ func gvrLeases() schema.GroupVersionResource {
 }
 
 func gvrWorkloadKind(kind string) (schema.GroupVersionResource, bool) {
-	switch strings.TrimSpace(kind) {
-	case "Deployment":
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "deployments", "deployment":
 		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}, true
-	case "StatefulSet":
+	case "statefulsets", "statefulset":
 		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}, true
-	case "DaemonSet":
+	case "daemonsets", "daemonset":
 		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}, true
 	default:
 		return schema.GroupVersionResource{}, false

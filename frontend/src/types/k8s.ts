@@ -491,3 +491,21 @@ export interface K8sTreeNode {
   iconUrl?: string
   children?: K8sTreeNode[]
 }
+
+/** RBAC 权限矩阵 - 单行权限规则 */
+export interface RBACMatrixRow {
+  api_group: string
+  resources: string[]
+  verbs: string[]
+  scope: 'cluster' | 'namespace'
+  label: string
+}
+
+/** RBAC 权限矩阵 - 完整请求 */
+export interface RBACMatrixRequest {
+  service_account: string
+  sa_namespace: string
+  target_namespaces: string[]
+  cluster_rows: RBACMatrixRow[]
+  namespace_rows: RBACMatrixRow[]
+}

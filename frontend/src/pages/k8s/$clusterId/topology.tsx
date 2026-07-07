@@ -15,6 +15,8 @@ import {
   Badge,
   Divider,
   Select,
+  Radio,
+  message,
 } from 'antd'
 import {
   SearchOutlined,
@@ -31,7 +33,7 @@ import {
   ApartmentOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons'
-import { AppPage } from '@/components'
+import { AppPage, YamlEditor } from '@/components'
 import { useQuery } from '@tanstack/react-query'
 import {
   getNodes,
@@ -41,6 +43,9 @@ import {
   getK8sServices,
   getConfigMaps,
   getResourceYaml,
+  listSecrets,
+  listIngresses,
+  listGenericResources,
 } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
 
@@ -88,6 +93,11 @@ const RESOURCE_CONFIGS: ResourceConfig[] = [
     color: '#6366f1',
     bg: '#eef2ff',
   },
+  { key: 'statefulset', label: 'StatefulSet', icon: <CloudServerOutlined />, color: '#0d9488', bg: '#f0fdfa' },
+  { key: 'daemonset', label: 'DaemonSet', icon: <CloudServerOutlined />, color: '#65a30d', bg: '#f7fee7' },
+  { key: 'secret', label: 'Secret', icon: <BlockOutlined />, color: '#be185d', bg: '#fdf2f8' },
+  { key: 'pvc', label: 'PVC', icon: <HddOutlined />, color: '#0369a1', bg: '#f0f9ff' },
+  { key: 'ingress', label: 'Ingress', icon: <ApartmentOutlined />, color: '#c2410c', bg: '#fff7ed' },
 ]
 
 function getConfig(type: string): ResourceConfig {
@@ -113,40 +123,95 @@ interface TopoEdge {
   source: string
   target: string
   label?: string
+  type?: 'owns' | 'contains' | 'routes' | 'uses' // 关系类型
+}
+
+// 连线样式分类
+const edgeStyleMap: Record<string, { stroke: string; dasharray?: string; width: number }> = {
+  owns: { stroke: '#2563eb', dasharray: undefined, width: 2 },
+  contains: { stroke: '#cbd5e1', dasharray: '6,4', width: 1.5 },
+  routes: { stroke: '#c2410c', dasharray: '8,3', width: 2 },
+  default: { stroke: '#94a3b8', dasharray: '6,4', width: 1.5 },
+}
+
+// 节点类型 → K8s 资源类型映射（用于加载 YAML）
+const NODE_TYPE_TO_RESOURCE: Record<string, string> = {
+  node: 'nodes',
+  namespace: 'namespaces',
+  deployment: 'deployments',
+  statefulset: 'statefulsets',
+  daemonset: 'daemonsets',
+  pod: 'pods',
+  service: 'services',
+  configmap: 'configmaps',
+  secret: 'secrets',
+  pvc: 'pvcs',
+  ingress: 'ingresses',
+}
+
+// ═══════════════════════════════════════
+// BFS 查找全链路关联节点
+// ═══════════════════════════════════════
+function findRelatedNodeIds(startId: string, allEdges: TopoEdge[]): Set<string> {
+  const ids = new Set<string>([startId])
+  const queue = [startId]
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    allEdges.forEach((e) => {
+      if (e.source === current && !ids.has(e.target)) {
+        ids.add(e.target)
+        queue.push(e.target)
+      }
+      if (e.target === current && !ids.has(e.source)) {
+        ids.add(e.source)
+        queue.push(e.source)
+      }
+    })
+  }
+  return ids
 }
 
 // ═══════════════════════════════════════
 // 自动布局 - 分层布局
 // ═══════════════════════════════════════
 function autoLayout(nodes: TopoNode[], _edges: TopoEdge[]): TopoNode[] {
-  const layers: Record<string, string[]> = {
-    node: [],
-    namespace: [],
-    deployment: [],
-    pod: [],
-    service: [],
-    configmap: [],
-  }
+  // 层级顺序：node → namespace → ingress → deployment/statefulset/daemonset → service → pod → configmap/secret/pvc
+  const layerOrder = [
+    'node',
+    'namespace',
+    'ingress',
+    'deployment',
+    'statefulset',
+    'daemonset',
+    'service',
+    'pod',
+    'configmap',
+    'secret',
+    'pvc',
+  ]
+  const layers: Record<string, TopoNode[]> = {}
+  layerOrder.forEach((k) => (layers[k] = []))
   nodes.forEach((n) => {
-    if (layers[n.type]) layers[n.type]!.push(n.id)
+    if (layers[n.type]) layers[n.type]!.push(n)
   })
+  // 每层内按名称排序，减少重叠
+  Object.values(layers).forEach((arr) => arr.sort((a, b) => a.name.localeCompare(b.name)))
 
-  const layerOrder = ['node', 'namespace', 'deployment', 'service', 'pod', 'configmap']
   const nodeMap = new Map(nodes.map((n) => [n.id, { ...n }]))
-  const layerWidth = 280
-  const nodeHeight = 100
+  const layerWidth = 300
+  const nodeHeight = 90
   const gapX = 60
-  const gapY = 40
+  const gapY = 50
 
   let currentX = 60
   layerOrder.forEach((layerKey) => {
-    const ids = layers[layerKey] || []
-    if (ids.length === 0) return
-    ids.forEach((id, idx) => {
-      const node = nodeMap.get(id)
-      if (node) {
-        node.x = currentX
-        node.y = 60 + idx * (nodeHeight + gapY)
+    const arr = layers[layerKey] || []
+    if (arr.length === 0) return
+    arr.forEach((node, idx) => {
+      const n = nodeMap.get(node.id)
+      if (n) {
+        n.x = currentX
+        n.y = 60 + idx * (nodeHeight + gapY)
       }
     })
     currentX += layerWidth + gapX
@@ -272,45 +337,103 @@ const K8sTopologyPage: React.FC = () => {
     panY: number
   } | null>(null)
   const [activeTypes, setActiveTypes] = useState<string[]>(RESOURCE_CONFIGS.map((c) => c.key))
+  // 筛选模式：all=全量 / namespace=命名空间 / pod=Pod链路
+  const [filterMode, setFilterMode] = useState<'all' | 'namespace' | 'pod'>('all')
+  const [selectedNamespaces, setSelectedNamespaces] = useState<string[]>([])
+  const [selectedPodId, setSelectedPodId] = useState<string | undefined>(undefined)
   const svgRef = useRef<SVGSVGElement>(null)
   const [svgSize, setSvgSize] = useState({ w: 1200, h: 700 })
 
   // ═══ Load resources ═══
+  const topoQueryOpts = { staleTime: 120_000 } as const
   const { data: k8sNodes, isLoading: loadingNodes } = useQuery({
     queryKey: ['k8s-nodes', clusterId],
     queryFn: ({ signal }) => getNodes(clusterId, signal),
+    ...topoQueryOpts,
   })
   const { data: k8sNamespaces, isLoading: loadingNS } = useQuery({
     queryKey: ['k8s-namespaces', clusterId],
     queryFn: ({ signal }) => getNamespaces(clusterId, signal),
+    ...topoQueryOpts,
   })
   const { data: k8sDeployments, isLoading: loadingDeploy } = useQuery({
     queryKey: ['k8s-deployments', clusterId, ''],
     queryFn: ({ signal }) => getDeployments(clusterId, undefined, signal),
+    ...topoQueryOpts,
   })
   const { data: k8sPods, isLoading: loadingPods } = useQuery({
     queryKey: ['k8s-pods', clusterId, ''],
     queryFn: ({ signal }) => getPods(clusterId, undefined, signal),
+    ...topoQueryOpts,
   })
   const { data: k8sServices, isLoading: loadingSvc } = useQuery({
     queryKey: ['k8s-services', clusterId, ''],
     queryFn: ({ signal }) => getK8sServices(clusterId, undefined, signal),
+    ...topoQueryOpts,
   })
   const { data: k8sConfigMaps, isLoading: loadingCM } = useQuery({
     queryKey: ['k8s-configmaps', clusterId, ''],
     queryFn: ({ signal }) => getConfigMaps(clusterId, undefined, signal),
+    ...topoQueryOpts,
+  })
+  // StatefulSet
+  const { data: k8sStatefulSets, isLoading: loadingSts } = useQuery({
+    queryKey: ['k8s-statefulsets', clusterId, ''],
+    queryFn: ({ signal }) => listGenericResources(Number(clusterId), 'statefulsets', undefined, signal),
+    enabled: !!clusterId,
+    ...topoQueryOpts,
+  })
+  // DaemonSet
+  const { data: k8sDaemonSets, isLoading: loadingDS } = useQuery({
+    queryKey: ['k8s-daemonsets', clusterId, ''],
+    queryFn: ({ signal }) => listGenericResources(Number(clusterId), 'daemonsets', undefined, signal),
+    enabled: !!clusterId,
+    ...topoQueryOpts,
+  })
+  // Secret
+  const { data: k8sSecrets, isLoading: loadingSecret } = useQuery({
+    queryKey: ['k8s-secrets-topo', clusterId, ''],
+    queryFn: ({ signal }) => listSecrets(Number(clusterId), undefined, signal),
+    enabled: !!clusterId,
+    ...topoQueryOpts,
+  })
+  // PVC
+  const { data: k8sPVCs, isLoading: loadingPVC } = useQuery({
+    queryKey: ['k8s-pvcs-topo', clusterId, ''],
+    queryFn: ({ signal }) => listGenericResources(Number(clusterId), 'persistentvolumeclaims', undefined, signal),
+    enabled: !!clusterId,
+    ...topoQueryOpts,
+  })
+  // Ingress
+  const { data: k8sIngresses, isLoading: loadingIngress } = useQuery({
+    queryKey: ['k8s-ingresses-topo', clusterId, ''],
+    queryFn: ({ signal }) => listIngresses(Number(clusterId), undefined, signal),
+    enabled: !!clusterId,
+    ...topoQueryOpts,
   })
 
   const isLoading =
-    loadingNodes || loadingNS || loadingDeploy || loadingPods || loadingSvc || loadingCM
+    loadingNodes ||
+    loadingNS ||
+    loadingDeploy ||
+    loadingPods ||
+    loadingSvc ||
+    loadingCM ||
+    loadingSts ||
+    loadingDS ||
+    loadingSecret ||
+    loadingPVC ||
+    loadingIngress
 
   // ═══ Build topology ═══
+  // 限制各类型最大展示数量，避免大集群节点过多导致卡顿
+  const MAX_PER_TYPE = 50
   useEffect(() => {
     if (isLoading) return
     const topoNodes: TopoNode[] = []
     const topoEdges: TopoEdge[] = []
 
-    k8sNodes?.items?.forEach((n) => {
+    k8sNodes?.items?.slice(0, MAX_PER_TYPE).forEach((n) => {
       topoNodes.push({
         id: `node:${n.name}`,
         type: 'node',
@@ -322,7 +445,7 @@ const K8sTopologyPage: React.FC = () => {
       })
     })
 
-    k8sNamespaces?.items?.forEach((ns) => {
+    k8sNamespaces?.items?.slice(0, MAX_PER_TYPE).forEach((ns) => {
       topoNodes.push({
         id: `ns:${ns.name}`,
         type: 'namespace',
@@ -334,7 +457,7 @@ const K8sTopologyPage: React.FC = () => {
       })
     })
 
-    k8sDeployments?.items?.forEach((d) => {
+    k8sDeployments?.items?.slice(0, MAX_PER_TYPE).forEach((d) => {
       const id = `deploy:${d.namespace}/${d.name}`
       topoNodes.push({
         id,
@@ -348,10 +471,10 @@ const K8sTopologyPage: React.FC = () => {
       })
       const nsEdge = topoEdges.find((e) => e.source === `ns:${d.namespace}`)
       if (!nsEdge)
-        topoEdges.push({ id: `ns:${d.namespace}->${id}`, source: `ns:${d.namespace}`, target: id })
+        topoEdges.push({ id: `ns:${d.namespace}->${id}`, source: `ns:${d.namespace}`, target: id, type: 'contains' })
     })
 
-    k8sPods?.items?.forEach((p) => {
+    k8sPods?.items?.slice(0, MAX_PER_TYPE).forEach((p) => {
       const id = `pod:${p.namespace}/${p.name}`
       topoNodes.push({
         id,
@@ -364,12 +487,32 @@ const K8sTopologyPage: React.FC = () => {
         meta: p,
       })
       if (p.ownerName) {
-        const ownerId = `deploy:${p.namespace}/${p.ownerName}`
-        topoEdges.push({ id: `${ownerId}->${id}`, source: ownerId, target: id, label: 'owns' })
+        // 根据 ownerKind 判断前缀：StatefulSet→sts / DaemonSet→ds / 其他→deploy
+        const ownerKindLower = (p.ownerKind || '').toLowerCase()
+        const ownerPrefix =
+          ownerKindLower === 'statefulset' ? 'sts' : ownerKindLower === 'daemonset' ? 'ds' : 'deploy'
+        const ownerId = `${ownerPrefix}:${p.namespace}/${p.ownerName}`
+        topoEdges.push({ id: `${ownerId}->${id}`, source: ownerId, target: id, label: 'owns', type: 'owns' })
+      }
+      // 通过 Pod volumes 建立 ConfigMap/Secret/PVC → Pod 的连线
+      if (Array.isArray(p.volumes)) {
+        for (const vol of p.volumes) {
+          if (!vol.source) continue
+          if (vol.type === 'ConfigMap') {
+            const cmId = `cm:${p.namespace}/${vol.source}`
+            topoEdges.push({ id: `${cmId}->${id}`, source: cmId, target: id, label: 'mounts', type: 'uses' })
+          } else if (vol.type === 'Secret') {
+            const secretId = `secret:${p.namespace}/${vol.source}`
+            topoEdges.push({ id: `${secretId}->${id}`, source: secretId, target: id, label: 'mounts', type: 'uses' })
+          } else if (vol.type === 'PVC') {
+            const pvcId = `pvc:${p.namespace}/${vol.source}`
+            topoEdges.push({ id: `${pvcId}->${id}`, source: pvcId, target: id, label: 'mounts', type: 'uses' })
+          }
+        }
       }
     })
 
-    k8sServices?.items?.forEach((s) => {
+    k8sServices?.items?.slice(0, MAX_PER_TYPE).forEach((s) => {
       const id = `svc:${s.namespace}/${s.name}`
       topoNodes.push({
         id,
@@ -381,10 +524,25 @@ const K8sTopologyPage: React.FC = () => {
         y: 0,
         meta: s,
       })
-      topoEdges.push({ id: `ns:${s.namespace}->${id}`, source: `ns:${s.namespace}`, target: id })
+      topoEdges.push({ id: `ns:${s.namespace}->${id}`, source: `ns:${s.namespace}`, target: id, type: 'contains' })
+      // 通过 selector 匹配 Pod labels，建立 Service → Pod 连线
+      if (s.selector && typeof s.selector === 'object') {
+        const selectorEntries = Object.entries(s.selector)
+        if (selectorEntries.length > 0) {
+          k8sPods?.items?.slice(0, MAX_PER_TYPE).forEach((p) => {
+            if (p.namespace !== s.namespace) return
+            const podLabels = p.labels || {}
+            const match = selectorEntries.every(([k, v]) => podLabels[k] === v)
+            if (match) {
+              const podId = `pod:${p.namespace}/${p.name}`
+              topoEdges.push({ id: `${id}->${podId}`, source: id, target: podId, label: 'selects', type: 'routes' })
+            }
+          })
+        }
+      }
     })
 
-    k8sConfigMaps?.items?.forEach((cm) => {
+    k8sConfigMaps?.items?.slice(0, MAX_PER_TYPE).forEach((cm) => {
       const id = `cm:${cm.namespace}/${cm.name}`
       topoNodes.push({
         id,
@@ -395,12 +553,136 @@ const K8sTopologyPage: React.FC = () => {
         y: 0,
         meta: cm,
       })
+      topoEdges.push({ id: `ns:${cm.namespace}->${id}`, source: `ns:${cm.namespace}`, target: id, type: 'contains' })
+    })
+
+    // StatefulSet 节点
+    k8sStatefulSets?.items?.slice(0, MAX_PER_TYPE).forEach((st) => {
+      const id = `sts:${st.namespace}/${st.name}`
+      topoNodes.push({
+        id,
+        type: 'statefulset',
+        name: st.name,
+        namespace: st.namespace,
+        status: `${st.raw?.status?.readyReplicas || 0}/${st.raw?.status?.replicas || 0}`,
+        x: 0,
+        y: 0,
+        meta: st,
+      })
+      // 关联到 namespace
+      topoEdges.push({
+        id: `ns:${st.namespace}->${id}`,
+        source: `ns:${st.namespace}`,
+        target: id,
+        label: 'contains',
+        type: 'contains',
+      })
+    })
+
+    // DaemonSet 节点
+    k8sDaemonSets?.items?.slice(0, MAX_PER_TYPE).forEach((ds) => {
+      const id = `ds:${ds.namespace}/${ds.name}`
+      topoNodes.push({
+        id,
+        type: 'daemonset',
+        name: ds.name,
+        namespace: ds.namespace,
+        status: `${ds.raw?.status?.numberReady || 0}/${ds.raw?.status?.desiredNumberScheduled || 0}`,
+        x: 0,
+        y: 0,
+        meta: ds,
+      })
+      // 关联到 namespace
+      topoEdges.push({
+        id: `ns:${ds.namespace}->${id}`,
+        source: `ns:${ds.namespace}`,
+        target: id,
+        label: 'contains',
+        type: 'contains',
+      })
+    })
+
+    // Secret 节点
+    k8sSecrets?.items?.slice(0, MAX_PER_TYPE).forEach((s) => {
+      const id = `secret:${s.namespace}/${s.name}`
+      topoNodes.push({
+        id,
+        type: 'secret',
+        name: s.name,
+        namespace: s.namespace,
+        status: s.type,
+        x: 0,
+        y: 0,
+        meta: s,
+      })
+      topoEdges.push({ id: `ns:${s.namespace}->${id}`, source: `ns:${s.namespace}`, target: id, type: 'contains' })
+    })
+
+    // PVC 节点
+    k8sPVCs?.items?.slice(0, MAX_PER_TYPE).forEach((pvc) => {
+      const id = `pvc:${pvc.namespace}/${pvc.name}`
+      topoNodes.push({
+        id,
+        type: 'pvc',
+        name: pvc.name,
+        namespace: pvc.namespace,
+        status: pvc.raw?.status?.phase,
+        x: 0,
+        y: 0,
+        meta: pvc,
+      })
+      topoEdges.push({ id: `ns:${pvc.namespace}->${id}`, source: `ns:${pvc.namespace}`, target: id, type: 'contains' })
+    })
+
+    // Ingress 节点 + 关联到 Service
+    k8sIngresses?.items?.slice(0, MAX_PER_TYPE).forEach((ing) => {
+      const id = `ingress:${ing.namespace}/${ing.name}`
+      topoNodes.push({
+        id,
+        type: 'ingress',
+        name: ing.name,
+        namespace: ing.namespace,
+        x: 0,
+        y: 0,
+        meta: ing,
+      })
+      // 关联到 Service（Ingress.rules 直接包含 spec.rules）
+      const rules = ing.rules || []
+      rules.forEach((rule: any) => {
+        const paths = rule.http?.paths || []
+        paths.forEach((p: any) => {
+          const svcName = p.backend?.service?.name || p.backend?.serviceName
+          if (svcName) {
+            const svcId = `svc:${ing.namespace}/${svcName}`
+            topoEdges.push({
+              id: `${id}->${svcId}`,
+              source: id,
+              target: svcId,
+              label: 'routes',
+              type: 'routes',
+            })
+          }
+        })
+      })
     })
 
     const laid = autoLayout(topoNodes, topoEdges)
     setNodes(laid)
     setEdges(topoEdges)
-  }, [k8sNodes, k8sNamespaces, k8sDeployments, k8sPods, k8sServices, k8sConfigMaps, isLoading])
+  }, [
+    k8sNodes,
+    k8sNamespaces,
+    k8sDeployments,
+    k8sPods,
+    k8sServices,
+    k8sConfigMaps,
+    k8sStatefulSets,
+    k8sDaemonSets,
+    k8sSecrets,
+    k8sPVCs,
+    k8sIngresses,
+    isLoading,
+  ])
 
   // ═══ Responsive SVG size ═══
   useEffect(() => {
@@ -472,41 +754,22 @@ const K8sTopologyPage: React.FC = () => {
     [pan],
   )
 
-  // ═══ Zoom ═══
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault()
-    setZoom((z) => Math.min(2, Math.max(0.3, z + (e.deltaY < 0 ? 0.1 : -0.1))))
-  }, [])
-
   // ═══ Select node ═══
   const handleNodeClick = useCallback(
     async (node: TopoNode) => {
       setSelectedNode(node)
       setYamlContent('')
-      if (
-        node.type === 'node' ||
-        node.type === 'deployment' ||
-        node.type === 'pod' ||
-        node.type === 'service' ||
-        node.type === 'configmap'
-      ) {
-        const resourceType =
-          node.type === 'node'
-            ? 'nodes'
-            : node.type === 'deployment'
-              ? 'deployments'
-              : node.type === 'pod'
-                ? 'pods'
-                : node.type === 'service'
-                  ? 'services'
-                  : 'configmaps'
+      const resourceType = NODE_TYPE_TO_RESOURCE[node.type]
+      if (resourceType) {
         const ns = node.namespace || 'default'
         setYamlLoading(true)
         try {
-          const res = await getResourceYaml(clusterId, resourceType, ns, node.name)
-          setYamlContent(typeof res === 'string' ? res : JSON.stringify(res, null, 2))
-        } catch {
-          setYamlContent('获取 YAML 失败')
+          const res = await getResourceYaml(Number(clusterId), resourceType, ns, node.name)
+          // 替换 YAML 内容中 JSON 转义的 \n 字面量为真实换行，确保 pre 正确显示
+          setYamlContent((res.yaml || '').replace(/\\n/g, '\n'))
+        } catch (e: any) {
+          const errMsg = e?.message || e?.response?.data?.message || String(e)
+          setYamlContent(`# 获取 YAML 失败\n# 错误: ${errMsg}\n# 资源: ${resourceType}/${ns}/${node.name}`)
         } finally {
           setYamlLoading(false)
         }
@@ -517,7 +780,7 @@ const K8sTopologyPage: React.FC = () => {
 
   // ═══ Search & Filter ═══
   const filteredNodes = useMemo(() => {
-    return nodes.filter((n) => {
+    let result = nodes.filter((n) => {
       if (!activeTypes.includes(n.type)) return false
       if (
         search &&
@@ -527,21 +790,37 @@ const K8sTopologyPage: React.FC = () => {
         return false
       return true
     })
-  }, [nodes, search, activeTypes])
+
+    // 命名空间模式：仅展示选中命名空间下的资源
+    if (filterMode === 'namespace' && selectedNamespaces.length > 0) {
+      const nsSet = new Set(selectedNamespaces)
+      result = result.filter((n) => {
+        // 节点（node）为集群级资源，保留展示
+        if (n.type === 'node') return true
+        // 命名空间节点按名称匹配
+        if (n.type === 'namespace') return nsSet.has(n.name)
+        return !!n.namespace && nsSet.has(n.namespace)
+      })
+    }
+
+    // Pod 链路模式：仅展示选中 Pod 的全链路关联节点
+    if (filterMode === 'pod' && selectedPodId) {
+      const relatedIds = findRelatedNodeIds(selectedPodId, edges)
+      result = result.filter((n) => relatedIds.has(n.id))
+    }
+
+    return result
+  }, [nodes, search, activeTypes, filterMode, selectedNamespaces, selectedPodId, edges])
 
   const filteredEdges = useMemo(() => {
     const nodeIds = new Set(filteredNodes.map((n) => n.id))
     return edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
   }, [edges, filteredNodes])
 
+  // 全链路高亮：BFS 递归查找所有关联节点
   const highlightedIds = useMemo(() => {
     if (!selectedNode) return new Set<string>()
-    const ids = new Set<string>([selectedNode.id])
-    edges.forEach((e) => {
-      if (e.source === selectedNode.id) ids.add(e.target)
-      if (e.target === selectedNode.id) ids.add(e.source)
-    })
-    return ids
+    return findRelatedNodeIds(selectedNode.id, edges)
   }, [selectedNode, edges])
 
   // ═══ Stats ═══
@@ -550,14 +829,34 @@ const K8sTopologyPage: React.FC = () => {
       nodes: nodes.filter((n) => n.type === 'node').length,
       namespaces: nodes.filter((n) => n.type === 'namespace').length,
       deployments: nodes.filter((n) => n.type === 'deployment').length,
+      statefulsets: nodes.filter((n) => n.type === 'statefulset').length,
+      daemonsets: nodes.filter((n) => n.type === 'daemonset').length,
       pods: nodes.filter((n) => n.type === 'pod').length,
       services: nodes.filter((n) => n.type === 'service').length,
       configmaps: nodes.filter((n) => n.type === 'configmap').length,
+      secrets: nodes.filter((n) => n.type === 'secret').length,
+      pvcs: nodes.filter((n) => n.type === 'pvc').length,
+      ingresses: nodes.filter((n) => n.type === 'ingress').length,
     }),
     [nodes],
   )
 
   if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
+
+  // 重置所有筛选条件
+  const handleResetFilter = () => {
+    setSearch('')
+    setActiveTypes(RESOURCE_CONFIGS.map((c) => c.key))
+    setFilterMode('all')
+    setSelectedNamespaces([])
+    setSelectedPodId(undefined)
+  }
+
+  // Pod 选项（用于 Pod 链路模式选择）
+  const podOptions = (k8sPods?.items || []).map((p) => ({
+    value: `pod:${p.namespace}/${p.name}`,
+    label: `${p.namespace}/${p.name}`,
+  }))
 
   return (
     <AppPage>
@@ -566,6 +865,20 @@ const K8sTopologyPage: React.FC = () => {
         <Row justify="space-between" align="middle">
           <Col>
             <Space size={12} wrap>
+              <Radio.Group
+                value={filterMode}
+                onChange={(e) => setFilterMode(e.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+                size="small"
+              >
+                <Radio.Button value="all">全量模式</Radio.Button>
+                <Radio.Button value="namespace">命名空间模式</Radio.Button>
+                <Radio.Button value="pod">Pod链路模式</Radio.Button>
+              </Radio.Group>
+              <Button size="small" onClick={handleResetFilter}>
+                重置筛选
+              </Button>
               <Input
                 placeholder="搜索资源名称或命名空间"
                 prefix={<SearchOutlined />}
@@ -591,6 +904,36 @@ const K8sTopologyPage: React.FC = () => {
                   ),
                 }))}
               />
+              {/* 命名空间模式：命名空间多选 */}
+              {filterMode === 'namespace' && (
+                <Select
+                  mode="multiple"
+                  placeholder="选择命名空间"
+                  value={selectedNamespaces}
+                  onChange={setSelectedNamespaces}
+                  style={{ minWidth: 240 }}
+                  maxTagCount={3}
+                  options={(k8sNamespaces?.items || []).map((ns) => ({
+                    value: ns.name,
+                    label: ns.name,
+                  }))}
+                />
+              )}
+              {/* Pod 链路模式：选择目标 Pod */}
+              {filterMode === 'pod' && (
+                <Select
+                  showSearch
+                  placeholder="选择目标 Pod"
+                  value={selectedPodId}
+                  onChange={setSelectedPodId}
+                  style={{ minWidth: 260 }}
+                  allowClear
+                  filterOption={(input, option) =>
+                    (option?.label as string).toLowerCase().includes(input.toLowerCase())
+                  }
+                  options={podOptions}
+                />
+              )}
             </Space>
           </Col>
           <Col>
@@ -669,11 +1012,9 @@ const K8sTopologyPage: React.FC = () => {
         </Space>
       </Card>
 
-      {/* ═══ Canvas + Detail ═══ */}
-      <Row gutter={12}>
-        <Col flex="auto">
-          <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden' }}>
-            <svg
+      {/* ═══ Canvas ═══ */}
+      <Card bodyStyle={{ padding: 0 }} style={{ overflow: 'hidden', marginBottom: 12 }}>
+        <svg
               ref={svgRef}
               width={svgSize.w}
               height={svgSize.h}
@@ -682,7 +1023,6 @@ const K8sTopologyPage: React.FC = () => {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              onWheel={handleWheel}
             >
               <defs>
                 <marker
@@ -711,17 +1051,29 @@ const K8sTopologyPage: React.FC = () => {
                   const x2 = tgt.x
                   const y2 = tgt.y + 40
                   const mx = (x1 + x2) / 2
+                  // 高亮：两端节点均在全链路高亮集合中
                   const isHighlighted =
-                    selectedNode &&
-                    (edge.source === selectedNode.id || edge.target === selectedNode.id)
+                    !!selectedNode &&
+                    highlightedIds.has(edge.source) &&
+                    highlightedIds.has(edge.target)
+                  const style = edgeStyleMap[edge.type || 'default'] || edgeStyleMap.default!
                   return (
-                    <g key={edge.id}>
+                    <g
+                      key={edge.id}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        const srcLabel = getConfig(src.type).label
+                        const tgtLabel = getConfig(tgt.type).label
+                        const rel = edge.label || '关联'
+                        message.info(`${srcLabel} ${src.name} ${rel} ${tgtLabel} ${tgt.name}`)
+                      }}
+                    >
                       <path
                         d={`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`}
                         fill="none"
-                        stroke={isHighlighted ? '#2563eb' : '#cbd5e1'}
-                        strokeWidth={isHighlighted ? 2.5 : 1.5}
-                        strokeDasharray={isHighlighted ? undefined : '6,4'}
+                        stroke={style.stroke}
+                        strokeWidth={isHighlighted ? style.width + 1 : style.width}
+                        strokeDasharray={isHighlighted ? undefined : style.dasharray}
                         markerEnd="url(#arrowhead)"
                       />
                       {edge.label && (
@@ -730,7 +1082,7 @@ const K8sTopologyPage: React.FC = () => {
                           y={(y1 + y2) / 2 - 6}
                           textAnchor="middle"
                           fontSize={9}
-                          fill="#94a3b8"
+                          fill={isHighlighted ? style.stroke : '#94a3b8'}
                         >
                           {edge.label}
                         </text>
@@ -752,10 +1104,8 @@ const K8sTopologyPage: React.FC = () => {
               </g>
             </svg>
           </Card>
-        </Col>
 
-        {/* ═══ Detail Panel ═══ */}
-        <Col flex="360px">
+          {/* ═══ Detail Panel ═══ */}
           <Card
             title={
               selectedNode ? (
@@ -770,13 +1120,13 @@ const K8sTopologyPage: React.FC = () => {
                 </Space>
               )
             }
-            size="small"
-            style={{ height: svgSize.h + 2, overflow: 'auto' }}
-            bodyStyle={{ padding: 12 }}
+            bodyStyle={{ padding: 16 }}
           >
             {selectedNode ? (
-              <>
-                <Descriptions column={1} size="small" labelStyle={{ width: 80 }}>
+              <Row gutter={24}>
+                <Col xs={24} lg={8}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 16 }}>
+                <Descriptions column={1} labelStyle={{ width: 100 }}>
                   <Descriptions.Item label="类型">
                     <Tag color={getConfig(selectedNode.type).color}>
                       {getConfig(selectedNode.type).label}
@@ -806,7 +1156,7 @@ const K8sTopologyPage: React.FC = () => {
                 {selectedNode.type === 'pod' && selectedNode.meta && (
                   <>
                     <Divider style={{ margin: '12px 0' }} />
-                    <Descriptions column={1} size="small" labelStyle={{ width: 80 }}>
+                    <Descriptions column={1} labelStyle={{ width: 100 }}>
                       <Descriptions.Item label="Pod IP">
                         {selectedNode.meta.podIP || '-'}
                       </Descriptions.Item>
@@ -829,7 +1179,7 @@ const K8sTopologyPage: React.FC = () => {
                 {selectedNode.type === 'deployment' && selectedNode.meta && (
                   <>
                     <Divider style={{ margin: '12px 0' }} />
-                    <Descriptions column={1} size="small" labelStyle={{ width: 80 }}>
+                    <Descriptions column={1} labelStyle={{ width: 100 }}>
                       <Descriptions.Item label="副本数">
                         {selectedNode.meta.readyReplicas || 0}/{selectedNode.meta.replicas}
                       </Descriptions.Item>
@@ -846,7 +1196,7 @@ const K8sTopologyPage: React.FC = () => {
                 {selectedNode.type === 'node' && selectedNode.meta && (
                   <>
                     <Divider style={{ margin: '12px 0' }} />
-                    <Descriptions column={1} size="small" labelStyle={{ width: 80 }}>
+                    <Descriptions column={1} labelStyle={{ width: 100 }}>
                       <Descriptions.Item label="IP">
                         {selectedNode.meta.ip || '-'}
                       </Descriptions.Item>
@@ -869,7 +1219,7 @@ const K8sTopologyPage: React.FC = () => {
                 {selectedNode.type === 'service' && selectedNode.meta && (
                   <>
                     <Divider style={{ margin: '12px 0' }} />
-                    <Descriptions column={1} size="small" labelStyle={{ width: 80 }}>
+                    <Descriptions column={1} labelStyle={{ width: 100 }}>
                       <Descriptions.Item label="类型">{selectedNode.meta.type}</Descriptions.Item>
                       <Descriptions.Item label="ClusterIP">
                         {selectedNode.meta.clusterIP || '-'}
@@ -883,38 +1233,28 @@ const K8sTopologyPage: React.FC = () => {
                   </>
                 )}
 
-                {/* YAML Preview */}
-                <Divider style={{ margin: '12px 0' }} />
-                <Text strong style={{ fontSize: 12 }}>
+                </div>
+                </Col>
+                <Col xs={24} lg={16}>
+                <Divider style={{ margin: '0 0 16px 0' }} />
+                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>
                   YAML 预览
                 </Text>
                 {yamlLoading ? (
                   <Spin size="small" style={{ display: 'block', marginTop: 8 }} />
                 ) : (
-                  <pre
-                    style={{
-                      background: '#1e1e1e',
-                      color: '#d4d4d4',
-                      padding: 12,
-                      borderRadius: 8,
-                      fontSize: 11,
-                      lineHeight: 1.5,
-                      maxHeight: 300,
-                      overflow: 'auto',
-                      marginTop: 8,
-                      fontFamily: 'Consolas, Monaco, monospace',
-                    }}
-                  >
-                    {yamlContent || '选择资源后加载 YAML'}
-                  </pre>
+                  <YamlEditor
+                    value={yamlContent || '# 选择资源后加载 YAML'}
+                    readOnly
+                    height={400}
+                  />
                 )}
-              </>
+                </Col>
+              </Row>
             ) : (
               <Empty description="点击节点查看详情" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             )}
           </Card>
-        </Col>
-      </Row>
 
       {/* ═══ Stats Bar ═══ */}
       <Card size="small" style={{ marginTop: 12 }}>

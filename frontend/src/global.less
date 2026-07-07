@@ -1949,6 +1949,47 @@ a {
   margin-bottom: 16px;
 }
 
+/* 权限分析页面 */
+.app-permission-audit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-permission-audit__config {
+  border-radius: 16px;
+}
+
+.app-permission-audit__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-permission-audit__field-label {
+  font-size: 12px;
+}
+
+.app-permission-audit__grid {
+  border-radius: 16px;
+}
+
+.app-permission-audit__grid .ant-table-thead > tr > th {
+  text-align: center;
+}
+
+.app-permission-audit__yaml {
+  border-radius: 16px;
+}
+
+.app-permission-audit__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+}
+
 @media (max-width: 1080px) {
   .app-login-brand__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

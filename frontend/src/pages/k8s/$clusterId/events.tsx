@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Alert, Button, Space, Tag, Typography, Input } from 'antd'
+import { Alert, Button, Select, Space, Tag, Typography, Input } from 'antd'
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'

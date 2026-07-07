@@ -586,7 +586,7 @@ const routes: any[] = [
       // ---- 治理分析 ----
       {
         path: '/k8s/:clusterId/permission-audits',
-        component: '@/pages/k8s/$clusterId/resource-placeholder',
+        component: '@/pages/k8s/$clusterId/permission-audits',
         hideInMenu: true,
       },
       {

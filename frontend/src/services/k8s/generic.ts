@@ -4,6 +4,7 @@
  */
 import { request } from '@umijs/max'
 import { extractMappedList } from './shared'
+import type { RBACMatrixRequest } from '@/types'
 
 /** 应用 YAML 清单 */
 export function applyYaml(clusterId: number, yaml: string): Promise<{ success: boolean; message: string }> {
@@ -83,8 +84,10 @@ const GENERIC_RESOURCE_ROUTE_MAP: Record<string, GenericResourceRouteConfig> = {
   customresourcedefinitions: { path: 'customresourcedefinitions' },
   crds: { path: 'customresourcedefinitions' },
   validatingwebhookconfigurations: { path: 'validatingwebhookconfigurations' },
+  validatingwebhooks: { path: 'validatingwebhookconfigurations' },
   'validating-webhooks': { path: 'validatingwebhookconfigurations' },
   mutatingwebhookconfigurations: { path: 'mutatingwebhookconfigurations' },
+  mutatingwebhooks: { path: 'mutatingwebhookconfigurations' },
   'mutating-webhooks': { path: 'mutatingwebhookconfigurations' },
   validatingadmissionpolicies: { path: 'validatingadmissionpolicies' },
   'validating-admission-policies': { path: 'validatingadmissionpolicies' },
@@ -163,6 +166,29 @@ export function listPermissionAudits(
     page: Number(res?.page || 1),
     pageSize: Number(res?.pageSize || res?.page_size || 100),
   }))
+}
+
+/** 获取 RBAC 权限矩阵默认值 */
+export function defaultRBACMatrix(
+  clusterId: number,
+  namespaces: string[],
+  signal?: AbortSignal,
+): Promise<RBACMatrixRequest> {
+  return request(`/api/v1/clusters/${clusterId}/permission-audits/rbac-matrix/default`, {
+    params: { namespaces: namespaces.join(',') },
+    signal,
+  })
+}
+
+/** 根据权限矩阵生成 RBAC YAML */
+export function buildRBACFromMatrix(
+  clusterId: number,
+  matrix: RBACMatrixRequest,
+): Promise<{ yaml_content: string }> {
+  return request(`/api/v1/clusters/${clusterId}/permission-audits/rbac-matrix/yaml`, {
+    method: 'POST',
+    data: matrix,
+  })
 }
 
 /** 获取任意资源 YAML */

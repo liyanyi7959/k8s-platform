@@ -671,7 +671,8 @@ func (s *K8sService) resolveCompatibleGVR(ctx context.Context, clusterID uint64,
 	for _, candidate := range candidates {
 		ok, err := s.supportsGVR(ctx, clusterID, candidate)
 		if err != nil {
-			return schema.GroupVersionResource{}, err
+			// Discovery API 出错时跳过该候选，继续尝试下一个版本
+			continue
 		}
 		if ok {
 			return candidate, nil
