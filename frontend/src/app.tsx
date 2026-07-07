@@ -15,6 +15,7 @@ import {
 import {
   AlertOutlined,
   ApartmentOutlined,
+  AppstoreOutlined,
   ArrowLeftOutlined,
   AuditOutlined,
   CloudServerOutlined,
@@ -142,6 +143,20 @@ const buildGlobalMenuItems = (): MenuItem[] => [
       { key: '/clusters/import', path: '/clusters/import', name: '集群导入', icon: <PlusOutlined /> },
       { key: '/topology', path: '/topology', name: '资源视图', icon: <ApartmentOutlined /> },
     ],
+  },
+  // ---- 项目管理 ----
+  {
+    key: '/projects',
+    path: '/projects',
+    name: '项目管理',
+    icon: <AppstoreOutlined />,
+  },
+  // ---- 应用商店 ----
+  {
+    key: '/app-store',
+    path: '/app-store',
+    name: '应用商店',
+    icon: <AppstoreOutlined />,
   },
   // ---- 自动化部署 ----
   {
@@ -403,6 +418,8 @@ const buildClusterMenuItems = (clusterId: string): MenuItem[] => [
     children: [
       { key: `/k8s/${clusterId}/permission-audits`, path: `/k8s/${clusterId}/permission-audits`, name: '权限分析' },
       { key: `/k8s/${clusterId}/topology`, path: `/k8s/${clusterId}/topology`, name: '资源关系图' },
+      { key: `/k8s/${clusterId}/helm-releases`, path: `/k8s/${clusterId}/helm-releases`, name: 'Helm 管理' },
+      { key: `/k8s/${clusterId}/resource-metrics`, path: `/k8s/${clusterId}/resource-metrics`, name: '资源监控' },
     ],
   },
 ]
@@ -452,7 +469,7 @@ const getClusterOpenKeys = (pathname: string): string[] => {
   const cluster = ['namespaces', 'nodes', 'leases']
   const events = ['events']
   const extensions = ['crds', 'api-services', 'priority-classes', 'runtime-classes', 'validating-webhooks', 'mutating-webhooks', 'validating-admission-policies', 'validating-admission-policy-bindings']
-  const audit = ['permission-audits', 'topology']
+  const audit = ['permission-audits', 'topology', 'helm-releases', 'resource-metrics']
 
   if (dashboard.includes(resource)) return ['group-dashboard']
   if (operations.includes(resource)) return ['group-operations']

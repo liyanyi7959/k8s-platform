@@ -43,6 +43,16 @@ const routes: any[] = [
     component: '@/pages/clusters',
   },
   {
+    name: '项目管理',
+    path: '/projects',
+    component: '@/pages/projects/index',
+  },
+  {
+    name: '应用商店',
+    path: '/app-store',
+    component: '@/pages/app-store/index',
+  },
+  {
     name: '集群详情',
     path: '/clusters/:id',
     hideInMenu: true,
@@ -592,6 +602,16 @@ const routes: any[] = [
       {
         path: '/k8s/:clusterId/topology',
         component: '@/pages/k8s/$clusterId/topology',
+        hideInMenu: true,
+      },
+      {
+        path: '/k8s/:clusterId/helm-releases',
+        component: '@/pages/k8s/$clusterId/helm-releases',
+        hideInMenu: true,
+      },
+      {
+        path: '/k8s/:clusterId/resource-metrics',
+        component: '@/pages/k8s/$clusterId/resource-metrics',
         hideInMenu: true,
       },
     ],

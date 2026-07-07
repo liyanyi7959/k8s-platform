@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -985,4 +986,168 @@ func (s *K8sService) StopUnusedInformers(activeIDs map[uint64]bool) {
 			}
 		}
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Metrics (metrics.k8s.io)
+// ---------------------------------------------------------------------------
+
+// GetNodeMetrics 获取节点使用率指标。
+// 组合节点容量（node.status.capacity）与 metrics.k8s.io 的实时使用量，
+// 计算每个节点的 CPU/内存使用率。
+func (s *K8sService) GetNodeMetrics(ctx context.Context, clusterID uint64) ([]map[string]any, error) {
+	// 获取节点列表
+	nodes, err := s.List(ctx, clusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}, "", "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+	// 获取 metrics.k8s.io 节点指标
+	dc, err := s.dynamicClient(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	metricsGVR := schema.GroupVersionResource{Group: "metrics.k8s.io", Version: "v1beta1", Resource: "nodes"}
+	metricsList, err := dc.Resource(metricsGVR).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, normalizeK8sErr(err)
+	}
+	// 构建指标 map：metrics.k8s.io 的 usage.cpu/memory 是字符串形式的资源数量
+	metricsMap := map[string]map[string]int64{}
+	for _, item := range metricsList.Items {
+		usage, _ := item.Object["usage"].(map[string]any)
+		if usage == nil {
+			continue
+		}
+		cpuStr, _ := usage["cpu"].(string)
+		memStr, _ := usage["memory"].(string)
+		metricsMap[item.GetName()] = map[string]int64{
+			"cpu":    parseResourceQuantity(cpuStr),
+			"memory": parseResourceQuantity(memStr),
+		}
+	}
+	// 组装结果
+	result := []map[string]any{}
+	for _, node := range nodes {
+		raw, ok := node.(map[string]any)
+		if !ok {
+			continue
+		}
+		meta, _ := raw["metadata"].(map[string]any)
+		name, _ := meta["name"].(string)
+		// 从 node status 获取容量
+		status, _ := raw["status"].(map[string]any)
+		capacity, _ := status["capacity"].(map[string]any)
+		cpuCapStr, _ := capacity["cpu"].(string)
+		memCapStr, _ := capacity["memory"].(string)
+		cpuCap := parseResourceQuantity(cpuCapStr)
+		memCap := parseResourceQuantity(memCapStr)
+		// 使用率
+		m, has := metricsMap[name]
+		cpuUsage := 0.0
+		memUsage := 0.0
+		var cpuUsed, memUsed int64
+		if has {
+			cpuUsed = m["cpu"]
+			memUsed = m["memory"]
+			if cpuCap > 0 {
+				cpuUsage = float64(cpuUsed) / float64(cpuCap) * 100
+			}
+			if memCap > 0 {
+				memUsage = float64(memUsed) / float64(memCap) * 100
+			}
+		}
+		result = append(result, map[string]any{
+			"name":           name,
+			"cpuUsage":       cpuUsage,
+			"memoryUsage":    memUsage,
+			"cpuCapacity":    cpuCap,
+			"memoryCapacity": memCap,
+			"cpuUsed":        cpuUsed,
+			"memoryUsed":     memUsed,
+		})
+	}
+	return result, nil
+}
+
+// GetPodMetrics 获取 Pod 使用量指标。
+// 汇总每个 Pod 所有容器的 CPU/内存使用量。namespace 为空时查询所有命名空间。
+func (s *K8sService) GetPodMetrics(ctx context.Context, clusterID uint64, namespace string) ([]map[string]any, error) {
+	dc, err := s.dynamicClient(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	metricsGVR := schema.GroupVersionResource{Group: "metrics.k8s.io", Version: "v1beta1", Resource: "pods"}
+	var ri dynamic.ResourceInterface
+	if namespace != "" {
+		ri = dc.Resource(metricsGVR).Namespace(namespace)
+	} else {
+		ri = dc.Resource(metricsGVR)
+	}
+	metricsList, err := ri.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, normalizeK8sErr(err)
+	}
+	result := []map[string]any{}
+	for _, item := range metricsList.Items {
+		meta, _ := item.Object["metadata"].(map[string]any)
+		name, _ := meta["name"].(string)
+		ns, _ := meta["namespace"].(string)
+		containers, _ := item.Object["containers"].([]any)
+		var cpuTotal, memTotal int64
+		for _, c := range containers {
+			cm, _ := c.(map[string]any)
+			usage, _ := cm["usage"].(map[string]any)
+			if usage == nil {
+				continue
+			}
+			cpuStr, _ := usage["cpu"].(string)
+			memStr, _ := usage["memory"].(string)
+			cpuTotal += parseResourceQuantity(cpuStr)
+			memTotal += parseResourceQuantity(memStr)
+		}
+		result = append(result, map[string]any{
+			"name":      name,
+			"namespace": ns,
+			"cpu":       cpuTotal,
+			"memory":    memTotal,
+		})
+	}
+	return result, nil
+}
+
+// parseResourceQuantity 解析 K8s 资源数量字符串。
+// CPU：millicores（"500m"）转为 nanocores，纯数字按核数转 nanocores。
+// Memory：Ki/Mi/Gi 按二进制倍数转换，纯数字视为 bytes。
+func parseResourceQuantity(s string) int64 {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
+	// CPU: millicores
+	if strings.HasSuffix(s, "m") {
+		n, _ := strconv.ParseInt(s[:len(s)-1], 10, 64)
+		return n * 1000000 // 转换为 nanocores
+	}
+	// 纯数字 CPU
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return n * 1000000000
+	}
+	// Memory
+	if strings.HasSuffix(s, "Ki") {
+		n, _ := strconv.ParseInt(s[:len(s)-2], 10, 64)
+		return n * 1024
+	}
+	if strings.HasSuffix(s, "Mi") {
+		n, _ := strconv.ParseInt(s[:len(s)-2], 10, 64)
+		return n * 1024 * 1024
+	}
+	if strings.HasSuffix(s, "Gi") {
+		n, _ := strconv.ParseInt(s[:len(s)-2], 10, 64)
+		return n * 1024 * 1024 * 1024
+	}
+	// 纯数字 memory (bytes)
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return n
+	}
+	return 0
 }

@@ -10,6 +10,7 @@
 package router
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -48,6 +49,8 @@ func New(d Deps) (*gin.Engine, error) {
 	var aiCtl *controller.AIController
 	var deployCtl *controller.DeployController
 	var deployConfigCtl *controller.DeployConfigController
+	var projectCtl *controller.ProjectController
+	var appTemplateCtl *controller.AppTemplateController
 
 	if d.DB != nil {
 		clusterReg := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
@@ -89,6 +92,12 @@ func New(d Deps) (*gin.Engine, error) {
 		deployCtl = controller.NewDeployController(deploySvc)
 		deployConfigSvc := service.NewDeployConfigService(d.DB)
 		deployConfigCtl = controller.NewDeployConfigController(deployConfigSvc)
+		projectSvc := service.NewProjectService(d.DB)
+		projectCtl = controller.NewProjectController(projectSvc, k8sSvc)
+		appTemplateSvc := service.NewAppTemplateService(d.DB)
+		appTemplateCtl = controller.NewAppTemplateController(appTemplateSvc)
+		// 初始化内置应用模板（幂等）
+		_ = appTemplateSvc.SeedBuiltinAppTemplates(context.Background())
 	}
 
 	// ── 健康检查 ──
@@ -97,7 +106,7 @@ func New(d Deps) (*gin.Engine, error) {
 	})
 
 	// ── 路由注册 ──
-	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, aiCtl, deployCtl, deployConfigCtl)
+	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, aiCtl, deployCtl, deployConfigCtl, projectCtl, appTemplateCtl)
 
 	return r, nil
 }
@@ -115,6 +124,8 @@ func registerRoutes(
 	aiCtl *controller.AIController,
 	deployCtl *controller.DeployController,
 	deployConfigCtl *controller.DeployConfigController,
+	projectCtl *controller.ProjectController,
+	appTemplateCtl *controller.AppTemplateController,
 ) {
 	api := r.Group("/api/v1")
 
@@ -146,6 +157,8 @@ func registerRoutes(
 	registerUserRoutes(authed, userCtl)
 	registerAIRoutes(authed, aiCtl)
 	registerDeployRoutes(authed, deployCtl, deployConfigCtl)
+	registerProjectRoutes(authed, projectCtl)
+	registerAppTemplateRoutes(authed, appTemplateCtl)
 }
 
 func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployController, configCtl *controller.DeployConfigController) {
@@ -208,6 +221,40 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 		deploy.PUT("/repositories/:id", writePlan, configCtl.UpdateRepository)
 		deploy.DELETE("/repositories/:id", deletePlan, configCtl.DeleteRepository)
 	}
+}
+
+// ── 项目管理 ──
+
+func registerProjectRoutes(authed *gin.RouterGroup, ctl *controller.ProjectController) {
+	if ctl == nil {
+		return
+	}
+	read := middleware.RequirePerm("project:read")
+	write := middleware.RequirePerm("project:write")
+	authed.GET("/projects", read, ctl.ListProjects)
+	authed.GET("/projects/:id", read, ctl.GetProject)
+	authed.POST("/projects", write, ctl.CreateProject)
+	authed.PUT("/projects/:id", write, ctl.UpdateProject)
+	authed.DELETE("/projects/:id", write, ctl.DeleteProject)
+	// 项目下所有命名空间的资源统计
+	authed.GET("/projects/:id/resources", read, ctl.GetProjectResources)
+	// 分配命名空间到项目
+	authed.PUT("/projects/:id/namespaces", write, ctl.AssignNamespaces)
+}
+
+// ── 应用商店 ──
+
+func registerAppTemplateRoutes(authed *gin.RouterGroup, ctl *controller.AppTemplateController) {
+	if ctl == nil {
+		return
+	}
+	read := middleware.RequirePerm("appstore:read")
+	write := middleware.RequirePerm("appstore:write")
+	authed.GET("/app-templates", read, ctl.ListAppTemplates)
+	authed.GET("/app-templates/:id", read, ctl.GetAppTemplate)
+	authed.POST("/app-templates", write, ctl.CreateAppTemplate)
+	authed.PUT("/app-templates/:id", write, ctl.UpdateAppTemplate)
+	authed.DELETE("/app-templates/:id", write, ctl.DeleteAppTemplate)
 }
 
 func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sPermissionAuditController) {
@@ -313,6 +360,7 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	registerConfigStorageRoutes(args)
 	registerRBACRoutes(args)
 	registerBatchRoutes(args)
+	registerHelmRoutes(args)
 }
 
 // ── 集群级资源：Namespace / Node / HPA / PDB / Event / CRD / APIService / PriorityClass / RuntimeClass / Webhook / Lease ──
@@ -424,6 +472,9 @@ func registerClusterResourceRoutes(a k8sRouteArgs) {
 	// Resource support
 	k8s.GET("/clusters/:id/resource-support", p.resourceSupportRead, ctl.GetResourceSupport)
 	k8s.GET("/clusters/:id/storage-snapshot-support", p.storageSnapshotSupport, ctl.GetStorageSnapshotSupport)
+
+	// 资源使用率监控
+	k8s.GET("/clusters/:id/nodes/metrics", p.read, ctl.ListNodeMetrics)
 }
 
 // ── 工作负载：Pod / Deployment / StatefulSet / DaemonSet / ReplicaSet / Manifest ──
@@ -434,6 +485,8 @@ func registerWorkloadRoutes(a k8sRouteArgs) {
 	// Pod
 	k8s.GET("/clusters/:id/pods", p.read, ctl.ListPods)
 	k8s.GET("/clusters/:id/podmetrics", p.read, ctl.ListPodMetrics)
+	// 资源使用率监控：Pod 维度 CPU/内存使用量（与上方 /podmetrics 区分，后者返回原始 PodMetrics 资源）
+	k8s.GET("/clusters/:id/pods/metrics", p.read, ctl.ListPodMetricsUsage)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/inspection", p.read, ctl.GetPodInspection)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/yaml", p.read, ctl.GetPodYAML)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/logs", p.read, ctl.GetPodLogs)
@@ -650,6 +703,14 @@ func registerBatchRoutes(a k8sRouteArgs) {
 	k8s.PATCH("/clusters/:id/cronjobs/:ns/:name/suspend", p.write, ctl.SuspendCronJob)
 	k8s.DELETE("/clusters/:id/cronjobs/:ns/:name", p.write, ctl.DeleteCronJob)
 	k8s.GET("/clusters/:id/cronjobs/:ns/:name/yaml", p.read, ctl.GetCronJobYAML)
+}
+
+// ── Helm 管理 ──
+
+func registerHelmRoutes(a k8sRouteArgs) {
+	k8s, ctl, p := a.k8s, a.ctl, a.perm
+	k8s.GET("/clusters/:id/helm/releases", p.read, ctl.ListHelmReleases)
+	k8s.GET("/clusters/:id/helm/releases/detail", p.read, ctl.GetHelmReleaseDetail)
 }
 
 // ── WebSocket ──

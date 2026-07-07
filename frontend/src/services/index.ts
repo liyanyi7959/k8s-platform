@@ -3,6 +3,20 @@
  */
 export { login, logout, getCurrentUser } from './auth'
 export {
+  listProjects,
+  createProject,
+  updateProject,
+  deleteProject,
+} from './project'
+export {
+  listAppTemplates,
+  getAppTemplate,
+  createAppTemplate,
+  updateAppTemplate,
+  deleteAppTemplate,
+  type AppTemplate,
+} from './app-template'
+export {
   listClusters,
   getClusterById,
   importCluster,

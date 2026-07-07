@@ -203,3 +203,37 @@ export function getResourceYaml(clusterId: number, resource: string, namespace: 
     yaml: res.yaml || res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
   }))
 }
+
+/** Helm release 列表 */
+export function listHelmReleases(clusterId: number, signal?: AbortSignal): Promise<{ items: any[] }> {
+  return request(`/api/v1/clusters/${clusterId}/helm/releases`, { signal }).then((res: any) => ({
+    items: Array.isArray(res?.list) ? res.list : [],
+  }))
+}
+
+/** Helm release 详情 */
+export function getHelmReleaseDetail(
+  clusterId: number,
+  namespace: string,
+  name: string,
+  signal?: AbortSignal,
+): Promise<any> {
+  return request(`/api/v1/clusters/${clusterId}/helm/releases/detail`, {
+    params: { namespace, name },
+    signal,
+  })
+}
+
+/** 节点资源使用率 */
+export function listNodeMetrics(clusterId: number, signal?: AbortSignal): Promise<any[]> {
+  return request(`/api/v1/clusters/${clusterId}/nodes/metrics`, { signal }).then((res: any) =>
+    Array.isArray(res?.list) ? res.list : (Array.isArray(res) ? res : []),
+  )
+}
+
+/** Pod 资源使用率（Pod 维度 CPU/内存使用量，与 pod.ts 中返回原始 PodMetrics 资源的 listPodMetrics 区分） */
+export function listPodMetricsUsage(clusterId: number, signal?: AbortSignal): Promise<any[]> {
+  return request(`/api/v1/clusters/${clusterId}/pods/metrics`, { signal }).then((res: any) =>
+    Array.isArray(res?.list) ? res.list : (Array.isArray(res) ? res : []),
+  )
+}
