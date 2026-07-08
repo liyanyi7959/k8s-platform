@@ -1,281 +1,229 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { history, useModel } from '@umijs/max'
-import {
-  Alert,
-  Button,
-  Empty,
-  Select,
-  Space,
-  Spin,
-  Tag,
-  Typography,
-} from 'antd'
+/**
+ * 全局资源视图
+ * 展示所有集群的资源概览（节点/Pod/工作负载数量 + CPU/内存使用率）
+ */
+import React from 'react'
+import { history } from '@umijs/max'
+import { Card, Row, Col, Spin, Tag, Progress, Typography, Empty, Button, Space, Statistic } from 'antd'
 import {
   ClusterOutlined,
-  HddOutlined,
-  NodeIndexOutlined,
   ReloadOutlined,
+  CloudServerOutlined,
+  HddOutlined,
+  ArrowRightOutlined,
+  CloudServerOutlined as NodeIcon,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import {
-  Background,
-  Controls,
-  MarkerType,
-  MiniMap,
-  ReactFlow,
-  type Edge,
-  type Node,
-} from '@xyflow/react'
-import '@xyflow/react/dist/style.css'
-import { ProCard } from '@ant-design/pro-components'
 import { AppPage } from '@/components'
 import { listClusters } from '@/services/clusters'
-import { getTopology } from '@/services/k8s'
+import { getClusterOverview } from '@/services/k8s'
+import { formatDate } from '@/utils'
 
-const { Text } = Typography
+const { Text, Title } = Typography
 
-type TopologyResource = {
-  id: string
-  type: string
-  data?: {
-    label?: string
-    namespace?: string
-    status?: string
-    clusterIP?: string
-  }
-}
+/** 集群概览卡片 */
+function ClusterCard({ cluster }: { cluster: any }) {
+  const { data: overview, isLoading } = useQuery({
+    queryKey: ['cluster-overview-topo', cluster.id],
+    queryFn: ({ signal }) => getClusterOverview(cluster.id, signal),
+    enabled: !!cluster.id,
+    staleTime: 60_000,
+  })
 
-const RESOURCE_THEME: Record<string, { color: string; fill: string }> = {
-  node: { color: '#0284c7', fill: '#f0f9ff' },
-  pod: { color: '#059669', fill: '#ecfdf5' },
-}
+  // 防御性取值（overview 字段名可能因后端版本不同）
+  const nodeCount = overview?.nodeCount ?? overview?.nodes?.total ?? 0
+  const readyNodes = overview?.readyNodes ?? overview?.nodes?.ready ?? 0
+  const podCount = overview?.podCount ?? overview?.pods?.total ?? 0
+  const runningPods = overview?.runningPods ?? overview?.pods?.running ?? 0
+  const deployCount = overview?.deploymentCount ?? overview?.deployments?.total ?? 0
+  const svcCount = overview?.serviceCount ?? overview?.services?.total ?? 0
+  const cpuUsage = overview?.cpuUsagePercent ?? overview?.cpu?.percent ?? 0
+  const memUsage = overview?.memoryUsagePercent ?? overview?.memory?.percent ?? 0
 
-function buildFlowNodes(items: TopologyResource[]): Node[] {
-  const graphItems = items.filter((item) => item.type !== 'service')
-  const grouped = graphItems.reduce<Record<string, TopologyResource[]>>((acc, item) => {
-    acc[item.type] = acc[item.type] || []
-    acc[item.type]!.push(item)
-    return acc
-  }, {})
+  const statusColor = cluster.status === 'healthy' ? 'success' : cluster.status === 'unhealthy' ? 'error' : 'default'
 
-  const order = ['node', 'pod']
-  const columnX: Record<string, number> = { node: 80, pod: 420 }
-
-  return order.flatMap((type) => {
-    const itemsOfType = grouped[type] || []
-    return itemsOfType.map((item, index) => {
-      const theme = RESOURCE_THEME[type] || RESOURCE_THEME.node || { color: '#2563eb', fill: '#eff6ff' }
-      const label = item.data?.label || item.id
-      return {
-        id: item.id,
-        position: { x: columnX[type] || 80, y: 70 + index * 108 },
-        data: { label },
-        draggable: false,
-        selectable: false,
-        style: {
-          width: 220,
-          borderRadius: 14,
-          border: `1px solid ${theme.color}33`,
-          background: theme.fill,
-          color: '#0f172a',
-          fontWeight: 700,
-          boxShadow: '0 12px 24px rgba(15, 23, 42, 0.08)',
-          padding: '18px 20px',
-        },
+  return (
+    <Card
+      hoverable
+      size="small"
+      style={{ borderRadius: 12 }}
+      onClick={() => history.push(`/clusters/${cluster.id}`)}
+      title={
+        <Space>
+          <ClusterOutlined style={{ color: '#2563eb' }} />
+          <Text strong>{cluster.name}</Text>
+          <Tag color={statusColor}>{cluster.status || '未知'}</Tag>
+        </Space>
       }
-    })
-  })
+      extra={
+        <Button
+          type="text"
+          size="small"
+          icon={<ArrowRightOutlined />}
+          onClick={(e) => {
+            e.stopPropagation()
+            history.push(`/k8s/${cluster.id}/dashboard`)
+          }}
+        />
+      }
+    >
+      {isLoading ? (
+        <div style={{ textAlign: 'center', padding: 24 }}>
+          <Spin />
+        </div>
+      ) : (
+        <>
+          {/* 资源统计网格 */}
+          <Row gutter={[8, 8]}>
+            <Col span={6}>
+              <Statistic title="节点" value={nodeCount} prefix={<ClusterOutlined />} valueStyle={{ fontSize: 18 }} />
+              <Text type="secondary" style={{ fontSize: 11 }}>就绪 {readyNodes}</Text>
+            </Col>
+            <Col span={6}>
+              <Statistic title="Pod" value={podCount} prefix={<HddOutlined />} valueStyle={{ fontSize: 18 }} />
+              <Text type="secondary" style={{ fontSize: 11 }}>运行 {runningPods}</Text>
+            </Col>
+            <Col span={6}>
+              <Statistic title="工作负载" value={deployCount} prefix={<CloudServerOutlined />} valueStyle={{ fontSize: 18 }} />
+            </Col>
+            <Col span={6}>
+              <Statistic title="Service" value={svcCount} prefix={<NodeIcon />} valueStyle={{ fontSize: 18 }} />
+            </Col>
+          </Row>
+
+          {/* CPU/内存使用率 */}
+          <div style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 8 }}>
+              <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>CPU 使用率</Text>
+                <Text style={{ fontSize: 12, fontWeight: 600 }}>{cpuUsage.toFixed(1)}%</Text>
+              </Space>
+              <Progress
+                percent={cpuUsage}
+                size="small"
+                strokeColor={cpuUsage > 80 ? '#ff4d4f' : cpuUsage > 60 ? '#faad14' : '#52c41a'}
+              />
+            </div>
+            <div>
+              <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>内存使用率</Text>
+                <Text style={{ fontSize: 12, fontWeight: 600 }}>{memUsage.toFixed(1)}%</Text>
+              </Space>
+              <Progress
+                percent={memUsage}
+                size="small"
+                strokeColor={memUsage > 80 ? '#ff4d4f' : memUsage > 60 ? '#faad14' : '#52c41a'}
+              />
+            </div>
+          </div>
+
+          {/* 快捷入口 */}
+          <Space style={{ marginTop: 12 }}>
+            <Button
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation()
+                history.push(`/k8s/${cluster.id}/topology`)
+              }}
+            >
+              资源关系图
+            </Button>
+            <Button
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation()
+                history.push(`/k8s/${cluster.id}/helm-releases`)
+              }}
+            >
+              Helm
+            </Button>
+            <Button
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation()
+                history.push(`/k8s/${cluster.id}/resource-metrics`)
+              }}
+            >
+              监控
+            </Button>
+          </Space>
+        </>
+      )}
+    </Card>
+  )
 }
 
-function buildFlowEdges(edges: Edge[]): Edge[] {
-  return edges.map((edge) => ({
-    ...edge,
-    type: 'smoothstep',
-    animated: true,
-    selectable: false,
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
-    style: { stroke: '#94a3b8', strokeWidth: 1.5 },
-  }))
-}
-
-const TopologyPage: React.FC = () => {
-  const { currentCluster } = useModel('cluster')
-  const [selectedClusterId, setSelectedClusterId] = useState<string | undefined>(undefined)
-
-  const { data: clustersData, isLoading: clustersLoading } = useQuery({
-    queryKey: ['topology-clusters'],
-    queryFn: () => listClusters(),
+/** 全局资源视图页面 */
+const ResourceOverviewPage: React.FC = () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['clusters-for-resource-overview'],
+    queryFn: () => listClusters({ pageSize: 100 }),
   })
 
-  const clusters = clustersData?.items || []
+  const clusters = data?.items || []
 
-  useEffect(() => {
-    if (selectedClusterId || clusters.length === 0) {
-      return
-    }
-    const preferredCluster = currentCluster?.id && clusters.some((item) => String(item.id) === currentCluster.id)
-      ? currentCluster.id
-      : String(clusters[0]!.id)
-    setSelectedClusterId(preferredCluster)
-  }, [clusters, currentCluster?.id, selectedClusterId])
-
-  const { data: topologyData, isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ['global-topology-overview', selectedClusterId],
-    enabled: Boolean(selectedClusterId),
-    queryFn: () => getTopology(Number(selectedClusterId)),
-  })
-
-  const selectedCluster = clusters.find((item) => String(item.id) === selectedClusterId)
-  const resources = (topologyData?.nodes || []) as TopologyResource[]
-  const serviceResources = resources.filter((item) => item.type === 'service')
-  const graphNodes = useMemo(() => buildFlowNodes(resources), [resources])
-  const graphEdges = useMemo(() => buildFlowEdges((topologyData?.edges || []) as Edge[]), [topologyData?.edges])
-
-  const summary = useMemo(() => {
-    const nodeCount = resources.filter((item) => item.type === 'node').length
-    const podCount = resources.filter((item) => item.type === 'pod').length
-    const serviceCount = serviceResources.length
-    const readyNodes = resources.filter((item) => item.type === 'node' && item.data?.status === 'Ready').length
-    return {
-      nodeCount,
-      podCount,
-      serviceCount,
-      edgeCount: graphEdges.length,
-      readyNodes,
-    }
-  }, [graphEdges.length, resources, serviceResources.length])
+  // 全局统计
+  const totalNodes = clusters.length
+  const healthyClusters = clusters.filter((c: any) => c.status === 'healthy').length
 
   return (
     <AppPage breadcrumbRender={false}>
       <div className="app-data-console">
+        {/* 全局统计 */}
         <section className="app-data-console__statgrid">
           <div className="app-data-console__stat">
-            <span className="app-data-console__stat-label">节点数量</span>
-            <strong className="app-data-console__stat-value">{summary.nodeCount}</strong>
-            <span className="app-data-console__stat-hint">就绪节点 {summary.readyNodes} 台</span>
+            <span className="app-data-console__stat-label">集群总数</span>
+            <strong className="app-data-console__stat-value">{totalNodes}</strong>
+            <span className="app-data-console__stat-hint">健康 {healthyClusters} 个</span>
           </div>
           <div className="app-data-console__stat">
-            <span className="app-data-console__stat-label">Pod 数量</span>
-            <strong className="app-data-console__stat-value">{summary.podCount}</strong>
-            <span className="app-data-console__stat-hint">按节点归属构建承载关系</span>
+            <span className="app-data-console__stat-label">集群状态</span>
+            <strong className="app-data-console__stat-value">
+              {healthyClusters}/{totalNodes}
+            </strong>
+            <span className="app-data-console__stat-hint">点击卡片进入集群详情</span>
           </div>
           <div className="app-data-console__stat">
-            <span className="app-data-console__stat-label">Service 数量</span>
-            <strong className="app-data-console__stat-value">{summary.serviceCount}</strong>
-            <span className="app-data-console__stat-hint">结合右侧资源清单辅助排查</span>
-          </div>
-        </section>
-
-        <section className="app-data-console__filters">
-          <div className="app-data-console__filters-left">
-            <Select
-              style={{ width: 260 }}
-              placeholder="选择要查看的集群"
-              loading={clustersLoading}
-              value={selectedClusterId}
-              onChange={setSelectedClusterId}
-              options={clusters.map((cluster) => ({
-                label: `${cluster.name}${cluster.k8sVersion ? ` · ${cluster.k8sVersion}` : ''}`,
-                value: String(cluster.id),
-              }))}
-            />
-            <Button icon={<ReloadOutlined />} loading={isRefetching} onClick={() => refetch()}>
-              刷新
-            </Button>
-          </div>
-          <div className="app-data-console__filters-right">
-            <span className="app-data-console__meta">
-              连接关系 <strong>{summary.edgeCount}</strong>
-            </span>
-            {selectedClusterId ? (
-              <Button onClick={() => history.push(`/k8s/${selectedClusterId}/topology`)}>
-                进入集群关系图
+            <span className="app-data-console__stat-label">快捷操作</span>
+            <strong className="app-data-console__stat-value" style={{ fontSize: 14 }}>
+              <Button
+                type="link"
+                size="small"
+                icon={<ReloadOutlined />}
+                onClick={() => window.location.reload()}
+              >
+                刷新
               </Button>
-            ) : null}
+            </strong>
+            <span className="app-data-console__stat-hint">数据每 60 秒自动刷新</span>
           </div>
         </section>
 
-        <Alert
-          type="info"
-          showIcon
-          message="资源视图用于快速回答“这个集群当前由哪些节点承载 Pod、有哪些 Service 正在对外提供能力”"
-          description="当前图谱基于节点、Pod 与 Service 实时构建。Service 与 Pod 的 selector 细粒度映射仍建议在集群关系图中继续深入查看。"
-        />
-
-        <ProCard bordered split="vertical" className="app-topology-page">
-          <ProCard colSpan="70%" bodyStyle={{ padding: 0 }}>
-            {!selectedClusterId ? (
-              <div className="app-topology-overview__empty">
-                <Empty description="请选择一个集群后查看资源视图" />
-              </div>
-            ) : isLoading ? (
-              <div className="app-topology-overview__empty">
-                <Spin />
-              </div>
-            ) : graphNodes.length === 0 ? (
-              <div className="app-topology-overview__empty">
-                <Empty description="当前集群暂无可展示的节点或 Pod 关系" />
-              </div>
-            ) : (
-              <ReactFlow nodes={graphNodes} edges={graphEdges} fitView fitViewOptions={{ padding: 0.16 }}>
-                <Background gap={20} size={1} />
-                <MiniMap pannable zoomable />
-                <Controls position="bottom-right" />
-              </ReactFlow>
-            )}
-          </ProCard>
-          <ProCard colSpan="30%" className="app-topology-overview__side">
-            <Space direction="vertical" size={14} style={{ width: '100%' }}>
-              <div>
-                <Text strong style={{ fontSize: 16 }}>
-                  {selectedCluster?.name || '未选择集群'}
-                </Text>
-                <div className="app-topology-overview__hint">
-                  {selectedCluster?.k8sVersion || '未识别版本'}
-                </div>
-              </div>
-
-              <div>
-                <Text strong>视图说明</Text>
-                <div className="app-topology-overview__legend">
-                  <Tag color="blue" icon={<ClusterOutlined />}>节点承载层</Tag>
-                  <Tag color="green" icon={<HddOutlined />}>Pod 运行层</Tag>
-                  <Tag color="gold" icon={<NodeIndexOutlined />}>Service 清单</Tag>
-                </div>
-              </div>
-
-              <div>
-                <Text strong>Service 清单</Text>
-                <div className="app-topology-overview__service-list">
-                  {serviceResources.length > 0 ? serviceResources.map((service) => (
-                    <div key={service.id} className="app-topology-overview__service-item">
-                      <div>
-                        <Text strong>{service.data?.label || service.id}</Text>
-                        <div className="app-topology-overview__hint">{service.data?.namespace || 'default'}</div>
-                      </div>
-                      <Tag color="gold">{service.data?.clusterIP || 'ClusterIP'}</Tag>
-                    </div>
-                  )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无 Service" />}
-                </div>
-              </div>
-
-              <div>
-                <Text strong>推荐动作</Text>
-                <div className="app-topology-overview__legend">
-                  <Button block onClick={() => history.push('/clusters')}>返回集群列表</Button>
-                  {selectedClusterId ? (
-                    <Button block type="primary" onClick={() => history.push(`/k8s/${selectedClusterId}/pods`)}>
-                      查看集群 Pod 列表
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            </Space>
-          </ProCard>
-        </ProCard>
+        {/* 集群卡片网格 */}
+        <section>
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: 60 }}>
+              <Spin size="large" />
+            </div>
+          ) : clusters.length === 0 ? (
+            <Empty description="暂无集群，请先导入集群" image={Empty.PRESENTED_IMAGE_SIMPLE}>
+              <Button type="primary" onClick={() => history.push('/clusters/import')}>
+                导入集群
+              </Button>
+            </Empty>
+          ) : (
+            <Row gutter={[16, 16]}>
+              {clusters.map((cluster: any) => (
+                <Col key={cluster.id} xs={24} sm={12} lg={8} xl={6}>
+                  <ClusterCard cluster={cluster} />
+                </Col>
+              ))}
+            </Row>
+          )}
+        </section>
       </div>
     </AppPage>
   )
 }
 
-export default TopologyPage
+export default ResourceOverviewPage

@@ -23,6 +23,8 @@ type AppTemplate struct {
 	Variables string `json:"variables" gorm:"column:variables;type:text"`
 	// IsBuiltin 标记是否为内置模板（内置模板不可删除）。
 	IsBuiltin bool `json:"is_builtin" gorm:"column:is_builtin;default:false"`
+	// DeployType 为部署类型：yaml 或 helm。helm 类型时 Template 字段存储 chart 仓库+chart名（如 bitnami/redis）。
+	DeployType string `json:"deploy_type" gorm:"column:deploy_type;type:varchar(20);default:'yaml'"`
 	// CreatedAt/UpdatedAt/DeletedAt 为通用审计字段。
 	CreatedAt time.Time  `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time  `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`

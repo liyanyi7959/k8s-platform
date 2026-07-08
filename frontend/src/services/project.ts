@@ -49,3 +49,33 @@ export function updateProject(id: number, data: Partial<Project>) {
 export function deleteProject(id: number) {
   return request(`/api/v1/projects/${id}`, { method: 'DELETE' })
 }
+
+/** 命名空间资源统计 */
+export interface NamespaceResources {
+  pods: number
+  deployments: number
+  services: number
+  configmaps: number
+  total: number
+}
+
+/** 项目资源统计响应 */
+export interface ProjectResourcesResponse {
+  cluster_id: number
+  namespaces: Record<string, NamespaceResources>
+}
+
+/** 获取项目下所有命名空间的资源统计 */
+export function getProjectResources(id: number, signal?: AbortSignal) {
+  return request<ProjectResourcesResponse>(`/api/v1/projects/${id}/resources`, {
+    signal,
+  })
+}
+
+/** 分配命名空间到项目 */
+export function assignNamespaces(id: number, namespaces: string[]) {
+  return request(`/api/v1/projects/${id}/namespaces`, {
+    method: 'PUT',
+    data: { namespaces },
+  })
+}

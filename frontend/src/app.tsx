@@ -18,6 +18,7 @@ import {
   AppstoreOutlined,
   ArrowLeftOutlined,
   AuditOutlined,
+  CloudDownloadOutlined,
   CloudServerOutlined,
   ClusterOutlined,
   DashboardOutlined,
@@ -418,8 +419,27 @@ const buildClusterMenuItems = (clusterId: string): MenuItem[] => [
     children: [
       { key: `/k8s/${clusterId}/permission-audits`, path: `/k8s/${clusterId}/permission-audits`, name: '权限分析' },
       { key: `/k8s/${clusterId}/topology`, path: `/k8s/${clusterId}/topology`, name: '资源关系图' },
-      { key: `/k8s/${clusterId}/helm-releases`, path: `/k8s/${clusterId}/helm-releases`, name: 'Helm 管理' },
-      { key: `/k8s/${clusterId}/resource-metrics`, path: `/k8s/${clusterId}/resource-metrics`, name: '资源监控' },
+    ],
+  },
+  // ---- Helm 管理 ----
+  {
+    key: 'group-helm',
+    path: `/k8s/${clusterId}/helm-releases`,
+    name: 'Helm 管理',
+    icon: <CloudDownloadOutlined />,
+    children: [
+      { key: `/k8s/${clusterId}/helm-releases`, path: `/k8s/${clusterId}/helm-releases`, name: 'Helm Releases' },
+      { key: `/k8s/${clusterId}/helm-repos`, path: `/k8s/${clusterId}/helm-repos`, name: '仓库管理' },
+    ],
+  },
+  // ---- 资源监控 ----
+  {
+    key: 'group-monitor',
+    path: `/k8s/${clusterId}/resource-metrics`,
+    name: '资源监控',
+    icon: <DashboardOutlined />,
+    children: [
+      { key: `/k8s/${clusterId}/resource-metrics`, path: `/k8s/${clusterId}/resource-metrics`, name: '资源使用率' },
     ],
   },
 ]
@@ -469,7 +489,9 @@ const getClusterOpenKeys = (pathname: string): string[] => {
   const cluster = ['namespaces', 'nodes', 'leases']
   const events = ['events']
   const extensions = ['crds', 'api-services', 'priority-classes', 'runtime-classes', 'validating-webhooks', 'mutating-webhooks', 'validating-admission-policies', 'validating-admission-policy-bindings']
-  const audit = ['permission-audits', 'topology', 'helm-releases', 'resource-metrics']
+  const audit = ['permission-audits', 'topology']
+  const helm = ['helm-releases', 'helm-repos']
+  const monitor = ['resource-metrics']
 
   if (dashboard.includes(resource)) return ['group-dashboard']
   if (operations.includes(resource)) return ['group-operations']
@@ -483,6 +505,8 @@ const getClusterOpenKeys = (pathname: string): string[] => {
   if (events.includes(resource)) return ['group-events']
   if (extensions.includes(resource)) return ['group-extensions']
   if (audit.includes(resource)) return ['group-audit']
+  if (helm.includes(resource)) return ['group-helm']
+  if (monitor.includes(resource)) return ['group-monitor']
   return ['group-dashboard']
 }
 

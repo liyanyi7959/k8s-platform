@@ -89,6 +89,14 @@ func (s *K8sService) restConfig(ctx context.Context, clusterID uint64) (*rest.Co
 	return cfg, nil
 }
 
+// GetKubeconfig 获取指定集群的 kubeconfig 内容，供 Helm CLI 等外部工具使用。
+func (s *K8sService) GetKubeconfig(ctx context.Context, clusterID uint64) (string, error) {
+	if s.clusterReg == nil {
+		return "", errors.New("cluster registry is required")
+	}
+	return s.clusterReg.GetKubeconfig(ctx, clusterID)
+}
+
 func (s *K8sService) ValidateKubeconfig(ctx context.Context, kubeconfig string) error {
 	kc := strings.TrimSpace(kubeconfig)
 	if kc == "" {

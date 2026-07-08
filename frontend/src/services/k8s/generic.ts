@@ -237,3 +237,34 @@ export function listPodMetricsUsage(clusterId: number, signal?: AbortSignal): Pr
     Array.isArray(res?.list) ? res.list : (Array.isArray(res) ? res : []),
   )
 }
+
+/** Helm 安装 chart */
+export function helmInstall(clusterId: number, data: {
+  release_name: string
+  namespace: string
+  chart: string
+  repo_url?: string
+  repo_name?: string
+  values_yaml?: string
+}) {
+  return request(`/api/v1/clusters/${clusterId}/helm/install`, { method: 'POST', data })
+}
+
+/** Helm 卸载 release */
+export function helmUninstall(clusterId: number, namespace: string, name: string) {
+  return request(`/api/v1/clusters/${clusterId}/helm/releases/${namespace}/${name}`, { method: 'DELETE' })
+}
+
+/** Helm 仓库列表 */
+export function listHelmRepos(clusterId: number, signal?: AbortSignal): Promise<any[]> {
+  return request(`/api/v1/clusters/${clusterId}/helm/repos`, { signal }).then((res: any) =>
+    Array.isArray(res) ? res : (Array.isArray(res?.list) ? res.list : []),
+  )
+}
+
+/** Helm 搜索 chart */
+export function helmSearch(clusterId: number, keyword: string, signal?: AbortSignal): Promise<any[]> {
+  return request(`/api/v1/clusters/${clusterId}/helm/search`, { params: { keyword }, signal }).then((res: any) =>
+    Array.isArray(res) ? res : (Array.isArray(res?.list) ? res.list : []),
+  )
+}

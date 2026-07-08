@@ -3,15 +3,20 @@
  * 管理多租户/命名空间分组项目，支持配额配置
  */
 import { useMemo, useState } from 'react'
+import { history } from '@umijs/max'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import {
   Button,
+  Descriptions,
+  Drawer,
   Form,
   Input,
   Modal,
   Popconfirm,
   Select,
   Space,
+  Spin,
+  Table,
   Tag,
   Tooltip,
   Typography,
@@ -22,15 +27,20 @@ import {
   EditOutlined,
   PlusOutlined,
   ReloadOutlined,
+  RocketOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage } from '@/components'
 import { listClusters } from '@/services/clusters'
+import { listHelmReleases } from '@/services/k8s'
 import {
+  assignNamespaces,
   createProject,
   deleteProject,
+  getProjectResources,
   listProjects,
   updateProject,
+  type NamespaceResources,
   type Project,
 } from '@/services/project'
 import { formatDate } from '@/utils'
@@ -51,11 +61,20 @@ const ProjectListPage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Project | null>(null)
   const [form] = Form.useForm()
+  // 项目详情 Drawer
+  const [detailProject, setDetailProject] = useState<Project | null>(null)
 
   // 项目列表
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['projects'],
     queryFn: () => listProjects(),
+  })
+
+  // 项目命名空间资源统计（仅当 Drawer 打开时查询）
+  const { data: resourcesData, isLoading: resourcesLoading } = useQuery({
+    queryKey: ['project-resources', detailProject?.id],
+    queryFn: ({ signal }) => getProjectResources(detailProject!.id, signal),
+    enabled: !!detailProject,
   })
 
   // 集群列表（用于表单中的集群选择）
@@ -109,6 +128,20 @@ const ProjectListPage: React.FC = () => {
     onError: (err: any) => message.error(err?.message || '删除失败'),
   })
 
+  // 分配命名空间
+  const assignNsMutation = useMutation({
+    mutationFn: ({ id, namespaces }: { id: number; namespaces: string[] }) =>
+      assignNamespaces(id, namespaces),
+    onSuccess: () => {
+      message.success('命名空间分配成功')
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({
+        queryKey: ['project-resources', detailProject?.id],
+      })
+    },
+    onError: (err: any) => message.error(err?.message || '分配失败'),
+  })
+
   const handleAdd = () => {
     setEditing(null)
     form.resetFields()
@@ -158,7 +191,13 @@ const ProjectListPage: React.FC = () => {
       dataIndex: 'name',
       width: 160,
       render: (_: unknown, record: Project) => (
-        <Text strong>{record.name || '-'}</Text>
+        <Button
+          type="link"
+          style={{ padding: 0, height: 'auto' }}
+          onClick={() => setDetailProject(record)}
+        >
+          <Text strong>{record.name || '-'}</Text>
+        </Button>
       ),
     },
     {
@@ -338,7 +377,223 @@ const ProjectListPage: React.FC = () => {
           </Space>
         </Form>
       </Modal>
+
+      {/* 项目详情 Drawer */}
+      <Drawer
+        title="项目详情"
+        open={!!detailProject}
+        onClose={() => setDetailProject(null)}
+        width={640}
+        destroyOnClose
+      >
+        {detailProject && (
+          <ProjectDetail
+            project={detailProject}
+            clusterName={clusterNameMap.get(detailProject.cluster_id)}
+            resourcesData={resourcesData}
+            resourcesLoading={resourcesLoading}
+            assignPending={assignNsMutation.isPending}
+            onAssign={(namespaces) =>
+              assignNsMutation.mutate({
+                id: detailProject.id,
+                namespaces,
+              })
+            }
+          />
+        )}
+      </Drawer>
     </AppPage>
+  )
+}
+
+/** 命名空间资源统计行 */
+function ResourceStatRow({
+  name,
+  stats,
+  clusterId,
+}: {
+  name: string
+  stats?: NamespaceResources
+  clusterId: number
+}) {
+  return (
+    <Descriptions.Item
+      label={
+        <a onClick={() => history.push(`/k8s/${clusterId}/pods?namespace=${name}`)}>
+          {name}
+        </a>
+      }
+    >
+      <Space size={4} wrap>
+        <Tag color="blue">Pod: {stats?.pods ?? 0}</Tag>
+        <Tag color="green">Deploy: {stats?.deployments ?? 0}</Tag>
+        <Tag color="orange">Svc: {stats?.services ?? 0}</Tag>
+        <Tag color="purple">CM: {stats?.configmaps ?? 0}</Tag>
+      </Space>
+    </Descriptions.Item>
+  )
+}
+
+/** 项目详情内容 */
+function ProjectDetail({
+  project,
+  clusterName,
+  resourcesData,
+  resourcesLoading,
+  assignPending,
+  onAssign,
+}: {
+  project: Project
+  clusterName?: string
+  resourcesData?: { cluster_id: number; namespaces: Record<string, NamespaceResources> }
+  resourcesLoading: boolean
+  assignPending: boolean
+  onAssign: (namespaces: string[]) => void
+}) {
+  const [nsForm] = Form.useForm()
+  const nsList = splitNamespaces(project.namespaces)
+
+  // 获取该集群的 Helm release 列表
+  const { data: helmData, isLoading: helmLoading } = useQuery({
+    queryKey: ['project-helm-releases', project.cluster_id],
+    queryFn: ({ signal }) => listHelmReleases(Number(project.cluster_id), signal),
+    enabled: !!project.cluster_id,
+  })
+
+  // 过滤出属于项目命名空间的 release
+  const helmReleases = (helmData?.items || []).filter((r: any) =>
+    nsList.includes(r.namespace),
+  )
+
+  const helmColumns = [
+    { title: '名称', dataIndex: 'name', width: 160, ellipsis: true },
+    { title: '命名空间', dataIndex: 'namespace', width: 120 },
+    { title: 'Chart', dataIndex: 'chart', width: 160, ellipsis: true },
+    { title: '版本', dataIndex: 'chart_ver', width: 80 },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      width: 100,
+      render: (status: string) => {
+        const colorMap: Record<string, string> = {
+          deployed: 'success',
+          failed: 'error',
+          'pending-install': 'processing',
+          'pending-upgrade': 'warning',
+          'pending-rollback': 'warning',
+          uninstalled: 'default',
+        }
+        return <Tag color={colorMap[status] || 'default'}>{status}</Tag>
+      },
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updated',
+      width: 170,
+      render: (v: string) => (v ? formatDate(v) : '-'),
+    },
+  ]
+
+  const handleSaveNs = async () => {
+    try {
+      const values = await nsForm.validateFields()
+      onAssign(values.namespaces || [])
+    } catch {
+      // 校验失败
+    }
+  }
+
+  return (
+    <Spin spinning={resourcesLoading}>
+      {/* 部署应用入口 */}
+      <Space style={{ marginBottom: 16 }}>
+        <Button
+          type="primary"
+          icon={<RocketOutlined />}
+          onClick={() =>
+            history.push(
+              `/app-store?cluster_id=${project.cluster_id}&namespaces=${project.namespaces}`,
+            )
+          }
+        >
+          部署应用
+        </Button>
+      </Space>
+
+      <Descriptions title="基本信息" column={1} bordered size="small">
+        <Descriptions.Item label="项目名称">{project.name}</Descriptions.Item>
+        <Descriptions.Item label="描述">
+          {project.description || <Text type="secondary">-</Text>}
+        </Descriptions.Item>
+        <Descriptions.Item label="关联集群">
+          {clusterName || (project.cluster_id ? `#${project.cluster_id}` : <Text type="secondary">未绑定</Text>)}
+        </Descriptions.Item>
+      </Descriptions>
+
+      <Descriptions
+        title="命名空间资源统计"
+        column={1}
+        bordered
+        size="small"
+        style={{ marginTop: 16 }}
+      >
+        {nsList.length === 0 ? (
+          <Descriptions.Item label="暂无">
+            <Text type="secondary">未配置命名空间</Text>
+          </Descriptions.Item>
+        ) : (
+          nsList.map((ns) => (
+            <ResourceStatRow
+              key={ns}
+              name={ns}
+              stats={resourcesData?.namespaces?.[ns]}
+              clusterId={project.cluster_id}
+            />
+          ))
+        )}
+      </Descriptions>
+
+      {/* Helm Release 列表 */}
+      <div style={{ marginTop: 16 }}>
+        <Typography.Title level={5}>Helm Release</Typography.Title>
+        <Table
+          dataSource={helmReleases}
+          columns={helmColumns}
+          rowKey={(r: any) => `${r.namespace}/${r.name}`}
+          loading={helmLoading}
+          size="small"
+          pagination={{
+            pageSize: 5,
+            showSizeChanger: true,
+            showTotal: (t) => `共 ${t} 条`,
+          }}
+          scroll={{ x: 800 }}
+        />
+      </div>
+
+      <Descriptions title="配额信息" column={3} bordered size="small" style={{ marginTop: 16 }}>
+        <Descriptions.Item label="CPU">{project.quota_cpu || '-'}</Descriptions.Item>
+        <Descriptions.Item label="内存">{project.quota_memory || '-'}</Descriptions.Item>
+        <Descriptions.Item label="Pod">{project.quota_pods || '-'}</Descriptions.Item>
+      </Descriptions>
+
+      <div style={{ marginTop: 16 }}>
+        <Typography.Title level={5}>管理命名空间</Typography.Title>
+        <Form form={nsForm} layout="vertical">
+          <Form.Item name="namespaces" initialValue={nsList}>
+            <Select
+              mode="tags"
+              placeholder="输入命名空间名称后回车"
+              tokenSeparators={[',']}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <Button type="primary" loading={assignPending} onClick={handleSaveNs}>
+            保存命名空间
+          </Button>
+        </Form>
+      </div>
+    </Spin>
   )
 }
 

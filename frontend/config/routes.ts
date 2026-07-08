@@ -610,6 +610,11 @@ const routes: any[] = [
         hideInMenu: true,
       },
       {
+        path: '/k8s/:clusterId/helm-repos',
+        component: '@/pages/k8s/$clusterId/helm-repos',
+        hideInMenu: true,
+      },
+      {
         path: '/k8s/:clusterId/resource-metrics',
         component: '@/pages/k8s/$clusterId/resource-metrics',
         hideInMenu: true,

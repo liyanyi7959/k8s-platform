@@ -13,6 +13,7 @@ export interface AppTemplate {
   template: string
   variables: string
   is_builtin: boolean
+  deploy_type?: string
   created_at: string
   updated_at: string
 }

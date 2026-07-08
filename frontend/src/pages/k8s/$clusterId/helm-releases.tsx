@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
-import { Card, Input, Button, Table, Tag, Drawer, Descriptions, Space, Tooltip, message } from 'antd'
-import { ReloadOutlined, SearchOutlined, EyeOutlined } from '@ant-design/icons'
-import { useQuery } from '@tanstack/react-query'
-import { AppPage } from '@/components'
-import { listHelmReleases, getHelmReleaseDetail } from '@/services/k8s'
+import { Card, Input, Button, Table, Tag, Drawer, Descriptions, Space, Tooltip, Modal, Popconfirm, Form, message } from 'antd'
+import { ReloadOutlined, SearchOutlined, EyeOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { AppPage, YamlEditor } from '@/components'
+import { listHelmReleases, getHelmReleaseDetail, helmInstall, helmUninstall } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 
@@ -23,6 +23,9 @@ const HelmReleasesPage: React.FC = () => {
   const [search, setSearch] = useState('')
   const [detailOpen, setDetailOpen] = useState(false)
   const [detail, setDetail] = useState<any>(null)
+  const [installOpen, setInstallOpen] = useState(false)
+  const [valuesYaml, setValuesYaml] = useState('')
+  const [installForm] = Form.useForm()
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['helm-releases', clusterId],
@@ -30,6 +33,37 @@ const HelmReleasesPage: React.FC = () => {
     enabled: !!clusterId,
     staleTime: 60_000,
   })
+
+  const installMutation = useMutation({
+    mutationFn: (data: any) => helmInstall(Number(clusterId), data),
+    onSuccess: () => {
+      message.success('安装成功')
+      setInstallOpen(false)
+      installForm.resetFields()
+      setValuesYaml('')
+      refetch()
+    },
+    onError: (err: any) => message.error(err?.message || '安装失败'),
+  })
+
+  const uninstallMutation = useMutation({
+    mutationFn: ({ ns, name }: { ns: string; name: string }) =>
+      helmUninstall(Number(clusterId), ns, name),
+    onSuccess: () => {
+      message.success('卸载成功')
+      refetch()
+    },
+    onError: (err: any) => message.error(err?.message || '卸载失败'),
+  })
+
+  const handleInstall = async () => {
+    try {
+      const values = await installForm.validateFields()
+      installMutation.mutate({ ...values, values_yaml: valuesYaml })
+    } catch {
+      // 校验失败
+    }
+  }
 
   const filteredData = (data?.items || []).filter((item: any) => {
     if (!search) return true
@@ -62,11 +96,23 @@ const HelmReleasesPage: React.FC = () => {
       render: (v: string) => v ? formatDate(v) : '-',
     },
     {
-      title: '操作', width: 80, align: 'center' as const,
+      title: '操作', width: 120, align: 'center' as const,
       render: (_: any, record: any) => (
-        <Tooltip title="查看详情">
-          <a onClick={() => handleViewDetail(record)}><EyeOutlined /></a>
-        </Tooltip>
+        <Space>
+          <Tooltip title="查看详情">
+            <a onClick={() => handleViewDetail(record)}><EyeOutlined /></a>
+          </Tooltip>
+          <Popconfirm
+            title="确认卸载该 Release？"
+            description={`将卸载 ${record.namespace}/${record.name}`}
+            onConfirm={() => uninstallMutation.mutate({ ns: record.namespace, name: record.name })}
+            okButtonProps={{ danger: true, loading: uninstallMutation.isPending }}
+          >
+            <Tooltip title="卸载">
+              <a style={{ color: '#ff4d4f' }}><DeleteOutlined /></a>
+            </Tooltip>
+          </Popconfirm>
+        </Space>
       ),
     },
   ]
@@ -84,6 +130,7 @@ const HelmReleasesPage: React.FC = () => {
             allowClear
           />
           <Button icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setInstallOpen(true)}>Helm 安装</Button>
         </Space>
         <Table
           dataSource={filteredData}
@@ -111,6 +158,40 @@ const HelmReleasesPage: React.FC = () => {
           </Descriptions>
         )}
       </Drawer>
+      <Modal
+        title="Helm 安装"
+        open={installOpen}
+        onCancel={() => {
+          setInstallOpen(false)
+          installForm.resetFields()
+          setValuesYaml('')
+        }}
+        onOk={handleInstall}
+        confirmLoading={installMutation.isPending}
+        width={640}
+        destroyOnClose
+      >
+        <Form form={installForm} layout="vertical" initialValues={{ namespace: 'default' }}>
+          <Form.Item name="release_name" label="Release 名称" rules={[{ required: true, message: '请输入 Release 名称' }]}>
+            <Input placeholder="例如：my-redis" />
+          </Form.Item>
+          <Form.Item name="namespace" label="命名空间" rules={[{ required: true, message: '请输入命名空间' }]}>
+            <Input placeholder="default" />
+          </Form.Item>
+          <Form.Item name="chart" label="Chart" rules={[{ required: true, message: '请输入 Chart 名称' }]}>
+            <Input placeholder="例如：bitnami/redis" />
+          </Form.Item>
+          <Form.Item name="repo_name" label="仓库名称（可选）">
+            <Input placeholder="例如：bitnami" />
+          </Form.Item>
+          <Form.Item name="repo_url" label="仓库地址（可选）">
+            <Input placeholder="例如：https://charts.bitnami.com/bitnami" />
+          </Form.Item>
+          <Form.Item label="values.yaml（可选）">
+            <YamlEditor value={valuesYaml} onChange={setValuesYaml} height={300} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </AppPage>
   )
 }

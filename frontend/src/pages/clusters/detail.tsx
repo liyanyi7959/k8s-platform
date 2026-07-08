@@ -1,18 +1,125 @@
 import React, { useState } from 'react'
 import { useParams, history } from '@umijs/max'
-import { Card, Descriptions, Button, Space, Spin, message } from 'antd'
+import { Card, Descriptions, Button, Space, Spin, Table, Tag, Typography, message } from 'antd'
 import { ModalForm, ProFormText } from '@ant-design/pro-components'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClusterById, updateCluster } from '@/services/clusters'
+import { listProjects, type Project } from '@/services/project'
 import { AppPage, StatusTag } from '@/components'
 import { formatDate } from '@/utils'
 import type { Cluster } from '@/types'
+
+const { Text } = Typography
+
+/** 将逗号分隔的命名空间字符串拆分为数组 */
+function splitNamespaces(ns: string): string[] {
+  return ns
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/** 集群下的项目列表 Tab */
+const ClusterProjectsTab: React.FC<{ clusterId: number }> = ({ clusterId }) => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['cluster-projects', clusterId],
+    queryFn: () => listProjects(),
+  })
+
+  // 前端过滤出属于当前集群的项目
+  const projects = (data?.list || []).filter((p) => p.cluster_id === clusterId)
+
+  const columns = [
+    {
+      title: '项目名称',
+      dataIndex: 'name',
+      width: 160,
+      render: (name: string) => <Text strong>{name || '-'}</Text>,
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      width: 200,
+      ellipsis: true,
+      render: (v: string) => v || <Text type="secondary">-</Text>,
+    },
+    {
+      title: '命名空间数',
+      dataIndex: 'namespaces',
+      width: 100,
+      align: 'center' as const,
+      render: (ns: string) => splitNamespaces(ns).length,
+    },
+    {
+      title: '配额',
+      width: 240,
+      render: (_: unknown, record: Project) => (
+        <Space size={4} wrap>
+          {record.quota_cpu && <Tag color="blue">CPU: {record.quota_cpu}</Tag>}
+          {record.quota_memory && <Tag color="green">内存: {record.quota_memory}</Tag>}
+          {record.quota_pods && <Tag color="orange">Pod: {record.quota_pods}</Tag>}
+          {!record.quota_cpu && !record.quota_memory && !record.quota_pods && (
+            <Text type="secondary">-</Text>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      width: 170,
+      render: (v: string) =>
+        v ? formatDate(v, 'YYYY-MM-DD HH:mm') : <Text type="secondary">-</Text>,
+    },
+    {
+      title: '操作',
+      width: 100,
+      align: 'center' as const,
+      render: () => (
+        <Button type="link" size="small" onClick={() => history.push('/projects')}>
+          查看详情
+        </Button>
+      ),
+    },
+  ]
+
+  return (
+    <Card
+      title="集群项目"
+      extra={
+        <Space>
+          <Button type="primary" onClick={() => history.push('/projects')}>
+            创建项目
+          </Button>
+          <Button onClick={() => history.push('/app-store')}>应用商店</Button>
+          <Button onClick={() => history.push(`/k8s/${clusterId}/helm-releases`)}>
+            Helm 管理
+          </Button>
+        </Space>
+      }
+    >
+      <Table
+        dataSource={projects}
+        columns={columns}
+        rowKey="id"
+        loading={isLoading}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (t) => `共 ${t} 条`,
+        }}
+        scroll={{ x: 1000 }}
+      />
+    </Card>
+  )
+}
 
 /** 集群详情页 */
 const ClusterDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
   const [editVisible, setEditVisible] = useState(false)
+  const [activeTab, setActiveTab] = useState('info')
 
   const { data: cluster, isLoading } = useQuery({
     queryKey: ['cluster', id],
@@ -50,20 +157,30 @@ const ClusterDetailPage: React.FC = () => {
           </Space>
         ),
       }}
+      tabActiveKey={activeTab}
+      onTabChange={setActiveTab}
+      tabList={[
+        { key: 'info', tab: '基本信息' },
+        { key: 'projects', tab: '项目' },
+      ]}
     >
-      <Card>
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label="集群名称">{cluster.name}</Descriptions.Item>
-          <Descriptions.Item label="类型">{cluster.type || '-'}</Descriptions.Item>
-          <Descriptions.Item label="状态">
-            <StatusTag status={cluster.status} />
-          </Descriptions.Item>
-          <Descriptions.Item label="K8s 版本">{cluster.k8sVersion || '-'}</Descriptions.Item>
-          <Descriptions.Item label="节点数">{cluster.nodeCount || '-'}</Descriptions.Item>
-          <Descriptions.Item label="创建时间">{cluster.createdAt ? formatDate(cluster.createdAt) : '-'}</Descriptions.Item>
-          <Descriptions.Item label="最后健康检查">{cluster.lastHealthAt ? formatDate(cluster.lastHealthAt) : '-'}</Descriptions.Item>
-        </Descriptions>
-      </Card>
+      {activeTab === 'info' && (
+        <Card>
+          <Descriptions column={2} bordered>
+            <Descriptions.Item label="集群名称">{cluster.name}</Descriptions.Item>
+            <Descriptions.Item label="类型">{cluster.type || '-'}</Descriptions.Item>
+            <Descriptions.Item label="状态">
+              <StatusTag status={cluster.status} />
+            </Descriptions.Item>
+            <Descriptions.Item label="K8s 版本">{cluster.k8sVersion || '-'}</Descriptions.Item>
+            <Descriptions.Item label="节点数">{cluster.nodeCount || '-'}</Descriptions.Item>
+            <Descriptions.Item label="创建时间">{cluster.createdAt ? formatDate(cluster.createdAt) : '-'}</Descriptions.Item>
+            <Descriptions.Item label="最后健康检查">{cluster.lastHealthAt ? formatDate(cluster.lastHealthAt) : '-'}</Descriptions.Item>
+          </Descriptions>
+        </Card>
+      )}
+
+      {activeTab === 'projects' && <ClusterProjectsTab clusterId={cluster.id} />}
 
       {/* 编辑集群弹窗 */}
       <ModalForm

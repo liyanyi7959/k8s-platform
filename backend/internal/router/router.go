@@ -711,6 +711,10 @@ func registerHelmRoutes(a k8sRouteArgs) {
 	k8s, ctl, p := a.k8s, a.ctl, a.perm
 	k8s.GET("/clusters/:id/helm/releases", p.read, ctl.ListHelmReleases)
 	k8s.GET("/clusters/:id/helm/releases/detail", p.read, ctl.GetHelmReleaseDetail)
+	k8s.POST("/clusters/:id/helm/install", p.write, ctl.HelmInstall)
+	k8s.DELETE("/clusters/:id/helm/releases/:ns/:name", p.write, ctl.HelmUninstall)
+	k8s.GET("/clusters/:id/helm/repos", p.read, ctl.HelmRepoList)
+	k8s.GET("/clusters/:id/helm/search", p.read, ctl.HelmSearch)
 }
 
 // ── WebSocket ──

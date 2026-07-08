@@ -167,6 +167,7 @@ var builtinAppTemplates = []model.AppTemplate{
 		Category:    "networking",
 		Icon:        "🌐",
 		IsBuiltin:   true,
+		DeployType:  "yaml",
 		Template: `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -222,6 +223,7 @@ spec:
 		Category:    "database",
 		Icon:        "🔴",
 		IsBuiltin:   true,
+		DeployType:  "yaml",
 		Template: `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -277,6 +279,7 @@ spec:
 		Category:    "database",
 		Icon:        "🗄️",
 		IsBuiltin:   true,
+		DeployType:  "yaml",
 		Template: `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -335,6 +338,7 @@ spec:
 		Category:    "devtool",
 		Icon:        "🛠️",
 		IsBuiltin:   true,
+		DeployType:  "yaml",
 		Template: `apiVersion: v1
 kind: Pod
 metadata:
@@ -357,6 +361,51 @@ spec:
           memory: 256Mi
 `,
 		Variables: `[{"name":"NAMESPACE","default":"default"},{"name":"NAME","default":"busybox-debug"},{"name":"IMAGE","default":"busybox:latest"}]`,
+	},
+	// ---- Helm 类型模板 ----
+	{
+		Name:        "helm-redis",
+		DisplayName: "Redis (Helm)",
+		Description: "通过 Helm Chart 部署 Bitnami Redis，适用于生产环境的高可用缓存集群。",
+		Category:    "database",
+		Icon:        "🔴",
+		IsBuiltin:   true,
+		DeployType:  "helm",
+		Template:    "bitnami/redis",
+		Variables:   "[]",
+	},
+	{
+		Name:        "helm-nginx",
+		DisplayName: "Nginx (Helm)",
+		Description: "通过 Helm Chart 部署 Bitnami Nginx，提供高性能 HTTP 服务器与反向代理。",
+		Category:    "networking",
+		Icon:        "🌐",
+		IsBuiltin:   true,
+		DeployType:  "helm",
+		Template:    "bitnami/nginx",
+		Variables:   "[]",
+	},
+	{
+		Name:        "helm-mysql",
+		DisplayName: "MySQL (Helm)",
+		Description: "通过 Helm Chart 部署 Bitnami MySQL，适用于关系型数据库持久化场景。",
+		Category:    "database",
+		Icon:        "🗄️",
+		IsBuiltin:   true,
+		DeployType:  "helm",
+		Template:    "bitnami/mysql",
+		Variables:   "[]",
+	},
+	{
+		Name:        "helm-mongodb",
+		DisplayName: "MongoDB (Helm)",
+		Description: "通过 Helm Chart 部署 Bitnami MongoDB，适用于文档型数据库与大数据场景。",
+		Category:    "database",
+		Icon:        "🍃",
+		IsBuiltin:   true,
+		DeployType:  "helm",
+		Template:    "bitnami/mongodb",
+		Variables:   "[]",
 	},
 }
 
