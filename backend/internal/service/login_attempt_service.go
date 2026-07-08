@@ -8,12 +8,6 @@ import (
 	"time"
 )
 
-// ── 登录限流 Service ──
-// 基于 CacheStore (Redis) 实现登录失败计数与账号锁定：
-// - 连续失败达 MaxFailures 次后锁定 LockDuration 时间
-// - 锁定期内拒绝登录，返回剩余锁定时间
-// - 登录成功时自动清零计数
-
 var (
 	ErrAccountLocked = errors.New("account is locked due to too many failed attempts")
 )
@@ -28,95 +22,140 @@ type LoginAttemptService struct {
 	cache CacheStore
 }
 
+type LoginAttemptStatus struct {
+	FailedAttempts       int  `json:"failed_attempts"`
+	RemainingAttempts    int  `json:"remaining_attempts"`
+	MaxAttempts          int  `json:"max_attempts"`
+	Locked               bool `json:"locked"`
+	LockRemainingSeconds int  `json:"lock_remaining_seconds,omitempty"`
+	LockDurationSeconds  int  `json:"lock_duration_seconds,omitempty"`
+}
+
+type loginFailData struct {
+	Count       int   `json:"count"`
+	LockedUntil int64 `json:"locked_until"`
+}
+
 func NewLoginAttemptService(cache CacheStore) *LoginAttemptService {
 	return &LoginAttemptService{cache: cache}
 }
 
-// loginFailData 存储失败次数与锁定截止时间
-type loginFailData struct {
-	Count    int   `json:"count"`
-	LockedUntil int64 `json:"locked_until"` // unix timestamp, 0 表示未锁定
+func emptyLoginAttemptStatus() LoginAttemptStatus {
+	return LoginAttemptStatus{}
 }
 
-// IsLocked 检查账号是否被锁定，返回是否锁定及剩余锁定秒数
-func (las *LoginAttemptService) IsLocked(ctx context.Context, username string) (locked bool, remainSec int) {
-	if las == nil || !las.cache.Enabled() {
-		return false, 0
+func defaultLoginAttemptStatus() LoginAttemptStatus {
+	return LoginAttemptStatus{
+		RemainingAttempts:   MaxLoginFailures,
+		MaxAttempts:         MaxLoginFailures,
+		LockDurationSeconds: int(LoginLockDuration.Seconds()),
 	}
-	key := loginFailKeyPrefix + username
+}
+
+func (las *LoginAttemptService) loadData(ctx context.Context, key string) (loginFailData, bool) {
+	if las == nil || !las.cache.Enabled() {
+		return loginFailData{}, false
+	}
 	b, ok, err := las.cache.Get(ctx, key)
 	if err != nil || !ok || len(b) == 0 {
-		return false, 0
+		return loginFailData{}, false
 	}
 	var data loginFailData
 	if json.Unmarshal(b, &data) != nil {
-		return false, 0
+		return loginFailData{}, false
 	}
-	if data.LockedUntil == 0 {
-		return false, 0
-	}
-	now := time.Now().Unix()
-	if now >= data.LockedUntil {
-		// 锁定已过期，清理
-		_ = las.cache.Del(ctx, key)
-		return false, 0
-	}
-	return true, int(data.LockedUntil - now)
+	return data, true
 }
 
-// RecordFailure 记录一次登录失败，达阈值则锁定
-func (las *LoginAttemptService) RecordFailure(ctx context.Context, username string) (locked bool, remainSec int) {
-	if las == nil || !las.cache.Enabled() {
-		return false, 0
+func (las *LoginAttemptService) buildStatusFromData(ctx context.Context, key string, data loginFailData) LoginAttemptStatus {
+	status := defaultLoginAttemptStatus()
+	if data.Count < 0 {
+		data.Count = 0
 	}
-	key := loginFailKeyPrefix + username
+	status.FailedAttempts = data.Count
 
-	var data loginFailData
-	if b, ok, err := las.cache.Get(ctx, key); err == nil && ok && len(b) > 0 {
-		_ = json.Unmarshal(b, &data)
-	}
-
-	// 如果已锁定，直接返回剩余时间
 	if data.LockedUntil > 0 {
 		now := time.Now().Unix()
 		if now >= data.LockedUntil {
-			// 锁定过期，重新计数
-			data = loginFailData{Count: 1, LockedUntil: 0}
-		} else {
-			return true, int(data.LockedUntil - now)
+			if las != nil && las.cache.Enabled() {
+				_ = las.cache.Del(ctx, key)
+			}
+			return status
 		}
-	} else {
-		data.Count++
+		status.Locked = true
+		status.RemainingAttempts = 0
+		status.LockRemainingSeconds = int(data.LockedUntil - now)
+		return status
 	}
 
-	// 达到阈值则锁定
+	remaining := MaxLoginFailures - data.Count
+	if remaining < 0 {
+		remaining = 0
+	}
+	status.RemainingAttempts = remaining
+	return status
+}
+
+func (las *LoginAttemptService) GetStatus(ctx context.Context, username string) LoginAttemptStatus {
+	if las == nil || !las.cache.Enabled() {
+		return emptyLoginAttemptStatus()
+	}
+	key := loginFailKeyPrefix + username
+	data, ok := las.loadData(ctx, key)
+	if !ok {
+		return defaultLoginAttemptStatus()
+	}
+	return las.buildStatusFromData(ctx, key, data)
+}
+
+func (las *LoginAttemptService) IsLocked(ctx context.Context, username string) (locked bool, remainSec int) {
+	status := las.GetStatus(ctx, username)
+	return status.Locked, status.LockRemainingSeconds
+}
+
+func (las *LoginAttemptService) RecordFailure(ctx context.Context, username string) (locked bool, remainSec int) {
+	status := las.RecordFailureDetail(ctx, username)
+	return status.Locked, status.LockRemainingSeconds
+}
+
+func (las *LoginAttemptService) RecordFailureDetail(ctx context.Context, username string) LoginAttemptStatus {
+	if las == nil || !las.cache.Enabled() {
+		return emptyLoginAttemptStatus()
+	}
+
+	key := loginFailKeyPrefix + username
+	data, _ := las.loadData(ctx, key)
+	now := time.Now()
+
+	if data.LockedUntil > 0 {
+		if now.Unix() < data.LockedUntil {
+			return las.buildStatusFromData(ctx, key, data)
+		}
+		data = loginFailData{}
+	}
+
+	data.Count++
 	if data.Count >= MaxLoginFailures {
-		data.LockedUntil = time.Now().Add(LoginLockDuration).Unix()
+		data.LockedUntil = now.Add(LoginLockDuration).Unix()
 	}
 
 	b, _ := json.Marshal(data)
 	ttl := LoginLockDuration
 	if data.LockedUntil == 0 {
-		ttl = 30 * time.Minute // 未锁定时计数记录 30min 后过期
+		ttl = 30 * time.Minute
 	}
 	_ = las.cache.Set(ctx, key, b, ttl)
 
-	if data.LockedUntil > 0 {
-		now := time.Now().Unix()
-		return true, int(data.LockedUntil - now)
-	}
-	return false, 0
+	return las.buildStatusFromData(ctx, key, data)
 }
 
-// ResetFailures 登录成功时清零失败计数
 func (las *LoginAttemptService) ResetFailures(ctx context.Context, username string) {
 	if las == nil || !las.cache.Enabled() {
 		return
 	}
-	_ = las.cache.Del(ctx, loginFailKeyPrefix + username)
+	_ = las.cache.Del(ctx, loginFailKeyPrefix+username)
 }
 
-// FormatLockMessage 格式化锁定提示文案
 func FormatLockMessage(remainSec int) string {
 	min := remainSec / 60
 	sec := remainSec % 60

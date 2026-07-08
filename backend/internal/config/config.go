@@ -137,7 +137,7 @@ func Default() Config {
 		},
 		Auth: AuthConfig{
 			AdminUsername: "admin",
-			AdminPassword: "admin",
+			AdminPassword: "admin@123",
 		},
 		Crypto: CryptoConfig{
 			MasterKey: "", // 空值时回退使用 JWT secret（兼容旧配置），建议生产环境独立配置
@@ -229,8 +229,8 @@ func (c Config) Validate() error {
 	if c.JWT.Secret == "dev_secret_change_me" {
 		_, _ = fmt.Fprintln(os.Stderr, "[WARN] jwt.secret is using default value 'dev_secret_change_me', please change it for production")
 	}
-	if c.Auth.AdminPassword == "admin" {
-		_, _ = fmt.Fprintln(os.Stderr, "[WARN] auth.admin_password is using default value 'admin', please change it for production")
+	if c.Auth.AdminPassword == "admin@123" {
+		_, _ = fmt.Fprintln(os.Stderr, "[WARN] auth.admin_password is using default value 'admin@123', please change it for production")
 	}
 	if strings.TrimSpace(c.Crypto.MasterKey) == "" {
 		_, _ = fmt.Fprintln(os.Stderr, "[WARN] crypto.master_key is not set, falling back to jwt.secret for encryption; consider setting a dedicated key for production")

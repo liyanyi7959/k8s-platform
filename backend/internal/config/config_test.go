@@ -22,6 +22,13 @@ func TestDefault_NonEmpty(t *testing.T) {
 	}
 }
 
+func TestDefault_AdminPassword(t *testing.T) {
+	cfg := Default()
+	if cfg.Auth.AdminPassword != "admin@123" {
+		t.Errorf("Auth.AdminPassword = %q, want %q", cfg.Auth.AdminPassword, "admin@123")
+	}
+}
+
 // ────────── Validate ──────────
 
 func TestValidate_OK_WithDSN(t *testing.T) {
@@ -225,6 +232,15 @@ func TestApplyEnvOverrides(t *testing.T) {
 	}
 	if cfg.JWT.TokenTTL != "48h" {
 		t.Errorf("JWT.TokenTTL = %q, want 48h", cfg.JWT.TokenTTL)
+	}
+}
+
+func TestApplyEnvOverrides_AdminPassword(t *testing.T) {
+	t.Setenv("ADMIN_PASSWORD", "env-admin@123")
+	cfg := Default()
+	applyEnvOverrides(&cfg)
+	if cfg.Auth.AdminPassword != "env-admin@123" {
+		t.Errorf("Auth.AdminPassword = %q, want %q", cfg.Auth.AdminPassword, "env-admin@123")
 	}
 }
 

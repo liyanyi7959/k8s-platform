@@ -40,6 +40,7 @@ export interface LoginRequest {
 /** 登录响应 */
 export interface LoginResponse {
   token: string
+  user?: User
 }
 
 /** 用户列表参数 */

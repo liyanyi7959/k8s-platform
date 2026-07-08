@@ -81,27 +81,45 @@ export const rootContainer = (container: React.ReactNode) => {
   return <AntdApp>{container}</AntdApp>
 }
 
+const LOGIN_PATH = '/login'
+
+const isLoginRoute = () => {
+  const runtimeLocation = typeof window !== 'undefined' ? window.location : undefined
+  const pathname = history.location?.pathname || runtimeLocation?.pathname || ''
+  const hashPath = (runtimeLocation?.hash || '').replace(/^#/, '').split('?')[0]
+  return pathname === LOGIN_PATH || hashPath === LOGIN_PATH
+}
+
+type RequestBusinessError = Error & {
+  code?: number
+  data?: unknown
+}
+
+const createRequestError = (messageText: string, code?: number, data?: unknown): RequestBusinessError => {
+  const error = new Error(messageText) as RequestBusinessError
+  error.name = 'BusinessError'
+  error.code = code
+  error.data = data
+  return error
+}
+
 // ============================================================
 // 初始状态
 // ============================================================
 export async function getInitialState(): Promise<{
   currentUser?: User
 }> {
-  const { location } = history
-
-  if (location.pathname === '/login') {
+  if (isLoginRoute()) {
     return {}
   }
 
   try {
     const currentUser = await getCurrentUser()
-    if (!currentUser?.id) {
-      history.push('/login')
-      return {}
-    }
     return { currentUser }
   } catch {
-    history.push('/login')
+    if (!isLoginRoute()) {
+      history.replace(LOGIN_PATH)
+    }
     return {}
   }
 }
@@ -578,7 +596,9 @@ export const layout = ({ initialState, setInitialState }: any) => {
     } finally {
       localStorage.removeItem('token')
       setInitialState({ currentUser: undefined })
-      history.push('/login')
+      if (!isLoginRoute()) {
+        history.replace(LOGIN_PATH)
+      }
     }
   }
 
@@ -793,9 +813,11 @@ export const request: RequestConfig = {
 
       if (status === 401) {
         localStorage.removeItem('token')
-        history.push('/login')
+        if (!isLoginRoute()) {
+          history.replace(LOGIN_PATH)
+        }
         message.error('登录已过期，请重新登录')
-        throw new Error('登录已过期，请重新登录')
+        throw createRequestError('登录已过期，请重新登录', 401)
       }
 
       const isApiEnvelope = payload && typeof payload === 'object' && 'code' in payload && 'message' in payload && 'data' in payload
@@ -803,15 +825,17 @@ export const request: RequestConfig = {
         return response
       }
 
-      if (payload.code === 401) {
+      if (payload.code === 401 || payload.code === 1002) {
         localStorage.removeItem('token')
-        history.push('/login')
+        if (!isLoginRoute()) {
+          history.replace(LOGIN_PATH)
+        }
         message.error(payload.message || '登录已过期，请重新登录')
-        throw new Error(payload.message || '登录已过期，请重新登录')
+        throw createRequestError(payload.message || '登录已过期，请重新登录', payload.code, payload.data)
       }
 
       if (payload.code !== 0) {
-        throw new Error(payload.message || '请求失败')
+        throw createRequestError(payload.message || '请求失败', payload.code, payload.data)
       }
 
       response.data = payload.data

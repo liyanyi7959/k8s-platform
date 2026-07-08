@@ -14,7 +14,7 @@ jwt:
   token_ttl: "168h"
 auth:
   admin_username: "admin"
-  admin_password: "admin"
+  admin_password: "admin@123"
 # crypto.master_key 用于加密 kubeconfig 等敏感数据（AES-256-GCM）。
 # 若不配置，则回退使用 jwt.secret（兼容旧版）。生产环境建议独立配置。
 crypto:

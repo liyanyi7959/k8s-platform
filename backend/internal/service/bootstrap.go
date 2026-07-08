@@ -36,7 +36,7 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 		username = "admin"
 	}
 	if password == "" {
-		password = "admin"
+		password = "admin@123"
 	}
 
 	permissionCatalog := BuiltinPermissionCatalog()
@@ -120,6 +120,15 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 			if err := tx.Create(&user).Error; err != nil {
 				return err
 			}
+		} else if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+			hash, genErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if genErr != nil {
+				return genErr
+			}
+			if err := tx.Model(&model.User{}).Where("id = ?", user.ID).Update("password_hash", string(hash)).Error; err != nil {
+				return err
+			}
+			user.PasswordHash = string(hash)
 		}
 
 		// 绑定 admin 角色（不存在则创建关联）。

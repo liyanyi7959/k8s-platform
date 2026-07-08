@@ -81,7 +81,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -94,7 +94,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 67
+        "register": 47
       },
       "enableBy": "register"
     },
@@ -107,7 +107,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 15
+        "register": 13
       },
       "enableBy": "register"
     },
@@ -124,7 +124,7 @@
             0
           ]
         },
-        "register": 7
+        "register": 8
       },
       "enableBy": "register"
     },
@@ -138,10 +138,10 @@
       "time": {
         "hooks": {
           "onStart": [
-            6
+            4
           ]
         },
-        "register": 4
+        "register": 5
       },
       "enableBy": "register"
     },
@@ -155,43 +155,6 @@
       "time": {
         "hooks": {
           "modifyRoutes": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -215,94 +178,24 @@
       "time": {
         "hooks": {
           "onDevCompileDone": [
-            752,
-            53,
-            53,
-            43,
-            50,
-            92,
+            1372,
+            60,
             54,
-            44,
-            110,
-            39,
-            81,
-            39,
-            102,
-            49,
-            43,
-            43,
-            79,
-            43,
-            34,
-            58,
-            41,
-            47,
-            43,
-            68,
-            38,
-            86,
-            43,
+            131,
+            51,
+            85,
             52,
+            47,
+            51,
+            46,
+            58,
+            94,
             48,
-            88,
-            45,
-            86,
-            38,
-            72,
-            40,
-            82,
-            55,
-            104,
-            40,
-            87,
-            55,
-            59,
-            79,
-            73,
-            43,
-            43,
-            112,
-            36,
-            39,
-            46,
-            69,
-            38,
-            42,
-            44,
-            107,
-            37,
-            72,
-            66,
-            37,
-            104,
-            46,
-            96,
-            49,
-            46,
-            40,
-            55,
-            43,
-            61,
-            48,
-            77,
-            46,
-            79,
-            31,
-            42,
-            43,
-            44,
-            62,
-            95,
-            36,
-            144,
-            42,
-            83,
-            46,
-            53,
-            46
+            70,
+            73
           ]
         },
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -316,56 +209,19 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            139
+            331
           ],
           "onGenerateFiles": [
-            11,
-            26,
-            25,
-            28,
-            25,
-            24,
+            12,
+            47,
+            55,
             27,
-            26,
-            21,
-            20,
-            22,
-            25,
-            28,
-            28,
-            25,
-            24,
-            23,
-            23,
-            28,
-            29,
-            26,
-            41,
-            31,
-            22,
-            21,
-            26,
-            21,
-            21,
-            23,
-            23,
-            25,
-            36,
+            37,
             32,
-            20,
-            21,
-            29,
-            31,
-            28,
-            23,
-            32,
-            29,
-            22,
-            27,
-            23
+            21
           ]
         },
-        "register": 34
+        "register": 33
       },
       "enableBy": "register"
     },
@@ -385,47 +241,10 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ]
         },
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -439,8 +258,6 @@
       "time": {
         "hooks": {
           "onCheckConfig": [
-            0,
-            0,
             0
           ],
           "onCheck": [
@@ -448,132 +265,18 @@
           ],
           "onPrepareBuildSuccess": [
             0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0,
             0,
             0,
             1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0
           ],
           "onCheckCode": [
             1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -658,7 +361,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -672,12 +375,10 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            0,
-            0,
-            0
+            1
           ]
         },
-        "register": 21
+        "register": 19
       },
       "enableBy": "register"
     },
@@ -1546,7 +1247,7 @@
             0
           ]
         },
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1560,10 +1261,10 @@
       "time": {
         "hooks": {
           "addBeforeMiddlewares": [
-            11
+            12
           ]
         },
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1576,7 +1277,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 97
+        "register": 98
       },
       "enableBy": "register"
     },
@@ -1589,7 +1290,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 100
+        "register": 90
       },
       "enableBy": "config"
     },
@@ -1602,7 +1303,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 36
+        "register": 32
       },
       "enableBy": "config"
     },
@@ -1616,29 +1317,46 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            0
+            1
           ],
           "addBeforeMiddlewares": [
             0
           ],
           "modifyHTMLFavicon": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             1,
             0,
-            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0
           ]
         },
@@ -1656,48 +1374,11 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            5,
-            0,
-            1,
+            8,
+            3,
             2,
             2,
-            1,
             2,
-            1,
-            1,
-            1,
-            1,
-            2,
-            1,
-            2,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            2,
-            1,
-            1,
-            1,
-            1,
-            2,
-            1,
             1,
             1
           ],
@@ -1708,47 +1389,10 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1761,7 +1405,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1775,13 +1419,13 @@
       "time": {
         "hooks": {
           "onStart": [
-            3
+            2
           ],
           "addBeforeMiddlewares": [
-            2
+            1
           ]
         },
-        "register": 45
+        "register": 43
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mpa/mpa": {
@@ -1806,7 +1450,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/overrides/overrides": {
@@ -1825,120 +1469,9 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "addEntryImports": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -1982,131 +1515,18 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            2,
-            0,
-            0
+            6
           ],
           "onGenerateFiles": [
-            183,
-            38,
-            42,
-            40,
-            48,
-            27,
-            29,
-            26,
-            28,
-            29,
-            26,
-            23,
-            48,
-            36,
+            188,
+            62,
+            70,
             32,
-            24,
-            26,
-            27,
-            30,
-            24,
-            31,
-            69,
-            27,
-            21,
-            28,
-            26,
-            24,
-            22,
-            22,
-            30,
-            32,
-            61,
-            54,
-            27,
-            29,
-            27,
-            69,
-            26,
-            30,
-            28,
-            72,
-            26,
-            31,
-            22
+            41,
+            50,
+            31
           ],
           "addPolyfillImports": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -2123,7 +1543,7 @@
             0
           ]
         },
-        "register": 4
+        "register": 5
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/polyfill/publicPathPolyfill": {
@@ -2144,80 +1564,6 @@
             0,
             0,
             0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -2226,7 +1572,7 @@
             0
           ]
         },
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2240,44 +1586,7 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            300,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+            281,
             0,
             0,
             0,
@@ -2286,7 +1595,7 @@
             0
           ]
         },
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2299,7 +1608,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2326,50 +1635,13 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            2,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            0,
-            1,
-            25,
-            1,
-            1,
+            3,
             1,
             1,
             1,
             1,
             0,
-            1,
-            1,
-            1,
-            1,
-            1
+            0
           ],
           "addBeforeMiddlewares": [
             0
@@ -2389,97 +1661,23 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            164,
-            19,
-            149,
-            8,
-            172,
-            9,
-            192,
-            13,
-            288,
-            12,
-            185,
-            11,
-            277,
-            7,
-            185,
-            9,
-            142,
-            8,
-            134,
-            8,
-            176,
-            9,
-            145,
-            12,
-            186,
-            9,
-            143,
-            8,
-            178,
-            10,
-            133,
-            10,
-            131,
-            10,
-            155,
-            11,
-            168,
-            11,
-            159,
-            12,
-            167,
-            14,
-            190,
-            12,
-            155,
-            9,
-            153,
-            14,
-            217,
-            10,
-            158,
-            15,
-            144,
-            8,
-            137,
-            12,
-            160,
-            10,
-            163,
-            9,
-            163,
-            12,
-            196,
-            10,
-            267,
-            11,
-            143,
-            10,
-            153,
-            10,
-            223,
-            10,
-            197,
-            8,
-            167,
-            8,
-            160,
+            128,
             17,
-            261,
-            12,
-            220,
-            9,
-            251,
-            9,
+            292,
+            14,
+            612,
+            21,
             180,
-            12,
-            160,
-            10
+            14,
+            191,
+            13,
+            281,
+            11,
+            149,
+            9
           ]
         },
-        "register": 9
+        "register": 10
       },
       "enableBy": "register"
     },
@@ -2492,7 +1690,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -2505,7 +1703,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/ssr/ssr": {
@@ -2517,7 +1715,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 11
+        "register": 9
       },
       "enableBy": "config"
     },
@@ -2531,50 +1729,13 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            522,
-            16,
-            10,
-            22,
-            18,
-            8,
-            17,
-            11,
-            12,
-            7,
-            12,
-            13,
-            9,
-            12,
-            10,
-            10,
-            9,
-            11,
-            13,
-            12,
-            18,
-            13,
-            12,
-            7,
-            15,
-            13,
-            10,
-            9,
-            10,
-            11,
-            12,
-            12,
-            14,
-            12,
-            8,
-            24,
-            16,
-            15,
-            10,
-            14,
-            18,
+            590,
+            42,
             23,
-            11,
-            11
+            18,
+            12,
+            14,
+            14
           ]
         },
         "register": 9
@@ -2594,7 +1755,7 @@
             0
           ]
         },
-        "register": 5
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -2607,7 +1768,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 6
       },
       "enableBy": "config"
     },
@@ -2633,7 +1794,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 18
+        "register": 12
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/monorepo/redirect": {
@@ -2645,7 +1806,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 30
+        "register": 29
       },
       "enableBy": "config"
     },
@@ -2659,53 +1820,16 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            4,
-            1,
-            1,
-            2,
-            1,
-            1,
-            1,
-            2,
-            1,
-            1,
-            2,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            2,
-            1,
-            3,
-            1,
-            4,
-            0,
-            0,
-            2,
-            1,
-            1,
-            1,
-            2,
-            2,
+            7,
             3,
             2,
             1,
-            2,
-            1,
-            3,
-            1,
-            1,
             1,
             2,
-            1,
-            2,
-            1,
-            2
+            1
           ]
         },
-        "register": 3
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/clickToComponent/clickToComponent": {
@@ -2730,7 +1854,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -2785,7 +1909,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 5
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mako/mako": {
@@ -2797,7 +1921,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2810,7 +1934,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/hmrGuardian/hmrGuardian": {
@@ -2835,27 +1959,44 @@
       "time": {
         "hooks": {
           "addHTMLHeadScripts": [
-            739,
-            0,
-            0,
-            0,
-            0,
-            47,
-            0,
-            38,
+            1354,
+            1353,
+            1353,
             0,
             0,
             0,
             0,
             0,
-            52,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0
           ]
         },
-        "register": 37
+        "register": 33
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/forget/forget": {
@@ -2867,7 +2008,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -2881,10 +2022,10 @@
       "time": {
         "hooks": {
           "modifyUniBundler": [
-            1422
+            1671
           ]
         },
-        "register": 4
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -2910,7 +2051,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 54
+        "register": 57
       },
       "enableBy": "register"
     },
@@ -2924,10 +2065,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            51
+            49
           ]
         },
-        "register": 100
+        "register": 94
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/commands/help": {
@@ -3017,7 +2158,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -3056,7 +2197,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -3069,7 +2210,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -3082,7 +2223,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -3108,7 +2249,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -3121,7 +2262,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -3134,7 +2275,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -3160,7 +2301,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -3173,7 +2314,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 25
+        "register": 40
       },
       "enableBy": "register"
     },
@@ -3186,7 +2327,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 5
       },
       "enableBy": "register"
     },
@@ -3199,7 +2340,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 10
       },
       "enableBy": "register"
     },
@@ -3219,96 +2360,22 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            6,
-            1,
-            1,
-            1,
-            1,
+            7,
             3,
-            3,
-            1,
-            1,
-            1,
-            1,
-            2,
-            2,
-            2,
-            1,
-            1,
-            2,
-            2,
-            1,
-            3,
-            3,
-            2,
-            1,
-            1,
-            3,
-            2,
-            2,
+            4,
             1,
             2,
             1,
-            3,
-            1,
-            2,
-            1,
-            2,
-            3,
-            1,
-            2,
-            1,
-            2,
-            3,
-            2,
-            0,
-            2
+            1
           ],
           "addTmpGenerateWatcherPaths": [
-            1
+            0
           ]
         },
-        "register": 3
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -3323,7 +2390,7 @@
       },
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/antd": {
@@ -3336,9 +2403,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            3,
-            1,
-            0
+            4
           ],
           "modifyAppData": [
             0
@@ -3360,120 +2425,9 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -3489,90 +2443,16 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            6,
-            4,
-            2,
-            2,
-            4,
-            2,
-            2,
-            2,
-            1,
-            2,
-            2,
-            2,
-            1,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            3,
-            3,
-            2,
-            2,
-            2,
+            38,
+            9,
+            9,
             4,
             1,
             2,
-            2,
-            4,
-            2,
-            2,
-            1,
-            2,
-            2,
-            2,
-            4,
-            1,
-            3,
-            3,
-            3,
-            3,
-            4,
-            3,
-            2
+            1
           ],
           "addExtraBabelPlugins": [
             0
@@ -3581,7 +2461,7 @@
             0
           ]
         },
-        "register": 12
+        "register": 16
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/dva": {
@@ -3593,7 +2473,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 13
+        "register": 21
       },
       "enableBy": "config"
     },
@@ -3613,43 +2493,6 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "addRuntimePluginKey": [
@@ -3659,88 +2502,14 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            3,
-            2,
-            0,
+            5,
+            1,
+            5,
             1,
             1,
-            1,
-            2,
-            2,
-            1,
-            0,
-            1,
-            3,
-            1,
-            3,
-            2,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            2,
-            1,
-            1,
-            1,
-            2,
-            1,
-            1,
-            1,
-            2,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            2,
-            2,
-            3,
             1,
             1
           ],
@@ -3751,47 +2520,10 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -3807,101 +2539,25 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            0,
-            0,
             0
           ],
           "addLayouts": [
-            0,
             1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+            1,
+            1,
             0,
             0,
             0,
             0
           ],
           "modifyAppData": [
-            3
+            1
           ],
           "addRuntimePlugin": [
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+            1,
             0,
             0,
             0
@@ -3913,93 +2569,19 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            12,
-            5,
-            5,
-            5,
-            6,
-            3,
-            5,
-            4,
-            4,
-            4,
-            4,
-            6,
-            4,
-            5,
-            7,
-            4,
-            3,
-            5,
-            5,
-            6,
-            7,
-            5,
-            6,
-            6,
-            4,
-            7,
-            4,
-            4,
-            7,
-            5,
-            4,
-            9,
+            37,
+            11,
+            14,
             8,
+            6,
             5,
-            4,
-            9,
-            8,
-            5,
-            3,
-            5,
-            8,
-            8,
-            3,
             4
           ]
         },
-        "register": 5
+        "register": 7
       },
       "enableBy": "config"
     },
@@ -4045,96 +2627,22 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
+            159,
             143,
-            93,
-            89,
-            126,
-            115,
+            252,
+            145,
             121,
-            94,
-            121,
-            97,
-            90,
-            107,
-            94,
-            90,
-            109,
-            101,
-            103,
-            103,
-            112,
-            123,
-            115,
-            125,
-            128,
-            99,
-            134,
-            95,
-            151,
-            94,
-            104,
-            121,
-            104,
-            143,
-            186,
-            163,
-            88,
-            93,
-            185,
-            119,
-            112,
-            216,
-            121,
-            146,
-            195,
-            104,
-            107
+            122,
+            100
           ],
           "addTmpGenerateWatcherPaths": [
             0
           ]
         },
-        "register": 2
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -4167,47 +2675,10 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ]
         },
-        "register": 4
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -4232,7 +2703,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/react-query": {
@@ -4245,97 +2716,21 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            11,
-            0,
-            0
+            9
           ],
           "onStart": [
             1
           ],
           "modifyTSConfig": [
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
             0,
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
             0,
             0,
             0
           ],
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -4351,90 +2746,16 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
             4,
-            1,
-            3,
-            3,
-            3,
-            3,
             2,
-            1,
-            3,
-            2,
-            1,
-            2,
-            2,
-            2,
-            2,
-            2,
-            1,
-            2,
-            1,
-            2,
-            1,
-            2,
-            2,
-            3,
-            2,
-            1,
-            2,
-            2,
-            3,
-            3,
-            2,
-            13,
-            4,
-            2,
-            2,
-            2,
-            2,
-            1,
             5,
-            2,
-            2,
-            2,
-            1,
-            2
+            4,
+            3,
+            4,
+            3
           ]
         },
         "register": 1
@@ -4457,93 +2778,19 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            8,
+            14,
             3,
-            2,
-            2,
-            3,
-            3,
-            2,
-            2,
+            7,
             2,
             3,
             3,
-            1,
-            4,
-            2,
-            2,
-            1,
-            2,
-            3,
-            2,
-            2,
-            3,
-            2,
-            3,
-            2,
-            3,
-            3,
-            3,
-            2,
-            3,
-            4,
-            2,
-            3,
-            4,
-            3,
-            2,
-            2,
-            2,
-            2,
-            5,
-            2,
-            2,
-            3,
-            2,
-            1
+            2
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -4556,7 +2803,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -4569,7 +2816,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -4582,7 +2829,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -4596,8 +2843,6 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            0,
-            0,
             0
           ]
         },
@@ -4688,6 +2933,11 @@
         "name": "项目管理",
         "path": "/projects",
         "component": "@/pages/projects/index"
+      },
+      {
+        "name": "应用商店",
+        "path": "/app-store",
+        "component": "@/pages/app-store/index"
       },
       {
         "name": "集群详情",
@@ -5303,6 +3553,11 @@
           {
             "path": "/k8s/:clusterId/helm-releases",
             "component": "@/pages/k8s/$clusterId/helm-releases",
+            "hideInMenu": true
+          },
+          {
+            "path": "/k8s/:clusterId/helm-repos",
+            "component": "@/pages/k8s/$clusterId/helm-repos",
             "hideInMenu": true
           },
           {
@@ -5416,6 +3671,11 @@
         "component": "@/pages/projects/index"
       },
       {
+        "name": "应用商店",
+        "path": "/app-store",
+        "component": "@/pages/app-store/index"
+      },
+      {
         "name": "集群详情",
         "path": "/clusters/:id",
         "hideInMenu": true,
@@ -6029,6 +4289,11 @@
           {
             "path": "/k8s/:clusterId/helm-releases",
             "component": "@/pages/k8s/$clusterId/helm-releases",
+            "hideInMenu": true
+          },
+          {
+            "path": "/k8s/:clusterId/helm-repos",
+            "component": "@/pages/k8s/$clusterId/helm-repos",
             "hideInMenu": true
           },
           {
@@ -7011,7 +5276,7 @@
       "file": "@/pages/login/index.tsx",
       "id": "1",
       "absPath": "/login",
-      "__content": "import React, { useState, useEffect, useRef, useCallback } from 'react'\nimport { history, useModel } from '@umijs/max'\nimport { Button, Form, Input, Typography, message, Checkbox, Modal } from 'antd'\nimport { ArrowRightOutlined, LockOutlined, UserOutlined } from '@ant-design/icons'\nimport { getCurrentUser, login, requestPasswordReset, confirmPasswordReset } from '@/services/auth'\n\nconst REMEMBER_USER_KEY = 'aiops_remembered_user'\nconst TRACK_WIDTH = 280\nconst SLIDER_WIDTH = 40\nconst TOLERANCE = 6\n\nconst LoginPage: React.FC = () => {\n  const [loading, setLoading] = useState(false)\n  const [remember, setRemember] = useState(false)\n  const { setInitialState } = useModel('@@initialState')\n  const [form] = Form.useForm()\n\n  // 滑块验证码状态（纯前端实现，不依赖 Redis）\n  const [targetX, setTargetX] = useState(0)\n  const [sliderX, setSliderX] = useState(0)\n  const [dragging, setDragging] = useState(false)\n  const [verified, setVerified] = useState(false)\n  const trackRef = useRef<HTMLDivElement>(null)\n\n  // 找回密码弹窗\n  const [resetModalOpen, setResetModalOpen] = useState(false)\n  const [resetStep, setResetStep] = useState<'request' | 'confirm'>('request')\n  const [resetToken, setResetToken] = useState('')\n  const [resetForm] = Form.useForm()\n\n  // 生成随机目标位置\n  const generateCaptcha = useCallback(() => {\n    const max = TRACK_WIDTH - SLIDER_WIDTH - 20\n    setTargetX(20 + Math.floor(Math.random() * max))\n    setSliderX(0)\n    setVerified(false)\n  }, [])\n\n  useEffect(() => {\n    try {\n      const raw = localStorage.getItem(REMEMBER_USER_KEY)\n      if (raw) {\n        form.setFieldsValue({ username: atob(raw) })\n        setRemember(true)\n      }\n    } catch {\n      // ignore\n    }\n    generateCaptcha()\n  }, [form, generateCaptcha])\n\n  // 滑块拖拽\n  const handleMouseDown = (e: React.MouseEvent) => {\n    if (verified) return\n    setDragging(true)\n    e.preventDefault()\n  }\n\n  useEffect(() => {\n    if (!dragging) return\n    const handleMouseMove = (e: MouseEvent) => {\n      if (!trackRef.current) return\n      const rect = trackRef.current.getBoundingClientRect()\n      const x = Math.max(0, Math.min(e.clientX - rect.left, TRACK_WIDTH - SLIDER_WIDTH))\n      setSliderX(x)\n    }\n    const handleMouseUp = () => {\n      setDragging(false)\n      // 松手时校验\n      const diff = Math.abs(sliderX - targetX)\n      if (diff <= TOLERANCE) {\n        setVerified(true)\n      } else {\n        message.error('验证失败，请重试')\n        // 失败后重置\n        setTimeout(() => generateCaptcha(), 300)\n      }\n    }\n    window.addEventListener('mousemove', handleMouseMove)\n    window.addEventListener('mouseup', handleMouseUp)\n    return () => {\n      window.removeEventListener('mousemove', handleMouseMove)\n      window.removeEventListener('mouseup', handleMouseUp)\n    }\n  }, [dragging, sliderX, targetX, generateCaptcha])\n\n  const handleSubmit = async (values: { username: string; password: string }) => {\n    if (!verified) {\n      message.warning('请先完成滑块验证')\n      return\n    }\n    setLoading(true)\n    try {\n      await login(values)\n      const currentUser = await getCurrentUser()\n      setInitialState({ currentUser })\n      if (remember && values.username) {\n        localStorage.setItem(REMEMBER_USER_KEY, btoa(values.username))\n      } else {\n        localStorage.removeItem(REMEMBER_USER_KEY)\n      }\n      message.success('登录成功')\n      history.push('/')\n    } catch {\n      // 登录失败，重置滑块\n      generateCaptcha()\n    } finally {\n      setLoading(false)\n    }\n  }\n\n  // ── 找回密码 ──\n  const handleOpenReset = () => {\n    setResetStep('request')\n    setResetToken('')\n    resetForm.resetFields()\n    setResetModalOpen(true)\n  }\n\n  const handleRequestReset = async () => {\n    const values = await resetForm.validateFields()\n    try {\n      const res = await requestPasswordReset(values.identifier)\n      if (res.token) {\n        setResetToken(res.token)\n        setResetStep('confirm')\n        message.success(res.message || '重置 token 已生成')\n      } else {\n        message.info(res.message || '如果该账号存在，重置链接已生成')\n        setResetModalOpen(false)\n      }\n    } catch {\n      // error handled by interceptor\n    }\n  }\n\n  const handleConfirmReset = async () => {\n    const values = await resetForm.validateFields()\n    try {\n      const res = await confirmPasswordReset(resetToken, values.newPassword)\n      message.success(res.message || '密码重置成功')\n      setResetModalOpen(false)\n    } catch {\n      // error handled by interceptor\n    }\n  }\n\n  return (\n    <div className=\"app-login-shell\">\n      <div className=\"app-login-panel\">\n        <section className=\"app-login-form\">\n          <span className=\"app-login-form__eyebrow\">Sign In</span>\n          <Typography.Title level={3} style={{ marginBottom: 24 }}>\n            AIOPS 智能运维平台\n          </Typography.Title>\n\n          <Form\n            form={form}\n            onFinish={handleSubmit}\n            size=\"large\"\n            autoComplete=\"off\"\n            layout=\"vertical\"\n          >\n            <Form.Item\n              label=\"用户名\"\n              name=\"username\"\n              rules={[\n                { required: true, message: '请输入用户名' },\n                { pattern: /^[a-zA-Z0-9_@.\\\\-]+$/, message: '用户名包含非法字符' },\n              ]}\n              validateTrigger=\"onBlur\"\n            >\n              <Input\n                prefix={<UserOutlined />}\n                placeholder=\"请输入用户名\"\n                autoComplete=\"username\"\n                style={{ height: 50 }}\n              />\n            </Form.Item>\n\n            <Form.Item\n              label=\"密码\"\n              name=\"password\"\n              rules={[\n                { required: true, message: '请输入密码' },\n                { min: 6, message: '密码长度至少 6 位' },\n              ]}\n              validateTrigger=\"onBlur\"\n            >\n              <Input.Password\n                prefix={<LockOutlined />}\n                placeholder=\"请输入密码\"\n                autoComplete=\"current-password\"\n                style={{ height: 50 }}\n              />\n            </Form.Item>\n\n            {/* 滑块验证码（纯前端实现） */}\n            <div style={{ marginBottom: 16 }}>\n              <div\n                ref={trackRef}\n                style={{\n                  position: 'relative',\n                  height: 44,\n                  width: '100%',\n                  background: verified ? '#f6ffed' : '#f5f5f5',\n                  borderRadius: 8,\n                  overflow: 'hidden',\n                  border: verified ? '1px solid #52c41a' : '1px solid #d9d9d9',\n                }}\n              >\n                {/* 进度条 */}\n                <div\n                  style={{\n                    position: 'absolute',\n                    left: 0,\n                    top: 0,\n                    height: '100%',\n                    width: verified ? '100%' : `${(sliderX / TRACK_WIDTH) * 100}%`,\n                    background: verified\n                      ? 'linear-gradient(90deg, #52c41a22, #52c41a44)'\n                      : 'linear-gradient(90deg, #1890ff22, #1890ff44)',\n                    transition: dragging ? 'none' : 'width 0.2s',\n                  }}\n                />\n                {/* 目标区域提示（半透明虚线框） */}\n                {!verified && (\n                  <div\n                    style={{\n                      position: 'absolute',\n                      left: targetX,\n                      top: 0,\n                      height: '100%',\n                      width: SLIDER_WIDTH,\n                      border: '2px dashed #1890ff66',\n                      borderRadius: 6,\n                      pointerEvents: 'none',\n                    }}\n                  />\n                )}\n                {/* 滑块按钮 */}\n                <div\n                  style={{\n                    position: 'absolute',\n                    left: verified ? TRACK_WIDTH - SLIDER_WIDTH : sliderX,\n                    top: 0,\n                    height: '100%',\n                    width: SLIDER_WIDTH,\n                    display: 'flex',\n                    alignItems: 'center',\n                    justifyContent: 'center',\n                    cursor: verified ? 'default' : dragging ? 'grabbing' : 'grab',\n                    background: verified ? '#52c41a' : '#fff',\n                    color: verified ? '#fff' : '#999',\n                    border: verified ? 'none' : '1px solid #d9d9d9',\n                    borderRadius: 8,\n                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',\n                    userSelect: 'none',\n                    transition: dragging ? 'none' : 'left 0.2s, background 0.2s',\n                  }}\n                  onMouseDown={handleMouseDown}\n                >\n                  {verified ? '✓' : '→'}\n                </div>\n                {/* 提示文字 */}\n                <div\n                  style={{\n                    position: 'absolute',\n                    right: 12,\n                    top: '50%',\n                    transform: 'translateY(-50%)',\n                    color: verified ? '#52c41a' : '#999',\n                    fontSize: 13,\n                    pointerEvents: 'none',\n                  }}\n                >\n                  {verified ? '验证成功' : '拖动滑块到虚线框内'}\n                </div>\n              </div>\n            </div>\n\n            <div className=\"app-login-remember\">\n              <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)}>\n                记住用户名\n              </Checkbox>\n              <a onClick={handleOpenReset}>忘记密码？</a>\n            </div>\n\n            <Form.Item style={{ marginBottom: 0, marginTop: 16 }}>\n              <Button\n                type=\"primary\"\n                htmlType=\"submit\"\n                loading={loading}\n                block\n                icon={<ArrowRightOutlined />}\n                style={{ height: 50, fontSize: 16, fontWeight: 700 }}\n              >\n                登录\n              </Button>\n            </Form.Item>\n          </Form>\n\n          <div className=\"app-login-footer\">\n            <span className=\"app-login-footer__copyright\">\n              AIOPS V2.1.0 | ops@aiops.company.com\n            </span>\n          </div>\n        </section>\n      </div>\n\n      {/* 找回密码弹窗 */}\n      <Modal\n        title=\"找回密码\"\n        open={resetModalOpen}\n        onCancel={() => setResetModalOpen(false)}\n        footer={null}\n        destroyOnClose\n      >\n        {resetStep === 'request' ? (\n          <Form form={resetForm} layout=\"vertical\" style={{ marginTop: 16 }}>\n            <Form.Item\n              label=\"用户名或邮箱\"\n              name=\"identifier\"\n              rules={[{ required: true, message: '请输入用户名或邮箱' }]}\n            >\n              <Input placeholder=\"请输入用户名或邮箱\" />\n            </Form.Item>\n            <Button type=\"primary\" block onClick={handleRequestReset}>\n              获取重置码\n            </Button>\n          </Form>\n        ) : (\n          <Form form={resetForm} layout=\"vertical\" style={{ marginTop: 16 }}>\n            <Form.Item\n              label=\"新密码\"\n              name=\"newPassword\"\n              rules={[\n                { required: true, message: '请输入新密码' },\n                { min: 6, message: '密码长度至少 6 位' },\n              ]}\n            >\n              <Input.Password placeholder=\"请输入新密码\" />\n            </Form.Item>\n            <Form.Item\n              label=\"确认新密码\"\n              name=\"confirmPassword\"\n              dependencies={['newPassword']}\n              rules={[\n                { required: true, message: '请再次输入新密码' },\n                ({ getFieldValue }) => ({\n                  validator(_, value) {\n                    if (!value || getFieldValue('newPassword') === value) {\n                      return Promise.resolve()\n                    }\n                    return Promise.reject(new Error('两次输入的密码不一致'))\n                  },\n                }),\n              ]}\n            >\n              <Input.Password placeholder=\"请再次输入新密码\" />\n            </Form.Item>\n            <Button type=\"primary\" block onClick={handleConfirmReset}>\n              重置密码\n            </Button>\n          </Form>\n        )}\n      </Modal>\n    </div>\n  )\n}\n\nexport default LoginPage",
+      "__content": "import React, { useState, useEffect, useRef, useCallback } from 'react'\nimport { history, useModel } from '@umijs/max'\nimport { Button, Form, Input, Typography, message, Checkbox, Modal } from 'antd'\nimport { ArrowRightOutlined, LockOutlined, UserOutlined } from '@ant-design/icons'\nimport { getCurrentUser, login, requestPasswordReset, confirmPasswordReset } from '@/services/auth'\n\nconst REMEMBER_USER_KEY = 'aiops_remembered_user'\nconst TRACK_WIDTH = 280\nconst SLIDER_WIDTH = 40\nconst TOLERANCE = 6\n\nconst LoginPage: React.FC = () => {\n  const [loading, setLoading] = useState(false)\n  const [remember, setRemember] = useState(false)\n  const { setInitialState } = useModel('@@initialState')\n  const [form] = Form.useForm()\n\n  // 滑块验证码状态（纯前端实现，不依赖 Redis）\n  const [targetX, setTargetX] = useState(0)\n  const [sliderX, setSliderX] = useState(0)\n  const [dragging, setDragging] = useState(false)\n  const [verified, setVerified] = useState(false)\n  const trackRef = useRef<HTMLDivElement>(null)\n\n  // 找回密码弹窗\n  const [resetModalOpen, setResetModalOpen] = useState(false)\n  const [resetStep, setResetStep] = useState<'request' | 'confirm'>('request')\n  const [resetToken, setResetToken] = useState('')\n  const [resetForm] = Form.useForm()\n\n  // 生成随机目标位置\n  const generateCaptcha = useCallback(() => {\n    const max = TRACK_WIDTH - SLIDER_WIDTH - 20\n    setTargetX(20 + Math.floor(Math.random() * max))\n    setSliderX(0)\n    setVerified(false)\n  }, [])\n\n  useEffect(() => {\n    try {\n      const raw = localStorage.getItem(REMEMBER_USER_KEY)\n      if (raw) {\n        form.setFieldsValue({ username: atob(raw) })\n        setRemember(true)\n      }\n    } catch {\n      // ignore\n    }\n    generateCaptcha()\n  }, [form, generateCaptcha])\n\n  // 滑块拖拽\n  const handleMouseDown = (e: React.MouseEvent) => {\n    if (verified) return\n    setDragging(true)\n    e.preventDefault()\n  }\n\n  useEffect(() => {\n    if (!dragging) return\n    const handleMouseMove = (e: MouseEvent) => {\n      if (!trackRef.current) return\n      const rect = trackRef.current.getBoundingClientRect()\n      const x = Math.max(0, Math.min(e.clientX - rect.left, TRACK_WIDTH - SLIDER_WIDTH))\n      setSliderX(x)\n    }\n    const handleMouseUp = () => {\n      setDragging(false)\n      // 松手时校验\n      const diff = Math.abs(sliderX - targetX)\n      if (diff <= TOLERANCE) {\n        setVerified(true)\n      } else {\n        message.error('验证失败，请重试')\n        // 失败后重置\n        setTimeout(() => generateCaptcha(), 300)\n      }\n    }\n    window.addEventListener('mousemove', handleMouseMove)\n    window.addEventListener('mouseup', handleMouseUp)\n    return () => {\n      window.removeEventListener('mousemove', handleMouseMove)\n      window.removeEventListener('mouseup', handleMouseUp)\n    }\n  }, [dragging, sliderX, targetX, generateCaptcha])\n\n  const handleSubmit = async (values: { username: string; password: string }) => {\n    if (!verified) {\n      message.warning('请先完成滑块验证')\n      return\n    }\n    setLoading(true)\n    try {\n      await login(values)\n      const currentUser = await getCurrentUser()\n      setInitialState({ currentUser })\n      if (remember && values.username) {\n        localStorage.setItem(REMEMBER_USER_KEY, btoa(values.username))\n      } else {\n        localStorage.removeItem(REMEMBER_USER_KEY)\n      }\n      message.success('登录成功')\n      history.replace('/')\n    } catch (error) {\n      message.error(error instanceof Error ? error.message : '登录失败，请重试')\n      // 登录失败，重置滑块\n      generateCaptcha()\n    } finally {\n      setLoading(false)\n    }\n  }\n\n  // ── 找回密码 ──\n  const handleOpenReset = () => {\n    setResetStep('request')\n    setResetToken('')\n    resetForm.resetFields()\n    setResetModalOpen(true)\n  }\n\n  const handleRequestReset = async () => {\n    const values = await resetForm.validateFields()\n    try {\n      const res = await requestPasswordReset(values.identifier)\n      if (res.token) {\n        setResetToken(res.token)\n        setResetStep('confirm')\n        message.success(res.message || '重置 token 已生成')\n      } else {\n        message.info(res.message || '如果该账号存在，重置链接已生成')\n        setResetModalOpen(false)\n      }\n    } catch {\n      // error handled by interceptor\n    }\n  }\n\n  const handleConfirmReset = async () => {\n    const values = await resetForm.validateFields()\n    try {\n      const res = await confirmPasswordReset(resetToken, values.newPassword)\n      message.success(res.message || '密码重置成功')\n      setResetModalOpen(false)\n    } catch {\n      // error handled by interceptor\n    }\n  }\n\n  return (\n    <div className=\"app-login-shell\">\n      <div className=\"app-login-panel\">\n        <section className=\"app-login-form\">\n          <span className=\"app-login-form__eyebrow\">Sign In</span>\n          <Typography.Title level={3} style={{ marginBottom: 24 }}>\n            AIOPS 智能运维平台\n          </Typography.Title>\n\n          <Form\n            form={form}\n            onFinish={handleSubmit}\n            size=\"large\"\n            autoComplete=\"off\"\n            layout=\"vertical\"\n          >\n            <Form.Item\n              label=\"用户名\"\n              name=\"username\"\n              rules={[\n                { required: true, message: '请输入用户名' },\n                { pattern: /^[a-zA-Z0-9_@.\\\\-]+$/, message: '用户名包含非法字符' },\n              ]}\n              validateTrigger=\"onBlur\"\n            >\n              <Input\n                prefix={<UserOutlined />}\n                placeholder=\"请输入用户名\"\n                autoComplete=\"username\"\n                style={{ height: 50 }}\n              />\n            </Form.Item>\n\n            <Form.Item\n              label=\"密码\"\n              name=\"password\"\n              rules={[\n                { required: true, message: '请输入密码' },\n                { min: 6, message: '密码长度至少 6 位' },\n              ]}\n              validateTrigger=\"onBlur\"\n            >\n              <Input.Password\n                prefix={<LockOutlined />}\n                placeholder=\"请输入密码\"\n                autoComplete=\"current-password\"\n                style={{ height: 50 }}\n              />\n            </Form.Item>\n\n            {/* 滑块验证码（纯前端实现） */}\n            <div style={{ marginBottom: 16 }}>\n              <div\n                ref={trackRef}\n                style={{\n                  position: 'relative',\n                  height: 44,\n                  width: '100%',\n                  background: verified ? '#f6ffed' : '#f5f5f5',\n                  borderRadius: 8,\n                  overflow: 'hidden',\n                  border: verified ? '1px solid #52c41a' : '1px solid #d9d9d9',\n                }}\n              >\n                {/* 进度条 */}\n                <div\n                  style={{\n                    position: 'absolute',\n                    left: 0,\n                    top: 0,\n                    height: '100%',\n                    width: verified ? '100%' : `${(sliderX / TRACK_WIDTH) * 100}%`,\n                    background: verified\n                      ? 'linear-gradient(90deg, #52c41a22, #52c41a44)'\n                      : 'linear-gradient(90deg, #1890ff22, #1890ff44)',\n                    transition: dragging ? 'none' : 'width 0.2s',\n                  }}\n                />\n                {/* 目标区域提示（半透明虚线框） */}\n                {!verified && (\n                  <div\n                    style={{\n                      position: 'absolute',\n                      left: targetX,\n                      top: 0,\n                      height: '100%',\n                      width: SLIDER_WIDTH,\n                      border: '2px dashed #1890ff66',\n                      borderRadius: 6,\n                      pointerEvents: 'none',\n                    }}\n                  />\n                )}\n                {/* 滑块按钮 */}\n                <div\n                  style={{\n                    position: 'absolute',\n                    left: verified ? TRACK_WIDTH - SLIDER_WIDTH : sliderX,\n                    top: 0,\n                    height: '100%',\n                    width: SLIDER_WIDTH,\n                    display: 'flex',\n                    alignItems: 'center',\n                    justifyContent: 'center',\n                    cursor: verified ? 'default' : dragging ? 'grabbing' : 'grab',\n                    background: verified ? '#52c41a' : '#fff',\n                    color: verified ? '#fff' : '#999',\n                    border: verified ? 'none' : '1px solid #d9d9d9',\n                    borderRadius: 8,\n                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',\n                    userSelect: 'none',\n                    transition: dragging ? 'none' : 'left 0.2s, background 0.2s',\n                  }}\n                  onMouseDown={handleMouseDown}\n                >\n                  {verified ? '✓' : '→'}\n                </div>\n                {/* 提示文字 */}\n                <div\n                  style={{\n                    position: 'absolute',\n                    right: 12,\n                    top: '50%',\n                    transform: 'translateY(-50%)',\n                    color: verified ? '#52c41a' : '#999',\n                    fontSize: 13,\n                    pointerEvents: 'none',\n                  }}\n                >\n                  {verified ? '验证成功' : '拖动滑块到虚线框内'}\n                </div>\n              </div>\n            </div>\n\n            <div className=\"app-login-remember\">\n              <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)}>\n                记住用户名\n              </Checkbox>\n              <a onClick={handleOpenReset}>忘记密码？</a>\n            </div>\n\n            <Form.Item style={{ marginBottom: 0, marginTop: 16 }}>\n              <Button\n                type=\"primary\"\n                htmlType=\"submit\"\n                loading={loading}\n                block\n                icon={<ArrowRightOutlined />}\n                style={{ height: 50, fontSize: 16, fontWeight: 700 }}\n              >\n                登录\n              </Button>\n            </Form.Item>\n          </Form>\n\n          <div className=\"app-login-footer\">\n            <span className=\"app-login-footer__copyright\">\n              AIOPS V2.1.0 | ops@aiops.company.com\n            </span>\n          </div>\n        </section>\n      </div>\n\n      {/* 找回密码弹窗 */}\n      <Modal\n        title=\"找回密码\"\n        open={resetModalOpen}\n        onCancel={() => setResetModalOpen(false)}\n        footer={null}\n        destroyOnHidden\n      >\n        {resetStep === 'request' ? (\n          <Form form={resetForm} layout=\"vertical\" style={{ marginTop: 16 }}>\n            <Form.Item\n              label=\"用户名或邮箱\"\n              name=\"identifier\"\n              rules={[{ required: true, message: '请输入用户名或邮箱' }]}\n            >\n              <Input placeholder=\"请输入用户名或邮箱\" />\n            </Form.Item>\n            <Button type=\"primary\" block onClick={handleRequestReset}>\n              获取重置码\n            </Button>\n          </Form>\n        ) : (\n          <Form form={resetForm} layout=\"vertical\" style={{ marginTop: 16 }}>\n            <Form.Item\n              label=\"新密码\"\n              name=\"newPassword\"\n              rules={[\n                { required: true, message: '请输入新密码' },\n                { min: 6, message: '密码长度至少 6 位' },\n              ]}\n            >\n              <Input.Password placeholder=\"请输入新密码\" />\n            </Form.Item>\n            <Form.Item\n              label=\"确认新密码\"\n              name=\"confirmPassword\"\n              dependencies={['newPassword']}\n              rules={[\n                { required: true, message: '请再次输入新密码' },\n                ({ getFieldValue }) => ({\n                  validator(_, value) {\n                    if (!value || getFieldValue('newPassword') === value) {\n                      return Promise.resolve()\n                    }\n                    return Promise.reject(new Error('两次输入的密码不一致'))\n                  },\n                }),\n              ]}\n            >\n              <Input.Password placeholder=\"请再次输入新密码\" />\n            </Form.Item>\n            <Button type=\"primary\" block onClick={handleConfirmReset}>\n              重置密码\n            </Button>\n          </Form>\n        )}\n      </Modal>\n    </div>\n  )\n}\n\nexport default LoginPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/login/index.tsx"
     },
@@ -7154,7 +5419,7 @@
       "parentId": "ant-design-pro-layout",
       "id": "15",
       "absPath": "/logs",
-      "__content": "import React from 'react'\nimport { Bubble } from '@ant-design/x'\nimport { ProCard } from '@ant-design/pro-components'\nimport {\n  AlertOutlined,\n  ClusterOutlined,\n  RobotOutlined,\n  RocketOutlined,\n  ApartmentOutlined,\n  LineChartOutlined,\n  CodeOutlined,\n} from '@ant-design/icons'\nimport { Alert, Col, Empty, Row, Skeleton, Tag, Tooltip, Typography } from 'antd'\nimport { useQuery } from '@tanstack/react-query'\nimport { AppPage } from '@/components'\nimport { fetchDashboardOverview } from '@/services/dashboard'\nimport { listClusters } from '@/services/clusters'\nimport { formatDate } from '@/utils'\nimport type { Cluster } from '@/types'\nimport type { DashboardStatistic, DashboardTimeRange } from '@/types/dashboard'\n\nconst { Text } = Typography\n\nconst DEFAULT_TIME_RANGE: DashboardTimeRange = '24h'\n\n// 统计卡片的图标与主题色配置\nconst statVisual: Record<\n  string,\n  { icon: React.ReactNode; color: string }\n> = {\n  clusters: { icon: <ClusterOutlined />, color: '#2563eb' },\n  alerts: { icon: <AlertOutlined />, color: '#dc2626' },\n  automation: { icon: <RocketOutlined />, color: '#059669' },\n  rca: { icon: <RobotOutlined />, color: '#7c3aed' },\n}\n\nconst fallbackStats: DashboardStatistic[] = [\n  { key: 'clusters', title: '集群总数', value: 0, unit: '个', description: '当前纳管集群' },\n  { key: 'alerts', title: '活跃告警', value: 0, unit: '条', description: '待处理事件' },\n  { key: 'automation', title: '自动化任务', value: 0, unit: '次', description: '近周期执行' },\n  { key: 'rca', title: '根因定位', value: 0, unit: '次', description: 'AI 分析记录' },\n]\n\n// 集群状态判断（与集群列表页 StatusTag 保持一致）\nconst HEALTHY_STATUSES = new Set(['active', 'healthy', 'connected', 'success'])\nconst DEGRADED_STATUSES = new Set(['degraded', 'warning'])\n\nfunction normalizeStatus(status?: string) {\n  return String(status || '').trim().toLowerCase()\n}\n\nfunction getClusterStatusDisplay(status?: string): { color: string; text: string } {\n  const normalized = normalizeStatus(status)\n  if (!normalized || normalized === 'unknown') {\n    return { color: 'default', text: '未知' }\n  }\n  if (HEALTHY_STATUSES.has(normalized)) {\n    return { color: 'success', text: '健康' }\n  }\n  // 降级状态（degraded/warning）显示黄色，不算严重异常\n  if (DEGRADED_STATUSES.has(normalized)) {\n    return { color: 'warning', text: '降级' }\n  }\n  return { color: 'error', text: '异常' }\n}\n\nconst DashboardPage: React.FC = () => {\n  const { data, isLoading, isError } = useQuery({\n    queryKey: ['dashboard-overview', DEFAULT_TIME_RANGE],\n    queryFn: () => fetchDashboardOverview(DEFAULT_TIME_RANGE),\n  })\n\n  // 接入真实集群列表，使「集群总数」与「集群健康概览」展示真实数据\n  const { data: clusterRes, isLoading: clustersLoading } = useQuery({\n    queryKey: ['dashboard-clusters'],\n    queryFn: ({ signal }) => listClusters({ page: 1, pageSize: 100 }, signal),\n  })\n  const clusters: Cluster[] = clusterRes?.items ?? []\n\n  // 用真实集群数覆盖 mock 的集群总数\n  const statistics = (data?.statistics ?? fallbackStats).map((item) =>\n    item.key === 'clusters' ? { ...item, value: clusters.length } : item,\n  )\n\n  return (\n    <AppPage breadcrumbRender={false}>\n      <div className=\"app-dashboard\">\n        {isError ? (\n          <Alert\n            type=\"warning\"\n            showIcon\n            message=\"仪表盘数据暂不可用\"\n            description=\"当前展示的是安全占位骨架，稍后可重新刷新数据。\"\n          />\n        ) : null}\n\n        {/* ========== 统计卡片区 ========== */}\n        <Row gutter={[16, 16]}>\n          {statistics.map((item) => {\n            const visual = statVisual[item.key] ?? statVisual.clusters\n            return (\n              <Col key={item.key} xs={24} sm={12} xl={6}>\n                <ProCard className=\"app-dashboard-stat-card\" bordered>\n                  <div className=\"app-dashboard-stat-card__inner\">\n                    <div\n                      className=\"app-dashboard-stat-card__icon\"\n                      style={{ color: visual.color, backgroundColor: `${visual.color}14` }}\n                    >\n                      {visual.icon}\n                    </div>\n                    <div className=\"app-dashboard-stat-card__body\">\n                      <div className=\"app-dashboard-stat-card__label\">{item.title}</div>\n                      <Skeleton loading={isLoading} active paragraph={false}>\n                        <div className=\"app-dashboard-stat-card__value\">\n                          {item.value}\n                          {item.unit ? (\n                            <span className=\"app-dashboard-stat-card__unit\">{item.unit}</span>\n                          ) : null}\n                        </div>\n                      </Skeleton>\n                      <div className=\"app-dashboard-stat-card__desc\">\n                        {item.description ?? '暂无数据'}\n                      </div>\n                    </div>\n                  </div>\n                </ProCard>\n              </Col>\n            )\n          })}\n        </Row>\n\n        {/* ========== 集群健康概览 + AI 助手 ========== */}\n        <Row gutter={[16, 16]}>\n          <Col xs={24} xl={16}>\n            <ProCard\n              className=\"app-dashboard-panel app-dashboard-panel--clusters\"\n              bordered\n              title=\"集群健康概览\"\n              extra={\n                clusters.length > 0 ? (\n                  <Text type=\"secondary\" style={{ fontSize: 13 }}>\n                    共 {clusters.length} 个集群\n                  </Text>\n                ) : null\n              }\n            >\n              {clustersLoading ? (\n                <Skeleton active paragraph={{ rows: 3 }} />\n              ) : clusters.length === 0 ? (\n                <Empty description=\"暂无纳管集群\" style={{ margin: '32px 0' }} />\n              ) : (\n                <div className=\"app-dashboard-cluster-grid\">\n                  {clusters.map((c) => {\n                    const sd = getClusterStatusDisplay(c.status)\n                    return (\n                      <Tooltip key={c.id} title={`原始状态：${c.status || '（空）'} · 最近健康检查：${c.lastHealthAt ? formatDate(c.lastHealthAt) : '-'}`}>\n                        <div\n                          className={\n                            'app-dashboard-cluster-item' +\n                            (sd.color === 'error' ? ' app-dashboard-cluster-item--danger' : '')\n                          }\n                        >\n                          <div className=\"app-dashboard-cluster-item__header\">\n                            <ClusterOutlined className=\"app-dashboard-cluster-item__icon\" />\n                            <span className=\"app-dashboard-cluster-item__name\">{c.name}</span>\n                            <Tag color={sd.color}>{sd.text}</Tag>\n                          </div>\n                          <div className=\"app-dashboard-cluster-item__meta\">\n                            <span>{c.k8sVersion || '版本未知'}</span>\n                            <span>{c.nodeCount} 节点</span>\n                          </div>\n                        </div>\n                      </Tooltip>\n                    )\n                  })}\n                </div>\n              )}\n            </ProCard>\n          </Col>\n          <Col xs={24} xl={8}>\n            <ProCard className=\"app-dashboard-panel\" bordered title=\"AI 运维助手\">\n              <div className=\"app-dashboard-placeholder app-dashboard-placeholder--ai\">\n                <Bubble\n                  variant=\"outlined\"\n                  shape=\"corner\"\n                  content=\"AI 助手占位 (Ant Design X)\"\n                  styles={{ content: { width: '100%' } }}\n                />\n              </div>\n            </ProCard>\n          </Col>\n        </Row>\n\n        {/* ========== 资源拓扑 + 趋势图表 ========== */}\n        <Row gutter={[16, 16]}>\n          <Col xs={24} xl={16}>\n            <ProCard\n              className=\"app-dashboard-panel\"\n              bordered\n              title={\n                <span>\n                  <ApartmentOutlined style={{ marginInlineEnd: 6 }} />\n                  资源拓扑视图\n                </span>\n              }\n            >\n              <div className=\"app-dashboard-placeholder app-dashboard-placeholder--topology\">\n                拓扑图占位 (React Flow)\n              </div>\n            </ProCard>\n          </Col>\n          <Col xs={24} xl={8}>\n            <ProCard\n              className=\"app-dashboard-panel\"\n              bordered\n              title={\n                <span>\n                  <LineChartOutlined style={{ marginInlineEnd: 6 }} />\n                  趋势图表\n                </span>\n              }\n            >\n              <div className=\"app-dashboard-placeholder app-dashboard-placeholder--chart\">\n                图表占位 (Ant Design Charts)\n              </div>\n            </ProCard>\n          </Col>\n        </Row>\n\n        {/* ========== 运维入口（终端 / 日志） ========== */}\n        <Row gutter={[16, 16]}>\n          <Col xs={24} xl={8}>\n            <ProCard\n              className=\"app-dashboard-panel\"\n              bordered\n              title={\n                <span>\n                  <CodeOutlined style={{ marginInlineEnd: 6 }} />\n                  快速终端\n                </span>\n              }\n            >\n              <div className=\"app-dashboard-placeholder app-dashboard-placeholder--terminal\">\n                终端占位 (Xterm)\n              </div>\n            </ProCard>\n          </Col>\n          <Col xs={24} xl={16}>\n            <ProCard\n              className=\"app-dashboard-panel\"\n              bordered\n              title={\n                <span>\n                  <AlertOutlined style={{ marginInlineEnd: 6 }} />\n                  近期事件\n                </span>\n              }\n            >\n              <div className=\"app-dashboard-placeholder app-dashboard-placeholder--chart\">\n                事件流占位\n              </div>\n            </ProCard>\n          </Col>\n        </Row>\n      </div>\n    </AppPage>\n  )\n}\n\nexport default DashboardPage\n",
+      "__content": "/**\n * AIOps 智能运维平台 - 全局概览\n * 统一管理多集群 Kubernetes 资源、应用部署与智能运维\n */\nimport React from 'react'\nimport { history } from '@umijs/max'\nimport { Card, Row, Col, Spin, Tag, Progress, Typography, Empty, Button, Statistic } from 'antd'\nimport {\n  ClusterOutlined,\n  HddOutlined,\n  CloudServerOutlined,\n  AppstoreOutlined,\n  ApartmentOutlined,\n  RobotOutlined,\n  ArrowRightOutlined,\n  CloudDownloadOutlined,\n  SafetyOutlined,\n  RocketOutlined,\n} from '@ant-design/icons'\nimport { useQuery } from '@tanstack/react-query'\nimport { AppPage } from '@/components'\nimport { listClusters } from '@/services/clusters'\nimport { getClusterOverview } from '@/services/k8s'\n\nconst { Text, Title } = Typography\n\n/** 功能入口配置 */\nconst ENTRIES = [\n  { key: 'clusters', title: '集群管理', desc: '导入和管理 K8s 集群', icon: <ClusterOutlined />, color: '#2563eb', path: '/clusters' },\n  { key: 'topology', title: '资源视图', desc: '全局资源概览', icon: <ApartmentOutlined />, color: '#0891b2', path: '/topology' },\n  { key: 'appstore', title: '应用商店', desc: 'YAML 模板和 Helm Chart', icon: <AppstoreOutlined />, color: '#059669', path: '/app-store' },\n  { key: 'projects', title: '项目管理', desc: '命名空间分组管理', icon: <RocketOutlined />, color: '#7c3aed', path: '/projects' },\n  { key: 'helm', title: 'Helm 管理', desc: 'Release 安装和管理', icon: <CloudDownloadOutlined />, color: '#c2410c', path: '/clusters' },\n  { key: 'ai', title: 'AI 运维', desc: '智能运维助手', icon: <RobotOutlined />, color: '#dc2626', path: '/ai/chat' },\n] as const\n\n/** 集群概览卡片 */\nfunction ClusterOverviewCard({ cluster }: { cluster: any }) {\n  const { data: overview, isLoading } = useQuery({\n    queryKey: ['cluster-overview-dashboard', cluster.id],\n    queryFn: ({ signal }) => getClusterOverview(cluster.id, signal),\n    enabled: !!cluster.id,\n    staleTime: 60_000,\n  })\n\n  const statusColor = cluster.status === 'healthy' ? 'success' : cluster.status === 'unhealthy' ? 'error' : 'default'\n  const statusText = cluster.status === 'healthy' ? '健康' : cluster.status === 'unhealthy' ? '异常' : '未知'\n\n  // 防御性取值\n  const nodeCount = overview?.nodeCount ?? overview?.nodes?.total ?? cluster.nodeCount ?? 0\n  const podCount = overview?.podCount ?? overview?.pods?.total ?? 0\n  const cpuUsage = overview?.cpuUsagePercent ?? overview?.cpu?.percent ?? 0\n  const memUsage = overview?.memoryUsagePercent ?? overview?.memory?.percent ?? 0\n\n  return (\n    <Card\n      hoverable\n      size=\"small\"\n      style={{ borderRadius: 12, cursor: 'pointer', transition: 'all 0.3s' }}\n      onClick={() => history.push(`/clusters/${cluster.id}`)}\n    >\n      {/* 标题行 */}\n      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>\n        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>\n          <ClusterOutlined style={{ color: '#2563eb', fontSize: 18 }} />\n          <Text strong style={{ fontSize: 15 }}>{cluster.name}</Text>\n        </div>\n        <Tag color={statusColor}>{statusText}</Tag>\n      </div>\n\n      {/* 指标 */}\n      {isLoading ? (\n        <div style={{ textAlign: 'center', padding: 16 }}><Spin size=\"small\" /></div>\n      ) : (\n        <>\n          <Row gutter={16}>\n            <Col span={12}>\n              <Statistic title=\"节点\" value={nodeCount} valueStyle={{ fontSize: 18 }} />\n            </Col>\n            <Col span={12}>\n              <Statistic title=\"Pod\" value={podCount} valueStyle={{ fontSize: 18 }} />\n            </Col>\n          </Row>\n\n          {/* CPU/内存使用率 */}\n          <div style={{ marginTop: 12 }}>\n            <div style={{ marginBottom: 8 }}>\n              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>\n                <Text type=\"secondary\" style={{ fontSize: 11 }}>CPU</Text>\n                <Text style={{ fontSize: 11, fontWeight: 600 }}>{cpuUsage.toFixed(1)}%</Text>\n              </div>\n              <Progress\n                percent={cpuUsage}\n                size=\"small\"\n                strokeColor={cpuUsage > 80 ? '#ff4d4f' : cpuUsage > 60 ? '#faad14' : '#52c41a'}\n                showInfo={false}\n              />\n            </div>\n            <div>\n              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>\n                <Text type=\"secondary\" style={{ fontSize: 11 }}>内存</Text>\n                <Text style={{ fontSize: 11, fontWeight: 600 }}>{memUsage.toFixed(1)}%</Text>\n              </div>\n              <Progress\n                percent={memUsage}\n                size=\"small\"\n                strokeColor={memUsage > 80 ? '#ff4d4f' : memUsage > 60 ? '#faad14' : '#52c41a'}\n                showInfo={false}\n              />\n            </div>\n          </div>\n\n          {/* 进入集群 */}\n          <Button\n            type=\"link\"\n            size=\"small\"\n            style={{ padding: 0, marginTop: 8 }}\n            onClick={(e) => {\n              e.stopPropagation()\n              history.push(`/k8s/${cluster.id}/dashboard`)\n            }}\n          >\n            进入集群 <ArrowRightOutlined />\n          </Button>\n        </>\n      )}\n    </Card>\n  )\n}\n\n/** 全局概览页面 */\nconst DashboardPage: React.FC = () => {\n  const { data, isLoading } = useQuery({\n    queryKey: ['clusters-dashboard'],\n    queryFn: () => listClusters({ pageSize: 100 }),\n  })\n\n  const clusters = data?.items || []\n  const healthyCount = clusters.filter((c: any) => c.status === 'healthy').length\n  const unhealthyCount = clusters.length - healthyCount\n  const totalNodes = clusters.reduce((sum: number, c: any) => sum + (c.nodeCount || 0), 0)\n\n  return (\n    <AppPage breadcrumbRender={false}>\n      <div style={{ maxWidth: 1400, margin: '0 auto' }}>\n        {/* ========== 欢迎区 ========== */}\n        <div style={{ marginBottom: 28 }}>\n          <Title level={3} style={{ marginBottom: 4 }}>AIOps 智能运维平台</Title>\n          <Text type=\"secondary\">统一管理多集群 Kubernetes 资源、应用部署与智能运维</Text>\n        </div>\n\n        {/* ========== 全局指标 ========== */}\n        <Row gutter={[16, 16]} style={{ marginBottom: 28 }}>\n          <Col xs={12} sm={6}>\n            <Card bordered={false} style={{ borderRadius: 12, background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' }}>\n              <Statistic\n                title=\"集群总数\"\n                value={clusters.length}\n                prefix={<ClusterOutlined />}\n                valueStyle={{ color: '#2563eb' }}\n              />\n            </Card>\n          </Col>\n          <Col xs={12} sm={6}>\n            <Card bordered={false} style={{ borderRadius: 12, background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' }}>\n              <Statistic\n                title=\"健康集群\"\n                value={healthyCount}\n                prefix={<SafetyOutlined />}\n                valueStyle={{ color: '#059669' }}\n              />\n            </Card>\n          </Col>\n          <Col xs={12} sm={6}>\n            <Card bordered={false} style={{ borderRadius: 12, background: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)' }}>\n              <Statistic\n                title=\"节点总数\"\n                value={totalNodes}\n                prefix={<HddOutlined />}\n                valueStyle={{ color: '#0d9488' }}\n              />\n            </Card>\n          </Col>\n          <Col xs={12} sm={6}>\n            <Card bordered={false} style={{ borderRadius: 12, background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' }}>\n              <Statistic\n                title=\"异常集群\"\n                value={unhealthyCount}\n                prefix={<CloudServerOutlined />}\n                valueStyle={{ color: '#dc2626' }}\n              />\n            </Card>\n          </Col>\n        </Row>\n\n        {/* ========== 集群概览 ========== */}\n        <div style={{ marginBottom: 28 }}>\n          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>\n            <Title level={5} style={{ margin: 0 }}>集群概览</Title>\n            {clusters.length > 0 && (\n              <Button type=\"link\" onClick={() => history.push('/clusters')}>\n                查看全部 <ArrowRightOutlined />\n              </Button>\n            )}\n          </div>\n          {isLoading ? (\n            <div style={{ textAlign: 'center', padding: 60 }}>\n              <Spin size=\"large\" />\n            </div>\n          ) : clusters.length === 0 ? (\n            <Card bordered={false} style={{ borderRadius: 12, textAlign: 'center', padding: 40 }}>\n              <Empty description=\"暂无纳管集群，请先导入集群\">\n                <Button type=\"primary\" onClick={() => history.push('/clusters/import')}>\n                  导入集群\n                </Button>\n              </Empty>\n            </Card>\n          ) : (\n            <Row gutter={[16, 16]}>\n              {clusters.slice(0, 8).map((cluster: any) => (\n                <Col key={cluster.id} xs={24} sm={12} lg={6}>\n                  <ClusterOverviewCard cluster={cluster} />\n                </Col>\n              ))}\n            </Row>\n          )}\n        </div>\n\n        {/* ========== 功能入口 ========== */}\n        <div>\n          <Title level={5} style={{ marginBottom: 12 }}>功能入口</Title>\n          <Row gutter={[16, 16]}>\n            {ENTRIES.map((entry) => (\n              <Col key={entry.key} xs={12} sm={8} lg={4}>\n                <Card\n                  hoverable\n                  bordered={false}\n                  style={{\n                    borderRadius: 12,\n                    textAlign: 'center',\n                    cursor: 'pointer',\n                    transition: 'all 0.3s',\n                    padding: '8px 0',\n                  }}\n                  onClick={() => history.push(entry.path)}\n                >\n                  <div style={{ fontSize: 32, color: entry.color, marginBottom: 8 }}>\n                    {entry.icon}\n                  </div>\n                  <Text strong>{entry.title}</Text>\n                  <div>\n                    <Text type=\"secondary\" style={{ fontSize: 12 }}>{entry.desc}</Text>\n                  </div>\n                </Card>\n              </Col>\n            ))}\n          </Row>\n        </div>\n      </div>\n    </AppPage>\n  )\n}\n\nexport default DashboardPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/dashboard/index.tsx"
     },
@@ -7361,7 +5626,7 @@
       "parentId": "ant-design-pro-layout",
       "id": "36",
       "absPath": "/topology",
-      "__content": "import React, { useEffect, useMemo, useState } from 'react'\nimport { history, useModel } from '@umijs/max'\nimport {\n  Alert,\n  Button,\n  Empty,\n  Select,\n  Space,\n  Spin,\n  Tag,\n  Typography,\n} from 'antd'\nimport {\n  ClusterOutlined,\n  HddOutlined,\n  NodeIndexOutlined,\n  ReloadOutlined,\n} from '@ant-design/icons'\nimport { useQuery } from '@tanstack/react-query'\nimport {\n  Background,\n  Controls,\n  MarkerType,\n  MiniMap,\n  ReactFlow,\n  type Edge,\n  type Node,\n} from '@xyflow/react'\nimport '@xyflow/react/dist/style.css'\nimport { ProCard } from '@ant-design/pro-components'\nimport { AppPage } from '@/components'\nimport { listClusters } from '@/services/clusters'\nimport { getTopology } from '@/services/k8s'\n\nconst { Text } = Typography\n\ntype TopologyResource = {\n  id: string\n  type: string\n  data?: {\n    label?: string\n    namespace?: string\n    status?: string\n    clusterIP?: string\n  }\n}\n\nconst RESOURCE_THEME: Record<string, { color: string; fill: string }> = {\n  node: { color: '#0284c7', fill: '#f0f9ff' },\n  pod: { color: '#059669', fill: '#ecfdf5' },\n}\n\nfunction buildFlowNodes(items: TopologyResource[]): Node[] {\n  const graphItems = items.filter((item) => item.type !== 'service')\n  const grouped = graphItems.reduce<Record<string, TopologyResource[]>>((acc, item) => {\n    acc[item.type] = acc[item.type] || []\n    acc[item.type]!.push(item)\n    return acc\n  }, {})\n\n  const order = ['node', 'pod']\n  const columnX: Record<string, number> = { node: 80, pod: 420 }\n\n  return order.flatMap((type) => {\n    const itemsOfType = grouped[type] || []\n    return itemsOfType.map((item, index) => {\n      const theme = RESOURCE_THEME[type] || RESOURCE_THEME.node || { color: '#2563eb', fill: '#eff6ff' }\n      const label = item.data?.label || item.id\n      return {\n        id: item.id,\n        position: { x: columnX[type] || 80, y: 70 + index * 108 },\n        data: { label },\n        draggable: false,\n        selectable: false,\n        style: {\n          width: 220,\n          borderRadius: 14,\n          border: `1px solid ${theme.color}33`,\n          background: theme.fill,\n          color: '#0f172a',\n          fontWeight: 700,\n          boxShadow: '0 12px 24px rgba(15, 23, 42, 0.08)',\n          padding: '18px 20px',\n        },\n      }\n    })\n  })\n}\n\nfunction buildFlowEdges(edges: Edge[]): Edge[] {\n  return edges.map((edge) => ({\n    ...edge,\n    type: 'smoothstep',\n    animated: true,\n    selectable: false,\n    markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },\n    style: { stroke: '#94a3b8', strokeWidth: 1.5 },\n  }))\n}\n\nconst TopologyPage: React.FC = () => {\n  const { currentCluster } = useModel('cluster')\n  const [selectedClusterId, setSelectedClusterId] = useState<string | undefined>(undefined)\n\n  const { data: clustersData, isLoading: clustersLoading } = useQuery({\n    queryKey: ['topology-clusters'],\n    queryFn: () => listClusters(),\n  })\n\n  const clusters = clustersData?.items || []\n\n  useEffect(() => {\n    if (selectedClusterId || clusters.length === 0) {\n      return\n    }\n    const preferredCluster = currentCluster?.id && clusters.some((item) => String(item.id) === currentCluster.id)\n      ? currentCluster.id\n      : String(clusters[0]!.id)\n    setSelectedClusterId(preferredCluster)\n  }, [clusters, currentCluster?.id, selectedClusterId])\n\n  const { data: topologyData, isLoading, isRefetching, refetch } = useQuery({\n    queryKey: ['global-topology-overview', selectedClusterId],\n    enabled: Boolean(selectedClusterId),\n    queryFn: () => getTopology(Number(selectedClusterId)),\n  })\n\n  const selectedCluster = clusters.find((item) => String(item.id) === selectedClusterId)\n  const resources = (topologyData?.nodes || []) as TopologyResource[]\n  const serviceResources = resources.filter((item) => item.type === 'service')\n  const graphNodes = useMemo(() => buildFlowNodes(resources), [resources])\n  const graphEdges = useMemo(() => buildFlowEdges((topologyData?.edges || []) as Edge[]), [topologyData?.edges])\n\n  const summary = useMemo(() => {\n    const nodeCount = resources.filter((item) => item.type === 'node').length\n    const podCount = resources.filter((item) => item.type === 'pod').length\n    const serviceCount = serviceResources.length\n    const readyNodes = resources.filter((item) => item.type === 'node' && item.data?.status === 'Ready').length\n    return {\n      nodeCount,\n      podCount,\n      serviceCount,\n      edgeCount: graphEdges.length,\n      readyNodes,\n    }\n  }, [graphEdges.length, resources, serviceResources.length])\n\n  return (\n    <AppPage breadcrumbRender={false}>\n      <div className=\"app-data-console\">\n        <section className=\"app-data-console__statgrid\">\n          <div className=\"app-data-console__stat\">\n            <span className=\"app-data-console__stat-label\">节点数量</span>\n            <strong className=\"app-data-console__stat-value\">{summary.nodeCount}</strong>\n            <span className=\"app-data-console__stat-hint\">就绪节点 {summary.readyNodes} 台</span>\n          </div>\n          <div className=\"app-data-console__stat\">\n            <span className=\"app-data-console__stat-label\">Pod 数量</span>\n            <strong className=\"app-data-console__stat-value\">{summary.podCount}</strong>\n            <span className=\"app-data-console__stat-hint\">按节点归属构建承载关系</span>\n          </div>\n          <div className=\"app-data-console__stat\">\n            <span className=\"app-data-console__stat-label\">Service 数量</span>\n            <strong className=\"app-data-console__stat-value\">{summary.serviceCount}</strong>\n            <span className=\"app-data-console__stat-hint\">结合右侧资源清单辅助排查</span>\n          </div>\n        </section>\n\n        <section className=\"app-data-console__filters\">\n          <div className=\"app-data-console__filters-left\">\n            <Select\n              style={{ width: 260 }}\n              placeholder=\"选择要查看的集群\"\n              loading={clustersLoading}\n              value={selectedClusterId}\n              onChange={setSelectedClusterId}\n              options={clusters.map((cluster) => ({\n                label: `${cluster.name}${cluster.k8sVersion ? ` · ${cluster.k8sVersion}` : ''}`,\n                value: String(cluster.id),\n              }))}\n            />\n            <Button icon={<ReloadOutlined />} loading={isRefetching} onClick={() => refetch()}>\n              刷新\n            </Button>\n          </div>\n          <div className=\"app-data-console__filters-right\">\n            <span className=\"app-data-console__meta\">\n              连接关系 <strong>{summary.edgeCount}</strong>\n            </span>\n            {selectedClusterId ? (\n              <Button onClick={() => history.push(`/k8s/${selectedClusterId}/topology`)}>\n                进入集群关系图\n              </Button>\n            ) : null}\n          </div>\n        </section>\n\n        <Alert\n          type=\"info\"\n          showIcon\n          message=\"资源视图用于快速回答“这个集群当前由哪些节点承载 Pod、有哪些 Service 正在对外提供能力”\"\n          description=\"当前图谱基于节点、Pod 与 Service 实时构建。Service 与 Pod 的 selector 细粒度映射仍建议在集群关系图中继续深入查看。\"\n        />\n\n        <ProCard bordered split=\"vertical\" className=\"app-topology-page\">\n          <ProCard colSpan=\"70%\" bodyStyle={{ padding: 0 }}>\n            {!selectedClusterId ? (\n              <div className=\"app-topology-overview__empty\">\n                <Empty description=\"请选择一个集群后查看资源视图\" />\n              </div>\n            ) : isLoading ? (\n              <div className=\"app-topology-overview__empty\">\n                <Spin />\n              </div>\n            ) : graphNodes.length === 0 ? (\n              <div className=\"app-topology-overview__empty\">\n                <Empty description=\"当前集群暂无可展示的节点或 Pod 关系\" />\n              </div>\n            ) : (\n              <ReactFlow nodes={graphNodes} edges={graphEdges} fitView fitViewOptions={{ padding: 0.16 }}>\n                <Background gap={20} size={1} />\n                <MiniMap pannable zoomable />\n                <Controls position=\"bottom-right\" />\n              </ReactFlow>\n            )}\n          </ProCard>\n          <ProCard colSpan=\"30%\" className=\"app-topology-overview__side\">\n            <Space direction=\"vertical\" size={14} style={{ width: '100%' }}>\n              <div>\n                <Text strong style={{ fontSize: 16 }}>\n                  {selectedCluster?.name || '未选择集群'}\n                </Text>\n                <div className=\"app-topology-overview__hint\">\n                  {selectedCluster?.k8sVersion || '未识别版本'}\n                </div>\n              </div>\n\n              <div>\n                <Text strong>视图说明</Text>\n                <div className=\"app-topology-overview__legend\">\n                  <Tag color=\"blue\" icon={<ClusterOutlined />}>节点承载层</Tag>\n                  <Tag color=\"green\" icon={<HddOutlined />}>Pod 运行层</Tag>\n                  <Tag color=\"gold\" icon={<NodeIndexOutlined />}>Service 清单</Tag>\n                </div>\n              </div>\n\n              <div>\n                <Text strong>Service 清单</Text>\n                <div className=\"app-topology-overview__service-list\">\n                  {serviceResources.length > 0 ? serviceResources.map((service) => (\n                    <div key={service.id} className=\"app-topology-overview__service-item\">\n                      <div>\n                        <Text strong>{service.data?.label || service.id}</Text>\n                        <div className=\"app-topology-overview__hint\">{service.data?.namespace || 'default'}</div>\n                      </div>\n                      <Tag color=\"gold\">{service.data?.clusterIP || 'ClusterIP'}</Tag>\n                    </div>\n                  )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"暂无 Service\" />}\n                </div>\n              </div>\n\n              <div>\n                <Text strong>推荐动作</Text>\n                <div className=\"app-topology-overview__legend\">\n                  <Button block onClick={() => history.push('/clusters')}>返回集群列表</Button>\n                  {selectedClusterId ? (\n                    <Button block type=\"primary\" onClick={() => history.push(`/k8s/${selectedClusterId}/pods`)}>\n                      查看集群 Pod 列表\n                    </Button>\n                  ) : null}\n                </div>\n              </div>\n            </Space>\n          </ProCard>\n        </ProCard>\n      </div>\n    </AppPage>\n  )\n}\n\nexport default TopologyPage\n",
+      "__content": "/**\n * 全局资源视图\n * 展示所有集群的概览卡片，点击直接进入集群管理\n */\nimport React from 'react'\nimport { history } from '@umijs/max'\nimport { Card, Row, Col, Spin, Tag, Typography, Empty, Button } from 'antd'\nimport { ClusterOutlined, ArrowRightOutlined } from '@ant-design/icons'\nimport { useQuery } from '@tanstack/react-query'\nimport { AppPage } from '@/components'\nimport { listClusters } from '@/services/clusters'\n\nconst { Text } = Typography\n\n/** 集群概览卡片（简洁版，不重复统计） */\nfunction ClusterCard({ cluster }: { cluster: any }) {\n  const statusColor =\n    cluster.status === 'healthy' ? 'success' : cluster.status === 'unhealthy' ? 'error' : 'default'\n  const statusText = cluster.status === 'healthy' ? '健康' : cluster.status === 'unhealthy' ? '异常' : '未知'\n\n  return (\n    <Card\n      hoverable\n      size=\"small\"\n      style={{ borderRadius: 12, cursor: 'pointer' }}\n      onClick={() => history.push(`/clusters/${cluster.id}`)}\n    >\n      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>\n        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>\n          <ClusterOutlined style={{ color: '#2563eb', fontSize: 20 }} />\n          <Text strong style={{ fontSize: 15 }}>{cluster.name}</Text>\n        </div>\n        <Tag color={statusColor}>{statusText}</Tag>\n      </div>\n      <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>\n        <Text type=\"secondary\" style={{ fontSize: 12 }}>\n          {cluster.k8sVersion || '版本未知'} · {cluster.nodeCount || 0} 节点\n        </Text>\n        <ArrowRightOutlined style={{ color: '#cbd5e1' }} />\n      </div>\n    </Card>\n  )\n}\n\n/** 全局资源视图页面 */\nconst ResourceOverviewPage: React.FC = () => {\n  const { data, isLoading } = useQuery({\n    queryKey: ['clusters-for-resource-overview'],\n    queryFn: () => listClusters({ pageSize: 100 }),\n  })\n\n  const clusters = data?.items || []\n  const healthyClusters = clusters.filter((c: any) => c.status === 'healthy').length\n\n  return (\n    <AppPage breadcrumbRender={false}>\n      <div className=\"app-data-console\">\n        {/* 全局统计 */}\n        <section className=\"app-data-console__statgrid\">\n          <div className=\"app-data-console__stat\">\n            <span className=\"app-data-console__stat-label\">集群总数</span>\n            <strong className=\"app-data-console__stat-value\">{clusters.length}</strong>\n            <span className=\"app-data-console__stat-hint\">健康 {healthyClusters} 个</span>\n          </div>\n          <div className=\"app-data-console__stat\">\n            <span className=\"app-data-console__stat-label\">资源视图</span>\n            <strong className=\"app-data-console__stat-value\" style={{ fontSize: 16 }}>\n              点击集群进入管理\n            </strong>\n            <span className=\"app-data-console__stat-hint\">详细统计在集群详情中查看</span>\n          </div>\n          <div className=\"app-data-console__stat\">\n            <span className=\"app-data-console__stat-label\">快捷操作</span>\n            <strong className=\"app-data-console__stat-value\" style={{ fontSize: 14 }}>\n              <Button\n                type=\"link\"\n                size=\"small\"\n                onClick={() => history.push('/clusters')}\n              >\n                集群管理\n              </Button>\n            </strong>\n            <span className=\"app-data-console__stat-hint\">导入/管理集群</span>\n          </div>\n        </section>\n\n        {/* 集群卡片列表 */}\n        <section>\n          {isLoading ? (\n            <div style={{ textAlign: 'center', padding: 60 }}>\n              <Spin size=\"large\" />\n            </div>\n          ) : clusters.length === 0 ? (\n            <Empty description=\"暂无集群，请先导入集群\" image={Empty.PRESENTED_IMAGE_SIMPLE}>\n              <Button type=\"primary\" onClick={() => history.push('/clusters/import')}>\n                导入集群\n              </Button>\n            </Empty>\n          ) : (\n            <Row gutter={[16, 16]}>\n              {clusters.map((cluster: any) => (\n                <Col key={cluster.id} xs={24} sm={12} lg={8} xl={6}>\n                  <ClusterCard cluster={cluster} />\n                </Col>\n              ))}\n            </Row>\n          )}\n        </section>\n      </div>\n    </AppPage>\n  )\n}\n\nexport default ResourceOverviewPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/topology/index.tsx"
     },
@@ -8511,11 +6776,9 @@
     "done": true,
     "progresses": [
       {
-        "percent": 0.95,
-        "status": "emitting",
-        "details": [
-          "emit"
-        ]
+        "percent": 1,
+        "status": "",
+        "details": []
       }
     ]
   },
@@ -8551,13 +6814,12 @@
   },
   "framework": "react",
   "typescript": {
-    "tsVersion": "5.9.3",
-    "tslibVersion": "2.8.1"
+    "tsVersion": "5.9.3"
   },
   "faviconFiles": [],
   "port": 8000,
   "host": "0.0.0.0",
-  "ip": "192.168.28.1",
+  "ip": "10.12.250.169",
   "antd": {
     "pkgPath": "D:\\03_学习\\soft\\k8s-platform\\frontend\\node_modules\\antd",
     "version": "5.29.3"
@@ -9771,7 +8033,7 @@
             "format": "esm"
           },
           "src/services/auth.ts": {
-            "bytes": 3858,
+            "bytes": 3992,
             "imports": [
               {
                 "path": "src/.umi/exports.ts",
@@ -10659,7 +8921,7 @@
             "format": "esm"
           },
           "src/app.tsx": {
-            "bytes": 29464,
+            "bytes": 29887,
             "imports": [
               {
                 "path": "src/.umi/exports.ts",
@@ -11274,7 +9536,7 @@
             "format": "esm"
           },
           "src/pages/login/index.tsx": {
-            "bytes": 12640,
+            "bytes": 12677,
             "imports": [
               {
                 "path": "react",
@@ -11922,7 +10184,7 @@
             "format": "esm"
           },
           "src/pages/dashboard/index.tsx": {
-            "bytes": 10275,
+            "bytes": 10497,
             "imports": [
               {
                 "path": "react",
@@ -11930,22 +10192,17 @@
                 "external": true
               },
               {
-                "path": "@ant-design/x",
+                "path": "src/.umi/exports.ts",
                 "kind": "import-statement",
-                "external": true
+                "original": "@umijs/max"
               },
               {
-                "path": "@ant-design/pro-components",
+                "path": "antd",
                 "kind": "import-statement",
                 "external": true
               },
               {
                 "path": "@ant-design/icons",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
                 "kind": "import-statement",
                 "external": true
               },
@@ -11960,19 +10217,14 @@
                 "original": "@/components"
               },
               {
-                "path": "src/services/dashboard.ts",
-                "kind": "import-statement",
-                "original": "@/services/dashboard"
-              },
-              {
                 "path": "src/services/clusters.ts",
                 "kind": "import-statement",
                 "original": "@/services/clusters"
               },
               {
-                "path": "src/utils/index.ts",
+                "path": "src/services/k8s/index.ts",
                 "kind": "import-statement",
-                "original": "@/utils"
+                "original": "@/services/k8s"
               },
               {
                 "path": "react/jsx-runtime",
@@ -12766,7 +11018,7 @@
             "format": "esm"
           },
           "src/pages/topology/index.tsx": {
-            "bytes": 10701,
+            "bytes": 4466,
             "imports": [
               {
                 "path": "react",
@@ -12794,21 +11046,6 @@
                 "external": true
               },
               {
-                "path": "@xyflow/react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@xyflow/react/dist/style.css",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
                 "path": "src/components/index.ts",
                 "kind": "import-statement",
                 "original": "@/components"
@@ -12817,11 +11054,6 @@
                 "path": "src/services/clusters.ts",
                 "kind": "import-statement",
                 "original": "@/services/clusters"
-              },
-              {
-                "path": "src/services/k8s/index.ts",
-                "kind": "import-statement",
-                "original": "@/services/k8s"
               },
               {
                 "path": "react/jsx-runtime",
@@ -17053,22 +15285,12 @@
                 "external": true
               },
               {
-                "path": "@ant-design/x",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
+                "path": "antd",
                 "kind": "import-statement",
                 "external": true
               },
               {
                 "path": "@ant-design/icons",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "antd",
                 "kind": "import-statement",
                 "external": true
               },
@@ -17443,11 +15665,6 @@
                 "external": true
               },
               {
-                "path": "react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
                 "path": "antd",
                 "kind": "import-statement",
                 "external": true
@@ -17459,21 +15676,6 @@
               },
               {
                 "path": "@tanstack/react-query",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@xyflow/react",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@xyflow/react/dist/style.css",
-                "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/pro-components",
                 "kind": "import-statement",
                 "external": true
               },
@@ -19851,7 +18053,7 @@
                 "bytesInOutput": 698
               },
               "src/services/auth.ts": {
-                "bytesInOutput": 3106
+                "bytesInOutput": 3250
               },
               "src/services/clusters.ts": {
                 "bytesInOutput": 1825
@@ -19905,7 +18107,7 @@
                 "bytesInOutput": 2223
               },
               "src/services/k8s/cluster.ts": {
-                "bytesInOutput": 3303
+                "bytesInOutput": 1887
               },
               "src/services/k8s/index.ts": {
                 "bytesInOutput": 273
@@ -19965,7 +18167,7 @@
                 "bytesInOutput": 1055
               },
               "src/app.tsx": {
-                "bytesInOutput": 31595
+                "bytesInOutput": 32082
               },
               "src/.umi/core/helmetContext.ts": {
                 "bytesInOutput": 129
@@ -20037,7 +18239,7 @@
                 "bytesInOutput": 5201
               },
               "src/pages/login/index.tsx": {
-                "bytesInOutput": 15895
+                "bytesInOutput": 15934
               },
               "src/pages/k8s/terminal.tsx": {
                 "bytesInOutput": 3552
@@ -20091,10 +18293,10 @@
                 "bytesInOutput": 2839
               },
               "src/pages/dashboard/index.tsx": {
-                "bytesInOutput": 11456
+                "bytesInOutput": 12988
               },
               "src/pages/config/yaml.tsx": {
-                "bytesInOutput": 2515
+                "bytesInOutput": 2502
               },
               "src/services/system.ts": {
                 "bytesInOutput": 5904
@@ -20136,7 +18338,7 @@
                 "bytesInOutput": 12207
               },
               "src/pages/ai/history.tsx": {
-                "bytesInOutput": 4014
+                "bytesInOutput": 4016
               },
               "src/pages/ai/settings.tsx": {
                 "bytesInOutput": 15660
@@ -20148,7 +18350,7 @@
                 "bytesInOutput": 8747
               },
               "src/pages/deploy/index.tsx": {
-                "bytesInOutput": 14545
+                "bytesInOutput": 14538
               },
               "src/pages/deploy/create.tsx": {
                 "bytesInOutput": 25371
@@ -20157,31 +18359,31 @@
                 "bytesInOutput": 12370
               },
               "src/pages/deploy/credentials.tsx": {
-                "bytesInOutput": 11868
+                "bytesInOutput": 11870
               },
               "src/pages/deploy/config.tsx": {
                 "bytesInOutput": 22692
               },
               "src/pages/topology/index.tsx": {
-                "bytesInOutput": 13247
+                "bytesInOutput": 5710
               },
               "src/layouts/ClusterLayout.tsx": {
                 "bytesInOutput": 2670
               },
               "src/pages/cluster/dashboard.tsx": {
-                "bytesInOutput": 12477
+                "bytesInOutput": 12475
               },
               "src/pages/cluster/redirect.tsx": {
                 "bytesInOutput": 1292
               },
               "src/pages/k8s/$clusterId/index.tsx": {
-                "bytesInOutput": 31130
+                "bytesInOutput": 31135
               },
               "src/pages/k8s/$clusterId/log-workbench.tsx": {
                 "bytesInOutput": 6078
               },
               "src/pages/k8s/$clusterId/manifest-apply.tsx": {
-                "bytesInOutput": 3101
+                "bytesInOutput": 3099
               },
               "src/pages/k8s/$clusterId/pods.tsx": {
                 "bytesInOutput": 54350
@@ -20328,10 +18530,10 @@
                 "bytesInOutput": 1802
               },
               "src/pages/k8s/$clusterId/permission-audits.tsx": {
-                "bytesInOutput": 11954
+                "bytesInOutput": 11975
               },
               "src/pages/k8s/$clusterId/topology.tsx": {
-                "bytesInOutput": 46458
+                "bytesInOutput": 46466
               },
               "src/pages/k8s/$clusterId/helm-releases.tsx": {
                 "bytesInOutput": 10190
@@ -20370,7 +18572,7 @@
                 "bytesInOutput": 2108
               }
             },
-            "bytes": 1242496
+            "bytes": 1235759
           }
         }
       }
