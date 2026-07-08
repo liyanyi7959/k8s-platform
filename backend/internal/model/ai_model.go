@@ -15,6 +15,7 @@ type AIModel struct {
 	SupportsReasoning bool     `gorm:"column:supports_reasoning;not null;default:0"`
 	SupportsStructuredOutput bool `gorm:"column:supports_structured_output;not null;default:0"`
 	SupportsImageGeneration bool `gorm:"column:supports_image_generation;not null;default:0"`
+	SupportsFileInput bool    `gorm:"column:supports_file_input;not null;default:0"`
 	MaxInputTokens  int        `gorm:"column:max_input_tokens;not null;default:0"`
 	MaxOutputTokens int        `gorm:"column:max_output_tokens;not null;default:0"`
 	ContextWindow   int        `gorm:"column:context_window;not null;default:0"`

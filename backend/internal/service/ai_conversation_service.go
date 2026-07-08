@@ -43,6 +43,7 @@ type AIMessageItem struct {
 	Role           string        `json:"role"`
 	MessageType    string        `json:"message_type"`
 	Content        string        `json:"content"`
+	Attachments    []AIMessageAttachmentItem `json:"attachments,omitempty"`
 	Structured     model.JSONMap `json:"structured,omitempty"`
 	Status         string        `json:"status"`
 	ToolCallCount  int           `json:"tool_call_count"`
@@ -146,6 +147,11 @@ func (s *AIConversationService) GetConversation(ctx context.Context, id uint64) 
 		return AIConversationDetail{}, err
 	}
 
+	attachmentsByMessage, err := listConversationAttachments(ctx, s.db, id)
+	if err != nil {
+		return AIConversationDetail{}, err
+	}
+
 	items := make([]AIMessageItem, 0, len(messages))
 	for _, msg := range messages {
 		items = append(items, AIMessageItem{
@@ -154,6 +160,7 @@ func (s *AIConversationService) GetConversation(ctx context.Context, id uint64) 
 			Role:           msg.Role,
 			MessageType:    msg.MessageType,
 			Content:        msg.Content,
+			Attachments:    attachmentsByMessage[msg.ID],
 			Structured:     msg.StructuredJSON,
 			Status:         msg.Status,
 			ToolCallCount:  msg.ToolCallCount,

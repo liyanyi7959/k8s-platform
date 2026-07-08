@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,6 +38,7 @@ type AIChatRequest struct {
 	ResourceKind   string             `json:"resource_kind"`
 	ResourceName   string             `json:"resource_name"`
 	Images         []AIChatImageInput `json:"images"`
+	Uploads        []AIChatUploadInput `json:"-"`
 	UserPerms      []string           `json:"-"`
 }
 
@@ -64,6 +66,7 @@ type AIChatService struct {
 	gateway   *AIGatewayService
 	toolSvc   *AIToolService
 	actionSvc *AIActionService
+	fileSvc   *AIFileService
 }
 
 func NewAIChatService(
@@ -71,8 +74,9 @@ func NewAIChatService(
 	gateway *AIGatewayService,
 	toolSvc *AIToolService,
 	actionSvc *AIActionService,
+	fileSvc *AIFileService,
 ) *AIChatService {
-	return &AIChatService{db: db, gateway: gateway, toolSvc: toolSvc, actionSvc: actionSvc}
+	return &AIChatService{db: db, gateway: gateway, toolSvc: toolSvc, actionSvc: actionSvc, fileSvc: fileSvc}
 }
 
 type aiAutoDiagnosticsPlan struct {
@@ -86,6 +90,163 @@ type aiMessageRequestScope struct {
 	Namespace     string
 	ResourceKind  string
 	ResourceName  string
+}
+
+func prepareAIChatInputs(req AIChatRequest) ([]AIChatUploadInput, []model.JSONMap, []AIGatewayImage, []AIGatewayFileContext, error) {
+	inlineUploads, err := inlineAIImagesToUploads(req.Images)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	uploads := append([]AIChatUploadInput(nil), req.Uploads...)
+	uploads = append(uploads, inlineUploads...)
+
+	normalizedImages := normalizeAIChatImages(req.Images)
+	normalizedImages = append(normalizedImages, normalizeAIChatUploadImages(req.Uploads)...)
+	gatewayImages := buildAIGatewayImages(normalizedImages)
+	fileContexts := buildAIGatewayFileContexts(uploads)
+	return uploads, normalizedImages, gatewayImages, fileContexts, nil
+}
+
+func inlineAIImagesToUploads(images []AIChatImageInput) ([]AIChatUploadInput, error) {
+	if len(images) == 0 {
+		return nil, nil
+	}
+
+	out := make([]AIChatUploadInput, 0, len(images))
+	for _, image := range images {
+		dataURL := strings.TrimSpace(image.DataURL)
+		if dataURL == "" {
+			continue
+		}
+		contentType, raw, err := decodeAIDataURL(dataURL)
+		if err != nil {
+			return nil, ErrWithMessage(ErrInvalidParams, "图片附件格式无效")
+		}
+		if !strings.HasPrefix(strings.ToLower(contentType), "image/") {
+			return nil, ErrWithMessage(ErrInvalidParams, "仅支持图片 data url")
+		}
+		name := strings.TrimSpace(image.Name)
+		if name == "" {
+			name = "image"
+		}
+		out = append(out, AIChatUploadInput{
+			Name:        name,
+			ContentType: strings.TrimSpace(image.ContentType),
+			Size:        maxInt64(image.Size, int64(len(raw))),
+			FileKind:    aiUploadKindImage,
+			Bytes:       raw,
+			DataURL:     dataURL,
+		})
+	}
+	return out, nil
+}
+
+func decodeAIDataURL(dataURL string) (string, []byte, error) {
+	trimmed := strings.TrimSpace(dataURL)
+	if !strings.HasPrefix(strings.ToLower(trimmed), "data:") {
+		return "", nil, ErrWithMessage(ErrInvalidParams, "invalid data url")
+	}
+	parts := strings.SplitN(trimmed, ",", 2)
+	if len(parts) != 2 {
+		return "", nil, ErrWithMessage(ErrInvalidParams, "invalid data url")
+	}
+	meta := strings.TrimPrefix(parts[0], "data:")
+	metaParts := strings.Split(meta, ";")
+	if len(metaParts) == 0 {
+		return "", nil, ErrWithMessage(ErrInvalidParams, "invalid data url")
+	}
+	contentType := strings.TrimSpace(metaParts[0])
+	if !containsAny(strings.ToLower(parts[0]), ";base64") {
+		return "", nil, ErrWithMessage(ErrInvalidParams, "only base64 data url is supported")
+	}
+	raw, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		return "", nil, err
+	}
+	return contentType, raw, nil
+}
+
+func normalizeAIChatUploadImages(uploads []AIChatUploadInput) []model.JSONMap {
+	if len(uploads) == 0 {
+		return nil
+	}
+
+	out := make([]model.JSONMap, 0, len(uploads))
+	for _, upload := range uploads {
+		if upload.FileKind != aiUploadKindImage || strings.TrimSpace(upload.DataURL) == "" {
+			continue
+		}
+		out = append(out, model.JSONMap{
+			"name":         strings.TrimSpace(upload.Name),
+			"content_type": strings.TrimSpace(upload.ContentType),
+			"data_url":     strings.TrimSpace(upload.DataURL),
+			"size":         maxInt64(upload.Size, int64(len(upload.Bytes))),
+		})
+	}
+	return out
+}
+
+func buildAIGatewayImages(images []model.JSONMap) []AIGatewayImage {
+	if len(images) == 0 {
+		return nil
+	}
+	out := make([]AIGatewayImage, 0, len(images))
+	for _, image := range images {
+		out = append(out, AIGatewayImage{
+			Name:        strings.TrimSpace(fmt.Sprint(image["name"])),
+			ContentType: strings.TrimSpace(fmt.Sprint(image["content_type"])),
+			DataURL:     strings.TrimSpace(fmt.Sprint(image["data_url"])),
+		})
+	}
+	return out
+}
+
+func buildAIGatewayFileContexts(uploads []AIChatUploadInput) []AIGatewayFileContext {
+	if len(uploads) == 0 {
+		return nil
+	}
+	out := make([]AIGatewayFileContext, 0, len(uploads))
+	for _, upload := range uploads {
+		if upload.FileKind != aiUploadKindText {
+			continue
+		}
+		out = append(out, AIGatewayFileContext{
+			Name:        strings.TrimSpace(upload.Name),
+			ContentType: strings.TrimSpace(upload.ContentType),
+			Content:     strings.TrimSpace(upload.TextContent),
+			Size:        maxInt64(upload.Size, int64(len(upload.Bytes))),
+		})
+	}
+	return out
+}
+
+func validateAIChatModelInputs(aiModel model.AIModel, images []model.JSONMap, files []AIGatewayFileContext) error {
+	if len(images) > 0 && !aiModel.SupportsVision {
+		return ErrWithMessage(ErrInvalidParams, "当前模型不支持图片输入，请切换到支持视觉的模型")
+	}
+	if len(files) > 0 && !aiModel.SupportsFileInput {
+		return ErrWithMessage(ErrInvalidParams, "当前模型不支持文件输入，请切换到支持文件输入的模型")
+	}
+	return nil
+}
+
+func buildAIMessageAttachmentRefs(attachments []AIMessageAttachmentItem) []model.JSONMap {
+	if len(attachments) == 0 {
+		return nil
+	}
+	out := make([]model.JSONMap, 0, len(attachments))
+	for _, item := range attachments {
+		out = append(out, model.JSONMap{
+			"id":            item.ID,
+			"original_name": item.OriginalName,
+			"content_type":  item.ContentType,
+			"file_size":     item.FileSize,
+			"file_kind":     item.FileKind,
+			"download_url":  item.DownloadURL,
+		})
+	}
+	return out
 }
 
 func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username string, req AIChatRequest) (AIChatResponse, error) {
@@ -113,9 +274,30 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		return AIChatResponse{}, err
 	}
 	selectedProviderID, selectedModelID := resolveAIInvocationTarget(conversation, req)
-	normalizedImages := normalizeAIChatImages(req.Images)
-	userMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, normalizedImages)
-	assistantMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, nil)
+	uploads, normalizedImages, gatewayImages, fileContexts, err := prepareAIChatInputs(req)
+	if err != nil {
+		return AIChatResponse{}, err
+	}
+	if len(uploads) > 0 && s.fileSvc == nil {
+		return AIChatResponse{}, errors.New("ai file service is required")
+	}
+	if len(gatewayImages) > 0 || len(fileContexts) > 0 {
+		_, aiModel, _, err := s.gateway.resolveInvocationTarget(ctx, AIGatewayRequest{
+			AssistantMode:   conversation.AssistantMode,
+			ProviderID:      selectedProviderID,
+			ModelID:         selectedModelID,
+			PreferModelCode: req.PreferModel,
+			CurrentImages:   gatewayImages,
+			CurrentFiles:    fileContexts,
+		})
+		if err != nil {
+			return AIChatResponse{}, err
+		}
+		if err := validateAIChatModelInputs(aiModel, normalizedImages, fileContexts); err != nil {
+			return AIChatResponse{}, err
+		}
+	}
+	userMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, normalizedImages, nil)
 
 	userMessage := model.AIMessage{
 		ConversationID: conversation.ID,
@@ -129,6 +311,21 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 	if err := s.db.WithContext(ctx).Create(&userMessage).Error; err != nil {
 		return AIChatResponse{}, err
 	}
+
+	attachments, err := s.fileSvc.SaveChatUploads(ctx, conversation.ID, userMessage.ID, userID, username, uploads)
+	if err != nil {
+		return AIChatResponse{}, err
+	}
+	if len(attachments) > 0 {
+		userMessageStructured = buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, normalizedImages, attachments)
+		if err := s.db.WithContext(ctx).
+			Model(&model.AIMessage{}).
+			Where("id = ?", userMessage.ID).
+			Update("structured_json", userMessageStructured).Error; err != nil {
+			return AIChatResponse{}, err
+		}
+	}
+	assistantMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, nil, attachments)
 
 	toolCalls := make([]AIToolCallItem, 0, 6)
 	diagnosticNotes := ""

@@ -20,6 +20,102 @@ export type { AIMessage } from '@/types/ai'
 
 const MOCK_ENABLED = false
 
+function toCamelCase(str: string): string {
+  return str.replace(/_([a-z])/g, (_, char) => char.toUpperCase())
+}
+
+function camelizeKeys<T = any>(input: any): T {
+  if (Array.isArray(input)) {
+    return input.map((item) => camelizeKeys(item)) as T
+  }
+
+  if (input && typeof input === 'object' && !(input instanceof Date)) {
+    return Object.entries(input).reduce<Record<string, unknown>>((result, [key, value]) => {
+      result[toCamelCase(key)] = camelizeKeys(value)
+      return result
+    }, {}) as T
+  }
+
+  return input as T
+}
+
+function mapAIProvider(raw: any): AIProvider {
+  const data = camelizeKeys<any>(raw)
+
+  return {
+    id: Number(data.id || 0),
+    name: data.name || '',
+    providerType: data.providerType || '',
+    vendorCode: data.vendorCode || '',
+    baseUrl: data.baseUrl || '',
+    authScheme: data.authScheme || 'bearer',
+    hasApiKey: Boolean(data.hasApiKey),
+    priority: Number(data.priority || 0),
+    meta: data.meta || data.metaJson || {},
+    enabled: data.enabled !== false,
+    createdAt: data.createdAt || '',
+    updatedAt: data.updatedAt || '',
+  }
+}
+
+function mapAIModel(raw: any): AIModel {
+  const data = camelizeKeys<any>(raw)
+
+  return {
+    id: Number(data.id || 0),
+    providerId: Number(data.providerId || 0),
+    providerName: data.providerName || '',
+    name: data.name || '',
+    modelCode: data.modelCode || '',
+    modelType: data.modelType || '',
+    maxInputTokens: Number(data.maxInputTokens || 0),
+    maxOutputTokens: Number(data.maxOutputTokens || 0),
+    contextWindow: Number(data.contextWindow || 0),
+    supportsTools: Boolean(data.supportsTools),
+    supportsVision: Boolean(data.supportsVision),
+    supportsStreaming: Boolean(data.supportsStreaming),
+    supportsReasoning: Boolean(data.supportsReasoning),
+    supportsStructuredOutput: Boolean(data.supportsStructuredOutput),
+    supportsImageGeneration: Boolean(data.supportsImageGeneration),
+    enabled: data.enabled !== false,
+    createdAt: data.createdAt || '',
+    updatedAt: data.updatedAt || '',
+  }
+}
+
+function toAIProviderPayload(data: Partial<CreateAIProviderRequest>) {
+  return {
+    name: data.name,
+    provider_type: data.providerType,
+    vendor_code: data.vendorCode,
+    base_url: data.baseUrl,
+    auth_scheme: data.authScheme,
+    api_key: data.apiKey,
+    priority: data.priority,
+    meta: data.meta,
+    enabled: data.enabled,
+  }
+}
+
+function toAIModelPayload(data: Partial<CreateAIModelRequest>) {
+  return {
+    provider_id: data.providerId,
+    name: data.name,
+    model_code: data.modelCode,
+    model_type: data.modelType,
+    max_input_tokens: data.maxInputTokens,
+    max_output_tokens: data.maxOutputTokens,
+    context_window: data.contextWindow,
+    supports_tools: data.supportsTools,
+    supports_vision: data.supportsVision,
+    supports_streaming: data.supportsStreaming,
+    supports_reasoning: data.supportsReasoning,
+    supports_structured_output: data.supportsStructuredOutput,
+    supports_image_generation: data.supportsImageGeneration,
+    enabled: data.enabled,
+  }
+}
+
 // ==================== AI 提供商 ====================
 
 const MOCK_PROVIDERS: AIProvider[] = [
@@ -33,10 +129,12 @@ export function listAIProviders(signal?: AbortSignal): Promise<AIProvider[]> {
       setTimeout(() => resolve([...MOCK_PROVIDERS]), 200)
     })
   }
-  return request('/api/v1/ai/providers', { signal })
+  return request('/api/v1/ai/providers', { signal }).then((items: any[]) =>
+    (items || []).map(mapAIProvider),
+  )
 }
 
-export function createAIProvider(data: CreateAIProviderRequest): Promise<AIProvider> {
+export function createAIProvider(data: CreateAIProviderRequest): Promise<{ id: number }> {
   if (MOCK_ENABLED) {
     return new Promise((resolve) => {
       const provider: AIProvider = {
@@ -52,10 +150,13 @@ export function createAIProvider(data: CreateAIProviderRequest): Promise<AIProvi
         updatedAt: new Date().toISOString(),
       }
       MOCK_PROVIDERS.push(provider)
-      resolve(provider)
+      resolve({ id: provider.id })
     })
   }
-  return request('/api/v1/ai/providers', { method: 'POST', data })
+  return request('/api/v1/ai/providers', {
+    method: 'POST',
+    data: toAIProviderPayload(data),
+  }).then((result: any) => ({ id: Number(result?.id || 0) }))
 }
 
 export function updateAIProvider(id: number, data: Partial<CreateAIProviderRequest>): Promise<AIProvider> {
@@ -79,7 +180,23 @@ export function updateAIProvider(id: number, data: Partial<CreateAIProviderReque
       resolve(updated)
     })
   }
-  return request(`/api/v1/ai/providers/${id}`, { method: 'PATCH', data })
+  return request(`/api/v1/ai/providers/${id}`, {
+    method: 'PATCH',
+    data: toAIProviderPayload(data),
+  }).then(() => listAIProviders().then((items) => items.find((item) => item.id === id)!))
+}
+
+export function deleteAIProvider(id: number): Promise<void> {
+  if (MOCK_ENABLED) {
+    return new Promise((resolve) => {
+      const index = MOCK_PROVIDERS.findIndex((provider) => provider.id === id)
+      if (index >= 0) {
+        MOCK_PROVIDERS.splice(index, 1)
+      }
+      resolve()
+    })
+  }
+  return request(`/api/v1/ai/providers/${id}`, { method: 'DELETE' })
 }
 
 // ==================== AI 模型 ====================
@@ -96,10 +213,12 @@ export function listAIModels(signal?: AbortSignal): Promise<AIModel[]> {
       setTimeout(() => resolve([...MOCK_MODELS]), 200)
     })
   }
-  return request('/api/v1/ai/models', { signal })
+  return request('/api/v1/ai/models', { signal }).then((items: any[]) =>
+    (items || []).map(mapAIModel),
+  )
 }
 
-export function createAIModel(data: CreateAIModelRequest): Promise<AIModel> {
+export function createAIModel(data: CreateAIModelRequest): Promise<{ id: number }> {
   if (MOCK_ENABLED) {
     return new Promise((resolve) => {
       const provider = MOCK_PROVIDERS.find((p) => p.id === data.providerId)
@@ -118,10 +237,13 @@ export function createAIModel(data: CreateAIModelRequest): Promise<AIModel> {
         updatedAt: new Date().toISOString(),
       }
       MOCK_MODELS.push(model)
-      resolve(model)
+      resolve({ id: model.id })
     })
   }
-  return request('/api/v1/ai/models', { method: 'POST', data })
+  return request('/api/v1/ai/models', {
+    method: 'POST',
+    data: toAIModelPayload(data),
+  }).then((result: any) => ({ id: Number(result?.id || 0) }))
 }
 
 export function updateAIModel(id: number, data: Partial<CreateAIModelRequest>): Promise<AIModel> {
@@ -149,7 +271,23 @@ export function updateAIModel(id: number, data: Partial<CreateAIModelRequest>): 
       }
     })
   }
-  return request(`/api/v1/ai/models/${id}`, { method: 'PATCH', data })
+  return request(`/api/v1/ai/models/${id}`, {
+    method: 'PATCH',
+    data: toAIModelPayload(data),
+  }).then(() => listAIModels().then((items) => items.find((item) => item.id === id)!))
+}
+
+export function deleteAIModel(id: number): Promise<void> {
+  if (MOCK_ENABLED) {
+    return new Promise((resolve) => {
+      const index = MOCK_MODELS.findIndex((model) => model.id === id)
+      if (index >= 0) {
+        MOCK_MODELS.splice(index, 1)
+      }
+      resolve()
+    })
+  }
+  return request(`/api/v1/ai/models/${id}`, { method: 'DELETE' })
 }
 
 // ==================== AI 对话 ====================

@@ -8,7 +8,9 @@ export interface AIProvider {
   id: number
   name: string
   providerType: string    // openai / azure-openai / ollama / qwen
+  vendorCode?: string
   baseUrl: string
+  authScheme?: string
   hasApiKey: boolean
   priority: number
   meta: Record<string, unknown>
@@ -20,7 +22,9 @@ export interface AIProvider {
 export interface CreateAIProviderRequest {
   name: string
   providerType: string
+  vendorCode?: string
   baseUrl: string
+  authScheme?: string
   apiKey?: string
   priority?: number
   meta?: Record<string, unknown>
@@ -36,8 +40,14 @@ export interface AIModel {
   modelCode: string
   modelType: string       // chat / vision / embedding / image
   maxInputTokens: number
+  maxOutputTokens?: number
+  contextWindow?: number
   supportsTools: boolean
   supportsVision: boolean
+  supportsStreaming?: boolean
+  supportsReasoning?: boolean
+  supportsStructuredOutput?: boolean
+  supportsImageGeneration?: boolean
   enabled: boolean
   createdAt: string
   updatedAt: string
@@ -49,8 +59,14 @@ export interface CreateAIModelRequest {
   modelCode: string
   modelType: string
   maxInputTokens?: number
+  maxOutputTokens?: number
+  contextWindow?: number
   supportsTools?: boolean
   supportsVision?: boolean
+  supportsStreaming?: boolean
+  supportsReasoning?: boolean
+  supportsStructuredOutput?: boolean
+  supportsImageGeneration?: boolean
   enabled?: boolean
 }
 

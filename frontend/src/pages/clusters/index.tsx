@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { history } from '@umijs/max'
+import { history, useModel } from '@umijs/max'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import {
   Badge,
@@ -11,50 +11,38 @@ import {
   Select,
   Space,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from 'antd'
 import {
   CheckCircleOutlined,
+  DeleteOutlined,
+  EyeOutlined,
   HeartOutlined,
   ImportOutlined,
   ReloadOutlined,
   SearchOutlined,
+  ToolOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage, EmptyState, StatusTag } from '@/components'
 import { checkClusterConnection, deleteCluster, listClusters } from '@/services/clusters'
-import { formatDate, formatNumber, formatRelativeTime } from '@/utils'
+import {
+  enterClusterWorkspace,
+  formatDate,
+  formatNumber,
+  formatRelativeTime,
+  isClusterHealthy as isHealthy,
+  needsClusterAttention as needsAttention,
+  normalizeClusterStatus,
+} from '@/utils'
 import type { Cluster } from '@/types'
 
 const { Text } = Typography
 
 type ClusterStatusFilter = 'active' | 'attention' | 'error' | undefined
-
-const HEALTHY_STATUSES = new Set(['active', 'healthy', 'connected', 'success'])
-const ATTENTION_STATUSES = new Set([
-  'warning',
-  'degraded',
-  'error',
-  'failed',
-  'disconnected',
-  'unknown',
-])
-
-function normalizeStatus(status?: string) {
-  return String(status || 'unknown')
-    .trim()
-    .toLowerCase()
-}
-
-function isHealthy(status?: string) {
-  return HEALTHY_STATUSES.has(normalizeStatus(status))
-}
-
-function needsAttention(status?: string) {
-  return ATTENTION_STATUSES.has(normalizeStatus(status))
-}
 
 function getHealthPercent(total: number, healthy: number) {
   if (total <= 0) return 0
@@ -63,6 +51,7 @@ function getHealthPercent(total: number, healthy: number) {
 
 /** 集群列表页 */
 const ClusterListPage: React.FC = () => {
+  const { setCurrentCluster } = useModel('cluster')
   const queryClient = useQueryClient()
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<ClusterStatusFilter>(undefined)
@@ -97,10 +86,13 @@ const ClusterListPage: React.FC = () => {
 
     return items.filter((item) => {
       const matchKeyword = !keyword || item.name.toLowerCase().includes(keyword.toLowerCase())
-      const normalized = normalizeStatus(item.status)
+      const normalized = normalizeClusterStatus(item.status)
       const matchStatus =
         !statusFilter ||
+        (statusFilter === 'active' && isHealthy(normalized)) ||
         (statusFilter === 'attention' && needsAttention(normalized)) ||
+        (statusFilter === 'error' &&
+          ['error', 'failed', 'disconnected', 'unhealthy', 'offline'].includes(normalized)) ||
         normalized === statusFilter
 
       return matchKeyword && matchStatus
@@ -127,6 +119,13 @@ const ClusterListPage: React.FC = () => {
 
   const hasFilters = Boolean(keyword || statusFilter)
   const lastUpdatedText = dataUpdatedAt ? formatDate(new Date(dataUpdatedAt), 'HH:mm:ss') : '暂无'
+
+  const handleEnterCluster = (cluster: Cluster, targetPath?: string) => {
+    enterClusterWorkspace(cluster, {
+      setCurrentCluster,
+      targetPath,
+    })
+  }
 
   const summaryCards = [
     {
@@ -179,7 +178,7 @@ const ClusterListPage: React.FC = () => {
           <Button
             type="link"
             className="app-cluster-namecell__link"
-            onClick={() => history.push(`/k8s/${record.id}/dashboard`)}
+            onClick={() => handleEnterCluster(record)}
           >
             {record.name}
           </Button>
@@ -249,34 +248,41 @@ const ClusterListPage: React.FC = () => {
     {
       title: '操作',
       valueType: 'option',
-      width: 220,
+      width: 180,
       align: 'center',
       render: (_, record) => (
-        <Space size={4} className="app-table-actions">
-          <Button type="link" size="small" onClick={() => history.push(`/clusters/${record.id}`)}>
-            查看
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            loading={healthMutation.isPending && healthMutation.variables === record.id}
-            onClick={() => healthMutation.mutate(record.id)}
-          >
-            执行检查
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => history.push(`/k8s/${record.id}/dashboard`)}
-          >
-            运维
-          </Button>
+        <div className="app-table-actions app-table-actions--icon">
+          <Tooltip title="查看详情">
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => history.push(`/clusters/${record.id}`)}
+            />
+          </Tooltip>
+          <Tooltip title="执行健康检查">
+            <Button
+              type="text"
+              size="small"
+              icon={<CheckCircleOutlined />}
+              loading={healthMutation.isPending && healthMutation.variables === record.id}
+              onClick={() => healthMutation.mutate(record.id)}
+            />
+          </Tooltip>
+          <Tooltip title={isHealthy(record.status) ? '进入运维' : '请检查集群健康状态'}>
+            <Button
+              type="text"
+              size="small"
+              icon={<ToolOutlined />}
+              onClick={() => handleEnterCluster(record)}
+            />
+          </Tooltip>
           <Popconfirm title="确定删除该集群吗？" onConfirm={() => deleteMutation.mutate(record.id)}>
-            <Button type="link" size="small" danger>
-              删除
-            </Button>
+            <Tooltip title="删除">
+              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+            </Tooltip>
           </Popconfirm>
-        </Space>
+        </div>
       ),
     },
   ]

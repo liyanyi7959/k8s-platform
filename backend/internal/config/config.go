@@ -99,6 +99,7 @@ type AIConfig struct {
 	DefaultProvider        string `yaml:"default_provider"`
 	DefaultChatModel       string `yaml:"default_chat_model"`
 	DefaultVisionModel     string `yaml:"default_vision_model"`
+	UploadDir              string `yaml:"upload_dir"`
 	MaskSecrets            bool   `yaml:"mask_secrets"`
 	AllowExternalModelData bool   `yaml:"allow_external_model_data"`
 	ToolTimeout            string `yaml:"tool_timeout"`
@@ -158,6 +159,7 @@ func Default() Config {
 			DefaultProvider:        "",
 			DefaultChatModel:       "",
 			DefaultVisionModel:     "",
+			UploadDir:              defaultAIUploadDir,
 			MaskSecrets:            true,
 			AllowExternalModelData: false,
 			ToolTimeout:            "20s",
@@ -389,6 +391,9 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := os.Getenv("AI_DEFAULT_VISION_MODEL"); v != "" {
 		cfg.AI.DefaultVisionModel = v
+	}
+	if v := os.Getenv("AI_UPLOAD_DIR"); v != "" {
+		cfg.AI.UploadDir = v
 	}
 	if v := os.Getenv("AI_MASK_SECRETS"); v != "" {
 		if b, err := strconv.ParseBool(v); err == nil {

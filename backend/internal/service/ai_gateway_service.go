@@ -21,6 +21,19 @@ type AIGatewayMessage struct {
 	Content string `json:"content"`
 }
 
+type AIGatewayImage struct {
+	Name        string
+	ContentType string
+	DataURL     string
+}
+
+type AIGatewayFileContext struct {
+	Name        string
+	ContentType string
+	Content     string
+	Size        int64
+}
+
 type AIGatewayRequest struct {
 	ConversationID  uint64
 	AssistantMode   string
@@ -28,6 +41,8 @@ type AIGatewayRequest struct {
 	ModelID         *uint64
 	PreferModelCode string
 	Messages        []AIGatewayMessage
+	CurrentImages   []AIGatewayImage
+	CurrentFiles    []AIGatewayFileContext
 	DiagnosticNotes string
 	ScopeNote       string
 }
@@ -110,8 +125,14 @@ func (s *AIGatewayService) resolveInvocationTarget(ctx context.Context, req AIGa
 
 	if strings.TrimSpace(req.AssistantMode) == "chat" {
 		q = q.Where("m.model_type IN ?", []string{"chat", "reasoning"})
-	} else {
+	} else if false {
 		q = q.Where("m.model_type IN ?", []string{"chat", "reasoning", "vision"})
+	}
+	if req.RequiresVision() {
+		q = q.Where("m.supports_vision = 1")
+	}
+	if req.RequiresFileInput() {
+		q = q.Where("m.supports_file_input = 1")
 	}
 
 	if err := q.Order("p.priority ASC, m.id DESC").First(&aiModel).Error; err != nil {
@@ -167,9 +188,17 @@ func (s *AIGatewayService) baseEnabledModelQuery(ctx context.Context, req AIGate
 		Where("m.deleted_at IS NULL AND p.deleted_at IS NULL AND m.enabled = 1 AND p.enabled = 1")
 
 	if strings.TrimSpace(req.AssistantMode) == "chat" {
-		return q.Where("m.model_type IN ?", []string{"chat", "reasoning"})
+		q = q.Where("m.model_type IN ?", []string{"chat", "reasoning"})
+	} else {
+		q = q.Where("m.model_type IN ?", []string{"chat", "reasoning", "vision"})
 	}
-	return q.Where("m.model_type IN ?", []string{"chat", "reasoning", "vision"})
+	if req.RequiresVision() {
+		q = q.Where("m.supports_vision = 1")
+	}
+	if req.RequiresFileInput() {
+		q = q.Where("m.supports_file_input = 1")
+	}
+	return q
 }
 
 func (s *AIGatewayService) findRoutePreferredModel(ctx context.Context, req AIGatewayRequest) *uint64 {
@@ -185,7 +214,9 @@ func (s *AIGatewayService) findRoutePreferredModel(ctx context.Context, req AIGa
 	}
 
 	var candidate *uint64
-	if strings.TrimSpace(req.AssistantMode) == "chat" {
+	if req.RequiresVision() && settings.DefaultVisionModelID != nil && *settings.DefaultVisionModelID > 0 {
+		candidate = settings.DefaultVisionModelID
+	} else if strings.TrimSpace(req.AssistantMode) == "chat" {
 		candidate = settings.DefaultChatModelID
 	} else {
 		candidate = settings.DefaultDiagnoseModelID
@@ -287,46 +318,35 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "当前 AI 提供商未配置 API Key")
 	}
 
-	systemPrompt := buildAISystemPromptV2(req.AssistantMode)
-	messages := make([]map[string]string, 0, len(req.Messages)+2)
-	messages = append(messages, map[string]string{
-		"role":    "system",
-		"content": systemPrompt,
-	})
-	if scopeNote := strings.TrimSpace(req.ScopeNote); scopeNote != "" {
-		messages = append(messages, map[string]string{
-			"role":    "system",
-			"content": scopeNote,
-		})
-	}
-	if notes := strings.TrimSpace(req.DiagnosticNotes); notes != "" {
-		messages = append(messages, map[string]string{
+	messages := buildOpenAICompatibleMessages(req)
+	if notes := strings.TrimSpace(req.DiagnosticNotes); false {
+		messages = append(messages, map[string]any{
 			"role":    "system",
 			"content": "以下是平台自动收集的只读诊断信息，请优先基于这些证据分析，不要编造缺失事实。\n" + notes,
 		})
 	} else {
-		messages = append(messages, map[string]string{
+		messages = append(messages, map[string]any{
 			"role":    "system",
 			"content": "当前没有拿到任何平台诊断证据。不要声称已经看到集群状态、Pod 状态、事件、日志或具体资源异常；请明确说明证据不足，并只给出下一步排查建议。",
 		})
 	}
-	if strings.TrimSpace(req.DiagnosticNotes) == "" {
-		messages = append(messages, map[string]string{
+	if false {
+		messages = append(messages, map[string]any{
 			"role":    "system",
 			"content": "No platform diagnostic evidence was collected for this round. Do not pretend you saw cluster state. Say that this round lacks evidence, ask to narrow scope or retry collection, and only suggest manual commands when the requested data is outside the platform's current read capabilities.",
 		})
-	} else {
-		messages = append(messages, map[string]string{
+	} else if false {
+		messages = append(messages, map[string]any{
 			"role":    "system",
 			"content": "Treat the provided diagnostic notes as platform-collected evidence. If the notes already contain concrete counts, lists, states, logs, metrics, or events, answer with them directly and do not fall back to generic kubectl instructions.",
 		})
 	}
-	for _, item := range req.Messages {
+	for _, item := range []AIGatewayMessage{} {
 		role := strings.ToLower(strings.TrimSpace(item.Role))
 		if role == "" {
 			role = "user"
 		}
-		messages = append(messages, map[string]string{
+		messages = append(messages, map[string]any{
 			"role":    role,
 			"content": item.Content,
 		})
@@ -456,29 +476,24 @@ func (s *AIGatewayService) InvokeStream(ctx context.Context, req AIGatewayReques
 	result.ModelName = aiModel.Name
 	result.ModelCode = aiModel.ModelCode
 
-	systemPrompt := buildAISystemPromptV2(req.AssistantMode)
-	messages := make([]map[string]string, 0, len(req.Messages)+2)
-	messages = append(messages, map[string]string{"role": "system", "content": systemPrompt})
-	if scopeNote := strings.TrimSpace(req.ScopeNote); scopeNote != "" {
-		messages = append(messages, map[string]string{"role": "system", "content": scopeNote})
-	}
-	if notes := strings.TrimSpace(req.DiagnosticNotes); notes != "" {
-		messages = append(messages, map[string]string{
+	messages := buildOpenAICompatibleMessages(req)
+	if notes := strings.TrimSpace(req.DiagnosticNotes); false {
+		messages = append(messages, map[string]any{
 			"role":    "system",
 			"content": "以下是平台自动收集的只读诊断信息，请优先基于这些证据分析，不要编造缺失事实。\n" + notes,
 		})
-	} else {
-		messages = append(messages, map[string]string{
+	} else if false {
+		messages = append(messages, map[string]any{
 			"role":    "system",
 			"content": "当前没有拿到任何平台诊断证据。不要声称已经看到集群状态、Pod 状态、事件、日志或具体资源异常；请明确说明证据不足，并只给出下一步排查建议。",
 		})
 	}
-	for _, item := range req.Messages {
+	for _, item := range []AIGatewayMessage{} {
 		role := strings.ToLower(strings.TrimSpace(item.Role))
 		if role == "" {
 			role = "user"
 		}
-		messages = append(messages, map[string]string{"role": role, "content": item.Content})
+		messages = append(messages, map[string]any{"role": role, "content": item.Content})
 	}
 
 	payload := map[string]any{
@@ -530,6 +545,135 @@ func buildAISystemPromptV2(mode string) string {
 		return base + " Current mode is general assistance. Keep answers concise but evidence-based. You may explain, compare, and summarize, but you must still respect platform permissions and must not imply direct write execution."
 	}
 	return base + " Current mode is fault diagnosis. Prefer an answer structure of issue summary, key evidence, likely causes, impact scope, and next step. For write actions, only provide recommendations or proposals and never imply that a risky change has already been executed."
+}
+
+func (r AIGatewayRequest) RequiresVision() bool {
+	return len(r.CurrentImages) > 0
+}
+
+func (r AIGatewayRequest) RequiresFileInput() bool {
+	return len(r.CurrentFiles) > 0
+}
+
+func buildOpenAICompatibleMessages(req AIGatewayRequest) []map[string]any {
+	systemPrompt := buildAISystemPromptV2(req.AssistantMode)
+	messages := make([]map[string]any, 0, len(req.Messages)+4)
+	messages = append(messages, map[string]any{
+		"role":    "system",
+		"content": systemPrompt,
+	})
+	if scopeNote := strings.TrimSpace(req.ScopeNote); scopeNote != "" {
+		messages = append(messages, map[string]any{
+			"role":    "system",
+			"content": scopeNote,
+		})
+	}
+	if notes := strings.TrimSpace(req.DiagnosticNotes); notes != "" {
+		messages = append(messages, map[string]any{
+			"role":    "system",
+			"content": "浠ヤ笅鏄钩鍙拌嚜鍔ㄦ敹闆嗙殑鍙璇婃柇淇℃伅锛岃浼樺厛鍩轰簬杩欎簺璇佹嵁鍒嗘瀽锛屼笉瑕佺紪閫犵己澶变簨瀹炪€俓n" + notes,
+		})
+	} else {
+		messages = append(messages, map[string]any{
+			"role":    "system",
+			"content": "褰撳墠娌℃湁鎷垮埌浠讳綍骞冲彴璇婃柇璇佹嵁銆備笉瑕佸０绉板凡缁忕湅鍒伴泦缇ょ姸鎬併€丳od 鐘舵€併€佷簨浠躲€佹棩蹇楁垨鍏蜂綋璧勬簮寮傚父锛涜鏄庣‘璇存槑璇佹嵁涓嶈冻锛屽苟鍙粰鍑轰笅涓€姝ユ帓鏌ュ缓璁€?,
+		})
+	}
+	if strings.TrimSpace(req.DiagnosticNotes) == "" {
+		messages = append(messages, map[string]any{
+			"role":    "system",
+			"content": "No platform diagnostic evidence was collected for this round. Do not pretend you saw cluster state. Say that this round lacks evidence, ask to narrow scope or retry collection, and only suggest manual commands when the requested data is outside the platform's current read capabilities.",
+		})
+	} else {
+		messages = append(messages, map[string]any{
+			"role":    "system",
+			"content": "Treat the provided diagnostic notes as platform-collected evidence. If the notes already contain concrete counts, lists, states, logs, metrics, or events, answer with them directly and do not fall back to generic kubectl instructions.",
+		})
+	}
+
+	lastUserIndex := len(req.Messages) - 1
+	for index, item := range req.Messages {
+		role := strings.ToLower(strings.TrimSpace(item.Role))
+		if role == "" {
+			role = "user"
+		}
+		if role == "user" && index == lastUserIndex {
+			messages = append(messages, buildOpenAIUserMessage(role, item.Content, req.CurrentFiles, req.CurrentImages))
+			continue
+		}
+		messages = append(messages, map[string]any{
+			"role":    role,
+			"content": item.Content,
+		})
+	}
+	return messages
+}
+
+func buildOpenAIUserMessage(role, content string, files []AIGatewayFileContext, images []AIGatewayImage) map[string]any {
+	textContent := buildAIGatewayUserText(content, files)
+	if len(images) == 0 {
+		return map[string]any{
+			"role":    role,
+			"content": textContent,
+		}
+	}
+
+	parts := make([]map[string]any, 0, len(images)+1)
+	parts = append(parts, map[string]any{
+		"type": "text",
+		"text": textContent,
+	})
+	for _, image := range images {
+		if strings.TrimSpace(image.DataURL) == "" {
+			continue
+		}
+		parts = append(parts, map[string]any{
+			"type": "image_url",
+			"image_url": map[string]any{
+				"url": image.DataURL,
+			},
+		})
+	}
+	return map[string]any{
+		"role":    role,
+		"content": parts,
+	}
+}
+
+func buildAIGatewayUserText(content string, files []AIGatewayFileContext) string {
+	content = strings.TrimSpace(content)
+	if len(files) == 0 {
+		return content
+	}
+
+	var builder strings.Builder
+	builder.WriteString(content)
+	builder.WriteString("\n\nAttached file excerpts:")
+	for _, file := range files {
+		builder.WriteString("\n\n[")
+		builder.WriteString(strings.TrimSpace(file.Name))
+		builder.WriteString("]")
+		if contentType := strings.TrimSpace(file.ContentType); contentType != "" {
+			builder.WriteString(" (")
+			builder.WriteString(contentType)
+			builder.WriteString(")")
+		}
+		builder.WriteString("\n")
+		builder.WriteString(truncateAIGatewayFileText(strings.TrimSpace(file.Content)))
+	}
+	return strings.TrimSpace(builder.String())
+}
+
+func truncateAIGatewayFileText(content string) string {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return "(empty file)"
+	}
+	runes := []rune(content)
+	if len(runes) <= aiChatMaxFileTextRunes {
+		return content
+	}
+	return string(runes[:aiChatMaxFileTextRunes]) + "\n...[truncated]"
 }
 
 func buildAIGatewayScopeNote(namespace, kind, name string) string {

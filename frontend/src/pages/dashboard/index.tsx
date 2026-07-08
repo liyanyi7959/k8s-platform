@@ -1,261 +1,437 @@
-/**
- * AIOps 智能运维平台 - 全局概览
- * 统一管理多集群 Kubernetes 资源、应用部署与智能运维
- */
-import React from 'react'
-import { history } from '@umijs/max'
-import { Card, Row, Col, Spin, Tag, Progress, Typography, Empty, Button, Statistic } from 'antd'
-import {
-  ClusterOutlined,
-  HddOutlined,
-  CloudServerOutlined,
-  AppstoreOutlined,
-  ApartmentOutlined,
-  RobotOutlined,
-  ArrowRightOutlined,
-  CloudDownloadOutlined,
-  SafetyOutlined,
-  RocketOutlined,
-} from '@ant-design/icons'
+import React, { useMemo } from 'react'
+import { history, useModel } from '@umijs/max'
 import { useQuery } from '@tanstack/react-query'
+import {
+  AlertOutlined,
+  ApartmentOutlined,
+  AppstoreOutlined,
+  ArrowRightOutlined,
+  CheckCircleOutlined,
+  CloudDownloadOutlined,
+  ClusterOutlined,
+  NodeIndexOutlined,
+  RadarChartOutlined,
+  RobotOutlined,
+  RocketOutlined,
+  SafetyCertificateOutlined,
+} from '@ant-design/icons'
+import {
+  Button,
+  Card,
+  Col,
+  Empty,
+  Progress,
+  Row,
+  Space,
+  Spin,
+  Statistic,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd'
 import { AppPage } from '@/components'
 import { listClusters } from '@/services/clusters'
 import { getClusterOverview } from '@/services/k8s'
+import {
+  enterClusterWorkspace,
+  getClusterStatusColor,
+  getClusterStatusText,
+  isClusterHealthy,
+  needsClusterAttention,
+} from '@/utils'
+import type { Cluster } from '@/types'
 
-const { Text, Title } = Typography
+const { Paragraph, Text, Title } = Typography
 
-/** 功能入口配置 */
-const ENTRIES = [
-  { key: 'clusters', title: '集群管理', desc: '导入和管理 K8s 集群', icon: <ClusterOutlined />, color: '#2563eb', path: '/clusters' },
-  { key: 'topology', title: '资源视图', desc: '全局资源概览', icon: <ApartmentOutlined />, color: '#0891b2', path: '/topology' },
-  { key: 'appstore', title: '应用商店', desc: 'YAML 模板和 Helm Chart', icon: <AppstoreOutlined />, color: '#059669', path: '/app-store' },
-  { key: 'projects', title: '项目管理', desc: '命名空间分组管理', icon: <RocketOutlined />, color: '#7c3aed', path: '/projects' },
-  { key: 'helm', title: 'Helm 管理', desc: 'Release 安装和管理', icon: <CloudDownloadOutlined />, color: '#c2410c', path: '/clusters' },
-  { key: 'ai', title: 'AI 运维', desc: '智能运维助手', icon: <RobotOutlined />, color: '#dc2626', path: '/ai/chat' },
+const QUICK_ENTRIES = [
+  {
+    key: 'clusters',
+    title: '集群列表',
+    desc: '查看接入与状态',
+    path: '/clusters',
+    icon: <ClusterOutlined />,
+    tone: 'blue',
+  },
+  {
+    key: 'topology',
+    title: '资源拓扑',
+    desc: '查看资源关系',
+    path: '/topology',
+    icon: <ApartmentOutlined />,
+    tone: 'cyan',
+  },
+  {
+    key: 'projects',
+    title: '项目空间',
+    desc: '管理业务边界',
+    path: '/projects',
+    icon: <RocketOutlined />,
+    tone: 'green',
+  },
+  {
+    key: 'app-store',
+    title: '应用商店',
+    desc: '快速交付应用',
+    path: '/app-store',
+    icon: <AppstoreOutlined />,
+    tone: 'orange',
+  },
+  {
+    key: 'helm',
+    title: 'Helm 管理',
+    desc: '进入发布管理',
+    path: '/clusters',
+    icon: <CloudDownloadOutlined />,
+    tone: 'slate',
+  },
+  {
+    key: 'ai',
+    title: 'AI 运维',
+    desc: '模型与诊断入口',
+    path: '/ai/settings',
+    icon: <RobotOutlined />,
+    tone: 'red',
+  },
 ] as const
 
-/** 集群概览卡片 */
-function ClusterOverviewCard({ cluster }: { cluster: any }) {
+const formatPercent = (value: number) => Math.max(0, Math.min(100, Number(value || 0)))
+
+const ClusterFleetCard: React.FC<{
+  cluster: Cluster
+  onEnterCluster: (cluster: Cluster) => void
+}> = ({ cluster, onEnterCluster }) => {
   const { data: overview, isLoading } = useQuery({
-    queryKey: ['cluster-overview-dashboard', cluster.id],
+    queryKey: ['dashboard-cluster-overview', cluster.id],
     queryFn: ({ signal }) => getClusterOverview(cluster.id, signal),
     enabled: !!cluster.id,
     staleTime: 60_000,
   })
 
-  const statusColor = cluster.status === 'healthy' ? 'success' : cluster.status === 'unhealthy' ? 'error' : 'default'
-  const statusText = cluster.status === 'healthy' ? '健康' : cluster.status === 'unhealthy' ? '异常' : '未知'
-
-  // 防御性取值
-  const nodeCount = overview?.nodeCount ?? overview?.nodes?.total ?? cluster.nodeCount ?? 0
-  const podCount = overview?.podCount ?? overview?.pods?.total ?? 0
-  const cpuUsage = overview?.cpuUsagePercent ?? overview?.cpu?.percent ?? 0
-  const memUsage = overview?.memoryUsagePercent ?? overview?.memory?.percent ?? 0
+  const healthy = isClusterHealthy(cluster.status)
+  const nodesReady = overview?.stats.nodes.ready ?? cluster.nodeCount ?? 0
+  const nodesTotal = overview?.stats.nodes.total ?? cluster.nodeCount ?? 0
+  const podTotal = overview?.stats.pods.total ?? 0
+  const cpuUsage = formatPercent(overview?.stats.cpu.used_percent ?? 0)
+  const memoryUsage = formatPercent(overview?.stats.memory.used_percent ?? 0)
 
   return (
     <Card
       hoverable
-      size="small"
-      style={{ borderRadius: 12, cursor: 'pointer', transition: 'all 0.3s' }}
-      onClick={() => history.push(`/clusters/${cluster.id}`)}
+      className={['app-aiops-cluster-card', healthy ? '' : 'is-blocked'].filter(Boolean).join(' ')}
+      onClick={() => onEnterCluster(cluster)}
     >
-      {/* 标题行 */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <ClusterOutlined style={{ color: '#2563eb', fontSize: 18 }} />
-          <Text strong style={{ fontSize: 15 }}>{cluster.name}</Text>
+      <div className="app-aiops-cluster-card__top">
+        <div className="app-aiops-cluster-card__identity">
+          <span className="app-aiops-cluster-card__icon">
+            <ClusterOutlined />
+          </span>
+          <div>
+            <div className="app-aiops-cluster-card__name">{cluster.name}</div>
+            <div className="app-aiops-cluster-card__meta">
+              <span>{cluster.type || 'Kubernetes'}</span>
+              <span>{cluster.k8sVersion || '版本待确认'}</span>
+            </div>
+          </div>
         </div>
-        <Tag color={statusColor}>{statusText}</Tag>
+        <Tag color={getClusterStatusColor(cluster.status)}>
+          {getClusterStatusText(cluster.status)}
+        </Tag>
       </div>
 
-      {/* 指标 */}
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 16 }}><Spin size="small" /></div>
+        <div className="app-aiops-cluster-card__loading">
+          <Spin size="small" />
+        </div>
       ) : (
         <>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Statistic title="节点" value={nodeCount} valueStyle={{ fontSize: 18 }} />
-            </Col>
-            <Col span={12}>
-              <Statistic title="Pod" value={podCount} valueStyle={{ fontSize: 18 }} />
-            </Col>
-          </Row>
-
-          {/* CPU/内存使用率 */}
-          <div style={{ marginTop: 12 }}>
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                <Text type="secondary" style={{ fontSize: 11 }}>CPU</Text>
-                <Text style={{ fontSize: 11, fontWeight: 600 }}>{cpuUsage.toFixed(1)}%</Text>
-              </div>
-              <Progress
-                percent={cpuUsage}
-                size="small"
-                strokeColor={cpuUsage > 80 ? '#ff4d4f' : cpuUsage > 60 ? '#faad14' : '#52c41a'}
-                showInfo={false}
-              />
+          <div className="app-aiops-cluster-card__stats">
+            <div className="app-aiops-cluster-card__stat">
+              <span className="app-aiops-cluster-card__label">节点 Ready</span>
+              <strong>
+                {nodesReady} / {nodesTotal}
+              </strong>
             </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                <Text type="secondary" style={{ fontSize: 11 }}>内存</Text>
-                <Text style={{ fontSize: 11, fontWeight: 600 }}>{memUsage.toFixed(1)}%</Text>
-              </div>
-              <Progress
-                percent={memUsage}
-                size="small"
-                strokeColor={memUsage > 80 ? '#ff4d4f' : memUsage > 60 ? '#faad14' : '#52c41a'}
-                showInfo={false}
-              />
+            <div className="app-aiops-cluster-card__stat">
+              <span className="app-aiops-cluster-card__label">Pod 总量</span>
+              <strong>{podTotal}</strong>
             </div>
           </div>
 
-          {/* 进入集群 */}
-          <Button
-            type="link"
-            size="small"
-            style={{ padding: 0, marginTop: 8 }}
-            onClick={(e) => {
-              e.stopPropagation()
-              history.push(`/k8s/${cluster.id}/dashboard`)
-            }}
-          >
-            进入集群 <ArrowRightOutlined />
-          </Button>
+          <div className="app-aiops-cluster-card__progress">
+            <div>
+              <div className="app-aiops-cluster-card__progress-head">
+                <span>CPU</span>
+                <strong>{cpuUsage.toFixed(1)}%</strong>
+              </div>
+              <Progress percent={cpuUsage} showInfo={false} size="small" />
+            </div>
+            <div>
+              <div className="app-aiops-cluster-card__progress-head">
+                <span>内存</span>
+                <strong>{memoryUsage.toFixed(1)}%</strong>
+              </div>
+              <Progress percent={memoryUsage} showInfo={false} size="small" />
+            </div>
+          </div>
         </>
       )}
+
+      <div className="app-aiops-cluster-card__footer">
+        <Text type={healthy ? 'secondary' : 'warning'}>
+          {healthy ? '可进入管理台' : '需先恢复健康状态'}
+        </Text>
+        <Button
+          type={healthy ? 'primary' : 'default'}
+          size="small"
+          onClick={(event) => {
+            event.stopPropagation()
+            onEnterCluster(cluster)
+          }}
+        >
+          {healthy ? '进入管理台' : '查看状态'}
+        </Button>
+      </div>
     </Card>
   )
 }
 
-/** 全局概览页面 */
 const DashboardPage: React.FC = () => {
+  const { setCurrentCluster } = useModel('cluster')
   const { data, isLoading } = useQuery({
-    queryKey: ['clusters-dashboard'],
+    queryKey: ['clusters-dashboard-overview'],
     queryFn: () => listClusters({ pageSize: 100 }),
   })
 
   const clusters = data?.items || []
-  const healthyCount = clusters.filter((c: any) => c.status === 'healthy').length
-  const unhealthyCount = clusters.length - healthyCount
-  const totalNodes = clusters.reduce((sum: number, c: any) => sum + (c.nodeCount || 0), 0)
+
+  const summary = useMemo(() => {
+    const healthy = clusters.filter((cluster) => isClusterHealthy(cluster.status))
+    const attention = clusters.filter((cluster) => needsClusterAttention(cluster.status))
+    const totalNodes = clusters.reduce((sum, cluster) => sum + (cluster.nodeCount || 0), 0)
+    const healthPercent = clusters.length
+      ? Math.round((healthy.length / clusters.length) * 100)
+      : 0
+
+    return {
+      healthy,
+      totalNodes,
+      healthPercent,
+      totalClusters: clusters.length,
+      riskClusters: attention.filter((cluster) => !isClusterHealthy(cluster.status)),
+    }
+  }, [clusters])
+
+  const heroMetrics = [
+    {
+      key: 'clusters',
+      label: '纳管集群',
+      value: summary.totalClusters,
+      icon: <ClusterOutlined />,
+    },
+    {
+      key: 'healthy',
+      label: '可进入管理',
+      value: summary.healthy.length,
+      icon: <CheckCircleOutlined />,
+    },
+    {
+      key: 'risk',
+      label: '待处理风险',
+      value: summary.riskClusters.length,
+      icon: <AlertOutlined />,
+    },
+    {
+      key: 'nodes',
+      label: '纳管节点',
+      value: summary.totalNodes,
+      icon: <NodeIndexOutlined />,
+    },
+  ]
+
+  const spotlightClusters = summary.riskClusters.slice(0, 4)
+  const displayClusters = [...summary.riskClusters, ...summary.healthy]
+    .filter((cluster, index, list) => list.findIndex((item) => item.id === cluster.id) === index)
+    .slice(0, 8)
+
+  const handleEnterCluster = (cluster: Cluster, targetPath?: string) => {
+    enterClusterWorkspace(cluster, {
+      setCurrentCluster,
+      targetPath,
+    })
+  }
 
   return (
     <AppPage breadcrumbRender={false}>
-      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-        {/* ========== 欢迎区 ========== */}
-        <div style={{ marginBottom: 28 }}>
-          <Title level={3} style={{ marginBottom: 4 }}>AIOps 智能运维平台</Title>
-          <Text type="secondary">统一管理多集群 Kubernetes 资源、应用部署与智能运维</Text>
-        </div>
+      <div className="app-page-shell app-aiops-overview">
+        <section className="app-aiops-hero">
+          <div className="app-aiops-hero__content">
+            <span className="app-aiops-hero__eyebrow">
+              <RadarChartOutlined />
+              AIOPS GLOBAL OVERVIEW
+            </span>
+            <Title level={2} className="app-aiops-hero__title">
+              AIOPS 全局态势
+            </Title>
+            <Paragraph className="app-aiops-hero__desc">
+              统一查看集群状态、容量与风险。
+            </Paragraph>
+            <Space wrap className="app-aiops-hero__actions">
+              <Button type="primary" size="large" onClick={() => history.push('/clusters')}>
+                查看集群
+              </Button>
+              <Button size="large" onClick={() => history.push('/ai/settings')}>
+                模型配置
+              </Button>
+            </Space>
+          </div>
 
-        {/* ========== 全局指标 ========== */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 28 }}>
-          <Col xs={12} sm={6}>
-            <Card bordered={false} style={{ borderRadius: 12, background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' }}>
-              <Statistic
-                title="集群总数"
-                value={clusters.length}
-                prefix={<ClusterOutlined />}
-                valueStyle={{ color: '#2563eb' }}
-              />
+          <div className="app-aiops-hero__panel">
+            <div className="app-aiops-hero__panel-header">
+              <div>
+                <Text className="app-aiops-hero__panel-label">平台运行评分</Text>
+                <div className="app-aiops-hero__panel-score">
+                  {summary.healthPercent}
+                  <span>/100</span>
+                </div>
+              </div>
+              <Tag color={summary.riskClusters.length > 0 ? 'warning' : 'success'}>
+                {summary.riskClusters.length > 0 ? '存在待处理项' : '运行稳定'}
+              </Tag>
+            </div>
+            <Progress percent={summary.healthPercent} showInfo={false} strokeColor="#2563eb" />
+            <div className="app-aiops-hero__metric-grid">
+              {heroMetrics.map((item) => (
+                <div key={item.key} className="app-aiops-hero__metric">
+                  <span className="app-aiops-hero__metric-icon">{item.icon}</span>
+                  <div>
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <Row gutter={[16, 16]}>
+          {heroMetrics.map((item) => (
+            <Col key={item.key} xs={12} lg={6}>
+              <Card className="app-aiops-stat-card">
+                <Statistic title={item.label} value={item.value} prefix={item.icon} />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+
+        <Row gutter={[16, 16]}>
+          <Col xs={24} xl={16}>
+            <Card
+              className="app-aiops-panel"
+              title="集群舰队"
+              extra={
+                <Button type="link" onClick={() => history.push('/clusters')}>
+                  查看全部 <ArrowRightOutlined />
+                </Button>
+              }
+            >
+              <div className="app-aiops-panel__meta">
+                <span>健康集群 {summary.healthy.length}</span>
+                <span>风险集群 {summary.riskClusters.length}</span>
+              </div>
+
+              {isLoading ? (
+                <div className="app-aiops-panel__loading">
+                  <Spin size="large" />
+                </div>
+              ) : displayClusters.length === 0 ? (
+                <Empty
+                  description="当前还没有接入任何集群"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                >
+                  <Button type="primary" onClick={() => history.push('/clusters/import')}>
+                    导入集群
+                  </Button>
+                </Empty>
+              ) : (
+                <div className="app-aiops-cluster-grid">
+                  {displayClusters.map((cluster) => (
+                    <ClusterFleetCard
+                      key={cluster.id}
+                      cluster={cluster}
+                      onEnterCluster={handleEnterCluster}
+                    />
+                  ))}
+                </div>
+              )}
             </Card>
           </Col>
-          <Col xs={12} sm={6}>
-            <Card bordered={false} style={{ borderRadius: 12, background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' }}>
-              <Statistic
-                title="健康集群"
-                value={healthyCount}
-                prefix={<SafetyOutlined />}
-                valueStyle={{ color: '#059669' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card bordered={false} style={{ borderRadius: 12, background: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)' }}>
-              <Statistic
-                title="节点总数"
-                value={totalNodes}
-                prefix={<HddOutlined />}
-                valueStyle={{ color: '#0d9488' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card bordered={false} style={{ borderRadius: 12, background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' }}>
-              <Statistic
-                title="异常集群"
-                value={unhealthyCount}
-                prefix={<CloudServerOutlined />}
-                valueStyle={{ color: '#dc2626' }}
-              />
+
+          <Col xs={24} xl={8}>
+            <Card className="app-aiops-panel" title="风险处置">
+              <div className="app-aiops-panel__meta">
+                <span>{summary.riskClusters.length} 个集群待处理</span>
+              </div>
+
+              {spotlightClusters.length ? (
+                <div className="app-aiops-risk-list">
+                  {spotlightClusters.map((cluster) => (
+                    <div key={cluster.id} className="app-aiops-risk-item">
+                      <div className="app-aiops-risk-item__head">
+                        <div>
+                          <div className="app-aiops-risk-item__name">{cluster.name}</div>
+                          <div className="app-aiops-risk-item__sub">
+                            {cluster.type || 'Kubernetes'} · {cluster.k8sVersion || '版本待确认'}
+                          </div>
+                        </div>
+                        <Tag color={getClusterStatusColor(cluster.status)}>
+                          {getClusterStatusText(cluster.status)}
+                        </Tag>
+                      </div>
+                      <div className="app-aiops-risk-item__foot">
+                        <Text type="secondary">建议先检查连接和节点状态。</Text>
+                        <Space size={8}>
+                          <Button size="small" onClick={() => history.push(`/clusters/${cluster.id}`)}>
+                            查看信息
+                          </Button>
+                          <Tooltip title="当前状态未恢复前不可进入集群管理">
+                            <Button size="small" onClick={() => handleEnterCluster(cluster)}>
+                              尝试进入
+                            </Button>
+                          </Tooltip>
+                        </Space>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="app-aiops-empty-state">
+                  <SafetyCertificateOutlined />
+                  <div>
+                    <strong>当前无风险集群</strong>
+                    <span>可直接进入健康集群管理台。</span>
+                  </div>
+                </div>
+              )}
             </Card>
           </Col>
         </Row>
 
-        {/* ========== 集群概览 ========== */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Title level={5} style={{ margin: 0 }}>集群概览</Title>
-            {clusters.length > 0 && (
-              <Button type="link" onClick={() => history.push('/clusters')}>
-                查看全部 <ArrowRightOutlined />
-              </Button>
-            )}
-          </div>
-          {isLoading ? (
-            <div style={{ textAlign: 'center', padding: 60 }}>
-              <Spin size="large" />
-            </div>
-          ) : clusters.length === 0 ? (
-            <Card bordered={false} style={{ borderRadius: 12, textAlign: 'center', padding: 40 }}>
-              <Empty description="暂无纳管集群，请先导入集群">
-                <Button type="primary" onClick={() => history.push('/clusters/import')}>
-                  导入集群
-                </Button>
-              </Empty>
-            </Card>
-          ) : (
-            <Row gutter={[16, 16]}>
-              {clusters.slice(0, 8).map((cluster: any) => (
-                <Col key={cluster.id} xs={24} sm={12} lg={6}>
-                  <ClusterOverviewCard cluster={cluster} />
-                </Col>
-              ))}
-            </Row>
-          )}
-        </div>
-
-        {/* ========== 功能入口 ========== */}
-        <div>
-          <Title level={5} style={{ marginBottom: 12 }}>功能入口</Title>
-          <Row gutter={[16, 16]}>
-            {ENTRIES.map((entry) => (
-              <Col key={entry.key} xs={12} sm={8} lg={4}>
-                <Card
-                  hoverable
-                  bordered={false}
-                  style={{
-                    borderRadius: 12,
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    padding: '8px 0',
-                  }}
-                  onClick={() => history.push(entry.path)}
-                >
-                  <div style={{ fontSize: 32, color: entry.color, marginBottom: 8 }}>
-                    {entry.icon}
-                  </div>
-                  <Text strong>{entry.title}</Text>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>{entry.desc}</Text>
-                  </div>
-                </Card>
-              </Col>
+        <Card className="app-aiops-panel" title="平台入口">
+          <div className="app-aiops-entry-grid">
+            {QUICK_ENTRIES.map((entry) => (
+              <button
+                key={entry.key}
+                type="button"
+                className={`app-aiops-entry-card tone-${entry.tone}`}
+                onClick={() => history.push(entry.path)}
+              >
+                <span className="app-aiops-entry-card__icon">{entry.icon}</span>
+                <span className="app-aiops-entry-card__title">{entry.title}</span>
+                <span className="app-aiops-entry-card__desc">{entry.desc}</span>
+              </button>
             ))}
-          </Row>
-        </div>
+          </div>
+        </Card>
       </div>
     </AppPage>
   )

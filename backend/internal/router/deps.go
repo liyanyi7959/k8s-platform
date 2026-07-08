@@ -31,6 +31,7 @@ type Deps struct {
 	// ── 可选：DB 存在时才注入 ──
 	DB             *gorm.DB
 	EncryptionKey  string
+	AIUploadDir    string
 	CacheStore     service.CacheStore
 	CacheTTL       time.Duration
 	K8sInsecureTLS bool

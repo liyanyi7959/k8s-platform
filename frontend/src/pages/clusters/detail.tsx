@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
-import { useParams, history } from '@umijs/max'
+import { useParams, history, useModel } from '@umijs/max'
 import { Card, Descriptions, Button, Space, Spin, Table, Tag, Typography, message } from 'antd'
 import { ModalForm, ProFormText } from '@ant-design/pro-components'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClusterById, updateCluster } from '@/services/clusters'
 import { listProjects, type Project } from '@/services/project'
 import { AppPage, StatusTag } from '@/components'
-import { formatDate } from '@/utils'
+import { enterClusterWorkspace, formatDate } from '@/utils'
 import type { Cluster } from '@/types'
 
 const { Text } = Typography
@@ -20,7 +20,11 @@ function splitNamespaces(ns: string): string[] {
 }
 
 /** 集群下的项目列表 Tab */
-const ClusterProjectsTab: React.FC<{ clusterId: number }> = ({ clusterId }) => {
+const ClusterProjectsTab: React.FC<{
+  cluster: Pick<Cluster, 'id' | 'name' | 'status' | 'k8sVersion'>
+  onEnterCluster: (targetPath?: string) => void
+}> = ({ cluster, onEnterCluster }) => {
+  const clusterId = cluster.id
   const { data, isLoading } = useQuery({
     queryKey: ['cluster-projects', clusterId],
     queryFn: () => listProjects(),
@@ -92,7 +96,7 @@ const ClusterProjectsTab: React.FC<{ clusterId: number }> = ({ clusterId }) => {
             创建项目
           </Button>
           <Button onClick={() => history.push('/app-store')}>应用商店</Button>
-          <Button onClick={() => history.push(`/k8s/${clusterId}/helm-releases`)}>
+          <Button onClick={() => onEnterCluster(`/k8s/${clusterId}/helm-releases`)}>
             Helm 管理
           </Button>
         </Space>
@@ -117,6 +121,7 @@ const ClusterProjectsTab: React.FC<{ clusterId: number }> = ({ clusterId }) => {
 /** 集群详情页 */
 const ClusterDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
+  const { setCurrentCluster } = useModel('cluster')
   const queryClient = useQueryClient()
   const [editVisible, setEditVisible] = useState(false)
   const [activeTab, setActiveTab] = useState('info')
@@ -146,13 +151,22 @@ const ClusterDetailPage: React.FC = () => {
     return <div>集群不存在</div>
   }
 
+  const handleEnterCluster = (targetPath?: string) => {
+    enterClusterWorkspace(cluster, {
+      setCurrentCluster,
+      targetPath,
+    })
+  }
+
   return (
     <AppPage
       header={{
         extra: (
           <Space>
             <Button onClick={() => setEditVisible(true)}>编辑</Button>
-            <Button type="primary" onClick={() => history.push(`/k8s/${cluster.id}/dashboard`)}>进入管理</Button>
+            <Button type="primary" onClick={() => handleEnterCluster()}>
+              进入管理
+            </Button>
             <Button onClick={() => history.push('/clusters')}>返回列表</Button>
           </Space>
         ),
@@ -180,7 +194,9 @@ const ClusterDetailPage: React.FC = () => {
         </Card>
       )}
 
-      {activeTab === 'projects' && <ClusterProjectsTab clusterId={cluster.id} />}
+      {activeTab === 'projects' && (
+        <ClusterProjectsTab cluster={cluster} onEnterCluster={handleEnterCluster} />
+      )}
 
       {/* 编辑集群弹窗 */}
       <ModalForm

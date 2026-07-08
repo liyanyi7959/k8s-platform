@@ -34,7 +34,7 @@ const routes: any[] = [
   {
     name: '仪表盘',
     path: '/dashboard',
-    component: '@/pages/Overview',
+    component: '@/pages/dashboard',
   },
   // ---- 集群管理（父级菜单：集群列表、集群导入、资源拓扑） ----
   {
@@ -79,7 +79,7 @@ const routes: any[] = [
   {
     name: '日志分析',
     path: '/logs',
-    component: '@/pages/dashboard',
+    component: '@/pages/logs',
   },
   // ---- 系统配置 ----
   {

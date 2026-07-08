@@ -9,6 +9,7 @@ import {
   Radio,
   Select,
   Space,
+  Tag,
   message,
   type MenuProps,
 } from 'antd'
@@ -41,6 +42,11 @@ import { listClusters } from '@/services/clusters'
 import { ChangePasswordModal } from '@/components'
 import type { User } from '@/types'
 import type { Cluster as ModelCluster } from '@/models/cluster'
+import {
+  enterClusterWorkspace,
+  getClusterStatusColor,
+  getClusterStatusText,
+} from '@/utils'
 import defaultSettings from '../config/defaultSettings'
 
 // ============================================================
@@ -739,6 +745,9 @@ export const layout = ({ initialState, setInitialState }: any) => {
                 <Space>
                   <span>{cluster.name}</span>
                   <span style={{ color: '#999', fontSize: 12 }}>{cluster.k8sVersion}</span>
+                  <Tag color={getClusterStatusColor(cluster.status)}>
+                    {getClusterStatusText(cluster.status)}
+                  </Tag>
                 </Space>
               ),
             }))}
@@ -750,13 +759,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
               }
               const cluster = clusters.find((item) => String(item.id) === clusterId)
               if (cluster) {
-                setCurrentCluster({
-                  id: String(cluster.id),
-                  name: cluster.name,
-                  version: cluster.k8sVersion || '',
-                  status: cluster.status,
-                })
-                history.push(`/k8s/${cluster.id}/dashboard`)
+                enterClusterWorkspace(cluster, { setCurrentCluster })
               }
             }}
           />

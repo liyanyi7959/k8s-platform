@@ -51,25 +51,26 @@ type PatchAIProviderRequest struct {
 }
 
 type AIModelItem struct {
-	ID              uint64        `json:"id"`
-	ProviderID      uint64        `json:"provider_id"`
-	ProviderName    string        `json:"provider_name"`
-	Name            string        `json:"name"`
-	ModelCode       string        `json:"model_code"`
-	ModelType       string        `json:"model_type"`
-	Enabled         bool          `json:"enabled"`
-	SupportsTools   bool          `json:"supports_tools"`
-	SupportsVision  bool          `json:"supports_vision"`
+	ID                       uint64        `json:"id"`
+	ProviderID               uint64        `json:"provider_id"`
+	ProviderName             string        `json:"provider_name"`
+	Name                     string        `json:"name"`
+	ModelCode                string        `json:"model_code"`
+	ModelType                string        `json:"model_type"`
+	Enabled                  bool          `json:"enabled"`
+	SupportsTools            bool          `json:"supports_tools"`
+	SupportsVision           bool          `json:"supports_vision"`
 	SupportsStreaming        bool          `json:"supports_streaming"`
 	SupportsReasoning        bool          `json:"supports_reasoning"`
 	SupportsStructuredOutput bool          `json:"supports_structured_output"`
 	SupportsImageGeneration  bool          `json:"supports_image_generation"`
-	MaxInputTokens  int           `json:"max_input_tokens"`
-	MaxOutputTokens int           `json:"max_output_tokens"`
-	ContextWindow   int           `json:"context_window"`
-	Meta            model.JSONMap `json:"meta,omitempty"`
-	CreatedAt       string        `json:"created_at"`
-	UpdatedAt       string        `json:"updated_at"`
+	SupportsFileInput        bool          `json:"supports_file_input"`
+	MaxInputTokens           int           `json:"max_input_tokens"`
+	MaxOutputTokens          int           `json:"max_output_tokens"`
+	ContextWindow            int           `json:"context_window"`
+	Meta                     model.JSONMap `json:"meta,omitempty"`
+	CreatedAt                string        `json:"created_at"`
+	UpdatedAt                string        `json:"updated_at"`
 }
 
 type ListAIModelsRequest struct {
@@ -79,39 +80,41 @@ type ListAIModelsRequest struct {
 }
 
 type CreateAIModelRequest struct {
-	ProviderID      uint64        `json:"provider_id"`
-	Name            string        `json:"name"`
-	ModelCode       string        `json:"model_code"`
-	ModelType       string        `json:"model_type"`
-	Enabled         *bool         `json:"enabled"`
-	SupportsTools   *bool         `json:"supports_tools"`
-	SupportsVision  *bool         `json:"supports_vision"`
+	ProviderID               uint64        `json:"provider_id"`
+	Name                     string        `json:"name"`
+	ModelCode                string        `json:"model_code"`
+	ModelType                string        `json:"model_type"`
+	Enabled                  *bool         `json:"enabled"`
+	SupportsTools            *bool         `json:"supports_tools"`
+	SupportsVision           *bool         `json:"supports_vision"`
 	SupportsStreaming        *bool         `json:"supports_streaming"`
 	SupportsReasoning        *bool         `json:"supports_reasoning"`
 	SupportsStructuredOutput *bool         `json:"supports_structured_output"`
 	SupportsImageGeneration  *bool         `json:"supports_image_generation"`
-	MaxInputTokens  *int          `json:"max_input_tokens"`
-	MaxOutputTokens *int          `json:"max_output_tokens"`
-	ContextWindow   *int          `json:"context_window"`
-	Meta            model.JSONMap `json:"meta"`
+	SupportsFileInput        *bool         `json:"supports_file_input"`
+	MaxInputTokens           *int          `json:"max_input_tokens"`
+	MaxOutputTokens          *int          `json:"max_output_tokens"`
+	ContextWindow            *int          `json:"context_window"`
+	Meta                     model.JSONMap `json:"meta"`
 }
 
 type PatchAIModelRequest struct {
-	ProviderID      *uint64        `json:"provider_id"`
-	Name            *string        `json:"name"`
-	ModelCode       *string        `json:"model_code"`
-	ModelType       *string        `json:"model_type"`
-	Enabled         *bool          `json:"enabled"`
-	SupportsTools   *bool          `json:"supports_tools"`
-	SupportsVision  *bool          `json:"supports_vision"`
+	ProviderID               *uint64        `json:"provider_id"`
+	Name                     *string        `json:"name"`
+	ModelCode                *string        `json:"model_code"`
+	ModelType                *string        `json:"model_type"`
+	Enabled                  *bool          `json:"enabled"`
+	SupportsTools            *bool          `json:"supports_tools"`
+	SupportsVision           *bool          `json:"supports_vision"`
 	SupportsStreaming        *bool          `json:"supports_streaming"`
 	SupportsReasoning        *bool          `json:"supports_reasoning"`
 	SupportsStructuredOutput *bool          `json:"supports_structured_output"`
 	SupportsImageGeneration  *bool          `json:"supports_image_generation"`
-	MaxInputTokens  *int           `json:"max_input_tokens"`
-	MaxOutputTokens *int           `json:"max_output_tokens"`
-	ContextWindow   *int           `json:"context_window"`
-	Meta            *model.JSONMap `json:"meta"`
+	SupportsFileInput        *bool          `json:"supports_file_input"`
+	MaxInputTokens           *int           `json:"max_input_tokens"`
+	MaxOutputTokens          *int           `json:"max_output_tokens"`
+	ContextWindow            *int           `json:"context_window"`
+	Meta                     *model.JSONMap `json:"meta"`
 }
 
 type AIProviderService struct {
@@ -285,6 +288,43 @@ func (s *AIProviderService) PatchProvider(ctx context.Context, id uint64, req Pa
 	})
 }
 
+func (s *AIProviderService) DeleteProvider(ctx context.Context, id uint64) error {
+	if s.db == nil {
+		return errors.New("db is required")
+	}
+	if id == 0 {
+		return ErrWithMessage(ErrInvalidParams, "AI 提供商 ID 无效")
+	}
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var row model.AIProvider
+		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrNotFound
+			}
+			return err
+		}
+
+		var modelCount int64
+		if err := tx.Model(&model.AIModel{}).
+			Where("deleted_at IS NULL AND provider_id = ?", id).
+			Count(&modelCount).Error; err != nil {
+			return err
+		}
+		if modelCount > 0 {
+			return ErrWithMessage(ErrConflict, "请先删除该提供商下的模型配置")
+		}
+
+		now := time.Now().UTC()
+		return tx.Model(&model.AIProvider{}).
+			Where("id = ? AND deleted_at IS NULL", id).
+			Updates(map[string]any{
+				"deleted_at": now,
+				"updated_at": now,
+			}).Error
+	})
+}
+
 func (s *AIProviderService) ListModels(ctx context.Context, req ListAIModelsRequest) ([]AIModelItem, error) {
 	if s.db == nil {
 		return nil, errors.New("db is required")
@@ -319,25 +359,26 @@ func (s *AIProviderService) ListModels(ctx context.Context, req ListAIModelsRequ
 	items := make([]AIModelItem, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, AIModelItem{
-			ID:              row.ID,
-			ProviderID:      row.ProviderID,
-			ProviderName:    row.ProviderName,
-			Name:            row.Name,
-			ModelCode:       row.ModelCode,
-			ModelType:       row.ModelType,
-			Enabled:         row.Enabled,
-			SupportsTools:   row.SupportsTools,
-			SupportsVision:  row.SupportsVision,
+			ID:                       row.ID,
+			ProviderID:               row.ProviderID,
+			ProviderName:             row.ProviderName,
+			Name:                     row.Name,
+			ModelCode:                row.ModelCode,
+			ModelType:                row.ModelType,
+			Enabled:                  row.Enabled,
+			SupportsTools:            row.SupportsTools,
+			SupportsVision:           row.SupportsVision,
 			SupportsStreaming:        row.SupportsStreaming,
 			SupportsReasoning:        row.SupportsReasoning,
 			SupportsStructuredOutput: row.SupportsStructuredOutput,
 			SupportsImageGeneration:  row.SupportsImageGeneration,
-			MaxInputTokens:  row.MaxInputTokens,
-			MaxOutputTokens: row.MaxOutputTokens,
-			ContextWindow:   row.ContextWindow,
-			Meta:            row.MetaJSON,
-			CreatedAt:       row.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:       row.UpdatedAt.UTC().Format(time.RFC3339),
+			SupportsFileInput:        row.SupportsFileInput,
+			MaxInputTokens:           row.MaxInputTokens,
+			MaxOutputTokens:          row.MaxOutputTokens,
+			ContextWindow:            row.ContextWindow,
+			Meta:                     row.MetaJSON,
+			CreatedAt:                row.CreatedAt.UTC().Format(time.RFC3339),
+			UpdatedAt:                row.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
 	return items, nil
@@ -365,21 +406,22 @@ func (s *AIProviderService) CreateModel(ctx context.Context, req CreateAIModelRe
 	}
 
 	row := model.AIModel{
-		ProviderID:      req.ProviderID,
-		Name:            name,
-		ModelCode:       modelCode,
-		ModelType:       modelType,
-		Enabled:         boolOrDefault(req.Enabled, true),
-		SupportsTools:   boolOrDefault(req.SupportsTools, false),
-		SupportsVision:  boolOrDefault(req.SupportsVision, false),
+		ProviderID:               req.ProviderID,
+		Name:                     name,
+		ModelCode:                modelCode,
+		ModelType:                modelType,
+		Enabled:                  boolOrDefault(req.Enabled, true),
+		SupportsTools:            boolOrDefault(req.SupportsTools, false),
+		SupportsVision:           boolOrDefault(req.SupportsVision, false),
 		SupportsStreaming:        boolOrDefault(req.SupportsStreaming, false),
 		SupportsReasoning:        boolOrDefault(req.SupportsReasoning, false),
 		SupportsStructuredOutput: boolOrDefault(req.SupportsStructuredOutput, false),
 		SupportsImageGeneration:  boolOrDefault(req.SupportsImageGeneration, false),
-		MaxInputTokens:  intOrDefault(req.MaxInputTokens, 0),
-		MaxOutputTokens: intOrDefault(req.MaxOutputTokens, 0),
-		ContextWindow:   intOrDefault(req.ContextWindow, 0),
-		MetaJSON:        req.Meta,
+		SupportsFileInput:        boolOrDefault(req.SupportsFileInput, false),
+		MaxInputTokens:           intOrDefault(req.MaxInputTokens, 0),
+		MaxOutputTokens:          intOrDefault(req.MaxOutputTokens, 0),
+		ContextWindow:            intOrDefault(req.ContextWindow, 0),
+		MetaJSON:                 req.Meta,
 	}
 
 	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -498,6 +540,9 @@ func (s *AIProviderService) PatchModel(ctx context.Context, id uint64, req Patch
 		if req.SupportsImageGeneration != nil {
 			updates["supports_image_generation"] = *req.SupportsImageGeneration
 		}
+		if req.SupportsFileInput != nil {
+			updates["supports_file_input"] = *req.SupportsFileInput
+		}
 		if req.MaxInputTokens != nil {
 			updates["max_input_tokens"] = *req.MaxInputTokens
 		}
@@ -514,6 +559,33 @@ func (s *AIProviderService) PatchModel(ctx context.Context, id uint64, req Patch
 			return nil
 		}
 		return tx.Model(&model.AIModel{}).Where("id = ? AND deleted_at IS NULL", id).Updates(updates).Error
+	})
+}
+
+func (s *AIProviderService) DeleteModel(ctx context.Context, id uint64) error {
+	if s.db == nil {
+		return errors.New("db is required")
+	}
+	if id == 0 {
+		return ErrWithMessage(ErrInvalidParams, "模型 ID 无效")
+	}
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var row model.AIModel
+		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrNotFound
+			}
+			return err
+		}
+
+		now := time.Now().UTC()
+		return tx.Model(&model.AIModel{}).
+			Where("id = ? AND deleted_at IS NULL", id).
+			Updates(map[string]any{
+				"deleted_at": now,
+				"updated_at": now,
+			}).Error
 	})
 }
 

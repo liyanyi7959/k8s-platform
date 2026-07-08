@@ -3,7 +3,7 @@
  * 管理多租户/命名空间分组项目，支持配额配置
  */
 import { useMemo, useState } from 'react'
-import { history } from '@umijs/max'
+import { history, useModel } from '@umijs/max'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import {
   Button,
@@ -43,7 +43,8 @@ import {
   type NamespaceResources,
   type Project,
 } from '@/services/project'
-import { formatDate } from '@/utils'
+import { enterClusterWorkspace, formatDate } from '@/utils'
+import type { Cluster as ManagedCluster } from '@/types'
 
 const { Text } = Typography
 
@@ -57,6 +58,7 @@ function splitNamespaces(ns: string): string[] {
 
 /** 项目管理页 */
 const ProjectListPage: React.FC = () => {
+  const { setCurrentCluster } = useModel('cluster')
   const queryClient = useQueryClient()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Project | null>(null)
@@ -90,10 +92,23 @@ const ProjectListPage: React.FC = () => {
     return map
   }, [clustersData?.items])
 
+  const clusterMap = useMemo(() => {
+    const map = new Map<number, ManagedCluster>()
+    ;(clustersData?.items || []).forEach((cluster) => map.set(cluster.id, cluster))
+    return map
+  }, [clustersData?.items])
+
   const clusterOptions = (clustersData?.items || []).map((c) => ({
     label: c.name,
     value: c.id,
   }))
+
+  const handleEnterCluster = (cluster: ManagedCluster, targetPath?: string) => {
+    enterClusterWorkspace(cluster, {
+      setCurrentCluster,
+      targetPath,
+    })
+  }
 
   const createMutation = useMutation({
     mutationFn: (payload: Partial<Project>) => createProject(payload),
@@ -389,10 +404,12 @@ const ProjectListPage: React.FC = () => {
         {detailProject && (
           <ProjectDetail
             project={detailProject}
+            cluster={clusterMap.get(detailProject.cluster_id)}
             clusterName={clusterNameMap.get(detailProject.cluster_id)}
             resourcesData={resourcesData}
             resourcesLoading={resourcesLoading}
             assignPending={assignNsMutation.isPending}
+            onEnterCluster={handleEnterCluster}
             onAssign={(namespaces) =>
               assignNsMutation.mutate({
                 id: detailProject.id,
@@ -410,16 +427,25 @@ const ProjectListPage: React.FC = () => {
 function ResourceStatRow({
   name,
   stats,
-  clusterId,
+  cluster,
+  onEnterCluster,
 }: {
   name: string
   stats?: NamespaceResources
-  clusterId: number
+  cluster?: ManagedCluster
+  onEnterCluster: (cluster: ManagedCluster, targetPath?: string) => void
 }) {
   return (
     <Descriptions.Item
       label={
-        <a onClick={() => history.push(`/k8s/${clusterId}/pods?namespace=${name}`)}>
+        <a
+          onClick={() => {
+            if (!cluster) {
+              return
+            }
+            onEnterCluster(cluster, `/k8s/${cluster.id}/pods?namespace=${encodeURIComponent(name)}`)
+          }}
+        >
           {name}
         </a>
       }
@@ -437,17 +463,21 @@ function ResourceStatRow({
 /** 项目详情内容 */
 function ProjectDetail({
   project,
+  cluster,
   clusterName,
   resourcesData,
   resourcesLoading,
   assignPending,
+  onEnterCluster,
   onAssign,
 }: {
   project: Project
+  cluster?: ManagedCluster
   clusterName?: string
   resourcesData?: { cluster_id: number; namespaces: Record<string, NamespaceResources> }
   resourcesLoading: boolean
   assignPending: boolean
+  onEnterCluster: (cluster: ManagedCluster, targetPath?: string) => void
   onAssign: (namespaces: string[]) => void
 }) {
   const [nsForm] = Form.useForm()
@@ -547,7 +577,8 @@ function ProjectDetail({
               key={ns}
               name={ns}
               stats={resourcesData?.namespaces?.[ns]}
-              clusterId={project.cluster_id}
+              cluster={cluster}
+              onEnterCluster={onEnterCluster}
             />
           ))
         )}

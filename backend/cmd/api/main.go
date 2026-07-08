@@ -105,6 +105,7 @@ func main() {
 		AuthCtl:        authCtl,
 		RbacSvc:        rbacSvc,
 		EncryptionKey:  cfg.EncryptionKey(),
+		AIUploadDir:    cfg.AI.UploadDir,
 		CacheStore:     cacheStore,
 		CacheTTL:       cfg.ParsedRedisDefaultTTL(),
 		K8sInsecureTLS: cfg.K8s.InsecureSkipTLSVerify,

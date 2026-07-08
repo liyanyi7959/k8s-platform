@@ -35,6 +35,7 @@ ai:
   default_provider: ""
   default_chat_model: ""
   default_vision_model: ""
+  upload_dir: "data/ai-uploads"
   mask_secrets: true
   allow_external_model_data: false
   tool_timeout: "20s"
