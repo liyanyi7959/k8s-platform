@@ -67,6 +67,7 @@ export const reactQuery = {
 // Antd Static Holder (用于 message/notification 等静态方法)
 // ============================================================
 let staticHolderConfigured = false
+const BRAND_FAVICON_HREF = '/brand/aiops-mark.svg'
 
 const ensureStaticHolder = () => {
   if (staticHolderConfigured) return
@@ -76,9 +77,37 @@ const ensureStaticHolder = () => {
   staticHolderConfigured = true
 }
 
+const AppRuntimeBranding = ({ children }: { children: React.ReactNode }) => {
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return
+    }
+
+    const ensureFaviconLink = (rel: 'icon' | 'shortcut icon') => {
+      let link = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`)
+      if (!link) {
+        link = document.createElement('link')
+        link.rel = rel
+        document.head.appendChild(link)
+      }
+      link.type = 'image/svg+xml'
+      link.href = BRAND_FAVICON_HREF
+    }
+
+    ensureFaviconLink('icon')
+    ensureFaviconLink('shortcut icon')
+  }, [])
+
+  return <>{children}</>
+}
+
 export const rootContainer = (container: React.ReactNode) => {
   ensureStaticHolder()
-  return <AntdApp>{container}</AntdApp>
+  return (
+    <AntdApp>
+      <AppRuntimeBranding>{container}</AppRuntimeBranding>
+    </AntdApp>
+  )
 }
 
 const LOGIN_PATH = '/login'

@@ -193,7 +193,17 @@ func (ac *AuthController) Login(c *gin.Context) {
 		}
 	}
 
-	if ac.captchaSvc != nil && ac.captchaSvc.CacheEnabled() && req.CaptchaToken != "" {
+	if ac.captchaSvc != nil && ac.captchaSvc.CacheEnabled() {
+		if strings.TrimSpace(req.CaptchaToken) == "" {
+			ac.recordAuthAudit(c, 0, username, "login", loginCodeCaptchaInvalid, "缺少验证码")
+			ac.failLogin(c, loginCodeCaptchaInvalid, "请先完成安全验证后再登录", buildLoginFailureData(
+				"captcha_invalid",
+				nil,
+				false,
+				"请先完成滑块验证后重新提交",
+			))
+			return
+		}
 		if err := ac.captchaSvc.Verify(c.Request.Context(), req.CaptchaToken, req.CaptchaX); err != nil {
 			ac.recordAuthAudit(c, 0, username, "login", loginCodeCaptchaInvalid, "验证码校验失败")
 			ac.failLogin(c, loginCodeCaptchaInvalid, "安全验证失败，请重新完成验证", buildLoginFailureData(

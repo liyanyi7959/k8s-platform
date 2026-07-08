@@ -2,7 +2,7 @@
  * ProLayout 默认配置
  */
 const defaultSettings = {
-  title: '🚀 AIOPS 智能运维',
+  title: 'AIOPS 智能运维',
   navTheme: 'light',
   colorPrimary: '#2563eb',
   layout: 'mix',
@@ -13,7 +13,7 @@ const defaultSettings = {
   splitMenus: false,
   colorWeak: false,
   pwa: false,
-  logo: undefined,
+  logo: '/brand/aiops-mark.svg',
   iconfontUrl: '',
   token: {
     header: {

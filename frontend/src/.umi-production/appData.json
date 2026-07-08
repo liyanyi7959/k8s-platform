@@ -94,7 +94,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 60
+        "register": 32
       },
       "enableBy": "register"
     },
@@ -107,7 +107,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 25
+        "register": 17
       },
       "enableBy": "register"
     },
@@ -124,7 +124,7 @@
             0
           ]
         },
-        "register": 11
+        "register": 8
       },
       "enableBy": "register"
     },
@@ -141,7 +141,7 @@
             3
           ]
         },
-        "register": 5
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -158,7 +158,7 @@
             0
           ]
         },
-        "register": 2
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -185,10 +185,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            224
+            161
           ]
         },
-        "register": 50
+        "register": 40
       },
       "enableBy": "register"
     },
@@ -221,7 +221,7 @@
             0
           ]
         },
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -268,7 +268,7 @@
             0
           ]
         },
-        "register": 23
+        "register": 18
       },
       "enableBy": "register"
     },
@@ -1134,10 +1134,10 @@
       "time": {
         "hooks": {
           "onStart": [
-            1
+            0
           ]
         },
-        "register": 4
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1176,7 +1176,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 131
+        "register": 85
       },
       "enableBy": "config"
     },
@@ -1189,7 +1189,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 40
+        "register": 26
       },
       "enableBy": "config"
     },
@@ -1206,7 +1206,7 @@
             0
           ]
         },
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1245,7 +1245,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 49
+        "register": 51
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mpa/mpa": {
@@ -1257,7 +1257,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1309,10 +1309,10 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            4
+            1
           ]
         },
-        "register": 6
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/polyfill/publicPathPolyfill": {
@@ -1337,7 +1337,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1363,7 +1363,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -1376,7 +1376,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1389,7 +1389,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 15
+        "register": 12
       },
       "enableBy": "register"
     },
@@ -1415,7 +1415,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/ssr/ssr": {
@@ -1427,7 +1427,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 11
+        "register": 8
       },
       "enableBy": "config"
     },
@@ -1453,7 +1453,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 10
+        "register": 7
       },
       "enableBy": "register"
     },
@@ -1466,7 +1466,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 7
       },
       "enableBy": "config"
     },
@@ -1479,7 +1479,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1492,7 +1492,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 21
+        "register": 31
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/monorepo/redirect": {
@@ -1504,7 +1504,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 35
+        "register": 39
       },
       "enableBy": "config"
     },
@@ -1517,7 +1517,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 3
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/clickToComponent/clickToComponent": {
@@ -1529,7 +1529,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/legacy/legacy": {
@@ -1554,7 +1554,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1567,7 +1567,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/swc/swc": {
@@ -1583,7 +1583,7 @@
             0
           ]
         },
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1596,7 +1596,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 6
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mako/mako": {
@@ -1608,7 +1608,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1645,7 +1645,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 48
+        "register": 46
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/forget/forget": {
@@ -1657,7 +1657,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1670,7 +1670,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -1683,7 +1683,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 13
+        "register": 11
       },
       "enableBy": "register"
     },
@@ -1696,7 +1696,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 94
+        "register": 65
       },
       "enableBy": "register"
     },
@@ -1709,7 +1709,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 320
+        "register": 81
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/commands/help": {
@@ -1721,7 +1721,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1734,7 +1734,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1747,7 +1747,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1760,7 +1760,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1786,7 +1786,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 22
+        "register": 5
       },
       "enableBy": "register"
     },
@@ -1799,7 +1799,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1812,7 +1812,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1825,7 +1825,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1838,7 +1838,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1851,7 +1851,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1864,7 +1864,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1877,7 +1877,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1890,7 +1890,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1903,7 +1903,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1916,7 +1916,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1929,7 +1929,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1942,7 +1942,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1955,7 +1955,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 57
+        "register": 32
       },
       "enableBy": "register"
     },
@@ -1968,7 +1968,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 12
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -1981,7 +1981,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 33
+        "register": 8
       },
       "enableBy": "register"
     },
@@ -1994,7 +1994,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2009,7 +2009,7 @@
       },
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/antd": {
@@ -2022,7 +2022,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            6
+            4
           ],
           "modifyAppData": [
             0
@@ -2031,7 +2031,7 @@
             0
           ]
         },
-        "register": 35
+        "register": 11
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/dva": {
@@ -2043,7 +2043,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 20
+        "register": 13
       },
       "enableBy": "config"
     },
@@ -2056,7 +2056,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2078,10 +2078,10 @@
             0
           ],
           "modifyAppData": [
-            1
+            2
           ]
         },
-        "register": 9
+        "register": 7
       },
       "enableBy": "config"
     },
@@ -2094,7 +2094,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 10
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -2107,7 +2107,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -2120,7 +2120,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -2133,7 +2133,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2146,7 +2146,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2159,7 +2159,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 3
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/qiankun/slave": {
@@ -2171,7 +2171,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 11
+        "register": 3
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/react-query": {
@@ -2184,13 +2184,13 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            8
+            6
           ],
           "onStart": [
-            0
+            1
           ]
         },
-        "register": 3
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2216,7 +2216,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2229,7 +2229,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2242,7 +2242,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2259,7 +2259,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2276,7 +2276,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2290,10 +2290,10 @@
       "time": {
         "hooks": {
           "onCheckPkgJSON": [
-            0
+            1
           ]
         },
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2306,7 +2306,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 1
       },
       "enableBy": "register"
     }
@@ -4689,7 +4689,7 @@
       "file": "@/pages/login/index.tsx",
       "id": "1",
       "absPath": "/login",
-      "__content": "import React, { useCallback, useEffect, useRef, useState } from 'react'\nimport { history, useModel } from '@umijs/max'\nimport { Alert, Button, Checkbox, Form, Input, Modal, Space, Typography, message } from 'antd'\nimport { ArrowRightOutlined, LockOutlined, UserOutlined } from '@ant-design/icons'\nimport { getCurrentUser, login, requestPasswordReset, confirmPasswordReset } from '@/services/auth'\n\nconst REMEMBER_USER_KEY = 'aiops_remembered_user'\nconst TRACK_WIDTH = 280\nconst SLIDER_WIDTH = 40\nconst TOLERANCE = 6\nconst LOGIN_FAILURE_LIMIT = 5\nconst LOGIN_LOCK_MINUTES = 15\n\ntype LoginFailurePayload = {\n  reason?: string\n  failed_attempts?: number\n  remaining_attempts?: number\n  max_attempts?: number\n  locked?: boolean\n  lock_remaining_seconds?: number\n  lock_duration_seconds?: number\n  can_reset_password?: boolean\n  suggestions?: string[]\n}\n\ntype LoginRequestError = Error & {\n  code?: number\n  data?: LoginFailurePayload\n}\n\ntype LoginFeedback = {\n  type: 'error' | 'warning' | 'info'\n  title: string\n  detail: string\n  reason?: string\n  canResetPassword?: boolean\n  suggestions: string[]\n  lockRemainingSeconds?: number\n}\n\nconst formatRemainingTime = (seconds: number) => {\n  const safeSeconds = Math.max(seconds, 0)\n  const minutes = Math.floor(safeSeconds / 60)\n  const remainSeconds = safeSeconds % 60\n  if (minutes > 0) {\n    return `${minutes} 分 ${String(remainSeconds).padStart(2, '0')} 秒`\n  }\n  return `${remainSeconds} 秒`\n}\n\nconst buildLoginFeedback = (error: unknown): LoginFeedback => {\n  const requestError = error as LoginRequestError\n  const payload = requestError?.data || {}\n  const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions.filter(Boolean) : []\n  const baseMessage = requestError?.message || '登录失败，请稍后重试'\n\n  if (payload.reason === 'account_locked' || requestError?.code === 4103) {\n    return {\n      type: 'error',\n      title: '账号暂时锁定',\n      detail: baseMessage,\n      reason: 'account_locked',\n      canResetPassword: payload.can_reset_password !== false,\n      suggestions: suggestions.length > 0 ? suggestions : [\n        '请等待锁定结束后再试',\n        '如已忘记密码，可使用忘记密码功能重置',\n      ],\n      lockRemainingSeconds: payload.lock_remaining_seconds || 0,\n    }\n  }\n\n  if (payload.reason === 'account_disabled' || requestError?.code === 4102) {\n    return {\n      type: 'error',\n      title: '账号已被禁用',\n      detail: baseMessage,\n      reason: 'account_disabled',\n      suggestions: suggestions.length > 0 ? suggestions : ['请联系管理员检查账号状态'],\n    }\n  }\n\n  if (payload.reason === 'captcha_invalid' || requestError?.code === 4104) {\n    return {\n      type: 'warning',\n      title: '安全验证失败',\n      detail: baseMessage,\n      reason: 'captcha_invalid',\n      suggestions: suggestions.length > 0 ? suggestions : ['请重新完成滑块验证后再试'],\n    }\n  }\n\n  if (payload.reason === 'invalid_params' || requestError?.code === 4000) {\n    return {\n      type: 'warning',\n      title: '请补全登录信息',\n      detail: baseMessage,\n      reason: 'invalid_params',\n      suggestions: suggestions.length > 0 ? suggestions : ['请填写用户名和密码后重新提交'],\n    }\n  }\n\n  if (payload.reason === 'invalid_credentials' || requestError?.code === 4101) {\n    const remainingAttempts = Number(payload.remaining_attempts || 0)\n    const maxAttempts = Number(payload.max_attempts || 0)\n    const detail = remainingAttempts > 0 && maxAttempts > 0\n      ? `用户名或密码不正确。当前还可尝试 ${remainingAttempts} 次，连续失败 ${maxAttempts} 次后账号会被临时锁定。`\n      : baseMessage\n\n    return {\n      type: 'error',\n      title: '账号或密码不正确',\n      detail,\n      reason: 'invalid_credentials',\n      canResetPassword: payload.can_reset_password !== false,\n      suggestions: suggestions.length > 0 ? suggestions : [\n        '请确认用户名、密码和大小写是否正确',\n        '如已忘记密码，可使用忘记密码功能重置',\n      ],\n    }\n  }\n\n  return {\n    type: 'error',\n    title: '登录失败',\n    detail: baseMessage,\n    suggestions: suggestions.length > 0 ? suggestions : ['请检查网络连接或稍后重试'],\n  }\n}\n\nconst LoginPage: React.FC = () => {\n  const [loading, setLoading] = useState(false)\n  const [remember, setRemember] = useState(false)\n  const [loginFeedback, setLoginFeedback] = useState<LoginFeedback>()\n  const { setInitialState } = useModel('@@initialState')\n  const [form] = Form.useForm()\n\n  const [targetX, setTargetX] = useState(0)\n  const [sliderX, setSliderX] = useState(0)\n  const [dragging, setDragging] = useState(false)\n  const [verified, setVerified] = useState(false)\n  const trackRef = useRef<HTMLDivElement>(null)\n\n  const [resetModalOpen, setResetModalOpen] = useState(false)\n  const [resetStep, setResetStep] = useState<'request' | 'confirm'>('request')\n  const [resetToken, setResetToken] = useState('')\n  const [resetForm] = Form.useForm()\n\n  const generateCaptcha = useCallback(() => {\n    const max = TRACK_WIDTH - SLIDER_WIDTH - 20\n    setTargetX(20 + Math.floor(Math.random() * max))\n    setSliderX(0)\n    setVerified(false)\n  }, [])\n\n  useEffect(() => {\n    try {\n      const raw = localStorage.getItem(REMEMBER_USER_KEY)\n      if (raw) {\n        form.setFieldsValue({ username: atob(raw) })\n        setRemember(true)\n      }\n    } catch {\n      // ignore invalid remembered username\n    }\n    generateCaptcha()\n  }, [form, generateCaptcha])\n\n  useEffect(() => {\n    if (loginFeedback?.reason !== 'account_locked' || !loginFeedback.lockRemainingSeconds || loginFeedback.lockRemainingSeconds <= 0) {\n      return\n    }\n\n    const timer = window.setInterval(() => {\n      setLoginFeedback((current) => {\n        if (!current || current.reason !== 'account_locked') {\n          return current\n        }\n        const nextSeconds = Math.max((current.lockRemainingSeconds || 0) - 1, 0)\n        return { ...current, lockRemainingSeconds: nextSeconds }\n      })\n    }, 1000)\n\n    return () => window.clearInterval(timer)\n  }, [loginFeedback?.reason, loginFeedback?.lockRemainingSeconds])\n\n  const handleMouseDown = (event: React.MouseEvent) => {\n    if (verified) return\n    setDragging(true)\n    event.preventDefault()\n  }\n\n  useEffect(() => {\n    if (!dragging) return\n\n    const handleMouseMove = (event: MouseEvent) => {\n      if (!trackRef.current) return\n      const rect = trackRef.current.getBoundingClientRect()\n      const x = Math.max(0, Math.min(event.clientX - rect.left, TRACK_WIDTH - SLIDER_WIDTH))\n      setSliderX(x)\n    }\n\n    const handleMouseUp = () => {\n      setDragging(false)\n      const diff = Math.abs(sliderX - targetX)\n      if (diff <= TOLERANCE) {\n        setVerified(true)\n        setLoginFeedback((current) => {\n          if (!current || current.reason !== 'captcha_invalid') {\n            return current\n          }\n          return undefined\n        })\n      } else {\n        setLoginFeedback({\n          type: 'warning',\n          title: '安全验证未通过',\n          detail: '请将滑块拖动到虚线框位置后再提交登录。',\n          reason: 'captcha_invalid',\n          suggestions: ['验证失败后已自动重置滑块，请重新完成验证'],\n        })\n        window.setTimeout(() => generateCaptcha(), 300)\n      }\n    }\n\n    window.addEventListener('mousemove', handleMouseMove)\n    window.addEventListener('mouseup', handleMouseUp)\n    return () => {\n      window.removeEventListener('mousemove', handleMouseMove)\n      window.removeEventListener('mouseup', handleMouseUp)\n    }\n  }, [dragging, generateCaptcha, sliderX, targetX])\n\n  const handleSubmit = async (values: { username: string; password: string }) => {\n    if (!verified) {\n      setLoginFeedback({\n        type: 'warning',\n        title: '请先完成安全验证',\n        detail: '完成滑块验证后才能提交登录请求。',\n        reason: 'captcha_invalid',\n        suggestions: ['将滑块拖动到虚线框位置后再登录'],\n      })\n      return\n    }\n\n    setLoading(true)\n    try {\n      const loginResult = await login(values)\n      const currentUser = loginResult.user || await getCurrentUser()\n      setInitialState({ currentUser })\n      if (remember && values.username) {\n        localStorage.setItem(REMEMBER_USER_KEY, btoa(values.username))\n      } else {\n        localStorage.removeItem(REMEMBER_USER_KEY)\n      }\n      setLoginFeedback(undefined)\n      message.success('登录成功')\n      history.replace('/')\n    } catch (error) {\n      setLoginFeedback(buildLoginFeedback(error))\n      generateCaptcha()\n    } finally {\n      setLoading(false)\n    }\n  }\n\n  const handleOpenReset = () => {\n    setResetStep('request')\n    setResetToken('')\n    resetForm.resetFields()\n    setResetModalOpen(true)\n  }\n\n  const handleRequestReset = async () => {\n    const values = await resetForm.validateFields()\n    try {\n      const res = await requestPasswordReset(values.identifier)\n      if (res.token) {\n        setResetToken(res.token)\n        setResetStep('confirm')\n        message.success(res.message || '重置 token 已生成')\n      } else {\n        message.info(res.message || '如果该账号存在，重置链接已生成')\n        setResetModalOpen(false)\n      }\n    } catch {\n      // handled by request interceptor\n    }\n  }\n\n  const handleConfirmReset = async () => {\n    const values = await resetForm.validateFields()\n    try {\n      const res = await confirmPasswordReset(resetToken, values.newPassword)\n      message.success(res.message || '密码重置成功')\n      setResetModalOpen(false)\n    } catch {\n      // handled by request interceptor\n    }\n  }\n\n  const lockedSeconds = loginFeedback?.reason === 'account_locked' ? loginFeedback.lockRemainingSeconds || 0 : 0\n  const submitLocked = lockedSeconds > 0\n  const feedbackDetail = loginFeedback?.reason === 'account_locked'\n    ? (lockedSeconds > 0\n      ? `账号已被临时锁定，请 ${formatRemainingTime(lockedSeconds)} 后再试。`\n      : '账号锁定已结束，请重新完成滑块验证后再试。')\n    : loginFeedback?.detail\n\n  return (\n    <div className=\"app-login-shell\">\n      <div className=\"app-login-panel\">\n        <section className=\"app-login-form\">\n          <span className=\"app-login-form__eyebrow\">Sign In</span>\n          <Typography.Title level={3} style={{ marginBottom: 12 }}>\n            AIOPS 智能运维平台\n          </Typography.Title>\n          <Typography.Paragraph type=\"secondary\" style={{ marginBottom: 24 }}>\n            登录失败超过 {LOGIN_FAILURE_LIMIT} 次会锁定账号 {LOGIN_LOCK_MINUTES} 分钟。遇到无法恢复的情况，可以直接使用“忘记密码”。\n          </Typography.Paragraph>\n\n          {loginFeedback && (\n            <Alert\n              showIcon\n              type={loginFeedback.type}\n              style={{ marginBottom: 20 }}\n              message={loginFeedback.title}\n              description={(\n                <Space direction=\"vertical\" size={6} style={{ width: '100%' }}>\n                  <span>{feedbackDetail}</span>\n                  {loginFeedback.suggestions.map((item) => (\n                    <span key={item}>- {item}</span>\n                  ))}\n                </Space>\n              )}\n            />\n          )}\n\n          <Form\n            form={form}\n            onFinish={handleSubmit}\n            size=\"large\"\n            autoComplete=\"off\"\n            layout=\"vertical\"\n            onValuesChange={() => {\n              setLoginFeedback((current) => {\n                if (current?.reason === 'account_locked' && (current.lockRemainingSeconds || 0) > 0) {\n                  return current\n                }\n                return undefined\n              })\n            }}\n          >\n            <Form.Item\n              label=\"用户名\"\n              name=\"username\"\n              rules={[\n                { required: true, message: '请输入用户名' },\n                { pattern: /^[a-zA-Z0-9_@.\\-]+$/, message: '用户名包含非法字符' },\n              ]}\n              validateTrigger=\"onBlur\"\n            >\n              <Input\n                prefix={<UserOutlined />}\n                placeholder=\"请输入用户名\"\n                autoComplete=\"username\"\n                style={{ height: 50 }}\n              />\n            </Form.Item>\n\n            <Form.Item\n              label=\"密码\"\n              name=\"password\"\n              rules={[{ required: true, message: '请输入密码' }]}\n              validateTrigger=\"onBlur\"\n            >\n              <Input.Password\n                prefix={<LockOutlined />}\n                placeholder=\"请输入密码\"\n                autoComplete=\"current-password\"\n                style={{ height: 50 }}\n              />\n            </Form.Item>\n\n            <div style={{ marginBottom: 16 }}>\n              <div\n                ref={trackRef}\n                style={{\n                  position: 'relative',\n                  height: 44,\n                  width: '100%',\n                  background: verified ? '#f6ffed' : '#f5f5f5',\n                  borderRadius: 8,\n                  overflow: 'hidden',\n                  border: verified ? '1px solid #52c41a' : '1px solid #d9d9d9',\n                }}\n              >\n                <div\n                  style={{\n                    position: 'absolute',\n                    left: 0,\n                    top: 0,\n                    height: '100%',\n                    width: verified ? '100%' : `${(sliderX / TRACK_WIDTH) * 100}%`,\n                    background: verified\n                      ? 'linear-gradient(90deg, #52c41a22, #52c41a44)'\n                      : 'linear-gradient(90deg, #1890ff22, #1890ff44)',\n                    transition: dragging ? 'none' : 'width 0.2s',\n                  }}\n                />\n                {!verified && (\n                  <div\n                    style={{\n                      position: 'absolute',\n                      left: targetX,\n                      top: 0,\n                      height: '100%',\n                      width: SLIDER_WIDTH,\n                      border: '2px dashed #1890ff66',\n                      borderRadius: 6,\n                      pointerEvents: 'none',\n                    }}\n                  />\n                )}\n                <div\n                  style={{\n                    position: 'absolute',\n                    left: verified ? TRACK_WIDTH - SLIDER_WIDTH : sliderX,\n                    top: 0,\n                    height: '100%',\n                    width: SLIDER_WIDTH,\n                    display: 'flex',\n                    alignItems: 'center',\n                    justifyContent: 'center',\n                    cursor: verified ? 'default' : dragging ? 'grabbing' : 'grab',\n                    background: verified ? '#52c41a' : '#fff',\n                    color: verified ? '#fff' : '#999',\n                    border: verified ? 'none' : '1px solid #d9d9d9',\n                    borderRadius: 8,\n                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',\n                    userSelect: 'none',\n                    transition: dragging ? 'none' : 'left 0.2s, background 0.2s',\n                  }}\n                  onMouseDown={handleMouseDown}\n                >\n                  {verified ? '✓' : '→'}\n                </div>\n                <div\n                  style={{\n                    position: 'absolute',\n                    right: 12,\n                    top: '50%',\n                    transform: 'translateY(-50%)',\n                    color: verified ? '#52c41a' : '#999',\n                    fontSize: 13,\n                    pointerEvents: 'none',\n                  }}\n                >\n                  {verified ? '验证成功' : '拖动滑块到虚线框内'}\n                </div>\n              </div>\n            </div>\n\n            <div className=\"app-login-remember\">\n              <Checkbox checked={remember} onChange={(event) => setRemember(event.target.checked)}>\n                记住用户名\n              </Checkbox>\n              <a onClick={handleOpenReset}>忘记密码？</a>\n            </div>\n\n            <Form.Item style={{ marginBottom: 0, marginTop: 16 }}>\n              <Button\n                type=\"primary\"\n                htmlType=\"submit\"\n                loading={loading}\n                disabled={submitLocked}\n                block\n                icon={<ArrowRightOutlined />}\n                style={{ height: 50, fontSize: 16, fontWeight: 700 }}\n              >\n                {submitLocked ? `账号锁定中 (${formatRemainingTime(lockedSeconds)})` : '登录'}\n              </Button>\n            </Form.Item>\n          </Form>\n\n          <div className=\"app-login-footer\">\n            <span className=\"app-login-footer__copyright\">\n              AIOPS V2.1.0 | ops@aiops.company.com\n            </span>\n          </div>\n        </section>\n      </div>\n\n      <Modal\n        title=\"找回密码\"\n        open={resetModalOpen}\n        onCancel={() => setResetModalOpen(false)}\n        footer={null}\n        destroyOnHidden\n      >\n        {resetStep === 'request' ? (\n          <Form form={resetForm} layout=\"vertical\" style={{ marginTop: 16 }}>\n            <Form.Item\n              label=\"用户名或邮箱\"\n              name=\"identifier\"\n              rules={[{ required: true, message: '请输入用户名或邮箱' }]}\n            >\n              <Input placeholder=\"请输入用户名或邮箱\" />\n            </Form.Item>\n            <Button type=\"primary\" block onClick={handleRequestReset}>\n              获取重置码\n            </Button>\n          </Form>\n        ) : (\n          <Form form={resetForm} layout=\"vertical\" style={{ marginTop: 16 }}>\n            <Form.Item\n              label=\"新密码\"\n              name=\"newPassword\"\n              rules={[\n                { required: true, message: '请输入新密码' },\n                { min: 6, message: '密码长度至少 6 位' },\n              ]}\n            >\n              <Input.Password placeholder=\"请输入新密码\" />\n            </Form.Item>\n            <Form.Item\n              label=\"确认新密码\"\n              name=\"confirmPassword\"\n              dependencies={['newPassword']}\n              rules={[\n                { required: true, message: '请再次输入新密码' },\n                ({ getFieldValue }) => ({\n                  validator(_, value) {\n                    if (!value || getFieldValue('newPassword') === value) {\n                      return Promise.resolve()\n                    }\n                    return Promise.reject(new Error('两次输入的密码不一致'))\n                  },\n                }),\n              ]}\n            >\n              <Input.Password placeholder=\"请再次输入新密码\" />\n            </Form.Item>\n            <Button type=\"primary\" block onClick={handleConfirmReset}>\n              重置密码\n            </Button>\n          </Form>\n        )}\n      </Modal>\n    </div>\n  )\n}\n\nexport default LoginPage\n",
+      "__content": "import React, { useCallback, useEffect, useRef, useState } from 'react'\nimport { history, useModel } from '@umijs/max'\nimport { Button, Checkbox, Form, Input, Modal, Space, Tooltip, Typography, message } from 'antd'\nimport { ArrowRightOutlined, LockOutlined, UserOutlined, InfoCircleOutlined } from '@ant-design/icons'\nimport {\n  getCaptcha,\n  getCurrentUser,\n  login,\n  requestPasswordReset,\n  confirmPasswordReset,\n} from '@/services/auth'\n\nconst REMEMBER_USER_KEY = 'aiops_remembered_user'\nconst TRACK_WIDTH = 280\nconst SLIDER_WIDTH = 40\nconst TOLERANCE = 6\nconst LOGIN_FAILURE_LIMIT = 5\nconst LOGIN_LOCK_MINUTES = 15\nconst BRAND_LOGO_SRC = '/brand/aiops-mark.svg'\n\ntype LoginFailurePayload = {\n  reason?: string\n  failed_attempts?: number\n  remaining_attempts?: number\n  max_attempts?: number\n  locked?: boolean\n  lock_remaining_seconds?: number\n  lock_duration_seconds?: number\n  can_reset_password?: boolean\n  suggestions?: string[]\n}\n\ntype LoginRequestError = Error & {\n  code?: number\n  data?: LoginFailurePayload\n}\n\ntype LoginFeedback = {\n  type: 'error' | 'warning' | 'info'\n  title: string\n  detail: string\n  reason?: string\n  canResetPassword?: boolean\n  suggestions: string[]\n  lockRemainingSeconds?: number\n  remainingAttempts?: number\n  maxAttempts?: number\n}\n\nconst formatRemainingTime = (seconds: number) => {\n  const safeSeconds = Math.max(seconds, 0)\n  const minutes = Math.floor(safeSeconds / 60)\n  const remainSeconds = safeSeconds % 60\n  if (minutes > 0) {\n    return `${minutes} 分 ${String(remainSeconds).padStart(2, '0')} 秒`\n  }\n  return `${remainSeconds} 秒`\n}\n\nconst buildLoginFeedback = (error: unknown): LoginFeedback => {\n  const requestError = error as LoginRequestError\n  const payload = requestError?.data || {}\n  const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions.filter(Boolean) : []\n  const baseMessage = requestError?.message || '登录失败，请稍后重试'\n\n  if (payload.reason === 'account_locked' || requestError?.code === 4103) {\n    return {\n      type: 'error',\n      title: '账号暂时锁定',\n      detail: baseMessage,\n      reason: 'account_locked',\n      canResetPassword: payload.can_reset_password !== false,\n      suggestions:\n        suggestions.length > 0\n          ? suggestions\n          : ['请等待锁定结束后再试', '如已忘记密码，可使用忘记密码功能重置'],\n      lockRemainingSeconds: payload.lock_remaining_seconds || 0,\n    }\n  }\n\n  if (payload.reason === 'account_disabled' || requestError?.code === 4102) {\n    return {\n      type: 'error',\n      title: '账号已被禁用',\n      detail: baseMessage,\n      reason: 'account_disabled',\n      suggestions: suggestions.length > 0 ? suggestions : ['请联系管理员检查账号状态'],\n    }\n  }\n\n  if (payload.reason === 'captcha_invalid' || requestError?.code === 4104) {\n    return {\n      type: 'warning',\n      title: '安全验证失败',\n      detail: baseMessage,\n      reason: 'captcha_invalid',\n      suggestions: suggestions.length > 0 ? suggestions : ['请重新完成滑块验证后再试'],\n    }\n  }\n\n  if (payload.reason === 'invalid_params' || requestError?.code === 4000) {\n    return {\n      type: 'warning',\n      title: '请补全登录信息',\n      detail: baseMessage,\n      reason: 'invalid_params',\n      suggestions: suggestions.length > 0 ? suggestions : ['请填写用户名和密码后重新提交'],\n    }\n  }\n\n  if (payload.reason === 'invalid_credentials' || requestError?.code === 4101) {\n    const remainingAttempts = Number(payload.remaining_attempts || 0)\n    const maxAttempts = Number(payload.max_attempts || 0)\n    const detail =\n      remainingAttempts > 0 && maxAttempts > 0\n        ? `用户名或密码不正确。当前还可尝试 ${remainingAttempts} 次，连续失败 ${maxAttempts} 次后账号会被临时锁定。`\n        : baseMessage\n\n    return {\n      type: 'error',\n      title: '账号或密码不正确',\n      detail,\n      reason: 'invalid_credentials',\n      canResetPassword: payload.can_reset_password !== false,\n      remainingAttempts,\n      maxAttempts,\n      suggestions:\n        suggestions.length > 0\n          ? suggestions\n          : ['请确认用户名、密码和大小写是否正确', '如已忘记密码，可使用忘记密码功能重置'],\n    }\n  }\n\n  return {\n    type: 'error',\n    title: '登录失败',\n    detail: baseMessage,\n    suggestions: suggestions.length > 0 ? suggestions : ['请检查网络连接或稍后重试'],\n  }\n}\n\nconst LoginPage: React.FC = () => {\n  const [loading, setLoading] = useState(false)\n  const [remember, setRemember] = useState(false)\n  const [loginFeedback, setLoginFeedback] = useState<LoginFeedback>()\n  const [captchaError, setCaptchaError] = useState<string>('')\n  const { setInitialState } = useModel('@@initialState')\n  const [form] = Form.useForm()\n\n  const [targetX, setTargetX] = useState(0)\n  const [trackWidth, setTrackWidth] = useState(TRACK_WIDTH)\n  const [sliderX, setSliderX] = useState(0)\n  const [dragging, setDragging] = useState(false)\n  const [verified, setVerified] = useState(false)\n  const [captchaEnabled, setCaptchaEnabled] = useState(false)\n  const [captchaToken, setCaptchaToken] = useState('')\n  const trackRef = useRef<HTMLDivElement>(null)\n\n  const [resetModalOpen, setResetModalOpen] = useState(false)\n  const [resetStep, setResetStep] = useState<'request' | 'confirm'>('request')\n  const [resetToken, setResetToken] = useState('')\n  const [resetForm] = Form.useForm()\n\n  const generateLocalCaptcha = useCallback(() => {\n    const max = TRACK_WIDTH - SLIDER_WIDTH - 20\n    setCaptchaEnabled(false)\n    setCaptchaToken('')\n    setTrackWidth(TRACK_WIDTH)\n    setTargetX(20 + Math.floor(Math.random() * max))\n    setSliderX(0)\n    setVerified(false)\n  }, [])\n\n  const refreshCaptcha = useCallback(async () => {\n    try {\n      const challenge = await getCaptcha()\n      if (challenge?.enabled && challenge.token && typeof challenge.target_x === 'number') {\n        setCaptchaEnabled(true)\n        setCaptchaToken(challenge.token)\n        setTrackWidth(challenge.track_width || TRACK_WIDTH)\n        setTargetX(challenge.target_x)\n        setSliderX(0)\n        setVerified(false)\n        return\n      }\n    } catch {\n      // fallback to local-only captcha when backend challenge is unavailable\n    }\n    generateLocalCaptcha()\n  }, [generateLocalCaptcha])\n\n  useEffect(() => {\n    try {\n      const raw = localStorage.getItem(REMEMBER_USER_KEY)\n      if (raw) {\n        form.setFieldsValue({ username: atob(raw) })\n        setRemember(true)\n      }\n    } catch {\n      // ignore invalid remembered username\n    }\n    void refreshCaptcha()\n  }, [form, refreshCaptcha])\n\n  useEffect(() => {\n    if (\n      loginFeedback?.reason !== 'account_locked' ||\n      !loginFeedback.lockRemainingSeconds ||\n      loginFeedback.lockRemainingSeconds <= 0\n    ) {\n      return\n    }\n\n    const timer = window.setInterval(() => {\n      setLoginFeedback((current) => {\n        if (!current || current.reason !== 'account_locked') {\n          return current\n        }\n        const nextSeconds = Math.max((current.lockRemainingSeconds || 0) - 1, 0)\n        return { ...current, lockRemainingSeconds: nextSeconds }\n      })\n    }, 1000)\n\n    return () => window.clearInterval(timer)\n  }, [loginFeedback?.reason, loginFeedback?.lockRemainingSeconds])\n\n  const handleMouseDown = (event: React.MouseEvent) => {\n    if (verified) return\n    setDragging(true)\n    event.preventDefault()\n  }\n\n  useEffect(() => {\n    if (!dragging) return\n\n    const handleMouseMove = (event: MouseEvent) => {\n      if (!trackRef.current) return\n      const rect = trackRef.current.getBoundingClientRect()\n      const x = Math.max(0, Math.min(event.clientX - rect.left, trackWidth - SLIDER_WIDTH))\n      setSliderX(x)\n    }\n\n    const handleMouseUp = () => {\n      setDragging(false)\n      const diff = Math.abs(sliderX - targetX)\n      if (diff <= TOLERANCE) {\n        setVerified(true)\n        setCaptchaError('')\n        setLoginFeedback((current) => {\n          if (!current || current.reason !== 'captcha_invalid') {\n            return current\n          }\n          return undefined\n        })\n      } else {\n        setCaptchaError('验证失败，请将滑块拖动到虚线框位置')\n        window.setTimeout(() => {\n          void refreshCaptcha()\n        }, 300)\n      }\n    }\n\n    window.addEventListener('mousemove', handleMouseMove)\n    window.addEventListener('mouseup', handleMouseUp)\n    return () => {\n      window.removeEventListener('mousemove', handleMouseMove)\n      window.removeEventListener('mouseup', handleMouseUp)\n    }\n  }, [dragging, refreshCaptcha, sliderX, targetX, trackWidth])\n\n  const handleSubmit = async (values: { username: string; password: string }) => {\n    if (!verified) {\n      setCaptchaError('请先完成滑块验证')\n      return\n    }\n\n    if (captchaEnabled && !captchaToken) {\n      setCaptchaError('验证码已过期，请重新完成验证')\n      void refreshCaptcha()\n      return\n    }\n\n    setLoading(true)\n    try {\n      const loginResult = await login({\n        ...values,\n        captchaToken: captchaEnabled ? captchaToken : undefined,\n        captchaX: captchaEnabled ? Math.round(sliderX) : undefined,\n      })\n      const currentUser = loginResult.user || (await getCurrentUser())\n      setInitialState({ currentUser })\n      if (remember && values.username) {\n        localStorage.setItem(REMEMBER_USER_KEY, btoa(values.username))\n      } else {\n        localStorage.removeItem(REMEMBER_USER_KEY)\n      }\n      setLoginFeedback(undefined)\n      setCaptchaError('')\n      message.success('登录成功')\n      history.replace('/')\n    } catch (error) {\n      setLoginFeedback(buildLoginFeedback(error))\n      void refreshCaptcha()\n    } finally {\n      setLoading(false)\n    }\n  }\n\n  const handleOpenReset = () => {\n    setResetStep('request')\n    setResetToken('')\n    resetForm.resetFields()\n    setResetModalOpen(true)\n  }\n\n  const handleRequestReset = async () => {\n    const values = await resetForm.validateFields()\n    try {\n      const res = await requestPasswordReset(values.identifier)\n      if (res.token) {\n        setResetToken(res.token)\n        setResetStep('confirm')\n        message.success(res.message || '重置 token 已生成')\n      } else {\n        message.info(res.message || '如果该账号存在，重置链接已生成')\n        setResetModalOpen(false)\n      }\n    } catch {\n      // handled by request interceptor\n    }\n  }\n\n  const handleConfirmReset = async () => {\n    const values = await resetForm.validateFields()\n    try {\n      const res = await confirmPasswordReset(resetToken, values.newPassword)\n      message.success(res.message || '密码重置成功')\n      setResetModalOpen(false)\n    } catch {\n      // handled by request interceptor\n    }\n  }\n\n  const lockedSeconds =\n    loginFeedback?.reason === 'account_locked' ? loginFeedback.lockRemainingSeconds || 0 : 0\n  const submitLocked = lockedSeconds > 0\n  const feedbackDetail =\n    loginFeedback?.reason === 'account_locked'\n      ? lockedSeconds > 0\n        ? `账号已被临时锁定，请 ${formatRemainingTime(lockedSeconds)} 后再试。`\n        : '账号锁定已结束，请重新完成滑块验证后再试。'\n      : loginFeedback?.detail\n  const captchaHint = captchaError || (verified ? '安全验证已通过，可以提交登录。' : '拖动滑块完成安全校验。')\n  const captchaHintTone = captchaError ? 'error' : verified ? 'success' : 'default'\n  const feedbackMessage =\n    loginFeedback?.reason === 'invalid_credentials' &&\n    (loginFeedback.remainingAttempts || 0) > 0 &&\n    (loginFeedback.maxAttempts || 0) > 0\n      ? `账号或密码不正确，还可尝试 ${loginFeedback.remainingAttempts} 次。`\n      : feedbackDetail\n  const feedbackAssist = loginFeedback?.suggestions[0]\n\n  return (\n    <div className=\"app-login-shell\">\n      <div className=\"app-login-panel\">\n        <section className=\"app-login-form\">\n          <div className=\"app-login-form__brand\">\n            <div className=\"app-login-form__brand-top\">\n              <img\n                className=\"app-login-form__logo\"\n                src={BRAND_LOGO_SRC}\n                alt=\"AIOPS platform logo\"\n                draggable={false}\n              />\n              <span className=\"app-login-form__eyebrow\">AIOPS Control Plane</span>\n            </div>\n            <Typography.Title level={3} className=\"app-login-form__title\">\n              AIOPS 智能运维平台\n            </Typography.Title>\n          </div>\n          <Typography.Paragraph className=\"app-login-form__subtitle\">\n            统一进入告警、日志、集群与自动化协同的运维控制台。\n          </Typography.Paragraph>\n\n          <Form\n            form={form}\n            onFinish={handleSubmit}\n            size=\"large\"\n            autoComplete=\"off\"\n            layout=\"vertical\"\n            onValuesChange={() => {\n              setLoginFeedback((current) => {\n                if (\n                  current?.reason === 'account_locked' &&\n                  (current.lockRemainingSeconds || 0) > 0\n                ) {\n                  return current\n                }\n                return undefined\n              })\n            }}\n          >\n            <Form.Item\n              label=\"用户名\"\n              name=\"username\"\n              rules={[\n                { required: true, message: '请输入用户名' },\n                { pattern: /^[a-zA-Z0-9_@.\\-]+$/, message: '用户名包含非法字符' },\n              ]}\n              validateTrigger=\"onBlur\"\n            >\n              <Input\n                prefix={<UserOutlined />}\n                placeholder=\"请输入用户名\"\n                autoComplete=\"username\"\n                style={{ height: 50 }}\n              />\n            </Form.Item>\n\n            <Form.Item\n              label=\"密码\"\n              name=\"password\"\n              rules={[{ required: true, message: '请输入密码' }]}\n              validateTrigger=\"onBlur\"\n            >\n              <Input.Password\n                prefix={<LockOutlined />}\n                placeholder=\"请输入密码\"\n                autoComplete=\"current-password\"\n                style={{ height: 50 }}\n              />\n            </Form.Item>\n\n            <div style={{ marginBottom: 16 }}>\n              <div\n                ref={trackRef}\n                style={{\n                  position: 'relative',\n                  height: 44,\n                  width: '100%',\n                  background: verified ? '#f6ffed' : '#f5f5f5',\n                  borderRadius: 8,\n                  overflow: 'hidden',\n                  border: verified ? '1px solid #52c41a' : '1px solid #d9d9d9',\n                }}\n              >\n                <div\n                  style={{\n                    position: 'absolute',\n                    left: 0,\n                    top: 0,\n                    height: '100%',\n                    width: verified ? '100%' : `${(sliderX / trackWidth) * 100}%`,\n                    background: verified\n                      ? 'linear-gradient(90deg, #52c41a22, #52c41a44)'\n                      : 'linear-gradient(90deg, #1890ff22, #1890ff44)',\n                    transition: dragging ? 'none' : 'width 0.2s',\n                  }}\n                />\n                {!verified && (\n                  <div\n                    style={{\n                      position: 'absolute',\n                      left: targetX,\n                      top: 0,\n                      height: '100%',\n                      width: SLIDER_WIDTH,\n                      border: '2px dashed #1890ff66',\n                      borderRadius: 6,\n                      pointerEvents: 'none',\n                    }}\n                  />\n                )}\n                <div\n                  style={{\n                    position: 'absolute',\n                    left: verified ? 'calc(100% - 40px)' : sliderX,\n                    top: 0,\n                    height: '100%',\n                    width: SLIDER_WIDTH,\n                    display: 'flex',\n                    alignItems: 'center',\n                    justifyContent: 'center',\n                    cursor: verified ? 'default' : dragging ? 'grabbing' : 'grab',\n                    background: verified ? '#52c41a' : '#fff',\n                    color: verified ? '#fff' : '#999',\n                    border: verified ? 'none' : '1px solid #d9d9d9',\n                    borderRadius: 8,\n                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',\n                    userSelect: 'none',\n                    transition: dragging ? 'none' : 'left 0.2s, background 0.2s',\n                    zIndex: 2,\n                  }}\n                  onMouseDown={handleMouseDown}\n                >\n                  {verified ? '✓' : '→'}\n                </div>\n                {/* 文字居中 + 对号在最右侧 */}\n                <div\n                  style={{\n                    position: 'absolute',\n                    left: 0,\n                    right: verified ? SLIDER_WIDTH + 4 : 0,\n                    top: 0,\n                    height: '100%',\n                    display: 'flex',\n                    alignItems: 'center',\n                    justifyContent: 'center',\n                    color: verified ? '#389e0c' : '#999',\n                    fontSize: 13,\n                    fontWeight: verified ? 600 : 400,\n                    pointerEvents: 'none',\n                    zIndex: 1,\n                  }}\n                >\n                  {verified ? '验证成功' : '拖动滑块到虚线框内'}\n                </div>\n              </div>\n              <div className={`app-login-captcha__hint app-login-captcha__hint--${captchaHintTone}`}>\n                {captchaHint}\n              </div>\n            </div>\n\n            <div className=\"app-login-remember\">\n              <Checkbox checked={remember} onChange={(event) => setRemember(event.target.checked)}>\n                记住用户名\n              </Checkbox>\n              <Space>\n                <a onClick={handleOpenReset}>忘记密码？</a>\n                <Tooltip\n                  title={`连续失败 ${LOGIN_FAILURE_LIMIT} 次后将锁定 ${LOGIN_LOCK_MINUTES} 分钟，可通过“忘记密码”重置。`}\n                >\n                  <InfoCircleOutlined style={{ color: '#bfbfbf', fontSize: 12, cursor: 'help' }} />\n                </Tooltip>\n              </Space>\n            </div>\n\n            <Form.Item style={{ marginBottom: 0, marginTop: 16 }}>\n              <Button\n                type=\"primary\"\n                htmlType=\"submit\"\n                loading={loading}\n                disabled={submitLocked}\n                block\n                icon={<ArrowRightOutlined />}\n                style={{ height: 50, fontSize: 16, fontWeight: 700 }}\n              >\n                {submitLocked ? `账号锁定中 (${formatRemainingTime(lockedSeconds)})` : '登录'}\n              </Button>\n            </Form.Item>\n\n            {loginFeedback && (\n              <div className={`app-login-feedback app-login-feedback--${loginFeedback.type}`}>\n                <span className=\"app-login-feedback__text\">{feedbackMessage}</span>\n                {feedbackAssist ? (\n                  <Tooltip title={feedbackAssist}>\n                    <InfoCircleOutlined className=\"app-login-feedback__icon\" />\n                  </Tooltip>\n                ) : null}\n              </div>\n            )}\n          </Form>\n\n          <div className=\"app-login-footer\">\n            <span className=\"app-login-footer__copyright\">\n              AIOPS V2.1.0 | ops@aiops.company.com\n            </span>\n          </div>\n        </section>\n      </div>\n\n      <Modal\n        title=\"找回密码\"\n        open={resetModalOpen}\n        onCancel={() => setResetModalOpen(false)}\n        footer={null}\n        destroyOnHidden\n      >\n        {resetStep === 'request' ? (\n          <Form form={resetForm} layout=\"vertical\" style={{ marginTop: 16 }}>\n            <Form.Item\n              label=\"用户名或邮箱\"\n              name=\"identifier\"\n              rules={[{ required: true, message: '请输入用户名或邮箱' }]}\n            >\n              <Input placeholder=\"请输入用户名或邮箱\" />\n            </Form.Item>\n            <Button type=\"primary\" block onClick={handleRequestReset}>\n              获取重置码\n            </Button>\n          </Form>\n        ) : (\n          <Form form={resetForm} layout=\"vertical\" style={{ marginTop: 16 }}>\n            <Form.Item\n              label=\"新密码\"\n              name=\"newPassword\"\n              rules={[\n                { required: true, message: '请输入新密码' },\n                { min: 6, message: '密码长度至少 6 位' },\n              ]}\n            >\n              <Input.Password placeholder=\"请输入新密码\" />\n            </Form.Item>\n            <Form.Item\n              label=\"确认新密码\"\n              name=\"confirmPassword\"\n              dependencies={['newPassword']}\n              rules={[\n                { required: true, message: '请再次输入新密码' },\n                ({ getFieldValue }) => ({\n                  validator(_, value) {\n                    if (!value || getFieldValue('newPassword') === value) {\n                      return Promise.resolve()\n                    }\n                    return Promise.reject(new Error('两次输入的密码不一致'))\n                  },\n                }),\n              ]}\n            >\n              <Input.Password placeholder=\"请再次输入新密码\" />\n            </Form.Item>\n            <Button type=\"primary\" block onClick={handleConfirmReset}>\n              重置密码\n            </Button>\n          </Form>\n        )}\n      </Modal>\n    </div>\n  )\n}\n\nexport default LoginPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/login/index.tsx"
     },

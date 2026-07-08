@@ -58,7 +58,12 @@ function toUser(raw: any): User {
   }
 }
 
-export async function login(data: { username: string; password: string }): Promise<LoginResponse> {
+export async function login(data: {
+  username: string
+  password: string
+  captchaToken?: string
+  captchaX?: number
+}): Promise<LoginResponse> {
   if (MOCK_ENABLED) {
     await new Promise((resolve) => setTimeout(resolve, 300))
     if (data.username === 'admin' && data.password === 'admin@123') {
@@ -69,7 +74,15 @@ export async function login(data: { username: string; password: string }): Promi
     throw new Error('用户名或密码错误')
   }
 
-  const res = await request<any>('/api/v1/auth/login', { method: 'POST', data })
+  const res = await request<any>('/api/v1/auth/login', {
+    method: 'POST',
+    data: {
+      username: data.username,
+      password: data.password,
+      captcha_token: data.captchaToken,
+      captcha_x: data.captchaX,
+    },
+  })
   const loginRes: LoginResponse = {
     token: res?.access_token || '',
     user: res?.user ? toUser(res.user) : undefined,
@@ -99,7 +112,10 @@ export async function logout(): Promise<void> {
   return request('/api/v1/auth/logout', { method: 'POST' })
 }
 
-export async function changePassword(data: { oldPassword: string; newPassword: string }): Promise<void> {
+export async function changePassword(data: {
+  oldPassword: string
+  newPassword: string
+}): Promise<void> {
   return request('/api/v1/auth/change-password', {
     method: 'POST',
     data: {
@@ -109,18 +125,28 @@ export async function changePassword(data: { oldPassword: string; newPassword: s
   })
 }
 
-export async function getCaptcha(): Promise<{ enabled: boolean; token?: string; target_x?: number; track_width?: number }> {
+export async function getCaptcha(): Promise<{
+  enabled: boolean
+  token?: string
+  target_x?: number
+  track_width?: number
+}> {
   return request('/api/v1/auth/captcha')
 }
 
-export async function requestPasswordReset(identifier: string): Promise<{ token?: string; username?: string; message: string }> {
+export async function requestPasswordReset(
+  identifier: string,
+): Promise<{ token?: string; username?: string; message: string }> {
   return request('/api/v1/auth/password-reset/request', {
     method: 'POST',
     data: { identifier },
   })
 }
 
-export async function confirmPasswordReset(token: string, newPassword: string): Promise<{ message: string }> {
+export async function confirmPasswordReset(
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
   return request('/api/v1/auth/password-reset/confirm', {
     method: 'POST',
     data: { token, new_password: newPassword },

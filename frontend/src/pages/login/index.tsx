@@ -1,8 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { history, useModel } from '@umijs/max'
-import { Alert, Button, Checkbox, Form, Input, Modal, Space, Typography, message } from 'antd'
-import { ArrowRightOutlined, LockOutlined, UserOutlined } from '@ant-design/icons'
-import { getCurrentUser, login, requestPasswordReset, confirmPasswordReset } from '@/services/auth'
+import { Button, Checkbox, Form, Input, Modal, Space, Tooltip, Typography, message } from 'antd'
+import { ArrowRightOutlined, LockOutlined, UserOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import {
+  getCaptcha,
+  getCurrentUser,
+  login,
+  requestPasswordReset,
+  confirmPasswordReset,
+} from '@/services/auth'
 
 const REMEMBER_USER_KEY = 'aiops_remembered_user'
 const TRACK_WIDTH = 280
@@ -10,6 +16,7 @@ const SLIDER_WIDTH = 40
 const TOLERANCE = 6
 const LOGIN_FAILURE_LIMIT = 5
 const LOGIN_LOCK_MINUTES = 15
+const BRAND_LOGO_SRC = '/brand/aiops-mark.svg'
 
 type LoginFailurePayload = {
   reason?: string
@@ -36,6 +43,8 @@ type LoginFeedback = {
   canResetPassword?: boolean
   suggestions: string[]
   lockRemainingSeconds?: number
+  remainingAttempts?: number
+  maxAttempts?: number
 }
 
 const formatRemainingTime = (seconds: number) => {
@@ -61,10 +70,10 @@ const buildLoginFeedback = (error: unknown): LoginFeedback => {
       detail: baseMessage,
       reason: 'account_locked',
       canResetPassword: payload.can_reset_password !== false,
-      suggestions: suggestions.length > 0 ? suggestions : [
-        '请等待锁定结束后再试',
-        '如已忘记密码，可使用忘记密码功能重置',
-      ],
+      suggestions:
+        suggestions.length > 0
+          ? suggestions
+          : ['请等待锁定结束后再试', '如已忘记密码，可使用忘记密码功能重置'],
       lockRemainingSeconds: payload.lock_remaining_seconds || 0,
     }
   }
@@ -102,9 +111,10 @@ const buildLoginFeedback = (error: unknown): LoginFeedback => {
   if (payload.reason === 'invalid_credentials' || requestError?.code === 4101) {
     const remainingAttempts = Number(payload.remaining_attempts || 0)
     const maxAttempts = Number(payload.max_attempts || 0)
-    const detail = remainingAttempts > 0 && maxAttempts > 0
-      ? `用户名或密码不正确。当前还可尝试 ${remainingAttempts} 次，连续失败 ${maxAttempts} 次后账号会被临时锁定。`
-      : baseMessage
+    const detail =
+      remainingAttempts > 0 && maxAttempts > 0
+        ? `用户名或密码不正确。当前还可尝试 ${remainingAttempts} 次，连续失败 ${maxAttempts} 次后账号会被临时锁定。`
+        : baseMessage
 
     return {
       type: 'error',
@@ -112,10 +122,12 @@ const buildLoginFeedback = (error: unknown): LoginFeedback => {
       detail,
       reason: 'invalid_credentials',
       canResetPassword: payload.can_reset_password !== false,
-      suggestions: suggestions.length > 0 ? suggestions : [
-        '请确认用户名、密码和大小写是否正确',
-        '如已忘记密码，可使用忘记密码功能重置',
-      ],
+      remainingAttempts,
+      maxAttempts,
+      suggestions:
+        suggestions.length > 0
+          ? suggestions
+          : ['请确认用户名、密码和大小写是否正确', '如已忘记密码，可使用忘记密码功能重置'],
     }
   }
 
@@ -131,13 +143,17 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [remember, setRemember] = useState(false)
   const [loginFeedback, setLoginFeedback] = useState<LoginFeedback>()
+  const [captchaError, setCaptchaError] = useState<string>('')
   const { setInitialState } = useModel('@@initialState')
   const [form] = Form.useForm()
 
   const [targetX, setTargetX] = useState(0)
+  const [trackWidth, setTrackWidth] = useState(TRACK_WIDTH)
   const [sliderX, setSliderX] = useState(0)
   const [dragging, setDragging] = useState(false)
   const [verified, setVerified] = useState(false)
+  const [captchaEnabled, setCaptchaEnabled] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
   const trackRef = useRef<HTMLDivElement>(null)
 
   const [resetModalOpen, setResetModalOpen] = useState(false)
@@ -145,12 +161,33 @@ const LoginPage: React.FC = () => {
   const [resetToken, setResetToken] = useState('')
   const [resetForm] = Form.useForm()
 
-  const generateCaptcha = useCallback(() => {
+  const generateLocalCaptcha = useCallback(() => {
     const max = TRACK_WIDTH - SLIDER_WIDTH - 20
+    setCaptchaEnabled(false)
+    setCaptchaToken('')
+    setTrackWidth(TRACK_WIDTH)
     setTargetX(20 + Math.floor(Math.random() * max))
     setSliderX(0)
     setVerified(false)
   }, [])
+
+  const refreshCaptcha = useCallback(async () => {
+    try {
+      const challenge = await getCaptcha()
+      if (challenge?.enabled && challenge.token && typeof challenge.target_x === 'number') {
+        setCaptchaEnabled(true)
+        setCaptchaToken(challenge.token)
+        setTrackWidth(challenge.track_width || TRACK_WIDTH)
+        setTargetX(challenge.target_x)
+        setSliderX(0)
+        setVerified(false)
+        return
+      }
+    } catch {
+      // fallback to local-only captcha when backend challenge is unavailable
+    }
+    generateLocalCaptcha()
+  }, [generateLocalCaptcha])
 
   useEffect(() => {
     try {
@@ -162,11 +199,15 @@ const LoginPage: React.FC = () => {
     } catch {
       // ignore invalid remembered username
     }
-    generateCaptcha()
-  }, [form, generateCaptcha])
+    void refreshCaptcha()
+  }, [form, refreshCaptcha])
 
   useEffect(() => {
-    if (loginFeedback?.reason !== 'account_locked' || !loginFeedback.lockRemainingSeconds || loginFeedback.lockRemainingSeconds <= 0) {
+    if (
+      loginFeedback?.reason !== 'account_locked' ||
+      !loginFeedback.lockRemainingSeconds ||
+      loginFeedback.lockRemainingSeconds <= 0
+    ) {
       return
     }
 
@@ -195,7 +236,7 @@ const LoginPage: React.FC = () => {
     const handleMouseMove = (event: MouseEvent) => {
       if (!trackRef.current) return
       const rect = trackRef.current.getBoundingClientRect()
-      const x = Math.max(0, Math.min(event.clientX - rect.left, TRACK_WIDTH - SLIDER_WIDTH))
+      const x = Math.max(0, Math.min(event.clientX - rect.left, trackWidth - SLIDER_WIDTH))
       setSliderX(x)
     }
 
@@ -204,6 +245,7 @@ const LoginPage: React.FC = () => {
       const diff = Math.abs(sliderX - targetX)
       if (diff <= TOLERANCE) {
         setVerified(true)
+        setCaptchaError('')
         setLoginFeedback((current) => {
           if (!current || current.reason !== 'captcha_invalid') {
             return current
@@ -211,14 +253,10 @@ const LoginPage: React.FC = () => {
           return undefined
         })
       } else {
-        setLoginFeedback({
-          type: 'warning',
-          title: '安全验证未通过',
-          detail: '请将滑块拖动到虚线框位置后再提交登录。',
-          reason: 'captcha_invalid',
-          suggestions: ['验证失败后已自动重置滑块，请重新完成验证'],
-        })
-        window.setTimeout(() => generateCaptcha(), 300)
+        setCaptchaError('验证失败，请将滑块拖动到虚线框位置')
+        window.setTimeout(() => {
+          void refreshCaptcha()
+        }, 300)
       }
     }
 
@@ -228,24 +266,28 @@ const LoginPage: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [dragging, generateCaptcha, sliderX, targetX])
+  }, [dragging, refreshCaptcha, sliderX, targetX, trackWidth])
 
   const handleSubmit = async (values: { username: string; password: string }) => {
     if (!verified) {
-      setLoginFeedback({
-        type: 'warning',
-        title: '请先完成安全验证',
-        detail: '完成滑块验证后才能提交登录请求。',
-        reason: 'captcha_invalid',
-        suggestions: ['将滑块拖动到虚线框位置后再登录'],
-      })
+      setCaptchaError('请先完成滑块验证')
+      return
+    }
+
+    if (captchaEnabled && !captchaToken) {
+      setCaptchaError('验证码已过期，请重新完成验证')
+      void refreshCaptcha()
       return
     }
 
     setLoading(true)
     try {
-      const loginResult = await login(values)
-      const currentUser = loginResult.user || await getCurrentUser()
+      const loginResult = await login({
+        ...values,
+        captchaToken: captchaEnabled ? captchaToken : undefined,
+        captchaX: captchaEnabled ? Math.round(sliderX) : undefined,
+      })
+      const currentUser = loginResult.user || (await getCurrentUser())
       setInitialState({ currentUser })
       if (remember && values.username) {
         localStorage.setItem(REMEMBER_USER_KEY, btoa(values.username))
@@ -253,11 +295,12 @@ const LoginPage: React.FC = () => {
         localStorage.removeItem(REMEMBER_USER_KEY)
       }
       setLoginFeedback(undefined)
+      setCaptchaError('')
       message.success('登录成功')
       history.replace('/')
     } catch (error) {
       setLoginFeedback(buildLoginFeedback(error))
-      generateCaptcha()
+      void refreshCaptcha()
     } finally {
       setLoading(false)
     }
@@ -298,42 +341,46 @@ const LoginPage: React.FC = () => {
     }
   }
 
-  const lockedSeconds = loginFeedback?.reason === 'account_locked' ? loginFeedback.lockRemainingSeconds || 0 : 0
+  const lockedSeconds =
+    loginFeedback?.reason === 'account_locked' ? loginFeedback.lockRemainingSeconds || 0 : 0
   const submitLocked = lockedSeconds > 0
-  const feedbackDetail = loginFeedback?.reason === 'account_locked'
-    ? (lockedSeconds > 0
-      ? `账号已被临时锁定，请 ${formatRemainingTime(lockedSeconds)} 后再试。`
-      : '账号锁定已结束，请重新完成滑块验证后再试。')
-    : loginFeedback?.detail
+  const feedbackDetail =
+    loginFeedback?.reason === 'account_locked'
+      ? lockedSeconds > 0
+        ? `账号已被临时锁定，请 ${formatRemainingTime(lockedSeconds)} 后再试。`
+        : '账号锁定已结束，请重新完成滑块验证后再试。'
+      : loginFeedback?.detail
+  const captchaHint = captchaError || (verified ? '安全验证已通过，可以提交登录。' : '拖动滑块完成安全校验。')
+  const captchaHintTone = captchaError ? 'error' : verified ? 'success' : 'default'
+  const feedbackMessage =
+    loginFeedback?.reason === 'invalid_credentials' &&
+    (loginFeedback.remainingAttempts || 0) > 0 &&
+    (loginFeedback.maxAttempts || 0) > 0
+      ? `账号或密码不正确，还可尝试 ${loginFeedback.remainingAttempts} 次。`
+      : feedbackDetail
+  const feedbackAssist = loginFeedback?.suggestions[0]
 
   return (
     <div className="app-login-shell">
       <div className="app-login-panel">
         <section className="app-login-form">
-          <span className="app-login-form__eyebrow">Sign In</span>
-          <Typography.Title level={3} style={{ marginBottom: 12 }}>
-            AIOPS 智能运维平台
-          </Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
-            登录失败超过 {LOGIN_FAILURE_LIMIT} 次会锁定账号 {LOGIN_LOCK_MINUTES} 分钟。遇到无法恢复的情况，可以直接使用“忘记密码”。
+          <div className="app-login-form__brand">
+            <div className="app-login-form__brand-top">
+              <img
+                className="app-login-form__logo"
+                src={BRAND_LOGO_SRC}
+                alt="AIOPS platform logo"
+                draggable={false}
+              />
+              <span className="app-login-form__eyebrow">AIOPS Control Plane</span>
+            </div>
+            <Typography.Title level={3} className="app-login-form__title">
+              AIOPS 智能运维平台
+            </Typography.Title>
+          </div>
+          <Typography.Paragraph className="app-login-form__subtitle">
+            统一进入告警、日志、集群与自动化协同的运维控制台。
           </Typography.Paragraph>
-
-          {loginFeedback && (
-            <Alert
-              showIcon
-              type={loginFeedback.type}
-              style={{ marginBottom: 20 }}
-              message={loginFeedback.title}
-              description={(
-                <Space direction="vertical" size={6} style={{ width: '100%' }}>
-                  <span>{feedbackDetail}</span>
-                  {loginFeedback.suggestions.map((item) => (
-                    <span key={item}>- {item}</span>
-                  ))}
-                </Space>
-              )}
-            />
-          )}
 
           <Form
             form={form}
@@ -343,7 +390,10 @@ const LoginPage: React.FC = () => {
             layout="vertical"
             onValuesChange={() => {
               setLoginFeedback((current) => {
-                if (current?.reason === 'account_locked' && (current.lockRemainingSeconds || 0) > 0) {
+                if (
+                  current?.reason === 'account_locked' &&
+                  (current.lockRemainingSeconds || 0) > 0
+                ) {
                   return current
                 }
                 return undefined
@@ -400,7 +450,7 @@ const LoginPage: React.FC = () => {
                     left: 0,
                     top: 0,
                     height: '100%',
-                    width: verified ? '100%' : `${(sliderX / TRACK_WIDTH) * 100}%`,
+                    width: verified ? '100%' : `${(sliderX / trackWidth) * 100}%`,
                     background: verified
                       ? 'linear-gradient(90deg, #52c41a22, #52c41a44)'
                       : 'linear-gradient(90deg, #1890ff22, #1890ff44)',
@@ -424,7 +474,7 @@ const LoginPage: React.FC = () => {
                 <div
                   style={{
                     position: 'absolute',
-                    left: verified ? TRACK_WIDTH - SLIDER_WIDTH : sliderX,
+                    left: verified ? 'calc(100% - 40px)' : sliderX,
                     top: 0,
                     height: '100%',
                     width: SLIDER_WIDTH,
@@ -466,13 +516,23 @@ const LoginPage: React.FC = () => {
                   {verified ? '验证成功' : '拖动滑块到虚线框内'}
                 </div>
               </div>
+              <div className={`app-login-captcha__hint app-login-captcha__hint--${captchaHintTone}`}>
+                {captchaHint}
+              </div>
             </div>
 
             <div className="app-login-remember">
               <Checkbox checked={remember} onChange={(event) => setRemember(event.target.checked)}>
                 记住用户名
               </Checkbox>
-              <a onClick={handleOpenReset}>忘记密码？</a>
+              <Space>
+                <a onClick={handleOpenReset}>忘记密码？</a>
+                <Tooltip
+                  title={`连续失败 ${LOGIN_FAILURE_LIMIT} 次后将锁定 ${LOGIN_LOCK_MINUTES} 分钟，可通过“忘记密码”重置。`}
+                >
+                  <InfoCircleOutlined style={{ color: '#bfbfbf', fontSize: 12, cursor: 'help' }} />
+                </Tooltip>
+              </Space>
             </div>
 
             <Form.Item style={{ marginBottom: 0, marginTop: 16 }}>
@@ -488,6 +548,17 @@ const LoginPage: React.FC = () => {
                 {submitLocked ? `账号锁定中 (${formatRemainingTime(lockedSeconds)})` : '登录'}
               </Button>
             </Form.Item>
+
+            {loginFeedback && (
+              <div className={`app-login-feedback app-login-feedback--${loginFeedback.type}`}>
+                <span className="app-login-feedback__text">{feedbackMessage}</span>
+                {feedbackAssist ? (
+                  <Tooltip title={feedbackAssist}>
+                    <InfoCircleOutlined className="app-login-feedback__icon" />
+                  </Tooltip>
+                ) : null}
+              </div>
+            )}
           </Form>
 
           <div className="app-login-footer">
