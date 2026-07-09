@@ -95,6 +95,7 @@ func TestBuildAIMessageScopeSnapshot(t *testing.T) {
 		&providerID,
 		&modelID,
 		nil,
+		nil,
 	)
 
 	requestScope, ok := snapshot["request_scope"].(model.JSONMap)
@@ -152,6 +153,7 @@ func TestBuildAIMessageScopeSnapshotIncludesImages(t *testing.T) {
 				"size":         int64(123),
 			},
 		},
+		nil,
 	)
 
 	requestScope, ok := snapshot["request_scope"].(model.JSONMap)
@@ -170,6 +172,47 @@ func TestBuildAIMessageScopeSnapshotIncludesImages(t *testing.T) {
 	}
 }
 
+func TestBuildAIMessageScopeSnapshotIncludesAttachments(t *testing.T) {
+	snapshot := buildAIMessageScopeSnapshot(
+		model.AIConversation{
+			ID:            9,
+			AssistantMode: "chat",
+		},
+		AIChatRequest{
+			ClusterID: 4,
+			Namespace: "ops",
+		},
+		nil,
+		nil,
+		nil,
+		[]AIMessageAttachmentItem{
+			{
+				ID:           12,
+				OriginalName: "events.log",
+				ContentType:  "text/plain",
+				FileSize:     256,
+				FileKind:     "text",
+				DownloadURL:  "/api/v1/ai/files/12/content",
+			},
+		},
+	)
+
+	requestScope, ok := snapshot["request_scope"].(model.JSONMap)
+	if !ok {
+		t.Fatalf("expected request_scope JSON map, got %#v", snapshot["request_scope"])
+	}
+	if got := requestScope["attachment_count"]; got != 1 {
+		t.Fatalf("request_scope.attachment_count = %#v, want 1", got)
+	}
+	attachments, ok := snapshot["request_attachments"].([]model.JSONMap)
+	if !ok || len(attachments) != 1 {
+		t.Fatalf("request_attachments = %#v, want one attachment", snapshot["request_attachments"])
+	}
+	if got := attachments[0]["original_name"]; got != "events.log" {
+		t.Fatalf("request_attachments[0].original_name = %#v, want %q", got, "events.log")
+	}
+}
+
 func TestBuildAIGatewayScopeNote(t *testing.T) {
 	note := buildAIGatewayScopeNote("devops", "Deployment", "bkci-auth")
 	if !strings.Contains(note, "namespace=devops") {
@@ -180,6 +223,55 @@ func TestBuildAIGatewayScopeNote(t *testing.T) {
 	}
 	if !strings.Contains(note, "Do not list sibling resources") {
 		t.Fatalf("expected strict scope guard, got %q", note)
+	}
+}
+
+func TestBuildAIDiagnosticEvidenceDigest(t *testing.T) {
+	digest := buildAIDiagnosticEvidenceDigest([]AIToolCallItem{
+		{
+			ToolName:      "cluster.health",
+			Status:        "succeeded",
+			ResultSummary: "API true, nodes ready 8/8",
+		},
+		{
+			ToolName:      "cluster.overview",
+			Status:        "succeeded",
+			ResultSummary: "pods 386 total, CPU 5%, memory 65%",
+		},
+		{
+			ToolName:      "resource.logs",
+			Status:        "failed",
+			ResultSummary: "should not be included",
+		},
+	}, "Tool: cluster.health\nEvidence JSON:\n{}")
+
+	if !strings.Contains(digest, "Confirmed platform evidence for this round") {
+		t.Fatalf("expected digest header, got %q", digest)
+	}
+	if !strings.Contains(digest, "cluster.health: API true, nodes ready 8/8") {
+		t.Fatalf("expected concise cluster.health summary, got %q", digest)
+	}
+	if !strings.Contains(digest, "Detailed platform evidence") {
+		t.Fatalf("expected detailed evidence section, got %q", digest)
+	}
+	if strings.Contains(digest, "should not be included") {
+		t.Fatalf("failed tool summary should not be included in digest: %q", digest)
+	}
+}
+
+func TestEffectiveAIGatewayMode(t *testing.T) {
+	if got := effectiveAIGatewayMode("chat", []AIToolCallItem{
+		{ToolName: "cluster.health", Status: "succeeded", ResultSummary: "ok"},
+	}, "evidence"); got != "diagnose" {
+		t.Fatalf("effectiveAIGatewayMode(chat with evidence) = %q, want diagnose", got)
+	}
+
+	if got := effectiveAIGatewayMode("chat", nil, ""); got != "chat" {
+		t.Fatalf("effectiveAIGatewayMode(chat without evidence) = %q, want chat", got)
+	}
+
+	if got := effectiveAIGatewayMode("diagnose", nil, ""); got != "diagnose" {
+		t.Fatalf("effectiveAIGatewayMode(diagnose) = %q, want diagnose", got)
 	}
 }
 

@@ -19,7 +19,7 @@ const AIHistoryPage: React.FC = () => {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteConversation(id),
+    mutationFn: (id: number) => deleteConversation(id),
     onSuccess: () => {
       message.success('删除成功')
       queryClient.invalidateQueries({ queryKey: ['conversations'] })

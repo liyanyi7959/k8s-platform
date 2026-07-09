@@ -209,11 +209,11 @@ func buildAIToolCallItem(row model.AIToolCall) AIToolCallItem {
 }
 
 func compactToolResult(v any) string {
-	b, err := json.Marshal(v)
+	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return ""
 	}
-	return truncateForModel(string(b), 3000)
+	return truncateForModel(string(b), 5000)
 }
 
 func truncateForModel(input string, limit int) string {

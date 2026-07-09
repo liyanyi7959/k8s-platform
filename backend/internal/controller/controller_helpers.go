@@ -74,7 +74,12 @@ func WriteServiceErr(c *gin.Context, err error, extras ...errMapping) {
 		}
 		resp.Fail(c, 5000, msg)
 	default:
-		resp.Fail(c, 5000, "内部错误")
+		// 尝试提取 ServiceError 中的用户可读消息
+		msg := "内部错误"
+		if m, ok := service.UserMessage(err); ok && m != "" {
+			msg = m
+		}
+		resp.Fail(c, 5000, msg)
 	}
 }
 

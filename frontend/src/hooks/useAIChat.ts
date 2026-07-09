@@ -1,195 +1,357 @@
-/**
- * AI 对话 Hook
- * 支持 SSE 流式输出和手动停止，Mock 模式下使用本地模拟
- */
-import { useState, useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import {
+  buildAIChatFetchRequest,
+  getAIChatStreamUrl,
+  sendAIChatMessage,
+} from '@/services/ai'
+import type {
+  AIActionProposal,
+  AIChatRequest,
+  AIConversationDetail,
+  AIMessage,
+  AIMessageAttachment,
+  AIStreamDoneData,
+  AIToolCall,
+} from '@/types'
 
-interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
+export interface UIChatMessage extends AIMessage {
+  localId: string
   isStreaming?: boolean
+  isPending?: boolean
 }
 
-const MOCK_ENABLED = false
-
-/** Mock 回复内容 */
-const MOCK_RESPONSES: Record<string, string> = {
-  default:
-    'Kubernetes 常用运维命令：\n\n' +
-    '1. 查看 Pod 状态：`kubectl get pods -A`\n' +
-    '2. 查看日志：`kubectl logs <pod-name> -n <namespace>`\n' +
-    '3. 进入容器：`kubectl exec -it <pod-name> -- /bin/sh`\n' +
-    '4. 查看事件：`kubectl get events --sort-by=.metadata.creationTimestamp`\n\n' +
-    '您可以在 K8s 运维页面中直接操作这些资源。',
-  restart:
-    'Pod 频繁重启的排查步骤：\n\n' +
-    '1. 查看 Pod 事件：`kubectl describe pod <pod-name>`\n' +
-    '2. 查看容器日志：`kubectl logs <pod-name> --previous`\n' +
-    '3. 检查资源限制：确认 requests/limits 是否合理\n' +
-    '4. 检查健康检查：liveness probe 配置是否正确\n' +
-    '5. 检查依赖服务：数据库、缓存等是否可用\n\n' +
-    '常见原因：OOMKilled、健康检查失败、依赖服务不可用。',
-  deploy:
-    'Deployment 滚动更新最佳实践：\n\n' +
-    '1. 设置合理的 `maxUnavailable` 和 `maxSurge`\n' +
-    '2. 配置 `readinessProbe` 确保新 Pod 就绪后再切流量\n' +
-    '3. 使用 `kubectl rollout status` 监控更新进度\n' +
-    '4. 准备回滚方案：`kubectl rollout undo deployment/<name>`\n\n' +
-    '建议在生产环境使用 Canary 或 Blue-Green 策略。',
+interface UseAIChatResult {
+  messages: UIChatMessage[]
+  conversationId?: number
+  toolCalls: AIToolCall[]
+  actionProposals: AIActionProposal[]
+  isStreaming: boolean
+  isResponding: boolean
+  activeModelName: string
+  activeProviderName: string
+  hydrateConversation: (detail?: AIConversationDetail | null) => void
+  clearConversation: () => void
+  stopGeneration: () => void
+  sendMessage: (clusterId: number, payload: AIChatRequest, stream: boolean) => Promise<number | undefined>
 }
 
-function getMockResponse(input: string): string {
-  const lower = input.toLowerCase()
-  if (lower.includes('重启') || lower.includes('restart')) return MOCK_RESPONSES.restart || ''
-  if (lower.includes('部署') || lower.includes('deploy')) return MOCK_RESPONSES.deploy || ''
-  return MOCK_RESPONSES.default || ''
+function buildLocalAttachments(files?: File[]): AIMessageAttachment[] {
+  return (files || []).map((file, index) => ({
+    id: -(Date.now() + index),
+    originalName: file.name,
+    contentType: file.type || 'application/octet-stream',
+    fileSize: file.size,
+    purpose: 'chat',
+    status: 'local',
+    fileKind: file.type.startsWith('image/') ? 'image' : 'text',
+    downloadUrl: '',
+    createdAt: new Date().toISOString(),
+  }))
 }
 
-export function useAIChat(clusterId?: string) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+function toUIMessage(message: AIMessage): UIChatMessage {
+  return {
+    ...message,
+    attachments: message.attachments || [],
+    localId: `server-${message.id}`,
+  }
+}
+
+function getAuthHeaders(extra?: HeadersInit): Headers {
+  const headers = new Headers(extra || {})
+  const token = localStorage.getItem('token')
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+  headers.set('Accept', 'text/event-stream')
+  return headers
+}
+
+export function useAIChat(): UseAIChatResult {
+  const [messages, setMessages] = useState<UIChatMessage[]>([])
+  const [conversationId, setConversationId] = useState<number | undefined>(undefined)
+  const [toolCalls, setToolCalls] = useState<AIToolCall[]>([])
+  const [actionProposals, setActionProposals] = useState<AIActionProposal[]>([])
+  const [activeModelName, setActiveModelName] = useState('')
+  const [activeProviderName, setActiveProviderName] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  const [isResponding, setIsResponding] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const mockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const sendMessage = useCallback(
-    async (userInput: string) => {
-      if (isStreaming) return
+  const hydrateConversation = useCallback((detail?: AIConversationDetail | null) => {
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
+    setIsStreaming(false)
+    setIsResponding(false)
+    setConversationId(detail?.id)
+    setMessages((detail?.messages || []).map(toUIMessage))
+    setToolCalls(detail?.toolCalls || [])
+    setActionProposals(detail?.actionProposals || [])
+  }, [])
 
-      const userMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        content: userInput,
-      }
-
-      const assistantMsgId = crypto.randomUUID()
-      const assistantMsg: ChatMessage = {
-        id: assistantMsgId,
-        role: 'assistant',
-        content: '',
-        isStreaming: true,
-      }
-
-      setMessages((prev) => [...prev, userMsg, assistantMsg])
-      setIsStreaming(true)
-
-      if (MOCK_ENABLED) {
-        // Mock 模式：逐字输出模拟流式响应
-        const fullText = getMockResponse(userInput)
-        let charIndex = 0
-
-        const tick = () => {
-          if (charIndex >= fullText.length) {
-            setMessages((prev) =>
-              prev.map((m) => (m.id === assistantMsgId ? { ...m, isStreaming: false } : m)),
-            )
-            setIsStreaming(false)
-            mockTimerRef.current = null
-            return
-          }
-
-          // 每次输出 2-4 个字符，模拟打字效果
-          const chunkSize = Math.floor(Math.random() * 3) + 2
-          const chunk = fullText.slice(charIndex, charIndex + chunkSize)
-          charIndex += chunkSize
-
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId ? { ...m, content: m.content + chunk } : m,
-            ),
-          )
-
-          mockTimerRef.current = setTimeout(tick, 30 + Math.random() * 40)
-        }
-
-        mockTimerRef.current = setTimeout(tick, 500)
-        return
-      }
-
-      // 真实模式：SSE 流式请求
-      const controller = new AbortController()
-      abortControllerRef.current = controller
-
-      try {
-        const response = await fetch(clusterId ? `/api/v1/clusters/${clusterId}/ai/chat/stream` : '/api/v1/ai/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-          credentials: 'include',
-          body: JSON.stringify({ message: userInput }),
-          signal: controller.signal,
-        })
-
-        if (!response.ok) throw new Error(`AI 服务响应异常: ${response.status}`)
-
-        const reader = response.body?.getReader()
-        if (!reader) throw new Error('不支持流式响应')
-
-        const decoder = new TextDecoder()
-        let buffer = ''
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const jsonStr = line.slice(6)
-              if (jsonStr === '[DONE]') continue
-              try {
-                const data = JSON.parse(jsonStr)
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId
-                      ? { ...m, content: m.content + (data.content || '') }
-                      : m,
-                  ),
-                )
-              } catch {
-                // 跳过非 JSON 行
-              }
-            }
-          }
-        }
-      } catch (err: unknown) {
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          // 用户手动停止
-        } else {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId
-                ? { ...m, content: 'AI 响应异常，请重试', isStreaming: false }
-                : m,
-            ),
-          )
-        }
-      } finally {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === assistantMsgId ? { ...m, isStreaming: false } : m)),
-        )
-        setIsStreaming(false)
-        abortControllerRef.current = null
-      }
-    },
-    [isStreaming],
-  )
+  const clearConversation = useCallback(() => {
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
+    setIsStreaming(false)
+    setIsResponding(false)
+    setConversationId(undefined)
+    setMessages([])
+    setToolCalls([])
+    setActionProposals([])
+    setActiveModelName('')
+    setActiveProviderName('')
+  }, [])
 
   const stopGeneration = useCallback(() => {
-    if (mockTimerRef.current) {
-      clearTimeout(mockTimerRef.current)
-      mockTimerRef.current = null
-    }
     abortControllerRef.current?.abort()
-    setMessages((prev) => prev.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m)))
+    abortControllerRef.current = null
+    setMessages((current) =>
+      current.map((item) =>
+        item.isStreaming ? { ...item, isStreaming: false, isPending: false } : item,
+      ),
+    )
     setIsStreaming(false)
+    setIsResponding(false)
   }, [])
 
-  const clearMessages = useCallback(() => {
-    setMessages([])
-  }, [])
+  const sendMessage = useCallback(async (clusterId: number, payload: AIChatRequest, stream: boolean) => {
+    if (isStreaming || isResponding) {
+      return conversationId
+    }
 
-  return { messages, isStreaming, sendMessage, stopGeneration, clearMessages }
+    const currentConversationId = payload.conversationId || conversationId
+    const userMessageLocalId = `user-${Date.now()}`
+    const assistantMessageLocalId = `assistant-${Date.now()}`
+    const now = new Date().toISOString()
+
+    const userMessage: UIChatMessage = {
+      id: 0,
+      localId: userMessageLocalId,
+      conversationId: currentConversationId || 0,
+      role: 'user',
+      messageType: 'text',
+      content: payload.message,
+      attachments: buildLocalAttachments(payload.files),
+      status: 'created',
+      toolCallCount: 0,
+      tokenInput: 0,
+      tokenOutput: 0,
+      createdBy: 0,
+      createdAt: now,
+    }
+    const assistantMessage: UIChatMessage = {
+      id: 0,
+      localId: assistantMessageLocalId,
+      conversationId: currentConversationId || 0,
+      role: 'assistant',
+      messageType: 'text',
+      content: '',
+      attachments: [],
+      status: 'created',
+      toolCallCount: 0,
+      tokenInput: 0,
+      tokenOutput: 0,
+      createdBy: 0,
+      createdAt: now,
+      isStreaming: stream,
+      isPending: true,
+    }
+
+    setMessages((current) => [...current, userMessage, assistantMessage])
+    setIsResponding(true)
+    setIsStreaming(stream)
+
+    if (!stream) {
+      try {
+        const response = await sendAIChatMessage(clusterId, {
+          ...payload,
+          conversationId: currentConversationId,
+        })
+        setConversationId(response.conversationId)
+        setActiveModelName(response.modelName || response.modelCode || '')
+        setActiveProviderName(response.providerName || '')
+        setToolCalls(response.toolCalls || [])
+        setActionProposals(response.actionProposals || [])
+        setMessages((current) =>
+          current.map((item) => {
+            if (item.localId === assistantMessageLocalId) {
+              return {
+                ...item,
+                conversationId: response.conversationId,
+                content: response.assistantMessage,
+                isStreaming: false,
+                isPending: false,
+              }
+            }
+            if (item.localId === userMessageLocalId) {
+              return {
+                ...item,
+                conversationId: response.conversationId,
+              }
+            }
+            return item
+          }),
+        )
+        return response.conversationId
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'AI 响应异常'
+        setMessages((current) =>
+          current.map((item) =>
+            item.localId === assistantMessageLocalId
+              ? { ...item, content: errorMessage, isStreaming: false, isPending: false, status: 'failed' }
+              : item,
+          ),
+        )
+        return currentConversationId
+      } finally {
+        setIsStreaming(false)
+        setIsResponding(false)
+      }
+    }
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    try {
+      const streamRequest = buildAIChatFetchRequest({
+        ...payload,
+        conversationId: currentConversationId,
+      })
+      const response = await fetch(getAIChatStreamUrl(clusterId), {
+        method: 'POST',
+        credentials: 'include',
+        signal: controller.signal,
+        body: streamRequest.body,
+        headers: getAuthHeaders(streamRequest.headers),
+      })
+
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const result = await response.json()
+        throw new Error(result?.message || '请求失败')
+      }
+      if (!response.ok) {
+        throw new Error(`AI 服务响应异常: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('当前浏览器不支持流式响应')
+      }
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let doneData: AIStreamDoneData | null = null
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) {
+          break
+        }
+
+        buffer += decoder.decode(value, { stream: true })
+        const events = buffer.split('\n\n')
+        buffer = events.pop() || ''
+
+        for (const eventText of events) {
+          const dataLine = eventText
+            .split('\n')
+            .find((line) => line.startsWith('data: '))
+          if (!dataLine) {
+            continue
+          }
+          const payloadText = dataLine.slice(6)
+          const chunk = JSON.parse(payloadText) as {
+            type: 'chunk' | 'done' | 'error'
+            content?: string
+            error?: string
+          }
+
+          if (chunk.type === 'chunk') {
+            setMessages((current) =>
+              current.map((item) =>
+                item.localId === assistantMessageLocalId
+                  ? { ...item, content: item.content + (chunk.content || '') }
+                  : item,
+              ),
+            )
+            continue
+          }
+          if (chunk.type === 'error') {
+            throw new Error(chunk.error || 'AI 响应异常')
+          }
+          if (chunk.type === 'done') {
+            doneData = chunk.content ? (JSON.parse(chunk.content) as AIStreamDoneData) : null
+          }
+        }
+      }
+
+      if (doneData) {
+        setConversationId(doneData.conversationId)
+        setActiveModelName(doneData.modelName || doneData.modelCode || '')
+        setActiveProviderName(doneData.providerName || '')
+        setToolCalls(doneData.toolCalls || [])
+        setActionProposals(doneData.actionProposals || [])
+        setMessages((current) =>
+          current.map((item) => {
+            if (item.localId === assistantMessageLocalId) {
+              return {
+                ...item,
+                conversationId: doneData!.conversationId,
+                isStreaming: false,
+                isPending: false,
+              }
+            }
+            if (item.localId === userMessageLocalId) {
+              return {
+                ...item,
+                conversationId: doneData!.conversationId,
+              }
+            }
+            return item
+          }),
+        )
+        return doneData.conversationId
+      }
+
+      return currentConversationId
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        const errorMessage = error instanceof Error ? error.message : 'AI 响应异常'
+        setMessages((current) =>
+          current.map((item) =>
+            item.localId === assistantMessageLocalId
+              ? { ...item, content: errorMessage, isStreaming: false, isPending: false, status: 'failed' }
+              : item,
+          ),
+        )
+      }
+      return currentConversationId
+    } finally {
+      abortControllerRef.current = null
+      setMessages((current) =>
+        current.map((item) =>
+          item.localId === assistantMessageLocalId
+            ? { ...item, isStreaming: false, isPending: false }
+            : item,
+        ),
+      )
+      setIsStreaming(false)
+      setIsResponding(false)
+    }
+  }, [conversationId, isResponding, isStreaming])
+
+  return {
+    messages,
+    conversationId,
+    toolCalls,
+    actionProposals,
+    isStreaming,
+    isResponding,
+    activeModelName,
+    activeProviderName,
+    hydrateConversation,
+    clearConversation,
+    stopGeneration,
+    sendMessage,
+  }
 }

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   DeleteOutlined,
   EditOutlined,
@@ -31,8 +31,10 @@ import {
   createAIProvider,
   deleteAIModel,
   deleteAIProvider,
+  getAIRouteSettings,
   listAIModels,
   listAIProviders,
+  updateAIRouteSettings,
   updateAIModel,
   updateAIProvider,
 } from '@/services/ai'
@@ -54,6 +56,12 @@ const MODEL_TYPE_OPTIONS = [
   { value: 'image', label: '图像生成' },
 ]
 
+const ROUTING_STRATEGY_OPTIONS = [
+  { value: 'priority_first', label: '优先级优先' },
+  { value: 'default_model_first', label: '默认模型优先' },
+  { value: 'capability_first', label: '能力优先' },
+]
+
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error && error.message ? error.message : fallback
 
@@ -69,6 +77,7 @@ const AiSettings: React.FC = () => {
           items={[
             { key: 'providers', label: 'AI 提供商', children: <ProviderPanel /> },
             { key: 'models', label: 'AI 模型', children: <ModelPanel /> },
+            { key: 'routing', label: 'AI 路由', children: <RouteSettingsPanel /> },
           ]}
         />
       </Card>
@@ -354,6 +363,7 @@ const ModelPanel: React.FC = () => {
       total: models.length,
       enabled: models.filter((item) => item.enabled).length,
       tools: models.filter((item) => item.supportsTools).length,
+      fileInput: models.filter((item) => item.supportsFileInput).length,
     }),
     [models],
   )
@@ -398,6 +408,7 @@ const ModelPanel: React.FC = () => {
       maxInputTokens: 4096,
       supportsTools: true,
       supportsVision: false,
+      supportsFileInput: false,
       enabled: true,
     })
     setModalOpen(true)
@@ -454,6 +465,7 @@ const ModelPanel: React.FC = () => {
         <Space size={[4, 4]} wrap>
           {record.supportsTools ? <Tag color="green">工具调用</Tag> : null}
           {record.supportsVision ? <Tag color="purple">视觉</Tag> : null}
+          {record.supportsFileInput ? <Tag color="cyan">文件输入</Tag> : null}
           {record.supportsStreaming ? <Tag color="blue">流式</Tag> : null}
         </Space>
       ),
@@ -510,6 +522,11 @@ const ModelPanel: React.FC = () => {
           <span className="app-data-console__stat-label">支持工具调用</span>
           <strong className="app-data-console__stat-value">{summary.tools}</strong>
           <span className="app-data-console__stat-hint">可用于诊断、分析与自动化执行链路</span>
+        </div>
+        <div className="app-data-console__stat">
+          <span className="app-data-console__stat-label">支持文件输入</span>
+          <strong className="app-data-console__stat-value">{summary.fileInput}</strong>
+          <span className="app-data-console__stat-hint">可接收文本附件、日志和清单文件</span>
         </div>
       </section>
 
@@ -598,6 +615,9 @@ const ModelPanel: React.FC = () => {
             <Form.Item name="supportsVision" label="支持视觉" valuePropName="checked">
               <Switch />
             </Form.Item>
+            <Form.Item name="supportsFileInput" label="支持文件输入" valuePropName="checked">
+              <Switch />
+            </Form.Item>
             <Form.Item name="supportsStreaming" label="支持流式" valuePropName="checked">
               <Switch />
             </Form.Item>
@@ -607,6 +627,139 @@ const ModelPanel: React.FC = () => {
           </Space>
         </Form>
       </Modal>
+    </div>
+  )
+}
+
+const RouteSettingsPanel: React.FC = () => {
+  const [form] = Form.useForm()
+  const queryClient = useQueryClient()
+
+  const { data: routeSettings, isLoading, refetch, isRefetching } = useQuery({
+    queryKey: ['ai-route-settings'],
+    queryFn: ({ signal }) => getAIRouteSettings(signal),
+  })
+  const { data: models = [] } = useQuery({
+    queryKey: ['ai-models'],
+    queryFn: ({ signal }) => listAIModels(signal),
+  })
+  const { data: providers = [] } = useQuery({
+    queryKey: ['ai-providers'],
+    queryFn: ({ signal }) => listAIProviders(signal),
+  })
+
+  useEffect(() => {
+    if (!routeSettings) {
+      return
+    }
+    form.setFieldsValue({
+      defaultChatModelId: routeSettings.defaultChatModelId,
+      defaultDiagnoseModelId: routeSettings.defaultDiagnoseModelId,
+      defaultVisionModelId: routeSettings.defaultVisionModelId,
+      defaultImageGenerationModelId: routeSettings.defaultImageGenerationModelId,
+      defaultFallbackProviderId: routeSettings.defaultFallbackProviderId,
+      routingStrategy: routeSettings.routingStrategy || 'priority_first',
+      allowFallback: routeSettings.allowFallback,
+    })
+  }, [form, routeSettings])
+
+  const updateMutation = useMutation({
+    mutationFn: updateAIRouteSettings,
+    onSuccess: () => {
+      message.success('路由设置更新成功')
+      queryClient.invalidateQueries({ queryKey: ['ai-route-settings'] })
+    },
+    onError: (error) => message.error(getErrorMessage(error, '路由设置更新失败')),
+  })
+
+  const modelOptions = models
+    .filter((item) => item.enabled)
+    .map((item) => ({
+      value: item.id,
+      label: `${item.providerName} / ${item.name} (${item.modelCode})`,
+    }))
+
+  const providerOptions = providers
+    .filter((item) => item.enabled)
+    .map((item) => ({
+      value: item.id,
+      label: item.name,
+    }))
+
+  return (
+    <div className="app-data-console">
+      <section className="app-data-console__statgrid">
+        <div className="app-data-console__stat">
+          <span className="app-data-console__stat-label">当前策略</span>
+          <strong className="app-data-console__stat-value">
+            {ROUTING_STRATEGY_OPTIONS.find((item) => item.value === routeSettings?.routingStrategy)?.label || '优先级优先'}
+          </strong>
+          <span className="app-data-console__stat-hint">控制自动选模时如何优先命中默认模型和能力模型</span>
+        </div>
+        <div className="app-data-console__stat">
+          <span className="app-data-console__stat-label">兜底开关</span>
+          <strong className="app-data-console__stat-value">{routeSettings?.allowFallback ? '开启' : '关闭'}</strong>
+          <span className="app-data-console__stat-hint">当首选模型不可用时，是否允许自动切换到其他提供商</span>
+        </div>
+      </section>
+
+      <section className="app-data-console__filters">
+        <div className="app-data-console__filters-left">
+          <Text type="secondary">这里定义对话、诊断、视觉与图像生成的默认模型，以及兜底提供商策略。</Text>
+        </div>
+        <div className="app-data-console__filters-right">
+          <Button icon={<ReloadOutlined />} loading={isRefetching} onClick={() => refetch()}>
+            刷新
+          </Button>
+          <Button type="primary" loading={updateMutation.isPending} onClick={() => form.submit()}>
+            保存设置
+          </Button>
+        </div>
+      </section>
+
+      <Card loading={isLoading}>
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{ routingStrategy: 'priority_first', allowFallback: true }}
+          onFinish={(values) => updateMutation.mutate(values)}
+        >
+          <Form.Item
+            name="routingStrategy"
+            label="路由策略"
+            rules={[{ required: true, message: '请选择路由策略' }]}
+          >
+            <Select options={ROUTING_STRATEGY_OPTIONS} />
+          </Form.Item>
+
+          <Space size={16} wrap style={{ width: '100%' }}>
+            <Form.Item name="defaultChatModelId" label="默认对话模型" style={{ minWidth: 320 }}>
+              <Select allowClear options={modelOptions} />
+            </Form.Item>
+            <Form.Item name="defaultDiagnoseModelId" label="默认诊断模型" style={{ minWidth: 320 }}>
+              <Select allowClear options={modelOptions} />
+            </Form.Item>
+            <Form.Item name="defaultVisionModelId" label="默认视觉模型" style={{ minWidth: 320 }}>
+              <Select allowClear options={modelOptions.filter((item) => {
+                const model = models.find((modelItem) => modelItem.id === item.value)
+                return model?.supportsVision
+              })} />
+            </Form.Item>
+            <Form.Item name="defaultImageGenerationModelId" label="默认图像生成模型" style={{ minWidth: 320 }}>
+              <Select allowClear options={modelOptions.filter((item) => {
+                const model = models.find((modelItem) => modelItem.id === item.value)
+                return model?.supportsImageGeneration
+              })} />
+            </Form.Item>
+            <Form.Item name="defaultFallbackProviderId" label="默认兜底提供商" style={{ minWidth: 320 }}>
+              <Select allowClear options={providerOptions} />
+            </Form.Item>
+            <Form.Item name="allowFallback" label="允许自动兜底" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </Space>
+        </Form>
+      </Card>
     </div>
   )
 }

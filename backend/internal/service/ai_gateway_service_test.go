@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -84,6 +85,9 @@ func TestBuildAISystemPromptV2(t *testing.T) {
 			if len(got) == 0 {
 				t.Errorf("buildAISystemPromptV2() returned empty string")
 			}
+			if !strings.Contains(got, "Format the final answer in Markdown") {
+				t.Errorf("buildAISystemPromptV2() should require Markdown formatting")
+			}
 		})
 	}
 }
@@ -135,4 +139,90 @@ func TestInvoke(t *testing.T) {
 
 func uint64Ptr(v uint64) *uint64 {
 	return &v
+}
+
+func TestBuildOpenAICompatibleMessagesPlacesFreshEvidenceNearCurrentUser(t *testing.T) {
+	req := AIGatewayRequest{
+		AssistantMode: "diagnose",
+		Messages: []AIGatewayMessage{
+			{Role: "user", Content: "old question"},
+			{Role: "assistant", Content: "old answer without evidence"},
+			{Role: "user", Content: "inspect current cluster"},
+		},
+		DiagnosticNotes: "Platform diagnostic tool: cluster.health\nSummary: API true, nodes ready 8/8",
+	}
+
+	messages := buildOpenAICompatibleMessages(req)
+	if len(messages) < 4 {
+		t.Fatalf("expected enough messages, got %d", len(messages))
+	}
+
+	last := messages[len(messages)-1]
+	if role := strings.TrimSpace(last["role"].(string)); role != "user" {
+		t.Fatalf("expected last message to be current user, got %q", role)
+	}
+	if content := strings.TrimSpace(last["content"].(string)); !strings.Contains(content, "inspect current cluster") {
+		t.Fatalf("expected last user message content to be preserved, got %q", content)
+	}
+
+	evidenceIndex := -1
+	oldAssistantIndex := -1
+	for index, message := range messages {
+		content := strings.TrimSpace(message["content"].(string))
+		if strings.Contains(content, "Fresh platform diagnostic evidence exists for this round") {
+			evidenceIndex = index
+		}
+		if strings.Contains(content, "old answer without evidence") {
+			oldAssistantIndex = index
+		}
+		if strings.Contains(content, "No platform diagnostic evidence was collected for this round") {
+			t.Fatal("did not expect no-evidence warning when diagnostic notes exist")
+		}
+	}
+
+	if evidenceIndex < 0 {
+		t.Fatal("expected fresh evidence system message to be present")
+	}
+	if oldAssistantIndex < 0 {
+		t.Fatal("expected prior assistant history to be present")
+	}
+	if evidenceIndex <= oldAssistantIndex {
+		t.Fatalf("expected fresh evidence message after prior history, got evidence=%d history=%d", evidenceIndex, oldAssistantIndex)
+	}
+}
+
+func TestBuildOpenAICompatibleMessagesAddsNoEvidenceWarningOnlyWhenNotesMissing(t *testing.T) {
+	req := AIGatewayRequest{
+		AssistantMode: "diagnose",
+		Messages: []AIGatewayMessage{
+			{Role: "user", Content: "inspect current cluster"},
+		},
+	}
+
+	messages := buildOpenAICompatibleMessages(req)
+	found := false
+	for _, message := range messages {
+		content, _ := message["content"].(string)
+		if strings.Contains(content, "No platform diagnostic evidence was collected for this round") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("expected no-evidence guidance when diagnostic notes are missing")
+	}
+}
+
+func TestBuildOpenAICurrentTurnContentIncludesDiagnosticSummary(t *testing.T) {
+	content := buildOpenAICurrentTurnContent(
+		"inspect current cluster",
+		"Confirmed platform evidence for this round:\n- cluster.health: API true, nodes ready 8/8",
+	)
+
+	if !strings.Contains(content, "Confirmed platform evidence for this round") {
+		t.Fatalf("expected diagnostic summary in current turn content, got %q", content)
+	}
+	if !strings.Contains(content, "Current user request:\ninspect current cluster") {
+		t.Fatalf("expected original user request to remain in current turn content, got %q", content)
+	}
 }

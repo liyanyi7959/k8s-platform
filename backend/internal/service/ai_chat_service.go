@@ -27,19 +27,19 @@ var (
 )
 
 type AIChatRequest struct {
-	ClusterID      uint64             `json:"-"`
-	ConversationID *uint64            `json:"conversation_id"`
-	Message        string             `json:"message"`
-	AssistantMode  string             `json:"assistant_mode"`
-	ProviderID     *uint64            `json:"provider_id"`
-	ModelID        *uint64            `json:"model_id"`
-	PreferModel    string             `json:"prefer_model"`
-	Namespace      string             `json:"namespace"`
-	ResourceKind   string             `json:"resource_kind"`
-	ResourceName   string             `json:"resource_name"`
-	Images         []AIChatImageInput `json:"images"`
+	ClusterID      uint64              `json:"-"`
+	ConversationID *uint64             `json:"conversation_id"`
+	Message        string              `json:"message"`
+	AssistantMode  string              `json:"assistant_mode"`
+	ProviderID     *uint64             `json:"provider_id"`
+	ModelID        *uint64             `json:"model_id"`
+	PreferModel    string              `json:"prefer_model"`
+	Namespace      string              `json:"namespace"`
+	ResourceKind   string              `json:"resource_kind"`
+	ResourceName   string              `json:"resource_name"`
+	Images         []AIChatImageInput  `json:"images"`
 	Uploads        []AIChatUploadInput `json:"-"`
-	UserPerms      []string           `json:"-"`
+	UserPerms      []string            `json:"-"`
 }
 
 type AIChatImageInput struct {
@@ -90,6 +90,18 @@ type aiMessageRequestScope struct {
 	Namespace     string
 	ResourceKind  string
 	ResourceName  string
+}
+
+type aiPreparedConversationTurn struct {
+	message                    string
+	conversation               model.AIConversation
+	selectedProviderID         *uint64
+	selectedModelID            *uint64
+	normalizedImages           []model.JSONMap
+	gatewayImages              []AIGatewayImage
+	fileContexts               []AIGatewayFileContext
+	userMessage                model.AIMessage
+	assistantMessageStructured model.JSONMap
 }
 
 func prepareAIChatInputs(req AIChatRequest) ([]AIChatUploadInput, []model.JSONMap, []AIGatewayImage, []AIGatewayFileContext, error) {
@@ -249,37 +261,43 @@ func buildAIMessageAttachmentRefs(attachments []AIMessageAttachmentItem) []model
 	return out
 }
 
-func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username string, req AIChatRequest) (AIChatResponse, error) {
-	if s.db == nil {
-		return AIChatResponse{}, errors.New("db is required")
-	}
-	if s.gateway == nil || s.toolSvc == nil {
-		return AIChatResponse{}, errors.New("ai dependencies are required")
-	}
-	if req.ClusterID == 0 {
-		return AIChatResponse{}, ErrWithMessage(ErrInvalidParams, "集群 ID 无效")
-	}
+func (s *AIChatService) startConversationTurn(
+	ctx context.Context,
+	userID uint64,
+	username string,
+	req AIChatRequest,
+) (_ aiPreparedConversationTurn, err error) {
 	message := strings.TrimSpace(req.Message)
+	if req.ClusterID == 0 {
+		return aiPreparedConversationTurn{}, ErrWithMessage(ErrInvalidParams, "集群 ID 无效")
+	}
 	if message == "" {
-		return AIChatResponse{}, ErrWithMessage(ErrInvalidParams, "消息内容不能为空")
+		return aiPreparedConversationTurn{}, ErrWithMessage(ErrInvalidParams, "消息内容不能为空")
 	}
 
 	conversation, err := s.ensureConversation(ctx, userID, username, req)
 	if err != nil {
-		return AIChatResponse{}, err
+		return aiPreparedConversationTurn{}, err
 	}
 
 	now := time.Now().UTC()
 	if err := s.beginConversationRun(ctx, conversation.ID, now); err != nil {
-		return AIChatResponse{}, err
+		return aiPreparedConversationTurn{}, err
 	}
+	runStarted := true
+	defer func() {
+		if err != nil && runStarted {
+			s.resetConversationRun(conversation.ID)
+		}
+	}()
+
 	selectedProviderID, selectedModelID := resolveAIInvocationTarget(conversation, req)
 	uploads, normalizedImages, gatewayImages, fileContexts, err := prepareAIChatInputs(req)
 	if err != nil {
-		return AIChatResponse{}, err
+		return aiPreparedConversationTurn{}, err
 	}
 	if len(uploads) > 0 && s.fileSvc == nil {
-		return AIChatResponse{}, errors.New("ai file service is required")
+		return aiPreparedConversationTurn{}, errors.New("ai file service is required")
 	}
 	if len(gatewayImages) > 0 || len(fileContexts) > 0 {
 		_, aiModel, _, err := s.gateway.resolveInvocationTarget(ctx, AIGatewayRequest{
@@ -291,14 +309,21 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 			CurrentFiles:    fileContexts,
 		})
 		if err != nil {
-			return AIChatResponse{}, err
+			return aiPreparedConversationTurn{}, err
 		}
 		if err := validateAIChatModelInputs(aiModel, normalizedImages, fileContexts); err != nil {
-			return AIChatResponse{}, err
+			return aiPreparedConversationTurn{}, err
 		}
 	}
-	userMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, normalizedImages, nil)
 
+	userMessageStructured := buildAIMessageScopeSnapshot(
+		conversation,
+		req,
+		selectedProviderID,
+		selectedModelID,
+		normalizedImages,
+		nil,
+	)
 	userMessage := model.AIMessage{
 		ConversationID: conversation.ID,
 		Role:           "user",
@@ -309,27 +334,78 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		CreatedBy:      userID,
 	}
 	if err := s.db.WithContext(ctx).Create(&userMessage).Error; err != nil {
-		return AIChatResponse{}, err
+		return aiPreparedConversationTurn{}, err
 	}
 
-	attachments, err := s.fileSvc.SaveChatUploads(ctx, conversation.ID, userMessage.ID, userID, username, uploads)
-	if err != nil {
-		return AIChatResponse{}, err
+	var attachments []AIMessageAttachmentItem
+	if len(uploads) > 0 {
+		attachments, err = s.fileSvc.SaveChatUploads(ctx, conversation.ID, userMessage.ID, userID, username, uploads)
+		if err != nil {
+			return aiPreparedConversationTurn{}, err
+		}
 	}
 	if len(attachments) > 0 {
-		userMessageStructured = buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, normalizedImages, attachments)
+		userMessageStructured = buildAIMessageScopeSnapshot(
+			conversation,
+			req,
+			selectedProviderID,
+			selectedModelID,
+			normalizedImages,
+			attachments,
+		)
 		if err := s.db.WithContext(ctx).
 			Model(&model.AIMessage{}).
 			Where("id = ?", userMessage.ID).
 			Update("structured_json", userMessageStructured).Error; err != nil {
-			return AIChatResponse{}, err
+			return aiPreparedConversationTurn{}, err
 		}
+		userMessage.StructuredJSON = userMessageStructured
 	}
-	assistantMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, nil, attachments)
+
+	runStarted = false
+	return aiPreparedConversationTurn{
+		message:            message,
+		conversation:       conversation,
+		selectedProviderID: selectedProviderID,
+		selectedModelID:    selectedModelID,
+		normalizedImages:   normalizedImages,
+		gatewayImages:      gatewayImages,
+		fileContexts:       fileContexts,
+		userMessage:        userMessage,
+		assistantMessageStructured: buildAIMessageScopeSnapshot(
+			conversation,
+			req,
+			selectedProviderID,
+			selectedModelID,
+			nil,
+			attachments,
+		),
+	}, nil
+}
+
+func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username string, req AIChatRequest) (AIChatResponse, error) {
+	if s.db == nil {
+		return AIChatResponse{}, errors.New("db is required")
+	}
+	if s.gateway == nil || s.toolSvc == nil {
+		return AIChatResponse{}, errors.New("ai dependencies are required")
+	}
+	turn, err := s.startConversationTurn(ctx, userID, username, req)
+	if err != nil {
+		return AIChatResponse{}, err
+	}
+
+	runCompleted := false
+	defer func() {
+		if !runCompleted {
+			s.resetConversationRun(turn.conversation.ID)
+		}
+	}()
 
 	toolCalls := make([]AIToolCallItem, 0, 6)
 	diagnosticNotes := ""
-	diagPlan := buildAIAutoDiagnosticsPlan(conversation.AssistantMode, req, message)
+	diagnosticSummary := ""
+	diagPlan := buildAIAutoDiagnosticsPlan(turn.conversation.AssistantMode, req, turn.message)
 	if diagPlan.Enabled {
 		diagCtx := ctx
 		cancel := func() {}
@@ -340,71 +416,83 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 
 		var diagErr error
 		toolCalls, diagnosticNotes, diagErr = s.toolSvc.RunAutoDiagnostics(diagCtx, AIToolContextRequest{
-			ConversationID: conversation.ID,
-			MessageID:      userMessage.ID,
+			ConversationID: turn.conversation.ID,
+			MessageID:      turn.userMessage.ID,
 			ClusterID:      req.ClusterID,
 			UserID:         userID,
 			Username:       username,
 			UserPerms:      req.UserPerms,
-			Query:          message,
+			Query:          turn.message,
 			Namespace:      strings.TrimSpace(req.Namespace),
 			ResourceKind:   strings.TrimSpace(req.ResourceKind),
 			ResourceName:   strings.TrimSpace(req.ResourceName),
 		})
 		if diagErr != nil && !diagPlan.Optional {
-			s.finishConversationRun(conversation.ID, aiConversationRunResult{
+			s.finishConversationRun(turn.conversation.ID, aiConversationRunResult{
 				Status:            aiConversationRunStatusFromError(diagErr),
 				Summary:           firstUserFacingError(diagErr),
 				AssistantContent:  buildAIAssistantFailureReply(diagErr),
 				AssistantStatus:   aiMessageStatusFromError(diagErr),
-				StructuredPayload: assistantMessageStructured,
+				StructuredPayload: turn.assistantMessageStructured,
 				ToolCallCount:     len(toolCalls),
-				ProviderID:        selectedProviderID,
-				ModelID:           selectedModelID,
+				ProviderID:        turn.selectedProviderID,
+				ModelID:           turn.selectedModelID,
 			})
+			runCompleted = true
 			return AIChatResponse{}, diagErr
 		}
 	}
+	diagnosticSummary = buildAIDiagnosticEvidenceSummary(toolCalls)
+	diagnosticNotes = buildAIDiagnosticEvidenceDigest(toolCalls, diagnosticNotes)
+	gatewayMode := effectiveAIGatewayMode(turn.conversation.AssistantMode, toolCalls, diagnosticNotes)
 
-	history, err := s.buildGatewayMessages(ctx, conversation.ID, aiMessageRequestScope{
-		AssistantMode: conversation.AssistantMode,
+	history, err := s.buildGatewayMessages(ctx, turn.conversation.ID, aiMessageRequestScope{
+		AssistantMode: turn.conversation.AssistantMode,
 		Namespace:     strings.TrimSpace(req.Namespace),
 		ResourceKind:  strings.TrimSpace(req.ResourceKind),
 		ResourceName:  strings.TrimSpace(req.ResourceName),
-	})
+	}, turn.userMessage.ID)
 	if err != nil {
 		return AIChatResponse{}, err
 	}
+	history = append(history, AIGatewayMessage{
+		Role:    "user",
+		Content: turn.message,
+	})
 	assistantResp, err := s.gateway.Invoke(ctx, AIGatewayRequest{
-		ConversationID:  conversation.ID,
-		AssistantMode:   conversation.AssistantMode,
-		ProviderID:      selectedProviderID,
-		ModelID:         selectedModelID,
-		PreferModelCode: req.PreferModel,
-		Messages:        history,
-		DiagnosticNotes: diagnosticNotes,
-		ScopeNote:       buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
+		ConversationID:    turn.conversation.ID,
+		AssistantMode:     gatewayMode,
+		ProviderID:        turn.selectedProviderID,
+		ModelID:           turn.selectedModelID,
+		PreferModelCode:   req.PreferModel,
+		Messages:          history,
+		CurrentImages:     turn.gatewayImages,
+		CurrentFiles:      turn.fileContexts,
+		DiagnosticSummary: diagnosticSummary,
+		DiagnosticNotes:   diagnosticNotes,
+		ScopeNote:         buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
 	})
 	if err != nil {
-		s.finishConversationRun(conversation.ID, aiConversationRunResult{
+		s.finishConversationRun(turn.conversation.ID, aiConversationRunResult{
 			Status:            aiConversationRunStatusFromError(err),
 			Summary:           firstUserFacingError(err),
 			AssistantContent:  buildAIAssistantFailureReply(err),
 			AssistantStatus:   aiMessageStatusFromError(err),
-			StructuredPayload: assistantMessageStructured,
+			StructuredPayload: turn.assistantMessageStructured,
 			ToolCallCount:     len(toolCalls),
-			ProviderID:        selectedProviderID,
-			ModelID:           selectedModelID,
+			ProviderID:        turn.selectedProviderID,
+			ModelID:           turn.selectedModelID,
 		})
+		runCompleted = true
 		return AIChatResponse{}, err
 	}
 
 	assistantContent, assistantStructured := normalizeAIModelAnswer(assistantResp.Content)
-	assistantStructured = mergeAIStructuredPayload(assistantStructured, assistantMessageStructured)
+	assistantStructured = mergeAIStructuredPayload(assistantStructured, turn.assistantMessageStructured)
 	assistantResp.Content = assistantContent
 
 	assistantMessage := model.AIMessage{
-		ConversationID: conversation.ID,
+		ConversationID: turn.conversation.ID,
 		Role:           "assistant",
 		MessageType:    "text",
 		Content:        assistantContent,
@@ -419,7 +507,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 	}
 
 	usage := model.AIUsageRecord{
-		ConversationID: ptrUint64(conversation.ID),
+		ConversationID: ptrUint64(turn.conversation.ID),
 		MessageID:      ptrUint64(assistantMessage.ID),
 		ProviderID:     ptrUint64(assistantResp.ProviderID),
 		ModelID:        ptrUint64(assistantResp.ModelID),
@@ -427,7 +515,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		RequestTokens:  assistantResp.Usage.RequestTokens,
 		ResponseTokens: assistantResp.Usage.ResponseTokens,
 		TotalTokens:    assistantResp.Usage.TotalTokens,
-		ImageCount:     len(normalizedImages),
+		ImageCount:     len(turn.normalizedImages),
 		LatencyMS:      assistantResp.Usage.LatencyMS,
 	}
 	if err := s.db.WithContext(ctx).Create(&usage).Error; err != nil {
@@ -439,9 +527,9 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		userID,
 		username,
 		req,
-		conversation.ID,
+		turn.conversation.ID,
 		assistantMessage.ID,
-		message,
+		turn.message,
 	)
 
 	summary := buildConversationSummary(assistantContent)
@@ -450,7 +538,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		conversationStatus = "waiting_confirm"
 	}
 	if err := s.db.WithContext(ctx).Model(&model.AIConversation{}).
-		Where("id = ?", conversation.ID).
+		Where("id = ?", turn.conversation.ID).
 		Updates(map[string]any{
 			"provider_id":     assistantResp.ProviderID,
 			"model_id":        assistantResp.ModelID,
@@ -460,10 +548,11 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		}).Error; err != nil {
 		return AIChatResponse{}, err
 	}
+	runCompleted = true
 
 	return AIChatResponse{
-		ConversationID:     conversation.ID,
-		UserMessageID:      userMessage.ID,
+		ConversationID:     turn.conversation.ID,
+		UserMessageID:      turn.userMessage.ID,
 		AssistantMessageID: assistantMessage.ID,
 		AssistantMessage:   assistantContent,
 		ProviderName:       assistantResp.ProviderName,
@@ -501,49 +590,23 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 		onChunk(AIStreamChunk{Type: "error", Error: "服务依赖未就绪"})
 		return errors.New("ai dependencies are required")
 	}
-	if req.ClusterID == 0 {
-		onChunk(AIStreamChunk{Type: "error", Error: "集群 ID 无效"})
-		return ErrWithMessage(ErrInvalidParams, "集群 ID 无效")
-	}
-	message := strings.TrimSpace(req.Message)
-	if message == "" {
-		onChunk(AIStreamChunk{Type: "error", Error: "消息内容不能为空"})
-		return ErrWithMessage(ErrInvalidParams, "消息内容不能为空")
-	}
-
-	conversation, err := s.ensureConversation(ctx, userID, username, req)
+	turn, err := s.startConversationTurn(ctx, userID, username, req)
 	if err != nil {
 		onChunk(AIStreamChunk{Type: "error", Error: firstUserFacingError(err)})
 		return err
 	}
 
-	now := time.Now().UTC()
-	if err := s.beginConversationRun(ctx, conversation.ID, now); err != nil {
-		onChunk(AIStreamChunk{Type: "error", Error: firstUserFacingError(err)})
-		return err
-	}
-	selectedProviderID, selectedModelID := resolveAIInvocationTarget(conversation, req)
-	normalizedImages := normalizeAIChatImages(req.Images)
-	userMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, normalizedImages)
-	assistantMessageStructured := buildAIMessageScopeSnapshot(conversation, req, selectedProviderID, selectedModelID, nil)
-
-	userMessage := model.AIMessage{
-		ConversationID: conversation.ID,
-		Role:           "user",
-		MessageType:    "text",
-		Content:        message,
-		Status:         "created",
-		StructuredJSON: userMessageStructured,
-		CreatedBy:      userID,
-	}
-	if err := s.db.WithContext(ctx).Create(&userMessage).Error; err != nil {
-		onChunk(AIStreamChunk{Type: "error", Error: "保存用户消息失败"})
-		return err
-	}
+	runCompleted := false
+	defer func() {
+		if !runCompleted {
+			s.resetConversationRun(turn.conversation.ID)
+		}
+	}()
 
 	toolCalls := make([]AIToolCallItem, 0, 6)
 	diagnosticNotes := ""
-	diagPlan := buildAIAutoDiagnosticsPlan(conversation.AssistantMode, req, message)
+	diagnosticSummary := ""
+	diagPlan := buildAIAutoDiagnosticsPlan(turn.conversation.AssistantMode, req, turn.message)
 	if diagPlan.Enabled {
 		diagCtx := ctx
 		cancel := func() {}
@@ -554,65 +617,78 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 
 		var diagErr error
 		toolCalls, diagnosticNotes, diagErr = s.toolSvc.RunAutoDiagnostics(diagCtx, AIToolContextRequest{
-			ConversationID: conversation.ID,
-			MessageID:      userMessage.ID,
+			ConversationID: turn.conversation.ID,
+			MessageID:      turn.userMessage.ID,
 			ClusterID:      req.ClusterID,
 			UserID:         userID,
 			Username:       username,
 			UserPerms:      req.UserPerms,
-			Query:          message,
+			Query:          turn.message,
 			Namespace:      strings.TrimSpace(req.Namespace),
 			ResourceKind:   strings.TrimSpace(req.ResourceKind),
 			ResourceName:   strings.TrimSpace(req.ResourceName),
 		})
 		if diagErr != nil && !diagPlan.Optional {
-			s.finishConversationRun(conversation.ID, aiConversationRunResult{
+			s.finishConversationRun(turn.conversation.ID, aiConversationRunResult{
 				Status:            aiConversationRunStatusFromError(diagErr),
 				Summary:           firstUserFacingError(diagErr),
 				AssistantContent:  buildAIAssistantFailureReply(diagErr),
 				AssistantStatus:   aiMessageStatusFromError(diagErr),
-				StructuredPayload: assistantMessageStructured,
+				StructuredPayload: turn.assistantMessageStructured,
 				ToolCallCount:     len(toolCalls),
-				ProviderID:        selectedProviderID,
-				ModelID:           selectedModelID,
+				ProviderID:        turn.selectedProviderID,
+				ModelID:           turn.selectedModelID,
 			})
+			runCompleted = true
 			onChunk(AIStreamChunk{Type: "error", Error: firstUserFacingError(diagErr)})
 			return diagErr
 		}
 	}
+	diagnosticSummary = buildAIDiagnosticEvidenceSummary(toolCalls)
+	diagnosticNotes = buildAIDiagnosticEvidenceDigest(toolCalls, diagnosticNotes)
+	gatewayMode := effectiveAIGatewayMode(turn.conversation.AssistantMode, toolCalls, diagnosticNotes)
 
-	history, err := s.buildGatewayMessages(ctx, conversation.ID, aiMessageRequestScope{
-		AssistantMode: conversation.AssistantMode,
+	history, err := s.buildGatewayMessages(ctx, turn.conversation.ID, aiMessageRequestScope{
+		AssistantMode: turn.conversation.AssistantMode,
 		Namespace:     strings.TrimSpace(req.Namespace),
 		ResourceKind:  strings.TrimSpace(req.ResourceKind),
 		ResourceName:  strings.TrimSpace(req.ResourceName),
-	})
+	}, turn.userMessage.ID)
 	if err != nil {
 		onChunk(AIStreamChunk{Type: "error", Error: "构建消息历史失败"})
 		return err
 	}
 
+	history = append(history, AIGatewayMessage{
+		Role:    "user",
+		Content: turn.message,
+	})
+
 	streamReader, streamResult, err := s.gateway.InvokeStream(ctx, AIGatewayRequest{
-		ConversationID:  conversation.ID,
-		AssistantMode:   conversation.AssistantMode,
-		ProviderID:      selectedProviderID,
-		ModelID:         selectedModelID,
-		PreferModelCode: req.PreferModel,
-		Messages:        history,
-		DiagnosticNotes: diagnosticNotes,
-		ScopeNote:       buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
+		ConversationID:    turn.conversation.ID,
+		AssistantMode:     gatewayMode,
+		ProviderID:        turn.selectedProviderID,
+		ModelID:           turn.selectedModelID,
+		PreferModelCode:   req.PreferModel,
+		Messages:          history,
+		CurrentImages:     turn.gatewayImages,
+		CurrentFiles:      turn.fileContexts,
+		DiagnosticSummary: diagnosticSummary,
+		DiagnosticNotes:   diagnosticNotes,
+		ScopeNote:         buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
 	})
 	if err != nil {
-		s.finishConversationRun(conversation.ID, aiConversationRunResult{
+		s.finishConversationRun(turn.conversation.ID, aiConversationRunResult{
 			Status:            aiConversationRunStatusFromError(err),
 			Summary:           firstUserFacingError(err),
 			AssistantContent:  buildAIAssistantFailureReply(err),
 			AssistantStatus:   aiMessageStatusFromError(err),
-			StructuredPayload: assistantMessageStructured,
+			StructuredPayload: turn.assistantMessageStructured,
 			ToolCallCount:     len(toolCalls),
-			ProviderID:        selectedProviderID,
-			ModelID:           selectedModelID,
+			ProviderID:        turn.selectedProviderID,
+			ModelID:           turn.selectedModelID,
 		})
+		runCompleted = true
 		onChunk(AIStreamChunk{Type: "error", Error: firstUserFacingError(err)})
 		return err
 	}
@@ -665,16 +741,17 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 	}
 
 	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
-		s.finishConversationRun(conversation.ID, aiConversationRunResult{
+		s.finishConversationRun(turn.conversation.ID, aiConversationRunResult{
 			Status:            "failed",
 			Summary:           "流式读取中断",
 			AssistantContent:  fullContent.String(),
 			AssistantStatus:   "failed",
-			StructuredPayload: assistantMessageStructured,
+			StructuredPayload: turn.assistantMessageStructured,
 			ToolCallCount:     len(toolCalls),
-			ProviderID:        selectedProviderID,
-			ModelID:           selectedModelID,
+			ProviderID:        turn.selectedProviderID,
+			ModelID:           turn.selectedModelID,
 		})
+		runCompleted = true
 		onChunk(AIStreamChunk{Type: "error", Error: "流式读取中断"})
 		return err
 	}
@@ -686,10 +763,10 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 	}
 
 	assistantContent, assistantStructured := normalizeAIModelAnswer(fullContent.String())
-	assistantStructured = mergeAIStructuredPayload(assistantStructured, assistantMessageStructured)
+	assistantStructured = mergeAIStructuredPayload(assistantStructured, turn.assistantMessageStructured)
 
 	assistantMessage := model.AIMessage{
-		ConversationID: conversation.ID,
+		ConversationID: turn.conversation.ID,
 		Role:           "assistant",
 		MessageType:    "text",
 		Content:        assistantContent,
@@ -705,7 +782,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 	}
 
 	usage := model.AIUsageRecord{
-		ConversationID: ptrUint64(conversation.ID),
+		ConversationID: ptrUint64(turn.conversation.ID),
 		MessageID:      ptrUint64(assistantMessage.ID),
 		ProviderID:     ptrUint64(streamResult.ProviderID),
 		ModelID:        ptrUint64(streamResult.ModelID),
@@ -713,7 +790,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 		RequestTokens:  streamResult.Usage.RequestTokens,
 		ResponseTokens: streamResult.Usage.ResponseTokens,
 		TotalTokens:    streamResult.Usage.TotalTokens,
-		ImageCount:     len(normalizedImages),
+		ImageCount:     len(turn.normalizedImages),
 		LatencyMS:      latencyMS,
 	}
 	if err := s.db.WithContext(ctx).Create(&usage).Error; err != nil {
@@ -721,7 +798,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 		_ = err
 	}
 
-	actionProposals := s.autoCreateActionProposals(ctx, userID, username, req, conversation.ID, assistantMessage.ID, message)
+	actionProposals := s.autoCreateActionProposals(ctx, userID, username, req, turn.conversation.ID, assistantMessage.ID, turn.message)
 
 	summary := buildConversationSummary(assistantContent)
 	conversationStatus := "open"
@@ -729,7 +806,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 		conversationStatus = "waiting_confirm"
 	}
 	_ = s.db.WithContext(ctx).Model(&model.AIConversation{}).
-		Where("id = ?", conversation.ID).
+		Where("id = ?", turn.conversation.ID).
 		Updates(map[string]any{
 			"provider_id":     streamResult.ProviderID,
 			"model_id":        streamResult.ModelID,
@@ -737,12 +814,13 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 			"status":          conversationStatus,
 			"last_message_at": time.Now().UTC(),
 		})
+	runCompleted = true
 
 	onChunk(AIStreamChunk{
 		Type: "done",
 		Content: mustMarshalJSON(AIStreamDoneData{
-			ConversationID:     conversation.ID,
-			UserMessageID:      userMessage.ID,
+			ConversationID:     turn.conversation.ID,
+			UserMessageID:      turn.userMessage.ID,
 			AssistantMessageID: assistantMessage.ID,
 			ProviderName:       streamResult.ProviderName,
 			ModelName:          streamResult.ModelName,
@@ -825,6 +903,7 @@ func buildAIMessageScopeSnapshot(
 	providerID,
 	modelID *uint64,
 	images []model.JSONMap,
+	attachments []AIMessageAttachmentItem,
 ) model.JSONMap {
 	scope := model.JSONMap{
 		"request_scope": model.JSONMap{
@@ -847,6 +926,10 @@ func buildAIMessageScopeSnapshot(
 	if len(images) > 0 {
 		requestScope["image_count"] = len(images)
 		scope["request_images"] = images
+	}
+	if len(attachments) > 0 {
+		requestScope["attachment_count"] = len(attachments)
+		scope["request_attachments"] = buildAIMessageAttachmentRefs(attachments)
 	}
 	return scope
 }
@@ -988,6 +1071,22 @@ func (s *AIChatService) finishConversationRun(conversationID uint64, result aiCo
 	}).Error
 }
 
+func (s *AIChatService) resetConversationRun(conversationID uint64) {
+	if s == nil || s.db == nil || conversationID == 0 {
+		return
+	}
+	bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_ = s.db.WithContext(bgCtx).
+		Model(&model.AIConversation{}).
+		Where("id = ? AND status = ?", conversationID, "running").
+		Updates(map[string]any{
+			"status":          "open",
+			"last_message_at": time.Now().UTC(),
+		}).Error
+}
+
 func (s *AIChatService) ensureConversation(ctx context.Context, userID uint64, username string, req AIChatRequest) (model.AIConversation, error) {
 	if req.ConversationID != nil && *req.ConversationID > 0 {
 		var conversation model.AIConversation
@@ -1027,19 +1126,26 @@ func (s *AIChatService) buildGatewayMessages(
 	ctx context.Context,
 	conversationID uint64,
 	currentScope aiMessageRequestScope,
+	excludeMessageID uint64,
 ) ([]AIGatewayMessage, error) {
 	var rows []model.AIMessage
 	if err := s.db.WithContext(ctx).
 		Where("conversation_id = ?", conversationID).
-		Order("created_at ASC, id ASC").
+		Order("created_at DESC, id DESC").
 		Limit(20).
 		Find(&rows).Error; err != nil {
 		return nil, err
+	}
+	for left, right := 0, len(rows)-1; left < right; left, right = left+1, right-1 {
+		rows[left], rows[right] = rows[right], rows[left]
 	}
 
 	filteredRows := buildScopedGatewayHistory(rows, currentScope)
 	messages := make([]AIGatewayMessage, 0, len(filteredRows))
 	for _, row := range filteredRows {
+		if excludeMessageID > 0 && row.ID == excludeMessageID {
+			continue
+		}
 		role := strings.ToLower(strings.TrimSpace(row.Role))
 		if role == "" {
 			role = "user"
@@ -1225,10 +1331,11 @@ func buildAutoActionProposalSpecs(req AIChatRequest, message string) []autoActio
 		Namespace: req.Namespace,
 		Name:      req.ResourceName,
 	})
-	if target.Kind == "" || target.Namespace == "" || target.Name == "" {
+	if target.Kind == "" || target.Name == "" {
 		return nil
 	}
-	if _, ok := aiActionWorkloadGVR(target.Kind); !ok {
+	// Node 是集群级资源，不需要命名空间；其他资源需要命名空间
+	if !strings.EqualFold(target.Kind, "Node") && target.Namespace == "" {
 		return nil
 	}
 
@@ -1237,25 +1344,84 @@ func buildAutoActionProposalSpecs(req AIChatRequest, message string) []autoActio
 		return nil
 	}
 
-	specs := make([]autoActionProposalSpec, 0, 2)
-	if isExplicitRestartIntent(trimmedMessage) {
+	specs := make([]autoActionProposalSpec, 0, 4)
+
+	// 工作负载类操作（仅 Deployment/StatefulSet/DaemonSet）
+	_, isWorkload := aiActionWorkloadGVR(target.Kind)
+	if isWorkload {
+		if isExplicitRestartIntent(trimmedMessage) {
+			specs = append(specs, autoActionProposalSpec{
+				ProposalType:   aiActionTypeRestartWorkload,
+				TargetResource: target,
+				Payload:        model.JSONMap{},
+				Reason:         "Auto-generated rollout restart proposal from the latest chat intent. Please verify scope before confirming.",
+			})
+		}
+
+		if !strings.EqualFold(target.Kind, "DaemonSet") {
+			if replicas, ok := detectScaleReplicaTarget(trimmedMessage); ok && isExplicitScaleIntent(trimmedMessage) {
+				specs = append(specs, autoActionProposalSpec{
+					ProposalType:   aiActionTypeScaleWorkload,
+					TargetResource: target,
+					Payload: model.JSONMap{
+						"replicas": replicas,
+					},
+					Reason: "Auto-generated scale proposal from the latest chat intent. Please verify target replicas before confirming.",
+				})
+			}
+		}
+
+		// 删除工作负载意图
+		if isExplicitDeleteIntent(trimmedMessage) {
+			specs = append(specs, autoActionProposalSpec{
+				ProposalType:   aiActionTypeDeleteWorkload,
+				TargetResource: target,
+				Payload:        model.JSONMap{},
+				Reason:         "Auto-generated delete proposal from chat intent. This is a HIGH RISK operation requiring double confirmation.",
+			})
+		}
+
+		// 更新镜像意图
+		if isExplicitUpdateImageIntent(trimmedMessage) {
+			if newImage := detectImageFromMessage(trimmedMessage); newImage != "" {
+				specs = append(specs, autoActionProposalSpec{
+					ProposalType:   aiActionTypeUpdateWorkloadImage,
+					TargetResource: target,
+					Payload: model.JSONMap{
+						"new_image": newImage,
+					},
+					Reason: "Auto-generated image update proposal. Please verify the new image before confirming.",
+				})
+			}
+		}
+	}
+
+	// Pod 类操作：删除 Pod
+	if strings.EqualFold(target.Kind, "Pod") && isExplicitDeletePodIntent(trimmedMessage) {
 		specs = append(specs, autoActionProposalSpec{
-			ProposalType:   aiActionTypeRestartWorkload,
+			ProposalType:   aiActionTypeDeletePod,
 			TargetResource: target,
 			Payload:        model.JSONMap{},
-			Reason:         "Auto-generated rollout restart proposal from the latest chat intent. Please verify scope before confirming.",
+			Reason:         "Auto-generated pod deletion proposal. Pod will be recreated by its controller if managed.",
 		})
 	}
 
-	if !strings.EqualFold(target.Kind, "DaemonSet") {
-		if replicas, ok := detectScaleReplicaTarget(trimmedMessage); ok && isExplicitScaleIntent(trimmedMessage) {
+	// Node 类操作：封锁/驱逐
+	if strings.EqualFold(target.Kind, "Node") {
+		if isExplicitCordonIntent(trimmedMessage) {
 			specs = append(specs, autoActionProposalSpec{
-				ProposalType:   aiActionTypeScaleWorkload,
+				ProposalType:   aiActionTypeCordonNode,
 				TargetResource: target,
-				Payload: model.JSONMap{
-					"replicas": replicas,
-				},
-				Reason: "Auto-generated scale proposal from the latest chat intent. Please verify target replicas before confirming.",
+				Payload:        model.JSONMap{},
+				Reason:         "Auto-generated node cordon proposal. Node will stop scheduling new pods.",
+			})
+		}
+		if isExplicitDrainIntent(trimmedMessage) {
+			specs = append(specs, autoActionProposalSpec{
+				ProposalType:   aiActionTypeDrainNode,
+				TargetResource: target,
+				Payload:        model.JSONMap{},
+				Reason:         "Auto-generated node drain proposal. This is a HIGH RISK operation requiring double confirmation. All pods will be evicted.",
 			})
 		}
 	}
@@ -1352,6 +1518,64 @@ func hasTentativeActionIntent(message string) bool {
 	)
 }
 
+// isExplicitDeleteIntent 判断是否为删除工作负载的明确意图
+func isExplicitDeleteIntent(msg string) bool {
+	lower := strings.ToLower(msg)
+	keywords := []string{"delete", "remove", "删除", "移除"}
+	for _, kw := range keywords {
+		if strings.Contains(lower, kw) {
+			// 排除试探性表述
+			if hasTentativeActionIntent(msg) {
+				return false
+			}
+			return true
+		}
+	}
+	return false
+}
+
+// isExplicitDeletePodIntent 判断是否为删除 Pod 的明确意图
+func isExplicitDeletePodIntent(msg string) bool {
+	lower := strings.ToLower(msg)
+	return strings.Contains(lower, "delete") || strings.Contains(lower, "删除") || strings.Contains(lower, "移除")
+}
+
+// isExplicitCordonIntent 判断是否为节点封锁意图
+func isExplicitCordonIntent(msg string) bool {
+	lower := strings.ToLower(msg)
+	return strings.Contains(lower, "cordon") || strings.Contains(lower, "封锁") || strings.Contains(lower, "停止调度")
+}
+
+// isExplicitDrainIntent 判断是否为节点驱逐意图
+func isExplicitDrainIntent(msg string) bool {
+	lower := strings.ToLower(msg)
+	return strings.Contains(lower, "drain") || strings.Contains(lower, "驱逐") || strings.Contains(lower, "排空")
+}
+
+// isExplicitUpdateImageIntent 判断是否为更新镜像意图
+func isExplicitUpdateImageIntent(msg string) bool {
+	lower := strings.ToLower(msg)
+	return strings.Contains(lower, "update image") || strings.Contains(lower, "change image") ||
+		strings.Contains(lower, "更新镜像") || strings.Contains(lower, "修改镜像") ||
+		strings.Contains(lower, "rollout image")
+}
+
+// detectImageFromMessage 从消息中提取镜像名称（匹配 image:xxx 格式）
+func detectImageFromMessage(msg string) string {
+	lower := strings.ToLower(msg)
+	idx := strings.Index(lower, "image:")
+	if idx >= 0 {
+		rest := msg[idx+6:]
+		// 截取到空白或行尾
+		end := strings.IndexAny(rest, " \n\t,，")
+		if end > 0 {
+			return strings.TrimSpace(rest[:end])
+		}
+		return strings.TrimSpace(rest)
+	}
+	return ""
+}
+
 func containsAny(text string, candidates ...string) bool {
 	for _, candidate := range candidates {
 		if candidate != "" && strings.Contains(text, candidate) {
@@ -1359,6 +1583,57 @@ func containsAny(text string, candidates ...string) bool {
 		}
 	}
 	return false
+}
+
+func buildAIDiagnosticEvidenceSummary(toolCalls []AIToolCallItem) string {
+	summaryLines := make([]string, 0, len(toolCalls))
+	for _, item := range toolCalls {
+		if !strings.EqualFold(strings.TrimSpace(item.Status), "succeeded") {
+			continue
+		}
+		toolName := strings.TrimSpace(item.ToolName)
+		resultSummary := strings.TrimSpace(item.ResultSummary)
+		if toolName == "" && resultSummary == "" {
+			continue
+		}
+		if resultSummary == "" {
+			summaryLines = append(summaryLines, "- "+toolName)
+			continue
+		}
+		if toolName == "" {
+			summaryLines = append(summaryLines, "- "+resultSummary)
+			continue
+		}
+		summaryLines = append(summaryLines, "- "+toolName+": "+resultSummary)
+	}
+
+	if len(summaryLines) == 0 {
+		return ""
+	}
+	return "Confirmed platform evidence for this round:\n" + strings.Join(summaryLines, "\n")
+}
+
+func buildAIDiagnosticEvidenceDigest(toolCalls []AIToolCallItem, diagnosticNotes string) string {
+	digest := buildAIDiagnosticEvidenceSummary(toolCalls)
+	notes := strings.TrimSpace(diagnosticNotes)
+	if digest == "" {
+		return notes
+	}
+	if notes == "" {
+		return digest
+	}
+	return digest + "\n\nDetailed platform evidence:\n" + notes
+}
+
+func effectiveAIGatewayMode(mode string, toolCalls []AIToolCallItem, diagnosticNotes string) string {
+	normalizedMode := normalizeAIAssistantMode(mode)
+	if normalizedMode == "" {
+		normalizedMode = "diagnose"
+	}
+	if normalizedMode == "chat" && (len(toolCalls) > 0 || strings.TrimSpace(diagnosticNotes) != "") {
+		return "diagnose"
+	}
+	return normalizedMode
 }
 
 func ptrUint64(v uint64) *uint64 {

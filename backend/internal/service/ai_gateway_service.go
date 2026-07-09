@@ -43,6 +43,7 @@ type AIGatewayRequest struct {
 	Messages        []AIGatewayMessage
 	CurrentImages   []AIGatewayImage
 	CurrentFiles    []AIGatewayFileContext
+	DiagnosticSummary string
 	DiagnosticNotes string
 	ScopeNote       string
 }
@@ -125,7 +126,7 @@ func (s *AIGatewayService) resolveInvocationTarget(ctx context.Context, req AIGa
 
 	if strings.TrimSpace(req.AssistantMode) == "chat" {
 		q = q.Where("m.model_type IN ?", []string{"chat", "reasoning"})
-	} else if false {
+	} else {
 		q = q.Where("m.model_type IN ?", []string{"chat", "reasoning", "vision"})
 	}
 	if req.RequiresVision() {
@@ -319,38 +320,6 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 	}
 
 	messages := buildOpenAICompatibleMessages(req)
-	if notes := strings.TrimSpace(req.DiagnosticNotes); false {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "以下是平台自动收集的只读诊断信息，请优先基于这些证据分析，不要编造缺失事实。\n" + notes,
-		})
-	} else {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "当前没有拿到任何平台诊断证据。不要声称已经看到集群状态、Pod 状态、事件、日志或具体资源异常；请明确说明证据不足，并只给出下一步排查建议。",
-		})
-	}
-	if false {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "No platform diagnostic evidence was collected for this round. Do not pretend you saw cluster state. Say that this round lacks evidence, ask to narrow scope or retry collection, and only suggest manual commands when the requested data is outside the platform's current read capabilities.",
-		})
-	} else if false {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "Treat the provided diagnostic notes as platform-collected evidence. If the notes already contain concrete counts, lists, states, logs, metrics, or events, answer with them directly and do not fall back to generic kubectl instructions.",
-		})
-	}
-	for _, item := range []AIGatewayMessage{} {
-		role := strings.ToLower(strings.TrimSpace(item.Role))
-		if role == "" {
-			role = "user"
-		}
-		messages = append(messages, map[string]any{
-			"role":    role,
-			"content": item.Content,
-		})
-	}
 
 	payload := map[string]any{
 		"model":       aiModel.ModelCode,
@@ -477,24 +446,6 @@ func (s *AIGatewayService) InvokeStream(ctx context.Context, req AIGatewayReques
 	result.ModelCode = aiModel.ModelCode
 
 	messages := buildOpenAICompatibleMessages(req)
-	if notes := strings.TrimSpace(req.DiagnosticNotes); false {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "以下是平台自动收集的只读诊断信息，请优先基于这些证据分析，不要编造缺失事实。\n" + notes,
-		})
-	} else if false {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "当前没有拿到任何平台诊断证据。不要声称已经看到集群状态、Pod 状态、事件、日志或具体资源异常；请明确说明证据不足，并只给出下一步排查建议。",
-		})
-	}
-	for _, item := range []AIGatewayMessage{} {
-		role := strings.ToLower(strings.TrimSpace(item.Role))
-		if role == "" {
-			role = "user"
-		}
-		messages = append(messages, map[string]any{"role": role, "content": item.Content})
-	}
 
 	payload := map[string]any{
 		"model":       aiModel.ModelCode,
@@ -540,11 +491,31 @@ func (s *AIGatewayService) InvokeStream(ctx context.Context, req AIGatewayReques
 }
 
 func buildAISystemPromptV2(mode string) string {
-	base := "You are the built-in AI assistant of a Kubernetes management platform. The platform backend can directly collect live, read-only cluster evidence for the current scope. When evidence is provided, treat it as current platform data. State confirmed facts directly, separate them from inference, and do not say that you cannot access the cluster. Do not ask the user to run kubectl for data that the platform has already collected. If counts, lists, states, logs, metrics, events, or rollout details appear in evidence, answer with them directly. Only say evidence is insufficient when the evidence for this round is truly missing, partial, or failed."
+	base := "You are the built-in AI assistant of a Kubernetes management platform. The platform backend can directly collect live, read-only cluster evidence for the current scope. When evidence is provided, treat it as current platform data. State confirmed facts directly, separate them from inference, and do not say that you cannot access the cluster. Do not ask the user to run kubectl for data that the platform has already collected. If counts, lists, states, logs, metrics, events, or rollout details appear in evidence, answer with them directly. When evidence exists, do not lead with a generic checklist; lead with the confirmed findings from the evidence first. Only say evidence is insufficient when the evidence for this round is truly missing, partial, or failed. Format the final answer in Markdown, using short headings, lists, tables, and fenced code blocks whenever they improve readability."
+
+	// 安全规则：强制人工确认
+	safetyRules := `
+## SAFETY RULES (MANDATORY)
+1. NEVER execute write operations (create, update, delete, scale, restart) without explicit human confirmation.
+2. ALL destructive operations (delete resource, delete pod, drain node) are HIGH RISK and require DOUBLE confirmation from two different operators.
+3. When recommending a change, always state:
+   - The exact action and target resource (kind/namespace/name)
+   - The risk level (low/medium/high)
+   - That human confirmation is required before execution
+   - Potential side effects and rollback considerations
+4. NEVER claim an operation has been executed. Use phrases like "proposed", "recommended", "pending confirmation".
+5. For namespace-wide or cluster-wide operations, warn about blast radius.
+6. When uncertain about safety, default to recommending caution and manual review.
+7. Secret values are masked. Never attempt to reconstruct or expose masked data.`
+
+	modeRule := ""
 	if strings.TrimSpace(mode) == "chat" {
-		return base + " Current mode is general assistance. Keep answers concise but evidence-based. You may explain, compare, and summarize, but you must still respect platform permissions and must not imply direct write execution."
+		modeRule = " Current mode is general assistance. Keep answers concise but evidence-based. You may explain, compare, and summarize, but you must still respect platform permissions and must not imply direct write execution."
+	} else {
+		modeRule = " Current mode is fault diagnosis. Prefer an answer structure of issue summary, key evidence, likely causes, impact scope, and next step. For write actions, only provide recommendations or proposals and never imply that a risky change has already been executed."
 	}
-	return base + " Current mode is fault diagnosis. Prefer an answer structure of issue summary, key evidence, likely causes, impact scope, and next step. For write actions, only provide recommendations or proposals and never imply that a risky change has already been executed."
+
+	return base + safetyRules + modeRule
 }
 
 func (r AIGatewayRequest) RequiresVision() bool {
@@ -568,37 +539,20 @@ func buildOpenAICompatibleMessages(req AIGatewayRequest) []map[string]any {
 			"content": scopeNote,
 		})
 	}
-	if notes := strings.TrimSpace(req.DiagnosticNotes); notes != "" {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "浠ヤ笅鏄钩鍙拌嚜鍔ㄦ敹闆嗙殑鍙璇婃柇淇℃伅锛岃浼樺厛鍩轰簬杩欎簺璇佹嵁鍒嗘瀽锛屼笉瑕佺紪閫犵己澶变簨瀹炪€俓n" + notes,
-		})
-	} else {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "褰撳墠娌℃湁鎷垮埌浠讳綍骞冲彴璇婃柇璇佹嵁銆備笉瑕佸０绉板凡缁忕湅鍒伴泦缇ょ姸鎬併€丳od 鐘舵€併€佷簨浠躲€佹棩蹇楁垨鍏蜂綋璧勬簮寮傚父锛涜鏄庣‘璇存槑璇佹嵁涓嶈冻锛屽苟鍙粰鍑轰笅涓€姝ユ帓鏌ュ缓璁€?,
-		})
-	}
-	if strings.TrimSpace(req.DiagnosticNotes) == "" {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "No platform diagnostic evidence was collected for this round. Do not pretend you saw cluster state. Say that this round lacks evidence, ask to narrow scope or retry collection, and only suggest manual commands when the requested data is outside the platform's current read capabilities.",
-		})
-	} else {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": "Treat the provided diagnostic notes as platform-collected evidence. If the notes already contain concrete counts, lists, states, logs, metrics, or events, answer with them directly and do not fall back to generic kubectl instructions.",
-		})
-	}
 
-	lastUserIndex := len(req.Messages) - 1
+	lastUserIndex := -1
+	for index := len(req.Messages) - 1; index >= 0; index-- {
+		if strings.EqualFold(strings.TrimSpace(req.Messages[index].Role), "user") {
+			lastUserIndex = index
+			break
+		}
+	}
 	for index, item := range req.Messages {
 		role := strings.ToLower(strings.TrimSpace(item.Role))
 		if role == "" {
 			role = "user"
 		}
 		if role == "user" && index == lastUserIndex {
-			messages = append(messages, buildOpenAIUserMessage(role, item.Content, req.CurrentFiles, req.CurrentImages))
 			continue
 		}
 		messages = append(messages, map[string]any{
@@ -606,7 +560,54 @@ func buildOpenAICompatibleMessages(req AIGatewayRequest) []map[string]any {
 			"content": item.Content,
 		})
 	}
+
+	messages = appendOpenAIContextMessages(messages, req)
+	if lastUserIndex >= 0 && lastUserIndex < len(req.Messages) {
+		currentUser := req.Messages[lastUserIndex]
+		messages = append(messages, buildOpenAIUserMessage("user", buildOpenAICurrentTurnContent(currentUser.Content, req.DiagnosticSummary), req.CurrentFiles, req.CurrentImages))
+	}
 	return messages
+}
+
+func buildOpenAICurrentTurnContent(content, diagnosticSummary string) string {
+	userContent := strings.TrimSpace(content)
+	summary := strings.TrimSpace(diagnosticSummary)
+	if summary == "" {
+		return userContent
+	}
+	if userContent == "" {
+		return summary
+	}
+	return summary + "\n\nTreat the above evidence as confirmed current platform data for this round. If earlier conversation turns conflict with it, trust this evidence.\n\nCurrent user request:\n" + userContent
+}
+
+func appendOpenAIContextMessages(messages []map[string]any, req AIGatewayRequest) []map[string]any {
+	if notes := strings.TrimSpace(req.DiagnosticNotes); notes != "" {
+		messages = append(messages, map[string]any{
+			"role": "system",
+			"content": "Fresh platform diagnostic evidence exists for this round. It overrides any earlier assistant guesswork " +
+				"or earlier missing-evidence statements in the conversation history.",
+		})
+		messages = append(messages, map[string]any{
+			"role": "system",
+			"content": "The following diagnostic notes were collected by the platform for this round. " +
+				"Treat them as current evidence, cite confirmed facts directly, and clearly label any inference.\n" + notes,
+		})
+		messages = append(messages, map[string]any{
+			"role":    "system",
+			"content": "When evidence is partial, first summarize the confirmed facts from that evidence, then explicitly call out only the missing dimensions. Do not say that the platform provided no evidence when these notes are present.",
+		})
+		messages = append(messages, map[string]any{
+			"role":    "system",
+			"content": "When the evidence already contains concrete counts, states, events, logs, or metrics, answer with them directly instead of falling back to generic kubectl guidance or a generic inspection checklist.",
+		})
+		return messages
+	}
+
+	return append(messages, map[string]any{
+		"role":    "system",
+		"content": "No platform diagnostic evidence was collected for this round. Do not pretend you saw live cluster state. Say evidence is insufficient, keep the answer bounded, and only suggest manual commands when the requested data is outside the platform's current read capabilities.",
+	})
 }
 
 func buildOpenAIUserMessage(role, content string, files []AIGatewayFileContext, images []AIGatewayImage) map[string]any {

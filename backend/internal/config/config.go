@@ -159,7 +159,7 @@ func Default() Config {
 			DefaultProvider:        "",
 			DefaultChatModel:       "",
 			DefaultVisionModel:     "",
-			UploadDir:              defaultAIUploadDir,
+			UploadDir:              "data/ai-uploads",
 			MaskSecrets:            true,
 			AllowExternalModelData: false,
 			ToolTimeout:            "20s",

@@ -1,13 +1,11 @@
-/**
- * AI 助手类型 — 扁平结构
- */
 import type { PageResult } from './common'
 
-/** AI 提供商 */
+export type AIAssistantMode = 'chat' | 'diagnose'
+
 export interface AIProvider {
   id: number
   name: string
-  providerType: string    // openai / azure-openai / ollama / qwen
+  providerType: string
   vendorCode?: string
   baseUrl: string
   authScheme?: string
@@ -31,24 +29,25 @@ export interface CreateAIProviderRequest {
   enabled?: boolean
 }
 
-/** AI 模型 */
 export interface AIModel {
   id: number
   providerId: number
   providerName: string
   name: string
   modelCode: string
-  modelType: string       // chat / vision / embedding / image
+  modelType: string
   maxInputTokens: number
-  maxOutputTokens?: number
-  contextWindow?: number
+  maxOutputTokens: number
+  contextWindow: number
   supportsTools: boolean
   supportsVision: boolean
-  supportsStreaming?: boolean
-  supportsReasoning?: boolean
-  supportsStructuredOutput?: boolean
-  supportsImageGeneration?: boolean
+  supportsStreaming: boolean
+  supportsReasoning: boolean
+  supportsStructuredOutput: boolean
+  supportsImageGeneration: boolean
+  supportsFileInput: boolean
   enabled: boolean
+  meta?: Record<string, unknown>
   createdAt: string
   updatedAt: string
 }
@@ -67,89 +66,147 @@ export interface CreateAIModelRequest {
   supportsReasoning?: boolean
   supportsStructuredOutput?: boolean
   supportsImageGeneration?: boolean
+  supportsFileInput?: boolean
   enabled?: boolean
+  meta?: Record<string, unknown>
 }
 
-/** AI 对话消息 */
-export interface AIMessage {
-  id: string
-  role: 'user' | 'assistant' | 'system' | 'tool'
-  content: string
-  status: 'sent' | 'pending' | 'failed' | 'cancelled'
-  toolCallCount: number
-  tokenInput: number
-  tokenOutput: number
+export interface AIRouteSettings {
+  id: number
+  defaultChatModelId?: number
+  defaultDiagnoseModelId?: number
+  defaultVisionModelId?: number
+  defaultImageGenerationModelId?: number
+  defaultFallbackProviderId?: number
+  routingStrategy: string
+  allowFallback: boolean
+  meta: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UpdateAIRouteSettingsRequest {
+  defaultChatModelId?: number | null
+  defaultDiagnoseModelId?: number | null
+  defaultVisionModelId?: number | null
+  defaultImageGenerationModelId?: number | null
+  defaultFallbackProviderId?: number | null
+  routingStrategy: string
+  allowFallback?: boolean
+  meta?: Record<string, unknown>
+}
+
+export interface AIMessageAttachment {
+  id: number
+  conversationId?: number
+  messageId?: number
+  originalName: string
+  contentType: string
+  fileSize: number
+  purpose: string
+  status: string
+  fileKind: string
+  downloadUrl: string
   createdAt: string
 }
 
-/** AI 工具调用 */
+export interface AIMessage {
+  id: number
+  conversationId: number
+  role: 'user' | 'assistant' | 'system' | 'tool'
+  messageType: string
+  content: string
+  attachments?: AIMessageAttachment[]
+  structured?: Record<string, unknown>
+  status: string
+  toolCallCount: number
+  tokenInput: number
+  tokenOutput: number
+  createdBy: number
+  createdAt: string
+}
+
 export interface AIToolCall {
-  id: string
+  id: number
+  messageId?: number
   toolName: string
+  toolKind: string
+  status: string
+  riskLevel: string
+  confirmLevel: string
   resultSummary: string
+  result?: Record<string, unknown>
   errorMessage: string
   createdAt: string
 }
 
-/** AI 建议动作 */
-export interface AISuggestedAction {
-  actionType: string
-  title: string
-  reason: string
-  targetKind: string
-  targetNamespace: string
-  targetName: string
-  replicas: number
-  riskLevel: 'low' | 'medium' | 'high' | 'critical'
-  manifestYaml: string
-  defaultNamespace: string
+export interface AIActionExecution {
+  id: number
+  proposalId: number
+  status: string
+  executionNo: number
+  operatorId: number
+  operatorName: string
+  commandSnapshot: string
+  result?: Record<string, unknown>
+  errorMessage?: string
+  startedAt?: string
+  finishedAt?: string
+  createdAt: string
 }
 
-/** AI 操作提案 */
 export interface AIActionProposal {
   id: number
-  title: string
+  conversationId: number
+  messageId?: number
+  toolCallId?: number
+  clusterId: number
   actionType: string
-  summary: string
   targetKind: string
   targetNamespace: string
   targetName: string
   riskLevel: string
-  status: 'pending_confirm' | 'confirmed' | 'executing' | 'succeeded' | 'failed' | 'cancelled'
-  confirmLevel: 'single' | 'double'
-  manifestYaml: string
-  latestExecution: {
-    status: string
-    createdAt: string
-  } | null
+  confirmLevel: string
+  status: string
+  title: string
+  summary: string
+  change?: Record<string, unknown>
+  createdBy: number
+  createdByName: string
+  approvedBy?: number
+  approvedByName: string
+  approvedAt?: string
+  secondApprovedBy?: number
+  secondApprovedName: string
+  secondApprovedAt?: string
+  requiredConfirmationText: string
+  latestExecution?: AIActionExecution | null
+  executions?: AIActionExecution[]
   createdAt: string
+  updatedAt: string
 }
 
-/** AI 对话详情 */
-export interface AIConversationDetail {
-  id: string
-  title: string
+export interface AIConversationItem {
+  id: number
   clusterId: number
-  assistantMode: string
+  providerId?: number
+  modelId?: number
+  title: string
   status: string
-  createdByName: string
+  assistantMode: string
+  summary: string
   createdBy: number
+  createdByName: string
+  messageCount: number
+  lastMessageAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AIConversationDetail extends AIConversationItem {
   messages: AIMessage[]
   toolCalls: AIToolCall[]
-  suggestedActions: AISuggestedAction[]
   actionProposals: AIActionProposal[]
-  createdAt: string
-  updatedAt: string
-}
-
-/** AI 对话列表项 */
-export interface AIConversationItem {
-  id: string
-  title: string
-  messageCount: number
-  updatedAt: string
-  status: string
-  assistantMode: string
 }
 
 export interface AIConversationListParams {
@@ -157,6 +214,61 @@ export interface AIConversationListParams {
   pageSize?: number
   keyword?: string
   clusterId?: number
+  status?: string
+  assistantMode?: string
 }
 
 export type AIConversationListResponse = PageResult<AIConversationItem>
+
+export interface CreateAIConversationRequest {
+  title?: string
+  clusterId: number
+  assistantMode?: AIAssistantMode
+  providerId?: number
+  modelId?: number
+  openingMessage?: string
+}
+
+export interface AIChatImageInput {
+  name: string
+  contentType: string
+  dataUrl: string
+  size: number
+}
+
+export interface AIChatRequest {
+  conversationId?: number
+  message: string
+  assistantMode?: AIAssistantMode
+  providerId?: number
+  modelId?: number
+  preferModel?: string
+  namespace?: string
+  resourceKind?: string
+  resourceName?: string
+  images?: AIChatImageInput[]
+  files?: File[]
+}
+
+export interface AIChatResponse {
+  conversationId: number
+  userMessageId: number
+  assistantMessageId: number
+  assistantMessage: string
+  providerName: string
+  modelName: string
+  modelCode: string
+  toolCalls: AIToolCall[]
+  actionProposals: AIActionProposal[]
+}
+
+export interface AIStreamDoneData {
+  conversationId: number
+  userMessageId: number
+  assistantMessageId: number
+  providerName: string
+  modelName: string
+  modelCode: string
+  toolCalls: AIToolCall[]
+  actionProposals: AIActionProposal[]
+}
