@@ -217,6 +217,7 @@ func TestBuildOpenAICurrentTurnContentIncludesDiagnosticSummary(t *testing.T) {
 	content := buildOpenAICurrentTurnContent(
 		"inspect current cluster",
 		"Confirmed platform evidence for this round:\n- cluster.health: API true, nodes ready 8/8",
+		"",
 	)
 
 	if !strings.Contains(content, "Confirmed platform evidence for this round") {

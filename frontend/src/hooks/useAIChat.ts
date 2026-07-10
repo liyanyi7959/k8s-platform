@@ -27,6 +27,7 @@ interface UseAIChatResult {
   actionProposals: AIActionProposal[]
   isStreaming: boolean
   isResponding: boolean
+  progress: string
   activeModelName: string
   activeProviderName: string
   hydrateConversation: (detail?: AIConversationDetail | null) => void
@@ -76,6 +77,7 @@ export function useAIChat(): UseAIChatResult {
   const [activeProviderName, setActiveProviderName] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [isResponding, setIsResponding] = useState(false)
+  const [progress, setProgress] = useState('')
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const hydrateConversation = useCallback((detail?: AIConversationDetail | null) => {
@@ -94,6 +96,7 @@ export function useAIChat(): UseAIChatResult {
     abortControllerRef.current = null
     setIsStreaming(false)
     setIsResponding(false)
+    setProgress('')
     setConversationId(undefined)
     setMessages([])
     setToolCalls([])
@@ -112,6 +115,7 @@ export function useAIChat(): UseAIChatResult {
     )
     setIsStreaming(false)
     setIsResponding(false)
+    setProgress('')
   }, [])
 
   const sendMessage = useCallback(async (clusterId: number, payload: AIChatRequest, stream: boolean) => {
@@ -160,6 +164,7 @@ export function useAIChat(): UseAIChatResult {
     setMessages((current) => [...current, userMessage, assistantMessage])
     setIsResponding(true)
     setIsStreaming(stream)
+    setProgress('')
 
     if (!stream) {
       try {
@@ -261,11 +266,16 @@ export function useAIChat(): UseAIChatResult {
           }
           const payloadText = dataLine.slice(6)
           const chunk = JSON.parse(payloadText) as {
-            type: 'chunk' | 'done' | 'error'
+            type: 'chunk' | 'done' | 'error' | 'progress'
             content?: string
             error?: string
+            progress?: string
           }
 
+          if (chunk.type === 'progress') {
+            setProgress(chunk.progress || '')
+            continue
+          }
           if (chunk.type === 'chunk') {
             setMessages((current) =>
               current.map((item) =>
@@ -347,6 +357,7 @@ export function useAIChat(): UseAIChatResult {
     actionProposals,
     isStreaming,
     isResponding,
+    progress,
     activeModelName,
     activeProviderName,
     hydrateConversation,

@@ -394,7 +394,7 @@ func TestBuildApplyManifestProposalRequest_Success(t *testing.T) {
 // ────────── PlanAutoDiagnostics: additional scenarios ──────────
 
 func TestPlanAutoDiagnostics_ReturnsNilForZeroCluster(t *testing.T) {
-	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := r.PlanAutoDiagnostics(AIToolContextRequest{ClusterID: 0})
 	if steps != nil {
 		t.Fatalf("expected nil for clusterID=0, got %v", steps)
@@ -402,7 +402,7 @@ func TestPlanAutoDiagnostics_ReturnsNilForZeroCluster(t *testing.T) {
 }
 
 func TestPlanAutoDiagnostics_AddsResourceEventsForWarningQuery(t *testing.T) {
-	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := r.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    1,
 		Query:        "这个 pod 有什么 warning 事件",
@@ -423,7 +423,7 @@ func TestPlanAutoDiagnostics_AddsResourceEventsForWarningQuery(t *testing.T) {
 }
 
 func TestPlanAutoDiagnostics_AddsResourceLogsForLogQuery(t *testing.T) {
-	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := r.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    1,
 		Query:        "show me the crash logs of this pod",
@@ -444,7 +444,7 @@ func TestPlanAutoDiagnostics_AddsResourceLogsForLogQuery(t *testing.T) {
 }
 
 func TestPlanAutoDiagnostics_NodeUsesNodeInspect(t *testing.T) {
-	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := r.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    1,
 		Query:        "check this node",
@@ -464,7 +464,7 @@ func TestPlanAutoDiagnostics_NodeUsesNodeInspect(t *testing.T) {
 }
 
 func TestPlanAutoDiagnostics_GenericResourceUsesResourceInspect(t *testing.T) {
-	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := r.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    1,
 		Query:        "check this configmap",
@@ -485,7 +485,7 @@ func TestPlanAutoDiagnostics_GenericResourceUsesResourceInspect(t *testing.T) {
 }
 
 func TestPlanAutoDiagnostics_SecretUsesMaskedYAML(t *testing.T) {
-	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := r.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    1,
 		Query:        "show the yaml of this secret",
@@ -506,7 +506,7 @@ func TestPlanAutoDiagnostics_SecretUsesMaskedYAML(t *testing.T) {
 }
 
 func TestPlanAutoDiagnostics_AddsClusterHealthForBroadQuery(t *testing.T) {
-	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := r.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID: 1,
 		Query:     "集群整体运行情况如何",
@@ -530,7 +530,7 @@ func TestPlanAutoDiagnostics_AddsClusterHealthForBroadQuery(t *testing.T) {
 }
 
 func TestPlanAutoDiagnostics_NonPodKindDoesNotAddPodInspect(t *testing.T) {
-	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := r.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    1,
 		Namespace:    "default",
@@ -546,7 +546,7 @@ func TestPlanAutoDiagnostics_NonPodKindDoesNotAddPodInspect(t *testing.T) {
 }
 
 func TestPlanAutoDiagnostics_NonWorkloadKindSkipsLogs(t *testing.T) {
-	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	r := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := r.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    1,
 		Query:        "show me the logs",
@@ -564,7 +564,7 @@ func TestPlanAutoDiagnostics_NonWorkloadKindSkipsLogs(t *testing.T) {
 // ────────── PlanAutoDiagnostics: original integration tests ──────────
 
 func TestPlanAutoDiagnosticsAddsNamespaceWorkloadsForScopedPod(t *testing.T) {
-	registry := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	registry := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := registry.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    7,
 		Query:        "check this pod and explain which deployment owns it",
@@ -586,7 +586,7 @@ func TestPlanAutoDiagnosticsAddsNamespaceWorkloadsForScopedPod(t *testing.T) {
 }
 
 func TestPlanAutoDiagnosticsKeepsScopedDeploymentStrict(t *testing.T) {
-	registry := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	registry := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := registry.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    7,
 		Query:        "当前的副本数是多少？如果小于 2 就扩到 2 个副本",
@@ -610,7 +610,7 @@ func TestPlanAutoDiagnosticsKeepsScopedDeploymentStrict(t *testing.T) {
 }
 
 func TestPlanAutoDiagnosticsAllowsExplicitScopeBroadening(t *testing.T) {
-	registry := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	registry := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	steps := registry.PlanAutoDiagnostics(AIToolContextRequest{
 		ClusterID:    7,
 		Query:        "先看这个 deployment，再对比整个命名空间里的其他 deployment",
@@ -632,7 +632,7 @@ func TestPlanAutoDiagnosticsAllowsExplicitScopeBroadening(t *testing.T) {
 }
 
 func TestAIToolRegistryIncludesSharedResourceQueryTools(t *testing.T) {
-	registry := NewAIToolRegistry(nil, nil, nil, nil, nil, nil)
+	registry := NewAIToolRegistry(nil, nil, nil, nil, nil, nil, nil)
 	expected := map[string]bool{
 		"resource.list":                        false,
 		"resource.search":                      false,

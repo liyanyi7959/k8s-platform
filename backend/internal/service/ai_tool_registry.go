@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
+
 	"k8s-platform-backend/internal/model"
 )
 
@@ -52,11 +54,13 @@ type AIToolCatalogItem struct {
 }
 
 type AIToolRegistry struct {
+	db    *gorm.DB
 	defs  map[string]AIToolDefinition
 	order []string
 }
 
 func NewAIToolRegistry(
+	db *gorm.DB,
 	clusterSvc *ClusterReadModelService,
 	namespaceSvc *NamespaceDiagnosisService,
 	inspectionSvc *ResourceInspectionService,
@@ -65,6 +69,7 @@ func NewAIToolRegistry(
 	exportPolicySvc *ResourceExportPolicyService,
 ) *AIToolRegistry {
 	r := &AIToolRegistry{
+		db:    db,
 		defs:  map[string]AIToolDefinition{},
 		order: make([]string, 0, 12),
 	}
@@ -82,14 +87,14 @@ func NewAIToolRegistry(
 				return AIToolResult{}, err
 			}
 			evidence := model.JSONMap{
-				"proposal_id":                 result.ProposalID,
-				"status":                      result.Status,
-				"risk_level":                  result.RiskLevel,
-				"need_second_confirm":         result.NeedSecondConfirm,
-				"required_confirmation_text":  result.RequiredConfirmationText,
-				"preview":                     result.Preview,
-				"diff":                        result.Diff,
-				"proposal":                    model.JSONMap{"id": result.Proposal.ID, "action_type": result.Proposal.ActionType, "title": result.Proposal.Title, "summary": result.Proposal.Summary},
+				"proposal_id":                result.ProposalID,
+				"status":                     result.Status,
+				"risk_level":                 result.RiskLevel,
+				"need_second_confirm":        result.NeedSecondConfirm,
+				"required_confirmation_text": result.RequiredConfirmationText,
+				"preview":                    result.Preview,
+				"diff":                       result.Diff,
+				"proposal":                   model.JSONMap{"id": result.Proposal.ID, "action_type": result.Proposal.ActionType, "title": result.Proposal.Title, "summary": result.Proposal.Summary},
 			}
 			return AIToolResult{
 				Summary:  fmt.Sprintf("Created proposal %d: %s", result.ProposalID, strings.TrimSpace(result.Proposal.Title)),
@@ -830,6 +835,183 @@ func NewAIToolRegistry(
 		},
 	})
 
+	// ─── 平台级只读查询工具 ───────────────────────────────────
+
+	// platform.helm.releases — 列出指定集群和命名空间下的 Helm releases
+	r.register(AIToolDefinition{
+		Name:                "platform.helm.releases",
+		Category:            "query",
+		Description:         "列出指定集群和命名空间下的 Helm releases，包含 release 名称、chart、版本、状态等信息",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             15 * time.Second,
+		InputSchema: model.JSONMap{
+			"cluster_id": "uint64",
+			"namespace":  "string?",
+		},
+		OutputSchema: aiToolOutputSchema("platform.helm.releases"),
+		Handler: func(ctx context.Context, req AIToolContextRequest, input map[string]any) (AIToolResult, error) {
+			ns := strings.TrimSpace(fmt.Sprint(input["namespace"]))
+			// Helm v3 将 release 存储在 Secret 中，通过 label owner=helm 标识
+			return resourceQuerySvc.ListResources(ctx, req.ClusterID, "Secret", ns, "owner=helm", "", "", 0)
+		},
+	})
+
+	// platform.projects — 列出平台项目列表
+	r.register(AIToolDefinition{
+		Name:                "platform.projects",
+		Category:            "query",
+		Description:         "列出平台所有项目，包含项目名称、描述、关联集群、命名空间及配额信息",
+		RequiredPermissions: []string{"ai:tool_exec", "namespace:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             10 * time.Second,
+		InputSchema:         model.JSONMap{},
+		OutputSchema:        aiToolOutputSchema("platform.projects"),
+		Handler: func(ctx context.Context, _ AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
+			if r.db == nil {
+				return AIToolResult{}, ErrWithMessage(ErrNotFound, "database not available")
+			}
+			var projects []model.Project
+			if err := r.db.WithContext(ctx).Find(&projects).Error; err != nil {
+				return AIToolResult{}, ErrWithMessage(ErrNotFound, "查询项目列表失败: "+err.Error())
+			}
+			items := make([]map[string]any, 0, len(projects))
+			for _, p := range projects {
+				items = append(items, map[string]any{
+					"id":           p.ID,
+					"name":         p.Name,
+					"description":  p.Description,
+					"cluster_id":   p.ClusterID,
+					"namespaces":   p.Namespaces,
+					"quota_cpu":    p.QuotaCPU,
+					"quota_memory": p.QuotaMemory,
+					"quota_pods":   p.QuotaPods,
+				})
+			}
+			summary := fmt.Sprintf("共 %d 个项目", len(projects))
+			return AIToolResult{
+				Summary:  summary,
+				Evidence: model.JSONMap{"items": items, "total": len(projects)},
+			}, nil
+		},
+	})
+
+	// platform.app_templates — 列出应用商店模板
+	r.register(AIToolDefinition{
+		Name:                "platform.app_templates",
+		Category:            "query",
+		Description:         "列出应用商店中所有可用模板，包含模板名称、分类、部署类型等信息",
+		RequiredPermissions: []string{"ai:tool_exec", "namespace:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             10 * time.Second,
+		InputSchema:         model.JSONMap{},
+		OutputSchema:        aiToolOutputSchema("platform.app_templates"),
+		Handler: func(ctx context.Context, _ AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
+			if r.db == nil {
+				return AIToolResult{}, ErrWithMessage(ErrNotFound, "database not available")
+			}
+			var templates []model.AppTemplate
+			if err := r.db.WithContext(ctx).Find(&templates).Error; err != nil {
+				return AIToolResult{}, ErrWithMessage(ErrNotFound, "查询应用模板列表失败: "+err.Error())
+			}
+			items := make([]map[string]any, 0, len(templates))
+			for _, t := range templates {
+				items = append(items, map[string]any{
+					"id":           t.ID,
+					"name":         t.Name,
+					"display_name": t.DisplayName,
+					"description":  t.Description,
+					"category":     t.Category,
+					"icon":         t.Icon,
+					"deploy_type":  t.DeployType,
+					"is_builtin":   t.IsBuiltin,
+				})
+			}
+			summary := fmt.Sprintf("共 %d 个应用模板", len(templates))
+			return AIToolResult{
+				Summary:  summary,
+				Evidence: model.JSONMap{"items": items, "total": len(templates)},
+			}, nil
+		},
+	})
+
+	// platform.clusters — 列出所有集群
+	r.register(AIToolDefinition{
+		Name:                "platform.clusters",
+		Category:            "query",
+		Description:         "列出平台所有集群，包含集群名称、状态、K8s 版本和节点数等信息",
+		RequiredPermissions: []string{"ai:tool_exec", "k8s:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             10 * time.Second,
+		InputSchema:         model.JSONMap{},
+		OutputSchema:        aiToolOutputSchema("platform.clusters"),
+		Handler: func(ctx context.Context, _ AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
+			if r.db == nil {
+				return AIToolResult{}, ErrWithMessage(ErrNotFound, "database not available")
+			}
+			var clusters []model.Cluster
+			if err := r.db.WithContext(ctx).Find(&clusters).Error; err != nil {
+				return AIToolResult{}, ErrWithMessage(ErrNotFound, "查询集群列表失败: "+err.Error())
+			}
+			items := make([]map[string]any, 0, len(clusters))
+			for _, c := range clusters {
+				items = append(items, map[string]any{
+					"id":          c.ID,
+					"name":        c.Name,
+					"type":        c.Type,
+					"status":      c.Status,
+					"k8s_version": c.K8sVersion,
+					"node_count":  c.NodeCount,
+				})
+			}
+			summary := fmt.Sprintf("共 %d 个集群", len(clusters))
+			return AIToolResult{
+				Summary:  summary,
+				Evidence: model.JSONMap{"items": items, "total": len(clusters)},
+			}, nil
+		},
+	})
+
+	// platform.users — 列出平台用户
+	r.register(AIToolDefinition{
+		Name:                "platform.users",
+		Category:            "query",
+		Description:         "列出平台所有用户，包含用户名、邮箱和状态信息（不包含密码等敏感字段）",
+		RequiredPermissions: []string{"ai:tool_exec", "namespace:read"},
+		RiskLevel:           "low",
+		ConfirmLevel:        "single",
+		Timeout:             10 * time.Second,
+		InputSchema:         model.JSONMap{},
+		OutputSchema:        aiToolOutputSchema("platform.users"),
+		Handler: func(ctx context.Context, _ AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
+			if r.db == nil {
+				return AIToolResult{}, ErrWithMessage(ErrNotFound, "database not available")
+			}
+			var users []model.User
+			if err := r.db.WithContext(ctx).Find(&users).Error; err != nil {
+				return AIToolResult{}, ErrWithMessage(ErrNotFound, "查询用户列表失败: "+err.Error())
+			}
+			items := make([]map[string]any, 0, len(users))
+			for _, u := range users {
+				items = append(items, map[string]any{
+					"id":       u.ID,
+					"username": u.Username,
+					"email":    u.Email,
+					"status":   u.Status,
+				})
+			}
+			summary := fmt.Sprintf("共 %d 个用户", len(users))
+			return AIToolResult{
+				Summary:  summary,
+				Evidence: model.JSONMap{"items": items, "total": len(users)},
+			}, nil
+		},
+	})
+
 	return r
 }
 
@@ -977,7 +1159,42 @@ func (r *AIToolRegistry) PlanAutoDiagnostics(req AIToolContextRequest) []AIToolP
 		}
 	}
 
+	// 用户指定了资源类型但未指定名称时，先列出该类型的资源
+	if kind != "" && name == "" && namespace != "" {
+		add("resource.list", "用户指定了资源类型但未指定名称，先列出该类型的资源", model.JSONMap{
+			"cluster_id": req.ClusterID,
+			"namespace":  namespace,
+			"kind":       kind,
+		})
+		return steps
+	}
+
 	if kind == "" || name == "" {
+		// 有命名空间且检测到配置/数据库相关意图时，发现命名空间下的配置资源和工作负载
+		if namespace != "" && (yamlIntent || aiNeedsConfigSearch(query)) {
+			// 列出工作负载，LLM 可从中发现 Redis 相关的 Deployment/StatefulSet
+			add("namespace.workloads", "列出工作负载，帮助发现 Redis 相关应用及其环境变量配置", model.JSONMap{
+				"cluster_id": req.ClusterID,
+				"namespace":  namespace,
+			})
+			// 列出 ConfigMap 和 Secret 名称
+			add("resource.list", "用户可能需要查看配置资源，先列出命名空间下的 ConfigMap", model.JSONMap{
+				"cluster_id": req.ClusterID,
+				"namespace":  namespace,
+				"kind":       "ConfigMap",
+			})
+			add("resource.list", "用户可能需要查看密钥资源，先列出命名空间下的 Secret", model.JSONMap{
+				"cluster_id": req.ClusterID,
+				"namespace":  namespace,
+				"kind":       "Secret",
+			})
+			// 列出 Service，帮助发现 Redis Service
+			add("resource.list", "列出 Service，帮助发现 Redis 服务", model.JSONMap{
+				"cluster_id": req.ClusterID,
+				"namespace":  namespace,
+				"kind":       "Service",
+			})
+		}
 		return steps
 	}
 
@@ -1158,6 +1375,16 @@ func aiNeedsRelatedResources(query string) bool {
 		"控制器",
 		"引用",
 	)
+}
+
+// aiNeedsConfigSearch 判断用户消息是否涉及配置、数据库或密钥等需要发现 ConfigMap/Secret 的意图
+func aiNeedsConfigSearch(message string) bool {
+	text := strings.ToLower(strings.TrimSpace(message))
+	if text == "" {
+		return false
+	}
+	return containsAny(text, "mysql", "database", "redis", "mongodb", "postgres", "config") ||
+		containsAny(message, "数据库", "配置", "连接", "密码", "密钥", "数据源", "环境变量")
 }
 
 func hasAllPermissions(userPerms []string, required []string) bool {

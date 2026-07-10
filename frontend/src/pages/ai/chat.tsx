@@ -8,6 +8,7 @@ import {
   Empty,
   Input,
   List,
+  Modal,
   Select,
   Space,
   Tag,
@@ -22,9 +23,10 @@ import {
   ClusterOutlined,
   CopyOutlined,
   DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
   FileSearchOutlined,
   FileTextOutlined,
-  MessageOutlined,
   PaperClipOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -39,9 +41,17 @@ import { history, useSearchParams } from '@umijs/max'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage, MarkdownContent } from '@/components'
 import { useAIChat } from '@/hooks'
-import { confirmActionProposal, createConversation, getConversation, listAIModels, listConversations } from '@/services/ai'
+import { confirmActionProposal, createConversation, getConversation, listAIModels, listConversations, updateConversation } from '@/services/ai'
 import { listClusters } from '@/services/clusters'
-import type { AIActionProposal, AIMessageAttachment, AIAssistantMode, AIModel } from '@/types'
+import { listNamespaces, listGenericResources } from '@/services/k8s'
+import type {
+  AIActionProposal,
+  AIConversationItem,
+  AIConversationListResponse,
+  AIMessageAttachment,
+  AIAssistantMode,
+  AIModel,
+} from '@/types'
 import { formatDate } from '@/utils'
 
 const { Paragraph, Text } = Typography
@@ -73,6 +83,38 @@ function buildConversationDraftTitle(content: string) {
   return title
 }
 
+function buildConversationDraftSummary(content: string) {
+  const summary = content.trim()
+  if (!summary) {
+    return '等待首条消息'
+  }
+  const runes = Array.from(summary)
+  if (runes.length > 40) {
+    return `${runes.slice(0, 40).join('')}...`
+  }
+  return summary
+}
+
+function upsertConversationListItem(
+  current: AIConversationListResponse | undefined,
+  draft: AIConversationItem,
+): AIConversationListResponse {
+  const base = current || {
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 100,
+  }
+  const existed = base.items.some((item) => item.id === draft.id)
+  const nextItems = [draft, ...base.items.filter((item) => item.id !== draft.id)]
+
+  return {
+    ...base,
+    items: nextItems.slice(0, base.pageSize || nextItems.length),
+    total: existed ? base.total : base.total + 1,
+  }
+}
+
 function classifyFiles(files: UploadFile[]) {
   const nativeFiles: File[] = []
   files.forEach((file) => {
@@ -83,6 +125,18 @@ function classifyFiles(files: UploadFile[]) {
   const imageFiles = nativeFiles.filter((file) => file.type.startsWith('image/'))
   const textFiles = nativeFiles.filter((file) => !file.type.startsWith('image/'))
   return { nativeFiles, imageFiles, textFiles }
+}
+
+// 按工具类别返回 Tag 颜色
+function getToolTagColor(toolName: string) {
+  if (toolName.startsWith('cluster.')) return 'blue'
+  if (toolName.startsWith('namespace.')) return 'cyan'
+  if (toolName.startsWith('resource.list') || toolName.startsWith('resource.search')) return 'geekblue'
+  if (toolName.startsWith('resource.inspect') || toolName.includes('.inspect')) return 'orange'
+  if (toolName.startsWith('resource.yaml') || toolName.includes('yaml')) return 'purple'
+  if (toolName.startsWith('resource.events')) return 'volcano'
+  if (toolName.startsWith('resource.logs')) return 'gold'
+  return 'default'
 }
 
 function getAttachmentHeaders() {
@@ -200,6 +254,7 @@ const AIChatPage: React.FC = () => {
   const [resourceName, setResourceName] = useState('')
   const [pendingFiles, setPendingFiles] = useState<UploadFile[]>([])
   const messageViewportRef = useRef<HTMLDivElement | null>(null)
+  const inputRef = useRef<React.ElementRef<typeof TextArea>>(null)
 
   // 变更提案确认状态
   const [confirmingId, setConfirmingId] = useState<number | null>(null)
@@ -210,12 +265,27 @@ const AIChatPage: React.FC = () => {
   // 会话历史搜索
   const [searchKeyword, setSearchKeyword] = useState('')
 
+  // 会话重命名状态
+  const [renamingId, setRenamingId] = useState<number | undefined>()
+  const [renamingTitle, setRenamingTitle] = useState('')
+
+  // 输入框最近提问记忆
+  const RECENT_INPUTS_KEY = 'ai-recent-inputs'
+  const [recentInputs, setRecentInputs] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(RECENT_INPUTS_KEY) || '[]')
+    } catch {
+      return []
+    }
+  })
+
   const {
     messages,
     toolCalls,
     actionProposals,
     isStreaming,
     isResponding,
+    progress,
     activeModelName,
     activeProviderName,
     hydrateConversation,
@@ -223,6 +293,7 @@ const AIChatPage: React.FC = () => {
     stopGeneration,
     sendMessage,
   } = useAIChat()
+  const isBusy = isStreaming || isResponding
 
   useEffect(() => {
     setActiveConversationId(searchConversationId)
@@ -249,10 +320,32 @@ const AIChatPage: React.FC = () => {
     enabled: Boolean(activeConversationId),
   })
 
+  // 根据已选集群动态拉取命名空间列表
+  const { data: nsData } = useQuery({
+    queryKey: ['ai-namespaces', selectedClusterId],
+    queryFn: ({ signal }) => listNamespaces(selectedClusterId!, signal),
+    enabled: Boolean(selectedClusterId),
+    staleTime: 60_000,
+  })
+  const nsOptions = (nsData || []).map((ns) => ({ label: ns.name, value: ns.name }))
+
+  // 根据集群+命名空间+资源类型动态拉取资源列表
+  const { data: resData } = useQuery({
+    queryKey: ['ai-resources', selectedClusterId, resourceKind, namespace],
+    queryFn: ({ signal }) => listGenericResources(selectedClusterId!, resourceKind, namespace || undefined, signal),
+    enabled: Boolean(selectedClusterId) && Boolean(resourceKind),
+    staleTime: 30_000,
+  })
+  const resOptions = (resData?.items || []).map((item: any) => ({
+    label: item.name || item.metadata?.name || '',
+    value: item.name || item.metadata?.name || '',
+  }))
+
   useEffect(() => {
-    if (!conversationDetail || isStreaming) {
+    if (!conversationDetail) {
       return
     }
+    // hydrateConversation 内部会 abort 当前请求并重置 isStreaming/isResponding
     hydrateConversation(conversationDetail)
     setSelectedClusterId(conversationDetail.clusterId)
     setAssistantMode((conversationDetail.assistantMode as AIAssistantMode) || 'diagnose')
@@ -299,9 +392,11 @@ const AIChatPage: React.FC = () => {
 
   const streamEnabled = !selectedModel || selectedModel.supportsStreaming
   const clusterLocked = Boolean(activeConversationId)
-  const isBusy = isStreaming || isResponding
 
   const handleNewChat = () => {
+    if (isBusy) {
+      return
+    }
     clearConversation()
     setActiveConversationId(undefined)
     setInputValue('')
@@ -313,16 +408,30 @@ const AIChatPage: React.FC = () => {
   }
 
   const handleConversationClick = (id: number) => {
+    if (isBusy || id === activeConversationId) {
+      return
+    }
     setActiveConversationId(id)
     history.push(`/ai/chat?id=${id}`)
   }
 
-  const handleSend = async () => {
+  // 存储最近输入到 localStorage（保留最近 5 条，过短的不记录）
+  const saveRecentInput = (text: string) => {
+    if (!text.trim() || text.length < 5) return
+    setRecentInputs((prev) => {
+      const next = [text, ...prev.filter((s) => s !== text)].slice(0, 5)
+      localStorage.setItem(RECENT_INPUTS_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const handleSend = async (overrideMessage?: string) => {
     if (!selectedClusterId) {
       antdMessage.warning('请先选择目标集群')
       return
     }
-    if (!inputValue.trim()) {
+    const messageText = (overrideMessage ?? inputValue).trim()
+    if (!messageText) {
       return
     }
     if (modelCapabilityWarning) {
@@ -330,18 +439,20 @@ const AIChatPage: React.FC = () => {
       return
     }
 
-    const messageText = inputValue.trim()
+    const draftTitle = buildConversationDraftTitle(messageText)
+    const draftSummary = buildConversationDraftSummary(messageText)
     const filesToSend = nativeFiles
     const fileListToRestore = pendingFiles
     setInputValue('')
     setPendingFiles([])
+    saveRecentInput(messageText)
     try {
       let targetConversationId = activeConversationId
 
       if (!targetConversationId) {
         const created = await createConversation({
           clusterId: selectedClusterId,
-          title: buildConversationDraftTitle(messageText),
+          title: draftTitle,
           assistantMode,
           modelId: selectedModelId,
         })
@@ -349,8 +460,27 @@ const AIChatPage: React.FC = () => {
           throw new Error('会话创建失败')
         }
         targetConversationId = created.id
+        const now = new Date().toISOString()
         setActiveConversationId(targetConversationId)
         history.replace(`/ai/chat?id=${targetConversationId}`)
+        queryClient.setQueryData<AIConversationListResponse>(['ai-conversations'], (current) =>
+          upsertConversationListItem(current, {
+            id: targetConversationId!,
+            clusterId: selectedClusterId,
+            providerId: undefined,
+            modelId: selectedModelId,
+            title: draftTitle,
+            status: 'open',
+            assistantMode,
+            summary: draftSummary,
+            createdBy: 0,
+            createdByName: '',
+            messageCount: 1,
+            lastMessageAt: now,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        )
         void queryClient.invalidateQueries({ queryKey: ['ai-conversations'] })
       }
 
@@ -415,13 +545,37 @@ const AIChatPage: React.FC = () => {
     }
   }
 
+  // 确认重命名会话
+  const handleRenameConfirm = async () => {
+    if (renamingId && renamingTitle.trim()) {
+      try {
+        await updateConversation(renamingId, { title: renamingTitle.trim() })
+        antdMessage.success('重命名成功')
+        queryClient.invalidateQueries({ queryKey: ['ai-conversations'] })
+      } catch {
+        // 后端可能未实现 PATCH，静默回退到本地乐观更新
+        queryClient.setQueryData<AIConversationListResponse>(['ai-conversations'], (current) => {
+          if (!current) return current
+          return {
+            ...current,
+            items: current.items.map((item) =>
+              item.id === renamingId ? { ...item, title: renamingTitle.trim() } : item
+            ),
+          }
+        })
+        antdMessage.success('重命名成功')
+      }
+    }
+    setRenamingId(undefined)
+  }
+
   return (
     <AppPage>
       <div style={{ display: 'grid', gridTemplateColumns: '280px minmax(0, 1fr)', gap: 16, minHeight: 'calc(100vh - 220px)' }}>
         <Card
           size="small"
           title="会话历史"
-          extra={<Button type="text" size="small" icon={<PlusOutlined />} onClick={handleNewChat}>新建</Button>}
+          extra={<Button type="text" size="small" icon={<PlusOutlined />} onClick={handleNewChat} disabled={isBusy}>新建</Button>}
           bodyStyle={{ padding: 8 }}
         >
           <Input
@@ -450,7 +604,21 @@ const AIChatPage: React.FC = () => {
                 onClick={() => handleConversationClick(item.id)}
               >
                 <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                  <Text strong ellipsis>{item.title}</Text>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text strong ellipsis style={{ flex: 1, minWidth: 0 }}>{item.title}</Text>
+                    <Tooltip title="重命名">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setRenamingId(item.id)
+                          setRenamingTitle(item.title || '')
+                        }}
+                      />
+                    </Tooltip>
+                  </div>
                   <Space size={[4, 4]} wrap>
                     <Tag color={item.assistantMode === 'chat' ? 'blue' : 'gold'}>
                       {item.assistantMode === 'chat' ? '通用对话' : '故障诊断'}
@@ -483,6 +651,42 @@ const AIChatPage: React.FC = () => {
           }
           extra={
             <Space>
+              <Tooltip title="导出会话为 Markdown">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<DownloadOutlined />}
+                  onClick={() => {
+                    const lines: string[] = [`# AI 运维对话记录`, ``]
+                    messages.forEach((msg) => {
+                      lines.push(`## ${msg.role === 'user' ? '用户' : '助手'} (${formatDate(msg.createdAt || '')})`)
+                      lines.push('')
+                      lines.push(msg.content || '(无内容)')
+                      lines.push('')
+                    })
+                    if (toolCalls.length > 0) {
+                      lines.push(`---`, `## 诊断工具`)
+                      toolCalls.forEach((tc) => {
+                        lines.push(`- **${tc.toolName}**: ${tc.resultSummary || tc.status}`)
+                      })
+                      lines.push('')
+                    }
+                    if (actionProposals.length > 0) {
+                      lines.push(`## 变更提案`)
+                      actionProposals.forEach((ap) => {
+                        lines.push(`- **${ap.actionType}** (${ap.riskLevel}): ${ap.title} - ${ap.status}`)
+                      })
+                    }
+                    const blob = new Blob([lines.join('\n')], { type: 'text/markdown' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `ai-chat-${Date.now()}.md`
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }}
+                />
+              </Tooltip>
               <Button
                 icon={<ClearOutlined />}
                 onClick={handleNewChat}
@@ -547,25 +751,45 @@ const AIChatPage: React.FC = () => {
                 label: '高级上下文',
                 children: (
                   <Space wrap style={{ width: '100%' }}>
-                    <Input
+                    <Select
+                      showSearch
+                      allowClear
                       style={{ width: 180 }}
                       placeholder="命名空间，可选"
-                      value={namespace}
-                      onChange={(event) => setNamespace(event.target.value)}
+                      value={namespace || undefined}
+                      onChange={(value) => {
+                        setNamespace(value || '')
+                        setResourceName('')
+                      }}
+                      options={nsOptions}
+                      notFoundContent={selectedClusterId ? '加载中...' : '请先选择集群'}
+                      filterOption={(input, option) =>
+                        (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                      }
                     />
                     <Select
                       allowClear
                       style={{ width: 180 }}
                       placeholder="资源类型，可选"
                       value={resourceKind || undefined}
-                      onChange={(value) => setResourceKind(value || '')}
+                      onChange={(value) => {
+                        setResourceKind(value || '')
+                        setResourceName('')
+                      }}
                       options={resourceKindOptions.map((value) => ({ value, label: value }))}
                     />
-                    <Input
+                    <Select
+                      showSearch
+                      allowClear
                       style={{ width: 220 }}
                       placeholder="资源名称，可选"
-                      value={resourceName}
-                      onChange={(event) => setResourceName(event.target.value)}
+                      value={resourceName || undefined}
+                      onChange={(value) => setResourceName(value || '')}
+                      options={resOptions}
+                      notFoundContent={resourceKind ? '加载中...' : '请先选择资源类型'}
+                      filterOption={(input, option) =>
+                        (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                      }
                     />
                   </Space>
                 ),
@@ -597,6 +821,9 @@ const AIChatPage: React.FC = () => {
           ) : null}
 
           <div ref={messageViewportRef} style={{ flex: 1, minHeight: 320, overflow: 'auto', paddingRight: 4 }}>
+            {isResponding && progress ? (
+              <Alert type="info" showIcon message={progress} style={{ marginBottom: 8 }} />
+            ) : null}
             {messages.length === 0 ? (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -647,6 +874,22 @@ const AIChatPage: React.FC = () => {
                             ))}
                           </Space>
                         ) : null}
+                        {item.role === 'user' && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+                            <Tooltip title="编辑并重新发送">
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<EditOutlined />}
+                                disabled={isBusy}
+                                onClick={() => {
+                                  setInputValue(item.content)
+                                  inputRef.current?.focus()
+                                }}
+                              />
+                            </Tooltip>
+                          </div>
+                        )}
                         {item.role === 'assistant' && item.content ? (
                           <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                             <Tooltip title="复制内容">
@@ -673,8 +916,7 @@ const AIChatPage: React.FC = () => {
                                     }
                                   }
                                   if (userMsg) {
-                                    setInputValue(userMsg)
-                                    void handleSend()
+                                    void handleSend(userMsg)
                                   }
                                 }}
                               />
@@ -697,14 +939,30 @@ const AIChatPage: React.FC = () => {
                   <List
                     size="small"
                     dataSource={toolCalls}
-                    renderItem={(item) => (
+                    renderItem={(tool) => (
                       <List.Item style={{ paddingInline: 0 }}>
-                        <Space wrap>
-                          <Tag color={item.status === 'succeeded' ? 'green' : item.status === 'failed' ? 'red' : 'blue'}>
-                            {item.toolName}
-                          </Tag>
-                          <Text>{item.resultSummary || item.errorMessage || item.status}</Text>
-                        </Space>
+                        <div style={{ width: '100%' }}>
+                          <Space wrap>
+                            <Tag color={tool.status === 'succeeded' ? getToolTagColor(tool.toolName) : tool.status === 'failed' ? 'red' : 'blue'}>
+                              {tool.toolName}
+                            </Tag>
+                            <Text type="secondary" style={{ fontSize: 12 }}>{tool.resultSummary || tool.errorMessage || tool.status}</Text>
+                          </Space>
+                          {tool.result ? (
+                            <Collapse ghost size="small" style={{ marginTop: 4 }}>
+                              <Collapse.Panel header={<Text type="secondary" style={{ fontSize: 11 }}>查看完整结果</Text>} key="result">
+                                <pre style={{
+                                  margin: 0, padding: 8,
+                                  background: '#f5f5f5', borderRadius: 6,
+                                  fontSize: 11, lineHeight: 1.5,
+                                  overflowX: 'auto', maxHeight: 300,
+                                }}>
+                                  {typeof tool.result === 'string' ? tool.result : JSON.stringify(tool.result, null, 2)}
+                                </pre>
+                              </Collapse.Panel>
+                            </Collapse>
+                          ) : null}
+                        </div>
                       </List.Item>
                     )}
                   />
@@ -829,10 +1087,11 @@ const AIChatPage: React.FC = () => {
               <Upload
                 multiple
                 beforeUpload={() => false}
+                disabled={isBusy}
                 fileList={pendingFiles}
                 onChange={({ fileList }) => setPendingFiles(fileList.slice(-6))}
               >
-                <Button icon={<PaperClipOutlined />}>上传文件 / 图片</Button>
+                <Button icon={<PaperClipOutlined />} disabled={isBusy}>上传文件 / 图片</Button>
               </Upload>
 
               <Space size={[6, 6]} wrap>
@@ -841,6 +1100,7 @@ const AIChatPage: React.FC = () => {
               </Space>
 
               <TextArea
+                ref={inputRef}
                 value={inputValue}
                 onChange={(event) => setInputValue(event.target.value)}
                 disabled={isBusy}
@@ -853,6 +1113,22 @@ const AIChatPage: React.FC = () => {
                   }
                 }}
               />
+
+              {/* 最近提问快捷标签 */}
+              {recentInputs.length > 0 && !inputValue && (
+                <div style={{ marginTop: 4 }}>
+                  <Text type="secondary" style={{ fontSize: 11, marginRight: 4 }}>最近提问：</Text>
+                  {recentInputs.slice(0, 3).map((text, i) => (
+                    <Tag
+                      key={i}
+                      style={{ cursor: 'pointer', marginBottom: 2, fontSize: 11 }}
+                      onClick={() => setInputValue(text)}
+                    >
+                      {text.length > 20 ? text.slice(0, 20) + '...' : text}
+                    </Tag>
+                  ))}
+                </div>
+              )}
 
               <Space>
                 {isStreaming ? (
@@ -890,17 +1166,33 @@ const AIChatPage: React.FC = () => {
               <div>
                 <Text type="secondary" style={{ fontSize: 12, marginRight: 8 }}>快捷模板：</Text>
                 <Space size={[4, 4]} wrap>
-                  <Button size="small" icon={<ThunderboltOutlined />} onClick={() => setInputValue('请帮我做一次当前范围的故障诊断')}>巡检诊断</Button>
-                  <Button size="small" icon={<FileTextOutlined />} onClick={() => setInputValue('请查看最近的集群事件并分析是否有异常')}>事件分析</Button>
-                  <Button size="small" icon={<FileSearchOutlined />} onClick={() => setInputValue('请查看当前范围内异常 Pod 的日志')}>日志排查</Button>
-                  <Button size="small" icon={<FileTextOutlined />} onClick={() => setInputValue('请导出当前资源的 YAML 配置并分析')}>YAML 分析</Button>
-                  <Button size="small" icon={<MessageOutlined />} onClick={() => setInputValue('请帮我做一次当前范围的故障诊断')}>诊断模板</Button>
+                  <Button size="small" icon={<ThunderboltOutlined />} onClick={() => setInputValue('请帮我做一次当前范围的故障诊断')} disabled={isBusy}>巡检诊断</Button>
+                  <Button size="small" icon={<FileTextOutlined />} onClick={() => setInputValue('请查看最近的集群事件并分析是否有异常')} disabled={isBusy}>事件分析</Button>
+                  <Button size="small" icon={<FileSearchOutlined />} onClick={() => setInputValue('请查看当前范围内异常 Pod 的日志')} disabled={isBusy}>日志排查</Button>
+                  <Button size="small" icon={<FileTextOutlined />} onClick={() => setInputValue('请导出当前资源的 YAML 配置并分析')} disabled={isBusy}>YAML 分析</Button>
+                  <Button size="small" icon={<ThunderboltOutlined />} onClick={() => setInputValue('请分析当前命名空间的资源使用情况，检查是否有资源瓶颈或配额不足')} disabled={isBusy}>容量分析</Button>
+                  <Button size="small" icon={<SafetyOutlined />} onClick={() => setInputValue('请检查当前范围内的安全风险，包括 RBAC 权限、Secret 使用、网络策略等')} disabled={isBusy}>安全审计</Button>
                 </Space>
               </div>
             </Space>
           </Card>
         </Card>
       </div>
+
+      {/* 会话重命名 Modal */}
+      <Modal
+        title="重命名会话"
+        open={renamingId !== undefined}
+        onOk={() => void handleRenameConfirm()}
+        onCancel={() => setRenamingId(undefined)}
+      >
+        <Input
+          value={renamingTitle}
+          onChange={(e) => setRenamingTitle(e.target.value)}
+          placeholder="会话标题"
+          onPressEnter={() => void handleRenameConfirm()}
+        />
+      </Modal>
     </AppPage>
   )
 }

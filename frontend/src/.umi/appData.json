@@ -81,7 +81,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -94,7 +94,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 48
+        "register": 31
       },
       "enableBy": "register"
     },
@@ -107,7 +107,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 19
+        "register": 11
       },
       "enableBy": "register"
     },
@@ -124,7 +124,7 @@
             0
           ]
         },
-        "register": 8
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -141,7 +141,7 @@
             3
           ]
         },
-        "register": 5
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -155,38 +155,6 @@
       "time": {
         "hooks": {
           "modifyRoutes": [
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0
           ]
@@ -205,90 +173,13 @@
       "time": {
         "hooks": {
           "onDevCompileDone": [
-            1148,
-            123,
-            74,
-            82,
-            92,
-            61,
-            80,
-            97,
-            65,
-            96,
-            65,
-            193,
-            59,
-            107,
-            54,
-            65,
-            64,
-            118,
-            66,
-            114,
-            50,
-            159,
-            74,
-            55,
-            123,
-            60,
-            87,
-            51,
-            94,
-            44,
-            46,
-            51,
-            53,
-            54,
-            68,
-            54,
-            50,
-            73,
-            91,
-            49,
-            47,
-            53,
-            98,
-            45,
-            83,
-            44,
-            83,
-            40,
-            39,
+            502,
+            77,
             41,
-            84,
-            35,
-            41,
-            46,
-            81,
-            49,
-            68,
-            41,
-            87,
-            45,
-            55,
-            57,
-            111,
-            52,
-            87,
-            46,
-            127,
-            79,
-            45,
-            50,
-            99,
-            51,
-            90,
-            100,
-            46,
-            91,
-            45,
-            375,
-            93,
-            138,
-            80
+            85
           ]
         },
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -302,46 +193,14 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            182
+            186
           ],
           "onGenerateFiles": [
-            12,
-            40,
-            44,
-            32,
-            31,
-            34,
-            28,
-            33,
-            40,
-            43,
-            36,
-            33,
-            28,
-            33,
-            44,
-            32,
-            31,
-            26,
-            34,
-            24,
-            35,
-            27,
-            26,
-            41,
-            38,
-            32,
-            28,
-            30,
-            40,
-            45,
-            34,
-            28,
-            60,
-            29
+            16,
+            23
           ]
         },
-        "register": 39
+        "register": 31
       },
       "enableBy": "register"
     },
@@ -356,42 +215,10 @@
         "hooks": {
           "addEntryCode": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ]
         },
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -412,50 +239,7 @@
           ],
           "onPrepareBuildSuccess": [
             0,
-            0,
-            0,
             1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            0,
             0,
             0
           ],
@@ -481,7 +265,6 @@
             0,
             0,
             0,
-            1,
             0,
             0,
             0,
@@ -497,96 +280,18 @@
             0,
             0,
             0,
-            1,
             0,
             0,
             0,
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
             0,
             0,
             0
           ]
         },
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -603,7 +308,7 @@
             1
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -616,7 +321,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -633,7 +338,7 @@
             0
           ]
         },
-        "register": 28
+        "register": 18
       },
       "enableBy": "register"
     },
@@ -1485,7 +1190,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1499,10 +1204,10 @@
       "time": {
         "hooks": {
           "onStart": [
-            1
+            0
           ]
         },
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1516,10 +1221,10 @@
       "time": {
         "hooks": {
           "addBeforeMiddlewares": [
-            18
+            13
           ]
         },
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1532,7 +1237,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 120
+        "register": 78
       },
       "enableBy": "register"
     },
@@ -1545,7 +1250,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 93
+        "register": 82
       },
       "enableBy": "config"
     },
@@ -1558,7 +1263,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 45
+        "register": 31
       },
       "enableBy": "config"
     },
@@ -1575,31 +1280,9 @@
             0
           ],
           "addBeforeMiddlewares": [
-            1
+            0
           ],
           "modifyHTMLFavicon": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -1620,79 +1303,15 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            5,
-            3,
-            1,
-            2,
-            2,
-            2,
-            1,
-            2,
-            3,
-            1,
-            2,
-            2,
-            1,
-            1,
-            3,
-            1,
-            3,
-            3,
             4,
-            3,
-            1,
-            2,
-            1,
-            3,
-            2,
-            1,
-            3,
-            1,
-            2,
-            2,
-            1,
-            2,
-            2,
-            2
+            1
           ],
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
             0,
             0
           ]
         },
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1705,7 +1324,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -1725,7 +1344,7 @@
             1
           ]
         },
-        "register": 51
+        "register": 37
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mpa/mpa": {
@@ -1737,7 +1356,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1764,105 +1383,9 @@
         "hooks": {
           "onGenerateFiles": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "addEntryImports": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -1882,7 +1405,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1899,113 +1422,17 @@
             2
           ],
           "onGenerateFiles": [
-            157,
-            61,
-            67,
-            51,
-            57,
-            55,
-            46,
-            62,
-            69,
-            60,
-            71,
-            52,
-            40,
-            24,
-            112,
-            72,
-            56,
-            49,
-            33,
-            46,
-            33,
-            30,
-            45,
-            200,
-            96,
-            51,
-            52,
-            41,
-            59,
-            36,
-            49,
-            45,
-            117,
-            66
+            110,
+            29
           ],
           "addPolyfillImports": [
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+            1,
             0
           ]
         },
-        "register": 10
+        "register": 6
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/polyfill/publicPathPolyfill": {
@@ -2018,70 +1445,6 @@
       "time": {
         "hooks": {
           "addPolyfillImports": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0,
             0,
@@ -2102,43 +1465,11 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            343,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+            268,
             0
           ]
         },
-        "register": 7
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -2151,7 +1482,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2164,7 +1495,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2179,45 +1510,13 @@
         "hooks": {
           "onGenerateFiles": [
             1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            1,
-            2,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            0,
-            1,
-            2,
-            1,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            1,
-            2,
-            1,
-            0,
-            0,
-            1,
-            1,
             0
           ],
           "addBeforeMiddlewares": [
             0
           ]
         },
-        "register": 3
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -2231,73 +1530,9 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            177,
-            24,
-            359,
-            18,
-            363,
-            18,
-            304,
-            10,
-            341,
+            88,
             14,
-            332,
-            18,
-            344,
-            14,
-            342,
-            13,
-            327,
-            15,
-            313,
-            16,
-            449,
-            20,
-            279,
-            12,
-            301,
-            12,
-            287,
-            12,
-            495,
-            16,
-            321,
-            10,
-            397,
-            13,
-            320,
-            10,
-            385,
-            12,
-            324,
-            12,
-            278,
-            12,
-            329,
-            11,
-            321,
-            15,
-            866,
-            20,
-            371,
-            11,
-            329,
-            10,
-            295,
-            11,
-            353,
-            14,
-            348,
-            15,
-            229,
-            10,
-            393,
-            16,
-            321,
-            9,
-            794,
-            54,
-            456,
+            218,
             11
           ]
         },
@@ -2314,7 +1549,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 6
       },
       "enableBy": "config"
     },
@@ -2327,7 +1562,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/ssr/ssr": {
@@ -2339,7 +1574,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 11
+        "register": 20
       },
       "enableBy": "config"
     },
@@ -2353,43 +1588,11 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            626,
-            25,
-            18,
-            22,
-            20,
-            24,
-            21,
-            13,
-            24,
-            12,
-            14,
-            18,
-            13,
-            11,
-            21,
-            13,
-            21,
-            9,
-            12,
-            12,
-            12,
-            11,
-            14,
-            15,
-            18,
-            17,
-            17,
-            19,
-            27,
-            11,
-            20,
-            20,
-            28,
-            24
+            522,
+            20
           ]
         },
-        "register": 9
+        "register": 14
       },
       "enableBy": "register"
     },
@@ -2406,7 +1609,7 @@
             1
           ]
         },
-        "register": 10
+        "register": 14
       },
       "enableBy": "register"
     },
@@ -2419,7 +1622,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 9
+        "register": 52
       },
       "enableBy": "config"
     },
@@ -2432,7 +1635,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -2445,7 +1648,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 17
+        "register": 25
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/monorepo/redirect": {
@@ -2457,7 +1660,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 34
+        "register": 50
       },
       "enableBy": "config"
     },
@@ -2471,43 +1674,11 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            4,
-            2,
-            2,
-            3,
-            2,
-            2,
-            2,
-            1,
-            3,
-            2,
-            4,
-            2,
-            1,
-            2,
-            2,
-            2,
-            2,
-            1,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            2,
-            1,
-            2,
-            2,
-            1,
-            1,
-            2,
-            1,
-            2,
-            3
+            8,
+            1
           ]
         },
-        "register": 3
+        "register": 5
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/clickToComponent/clickToComponent": {
@@ -2519,7 +1690,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -2532,7 +1703,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 5
       },
       "enableBy": "config"
     },
@@ -2545,7 +1716,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2558,7 +1729,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/swc/swc": {
@@ -2587,7 +1758,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 13
+        "register": 11
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mako/mako": {
@@ -2599,7 +1770,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -2612,7 +1783,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/hmrGuardian/hmrGuardian": {
@@ -2624,7 +1795,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 10
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/routePreloadOnLoad/routePreloadOnLoad": {
@@ -2637,35 +1808,13 @@
       "time": {
         "hooks": {
           "addHTMLHeadScripts": [
-            1129,
-            1,
-            0,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+            487,
             0,
             0,
             0
           ]
         },
-        "register": 41
+        "register": 62
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/forget/forget": {
@@ -2677,7 +1826,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 7
       },
       "enableBy": "config"
     },
@@ -2691,10 +1840,10 @@
       "time": {
         "hooks": {
           "modifyUniBundler": [
-            1534
+            1019
           ]
         },
-        "register": 14
+        "register": 7
       },
       "enableBy": "register"
     },
@@ -2707,7 +1856,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 19
+        "register": 17
       },
       "enableBy": "register"
     },
@@ -2720,7 +1869,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 75
+        "register": 107
       },
       "enableBy": "register"
     },
@@ -2734,10 +1883,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            40
+            172
           ]
         },
-        "register": 112
+        "register": 148
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/commands/help": {
@@ -2749,7 +1898,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2762,7 +1911,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 0
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2788,7 +1937,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -2801,7 +1950,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2814,7 +1963,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 14
+        "register": 7
       },
       "enableBy": "register"
     },
@@ -2827,7 +1976,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2840,7 +1989,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2853,7 +2002,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -2879,7 +2028,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2892,7 +2041,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2918,7 +2067,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -2944,7 +2093,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2957,7 +2106,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2970,7 +2119,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -2983,7 +2132,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 35
+        "register": 48
       },
       "enableBy": "register"
     },
@@ -3009,7 +2158,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 11
+        "register": 12
       },
       "enableBy": "register"
     },
@@ -3024,81 +2173,17 @@
         "hooks": {
           "addRuntimePlugin": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1
+            0
           ],
           "onGenerateFiles": [
-            3,
-            3,
-            3,
-            1,
-            0,
-            3,
-            2,
-            1,
-            3,
-            2,
-            2,
-            1,
-            1,
-            2,
-            3,
-            2,
-            2,
-            1,
-            2,
-            2,
-            3,
-            2,
-            2,
-            5,
-            1,
-            2,
-            2,
-            2,
-            1,
-            1,
-            3,
-            1,
-            2,
-            2
+            6,
+            1
           ],
           "addTmpGenerateWatcherPaths": [
             0
           ]
         },
-        "register": 3
+        "register": 5
       },
       "enableBy": "config"
     },
@@ -3126,7 +2211,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            6
+            5
           ],
           "modifyAppData": [
             0
@@ -3138,188 +2223,28 @@
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
             0,
             0
           ],
           "addRuntimePluginKey": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            9,
-            4,
-            4,
-            3,
-            2,
-            4,
-            4,
-            2,
             6,
-            3,
-            4,
-            7,
-            2,
-            3,
-            4,
-            4,
-            2,
-            2,
-            3,
-            4,
-            3,
-            3,
-            2,
-            7,
-            3,
-            3,
-            5,
-            3,
-            2,
-            1,
-            7,
-            1,
-            3,
-            3
+            1
           ],
           "addExtraBabelPlugins": [
             0
           ],
           "chainWebpack": [
-            0
+            1
           ]
         },
-        "register": 16
+        "register": 21
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/dva": {
@@ -3331,7 +2256,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 11
+        "register": 21
       },
       "enableBy": "config"
     },
@@ -3346,145 +2271,17 @@
         "hooks": {
           "addRuntimePlugin": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "addRuntimePluginKey": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0
           ],
           "onGenerateFiles": [
             4,
-            2,
-            1,
-            1,
-            0,
-            2,
-            2,
-            2,
-            2,
-            1,
-            3,
-            1,
-            0,
-            2,
-            2,
-            2,
-            2,
-            1,
-            2,
-            1,
-            1,
-            2,
-            1,
-            5,
-            2,
-            1,
-            2,
-            1,
-            1,
-            1,
-            3,
-            2,
-            3,
             1
           ],
           "addExtraModels": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0
           ]
@@ -3509,153 +2306,25 @@
           ],
           "addLayouts": [
             1,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
+            1
           ],
           "modifyAppData": [
             1
           ],
           "addRuntimePlugin": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "addRuntimePluginKey": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1
+            0
           ],
           "onGenerateFiles": [
-            12,
-            9,
-            9,
-            9,
-            5,
-            4,
             10,
-            7,
-            9,
-            6,
-            8,
-            7,
-            4,
-            5,
-            8,
-            5,
-            5,
-            5,
-            5,
-            7,
-            6,
-            7,
-            5,
-            13,
-            7,
-            5,
-            7,
-            6,
-            8,
-            4,
-            11,
-            4,
-            8,
-            8
+            4
           ]
         },
-        "register": 7
+        "register": 9
       },
       "enableBy": "config"
     },
@@ -3668,7 +2337,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 10
       },
       "enableBy": "config"
     },
@@ -3681,7 +2350,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 5
       },
       "enableBy": "config"
     },
@@ -3696,81 +2365,17 @@
         "hooks": {
           "addRuntimePlugin": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            264,
-            168,
-            176,
-            188,
-            215,
-            200,
-            283,
-            159,
-            205,
-            272,
-            246,
-            165,
-            153,
-            155,
-            275,
-            108,
-            143,
-            203,
-            171,
-            132,
-            186,
-            172,
-            170,
-            432,
-            142,
-            206,
-            170,
-            146,
-            183,
-            106,
-            133,
-            165,
-            332,
-            159
+            144,
+            130
           ],
           "addTmpGenerateWatcherPaths": [
             0
           ]
         },
-        "register": 2
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -3798,38 +2403,6 @@
         "hooks": {
           "addRuntimePluginKey": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ]
         },
@@ -3846,7 +2419,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/qiankun/slave": {
@@ -3858,7 +2431,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 5
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/react-query": {
@@ -3871,152 +2444,24 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            7
+            17
           ],
           "onStart": [
             1
           ],
           "modifyTSConfig": [
             1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            0,
-            1,
-            0,
-            0,
-            1,
-            0,
             0
           ],
           "addRuntimePlugin": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0,
             0
           ],
           "addRuntimePluginKey": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            4,
-            2,
-            2,
-            3,
-            4,
-            3,
-            3,
-            4,
-            2,
-            4,
-            4,
-            2,
-            2,
-            2,
-            4,
-            1,
-            4,
-            1,
-            4,
-            3,
-            1,
-            4,
-            4,
-            7,
-            3,
-            3,
-            3,
-            2,
-            4,
-            1,
-            6,
-            4,
             3,
             2
           ]
@@ -4036,78 +2481,14 @@
         "hooks": {
           "addRuntimePluginKey": [
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
             0
           ],
           "onGenerateFiles": [
-            18,
-            6,
-            11,
-            5,
-            4,
-            7,
-            11,
-            3,
-            2,
-            6,
-            4,
-            4,
-            2,
-            4,
-            6,
-            3,
-            4,
-            3,
-            4,
-            4,
-            5,
-            5,
-            4,
-            7,
-            4,
-            2,
-            2,
-            3,
-            2,
-            2,
-            6,
-            4,
-            7,
-            6
+            9,
+            2
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -4120,7 +2501,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -4133,7 +2514,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -4146,7 +2527,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -4163,7 +2544,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -4180,7 +2561,7 @@
             0
           ]
         },
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -4197,7 +2578,7 @@
             0
           ]
         },
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -4210,7 +2591,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "register"
     }
@@ -6830,7 +5211,7 @@
       "parentId": "23",
       "id": "25",
       "absPath": "/ai/chat",
-      "__content": "import React, { useEffect, useMemo, useRef, useState } from 'react'\nimport {\n  Alert,\n  Button,\n  Card,\n  Checkbox,\n  Collapse,\n  Empty,\n  Input,\n  List,\n  Select,\n  Space,\n  Tag,\n  Tooltip,\n  Typography,\n  Upload,\n  message as antdMessage,\n  type UploadFile,\n} from 'antd'\nimport {\n  ClearOutlined,\n  ClusterOutlined,\n  CopyOutlined,\n  DeleteOutlined,\n  FileSearchOutlined,\n  FileTextOutlined,\n  MessageOutlined,\n  PaperClipOutlined,\n  PlusOutlined,\n  ReloadOutlined,\n  RobotOutlined,\n  SafetyOutlined,\n  SearchOutlined,\n  SendOutlined,\n  StopOutlined,\n  ThunderboltOutlined,\n} from '@ant-design/icons'\nimport { history, useSearchParams } from '@umijs/max'\nimport { useQuery, useQueryClient } from '@tanstack/react-query'\nimport { AppPage, MarkdownContent } from '@/components'\nimport { useAIChat } from '@/hooks'\nimport { confirmActionProposal, createConversation, getConversation, listAIModels, listConversations } from '@/services/ai'\nimport { listClusters } from '@/services/clusters'\nimport type { AIActionProposal, AIMessageAttachment, AIAssistantMode, AIModel } from '@/types'\nimport { formatDate } from '@/utils'\n\nconst { Paragraph, Text } = Typography\nconst { TextArea } = Input\n\nconst resourceKindOptions = [\n  'Pod',\n  'Deployment',\n  'StatefulSet',\n  'DaemonSet',\n  'Service',\n  'Ingress',\n  'ConfigMap',\n  'Secret',\n  'Job',\n  'CronJob',\n  'Node',\n]\n\nfunction buildConversationDraftTitle(content: string) {\n  const title = content.trim()\n  if (!title) {\n    return '新的 AI 会话'\n  }\n  const runes = Array.from(title)\n  if (runes.length > 24) {\n    return `${runes.slice(0, 24).join('')}...`\n  }\n  return title\n}\n\nfunction classifyFiles(files: UploadFile[]) {\n  const nativeFiles: File[] = []\n  files.forEach((file) => {\n    if (file.originFileObj instanceof File) {\n      nativeFiles.push(file.originFileObj)\n    }\n  })\n  const imageFiles = nativeFiles.filter((file) => file.type.startsWith('image/'))\n  const textFiles = nativeFiles.filter((file) => !file.type.startsWith('image/'))\n  return { nativeFiles, imageFiles, textFiles }\n}\n\nfunction getAttachmentHeaders() {\n  const headers = new Headers()\n  const token = localStorage.getItem('token')\n  if (token) {\n    headers.set('Authorization', `Bearer ${token}`)\n  }\n  return headers\n}\n\nasync function fetchAttachmentBlob(downloadUrl: string): Promise<Blob> {\n  const response = await fetch(downloadUrl, {\n    method: 'GET',\n    credentials: 'include',\n    headers: getAttachmentHeaders(),\n  })\n  if (!response.ok) {\n    throw new Error('附件加载失败')\n  }\n  return response.blob()\n}\n\nconst AttachmentItem: React.FC<{ attachment: AIMessageAttachment }> = ({ attachment }) => {\n  const [previewUrl, setPreviewUrl] = useState('')\n\n  useEffect(() => {\n    if (attachment.fileKind !== 'image' || !attachment.downloadUrl) {\n      return\n    }\n\n    let objectUrl = ''\n    let disposed = false\n    void fetchAttachmentBlob(attachment.downloadUrl)\n      .then((blob) => {\n        if (disposed) {\n          return\n        }\n        objectUrl = URL.createObjectURL(blob)\n        setPreviewUrl(objectUrl)\n      })\n      .catch(() => {\n        setPreviewUrl('')\n      })\n\n    return () => {\n      disposed = true\n      if (objectUrl) {\n        URL.revokeObjectURL(objectUrl)\n      }\n    }\n  }, [attachment.downloadUrl, attachment.fileKind])\n\n  const handleDownload = async () => {\n    if (!attachment.downloadUrl) {\n      return\n    }\n    try {\n      const blob = await fetchAttachmentBlob(attachment.downloadUrl)\n      const objectUrl = URL.createObjectURL(blob)\n      const anchor = document.createElement('a')\n      anchor.href = objectUrl\n      anchor.download = attachment.originalName || `attachment-${attachment.id}`\n      document.body.appendChild(anchor)\n      anchor.click()\n      anchor.remove()\n      URL.revokeObjectURL(objectUrl)\n    } catch (error) {\n      antdMessage.error(error instanceof Error ? error.message : '附件下载失败')\n    }\n  }\n\n  if (attachment.fileKind === 'image' && previewUrl) {\n    return (\n      <button\n        key={attachment.id}\n        type=\"button\"\n        onClick={() => void handleDownload()}\n        style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}\n      >\n        <img\n          src={previewUrl}\n          alt={attachment.originalName}\n          style={{\n            width: 96,\n            height: 96,\n            objectFit: 'cover',\n            borderRadius: 8,\n            border: '1px solid #f0f0f0',\n          }}\n        />\n      </button>\n    )\n  }\n\n  return (\n    <Tag key={attachment.id} style={{ cursor: attachment.downloadUrl ? 'pointer' : 'default' }} onClick={() => void handleDownload()}>\n      {attachment.originalName || `attachment-${attachment.id}`}\n    </Tag>\n  )\n}\n\nconst AIChatPage: React.FC = () => {\n  const [searchParams] = useSearchParams()\n  const queryClient = useQueryClient()\n  const searchConversationId = Number(searchParams.get('id') || 0) || undefined\n\n  const [activeConversationId, setActiveConversationId] = useState<number | undefined>(searchConversationId)\n  const [inputValue, setInputValue] = useState('')\n  const [selectedClusterId, setSelectedClusterId] = useState<number | undefined>(undefined)\n  const [assistantMode, setAssistantMode] = useState<AIAssistantMode>('diagnose')\n  const [selectedModelId, setSelectedModelId] = useState<number | undefined>(undefined)\n  const [namespace, setNamespace] = useState('')\n  const [resourceKind, setResourceKind] = useState('')\n  const [resourceName, setResourceName] = useState('')\n  const [pendingFiles, setPendingFiles] = useState<UploadFile[]>([])\n  const messageViewportRef = useRef<HTMLDivElement | null>(null)\n\n  // 变更提案确认状态\n  const [confirmingId, setConfirmingId] = useState<number | null>(null)\n  const [confirmText, setConfirmText] = useState('')\n  const [confirmRisk, setConfirmRisk] = useState(false)\n  const [confirmLoading, setConfirmLoading] = useState(false)\n\n  // 会话历史搜索\n  const [searchKeyword, setSearchKeyword] = useState('')\n\n  const {\n    messages,\n    toolCalls,\n    actionProposals,\n    isStreaming,\n    isResponding,\n    activeModelName,\n    activeProviderName,\n    hydrateConversation,\n    clearConversation,\n    stopGeneration,\n    sendMessage,\n  } = useAIChat()\n\n  useEffect(() => {\n    setActiveConversationId(searchConversationId)\n    if (!searchConversationId) {\n      clearConversation()\n    }\n  }, [clearConversation, searchConversationId])\n\n  const { data: clustersData } = useQuery({\n    queryKey: ['clusters-for-ai'],\n    queryFn: ({ signal }) => listClusters({ page: 1, pageSize: 200 }, signal),\n  })\n  const { data: models = [] } = useQuery({\n    queryKey: ['ai-models'],\n    queryFn: ({ signal }) => listAIModels(signal),\n  })\n  const { data: conversationsData } = useQuery({\n    queryKey: ['ai-conversations'],\n    queryFn: ({ signal }) => listConversations({ page: 1, pageSize: 100 }, signal),\n  })\n  const { data: conversationDetail, isFetching: isConversationLoading } = useQuery({\n    queryKey: ['ai-conversation', activeConversationId],\n    queryFn: ({ signal }) => getConversation(activeConversationId!, signal),\n    enabled: Boolean(activeConversationId),\n  })\n\n  useEffect(() => {\n    if (!conversationDetail || isStreaming) {\n      return\n    }\n    hydrateConversation(conversationDetail)\n    setSelectedClusterId(conversationDetail.clusterId)\n    setAssistantMode((conversationDetail.assistantMode as AIAssistantMode) || 'diagnose')\n    setSelectedModelId(conversationDetail.modelId)\n  }, [conversationDetail, hydrateConversation])\n\n  useEffect(() => {\n    const viewport = messageViewportRef.current\n    if (!viewport) {\n      return\n    }\n    viewport.scrollTop = viewport.scrollHeight\n  }, [actionProposals.length, messages, toolCalls.length])\n\n  const clusters = clustersData?.items || []\n  const conversations = conversationsData?.items || []\n  // 按搜索关键词过滤会话列表\n  const filteredConversations = conversations.filter(c => {\n    if (!searchKeyword) return true\n    const kw = searchKeyword.toLowerCase()\n    return c.title?.toLowerCase().includes(kw) || c.summary?.toLowerCase().includes(kw)\n  })\n  const selectedModel = useMemo(\n    () => models.find((item) => item.id === selectedModelId),\n    [models, selectedModelId],\n  )\n  const { nativeFiles, imageFiles, textFiles } = useMemo(\n    () => classifyFiles(pendingFiles),\n    [pendingFiles],\n  )\n\n  const modelCapabilityWarning = useMemo(() => {\n    if (!selectedModel) {\n      return ''\n    }\n    if (imageFiles.length > 0 && !selectedModel.supportsVision) {\n      return '当前模型不支持图片输入，请切换到支持视觉的模型或移除图片。'\n    }\n    if (textFiles.length > 0 && !selectedModel.supportsFileInput) {\n      return '当前模型不支持文件输入，请切换到支持文件输入的模型或移除文本附件。'\n    }\n    return ''\n  }, [imageFiles.length, selectedModel, textFiles.length])\n\n  const streamEnabled = !selectedModel || selectedModel.supportsStreaming\n  const clusterLocked = Boolean(activeConversationId)\n  const isBusy = isStreaming || isResponding\n\n  const handleNewChat = () => {\n    clearConversation()\n    setActiveConversationId(undefined)\n    setInputValue('')\n    setPendingFiles([])\n    setNamespace('')\n    setResourceKind('')\n    setResourceName('')\n    history.push('/ai/chat')\n  }\n\n  const handleConversationClick = (id: number) => {\n    setActiveConversationId(id)\n    history.push(`/ai/chat?id=${id}`)\n  }\n\n  const handleSend = async () => {\n    if (!selectedClusterId) {\n      antdMessage.warning('请先选择目标集群')\n      return\n    }\n    if (!inputValue.trim()) {\n      return\n    }\n    if (modelCapabilityWarning) {\n      antdMessage.warning(modelCapabilityWarning)\n      return\n    }\n\n    const messageText = inputValue.trim()\n    const filesToSend = nativeFiles\n    setInputValue('')\n    setPendingFiles([])\n\n    const resultConversationId = await sendMessage(\n      selectedClusterId,\n      {\n        conversationId: activeConversationId,\n        message: messageText,\n        assistantMode,\n        modelId: selectedModelId,\n        preferModel: selectedModel?.modelCode,\n        namespace: namespace || undefined,\n        resourceKind: resourceKind || undefined,\n        resourceName: resourceName || undefined,\n        files: filesToSend,\n      },\n      streamEnabled,\n    )\n\n    if (resultConversationId) {\n      setActiveConversationId(resultConversationId)\n      history.replace(`/ai/chat?id=${resultConversationId}`)\n      void Promise.all([\n        queryClient.invalidateQueries({ queryKey: ['ai-conversations'] }),\n        queryClient.invalidateQueries({ queryKey: ['ai-conversation', resultConversationId] }),\n      ])\n    }\n  }\n\n  // 确认执行变更提案\n  const handleConfirm = async (proposal: AIActionProposal) => {\n    if (confirmText !== proposal.requiredConfirmationText) {\n      antdMessage.error(`请输入正确的确认短语：${proposal.requiredConfirmationText}`)\n      return\n    }\n    if (!confirmRisk) {\n      antdMessage.warning('请勾选风险确认')\n      return\n    }\n    setConfirmLoading(true)\n    try {\n      await confirmActionProposal(proposal.clusterId, proposal.id, {\n        confirmation_text: confirmText,\n        confirm_risk: confirmRisk,\n      })\n      antdMessage.success('提案已确认执行')\n      setConfirmingId(null)\n      setConfirmText('')\n      setConfirmRisk(false)\n      // 刷新会话\n      queryClient.invalidateQueries({ queryKey: ['ai-conversation', activeConversationId] })\n    } catch (err: any) {\n      antdMessage.error(err?.message || '确认失败')\n    } finally {\n      setConfirmLoading(false)\n    }\n  }\n\n  return (\n    <AppPage>\n      <div style={{ display: 'grid', gridTemplateColumns: '280px minmax(0, 1fr)', gap: 16, minHeight: 'calc(100vh - 220px)' }}>\n        <Card\n          size=\"small\"\n          title=\"会话历史\"\n          extra={<Button type=\"text\" size=\"small\" icon={<PlusOutlined />} onClick={handleNewChat}>新建</Button>}\n          bodyStyle={{ padding: 8 }}\n        >\n          <Input\n            placeholder=\"搜索会话...\"\n            prefix={<SearchOutlined />}\n            allowClear\n            size=\"small\"\n            style={{ marginBottom: 8 }}\n            value={searchKeyword}\n            onChange={(e) => setSearchKeyword(e.target.value)}\n          />\n          <List\n            dataSource={filteredConversations}\n            locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"暂无会话\" /> }}\n            renderItem={(item) => (\n              <List.Item\n                style={{\n                  cursor: 'pointer',\n                  display: 'block',\n                  borderRadius: 10,\n                  padding: 10,\n                  marginBottom: 8,\n                  background: item.id === activeConversationId ? '#f0f7ff' : '#fff',\n                  border: item.id === activeConversationId ? '1px solid #91caff' : '1px solid #f0f0f0',\n                }}\n                onClick={() => handleConversationClick(item.id)}\n              >\n                <Space direction=\"vertical\" size={4} style={{ width: '100%' }}>\n                  <Text strong ellipsis>{item.title}</Text>\n                  <Space size={[4, 4]} wrap>\n                    <Tag color={item.assistantMode === 'chat' ? 'blue' : 'gold'}>\n                      {item.assistantMode === 'chat' ? '通用对话' : '故障诊断'}\n                    </Tag>\n                    <Tag>{item.messageCount} 条</Tag>\n                  </Space>\n                  <Text type=\"secondary\" style={{ fontSize: 12 }}>\n                    {item.summary || '暂无摘要'}\n                  </Text>\n                  <Text type=\"secondary\" style={{ fontSize: 12 }}>\n                    {formatDate(item.updatedAt)}\n                  </Text>\n                </Space>\n              </List.Item>\n            )}\n          />\n        </Card>\n\n        <Card\n          style={{ display: 'flex', flexDirection: 'column' }}\n          bodyStyle={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, flex: 1 }}\n          title={\n            <Space wrap>\n              <RobotOutlined />\n              <Text strong>对话式运维</Text>\n              {activeProviderName ? <Tag>{activeProviderName}</Tag> : null}\n              {activeModelName ? <Tag color=\"blue\">{activeModelName}</Tag> : null}\n              {!streamEnabled ? <Tag color=\"orange\">非流式</Tag> : null}\n            </Space>\n          }\n          extra={\n            <Space>\n              <Button\n                icon={<ClearOutlined />}\n                onClick={handleNewChat}\n                disabled={isBusy}\n              >\n                清空当前\n              </Button>\n            </Space>\n          }\n        >\n          <Space wrap size={12}>\n            <Select\n              style={{ width: 240 }}\n              placeholder=\"选择集群\"\n              value={selectedClusterId}\n              onChange={setSelectedClusterId}\n              disabled={clusterLocked || isBusy}\n              options={clusters.map((cluster) => ({ value: cluster.id, label: cluster.name }))}\n              suffixIcon={<ClusterOutlined />}\n            />\n            <Select\n              style={{ width: 160 }}\n              value={assistantMode}\n              onChange={(value) => setAssistantMode(value as AIAssistantMode)}\n              disabled={clusterLocked || isBusy}\n              options={[\n                { value: 'diagnose', label: '故障诊断' },\n                { value: 'chat', label: '通用对话' },\n              ]}\n            />\n            <Select\n              allowClear\n              style={{ width: 360 }}\n              placeholder=\"自动路由模型\"\n              value={selectedModelId}\n              onChange={setSelectedModelId}\n              disabled={isBusy}\n              options={models\n                .filter((item) => item.enabled)\n                .map((item: AIModel) => ({\n                  value: item.id,\n                  label: `${item.providerName} / ${item.name} (${item.modelCode})`,\n                }))}\n            />\n            {selectedModel ? (\n              <Space size={[4, 4]} wrap>\n                {selectedModel.supportsVision ? <Tag color=\"purple\">视觉</Tag> : null}\n                {selectedModel.supportsFileInput ? <Tag color=\"cyan\">文件</Tag> : null}\n                {selectedModel.supportsStreaming ? <Tag color=\"blue\">流式</Tag> : null}\n                {selectedModel.supportsTools ? <Tag color=\"green\">工具</Tag> : null}\n              </Space>\n            ) : (\n              <Tag>自动按路由配置选择模型</Tag>\n            )}\n          </Space>\n\n          <Collapse\n            size=\"small\"\n            items={[\n              {\n                key: 'scope',\n                label: '高级上下文',\n                children: (\n                  <Space wrap style={{ width: '100%' }}>\n                    <Input\n                      style={{ width: 180 }}\n                      placeholder=\"命名空间，可选\"\n                      value={namespace}\n                      onChange={(event) => setNamespace(event.target.value)}\n                    />\n                    <Select\n                      allowClear\n                      style={{ width: 180 }}\n                      placeholder=\"资源类型，可选\"\n                      value={resourceKind || undefined}\n                      onChange={(value) => setResourceKind(value || '')}\n                      options={resourceKindOptions.map((value) => ({ value, label: value }))}\n                    />\n                    <Input\n                      style={{ width: 220 }}\n                      placeholder=\"资源名称，可选\"\n                      value={resourceName}\n                      onChange={(event) => setResourceName(event.target.value)}\n                    />\n                  </Space>\n                ),\n              },\n            ]}\n          />\n\n          <Collapse ghost size=\"small\" style={{ marginBottom: 8 }}>\n            <Collapse.Panel header={<Text type=\"secondary\" style={{ fontSize: 12 }}><SafetyOutlined /> AI 运维安全规则</Text>} key=\"safety\">\n              <ul style={{ fontSize: 12, color: '#8c8c8c', margin: 0, paddingLeft: 16 }}>\n                <li>所有写操作（创建/修改/删除）必须经人工确认后才能执行</li>\n                <li>高危操作（删除资源/驱逐节点）需要两位管理员双重确认</li>\n                <li>AI 不会自动执行任何变更操作，仅提供提案和建议</li>\n                <li>Secret 等敏感信息已脱敏处理</li>\n              </ul>\n            </Collapse.Panel>\n          </Collapse>\n\n          {clusterLocked ? (\n            <Alert\n              type=\"info\"\n              showIcon\n              message=\"当前历史会话已绑定集群和模式。如需切换集群，请新建会话。\"\n            />\n          ) : null}\n\n          {modelCapabilityWarning ? (\n            <Alert type=\"warning\" showIcon message={modelCapabilityWarning} />\n          ) : null}\n\n          <div ref={messageViewportRef} style={{ flex: 1, minHeight: 320, overflow: 'auto', paddingRight: 4 }}>\n            {messages.length === 0 ? (\n              <Empty\n                image={Empty.PRESENTED_IMAGE_SIMPLE}\n                description=\"输入运维问题后，助手会结合集群上下文和模型能力给出回答。\"\n              />\n            ) : (\n              <List\n                loading={isConversationLoading && messages.length === 0}\n                dataSource={messages}\n                renderItem={(item) => (\n                  <List.Item key={item.localId} style={{ border: 'none', padding: '10px 0' }}>\n                    <div\n                      style={{\n                        width: '100%',\n                        display: 'flex',\n                        justifyContent: item.role === 'user' ? 'flex-end' : 'flex-start',\n                      }}\n                    >\n                      <div\n                        style={{\n                          maxWidth: '84%',\n                          background: item.role === 'user' ? '#1677ff' : '#fafafa',\n                          color: item.role === 'user' ? '#fff' : '#141414',\n                          borderRadius: 14,\n                          padding: '12px 14px',\n                          border: item.role === 'user' ? 'none' : '1px solid #f0f0f0',\n                        }}\n                      >\n                        <Space size={[6, 6]} wrap style={{ marginBottom: 8 }}>\n                          <Tag color={item.role === 'user' ? 'geekblue' : 'default'}>\n                            {item.role === 'user' ? '用户' : '助手'}\n                          </Tag>\n                          <Text style={{ color: item.role === 'user' ? '#dbeafe' : '#8c8c8c', fontSize: 12 }}>\n                            {formatDate(item.createdAt)}\n                          </Text>\n                        </Space>\n                        <MarkdownContent\n                          content={item.content || (item.isStreaming || item.isPending ? '正在结合集群证据生成回答...' : '')}\n                          tone={item.role === 'user' ? 'dark' : 'light'}\n                        />\n                        <Paragraph style={{ display: 'none' }}>\n                          {item.content || (item.isStreaming ? '正在生成回答...' : '')}\n                        </Paragraph>\n                        {item.attachments?.length ? (\n                          <Space size={[8, 8]} wrap style={{ marginTop: 10 }}>\n                            {item.attachments.map((attachment) => (\n                              <AttachmentItem key={attachment.id} attachment={attachment} />\n                            ))}\n                          </Space>\n                        ) : null}\n                        {item.role === 'assistant' && item.content ? (\n                          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>\n                            <Tooltip title=\"复制内容\">\n                              <Button type=\"text\" size=\"small\" icon={<CopyOutlined />} onClick={() => {\n                                navigator.clipboard.writeText(item.content)\n                                antdMessage.success('已复制')\n                              }} />\n                            </Tooltip>\n                            <Tooltip title=\"重新生成回答\">\n                              <Button\n                                type=\"text\"\n                                size=\"small\"\n                                icon={<ReloadOutlined />}\n                                disabled={isBusy}\n                                onClick={() => {\n                                  // 找到上一条用户消息\n                                  const idx = messages.findIndex((m) => m.localId === item.localId)\n                                  if (idx <= 0) return\n                                  let userMsg = ''\n                                  for (let i = idx - 1; i >= 0; i--) {\n                                    if (messages[i].role === 'user') {\n                                      userMsg = messages[i].content\n                                      break\n                                    }\n                                  }\n                                  if (userMsg) {\n                                    setInputValue(userMsg)\n                                    void handleSend()\n                                  }\n                                }}\n                              />\n                            </Tooltip>\n                          </div>\n                        ) : null}\n                      </div>\n                    </div>\n                  </List.Item>\n                )}\n              />\n            )}\n          </div>\n\n          {toolCalls.length || actionProposals.length ? (\n            <Card size=\"small\" title=\"本轮上下文结果\">\n              {toolCalls.length ? (\n                <div style={{ marginBottom: actionProposals.length ? 12 : 0 }}>\n                  <Text strong>诊断工具</Text>\n                  <List\n                    size=\"small\"\n                    dataSource={toolCalls}\n                    renderItem={(item) => (\n                      <List.Item style={{ paddingInline: 0 }}>\n                        <Space wrap>\n                          <Tag color={item.status === 'succeeded' ? 'green' : item.status === 'failed' ? 'red' : 'blue'}>\n                            {item.toolName}\n                          </Tag>\n                          <Text>{item.resultSummary || item.errorMessage || item.status}</Text>\n                        </Space>\n                      </List.Item>\n                    )}\n                  />\n                </div>\n              ) : null}\n\n              {actionProposals.length ? (\n                <div>\n                  <Text strong>变更提案</Text>\n                  <List\n                    size=\"small\"\n                    dataSource={actionProposals}\n                    renderItem={(item) => {\n                      const riskColor = item.riskLevel === 'high' ? 'red' : item.riskLevel === 'medium' ? 'orange' : 'green'\n                      const statusColor = item.status === 'pending_confirm' ? 'orange' : item.status === 'approved' ? 'blue' : item.status === 'succeeded' ? 'green' : item.status === 'failed' ? 'red' : 'default'\n                      return (\n                        <List.Item style={{ paddingInline: 0 }}>\n                          <div style={{ width: '100%' }}>\n                            <Space wrap>\n                              <Tag color=\"orange\">{item.actionType}</Tag>\n                              <Tag color={riskColor}>{item.riskLevel}</Tag>\n                              <Text strong>{item.title || item.summary}</Text>\n                              <Tag color={statusColor}>{item.status}</Tag>\n                            </Space>\n                            <div style={{ marginTop: 4, fontSize: 12, color: '#8c8c8c' }}>\n                              目标资源：{item.targetKind} / {item.targetNamespace} / {item.targetName}\n                            </div>\n                            {item.riskLevel === 'high' && (\n                              <Alert\n                                type=\"error\"\n                                showIcon\n                                banner\n                                message=\"高危操作\"\n                                description=\"此操作为高危操作，需要两位管理员分别确认后才能执行。请仔细核实操作目标和影响范围。\"\n                                style={{ marginTop: 8, marginBottom: 8 }}\n                              />\n                            )}\n                            {item.status === 'pending_confirm' ? (\n                              <div style={{ marginTop: 8 }}>\n                                {confirmingId === item.id ? (\n                                  <Space direction=\"vertical\" size={8} style={{ width: '100%' }}>\n                                    <Input\n                                      placeholder={`请输入确认短语：${item.requiredConfirmationText}`}\n                                      value={confirmText}\n                                      onChange={(e) => setConfirmText(e.target.value)}\n                                      size=\"small\"\n                                    />\n                                    <Checkbox\n                                      checked={confirmRisk}\n                                      onChange={(e) => setConfirmRisk(e.target.checked)}\n                                    >\n                                      我已了解此操作的风险\n                                    </Checkbox>\n                                    {item.riskLevel === 'high' && item.confirmLevel === 'double' && (\n                                      <div style={{ fontSize: 12, color: '#ff4d4f', marginTop: 4 }}>\n                                        ⚠ 此操作需要双重确认：您确认后，还需另一位管理员进行二次确认。\n                                      </div>\n                                    )}\n                                    <Space>\n                                      <Button\n                                        type=\"primary\"\n                                        size=\"small\"\n                                        loading={confirmLoading}\n                                        onClick={() => void handleConfirm(item)}\n                                      >\n                                        确认执行\n                                      </Button>\n                                      <Button\n                                        size=\"small\"\n                                        onClick={() => {\n                                          setConfirmingId(null)\n                                          setConfirmText('')\n                                          setConfirmRisk(false)\n                                        }}\n                                      >\n                                        拒绝\n                                      </Button>\n                                    </Space>\n                                  </Space>\n                                ) : (\n                                  <Button\n                                    type=\"primary\"\n                                    size=\"small\"\n                                    onClick={() => {\n                                      setConfirmingId(item.id)\n                                      setConfirmText('')\n                                      setConfirmRisk(false)\n                                    }}\n                                  >\n                                    确认\n                                  </Button>\n                                )}\n                              </div>\n                            ) : null}\n                            {item.status === 'approved' ? (\n                              <div style={{ marginTop: 4, color: '#1677ff', fontSize: 12 }}>\n                                等待二次确认\n                              </div>\n                            ) : null}\n                            {item.status === 'succeeded' ? (\n                              <div style={{ marginTop: 4, color: '#52c41a', fontSize: 12 }}>\n                                执行成功\n                              </div>\n                            ) : null}\n                            {item.status === 'failed' ? (\n                              <div style={{ marginTop: 4, color: '#ff4d4f', fontSize: 12 }}>\n                                执行失败：{item.latestExecution?.errorMessage || '未知错误'}\n                              </div>\n                            ) : null}\n                          </div>\n                        </List.Item>\n                      )\n                    }}\n                  />\n                </div>\n              ) : null}\n            </Card>\n          ) : null}\n\n          <Card size=\"small\" title=\"输入与附件\">\n            <Space direction=\"vertical\" size={12} style={{ width: '100%' }}>\n              <Upload\n                multiple\n                beforeUpload={() => false}\n                fileList={pendingFiles}\n                onChange={({ fileList }) => setPendingFiles(fileList.slice(-6))}\n              >\n                <Button icon={<PaperClipOutlined />}>上传文件 / 图片</Button>\n              </Upload>\n\n              <Space size={[6, 6]} wrap>\n                {imageFiles.length ? <Tag color=\"purple\">{imageFiles.length} 张图片</Tag> : null}\n                {textFiles.length ? <Tag color=\"cyan\">{textFiles.length} 个文件</Tag> : null}\n              </Space>\n\n              <TextArea\n                value={inputValue}\n                onChange={(event) => setInputValue(event.target.value)}\n                disabled={isBusy}\n                autoSize={{ minRows: 4, maxRows: 8 }}\n                placeholder=\"输入运维问题。可结合附件、命名空间或具体资源进行追问。\"\n                onPressEnter={(event) => {\n                  if (!event.shiftKey) {\n                    event.preventDefault()\n                    void handleSend()\n                  }\n                }}\n              />\n\n              <Space>\n                {isStreaming ? (\n                  <Button icon={<StopOutlined />} onClick={stopGeneration}>\n                    停止生成\n                  </Button>\n                ) : (\n                  <Button\n                    type=\"primary\"\n                    icon={<SendOutlined />}\n                    loading={isResponding}\n                    onClick={() => void handleSend()}\n                    disabled={!selectedClusterId || !inputValue.trim() || Boolean(modelCapabilityWarning) || isResponding}\n                  >\n                    发送\n                  </Button>\n                )}\n                {activeConversationId ? (\n                  <Tooltip title=\"清空当前对话\">\n                    <Button\n                      icon={<ClearOutlined />}\n                      onClick={() => {\n                        clearConversation()\n                        history.replace('/ai/chat')\n                        setActiveConversationId(undefined)\n                      }}\n                    >\n                      新对话\n                    </Button>\n                  </Tooltip>\n                ) : null}\n              </Space>\n\n              {/* 诊断模板快捷入口 */}\n              <div>\n                <Text type=\"secondary\" style={{ fontSize: 12, marginRight: 8 }}>快捷模板：</Text>\n                <Space size={[4, 4]} wrap>\n                  <Button size=\"small\" icon={<ThunderboltOutlined />} onClick={() => setInputValue('请帮我做一次当前范围的故障诊断')}>巡检诊断</Button>\n                  <Button size=\"small\" icon={<FileTextOutlined />} onClick={() => setInputValue('请查看最近的集群事件并分析是否有异常')}>事件分析</Button>\n                  <Button size=\"small\" icon={<FileSearchOutlined />} onClick={() => setInputValue('请查看当前范围内异常 Pod 的日志')}>日志排查</Button>\n                  <Button size=\"small\" icon={<FileTextOutlined />} onClick={() => setInputValue('请导出当前资源的 YAML 配置并分析')}>YAML 分析</Button>\n                  <Button size=\"small\" icon={<MessageOutlined />} onClick={() => setInputValue('请帮我做一次当前范围的故障诊断')}>诊断模板</Button>\n                </Space>\n              </div>\n            </Space>\n          </Card>\n        </Card>\n      </div>\n    </AppPage>\n  )\n}\n\nexport default AIChatPage\n",
+      "__content": "import React, { useEffect, useMemo, useRef, useState } from 'react'\nimport {\n  Alert,\n  Button,\n  Card,\n  Checkbox,\n  Collapse,\n  Empty,\n  Input,\n  List,\n  Modal,\n  Select,\n  Space,\n  Tag,\n  Tooltip,\n  Typography,\n  Upload,\n  message as antdMessage,\n  type UploadFile,\n} from 'antd'\nimport {\n  ClearOutlined,\n  ClusterOutlined,\n  CopyOutlined,\n  DeleteOutlined,\n  DownloadOutlined,\n  EditOutlined,\n  FileSearchOutlined,\n  FileTextOutlined,\n  PaperClipOutlined,\n  PlusOutlined,\n  ReloadOutlined,\n  RobotOutlined,\n  SafetyOutlined,\n  SearchOutlined,\n  SendOutlined,\n  StopOutlined,\n  ThunderboltOutlined,\n} from '@ant-design/icons'\nimport { history, useSearchParams } from '@umijs/max'\nimport { useQuery, useQueryClient } from '@tanstack/react-query'\nimport { AppPage, MarkdownContent } from '@/components'\nimport { useAIChat } from '@/hooks'\nimport { confirmActionProposal, createConversation, getConversation, listAIModels, listConversations, updateConversation } from '@/services/ai'\nimport { listClusters } from '@/services/clusters'\nimport { listNamespaces, listGenericResources } from '@/services/k8s'\nimport type {\n  AIActionProposal,\n  AIConversationItem,\n  AIConversationListResponse,\n  AIMessageAttachment,\n  AIAssistantMode,\n  AIModel,\n} from '@/types'\nimport { formatDate } from '@/utils'\n\nconst { Paragraph, Text } = Typography\nconst { TextArea } = Input\n\nconst resourceKindOptions = [\n  'Pod',\n  'Deployment',\n  'StatefulSet',\n  'DaemonSet',\n  'Service',\n  'Ingress',\n  'ConfigMap',\n  'Secret',\n  'Job',\n  'CronJob',\n  'Node',\n]\n\nfunction buildConversationDraftTitle(content: string) {\n  const title = content.trim()\n  if (!title) {\n    return '新的 AI 会话'\n  }\n  const runes = Array.from(title)\n  if (runes.length > 24) {\n    return `${runes.slice(0, 24).join('')}...`\n  }\n  return title\n}\n\nfunction buildConversationDraftSummary(content: string) {\n  const summary = content.trim()\n  if (!summary) {\n    return '等待首条消息'\n  }\n  const runes = Array.from(summary)\n  if (runes.length > 40) {\n    return `${runes.slice(0, 40).join('')}...`\n  }\n  return summary\n}\n\nfunction upsertConversationListItem(\n  current: AIConversationListResponse | undefined,\n  draft: AIConversationItem,\n): AIConversationListResponse {\n  const base = current || {\n    items: [],\n    total: 0,\n    page: 1,\n    pageSize: 100,\n  }\n  const existed = base.items.some((item) => item.id === draft.id)\n  const nextItems = [draft, ...base.items.filter((item) => item.id !== draft.id)]\n\n  return {\n    ...base,\n    items: nextItems.slice(0, base.pageSize || nextItems.length),\n    total: existed ? base.total : base.total + 1,\n  }\n}\n\nfunction classifyFiles(files: UploadFile[]) {\n  const nativeFiles: File[] = []\n  files.forEach((file) => {\n    if (file.originFileObj instanceof File) {\n      nativeFiles.push(file.originFileObj)\n    }\n  })\n  const imageFiles = nativeFiles.filter((file) => file.type.startsWith('image/'))\n  const textFiles = nativeFiles.filter((file) => !file.type.startsWith('image/'))\n  return { nativeFiles, imageFiles, textFiles }\n}\n\n// 按工具类别返回 Tag 颜色\nfunction getToolTagColor(toolName: string) {\n  if (toolName.startsWith('cluster.')) return 'blue'\n  if (toolName.startsWith('namespace.')) return 'cyan'\n  if (toolName.startsWith('resource.list') || toolName.startsWith('resource.search')) return 'geekblue'\n  if (toolName.startsWith('resource.inspect') || toolName.includes('.inspect')) return 'orange'\n  if (toolName.startsWith('resource.yaml') || toolName.includes('yaml')) return 'purple'\n  if (toolName.startsWith('resource.events')) return 'volcano'\n  if (toolName.startsWith('resource.logs')) return 'gold'\n  return 'default'\n}\n\nfunction getAttachmentHeaders() {\n  const headers = new Headers()\n  const token = localStorage.getItem('token')\n  if (token) {\n    headers.set('Authorization', `Bearer ${token}`)\n  }\n  return headers\n}\n\nasync function fetchAttachmentBlob(downloadUrl: string): Promise<Blob> {\n  const response = await fetch(downloadUrl, {\n    method: 'GET',\n    credentials: 'include',\n    headers: getAttachmentHeaders(),\n  })\n  if (!response.ok) {\n    throw new Error('附件加载失败')\n  }\n  return response.blob()\n}\n\nconst AttachmentItem: React.FC<{ attachment: AIMessageAttachment }> = ({ attachment }) => {\n  const [previewUrl, setPreviewUrl] = useState('')\n\n  useEffect(() => {\n    if (attachment.fileKind !== 'image' || !attachment.downloadUrl) {\n      return\n    }\n\n    let objectUrl = ''\n    let disposed = false\n    void fetchAttachmentBlob(attachment.downloadUrl)\n      .then((blob) => {\n        if (disposed) {\n          return\n        }\n        objectUrl = URL.createObjectURL(blob)\n        setPreviewUrl(objectUrl)\n      })\n      .catch(() => {\n        setPreviewUrl('')\n      })\n\n    return () => {\n      disposed = true\n      if (objectUrl) {\n        URL.revokeObjectURL(objectUrl)\n      }\n    }\n  }, [attachment.downloadUrl, attachment.fileKind])\n\n  const handleDownload = async () => {\n    if (!attachment.downloadUrl) {\n      return\n    }\n    try {\n      const blob = await fetchAttachmentBlob(attachment.downloadUrl)\n      const objectUrl = URL.createObjectURL(blob)\n      const anchor = document.createElement('a')\n      anchor.href = objectUrl\n      anchor.download = attachment.originalName || `attachment-${attachment.id}`\n      document.body.appendChild(anchor)\n      anchor.click()\n      anchor.remove()\n      URL.revokeObjectURL(objectUrl)\n    } catch (error) {\n      antdMessage.error(error instanceof Error ? error.message : '附件下载失败')\n    }\n  }\n\n  if (attachment.fileKind === 'image' && previewUrl) {\n    return (\n      <button\n        key={attachment.id}\n        type=\"button\"\n        onClick={() => void handleDownload()}\n        style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}\n      >\n        <img\n          src={previewUrl}\n          alt={attachment.originalName}\n          style={{\n            width: 96,\n            height: 96,\n            objectFit: 'cover',\n            borderRadius: 8,\n            border: '1px solid #f0f0f0',\n          }}\n        />\n      </button>\n    )\n  }\n\n  return (\n    <Tag key={attachment.id} style={{ cursor: attachment.downloadUrl ? 'pointer' : 'default' }} onClick={() => void handleDownload()}>\n      {attachment.originalName || `attachment-${attachment.id}`}\n    </Tag>\n  )\n}\n\nconst AIChatPage: React.FC = () => {\n  const [searchParams] = useSearchParams()\n  const queryClient = useQueryClient()\n  const searchConversationId = Number(searchParams.get('id') || 0) || undefined\n\n  const [activeConversationId, setActiveConversationId] = useState<number | undefined>(searchConversationId)\n  const [inputValue, setInputValue] = useState('')\n  const [selectedClusterId, setSelectedClusterId] = useState<number | undefined>(undefined)\n  const [assistantMode, setAssistantMode] = useState<AIAssistantMode>('diagnose')\n  const [selectedModelId, setSelectedModelId] = useState<number | undefined>(undefined)\n  const [namespace, setNamespace] = useState('')\n  const [resourceKind, setResourceKind] = useState('')\n  const [resourceName, setResourceName] = useState('')\n  const [pendingFiles, setPendingFiles] = useState<UploadFile[]>([])\n  const messageViewportRef = useRef<HTMLDivElement | null>(null)\n  const inputRef = useRef<React.ElementRef<typeof TextArea>>(null)\n\n  // 变更提案确认状态\n  const [confirmingId, setConfirmingId] = useState<number | null>(null)\n  const [confirmText, setConfirmText] = useState('')\n  const [confirmRisk, setConfirmRisk] = useState(false)\n  const [confirmLoading, setConfirmLoading] = useState(false)\n\n  // 会话历史搜索\n  const [searchKeyword, setSearchKeyword] = useState('')\n\n  // 会话重命名状态\n  const [renamingId, setRenamingId] = useState<number | undefined>()\n  const [renamingTitle, setRenamingTitle] = useState('')\n\n  // 输入框最近提问记忆\n  const RECENT_INPUTS_KEY = 'ai-recent-inputs'\n  const [recentInputs, setRecentInputs] = useState<string[]>(() => {\n    try {\n      return JSON.parse(localStorage.getItem(RECENT_INPUTS_KEY) || '[]')\n    } catch {\n      return []\n    }\n  })\n\n  const {\n    messages,\n    toolCalls,\n    actionProposals,\n    isStreaming,\n    isResponding,\n    progress,\n    activeModelName,\n    activeProviderName,\n    hydrateConversation,\n    clearConversation,\n    stopGeneration,\n    sendMessage,\n  } = useAIChat()\n  const isBusy = isStreaming || isResponding\n\n  useEffect(() => {\n    setActiveConversationId(searchConversationId)\n    if (!searchConversationId) {\n      clearConversation()\n    }\n  }, [clearConversation, searchConversationId])\n\n  const { data: clustersData } = useQuery({\n    queryKey: ['clusters-for-ai'],\n    queryFn: ({ signal }) => listClusters({ page: 1, pageSize: 200 }, signal),\n  })\n  const { data: models = [] } = useQuery({\n    queryKey: ['ai-models'],\n    queryFn: ({ signal }) => listAIModels(signal),\n  })\n  const { data: conversationsData } = useQuery({\n    queryKey: ['ai-conversations'],\n    queryFn: ({ signal }) => listConversations({ page: 1, pageSize: 100 }, signal),\n  })\n  const { data: conversationDetail, isFetching: isConversationLoading } = useQuery({\n    queryKey: ['ai-conversation', activeConversationId],\n    queryFn: ({ signal }) => getConversation(activeConversationId!, signal),\n    enabled: Boolean(activeConversationId),\n  })\n\n  // 根据已选集群动态拉取命名空间列表\n  const { data: nsData } = useQuery({\n    queryKey: ['ai-namespaces', selectedClusterId],\n    queryFn: ({ signal }) => listNamespaces(selectedClusterId!, signal),\n    enabled: Boolean(selectedClusterId),\n    staleTime: 60_000,\n  })\n  const nsOptions = (nsData || []).map((ns) => ({ label: ns.name, value: ns.name }))\n\n  // 根据集群+命名空间+资源类型动态拉取资源列表\n  const { data: resData } = useQuery({\n    queryKey: ['ai-resources', selectedClusterId, resourceKind, namespace],\n    queryFn: ({ signal }) => listGenericResources(selectedClusterId!, resourceKind, namespace || undefined, signal),\n    enabled: Boolean(selectedClusterId) && Boolean(resourceKind),\n    staleTime: 30_000,\n  })\n  const resOptions = (resData?.items || []).map((item: any) => ({\n    label: item.name || item.metadata?.name || '',\n    value: item.name || item.metadata?.name || '',\n  }))\n\n  useEffect(() => {\n    if (!conversationDetail) {\n      return\n    }\n    // 正在流式响应时不覆盖当前消息，等流式结束后依赖变化会重新触发\n    if (isStreaming || isResponding) {\n      return\n    }\n    hydrateConversation(conversationDetail)\n    setSelectedClusterId(conversationDetail.clusterId)\n    setAssistantMode((conversationDetail.assistantMode as AIAssistantMode) || 'diagnose')\n    setSelectedModelId(conversationDetail.modelId)\n  }, [conversationDetail, hydrateConversation, isStreaming, isResponding])\n\n  useEffect(() => {\n    const viewport = messageViewportRef.current\n    if (!viewport) {\n      return\n    }\n    viewport.scrollTop = viewport.scrollHeight\n  }, [actionProposals.length, messages, toolCalls.length])\n\n  const clusters = clustersData?.items || []\n  const conversations = conversationsData?.items || []\n  // 按搜索关键词过滤会话列表\n  const filteredConversations = conversations.filter(c => {\n    if (!searchKeyword) return true\n    const kw = searchKeyword.toLowerCase()\n    return c.title?.toLowerCase().includes(kw) || c.summary?.toLowerCase().includes(kw)\n  })\n  const selectedModel = useMemo(\n    () => models.find((item) => item.id === selectedModelId),\n    [models, selectedModelId],\n  )\n  const { nativeFiles, imageFiles, textFiles } = useMemo(\n    () => classifyFiles(pendingFiles),\n    [pendingFiles],\n  )\n\n  const modelCapabilityWarning = useMemo(() => {\n    if (!selectedModel) {\n      return ''\n    }\n    if (imageFiles.length > 0 && !selectedModel.supportsVision) {\n      return '当前模型不支持图片输入，请切换到支持视觉的模型或移除图片。'\n    }\n    if (textFiles.length > 0 && !selectedModel.supportsFileInput) {\n      return '当前模型不支持文件输入，请切换到支持文件输入的模型或移除文本附件。'\n    }\n    return ''\n  }, [imageFiles.length, selectedModel, textFiles.length])\n\n  const streamEnabled = !selectedModel || selectedModel.supportsStreaming\n  const clusterLocked = Boolean(activeConversationId)\n\n  const handleNewChat = () => {\n    if (isBusy) {\n      return\n    }\n    clearConversation()\n    setActiveConversationId(undefined)\n    setInputValue('')\n    setPendingFiles([])\n    setNamespace('')\n    setResourceKind('')\n    setResourceName('')\n    history.push('/ai/chat')\n  }\n\n  const handleConversationClick = (id: number) => {\n    if (isBusy || id === activeConversationId) {\n      return\n    }\n    setActiveConversationId(id)\n    history.push(`/ai/chat?id=${id}`)\n  }\n\n  // 存储最近输入到 localStorage（保留最近 5 条，过短的不记录）\n  const saveRecentInput = (text: string) => {\n    if (!text.trim() || text.length < 5) return\n    setRecentInputs((prev) => {\n      const next = [text, ...prev.filter((s) => s !== text)].slice(0, 5)\n      localStorage.setItem(RECENT_INPUTS_KEY, JSON.stringify(next))\n      return next\n    })\n  }\n\n  const handleSend = async (overrideMessage?: string) => {\n    if (!selectedClusterId) {\n      antdMessage.warning('请先选择目标集群')\n      return\n    }\n    const messageText = (overrideMessage ?? inputValue).trim()\n    if (!messageText) {\n      return\n    }\n    if (modelCapabilityWarning) {\n      antdMessage.warning(modelCapabilityWarning)\n      return\n    }\n\n    const draftTitle = buildConversationDraftTitle(messageText)\n    const draftSummary = buildConversationDraftSummary(messageText)\n    const filesToSend = nativeFiles\n    const fileListToRestore = pendingFiles\n    setInputValue('')\n    setPendingFiles([])\n    saveRecentInput(messageText)\n    try {\n      let targetConversationId = activeConversationId\n\n      if (!targetConversationId) {\n        const created = await createConversation({\n          clusterId: selectedClusterId,\n          title: draftTitle,\n          assistantMode,\n          modelId: selectedModelId,\n        })\n        if (!created.id) {\n          throw new Error('会话创建失败')\n        }\n        targetConversationId = created.id\n        const now = new Date().toISOString()\n        setActiveConversationId(targetConversationId)\n        history.replace(`/ai/chat?id=${targetConversationId}`)\n        queryClient.setQueryData<AIConversationListResponse>(['ai-conversations'], (current) =>\n          upsertConversationListItem(current, {\n            id: targetConversationId!,\n            clusterId: selectedClusterId,\n            providerId: undefined,\n            modelId: selectedModelId,\n            title: draftTitle,\n            status: 'open',\n            assistantMode,\n            summary: draftSummary,\n            createdBy: 0,\n            createdByName: '',\n            messageCount: 1,\n            lastMessageAt: now,\n            createdAt: now,\n            updatedAt: now,\n          }),\n        )\n        void queryClient.invalidateQueries({ queryKey: ['ai-conversations'] })\n      }\n\n      const resultConversationId = await sendMessage(\n        selectedClusterId,\n        {\n          conversationId: targetConversationId,\n          message: messageText,\n          assistantMode,\n          modelId: selectedModelId,\n          preferModel: selectedModel?.modelCode,\n          namespace: namespace || undefined,\n          resourceKind: resourceKind || undefined,\n          resourceName: resourceName || undefined,\n          files: filesToSend,\n        },\n        streamEnabled,\n      )\n\n      const finalConversationId = resultConversationId || targetConversationId\n      if (finalConversationId) {\n        setActiveConversationId(finalConversationId)\n        history.replace(`/ai/chat?id=${finalConversationId}`)\n        void Promise.all([\n          queryClient.invalidateQueries({ queryKey: ['ai-conversations'] }),\n          queryClient.invalidateQueries({ queryKey: ['ai-conversation', finalConversationId] }),\n        ])\n      }\n    } catch (error) {\n      setInputValue(messageText)\n      setPendingFiles(fileListToRestore)\n      antdMessage.error(error instanceof Error ? error.message : '会话发送失败')\n    }\n  }\n\n  // 确认执行变更提案\n  const handleConfirm = async (proposal: AIActionProposal) => {\n    if (confirmText !== proposal.requiredConfirmationText) {\n      antdMessage.error(`请输入正确的确认短语：${proposal.requiredConfirmationText}`)\n      return\n    }\n    if (!confirmRisk) {\n      antdMessage.warning('请勾选风险确认')\n      return\n    }\n    setConfirmLoading(true)\n    try {\n      await confirmActionProposal(proposal.clusterId, proposal.id, {\n        confirmation_text: confirmText,\n        confirm_risk: confirmRisk,\n      })\n      antdMessage.success('提案已确认执行')\n      setConfirmingId(null)\n      setConfirmText('')\n      setConfirmRisk(false)\n      // 刷新会话\n      queryClient.invalidateQueries({ queryKey: ['ai-conversation', activeConversationId] })\n    } catch (err: any) {\n      antdMessage.error(err?.message || '确认失败')\n    } finally {\n      setConfirmLoading(false)\n    }\n  }\n\n  // 确认重命名会话\n  const handleRenameConfirm = async () => {\n    if (renamingId && renamingTitle.trim()) {\n      try {\n        await updateConversation(renamingId, { title: renamingTitle.trim() })\n        antdMessage.success('重命名成功')\n        queryClient.invalidateQueries({ queryKey: ['ai-conversations'] })\n      } catch {\n        // 后端可能未实现 PATCH，静默回退到本地乐观更新\n        queryClient.setQueryData<AIConversationListResponse>(['ai-conversations'], (current) => {\n          if (!current) return current\n          return {\n            ...current,\n            items: current.items.map((item) =>\n              item.id === renamingId ? { ...item, title: renamingTitle.trim() } : item\n            ),\n          }\n        })\n        antdMessage.success('重命名成功')\n      }\n    }\n    setRenamingId(undefined)\n  }\n\n  return (\n    <AppPage>\n      <div style={{ display: 'grid', gridTemplateColumns: '280px minmax(0, 1fr)', gap: 16, minHeight: 'calc(100vh - 220px)' }}>\n        <Card\n          size=\"small\"\n          title=\"会话历史\"\n          extra={<Button type=\"text\" size=\"small\" icon={<PlusOutlined />} onClick={handleNewChat} disabled={isBusy}>新建</Button>}\n          bodyStyle={{ padding: 8 }}\n        >\n          <Input\n            placeholder=\"搜索会话...\"\n            prefix={<SearchOutlined />}\n            allowClear\n            size=\"small\"\n            style={{ marginBottom: 8 }}\n            value={searchKeyword}\n            onChange={(e) => setSearchKeyword(e.target.value)}\n          />\n          <List\n            dataSource={filteredConversations}\n            locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"暂无会话\" /> }}\n            renderItem={(item) => (\n              <List.Item\n                style={{\n                  cursor: 'pointer',\n                  display: 'block',\n                  borderRadius: 10,\n                  padding: 10,\n                  marginBottom: 8,\n                  background: item.id === activeConversationId ? '#f0f7ff' : '#fff',\n                  border: item.id === activeConversationId ? '1px solid #91caff' : '1px solid #f0f0f0',\n                }}\n                onClick={() => handleConversationClick(item.id)}\n              >\n                <Space direction=\"vertical\" size={4} style={{ width: '100%' }}>\n                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>\n                    <Text strong ellipsis style={{ flex: 1, minWidth: 0 }}>{item.title}</Text>\n                    <Tooltip title=\"重命名\">\n                      <Button\n                        type=\"text\"\n                        size=\"small\"\n                        icon={<EditOutlined />}\n                        onClick={(e) => {\n                          e.stopPropagation()\n                          setRenamingId(item.id)\n                          setRenamingTitle(item.title || '')\n                        }}\n                      />\n                    </Tooltip>\n                  </div>\n                  <Space size={[4, 4]} wrap>\n                    <Tag color={item.assistantMode === 'chat' ? 'blue' : 'gold'}>\n                      {item.assistantMode === 'chat' ? '通用对话' : '故障诊断'}\n                    </Tag>\n                    <Tag>{item.messageCount} 条</Tag>\n                  </Space>\n                  <Text type=\"secondary\" style={{ fontSize: 12 }}>\n                    {item.summary || '暂无摘要'}\n                  </Text>\n                  <Text type=\"secondary\" style={{ fontSize: 12 }}>\n                    {formatDate(item.updatedAt)}\n                  </Text>\n                </Space>\n              </List.Item>\n            )}\n          />\n        </Card>\n\n        <Card\n          style={{ display: 'flex', flexDirection: 'column' }}\n          bodyStyle={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, flex: 1 }}\n          title={\n            <Space wrap>\n              <RobotOutlined />\n              <Text strong>对话式运维</Text>\n              {activeProviderName ? <Tag>{activeProviderName}</Tag> : null}\n              {activeModelName ? <Tag color=\"blue\">{activeModelName}</Tag> : null}\n              {!streamEnabled ? <Tag color=\"orange\">非流式</Tag> : null}\n            </Space>\n          }\n          extra={\n            <Space>\n              <Tooltip title=\"导出会话为 Markdown\">\n                <Button\n                  type=\"text\"\n                  size=\"small\"\n                  icon={<DownloadOutlined />}\n                  onClick={() => {\n                    const lines: string[] = [`# AI 运维对话记录`, ``]\n                    messages.forEach((msg) => {\n                      lines.push(`## ${msg.role === 'user' ? '用户' : '助手'} (${formatDate(msg.createdAt || '')})`)\n                      lines.push('')\n                      lines.push(msg.content || '(无内容)')\n                      lines.push('')\n                    })\n                    if (toolCalls.length > 0) {\n                      lines.push(`---`, `## 诊断工具`)\n                      toolCalls.forEach((tc) => {\n                        lines.push(`- **${tc.toolName}**: ${tc.resultSummary || tc.status}`)\n                      })\n                      lines.push('')\n                    }\n                    if (actionProposals.length > 0) {\n                      lines.push(`## 变更提案`)\n                      actionProposals.forEach((ap) => {\n                        lines.push(`- **${ap.actionType}** (${ap.riskLevel}): ${ap.title} - ${ap.status}`)\n                      })\n                    }\n                    const blob = new Blob([lines.join('\\n')], { type: 'text/markdown' })\n                    const url = URL.createObjectURL(blob)\n                    const a = document.createElement('a')\n                    a.href = url\n                    a.download = `ai-chat-${Date.now()}.md`\n                    a.click()\n                    URL.revokeObjectURL(url)\n                  }}\n                />\n              </Tooltip>\n              <Button\n                icon={<ClearOutlined />}\n                onClick={handleNewChat}\n                disabled={isBusy}\n              >\n                清空当前\n              </Button>\n            </Space>\n          }\n        >\n          <Space wrap size={12}>\n            <Select\n              style={{ width: 240 }}\n              placeholder=\"选择集群\"\n              value={selectedClusterId}\n              onChange={setSelectedClusterId}\n              disabled={clusterLocked || isBusy}\n              options={clusters.map((cluster) => ({ value: cluster.id, label: cluster.name }))}\n              suffixIcon={<ClusterOutlined />}\n            />\n            <Select\n              style={{ width: 160 }}\n              value={assistantMode}\n              onChange={(value) => setAssistantMode(value as AIAssistantMode)}\n              disabled={clusterLocked || isBusy}\n              options={[\n                { value: 'diagnose', label: '故障诊断' },\n                { value: 'chat', label: '通用对话' },\n              ]}\n            />\n            <Select\n              allowClear\n              style={{ width: 360 }}\n              placeholder=\"自动路由模型\"\n              value={selectedModelId}\n              onChange={setSelectedModelId}\n              disabled={isBusy}\n              options={models\n                .filter((item) => item.enabled)\n                .map((item: AIModel) => ({\n                  value: item.id,\n                  label: `${item.providerName} / ${item.name} (${item.modelCode})`,\n                }))}\n            />\n            {selectedModel ? (\n              <Space size={[4, 4]} wrap>\n                {selectedModel.supportsVision ? <Tag color=\"purple\">视觉</Tag> : null}\n                {selectedModel.supportsFileInput ? <Tag color=\"cyan\">文件</Tag> : null}\n                {selectedModel.supportsStreaming ? <Tag color=\"blue\">流式</Tag> : null}\n                {selectedModel.supportsTools ? <Tag color=\"green\">工具</Tag> : null}\n              </Space>\n            ) : (\n              <Tag>自动按路由配置选择模型</Tag>\n            )}\n          </Space>\n\n          <Collapse\n            size=\"small\"\n            items={[\n              {\n                key: 'scope',\n                label: '高级上下文',\n                children: (\n                  <Space wrap style={{ width: '100%' }}>\n                    <Select\n                      showSearch\n                      allowClear\n                      style={{ width: 180 }}\n                      placeholder=\"命名空间，可选\"\n                      value={namespace || undefined}\n                      onChange={(value) => {\n                        setNamespace(value || '')\n                        setResourceName('')\n                      }}\n                      options={nsOptions}\n                      notFoundContent={selectedClusterId ? '加载中...' : '请先选择集群'}\n                      filterOption={(input, option) =>\n                        (option?.label as string)?.toLowerCase().includes(input.toLowerCase())\n                      }\n                    />\n                    <Select\n                      allowClear\n                      style={{ width: 180 }}\n                      placeholder=\"资源类型，可选\"\n                      value={resourceKind || undefined}\n                      onChange={(value) => {\n                        setResourceKind(value || '')\n                        setResourceName('')\n                      }}\n                      options={resourceKindOptions.map((value) => ({ value, label: value }))}\n                    />\n                    <Select\n                      showSearch\n                      allowClear\n                      style={{ width: 220 }}\n                      placeholder=\"资源名称，可选\"\n                      value={resourceName || undefined}\n                      onChange={(value) => setResourceName(value || '')}\n                      options={resOptions}\n                      notFoundContent={resourceKind ? '加载中...' : '请先选择资源类型'}\n                      filterOption={(input, option) =>\n                        (option?.label as string)?.toLowerCase().includes(input.toLowerCase())\n                      }\n                    />\n                  </Space>\n                ),\n              },\n            ]}\n          />\n\n          <Collapse ghost size=\"small\" style={{ marginBottom: 8 }}>\n            <Collapse.Panel header={<Text type=\"secondary\" style={{ fontSize: 12 }}><SafetyOutlined /> AI 运维安全规则</Text>} key=\"safety\">\n              <ul style={{ fontSize: 12, color: '#8c8c8c', margin: 0, paddingLeft: 16 }}>\n                <li>所有写操作（创建/修改/删除）必须经人工确认后才能执行</li>\n                <li>高危操作（删除资源/驱逐节点）需要两位管理员双重确认</li>\n                <li>AI 不会自动执行任何变更操作，仅提供提案和建议</li>\n                <li>Secret 等敏感信息已脱敏处理</li>\n              </ul>\n            </Collapse.Panel>\n          </Collapse>\n\n          {clusterLocked ? (\n            <Alert\n              type=\"info\"\n              showIcon\n              message=\"当前历史会话已绑定集群和模式。如需切换集群，请新建会话。\"\n            />\n          ) : null}\n\n          {modelCapabilityWarning ? (\n            <Alert type=\"warning\" showIcon message={modelCapabilityWarning} />\n          ) : null}\n\n          <div ref={messageViewportRef} style={{ flex: 1, minHeight: 320, overflow: 'auto', paddingRight: 4 }}>\n            {isResponding && progress ? (\n              <Alert type=\"info\" showIcon message={progress} style={{ marginBottom: 8 }} />\n            ) : null}\n            {messages.length === 0 ? (\n              <Empty\n                image={Empty.PRESENTED_IMAGE_SIMPLE}\n                description=\"输入运维问题后，助手会结合集群上下文和模型能力给出回答。\"\n              />\n            ) : (\n              <List\n                loading={isConversationLoading && messages.length === 0}\n                dataSource={messages}\n                renderItem={(item) => (\n                  <List.Item key={item.localId} style={{ border: 'none', padding: '10px 0' }}>\n                    <div\n                      style={{\n                        width: '100%',\n                        display: 'flex',\n                        justifyContent: item.role === 'user' ? 'flex-end' : 'flex-start',\n                      }}\n                    >\n                      <div\n                        style={{\n                          maxWidth: '84%',\n                          background: item.role === 'user' ? '#1677ff' : '#fafafa',\n                          color: item.role === 'user' ? '#fff' : '#141414',\n                          borderRadius: 14,\n                          padding: '12px 14px',\n                          border: item.role === 'user' ? 'none' : '1px solid #f0f0f0',\n                        }}\n                      >\n                        <Space size={[6, 6]} wrap style={{ marginBottom: 8 }}>\n                          <Tag color={item.role === 'user' ? 'geekblue' : 'default'}>\n                            {item.role === 'user' ? '用户' : '助手'}\n                          </Tag>\n                          <Text style={{ color: item.role === 'user' ? '#dbeafe' : '#8c8c8c', fontSize: 12 }}>\n                            {formatDate(item.createdAt)}\n                          </Text>\n                        </Space>\n                        <MarkdownContent\n                          content={item.content || (item.isStreaming || item.isPending ? '正在结合集群证据生成回答...' : '')}\n                          tone={item.role === 'user' ? 'dark' : 'light'}\n                        />\n                        <Paragraph style={{ display: 'none' }}>\n                          {item.content || (item.isStreaming ? '正在生成回答...' : '')}\n                        </Paragraph>\n                        {item.attachments?.length ? (\n                          <Space size={[8, 8]} wrap style={{ marginTop: 10 }}>\n                            {item.attachments.map((attachment) => (\n                              <AttachmentItem key={attachment.id} attachment={attachment} />\n                            ))}\n                          </Space>\n                        ) : null}\n                        {item.role === 'user' && (\n                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>\n                            <Tooltip title=\"编辑并重新发送\">\n                              <Button\n                                type=\"text\"\n                                size=\"small\"\n                                icon={<EditOutlined />}\n                                disabled={isBusy}\n                                onClick={() => {\n                                  setInputValue(item.content)\n                                  inputRef.current?.focus()\n                                }}\n                              />\n                            </Tooltip>\n                          </div>\n                        )}\n                        {item.role === 'assistant' && item.content ? (\n                          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>\n                            <Tooltip title=\"复制内容\">\n                              <Button type=\"text\" size=\"small\" icon={<CopyOutlined />} onClick={() => {\n                                navigator.clipboard.writeText(item.content)\n                                antdMessage.success('已复制')\n                              }} />\n                            </Tooltip>\n                            <Tooltip title=\"重新生成回答\">\n                              <Button\n                                type=\"text\"\n                                size=\"small\"\n                                icon={<ReloadOutlined />}\n                                disabled={isBusy}\n                                onClick={() => {\n                                  // 找到上一条用户消息\n                                  const idx = messages.findIndex((m) => m.localId === item.localId)\n                                  if (idx <= 0) return\n                                  let userMsg = ''\n                                  for (let i = idx - 1; i >= 0; i--) {\n                                    if (messages[i].role === 'user') {\n                                      userMsg = messages[i].content\n                                      break\n                                    }\n                                  }\n                                  if (userMsg) {\n                                    void handleSend(userMsg)\n                                  }\n                                }}\n                              />\n                            </Tooltip>\n                          </div>\n                        ) : null}\n                      </div>\n                    </div>\n                  </List.Item>\n                )}\n              />\n            )}\n          </div>\n\n          {toolCalls.length || actionProposals.length ? (\n            <Card size=\"small\" title=\"本轮上下文结果\">\n              {toolCalls.length ? (\n                <div style={{ marginBottom: actionProposals.length ? 12 : 0 }}>\n                  <Text strong>诊断工具</Text>\n                  <List\n                    size=\"small\"\n                    dataSource={toolCalls}\n                    renderItem={(tool) => (\n                      <List.Item style={{ paddingInline: 0 }}>\n                        <div style={{ width: '100%' }}>\n                          <Space wrap>\n                            <Tag color={tool.status === 'succeeded' ? getToolTagColor(tool.toolName) : tool.status === 'failed' ? 'red' : 'blue'}>\n                              {tool.toolName}\n                            </Tag>\n                            <Text type=\"secondary\" style={{ fontSize: 12 }}>{tool.resultSummary || tool.errorMessage || tool.status}</Text>\n                          </Space>\n                          {tool.result ? (\n                            <Collapse ghost size=\"small\" style={{ marginTop: 4 }}>\n                              <Collapse.Panel header={<Text type=\"secondary\" style={{ fontSize: 11 }}>查看完整结果</Text>} key=\"result\">\n                                <pre style={{\n                                  margin: 0, padding: 8,\n                                  background: '#f5f5f5', borderRadius: 6,\n                                  fontSize: 11, lineHeight: 1.5,\n                                  overflowX: 'auto', maxHeight: 300,\n                                }}>\n                                  {typeof tool.result === 'string' ? tool.result : JSON.stringify(tool.result, null, 2)}\n                                </pre>\n                              </Collapse.Panel>\n                            </Collapse>\n                          ) : null}\n                        </div>\n                      </List.Item>\n                    )}\n                  />\n                </div>\n              ) : null}\n\n              {actionProposals.length ? (\n                <div>\n                  <Text strong>变更提案</Text>\n                  <List\n                    size=\"small\"\n                    dataSource={actionProposals}\n                    renderItem={(item) => {\n                      const riskColor = item.riskLevel === 'high' ? 'red' : item.riskLevel === 'medium' ? 'orange' : 'green'\n                      const statusColor = item.status === 'pending_confirm' ? 'orange' : item.status === 'approved' ? 'blue' : item.status === 'succeeded' ? 'green' : item.status === 'failed' ? 'red' : 'default'\n                      return (\n                        <List.Item style={{ paddingInline: 0 }}>\n                          <div style={{ width: '100%' }}>\n                            <Space wrap>\n                              <Tag color=\"orange\">{item.actionType}</Tag>\n                              <Tag color={riskColor}>{item.riskLevel}</Tag>\n                              <Text strong>{item.title || item.summary}</Text>\n                              <Tag color={statusColor}>{item.status}</Tag>\n                            </Space>\n                            <div style={{ marginTop: 4, fontSize: 12, color: '#8c8c8c' }}>\n                              目标资源：{item.targetKind} / {item.targetNamespace} / {item.targetName}\n                            </div>\n                            {item.riskLevel === 'high' && (\n                              <Alert\n                                type=\"error\"\n                                showIcon\n                                banner\n                                message=\"高危操作\"\n                                description=\"此操作为高危操作，需要两位管理员分别确认后才能执行。请仔细核实操作目标和影响范围。\"\n                                style={{ marginTop: 8, marginBottom: 8 }}\n                              />\n                            )}\n                            {item.status === 'pending_confirm' ? (\n                              <div style={{ marginTop: 8 }}>\n                                {confirmingId === item.id ? (\n                                  <Space direction=\"vertical\" size={8} style={{ width: '100%' }}>\n                                    <Input\n                                      placeholder={`请输入确认短语：${item.requiredConfirmationText}`}\n                                      value={confirmText}\n                                      onChange={(e) => setConfirmText(e.target.value)}\n                                      size=\"small\"\n                                    />\n                                    <Checkbox\n                                      checked={confirmRisk}\n                                      onChange={(e) => setConfirmRisk(e.target.checked)}\n                                    >\n                                      我已了解此操作的风险\n                                    </Checkbox>\n                                    {item.riskLevel === 'high' && item.confirmLevel === 'double' && (\n                                      <div style={{ fontSize: 12, color: '#ff4d4f', marginTop: 4 }}>\n                                        ⚠ 此操作需要双重确认：您确认后，还需另一位管理员进行二次确认。\n                                      </div>\n                                    )}\n                                    <Space>\n                                      <Button\n                                        type=\"primary\"\n                                        size=\"small\"\n                                        loading={confirmLoading}\n                                        onClick={() => void handleConfirm(item)}\n                                      >\n                                        确认执行\n                                      </Button>\n                                      <Button\n                                        size=\"small\"\n                                        onClick={() => {\n                                          setConfirmingId(null)\n                                          setConfirmText('')\n                                          setConfirmRisk(false)\n                                        }}\n                                      >\n                                        拒绝\n                                      </Button>\n                                    </Space>\n                                  </Space>\n                                ) : (\n                                  <Button\n                                    type=\"primary\"\n                                    size=\"small\"\n                                    onClick={() => {\n                                      setConfirmingId(item.id)\n                                      setConfirmText('')\n                                      setConfirmRisk(false)\n                                    }}\n                                  >\n                                    确认\n                                  </Button>\n                                )}\n                              </div>\n                            ) : null}\n                            {item.status === 'approved' ? (\n                              <div style={{ marginTop: 4, color: '#1677ff', fontSize: 12 }}>\n                                等待二次确认\n                              </div>\n                            ) : null}\n                            {item.status === 'succeeded' ? (\n                              <div style={{ marginTop: 4, color: '#52c41a', fontSize: 12 }}>\n                                执行成功\n                              </div>\n                            ) : null}\n                            {item.status === 'failed' ? (\n                              <div style={{ marginTop: 4, color: '#ff4d4f', fontSize: 12 }}>\n                                执行失败：{item.latestExecution?.errorMessage || '未知错误'}\n                              </div>\n                            ) : null}\n                          </div>\n                        </List.Item>\n                      )\n                    }}\n                  />\n                </div>\n              ) : null}\n            </Card>\n          ) : null}\n\n          <Card size=\"small\" title=\"输入与附件\">\n            <Space direction=\"vertical\" size={12} style={{ width: '100%' }}>\n              <Upload\n                multiple\n                beforeUpload={() => false}\n                disabled={isBusy}\n                fileList={pendingFiles}\n                onChange={({ fileList }) => setPendingFiles(fileList.slice(-6))}\n              >\n                <Button icon={<PaperClipOutlined />} disabled={isBusy}>上传文件 / 图片</Button>\n              </Upload>\n\n              <Space size={[6, 6]} wrap>\n                {imageFiles.length ? <Tag color=\"purple\">{imageFiles.length} 张图片</Tag> : null}\n                {textFiles.length ? <Tag color=\"cyan\">{textFiles.length} 个文件</Tag> : null}\n              </Space>\n\n              <TextArea\n                ref={inputRef}\n                value={inputValue}\n                onChange={(event) => setInputValue(event.target.value)}\n                disabled={isBusy}\n                autoSize={{ minRows: 4, maxRows: 8 }}\n                placeholder=\"输入运维问题。可结合附件、命名空间或具体资源进行追问。\"\n                onPressEnter={(event) => {\n                  if (!event.shiftKey) {\n                    event.preventDefault()\n                    void handleSend()\n                  }\n                }}\n              />\n\n              {/* 最近提问快捷标签 */}\n              {recentInputs.length > 0 && !inputValue && (\n                <div style={{ marginTop: 4 }}>\n                  <Text type=\"secondary\" style={{ fontSize: 11, marginRight: 4 }}>最近提问：</Text>\n                  {recentInputs.slice(0, 3).map((text, i) => (\n                    <Tag\n                      key={i}\n                      style={{ cursor: 'pointer', marginBottom: 2, fontSize: 11 }}\n                      onClick={() => setInputValue(text)}\n                    >\n                      {text.length > 20 ? text.slice(0, 20) + '...' : text}\n                    </Tag>\n                  ))}\n                </div>\n              )}\n\n              <Space>\n                {isStreaming ? (\n                  <Button icon={<StopOutlined />} onClick={stopGeneration}>\n                    停止生成\n                  </Button>\n                ) : (\n                  <Button\n                    type=\"primary\"\n                    icon={<SendOutlined />}\n                    loading={isResponding}\n                    onClick={() => void handleSend()}\n                    disabled={!selectedClusterId || !inputValue.trim() || Boolean(modelCapabilityWarning) || isResponding}\n                  >\n                    发送\n                  </Button>\n                )}\n                {activeConversationId ? (\n                  <Tooltip title=\"清空当前对话\">\n                    <Button\n                      icon={<ClearOutlined />}\n                      onClick={() => {\n                        clearConversation()\n                        history.replace('/ai/chat')\n                        setActiveConversationId(undefined)\n                      }}\n                    >\n                      新对话\n                    </Button>\n                  </Tooltip>\n                ) : null}\n              </Space>\n\n              {/* 诊断模板快捷入口 */}\n              <div>\n                <Text type=\"secondary\" style={{ fontSize: 12, marginRight: 8 }}>快捷模板：</Text>\n                <Space size={[4, 4]} wrap>\n                  <Button size=\"small\" icon={<ThunderboltOutlined />} onClick={() => setInputValue('请帮我做一次当前范围的故障诊断')} disabled={isBusy}>巡检诊断</Button>\n                  <Button size=\"small\" icon={<FileTextOutlined />} onClick={() => setInputValue('请查看最近的集群事件并分析是否有异常')} disabled={isBusy}>事件分析</Button>\n                  <Button size=\"small\" icon={<FileSearchOutlined />} onClick={() => setInputValue('请查看当前范围内异常 Pod 的日志')} disabled={isBusy}>日志排查</Button>\n                  <Button size=\"small\" icon={<FileTextOutlined />} onClick={() => setInputValue('请导出当前资源的 YAML 配置并分析')} disabled={isBusy}>YAML 分析</Button>\n                  <Button size=\"small\" icon={<ThunderboltOutlined />} onClick={() => setInputValue('请分析当前命名空间的资源使用情况，检查是否有资源瓶颈或配额不足')} disabled={isBusy}>容量分析</Button>\n                  <Button size=\"small\" icon={<SafetyOutlined />} onClick={() => setInputValue('请检查当前范围内的安全风险，包括 RBAC 权限、Secret 使用、网络策略等')} disabled={isBusy}>安全审计</Button>\n                </Space>\n              </div>\n            </Space>\n          </Card>\n        </Card>\n      </div>\n\n      {/* 会话重命名 Modal */}\n      <Modal\n        title=\"重命名会话\"\n        open={renamingId !== undefined}\n        onOk={() => void handleRenameConfirm()}\n        onCancel={() => setRenamingId(undefined)}\n      >\n        <Input\n          value={renamingTitle}\n          onChange={(e) => setRenamingTitle(e.target.value)}\n          placeholder=\"会话标题\"\n          onPressEnter={() => void handleRenameConfirm()}\n        />\n      </Modal>\n    </AppPage>\n  )\n}\n\nexport default AIChatPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/ai/chat.tsx"
     },
@@ -6841,7 +5222,7 @@
       "parentId": "23",
       "id": "26",
       "absPath": "/ai/history",
-      "__content": "import React from 'react'\nimport { Button, Card, Empty, List, message, Popconfirm, Tag, Typography } from 'antd'\nimport { DeleteOutlined, MessageOutlined, PlusOutlined } from '@ant-design/icons'\nimport { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'\nimport { useNavigate } from '@umijs/max'\nimport { AppPage } from '@/components'\nimport { deleteConversation, listConversations } from '@/services/ai'\nimport { formatDate } from '@/utils'\n\nconst { Text } = Typography\n\nconst AIHistoryPage: React.FC = () => {\n  const navigate = useNavigate()\n  const queryClient = useQueryClient()\n\n  const { data, isLoading } = useQuery({\n    queryKey: ['conversations'],\n    queryFn: () => listConversations(),\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (id: number) => deleteConversation(id),\n    onSuccess: () => {\n      message.success('删除成功')\n      queryClient.invalidateQueries({ queryKey: ['conversations'] })\n    },\n    onError: () => message.error('删除失败'),\n  })\n\n  const conversations = data?.items || []\n\n  return (\n    <AppPage>\n      <Card\n        extra={\n          <Button type=\"primary\" icon={<PlusOutlined />} onClick={() => navigate('/ai/chat')}>\n            新建对话\n          </Button>\n        }\n      >\n        {!isLoading && conversations.length === 0 ? (\n          <Empty description=\"暂无对话历史\">\n            <Button type=\"primary\" onClick={() => navigate('/ai/chat')}>\n              开始对话\n            </Button>\n          </Empty>\n        ) : (\n          <List\n            loading={isLoading}\n            dataSource={conversations}\n            renderItem={(item) => (\n              <List.Item\n                actions={[\n                  <Tag key=\"count\" color=\"blue\">\n                    {item.messageCount} 条消息\n                  </Tag>,\n                  <Text key=\"time\" type=\"secondary\" style={{ fontSize: 12 }}>\n                    {formatDate(item.updatedAt)}\n                  </Text>,\n                  <Popconfirm\n                    key=\"delete\"\n                    title=\"确定删除该对话？\"\n                    onConfirm={() => deleteMutation.mutate(item.id)}\n                  >\n                    <Button type=\"text\" danger size=\"small\" icon={<DeleteOutlined />} />\n                  </Popconfirm>,\n                ]}\n              >\n                <List.Item.Meta\n                  avatar={<MessageOutlined style={{ fontSize: 20, color: '#1677ff' }} />}\n                  title={<a onClick={() => navigate(`/ai/chat?id=${item.id}`)}>{item.title}</a>}\n                  description={\n                    <Text type=\"secondary\" ellipsis style={{ maxWidth: 500 }}>\n                      更新于 {formatDate(item.updatedAt)}\n                    </Text>\n                  }\n                />\n              </List.Item>\n            )}\n          />\n        )}\n      </Card>\n    </AppPage>\n  )\n}\n\nexport default AIHistoryPage\n",
+      "__content": "import React from 'react'\nimport { Button, Card, Empty, List, message, Popconfirm, Tag, Typography } from 'antd'\nimport { DeleteOutlined, MessageOutlined, PlusOutlined } from '@ant-design/icons'\nimport { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'\nimport { useNavigate } from '@umijs/max'\nimport { AppPage } from '@/components'\nimport { deleteConversation, listConversations } from '@/services/ai'\nimport { formatDate } from '@/utils'\n\nconst { Text } = Typography\n\nconst AIHistoryPage: React.FC = () => {\n  const navigate = useNavigate()\n  const queryClient = useQueryClient()\n\n  const { data, isLoading } = useQuery({\n    queryKey: ['ai-conversations'],\n    queryFn: ({ signal }) => listConversations(undefined, signal),\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: (id: number) => deleteConversation(id),\n    onSuccess: () => {\n      message.success('删除成功')\n      queryClient.invalidateQueries({ queryKey: ['ai-conversations'] })\n    },\n    onError: () => message.error('删除失败'),\n  })\n\n  const conversations = data?.items || []\n\n  return (\n    <AppPage>\n      <Card\n        extra={\n          <Button type=\"primary\" icon={<PlusOutlined />} onClick={() => navigate('/ai/chat')}>\n            新建对话\n          </Button>\n        }\n      >\n        {!isLoading && conversations.length === 0 ? (\n          <Empty description=\"暂无对话历史\">\n            <Button type=\"primary\" onClick={() => navigate('/ai/chat')}>\n              开始对话\n            </Button>\n          </Empty>\n        ) : (\n          <List\n            loading={isLoading}\n            dataSource={conversations}\n            renderItem={(item) => (\n              <List.Item\n                actions={[\n                  <Tag key=\"count\" color=\"blue\">\n                    {item.messageCount} 条消息\n                  </Tag>,\n                  <Text key=\"time\" type=\"secondary\" style={{ fontSize: 12 }}>\n                    {formatDate(item.updatedAt)}\n                  </Text>,\n                  <Popconfirm\n                    key=\"delete\"\n                    title=\"确定删除该对话？\"\n                    onConfirm={() => deleteMutation.mutate(item.id)}\n                  >\n                    <Button type=\"text\" danger size=\"small\" icon={<DeleteOutlined />} />\n                  </Popconfirm>,\n                ]}\n              >\n                <List.Item.Meta\n                  avatar={<MessageOutlined style={{ fontSize: 20, color: '#1677ff' }} />}\n                  title={<a onClick={() => navigate(`/ai/chat?id=${item.id}`)}>{item.title}</a>}\n                  description={\n                    <Text type=\"secondary\" ellipsis style={{ maxWidth: 500 }}>\n                      更新于 {formatDate(item.updatedAt)}\n                    </Text>\n                  }\n                />\n              </List.Item>\n            )}\n          />\n        )}\n      </Card>\n    </AppPage>\n  )\n}\n\nexport default AIHistoryPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/ai/history.tsx"
     },
@@ -8093,11 +6474,9 @@
     "done": true,
     "progresses": [
       {
-        "percent": 0.95,
-        "status": "emitting",
-        "details": [
-          "emit"
-        ]
+        "percent": 1,
+        "status": "",
+        "details": []
       }
     ]
   },
@@ -8139,7 +6518,7 @@
   "faviconFiles": [],
   "port": 8000,
   "host": "0.0.0.0",
-  "ip": "10.12.250.191",
+  "ip": "10.12.250.40",
   "antd": {
     "pkgPath": "D:\\03_学习\\soft\\k8s-platform\\frontend\\node_modules\\antd",
     "version": "5.29.3"
@@ -10171,7 +8550,7 @@
             "format": "esm"
           },
           "src/components/MarkdownContent.tsx": {
-            "bytes": 15526,
+            "bytes": 15631,
             "imports": [
               {
                 "path": "react",
@@ -11900,7 +10279,7 @@
             "format": "esm"
           },
           "src/services/ai.ts": {
-            "bytes": 16197,
+            "bytes": 16485,
             "imports": [
               {
                 "path": "src/.umi/exports.ts",
@@ -11911,7 +10290,7 @@
             "format": "esm"
           },
           "src/hooks/useAIChat.ts": {
-            "bytes": 11102,
+            "bytes": 11407,
             "imports": [
               {
                 "path": "react",
@@ -11958,7 +10337,7 @@
             "format": "esm"
           },
           "src/pages/ai/chat.tsx": {
-            "bytes": 34836,
+            "bytes": 48096,
             "imports": [
               {
                 "path": "react",
@@ -12006,6 +10385,11 @@
                 "original": "@/services/clusters"
               },
               {
+                "path": "src/services/k8s/index.ts",
+                "kind": "import-statement",
+                "original": "@/services/k8s"
+              },
+              {
                 "path": "src/utils/index.ts",
                 "kind": "import-statement",
                 "original": "@/utils"
@@ -12019,7 +10403,7 @@
             "format": "esm"
           },
           "src/pages/ai/history.tsx": {
-            "bytes": 2930,
+            "bytes": 2963,
             "imports": [
               {
                 "path": "react",
@@ -19539,7 +17923,7 @@
                 "bytesInOutput": 3828
               },
               "src/components/MarkdownContent.tsx": {
-                "bytesInOutput": 14925
+                "bytesInOutput": 15030
               },
               "src/components/index.ts": {
                 "bytesInOutput": 542
@@ -19701,19 +18085,19 @@
                 "bytesInOutput": 214
               },
               "src/services/ai.ts": {
-                "bytesInOutput": 13587
+                "bytesInOutput": 14102
               },
               "src/hooks/useAIChat.ts": {
-                "bytesInOutput": 10013
+                "bytesInOutput": 10264
               },
               "src/hooks/index.ts": {
                 "bytesInOutput": 199
               },
               "src/pages/ai/chat.tsx": {
-                "bytesInOutput": 42398
+                "bytesInOutput": 58065
               },
               "src/pages/ai/history.tsx": {
-                "bytesInOutput": 4016
+                "bytesInOutput": 4025
               },
               "src/pages/ai/settings.tsx": {
                 "bytesInOutput": 35568
@@ -19734,7 +18118,7 @@
                 "bytesInOutput": 12374
               },
               "src/pages/deploy/credentials.tsx": {
-                "bytesInOutput": 11884
+                "bytesInOutput": 11888
               },
               "src/pages/deploy/config.tsx": {
                 "bytesInOutput": 22697
@@ -19947,7 +18331,7 @@
                 "bytesInOutput": 2108
               }
             },
-            "bytes": 1324179
+            "bytes": 1340730
           }
         }
       }

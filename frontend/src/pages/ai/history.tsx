@@ -14,15 +14,15 @@ const AIHistoryPage: React.FC = () => {
   const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['conversations'],
-    queryFn: () => listConversations(),
+    queryKey: ['ai-conversations'],
+    queryFn: ({ signal }) => listConversations(undefined, signal),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteConversation(id),
     onSuccess: () => {
       message.success('删除成功')
-      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+      queryClient.invalidateQueries({ queryKey: ['ai-conversations'] })
     },
     onError: () => message.error('删除失败'),
   })

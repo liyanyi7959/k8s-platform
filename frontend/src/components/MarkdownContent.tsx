@@ -229,10 +229,10 @@ function renderInline(text: string, tone: MarkdownTone, keyPrefix: string): Reac
           key={`${keyPrefix}-code-${start}`}
           style={{
             fontFamily: 'Consolas, Monaco, monospace',
-            background: tone === 'dark' ? 'rgba(255,255,255,0.16)' : '#f3f4f6',
+            background: tone === 'dark' ? 'rgba(255,255,255,0.1)' : '#f0f0f0',
             borderRadius: 6,
             padding: '2px 6px',
-            color: 'inherit',
+            color: tone === 'dark' ? '#ff9c6e' : '#c41d7f',
           }}
         >
           {token.slice(1, -1)}
@@ -252,7 +252,7 @@ function renderInline(text: string, tone: MarkdownTone, keyPrefix: string): Reac
             key={`${keyPrefix}-link-${start}`}
             href={linkMatch[2]}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             style={{
               color: tone === 'dark' ? '#dbeafe' : '#1677ff',
               textDecoration: 'underline',
@@ -372,6 +372,8 @@ function renderBlock(block: MarkdownBlock, tone: MarkdownTone, index: number) {
           style={{
             margin: '8px 0 12px 20px',
             padding: 0,
+            paddingLeft: 22,
+            listStyleType: 'decimal',
             color: textColor,
           }}
         >

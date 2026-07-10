@@ -409,6 +409,14 @@ export function getConversation(id: number | string, signal?: AbortSignal): Prom
   return request(`/api/v1/ai/conversations/${id}`, { signal }).then(mapAIConversationDetail)
 }
 
+/** 更新会话标题（后端可能未实现 PATCH，调用失败时由前端本地回退） */
+export function updateConversation(id: number | string, data: { title?: string }): Promise<any> {
+  return request(`/api/v1/ai/conversations/${id}`, {
+    method: 'PATCH',
+    data,
+  })
+}
+
 export function deleteConversation(id: number | string): Promise<void> {
   return request(`/api/v1/ai/conversations/${id}`, { method: 'DELETE' })
 }

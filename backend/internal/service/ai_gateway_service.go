@@ -16,9 +16,25 @@ import (
 	"k8s-platform-backend/internal/model"
 )
 
+// AIToolSpec 描述暴露给 LLM 的工具规格（OpenAI function calling 格式）
+type AIToolSpec struct {
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Parameters  model.JSONMap `json:"parameters"`
+}
+
+// AIToolCall 表示 LLM 返回的一次工具调用请求
+type AIToolCall struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"` // JSON 字符串
+}
+
 type AIGatewayMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role       string       `json:"role"`
+	Content    string       `json:"content"`
+	ToolCallID string       `json:"tool_call_id,omitempty"` // tool 角色消息使用
+	ToolCalls  []AIToolCall `json:"tool_calls,omitempty"`   // assistant 角色消息使用
 }
 
 type AIGatewayImage struct {
@@ -35,17 +51,19 @@ type AIGatewayFileContext struct {
 }
 
 type AIGatewayRequest struct {
-	ConversationID  uint64
-	AssistantMode   string
-	ProviderID      *uint64
-	ModelID         *uint64
-	PreferModelCode string
-	Messages        []AIGatewayMessage
-	CurrentImages   []AIGatewayImage
-	CurrentFiles    []AIGatewayFileContext
-	DiagnosticSummary string
-	DiagnosticNotes string
-	ScopeNote       string
+	ConversationID      uint64
+	AssistantMode       string
+	ProviderID          *uint64
+	ModelID             *uint64
+	PreferModelCode     string
+	Messages            []AIGatewayMessage
+	CurrentImages       []AIGatewayImage
+	CurrentFiles        []AIGatewayFileContext
+	DiagnosticSummary   string
+	DiagnosticNotes     string
+	ScopeNote           string
+	Tools               []AIToolSpec // LLM function calling 工具列表
+	FunctionCallingMode bool         // true 时跳过诊断注入和 last-user 增强，直接透传消息
 }
 
 type AIGatewayUsage struct {
@@ -62,6 +80,7 @@ type AIGatewayResponse struct {
 	ModelName        string
 	ModelCode        string
 	Content          string
+	ToolCalls        []AIToolCall // LLM 请求的工具调用（为空时表示直接给出文本回答）
 	SuggestedActions []AISuggestedAction
 	Usage            AIGatewayUsage
 }
@@ -102,6 +121,18 @@ func (s *AIGatewayService) Invoke(ctx context.Context, req AIGatewayRequest) (AI
 	default:
 		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "当前提供商类型暂不支持在线调用")
 	}
+}
+
+// ModelSupportsTools 解析当前请求对应的模型是否支持 function calling
+func (s *AIGatewayService) ModelSupportsTools(ctx context.Context, req AIGatewayRequest) bool {
+	if s == nil || s.db == nil {
+		return false
+	}
+	_, aiModel, _, err := s.resolveInvocationTarget(ctx, req)
+	if err != nil {
+		return false
+	}
+	return aiModel.SupportsTools
 }
 
 func (s *AIGatewayService) resolveInvocationTarget(ctx context.Context, req AIGatewayRequest) (model.AIProvider, model.AIModel, string, error) {
@@ -327,6 +358,30 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 		"temperature": 0.2,
 		"stream":      false,
 	}
+	// 模型支持 function calling 且请求携带工具时，添加 tools 参数
+	if aiModel.SupportsTools && len(req.Tools) > 0 {
+		tools := make([]map[string]any, 0, len(req.Tools))
+		for _, tool := range req.Tools {
+			// 确保 parameters 是有效的 JSON Schema 对象
+			params := tool.Parameters
+			if params == nil || len(params) == 0 {
+				params = model.JSONMap{
+					"type":       "object",
+					"properties": model.JSONMap{},
+				}
+			}
+			tools = append(tools, map[string]any{
+				"type": "function",
+				"function": map[string]any{
+					"name":        tool.Name,
+					"description": tool.Description,
+					"parameters":  params,
+				},
+			})
+		}
+		payload["tools"] = tools
+		payload["tool_choice"] = "auto"
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return AIGatewayResponse{}, err
@@ -369,13 +424,29 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 		return AIGatewayResponse{}, err
 	}
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, fmt.Sprintf("AI 提供商返回异常状态: %d", httpResp.StatusCode))
+		// 读取错误响应体，帮助诊断 400 等错误的具体原因
+		errBody := ""
+		if httpResp.Body != nil {
+			if b, readErr := io.ReadAll(io.LimitReader(httpResp.Body, 2048)); readErr == nil {
+				errBody = string(b)
+			}
+			_ = httpResp.Body.Close()
+		}
+		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, fmt.Sprintf("AI 提供商返回异常状态: %d, 响应: %s", httpResp.StatusCode, errBody))
 	}
 
 	var parsed struct {
 		Choices []struct {
 			Message struct {
-				Content string `json:"content"`
+				Content   string `json:"content"`
+				ToolCalls []struct {
+					ID       string `json:"id"`
+					Type     string `json:"type"`
+					Function struct {
+						Name      string `json:"name"`
+						Arguments string `json:"arguments"`
+					} `json:"function"`
+				} `json:"tool_calls"`
 			} `json:"message"`
 		} `json:"choices"`
 		Usage struct {
@@ -387,7 +458,25 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 	if err := json.Unmarshal(respBody, &parsed); err != nil {
 		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "AI 提供商响应格式无法解析")
 	}
-	if len(parsed.Choices) == 0 || strings.TrimSpace(parsed.Choices[0].Message.Content) == "" {
+	if len(parsed.Choices) == 0 {
+		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "AI 提供商未返回有效回答")
+	}
+
+	// 解析 tool_calls（LLM 可能返回工具调用而非文本回答）
+	var toolCalls []AIToolCall
+	if len(parsed.Choices[0].Message.ToolCalls) > 0 {
+		toolCalls = make([]AIToolCall, 0, len(parsed.Choices[0].Message.ToolCalls))
+		for _, tc := range parsed.Choices[0].Message.ToolCalls {
+			toolCalls = append(toolCalls, AIToolCall{
+				ID:        tc.ID,
+				Name:      tc.Function.Name,
+				Arguments: tc.Function.Arguments,
+			})
+		}
+	}
+
+	// 有 tool_calls 时允许 content 为空；无 tool_calls 时 content 不能为空
+	if len(toolCalls) == 0 && strings.TrimSpace(parsed.Choices[0].Message.Content) == "" {
 		return AIGatewayResponse{}, ErrWithMessage(ErrInvalidParams, "AI 提供商未返回有效回答")
 	}
 
@@ -398,6 +487,7 @@ func (s *AIGatewayService) invokeOpenAICompatible(
 		ModelName:    aiModel.Name,
 		ModelCode:    aiModel.ModelCode,
 		Content:      strings.TrimSpace(parsed.Choices[0].Message.Content),
+		ToolCalls:    toolCalls,
 		Usage: AIGatewayUsage{
 			RequestTokens:  parsed.Usage.PromptTokens,
 			ResponseTokens: parsed.Usage.CompletionTokens,
@@ -453,6 +543,29 @@ func (s *AIGatewayService) InvokeStream(ctx context.Context, req AIGatewayReques
 		"temperature": 0.2,
 		"stream":      true,
 	}
+	// 模型支持 function calling 且请求携带工具时，添加 tools 参数
+	if aiModel.SupportsTools && len(req.Tools) > 0 {
+		tools := make([]map[string]any, 0, len(req.Tools))
+		for _, tool := range req.Tools {
+			params := tool.Parameters
+			if params == nil || len(params) == 0 {
+				params = model.JSONMap{
+					"type":       "object",
+					"properties": model.JSONMap{},
+				}
+			}
+			tools = append(tools, map[string]any{
+				"type": "function",
+				"function": map[string]any{
+					"name":        tool.Name,
+					"description": tool.Description,
+					"parameters":  params,
+				},
+			})
+		}
+		payload["tools"] = tools
+		payload["tool_choice"] = "auto"
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, result, err
@@ -483,8 +596,12 @@ func (s *AIGatewayService) InvokeStream(ctx context.Context, req AIGatewayReques
 		return nil, result, ErrWithMessage(ErrK8sNetwork, "AI 提供商连接失败")
 	}
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		errBody := ""
+		if b, readErr := io.ReadAll(io.LimitReader(httpResp.Body, 2048)); readErr == nil {
+			errBody = string(b)
+		}
 		_ = httpResp.Body.Close()
-		return nil, result, ErrWithMessage(ErrInvalidParams, fmt.Sprintf("AI 提供商返回异常状态: %d", httpResp.StatusCode))
+		return nil, result, ErrWithMessage(ErrInvalidParams, fmt.Sprintf("AI 提供商返回异常状态: %d, 响应: %s", httpResp.StatusCode, errBody))
 	}
 
 	return httpResp.Body, result, nil
@@ -492,6 +609,14 @@ func (s *AIGatewayService) InvokeStream(ctx context.Context, req AIGatewayReques
 
 func buildAISystemPromptV2(mode string) string {
 	base := "You are the built-in AI assistant of a Kubernetes management platform. The platform backend can directly collect live, read-only cluster evidence for the current scope. When evidence is provided, treat it as current platform data. State confirmed facts directly, separate them from inference, and do not say that you cannot access the cluster. Do not ask the user to run kubectl for data that the platform has already collected. If counts, lists, states, logs, metrics, events, or rollout details appear in evidence, answer with them directly. When evidence exists, do not lead with a generic checklist; lead with the confirmed findings from the evidence first. Only say evidence is insufficient when the evidence for this round is truly missing, partial, or failed. Format the final answer in Markdown, using short headings, lists, tables, and fenced code blocks whenever they improve readability."
+
+	// 精确性规则：防止 LLM 篡改或编造命名空间、资源名等关键信息
+	accuracyRules := `
+## ACCURACY RULES (MANDATORY)
+1. ALWAYS use the EXACT namespace, resource kind, and resource name as provided by the user or platform context. NEVER modify, abbreviate, or alter resource names.
+2. If the user mentions "blueking" namespace, write "blueking", NOT "bluebooking" or any variation.
+3. When evidence is missing for a specific resource, state exactly which resource you were looking for and that evidence was not collected. Do NOT fabricate resource names, namespaces, or configuration values.
+4. If you are unsure about a name, quote the user's original text verbatim rather than guessing.`
 
 	// 安全规则：强制人工确认
 	safetyRules := `
@@ -512,10 +637,17 @@ func buildAISystemPromptV2(mode string) string {
 	if strings.TrimSpace(mode) == "chat" {
 		modeRule = " Current mode is general assistance. Keep answers concise but evidence-based. You may explain, compare, and summarize, but you must still respect platform permissions and must not imply direct write execution."
 	} else {
-		modeRule = " Current mode is fault diagnosis. Prefer an answer structure of issue summary, key evidence, likely causes, impact scope, and next step. For write actions, only provide recommendations or proposals and never imply that a risky change has already been executed."
+		modeRule = ` Current mode is fault diagnosis. Structure your response as follows:
+1. **问题概述** - One-sentence summary of the detected issue
+2. **关键证据** - List the confirmed evidence from diagnostic tools (with tool name references)
+3. **可能原因** - Ranked list of likely root causes with confidence level (高/中/低)
+4. **影响范围** - Affected resources, namespaces, or services
+5. **建议操作** - Specific next steps, clearly marked as proposals requiring human confirmation
+
+When evidence is insufficient for a section, state "证据不足" explicitly rather than guessing.`
 	}
 
-	return base + safetyRules + modeRule
+	return base + accuracyRules + safetyRules + modeRule
 }
 
 func (r AIGatewayRequest) RequiresVision() bool {
@@ -528,16 +660,48 @@ func (r AIGatewayRequest) RequiresFileInput() bool {
 
 func buildOpenAICompatibleMessages(req AIGatewayRequest) []map[string]any {
 	systemPrompt := buildAISystemPromptV2(req.AssistantMode)
-	messages := make([]map[string]any, 0, len(req.Messages)+4)
+	messages := make([]map[string]any, 0, len(req.Messages)+6)
 	messages = append(messages, map[string]any{
 		"role":    "system",
 		"content": systemPrompt,
 	})
+	// 工具可用时注入工具使用说明
+	if len(req.Tools) > 0 {
+		messages = append(messages, map[string]any{
+			"role": "system",
+			"content": `## TOOL USE
+You have access to platform diagnostic tools. When you need cluster data, call the appropriate tool instead of saying "证据不足".
+
+Available tool categories:
+- cluster.health / cluster.overview - 集群级健康和概览
+- namespace.inspect / namespace.health / namespace.summary - 命名空间级检查
+- resource.list / resource.search - 资源列表和搜索
+- pod.inspect / node.inspect / deployment.inspect / resource.inspect - 资源详情
+- resource.events - 事件查询
+- resource.logs - 日志采集
+- resource.yaml / resource.masked_yaml - YAML 导出
+
+Rules:
+1. Call tools proactively when you need data. Do NOT ask the user to run commands.
+2. For general knowledge questions (e.g. "什么是 Deployment"), answer directly WITHOUT calling tools.
+3. Prefer calling 1-2 most relevant tools first. Only call more if initial evidence is insufficient.
+4. After receiving tool results, analyze them and decide: call more tools or provide final answer.
+5. When listing ConfigMaps or Secrets, if the user asks about specific configuration, call resource.inspect on the relevant ConfigMap to see its data content.`,
+		})
+	}
 	if scopeNote := strings.TrimSpace(req.ScopeNote); scopeNote != "" {
 		messages = append(messages, map[string]any{
 			"role":    "system",
 			"content": scopeNote,
 		})
+	}
+
+	// function calling 模式：直接透传所有消息（含 tool_calls / tool_call_id），不做 last-user 增强
+	if req.FunctionCallingMode {
+		for _, item := range req.Messages {
+			messages = append(messages, buildOpenAIMessageFromGateway(item))
+		}
+		return messages
 	}
 
 	lastUserIndex := -1
@@ -564,21 +728,74 @@ func buildOpenAICompatibleMessages(req AIGatewayRequest) []map[string]any {
 	messages = appendOpenAIContextMessages(messages, req)
 	if lastUserIndex >= 0 && lastUserIndex < len(req.Messages) {
 		currentUser := req.Messages[lastUserIndex]
-		messages = append(messages, buildOpenAIUserMessage("user", buildOpenAICurrentTurnContent(currentUser.Content, req.DiagnosticSummary), req.CurrentFiles, req.CurrentImages))
+		messages = append(messages, buildOpenAIUserMessage("user", buildOpenAICurrentTurnContent(currentUser.Content, req.DiagnosticSummary, req.ScopeNote), req.CurrentFiles, req.CurrentImages))
 	}
 	return messages
 }
 
-func buildOpenAICurrentTurnContent(content, diagnosticSummary string) string {
+// buildOpenAIMessageFromGateway 将 AIGatewayMessage 转换为 OpenAI 兼容的 map 格式
+// 正确处理 tool_calls（assistant 角色）和 tool_call_id（tool 角色）
+func buildOpenAIMessageFromGateway(item AIGatewayMessage) map[string]any {
+	role := strings.ToLower(strings.TrimSpace(item.Role))
+	if role == "" {
+		role = "user"
+	}
+
+	// tool 角色消息：包含 tool_call_id
+	if item.ToolCallID != "" {
+		return map[string]any{
+			"role":         role,
+			"content":      item.Content,
+			"tool_call_id": item.ToolCallID,
+		}
+	}
+
+	// assistant 角色消息 with tool_calls
+	if len(item.ToolCalls) > 0 {
+		toolCalls := make([]map[string]any, 0, len(item.ToolCalls))
+		for _, tc := range item.ToolCalls {
+			toolCalls = append(toolCalls, map[string]any{
+				"id":   tc.ID,
+				"type": "function",
+				"function": map[string]any{
+					"name":      tc.Name,
+					"arguments": tc.Arguments,
+				},
+			})
+		}
+		msg := map[string]any{
+			"role":       role,
+			"tool_calls": toolCalls,
+		}
+		if strings.TrimSpace(item.Content) != "" {
+			msg["content"] = item.Content
+		}
+		return msg
+	}
+
+	return map[string]any{
+		"role":    role,
+		"content": item.Content,
+	}
+}
+
+func buildOpenAICurrentTurnContent(content, diagnosticSummary, scopeNote string) string {
 	userContent := strings.TrimSpace(content)
 	summary := strings.TrimSpace(diagnosticSummary)
-	if summary == "" {
-		return userContent
+	scope := strings.TrimSpace(scopeNote)
+
+	// 始终注入作用域信息，确保 LLM 使用精确的命名空间/资源名
+	var prefix string
+	if summary != "" {
+		prefix = summary + "\n\nTreat the above evidence as confirmed current platform data for this round. If earlier conversation turns conflict with it, trust this evidence.\n"
 	}
-	if userContent == "" {
-		return summary
+	if scope != "" {
+		prefix += "\n" + scope + "\n"
 	}
-	return summary + "\n\nTreat the above evidence as confirmed current platform data for this round. If earlier conversation turns conflict with it, trust this evidence.\n\nCurrent user request:\n" + userContent
+	if prefix != "" {
+		return prefix + "\nCurrent user request:\n" + userContent
+	}
+	return userContent
 }
 
 func appendOpenAIContextMessages(messages []map[string]any, req AIGatewayRequest) []map[string]any {

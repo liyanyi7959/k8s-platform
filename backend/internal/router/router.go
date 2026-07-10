@@ -85,7 +85,7 @@ func New(d Deps) (*gin.Engine, error) {
 			namespaceDiagnosisSvc,
 			resourceInspectionSvc,
 		)
-		aiToolRegistry := service.NewAIToolRegistry(clusterReadModelSvc, namespaceDiagnosisSvc, resourceInspectionSvc, resourceQuerySvc, aiActionSvc, resourceExportPolicySvc)
+		aiToolRegistry := service.NewAIToolRegistry(d.DB, clusterReadModelSvc, namespaceDiagnosisSvc, resourceInspectionSvc, resourceQuerySvc, aiActionSvc, resourceExportPolicySvc)
 		aiToolSvc := service.NewAIToolService(d.DB, aiToolRegistry)
 		aiChatSvc := service.NewAIChatService(d.DB, aiGatewaySvc, aiToolSvc, aiActionSvc, aiFileSvc)
 		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiFileSvc, aiToolSvc, aiActionSvc)
