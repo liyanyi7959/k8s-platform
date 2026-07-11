@@ -1,0 +1,7 @@
+---
+# pre_check role 默认变量
+
+min_cpu_cores: 2
+min_memory_mb: 2048
+min_disk_gb: 20
+master_required_ports: [6443, 2379, 2380, 10250, 10259, 10257]

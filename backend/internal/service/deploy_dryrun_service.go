@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 
 	"gorm.io/gorm"
 
@@ -18,7 +17,8 @@ type DryRunStep struct {
 	Title       string   `json:"title"`       // 步骤标题
 	Description string   `json:"description"` // 步骤说明
 	Phase       string   `json:"phase"`       // preflight/install/init/join/addon/finalize
-	Commands    []string `json:"commands"`    // 实际执行命令
+	Tasks       []string `json:"tasks"`       // Ansible task 描述列表
+	AppliesTo   string   `json:"applies_to"`  // all / master / worker
 	DependsOn   []string `json:"depends_on,omitempty"`
 }
 
@@ -42,7 +42,128 @@ type DryRunResult struct {
 	Summary     map[string]int   `json:"summary"` // 各阶段步骤数统计
 }
 
-// DryRunPlan 根据计划生成模拟运行流程
+// ansibleDryRunStepDef 定义 Ansible 部署步骤元数据
+type ansibleDryRunStepDef struct {
+	Key         string
+	Title       string
+	Description string
+	Phase       string
+	Tasks       []string
+	AppliesTo   string // all / master / worker
+	DependsOn   []string
+}
+
+// ansibleDryRunSteps Ansible 部署流水线的 7 个步骤定义
+var ansibleDryRunSteps = []ansibleDryRunStepDef{
+	{
+		Key:         "pre_check",
+		Title:       "环境预检",
+		Description: "检查目标节点的 CPU 核数、内存容量、磁盘空间、端口占用、hostname 唯一性等环境要求",
+		Phase:       "preflight",
+		AppliesTo:   "all",
+		Tasks: []string{
+			"Ping 测试 SSH 连通性",
+			"检查 OS 发行版和版本号",
+			"检查 CPU 核数 >= 2",
+			"检查内存 >= 2048MB",
+			"检查磁盘可用空间 >= 20GB",
+			"检查 hostname 是否设置且唯一",
+			"Master 节点检查端口 6443/2379/2380/10250/10259/10257 未被占用",
+		},
+	},
+	{
+		Key:         "bootstrap",
+		Title:       "基础环境初始化",
+		Description: "关闭 swap、加载内核模块（br_netfilter/overlay/nf_conntrack）、设置 sysctl 参数、禁用防火墙和 SELinux、安装基础依赖包、配置时间同步",
+		Phase:       "install",
+		AppliesTo:   "all",
+		Tasks: []string{
+			"关闭 swap 并注释 /etc/fstab 中的 swap 行",
+			"加载内核模块 br_netfilter, overlay, nf_conntrack 并持久化",
+			"设置 sysctl: net.bridge.bridge-nf-call-iptables=1, net.ipv4.ip_forward=1 等",
+			"停止并禁用 firewalld",
+			"设置 SELinux 为 permissive/disabled",
+			"安装基础包: device-mapper-persistent-data, lvm2, wget, curl, vim, chrony",
+			"配置 Kubernetes yum/apt 仓库",
+		},
+	},
+	{
+		Key:         "container_runtime",
+		Title:       "容器运行时安装",
+		Description: "安装 containerd 容器运行时，配置 SystemdCgroup 和 sandbox 镜像，启动并设置开机自启",
+		Phase:       "install",
+		AppliesTo:   "all",
+		Tasks: []string{
+			"安装 Docker CE 仓库（RedHat/Debian 双系兼容）",
+			"安装 containerd.io",
+			"生成 containerd 默认配置",
+			"设置 SystemdCgroup=true",
+			"设置 sandbox_image=registry.k8s.io/pause:3.9",
+			"启动 containerd 并设置开机自启",
+		},
+	},
+	{
+		Key:         "kubeadm_init",
+		Title:       "Kubernetes Master 初始化",
+		Description: "在 Master 节点安装 kubeadm/kubelet/kubectl，生成 kubeadm 配置文件，执行 kubeadm init 初始化集群，配置 kubeconfig，生成 worker 节点的 join 命令",
+		Phase:       "init",
+		AppliesTo:   "master",
+		Tasks: []string{
+			"安装 kubeadm, kubelet, kubectl（版本 " + "{{k8s_version}}" + "）",
+			"锁定版本不自动更新",
+			"生成 kubeadm-init.yaml 配置文件",
+			"执行 kubeadm init --config /tmp/kubeadm-init.yaml",
+			"配置 kubeconfig (~/.kube/config)",
+			"生成 worker join 命令 (kubeadm token create --print-join-command)",
+		},
+		DependsOn: []string{"bootstrap", "container_runtime"},
+	},
+	{
+		Key:         "join_workers",
+		Title:       "Worker 节点加入集群",
+		Description: "在 Worker 节点安装 kubeadm/kubelet，执行 kubeadm join 加入 Kubernetes 集群",
+		Phase:       "join",
+		AppliesTo:   "worker",
+		Tasks: []string{
+			"安装 kubeadm, kubelet（版本 " + "{{k8s_version}}" + "）",
+			"锁定版本不自动更新",
+			"执行 kubeadm join <master_ip>:6443 --token <token> --discovery-token-ca-cert-hash <hash>",
+		},
+		DependsOn: []string{"kubeadm_init"},
+	},
+	{
+		Key:         "install_cni",
+		Title:       "安装 CNI 网络插件",
+		Description: "在 Master 节点安装容器网络接口插件（Flannel/Calico/Cilium），等待 CNI Pods 就绪，检查节点状态",
+		Phase:       "addon",
+		AppliesTo:   "master",
+		Tasks: []string{
+			"根据 cni_type 变量选择 CNI 插件",
+			"Flannel: 下载并应用 kube-flannel.yml，替换 Pod 网段",
+			"Calico: 下载并应用 calico.yaml，替换 CIDR",
+			"Cilium: 安装 cilium CLI 并部署",
+			"等待 CNI Pods 就绪 (kubectl wait)",
+			"检查所有节点状态为 Ready",
+		},
+		DependsOn: []string{"kubeadm_init"},
+	},
+	{
+		Key:         "register",
+		Title:       "节点注册到管理平台",
+		Description: "从 Master 节点提取 kubeconfig，替换 API Server 地址为实际 IP，写回到 Ansible 控制器供后端 Go 代码注册集群",
+		Phase:       "finalize",
+		AppliesTo:   "master",
+		Tasks: []string{
+			"读取 /etc/kubernetes/admin.conf",
+			"替换 127.0.0.1:6443 为 Master 实际 IP:6443",
+			"写入 kubeconfig 到 /tmp/k8s-deploy-{cluster_name}-kubeconfig.yml",
+			"后端读取 kubeconfig 并注册集群到管理平台",
+		},
+		DependsOn: []string{"install_cni", "join_workers"},
+	},
+}
+
+// DryRunPlan 根据计划生成 Ansible 部署预览
 func (s *DeployService) DryRunPlan(ctx context.Context, planID uint64) (DryRunResult, error) {
 	if planID == 0 {
 		return DryRunResult{}, ErrInvalidParams
@@ -71,20 +192,13 @@ func (s *DeployService) DryRunPlan(ctx context.Context, planID uint64) (DryRunRe
 		serverMap[srv.ID] = srv
 	}
 
-	// 找出第一个 master（用于 init 步骤），其余 master 用于 controlplane join
+	// 排序：master 优先，按 sortOrder
 	sort.SliceStable(nodes, func(i, j int) bool {
 		if nodes[i].Role != nodes[j].Role {
 			return nodes[i].Role == "master"
 		}
 		return nodes[i].SortOrder < nodes[j].SortOrder
 	})
-	var firstMasterID uint64
-	for _, n := range nodes {
-		if n.Role == "master" {
-			firstMasterID = n.ServerID
-			break
-		}
-	}
 
 	flows := make([]DryRunNodeFlow, 0, len(nodes))
 	summary := map[string]int{}
@@ -94,8 +208,7 @@ func (s *DeployService) DryRunPlan(ctx context.Context, planID uint64) (DryRunRe
 		if serverName == "" {
 			serverName = fmt.Sprintf("server-%d", n.ServerID)
 		}
-		isFirstMaster := n.ServerID == firstMasterID
-		steps := s.buildNodeSteps(ctx, plan, n, srv, isFirstMaster)
+		steps := s.buildAnsibleSteps(n.Role)
 		for _, st := range steps {
 			summary[st.Phase]++
 		}
@@ -119,100 +232,28 @@ func (s *DeployService) DryRunPlan(ctx context.Context, planID uint64) (DryRunRe
 	}, nil
 }
 
-// buildNodeSteps 根据计划与节点角色生成步骤序列
-func (s *DeployService) buildNodeSteps(ctx context.Context, plan model.DeployPlan, node model.DeployPlanNode, server model.DeployServer, isFirstMaster bool) []DryRunStep {
-	stepMetas := []struct {
-		stepKey string
-		title   string
-		phase   string
-		when    func() bool
-	}{
-		{stepKey: "pre_check", title: "环境预检", phase: "preflight", when: func() bool { return true }},
-		{stepKey: "bootstrap", title: "基础环境初始化", phase: "install", when: func() bool { return true }},
-		{stepKey: "init_master", title: "初始化 Master", phase: "init", when: func() bool { return node.Role == "master" && isFirstMaster }},
-		{stepKey: "join_workers", title: "节点加入集群", phase: "join", when: func() bool { return node.Role == "worker" }},
-		{stepKey: "install_cni", title: "安装网络插件", phase: "addon", when: func() bool { return node.Role == "master" && isFirstMaster }},
-		{stepKey: "register", title: "注册集群", phase: "finalize", when: func() bool { return node.Role == "master" && isFirstMaster }},
-	}
-	data := deployTemplateData{
-		PlanID:       plan.ID,
-		PlanName:     plan.Name,
-		ClusterName:  plan.ClusterName,
-		K8sVersion:   plan.K8sVersion,
-		MinorVersion: strings.TrimPrefix(plan.K8sVersion, "v"),
-		PodCIDR:      plan.PodCIDR,
-		SvcCIDR:      plan.SvcCIDR,
-		MasterIP:     server.IP,
-		JoinCommand:  "kubeadm join <CONTROL_PLANE_ENDPOINT> --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>",
-		CNICommand:   resolveCNICommand(plan.CNIType),
-		NodeRole:     node.Role,
-		ServerID:     node.ServerID,
-		ServerIP:     server.IP,
-	}
-	if idx := strings.LastIndex(data.MinorVersion, "."); idx > 0 {
-		data.MinorVersion = data.MinorVersion[:idx]
-	}
-	steps := make([]DryRunStep, 0, len(stepMetas))
-	for _, meta := range stepMetas {
-		if !meta.when() {
+// buildAnsibleSteps 根据节点角色生成适用的 Ansible 步骤
+func (s *DeployService) buildAnsibleSteps(role string) []DryRunStep {
+	steps := make([]DryRunStep, 0, len(ansibleDryRunSteps))
+	for _, def := range ansibleDryRunSteps {
+		// 判断步骤是否适用于当前角色
+		if def.AppliesTo != "all" && def.AppliesTo != role {
 			continue
 		}
-		resolved, err := s.resolvePlanStep(ctx, plan, meta.stepKey, node, server, data)
-		if err != nil || !resolved.Config.Enabled {
-			continue
-		}
-		description := meta.title
-		if resolved.Config.Description != nil && strings.TrimSpace(*resolved.Config.Description) != "" {
-			description = *resolved.Config.Description
+		// 替换任务描述中的变量占位符
+		tasks := make([]string, len(def.Tasks))
+		for i, t := range def.Tasks {
+			tasks[i] = t
 		}
 		steps = append(steps, DryRunStep{
-			Key:         resolved.Config.StepKey,
-			Title:       resolved.Config.StepName,
-			Description: description,
-			Phase:       meta.phase,
-			Commands:    resolved.Commands,
+			Key:         def.Key,
+			Title:       def.Title,
+			Description: def.Description,
+			Phase:       def.Phase,
+			Tasks:       tasks,
+			AppliesTo:   def.AppliesTo,
+			DependsOn:   def.DependsOn,
 		})
 	}
 	return steps
-}
-
-func buildAddonStep(addon string) DryRunStep {
-	switch strings.ToLower(addon) {
-	case "metrics-server":
-		return DryRunStep{
-			Key: "addon.metrics-server", Title: "部署 Metrics Server", Phase: "addon",
-			Description: "提供节点和 Pod 资源使用指标",
-			Commands: []string{
-				"kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml",
-			},
-			DependsOn: []string{"addon.cni"},
-		}
-	case "ingress-nginx":
-		return DryRunStep{
-			Key: "addon.ingress-nginx", Title: "部署 Ingress NGINX", Phase: "addon",
-			Description: "提供 HTTP/HTTPS 路由能力",
-			Commands: []string{
-				"kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml",
-			},
-			DependsOn: []string{"addon.cni"},
-		}
-	case "dashboard":
-		return DryRunStep{
-			Key: "addon.dashboard", Title: "部署 Kubernetes Dashboard", Phase: "addon",
-			Description: "提供集群可视化管理面板",
-			Commands: []string{
-				"kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml",
-			},
-			DependsOn: []string{"addon.cni"},
-		}
-	default:
-		return DryRunStep{
-			Key: "addon." + addon, Title: "部署 " + addon, Phase: "addon",
-			Description: "自定义附加组件部署",
-			Commands: []string{
-				fmt.Sprintf("# 待提供 %s 组件的部署清单", addon),
-			},
-			DependsOn: []string{"addon.cni"},
-		}
-	}
 }

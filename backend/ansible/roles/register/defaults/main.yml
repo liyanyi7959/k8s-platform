@@ -1,0 +1,5 @@
+---
+# register 默认变量
+
+k8s_api_server_port: 6443
+master_ip: "{{ ansible_default_ipv4.address }}"

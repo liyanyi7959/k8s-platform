@@ -18,6 +18,7 @@ type DeployService struct {
 	taskStore       *TaskStore
 	clusterRegistry *ClusterRegistryService
 	deployConfig    *DeployConfigService
+	ansibleDir      string // Ansible playbook 目录路径，空则使用默认 "ansible"
 }
 
 func NewDeployService(db *gorm.DB, encryptionKey string, taskStore *TaskStore, clusterRegistry *ClusterRegistryService) *DeployService {

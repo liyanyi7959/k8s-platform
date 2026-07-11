@@ -1,0 +1,37 @@
+# containerd 完整配置模板
+# 包含基础配置 + systemd cgroup + sandbox image
+# 此模板可替代 containerd config default 生成的配置
+
+version = 2
+
+[plugins]
+  [plugins."io.containerd.grpc.v1.cri"]
+    # sandbox 镜像
+    sandbox_image = "{{ sandbox_image }}"
+
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            # 使用 systemd 作为 cgroup driver
+            SystemdCgroup = {{ systemd_cgroup | lower }}
+
+    [plugins."io.containerd.grpc.v1.cri".cni]
+      bin_dir = "/opt/cni/bin"
+      conf_dir = "/etc/cni/net.d"
+
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+          endpoint = ["https://registry-1.docker.io"]
+
+  [plugins."io.containerd.runtime.v1.linux"]
+    no_shim = false
+
+  [plugins."io.containerd.gc.v1.scheduler"]
+    pause_threshold = 0.02
+    deletion_threshold = 0.02
+    mutation_threshold = 0.02
+    schedule_delay = "0s"
+    startup_delay = "100ms"

@@ -1,0 +1,11 @@
+---
+# container_runtime role 默认变量
+
+# containerd 版本 (空表示安装最新稳定版)
+containerd_version: ""
+
+# sandbox 镜像
+sandbox_image: "registry.k8s.io/pause:3.9"
+
+# 是否使用 systemd cgroup
+systemd_cgroup: true

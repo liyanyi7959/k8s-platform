@@ -295,6 +295,21 @@ func (dc *DeployController) RetryPlan(c *gin.Context) {
 	resp.OK(c, gin.H{"task_id": taskID})
 }
 
+// GetDeployTask 获取部署任务详情
+func (dc *DeployController) GetDeployTask(c *gin.Context) {
+	taskID, err := strconv.ParseInt(c.Param("taskId"), 10, 64)
+	if err != nil || taskID <= 0 {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+	task, ok := dc.svc.GetTaskStore().Get(taskID)
+	if !ok {
+		resp.Fail(c, 4004, "任务不存在")
+		return
+	}
+	resp.OK(c, task)
+}
+
 // GetDeployTaskLogs 获取部署任务日志
 func (dc *DeployController) GetDeployTaskLogs(c *gin.Context) {
 	taskID, err := strconv.ParseInt(c.Param("taskId"), 10, 64)

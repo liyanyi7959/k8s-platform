@@ -1,0 +1,7 @@
+---
+# kubeadm_init 默认变量
+
+k8s_version: "v1.31.0"
+k8s_minor_version: "1.31"
+kubeadm_init_extra_args: ""
+k8s_api_server_port: 6443

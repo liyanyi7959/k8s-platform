@@ -113,6 +113,7 @@ const routes: any[] = [
       { path: '/deploy', redirect: '/deploy/plans' },
       { name: '部署计划', path: '/deploy/plans', component: '@/pages/deploy/index' },
       { path: '/deploy/plans/create', component: '@/pages/deploy/create', hideInMenu: true },
+      { path: '/deploy/plans/:id', component: '@/pages/deploy/detail', hideInMenu: true },
       { path: '/deploy/plans/:id/edit', component: '@/pages/deploy/create', hideInMenu: true },
       { name: '服务器管理', path: '/deploy/servers', component: '@/pages/deploy/servers' },
       { name: '凭据管理', path: '/deploy/credentials', component: '@/pages/deploy/credentials' },

@@ -204,6 +204,7 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.DELETE("/plans/:id", deletePlan, ctl.DeletePlan)
 
 	// 部署任务日志
+	deploy.GET("/tasks/:taskId", readPlan, ctl.GetDeployTask)
 	deploy.GET("/tasks/:taskId/logs", readPlan, ctl.GetDeployTaskLogs)
 	deploy.GET("/tasks/:taskId/logs/sse", readPlan, ctl.GetDeployTaskLogsSSE)
 

@@ -77,6 +77,30 @@ export interface DeployPlan {
   updatedAt: string
 }
 
+/** 部署任务步骤 */
+export interface DeployTaskStep {
+  key: string
+  title: string
+  status: string // pending / running / success / failed
+  startedAt?: string
+  finishedAt?: string
+  message?: string
+}
+
+/** 部署任务 */
+export interface DeployTask {
+  id: number
+  type: string
+  status: string // pending / running / success / failed / canceled / timeout
+  title?: string
+  percent?: number
+  message?: string
+  meta?: Record<string, any>
+  steps?: DeployTaskStep[]
+  createdAt: string
+  createdBy: number
+}
+
 /** 部署配置步骤 */
 export interface DeployConfigStep {
   id: number
@@ -166,7 +190,8 @@ export interface DeployDryRunStep {
   title: string
   description: string
   phase: string
-  commands: string[]
+  tasks: string[]
+  appliesTo: string
   dependsOn?: string[]
 }
 

@@ -1,0 +1,45 @@
+---
+# K8s Platform 集群部署主 Playbook
+# 按顺序执行各 role 完成集群初始化
+
+- name: 环境预检 - 所有节点
+  hosts: all
+  become: yes
+  roles:
+    - pre_check
+
+- name: 基础环境初始化 - 所有节点
+  hosts: all
+  become: yes
+  roles:
+    - bootstrap
+
+- name: 容器运行时安装 - 所有节点
+  hosts: all
+  become: yes
+  roles:
+    - container_runtime
+
+- name: Kubernetes Master 初始化
+  hosts: master
+  become: yes
+  roles:
+    - kubeadm_init
+
+- name: Worker 节点加入集群
+  hosts: worker
+  become: yes
+  roles:
+    - join_workers
+
+- name: 安装 CNI 网络插件
+  hosts: master
+  become: yes
+  roles:
+    - install_cni
+
+- name: 节点注册到管理平台
+  hosts: master
+  become: yes
+  roles:
+    - register

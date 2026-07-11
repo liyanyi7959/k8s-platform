@@ -406,8 +406,8 @@ func (s *DeployService) ExecutePlan(ctx context.Context, id uint64, userID uint6
 	if err != nil {
 		return 0, err
 	}
-	// 异步启动部署流水线
-	go s.deployPipeline(context.Background(), id, int64(taskID))
+	// 异步启动 Ansible 部署流水线
+	go s.ansiblePipeline(context.Background(), id, int64(taskID))
 	return taskID, nil
 }
 

@@ -1,0 +1,35 @@
+---
+# bootstrap role 默认变量
+
+# 需要加载的内核模块
+required_kernel_modules:
+  - br_netfilter
+  - overlay
+  - nf_conntrack
+
+# Kubernetes 内核参数
+sysctl_k8s_params:
+  net.bridge.bridge-nf-call-iptables: 1
+  net.bridge.bridge-nf-call-ip6tables: 1
+  net.ipv4.ip_forward: 1
+  fs.inotify.max_persistent_watches: 524288
+
+# RedHat 系列基础依赖包
+base_packages_redhat:
+  - device-mapper-persistent-data
+  - lvm2
+  - wget
+  - curl
+  - vim
+  - yum-utils
+
+# Debian 系列基础依赖包
+base_packages_debian:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - wget
+  - vim
+  - gnupg
+  - lsb-release
+  - software-properties-common

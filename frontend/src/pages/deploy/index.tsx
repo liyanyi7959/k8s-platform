@@ -6,13 +6,12 @@ import { useState } from 'react'
 import { Card, Table, Button, Space, Tag, Popconfirm, message, Typography, Tooltip, Empty, Modal, Descriptions, Badge, Collapse } from 'antd'
 import {
   PlusOutlined, DeleteOutlined, ReloadOutlined,
-  EyeOutlined, PlayCircleOutlined, StopOutlined, RedoOutlined, DesktopOutlined, EditOutlined
+  EyeOutlined, PlayCircleOutlined, StopOutlined, RedoOutlined, DesktopOutlined, EditOutlined, ProfileOutlined
 } from '@ant-design/icons'
 import { history } from '@umijs/max'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
 import { AppPage } from '@/components'
-import TerminalCodeBlock from '@/components/TerminalCodeBlock'
 import { getDeployPlans, deleteDeployPlan, dryRunDeployPlan, executeDeployPlan, cancelDeployPlan, retryDeployPlan } from '@/services/deploy'
 import type { DeployPlan, DeployDryRunNodeFlow, DeployDryRunResult, DeployDryRunStep } from '@/types/deploy'
 
@@ -55,6 +54,11 @@ export default function DeployPlansPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['deploy-plans', page, pageSize],
     queryFn: () => getDeployPlans({ page, pageSize }),
+    refetchInterval: (query) => {
+      // 有运行中的计划时自动刷新
+      const items = query.state.data?.items || []
+      return items.some((p) => p.status === 'running') ? 5000 : false
+    },
   })
 
   const deleteMutation = useMutation({
@@ -69,7 +73,7 @@ export default function DeployPlansPage() {
   const executeMutation = useMutation({
     mutationFn: (id: number) => executeDeployPlan(id),
     onSuccess: () => {
-      message.success('执行成功')
+      message.success('部署已启动')
       queryClient.invalidateQueries({ queryKey: ['deploy-plans'] })
     },
     onError: () => message.error('执行失败'),
@@ -87,11 +91,31 @@ export default function DeployPlansPage() {
   const retryMutation = useMutation({
     mutationFn: (id: number) => retryDeployPlan(id),
     onSuccess: () => {
-      message.success('重试成功')
+      message.success('重试已启动')
       queryClient.invalidateQueries({ queryKey: ['deploy-plans'] })
     },
     onError: () => message.error('重试失败'),
   })
+
+  // 执行部署并跳转详情页
+  const handleExecute = async (id: number) => {
+    try {
+      await executeMutation.mutateAsync(id)
+      history.push(`/deploy/plans/${id}`)
+    } catch {
+      // onError 已提示
+    }
+  }
+
+  // 重试部署并跳转详情页
+  const handleRetry = async (id: number) => {
+    try {
+      await retryMutation.mutateAsync(id)
+      history.push(`/deploy/plans/${id}`)
+    } catch {
+      // onError 已提示
+    }
+  }
 
   /** 预览部署计划 - 使用 dry-run 接口 */
   const handlePreview = async (id: number) => {
@@ -159,11 +183,14 @@ export default function DeployPlansPage() {
     },
     {
       title: '操作',
-      width: 180,
+      width: 220,
       align: 'center',
       fixed: 'right',
       render: (_: unknown, record: DeployPlan) => (
         <Space size={8} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Tooltip title="查看详情">
+            <a onClick={() => history.push(`/deploy/plans/${record.id}`)}><ProfileOutlined /></a>
+          </Tooltip>
           <Tooltip title="预览">
             <a onClick={() => handlePreview(record.id)}><EyeOutlined /></a>
           </Tooltip>
@@ -173,7 +200,7 @@ export default function DeployPlansPage() {
             </Tooltip>
           )}
           {record.status === 'draft' && (
-            <Popconfirm title="确认执行该部署方案？" onConfirm={() => executeMutation.mutate(record.id)}>
+            <Popconfirm title="确认执行该部署方案？" onConfirm={() => handleExecute(record.id)}>
               <Tooltip title="执行">
                 <a style={{ color: '#52c41a' }}><PlayCircleOutlined /></a>
               </Tooltip>
@@ -187,7 +214,7 @@ export default function DeployPlansPage() {
             </Popconfirm>
           )}
           {record.status === 'failed' && (
-            <Popconfirm title="确认重试该部署方案？" onConfirm={() => retryMutation.mutate(record.id)}>
+            <Popconfirm title="确认重试该部署方案？" onConfirm={() => handleRetry(record.id)}>
               <Tooltip title="重试">
                 <a style={{ color: '#1677ff' }}><RedoOutlined /></a>
               </Tooltip>
@@ -266,17 +293,6 @@ export default function DeployPlansPage() {
               <Descriptions.Item label="CNI 类型">{previewData.cniType || '-'}</Descriptions.Item>
             </Descriptions>
 
-            <TerminalCodeBlock
-              title="deploy-plan.preview"
-              content={[
-                `PLAN=${previewData.planName || '-'}`,
-                `CLUSTER=${previewData.clusterName || '-'}`,
-                `K8S_VERSION=${previewData.k8sVersion || '-'}`,
-                `CNI=${previewData.cniType || '-'}`,
-                `NODES=${previewData.nodes?.length || 0}`,
-              ].join('\n')}
-              className="app-terminal-code-block--summary"
-            />
 
             {previewData.nodes && previewData.nodes.length > 0 && (
               <>
@@ -306,14 +322,29 @@ export default function DeployPlansPage() {
                               <Space>
                                 <Tag color="blue">{phaseMap[step.phase] || step.phase}</Tag>
                                 <Text strong>{step.title || `步骤 ${stepIndex + 1}`}</Text>
+                                {step.appliesTo && (
+                                  <Tag color={step.appliesTo === 'master' ? 'red' : step.appliesTo === 'worker' ? 'blue' : 'default'}>
+                                    {step.appliesTo === 'all' ? '所有节点' : step.appliesTo === 'master' ? 'Master' : 'Worker'}
+                                  </Tag>
+                                )}
                               </Space>
                             }
                             extra={<Text type="secondary" style={{ fontSize: 12 }}>{step.description}</Text>}
                           >
-                            <TerminalCodeBlock
-                              title={`${node.serverName || `node-${index + 1}`}.${step.key || `step-${stepIndex + 1}`}.sh`}
-                              content={step.commands?.join('\n') || '无命令'}
-                            />
+                            {step.tasks && step.tasks.length > 0 ? (
+                              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: '1.8' }}>
+                                {step.tasks.map((task, taskIdx) => (
+                                  <li key={taskIdx}>{task}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <Text type="secondary">无任务</Text>
+                            )}
+                            {step.dependsOn && step.dependsOn.length > 0 && (
+                              <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+                                依赖: {step.dependsOn.map((d) => <Tag key={d} style={{ fontSize: 11 }}>{d}</Tag>)}
+                              </div>
+                            )}
                           </Card>
                         ))}
                       </div>

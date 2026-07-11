@@ -1,53 +1,156 @@
 /**
- * 部署配置页 — 流程步骤配置 + 仓库配置
- * 对标 frontend-old DeployConfigView
+ * 部署配置页 - Ansible 流水线概览 + 仓库配置
+ * 基于 Ansible Playbook 的 K8s 部署流程说明
  */
-import React, { useMemo, useState } from 'react'
-import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Tooltip, Badge, Alert, Typography, Empty } from 'antd'
+import React, { useState } from 'react'
+import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Alert, Typography } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AppPage } from '@/components'
-import TerminalCodeBlock from '@/components/TerminalCodeBlock'
 import {
-  listDeployStepConfigs,
-  listSupportedOSTypes,
-  updateDeployStepConfig,
-  listDeployConfigVersions,
   listRepositories,
   createRepository,
   updateRepository,
   deleteRepository,
 } from '@/services/deploy'
-import type { DeployStepConfig, RepositoryConfig } from '@/types'
+import type { RepositoryConfig } from '@/types'
 import {
-  EyeOutlined,
-  EditOutlined,
-  HistoryOutlined,
   PlusOutlined,
+  DesktopOutlined,
+  CheckCircleOutlined,
+  ContainerOutlined,
+  ClusterOutlined,
+  ApartmentOutlined,
+  CloudUploadOutlined,
 } from '@ant-design/icons'
 
 const { Text } = Typography
 
-const OS_TYPE_LABELS: Record<string, string> = {
-  ubuntu: 'Ubuntu 系列',
-  debian: 'Ubuntu 系列',
-  centos: '红帽系列',
-  rocky: '红帽系列',
-  rhel: '红帽系列',
-  almalinux: '红帽系列',
+/** Ansible 部署流水线步骤定义 */
+interface AnsibleStep {
+  key: string
+  title: string
+  description: string
+  icon: React.ReactNode
+  appliesTo: string
+  tasks: string[]
 }
 
-function getOSTypeLabel(value?: string) {
-  if (!value) return 'Linux 系列'
-  return OS_TYPE_LABELS[value] || value
-}
-
-const OS_FAMILY_OPTIONS = [
-  { label: 'Ubuntu 系列', value: 'ubuntu' },
-  { label: '红帽系列', value: 'centos' },
+const ansibleSteps: AnsibleStep[] = [
+  {
+    key: 'pre_check',
+    title: '环境预检',
+    description: '检查目标节点的 CPU、内存、磁盘、端口、hostname 等环境要求',
+    icon: <CheckCircleOutlined />,
+    appliesTo: '所有节点',
+    tasks: [
+      'Ping 测试 SSH 连通性',
+      '检查 OS 发行版和版本号',
+      '检查 CPU 核数 >= 2',
+      '检查内存 >= 2048MB',
+      '检查磁盘可用空间 >= 20GB',
+      '检查 hostname 是否设置且唯一',
+      'Master 节点检查端口 6443/2379/2380 等未被占用',
+    ],
+  },
+  {
+    key: 'bootstrap',
+    title: '基础环境初始化',
+    description: '关闭 swap、加载内核模块、设置 sysctl、禁用防火墙、安装基础依赖',
+    icon: <DesktopOutlined />,
+    appliesTo: '所有节点',
+    tasks: [
+      '关闭 swap 并注释 /etc/fstab',
+      '加载内核模块 br_netfilter, overlay, nf_conntrack',
+      '设置 sysctl 参数（ip_forward 等）',
+      '停止并禁用 firewalld',
+      '设置 SELinux 为 permissive/disabled',
+      '安装基础包: lvm2, wget, curl, vim, chrony',
+      '配置 Kubernetes yum/apt 仓库',
+    ],
+  },
+  {
+    key: 'container_runtime',
+    title: '容器运行时安装',
+    description: '安装 containerd，配置 SystemdCgroup 和 sandbox 镜像',
+    icon: <ContainerOutlined />,
+    appliesTo: '所有节点',
+    tasks: [
+      '安装 Docker CE 仓库（RedHat/Debian 兼容）',
+      '安装 containerd.io',
+      '生成 containerd 默认配置',
+      '设置 SystemdCgroup=true',
+      '设置 sandbox_image=registry.k8s.io/pause:3.9',
+      '启动 containerd 并设置开机自启',
+    ],
+  },
+  {
+    key: 'kubeadm_init',
+    title: 'Master 初始化',
+    description: '安装 kubeadm/kubelet/kubectl，执行 kubeadm init 初始化集群',
+    icon: <ClusterOutlined />,
+    appliesTo: 'Master 节点',
+    tasks: [
+      '安装 kubeadm, kubelet, kubectl',
+      '锁定版本不自动更新',
+      '生成 kubeadm-init.yaml 配置文件',
+      '执行 kubeadm init --config /tmp/kubeadm-init.yaml',
+      '配置 kubeconfig (~/.kube/config)',
+      '生成 worker join 命令',
+    ],
+  },
+  {
+    key: 'join_workers',
+    title: 'Worker 加入集群',
+    description: '在 Worker 节点安装 kubeadm/kubelet，执行 kubeadm join',
+    icon: <ApartmentOutlined />,
+    appliesTo: 'Worker 节点',
+    tasks: [
+      '安装 kubeadm, kubelet',
+      '锁定版本不自动更新',
+      '执行 kubeadm join <master_ip>:6443',
+    ],
+  },
+  {
+    key: 'install_cni',
+    title: '安装 CNI 网络插件',
+    description: '安装 Flannel/Calico/Cilium 网络插件，等待 Pods 就绪',
+    icon: <ApartmentOutlined />,
+    appliesTo: 'Master 节点',
+    tasks: [
+      '根据 cni_type 变量选择 CNI 插件',
+      'Flannel: 下载并应用 kube-flannel.yml',
+      'Calico: 下载并应用 calico.yaml',
+      'Cilium: 安装 cilium CLI 并部署',
+      '等待 CNI Pods 就绪',
+      '检查所有节点状态为 Ready',
+    ],
+  },
+  {
+    key: 'register',
+    title: '注册到管理平台',
+    description: '提取 kubeconfig，注册集群到 K8s 管理平台',
+    icon: <CloudUploadOutlined />,
+    appliesTo: 'Master 节点',
+    tasks: [
+      '读取 /etc/kubernetes/admin.conf',
+      '替换 API Server 地址为 Master 实际 IP',
+      '写入 kubeconfig 到临时文件',
+      '后端读取 kubeconfig 并注册集群',
+    ],
+  },
 ]
 
+const phaseColorMap: Record<string, string> = {
+  preflight: 'default',
+  install: 'blue',
+  init: 'gold',
+  join: 'cyan',
+  addon: 'green',
+  finalize: 'purple',
+}
+
 const DeployConfig: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('steps')
+  const [activeTab, setActiveTab] = useState('pipeline')
 
   return (
     <AppPage>
@@ -56,7 +159,7 @@ const DeployConfig: React.FC = () => {
           activeKey={activeTab}
           onChange={setActiveTab}
           items={[
-            { key: 'steps', label: '流程步骤配置', children: <StepConfigPanel /> },
+            { key: 'pipeline', label: 'Ansible 部署流水线', children: <AnsiblePipelinePanel /> },
             { key: 'repos', label: '仓库配置', children: <RepoConfigPanel /> },
           ]}
         />
@@ -65,281 +168,130 @@ const DeployConfig: React.FC = () => {
   )
 }
 
-// ==================== 流程步骤配置 ====================
+// ==================== Ansible 部署流水线概览 ====================
 
-const StepConfigPanel: React.FC = () => {
-  const [detailModalOpen, setDetailModalOpen] = useState(false)
-  const [editModalOpen, setEditModalOpen] = useState(false)
-  const [historyModalOpen, setHistoryModalOpen] = useState(false)
-  const [currentStep, setCurrentStep] = useState<DeployStepConfig | null>(null)
-  const [selectedOSType, setSelectedOSType] = useState<string>('ubuntu')
-  const [form] = Form.useForm()
-  const queryClient = useQueryClient()
-  const watchedCommandTemplate = Form.useWatch('commandTemplate', form)
-
-  const { data: supportedOSTypes } = useQuery({
-    queryKey: ['deploy-step-config-os-types'],
-    queryFn: ({ signal }) => listSupportedOSTypes(signal),
-  })
-
-  const { data: steps, isLoading } = useQuery({
-    queryKey: ['deploy-step-configs', selectedOSType],
-    queryFn: ({ signal }) => listDeployStepConfigs({ osType: selectedOSType }, signal),
-  })
-
-  const { data: versions } = useQuery({
-    queryKey: ['deploy-config-versions', currentStep?.id],
-    queryFn: ({ signal }) => listDeployConfigVersions(currentStep!.id, signal),
-    enabled: historyModalOpen && !!currentStep?.id,
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: (values: Partial<DeployStepConfig>) => updateDeployStepConfig(currentStep!.id, values),
-    onSuccess: () => {
-      message.success('配置已更新')
-      queryClient.invalidateQueries({ queryKey: ['deploy-step-configs'] })
-      setEditModalOpen(false)
-    },
-  })
-
-  const handleDetail = (record: DeployStepConfig) => {
-    setCurrentStep(record)
-    setDetailModalOpen(true)
-  }
-
-  const handleEdit = (record: DeployStepConfig) => {
-    setCurrentStep(record)
-    form.setFieldsValue(record)
-    setEditModalOpen(true)
-  }
-
-  const handleHistory = (record: DeployStepConfig) => {
-    setCurrentStep(record)
-    setHistoryModalOpen(true)
-  }
-
-  const osTypeOptions = useMemo(() => {
-    const supported = new Set<string>((supportedOSTypes || []).map((item) => {
-      if (['centos', 'rocky', 'rhel', 'almalinux'].includes(item)) return 'centos'
-      return 'ubuntu'
-    }))
-    return OS_FAMILY_OPTIONS.filter((item) => supported.size === 0 || supported.has(item.value))
-  }, [supportedOSTypes])
-
-  const columns = [
-    {
-      title: '排序',
-      dataIndex: 'stepOrder',
-      key: 'stepOrder',
-      width: 80,
-      sorter: (a: DeployStepConfig, b: DeployStepConfig) => a.stepOrder - b.stepOrder,
-    },
-    {
-      title: '步骤标识',
-      dataIndex: 'stepKey',
-      key: 'stepKey',
-      width: 150,
-      render: (text: string) => <Text code>{text}</Text>,
-    },
-    {
-      title: '步',
-      dataIndex: 'stepName',
-      key: 'stepName',
-      width: 120,
-      render: (text: string) => <strong>{text}</strong>,
-    },
-    {
-      title: '说明',
-      dataIndex: 'description',
-      key: 'description',
-      width: 260,
-      ellipsis: true,
-    },
-    {
-      title: '超时(秒)',
-      dataIndex: 'timeoutSeconds',
-      key: 'timeoutSeconds',
-      width: 90,
-    },
-    {
-      title: '重试',
-      dataIndex: 'retryCount',
-      key: 'retryCount',
-      width: 60,
-    },
-    {
-      title: '状态',
-      dataIndex: 'enabled',
-      key: 'enabled',
-      width: 80,
-      render: (enabled: boolean) => (
-        <Badge status={enabled ? 'success' : 'default'} text={enabled ? '启用' : '禁用'} />
-      ),
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 160,
-      render: (_: unknown, record: DeployStepConfig) => (
-        <Space>
-          <Tooltip title="命令详情">
-            <a onClick={() => handleDetail(record)}><EyeOutlined /></a>
-          </Tooltip>
-          <Tooltip title="编辑">
-            <a onClick={() => handleEdit(record)}><EditOutlined /></a>
-          </Tooltip>
-          <Tooltip title="变更历史">
-            <a onClick={() => handleHistory(record)}><HistoryOutlined /></a>
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ]
-
+const AnsiblePipelinePanel: React.FC = () => {
   return (
     <>
-      <Space direction="vertical" size={16} style={{ width: '100%', marginBottom: 16 }}>
-        <Alert
-          type="info"
-          showIcon
-          message="按 Linux 系列查看完整 6 步部署流程"
-          description="不同 Linux 系列部署 K8s 都需要经过完整的 6 个步骤。这里按系列切换，列表只保留步骤清单，命令详情从操作栏按需查看。"
-        />
-        <Space align="center" wrap>
-          <Text type="secondary">Linux 分类</Text>
-          <Select
-            value={selectedOSType}
-            onChange={setSelectedOSType}
-            options={osTypeOptions}
-            style={{ width: 220 }}
-          />
-          <Text type="secondary">当前显示 {steps?.length || 0} / 6 个流程步骤</Text>
-        </Space>
-      </Space>
+      <Alert
+        type="info"
+        showIcon
+        message="基于 Ansible Playbook 的标准化部署"
+        description="部署流程由 Ansible Playbook 管理，位于 backend/ansible/ 目录下。每个步骤对应一个独立的 Ansible Role，支持幂等执行、多环境兼容。步骤配置通过修改 Playbook 文件管理，无需数据库存储。"
+        style={{ marginBottom: 24 }}
+      />
 
-      <Card bodyStyle={{ padding: 0 }}>
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={steps}
-          loading={isLoading}
-          pagination={false}
-          scroll={{ x: 980 }}
-        />
-      </Card>
-
-      <Modal
-        title="命令详情"
-        open={detailModalOpen}
-        onCancel={() => setDetailModalOpen(false)}
-        footer={null}
-        width={980}
-      >
-        {currentStep ? (
-          <Space direction="vertical" size={16} style={{ width: '100%' }}>
-            <Space wrap>
-              <Tag color="blue">步骤 {currentStep.stepOrder}</Tag>
-              <Tag color="gold">{getOSTypeLabel(selectedOSType)}</Tag>
-              <Tag color={currentStep.enabled ? 'green' : 'default'}>{currentStep.enabled ? '启用' : '禁用'}</Tag>
-            </Space>
-            <div>
-              <Text strong style={{ fontSize: 18 }}>{currentStep.stepName}</Text>
-              <div style={{ marginTop: 8 }}>
-                <Text type="secondary">{currentStep.description || '暂无说明'}</Text>
+      {/* 流程可视化 */}
+      <div style={{ display: 'flex', gap: 0, overflowX: 'auto', paddingBottom: 8, marginBottom: 24 }}>
+        {ansibleSteps.map((step, idx) => (
+          <div key={step.key} style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                width: 220,
+                minHeight: 140,
+                border: '1px solid #d6e4ff',
+                borderRadius: 8,
+                padding: 12,
+                background: '#f6f9ff',
+                position: 'relative',
+              }}
+            >
+              {/* 步骤编号 + 图标 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: '#1677ff',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 16,
+                  }}
+                >
+                  {step.icon}
+                </div>
+                <div>
+                  <Text strong style={{ fontSize: 13, display: 'block' }}>{step.title}</Text>
+                  <Text code style={{ fontSize: 10 }}>{step.key}</Text>
+                </div>
+              </div>
+              {/* 适用范围 */}
+              <Tag color={step.appliesTo.includes('所有') ? 'blue' : step.appliesTo.includes('Master') ? 'red' : 'cyan'} style={{ fontSize: 10, margin: '4px 0' }}>
+                {step.appliesTo}
+              </Tag>
+              {/* 描述 */}
+              <div style={{ fontSize: 11, color: '#8c8c8c', height: 40, overflow: 'hidden', marginTop: 4 }}>
+                {step.description}
+              </div>
+              {/* 任务数量 */}
+              <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
+                {step.tasks.length} 个任务
               </div>
             </div>
-            <Space>
-              <Text type="secondary">超时 {currentStep.timeoutSeconds}s</Text>
-              <Text type="secondary">重试 {currentStep.retryCount} 次</Text>
-            </Space>
-            <TerminalCodeBlock
-              title={`${currentStep.stepKey}.${selectedOSType}.sh`}
-              content={currentStep.commandTemplate}
-            />
-            <Space>
-              <Button
-                type="primary"
-                icon={<EditOutlined />}
-                onClick={() => {
-                  setDetailModalOpen(false)
-                  handleEdit(currentStep)
-                }}
-              >
-                编辑当前步骤
-              </Button>
-              <Button
-                icon={<HistoryOutlined />}
-                onClick={() => {
-                  setDetailModalOpen(false)
-                  handleHistory(currentStep)
-                }}
-              >
-                变更历史
-              </Button>
-            </Space>
-          </Space>
-        ) : (
-          <Empty description="暂无可查看的命令详情" />
-        )}
-      </Modal>
+            {/* 连接箭头 */}
+            {idx < ansibleSteps.length - 1 && (
+              <div style={{ padding: '0 4px', color: '#d9d9d9', fontSize: 18 }}>→</div>
+            )}
+          </div>
+        ))}
+      </div>
 
-      <Modal
-        title={`编辑步骤 — ${currentStep?.stepName}`}
-        open={editModalOpen}
-        onCancel={() => setEditModalOpen(false)}
-        onOk={() => form.submit()}
-        confirmLoading={updateMutation.isPending}
-        width={640}
-      >
-        <Form form={form} layout="vertical" onFinish={(values) => updateMutation.mutate(values)}>
-          <Form.Item name="stepName" label="步骤名称" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="说明">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="commandTemplate" label="命令模板">
-            <Input.TextArea rows={6} style={{ fontFamily: 'monospace' }} />
-          </Form.Item>
-          <Form.Item label="命令预览">
-            <TerminalCodeBlock
-              title={`${currentStep?.stepKey || 'step'}.${currentStep?.osType || 'linux'}.sh`}
-              content={watchedCommandTemplate}
-            />
-          </Form.Item>
-          <Space>
-            <Form.Item name="timeoutSeconds" label="超时(秒)">
-              <InputNumber min={10} max={3600} />
-            </Form.Item>
-            <Form.Item name="retryCount" label="重试次数">
-              <InputNumber min={0} max={10} />
-            </Form.Item>
-            <Form.Item name="enabled" label="启用" valuePropName="checked">
-              <Switch />
-            </Form.Item>
-          </Space>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={`变更历史 — ${currentStep?.stepName}`}
-        open={historyModalOpen}
-        onCancel={() => setHistoryModalOpen(false)}
-        footer={null}
-        width={640}
-      >
+      {/* 详细步骤列表 */}
+      <Card bodyStyle={{ padding: 0 }} title="步骤详情" size="small">
         <Table
-          rowKey="id"
-          dataSource={versions}
+          rowKey="key"
+          dataSource={ansibleSteps}
           pagination={false}
           size="small"
+          scroll={{ x: 900 }}
           columns={[
-            { title: '时间', dataIndex: 'changedAt', width: 180, render: (t: string) => new Date(t).toLocaleString() },
-            { title: '类型', dataIndex: 'changeType', width: 80, render: (t: string) => <Tag color={t === 'create' ? 'blue' : 'orange'}>{t === 'create' ? '创建' : '更新'}</Tag> },
-            { title: '摘要', dataIndex: 'changeSummary' },
+            {
+              title: '步骤',
+              dataIndex: 'key',
+              key: 'key',
+              width: 180,
+              render: (key: string, record: AnsibleStep) => (
+                <Space>
+                  {record.icon}
+                  <div>
+                    <Text strong>{record.title}</Text>
+                    <div><Text code style={{ fontSize: 11 }}>{key}</Text></div>
+                  </div>
+                </Space>
+              ),
+            },
+            {
+              title: '适用范围',
+              dataIndex: 'appliesTo',
+              key: 'appliesTo',
+              width: 120,
+              render: (text: string) => (
+                <Tag color={text.includes('所有') ? 'blue' : text.includes('Master') ? 'red' : 'cyan'}>{text}</Tag>
+              ),
+            },
+            {
+              title: '说明',
+              dataIndex: 'description',
+              key: 'description',
+              width: 280,
+              ellipsis: true,
+            },
+            {
+              title: 'Ansible 任务',
+              dataIndex: 'tasks',
+              key: 'tasks',
+              render: (tasks: string[]) => (
+                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, lineHeight: '1.6' }}>
+                  {tasks.map((task, i) => <li key={i}>{task}</li>)}
+                </ul>
+              ),
+            },
           ]}
         />
-      </Modal>
+      </Card>
     </>
   )
 }

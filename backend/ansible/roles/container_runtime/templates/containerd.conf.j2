@@ -1,0 +1,7 @@
+# containerd CRI 配置片段
+# 用于替换 SystemdCgroup 和 sandbox_image 关键配置
+
+[plugins."io.containerd.grpc.v1.cri"]
+  sandbox_image = "{{ sandbox_image }}"
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+  SystemdCgroup = {{ systemd_cgroup | lower }}

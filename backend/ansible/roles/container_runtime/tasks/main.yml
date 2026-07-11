@@ -1,0 +1,94 @@
+---
+# 容器运行时 (containerd) 安装 role
+# 在所有节点上安装并配置 containerd
+
+# 1. 安装 Docker CE 仓库 (RedHat 系列需要先配置仓库)
+- name: 添加 Docker CE yum 仓库 (RedHat)
+  ansible.builtin.yum_repository:
+    name: docker-ce
+    description: Docker CE Stable Repository
+    baseurl: "https://download.docker.com/linux/centos/{{ ansible_distribution_major_version }}/$basearch/stable"
+    gpgcheck: yes
+    gpgkey: "https://download.docker.com/linux/centos/gpg"
+  when: ansible_os_family == "RedHat"
+
+# 1. 安装 Docker CE apt 仓库 (Debian 系列需要先配置仓库)
+- name: 添加 Docker CE GPG key (Debian)
+  ansible.builtin.apt_key:
+    url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: 添加 Docker CE apt 仓库 (Debian)
+  ansible.builtin.apt_repository:
+    repo: "deb https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+# 2. 安装 containerd.io
+- name: 安装 containerd.io (RedHat)
+  ansible.builtin.yum:
+    name: "{{ 'containerd.io' if containerd_version == '' else 'containerd.io-' + containerd_version }}"
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: 安装 containerd.io (Debian)
+  ansible.builtin.apt:
+    name: "{{ 'containerd.io' if containerd_version == '' else 'containerd.io=' + containerd_version }}"
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+# 3. 创建 containerd 配置目录
+- name: 创建 containerd 配置目录
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    mode: '0755'
+
+# 4. 生成默认 containerd 配置
+- name: 生成默认 containerd 配置文件
+  ansible.builtin.shell: containerd config default > /etc/containerd/config.toml
+  args:
+    creates: /etc/containerd/config.toml
+
+# 5. 修改 SystemdCgroup 设置为 true
+- name: 设置 SystemdCgroup 为 true
+  ansible.builtin.lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: '(\s*)SystemdCgroup = .*'
+    line: '\1SystemdCgroup = {{ systemd_cgroup | lower }}'
+    backrefs: yes
+  register: cgroup_changed
+
+# 6. 修改 sandbox_image
+- name: 设置 sandbox_image
+  ansible.builtin.lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: '(\s*)sandbox_image = .*'
+    line: '\1sandbox_image = "{{ sandbox_image }}"'
+    backrefs: yes
+  register: sandbox_image_changed
+
+# 7. 启动并设置 containerd 开机自启
+- name: 重新加载 systemd 配置
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  when: cgroup_changed.changed or sandbox_image_changed.changed
+
+- name: 启动并设置 containerd 开机自启
+  ansible.builtin.systemd:
+    name: containerd
+    state: "{{ 'restarted' if cgroup_changed.changed or sandbox_image_changed.changed else 'started' }}"
+    enabled: yes
+
+# 8. 验证 containerd 运行状态
+- name: 验证 containerd 运行状态
+  ansible.builtin.command: ctr version
+  register: containerd_status
+  changed_when: false
+
+- name: 显示 containerd 版本信息
+  ansible.builtin.debug:
+    msg: "containerd 已安装并运行: {{ containerd_status.stdout_lines[0] }}"

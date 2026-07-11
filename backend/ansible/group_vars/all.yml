@@ -1,0 +1,22 @@
+---
+# K8s Platform 全局默认变量
+
+# Kubernetes 版本
+k8s_version: "v1.31.0"
+k8s_minor_version: "1.31"
+
+# 网络 CIDR
+pod_cidr: "10.244.0.0/16"
+svc_cidr: "10.96.0.0/12"
+
+# CNI 配置
+cni_type: "flannel"
+
+# 容器运行时
+container_runtime: "containerd"
+
+# API Server
+k8s_api_server_port: 6443
+
+# kubeadm init 额外参数
+kubeadm_init_extra_args: ""

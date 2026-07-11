@@ -1,0 +1,8 @@
+---
+# install_cni 默认变量
+
+cni_type: "flannel"
+pod_cidr: "10.244.0.0/16"
+flannel_version: "v0.24.2"
+calico_version: "v3.27.0"
+cilium_version: "1.15.4"

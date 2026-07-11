@@ -2,18 +2,15 @@
  * 创建/编辑部署计划页
  */
 import { useEffect, useMemo, useState } from 'react'
-import {
-  Alert, Button, Card, Checkbox, Empty, Form, Input, Radio, Select, Space, Steps, Tag, Typography, message, Divider,
-} from 'antd'
+import { Alert, Button, Card, Checkbox, Empty, Form, Input, Radio, Select, Space, Steps, Typography, message, Descriptions, Tag } from 'antd'
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import { history, useParams } from '@umijs/max'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { AppPage } from '@/components'
-import TerminalCodeBlock from '@/components/TerminalCodeBlock'
 import { createDeployPlan, getDeployPlanById, getServers, updateDeployPlan } from '@/services/deploy'
-import type { CreateDeployPlanRequest, DeployPlan, DeployPlanStepOverride } from '@/types/deploy'
+import type { CreateDeployPlanRequest } from '@/types/deploy'
 
-const { Text, Title } = Typography
+const { Title } = Typography
 
 const versionOptions = ['v1.31.0', 'v1.30.0', 'v1.29.0', 'v1.28.0']
 const cniOptions = [
@@ -27,40 +24,12 @@ const addonOptions = [
   { label: 'local-storage', value: 'local-storage' },
 ]
 
-const stepOverrideDefinitions = [
-  { stepKey: 'pre_check', stepName: '环境预检', roles: ['master', 'worker'] },
-  { stepKey: 'bootstrap', stepName: '基础环境初始化', roles: ['master', 'worker'] },
-  { stepKey: 'init_master', stepName: '初始化 Master', roles: ['master'] },
-  { stepKey: 'join_workers', stepName: 'Worker 加入集群', roles: ['worker'] },
-  { stepKey: 'install_cni', stepName: '安装网络插件', roles: ['master'] },
-  { stepKey: 'register', stepName: '注册集群', roles: ['master'] },
-]
-
-type StepOverrideFormItem = {
-  key: string
-  stepKey: string
-  nodeServerId: number
-  nodeRole: 'master' | 'worker'
-  commandTemplate: string
-  description?: string
-}
-
 export default function CreateDeployPlanPage() {
   const params = useParams<{ id?: string }>()
   const planId = params.id ? Number(params.id) : undefined
   const isEditMode = Number.isFinite(planId)
   const [form] = Form.useForm()
   const [step, setStep] = useState(0)
-
-  const watchedNodes = Form.useWatch('nodes', form) || []
-  const watchedName = Form.useWatch('name', form)
-  const watchedClusterName = Form.useWatch('clusterName', form)
-  const watchedVersion = Form.useWatch('k8sVersion', form)
-  const watchedCni = Form.useWatch('cniType', form)
-  const watchedPodCidr = Form.useWatch('podCidr', form)
-  const watchedSvcCidr = Form.useWatch('svcCidr', form)
-  const watchedAddons = Form.useWatch('addons', form) || []
-  const watchedStepOverrides = Form.useWatch('stepOverrides', form) || []
 
   const { data: serversData, isLoading: serversLoading } = useQuery({
     queryKey: ['deploy-servers-for-plan-create'],
@@ -95,7 +64,6 @@ export default function CreateDeployPlanPage() {
 
   useEffect(() => {
     if (!planDetail) return
-    const overrideItems = mapPlanOverridesToForm(planDetail)
     form.setFieldsValue({
       name: planDetail.name,
       clusterName: planDetail.clusterName,
@@ -108,15 +76,8 @@ export default function CreateDeployPlanPage() {
         serverId: node.serverId,
         role: node.role,
       })),
-      stepOverrides: overrideItems,
     })
   }, [form, planDetail])
-
-  const getServerLabel = (serverId?: number) => {
-    if (!serverId) return '-'
-    const server = availableServers.find((item) => item.id === serverId)
-    return server ? `${server.name} (${server.ip})` : `#${serverId}`
-  }
 
   const validateNodeSelection = async () => {
     const nodes = (form.getFieldValue('nodes') || []) as Array<{ serverId?: number; role?: 'master' | 'worker' }>
@@ -150,6 +111,8 @@ export default function CreateDeployPlanPage() {
       if (step === 1) {
         await form.validateFields(['nodes'])
         await validateNodeSelection()
+        await handleSubmit()
+        return
       }
       setStep(step + 1)
     } catch (error) {
@@ -165,7 +128,9 @@ export default function CreateDeployPlanPage() {
 
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields()
+      // step===0 的 Form.Item 在 step===1 时已卸载，validateFields 无法获取其值
+      // 改用 getFieldsValue(true) 获取所有字段（含已卸载 Form.Item 的值）
+      const values = form.getFieldsValue(true)
       await validateNodeSelection()
 
       const data: CreateDeployPlanRequest = {
@@ -177,7 +142,6 @@ export default function CreateDeployPlanPage() {
         cniType: values.cniType,
         cniConfig: {},
         addons: values.addons || [],
-        stepOverrides: buildStepOverrides(values.stepOverrides || []),
         nodes: (values.nodes || []).map((node: { serverId: number; role: 'master' | 'worker' }, index: number) => ({
           serverId: Number(node.serverId),
           role: node.role,
@@ -193,18 +157,7 @@ export default function CreateDeployPlanPage() {
     }
   }
 
-  const stepTitles = ['基础信息', '节点配置', '命令覆盖']
-  const nodeOptions = watchedNodes
-    .map((node: { serverId?: number; role?: 'master' | 'worker' }, index: number) => {
-      if (!node.serverId || !node.role) return null
-      return {
-        label: `节点 ${index + 1} · ${getServerLabel(node.serverId)} · ${node.role}`,
-        value: `${node.serverId}:${node.role}`,
-        serverId: Number(node.serverId),
-        role: node.role,
-      }
-    })
-    .filter(Boolean) as Array<{ label: string; value: string; serverId: number; role: 'master' | 'worker' }>
+  const stepTitles = ['基础信息', '节点配置']
 
   return (
     <AppPage>
@@ -224,7 +177,6 @@ export default function CreateDeployPlanPage() {
           cniType: 'flannel',
           addons: ['metrics-server'],
           nodes: [{ role: 'master' }],
-          stepOverrides: [],
         }}
       >
         {step === 0 && (
@@ -296,7 +248,7 @@ export default function CreateDeployPlanPage() {
                               placeholder="选择服务器"
                               loading={serversLoading}
                               options={availableServers.map((server) => ({
-                                label: `${server.name} (${server.ip})`,
+                                label: `${server.name} (${server.ip}) · ${server.os || '未知'} · ${server.status}`,
                                 value: server.id,
                               }))}
                             />
@@ -323,128 +275,27 @@ export default function CreateDeployPlanPage() {
                 )}
               </Form.List>
             )}
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-              message="命令覆盖仅作用于当前部署计划"
-              description="这里配置的是计划级覆盖，不会修改部署模板。你可以针对某个节点的某个步骤单独改命令。"
-            />
 
             <Form.Item name="addons" label="附加组件">
               <Checkbox.Group options={addonOptions} />
             </Form.Item>
 
-            <Form.List name="stepOverrides">
-              {(fields, { add, remove }) => (
-                <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                  {fields.map((field) => {
-                    const currentValue = form.getFieldValue(['stepOverrides', field.name]) as StepOverrideFormItem | undefined
-                    const selectedDefinition = stepOverrideDefinitions.find((item) => item.stepKey === currentValue?.stepKey)
-                    return (
-                      <Card
-                        key={field.key}
-                        size="small"
-                        title={currentValue?.stepKey ? `${selectedDefinition?.stepName || currentValue.stepKey} 覆盖` : '步骤命令覆盖'}
-                        extra={<Button type="text" danger icon={<MinusCircleOutlined />} onClick={() => remove(field.name)} />}
-                      >
-                        <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                          <Space align="start" wrap style={{ width: '100%' }}>
-                            <Form.Item
-                              {...field}
-                              name={[field.name, 'stepKey']}
-                              label="步骤"
-                              rules={[{ required: true, message: '请选择步骤' }]}
-                              style={{ minWidth: 220, marginBottom: 0 }}
-                            >
-                              <Select
-                                options={stepOverrideDefinitions.map((item) => ({ label: item.stepName, value: item.stepKey }))}
-                              />
-                            </Form.Item>
-                            <Form.Item
-                              {...field}
-                              name={[field.name, 'nodeRef']}
-                              label="目标节点"
-                              rules={[{ required: true, message: '请选择目标节点' }]}
-                              style={{ minWidth: 360, marginBottom: 0 }}
-                            >
-                              <Select
-                                options={nodeOptions}
-                                onChange={(value) => {
-                                  const match = nodeOptions.find((item) => item.value === value)
-                                  form.setFieldValue(['stepOverrides', field.name, 'nodeServerId'], match?.serverId)
-                                  form.setFieldValue(['stepOverrides', field.name, 'nodeRole'], match?.role)
-                                }}
-                              />
-                            </Form.Item>
-                          </Space>
-                          <Form.Item
-                            {...field}
-                            name={[field.name, 'description']}
-                            label="覆盖说明"
-                          >
-                            <Input placeholder="例如：这台机器需要使用内网仓库或特殊依赖源" />
-                          </Form.Item>
-                          <Form.Item
-                            {...field}
-                            name={[field.name, 'commandTemplate']}
-                            label="命令模板"
-                            rules={[{ required: true, message: '请输入覆盖命令' }]}
-                          >
-                            <Input.TextArea rows={8} style={{ fontFamily: 'monospace' }} />
-                          </Form.Item>
-                          <TerminalCodeBlock
-                            title={`${currentValue?.stepKey || 'step'}.${currentValue?.nodeRole || 'node'}.override.sh`}
-                            content={currentValue?.commandTemplate}
-                          />
-                        </Space>
-                      </Card>
-                    )
-                  })}
-                  <Button
-                    icon={<PlusOutlined />}
-                    onClick={() => add({ enabled: true })}
-                    disabled={nodeOptions.length === 0}
-                  >
-                    添加步骤命令覆盖
-                  </Button>
-                </Space>
-              )}
-            </Form.List>
-
-            <Divider />
-
-            <Card size="small" title="部署摘要" style={{ background: '#fafafa' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Text>计划名称：<Text strong>{watchedName || '-'}</Text></Text>
-                <Text>集群名称：<Text strong>{watchedClusterName || '-'}</Text></Text>
-                <Text>K8s 版本：<Tag color="blue">{watchedVersion || '-'}</Tag></Text>
-                <Text>CNI：<Tag color="green">{watchedCni || '-'}</Tag></Text>
-                <Text>Pod 网段：<Text code>{watchedPodCidr || '-'}</Text></Text>
-                <Text>Service 网段：<Text code>{watchedSvcCidr || '-'}</Text></Text>
-                <Text>
-                  节点：
-                  <Space wrap>
-                    {watchedNodes.length > 0 ? watchedNodes.map((node: { serverId?: number; role?: string }, index: number) => (
-                      <Tag key={`${node.serverId || 'unknown'}-${index}`} color={node.role === 'master' ? 'red' : 'blue'}>
-                        {getServerLabel(node.serverId)} / {node.role || '未选角色'}
-                      </Tag>
-                    )) : '-'}
-                  </Space>
-                </Text>
-                <Text>
-                  附加组件：
-                  <Space wrap>
-                    {watchedAddons.length > 0 ? watchedAddons.map((addon: string) => <Tag key={addon}>{addon}</Tag>) : <Text type="secondary">无</Text>}
-                  </Space>
-                </Text>
-                <Text>命令覆盖：<Text strong>{watchedStepOverrides.length || 0}</Text></Text>
-              </Space>
+            {/* 部署摘要 */}
+            <Card size="small" title="部署摘要" style={{ marginTop: 16, background: '#fafafa' }}>
+              <Descriptions column={2} size="small">
+                <Descriptions.Item label="K8s 版本">
+                  <Tag color="blue">{form.getFieldsValue(true).k8sVersion || '-'}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="CNI">
+                  <Tag color="green">{form.getFieldsValue(true).cniType || '-'}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Pod 网段">
+                  <Typography.Text code>{form.getFieldsValue(true).podCidr || '-'}</Typography.Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Service 网段">
+                  <Typography.Text code>{form.getFieldsValue(true).svcCidr || '-'}</Typography.Text>
+                </Descriptions.Item>
+              </Descriptions>
             </Card>
           </>
         )}
@@ -454,8 +305,8 @@ export default function CreateDeployPlanPage() {
         <Space>
           <Button onClick={() => history.push('/deploy/plans')}>取消</Button>
           {step > 0 && <Button onClick={handlePrev}>上一步</Button>}
-          {step < 2 && <Button type="primary" onClick={handleNext}>下一步</Button>}
-          {step === 2 && (
+          {step < 1 && <Button type="primary" onClick={handleNext}>下一步</Button>}
+          {step === 1 && (
             <Button type="primary" loading={submitMutation.isPending || planLoading} onClick={handleSubmit}>
               {isEditMode ? '保存部署方案' : '创建部署方案'}
             </Button>
@@ -465,35 +316,4 @@ export default function CreateDeployPlanPage() {
       </Card>
     </AppPage>
   )
-}
-
-function buildStepOverrides(items: StepOverrideFormItem[]): Record<string, DeployPlanStepOverride> | undefined {
-  if (!items.length) return undefined
-  const entries = items
-    .filter((item) => item.stepKey && item.nodeServerId && item.commandTemplate?.trim())
-    .map((item) => ([
-      `${item.stepKey}#server:${item.nodeServerId}`,
-      {
-        stepKey: item.stepKey,
-        nodeRole: item.nodeRole,
-        nodeServerId: item.nodeServerId,
-        commandTemplate: item.commandTemplate,
-        description: item.description,
-      },
-    ]))
-  if (!entries.length) return undefined
-  return Object.fromEntries(entries)
-}
-
-function mapPlanOverridesToForm(plan: DeployPlan): StepOverrideFormItem[] {
-  if (!plan.stepOverrides) return []
-  return Object.entries(plan.stepOverrides).map(([key, item]) => ({
-    key,
-    stepKey: item.stepKey,
-    nodeServerId: item.nodeServerId || 0,
-    nodeRole: (item.nodeRole as 'master' | 'worker') || 'worker',
-    commandTemplate: item.commandTemplate,
-    description: item.description,
-    nodeRef: item.nodeServerId ? `${item.nodeServerId}:${item.nodeRole || 'worker'}` : undefined,
-  })) as StepOverrideFormItem[]
 }

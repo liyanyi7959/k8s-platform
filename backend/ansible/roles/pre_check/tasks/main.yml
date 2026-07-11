@@ -1,0 +1,90 @@
+---
+# 环境预检 role
+# 在部署前验证所有节点满足 Kubernetes 最低要求
+
+# 1. 确认主机连通性
+- name: 检查主机连通性 (ping)
+  ansible.builtin.ping:
+
+# 2. 检查 OS 发行版
+- name: 收集 OS 发行版信息
+  ansible.builtin.setup:
+    gather_subset:
+      - os_family
+      - distribution
+      - hardware
+
+- name: 显示 OS 发行版信息
+  ansible.builtin.debug:
+    msg: "OS: {{ ansible_distribution }} {{ ansible_distribution_version }} ({{ ansible_os_family }})"
+
+- name: 验证受支持的 OS 家族
+  ansible.builtin.fail:
+    msg: "不支持的 OS 家族: {{ ansible_os_family }}，仅支持 RedHat 和 Debian"
+  when: ansible_os_family not in ['RedHat', 'Debian']
+
+# 3. 检查 CPU 核数
+- name: 检查 CPU 核数
+  ansible.builtin.fail:
+    msg: "CPU 核数不足: {{ ansible_processor_vcpus }} 核，要求至少 {{ min_cpu_cores }} 核"
+  when: ansible_processor_vcpus < min_cpu_cores
+
+# 4. 检查内存
+- name: 检查内存容量
+  ansible.builtin.fail:
+    msg: "内存不足: {{ ansible_memtotal_mb }}MB，要求至少 {{ min_memory_mb }}MB"
+  when: ansible_memtotal_mb < min_memory_mb
+
+# 5. 检查磁盘可用空间
+- name: 检查根分区磁盘可用空间
+  ansible.builtin.fail:
+    msg: "磁盘空间不足: {{ (item.size_available / 1024 / 1024 / 1024) | round(1) }}GB 可用，要求至少 {{ min_disk_gb }}GB"
+  when:
+    - item.mount == '/'
+    - (item.size_available / 1024 / 1024 / 1024) < min_disk_gb
+  loop: "{{ ansible_mounts }}"
+
+# 6. 检查 hostname 是否设置
+- name: 检查 hostname 是否已设置
+  ansible.builtin.fail:
+    msg: "hostname 未设置或为 localhost，请设置主机名后再执行部署"
+  when: ansible_hostname == '' or ansible_hostname == 'localhost'
+
+# 7. 检查 swap 是否关闭 (非关键检查，仅输出警告)
+- name: 检查 swap 状态
+  ansible.builtin.command: swapon --show
+  register: swap_status
+  changed_when: false
+
+- name: 输出 swap 状态警告
+  ansible.builtin.debug:
+    msg: "警告: swap 未关闭，将在 bootstrap 阶段处理"
+  when: swap_status.stdout | length > 0
+
+# 8. master 节点检查关键端口未被占用
+- name: 检查 master 节点关键端口是否被占用
+  block:
+    - name: 收集 master 关键端口占用情况
+      ansible.builtin.command: "ss -tlnp"
+      register: master_port_status
+      changed_when: false
+
+    - name: 验证 master 关键端口未被占用
+      ansible.builtin.fail:
+        msg: "端口 {{ item }} 已被占用，请释放该端口后再执行部署"
+      loop: "{{ master_required_ports }}"
+      when: master_port_status.stdout | regex_search(':' + item | string + '\\b')
+  when: "'master' in group_names"
+
+# 9. 输出预检结果摘要
+- name: 输出预检结果摘要
+  ansible.builtin.debug:
+    msg:
+      - "========== 预检结果摘要 =========="
+      - "主机: {{ ansible_hostname }}"
+      - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }} ({{ ansible_os_family }})"
+      - "CPU 核数: {{ ansible_processor_vcpus }}"
+      - "内存: {{ ansible_memtotal_mb }}MB"
+      - "Swap: {{ '已关闭' if swap_status.stdout | length == 0 else '未关闭(将在bootstrap处理)' }}"
+      - "节点角色: {{ 'master' if 'master' in group_names else 'worker' }}"
+      - "预检通过!"

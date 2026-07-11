@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,11 +17,14 @@ import (
 )
 
 type SSHProbeResult struct {
-	Status    string `json:"status"`
-	Message   string `json:"message"`
-	OS        string `json:"os,omitempty"`
-	OSVersion string `json:"os_version,omitempty"`
-	Kernel    string `json:"kernel,omitempty"`
+	Status    string  `json:"status"`
+	Message   string  `json:"message"`
+	OS        string  `json:"os,omitempty"`
+	OSVersion string  `json:"os_version,omitempty"`
+	Kernel    string  `json:"kernel,omitempty"`
+	CPUCores  *uint   `json:"cpu_cores,omitempty"`
+	MemoryMB  *uint64 `json:"memory_mb,omitempty"`
+	DiskGB    *uint64 `json:"disk_gb,omitempty"`
 }
 
 func (s *DeployService) ProbeServerSSH(ctx context.Context, id uint64) (SSHProbeResult, error) {
@@ -69,6 +73,15 @@ func (s *DeployService) ProbeServerSSH(ctx context.Context, id uint64) (SSHProbe
 	if result.Kernel != "" {
 		updates["kernel"] = result.Kernel
 	}
+	if result.CPUCores != nil {
+		updates["cpu_cores"] = *result.CPUCores
+	}
+	if result.MemoryMB != nil {
+		updates["memory_mb"] = *result.MemoryMB
+	}
+	if result.DiskGB != nil {
+		updates["disk_gb"] = *result.DiskGB
+	}
 	if dbErr := s.db.WithContext(ctx).Model(&model.DeployServer{}).Where("id = ?", id).Updates(updates).Error; dbErr != nil {
 		return SSHProbeResult{}, dbErr
 	}
@@ -110,7 +123,8 @@ func probeSSH(ctx context.Context, row model.DeployServer, credential string) (S
 	}
 	client := ssh.NewClient(sshConn, chans, reqs)
 	defer client.Close()
-	output, err := runSSHCommand(client, "uname -s && uname -r && (grep -E '^(NAME|VERSION_ID)=' /etc/os-release 2>/dev/null || true)")
+	// 采集系统信息：OS、内核、CPU 核数、内存(MB)、磁盘(GB)
+	output, err := runSSHCommand(client, `uname -s && uname -r && (grep -E '^(NAME|VERSION_ID)=' /etc/os-release 2>/dev/null || true) && echo "---HW---" && nproc 2>/dev/null && (free -m 2>/dev/null | awk '/^Mem:/{print $2}' || cat /proc/meminfo 2>/dev/null | awk '/MemTotal/{print $2}') && (df -BG / 2>/dev/null | awk 'NR==2{gsub(/G/,"",$2);print $2}' || echo 0)`)
 	if err != nil {
 		return SSHProbeResult{}, err
 	}
@@ -158,13 +172,25 @@ func runSSHCommand(client *ssh.Client, command string) (string, error) {
 func parseSSHProbeOutput(output string) SSHProbeResult {
 	lines := strings.Split(strings.TrimSpace(output), "\n")
 	result := SSHProbeResult{}
-	if len(lines) > 0 {
+	hwStart := -1
+	for i, line := range lines {
+		if strings.TrimSpace(line) == "---HW---" {
+			hwStart = i
+			break
+		}
+	}
+	// 解析系统信息（---HW--- 之前的部分）
+	endIdx := len(lines)
+	if hwStart >= 0 {
+		endIdx = hwStart
+	}
+	if endIdx > 0 {
 		result.OS = strings.TrimSpace(lines[0])
 	}
-	if len(lines) > 1 {
+	if endIdx > 1 {
 		result.Kernel = strings.TrimSpace(lines[1])
 	}
-	for _, line := range lines[2:] {
+	for _, line := range lines[2:endIdx] {
 		key, value, ok := strings.Cut(line, "=")
 		if !ok {
 			continue
@@ -177,6 +203,19 @@ func parseSSHProbeOutput(output string) SSHProbeResult {
 			}
 		case "VERSION_ID":
 			result.OSVersion = value
+		}
+	}
+	// 解析硬件信息（---HW--- 之后：CPU 核数、内存 MB、磁盘 GB）
+	if hwStart >= 0 && hwStart+3 < len(lines) {
+		if cpu, err := strconv.ParseUint(strings.TrimSpace(lines[hwStart+1]), 10, 64); err == nil && cpu > 0 {
+			c := uint(cpu)
+			result.CPUCores = &c
+		}
+		if mem, err := strconv.ParseUint(strings.TrimSpace(lines[hwStart+2]), 10, 64); err == nil && mem > 0 {
+			result.MemoryMB = &mem
+		}
+		if disk, err := strconv.ParseUint(strings.TrimSpace(lines[hwStart+3]), 10, 64); err == nil && disk > 0 {
+			result.DiskGB = &disk
 		}
 	}
 	return result

@@ -7,6 +7,7 @@ import type {
   DeployServer,
   Credential,
   DeployPlan,
+  DeployTask,
   CreateDeployPlanRequest,
   CreateServerRequest,
   CreateCredentialRequest,
@@ -248,7 +249,11 @@ export function createDeployPlan(data: CreateDeployPlanRequest): Promise<DeployP
       cni_config: data.cniConfig,
       addons: data.addons,
       step_overrides: serializeStepOverrides(data.stepOverrides),
-      nodes: data.nodes,
+      nodes: (data.nodes || []).map((n) => ({
+        server_id: n.serverId,
+        role: n.role,
+        sort_order: n.sortOrder,
+      })),
     },
   }).then(mapPlan)
 }
@@ -266,7 +271,11 @@ export function updateDeployPlan(id: number, data: Partial<CreateDeployPlanReque
       cni_config: data.cniConfig,
       addons: data.addons,
       step_overrides: serializeStepOverrides(data.stepOverrides),
-      nodes: data.nodes,
+      nodes: (data.nodes || []).map((n) => ({
+        server_id: n.serverId,
+        role: n.role,
+        sort_order: n.sortOrder,
+      })),
     },
   })
 }
@@ -275,7 +284,7 @@ export function deleteDeployPlan(id: number): Promise<void> {
   return request(`/api/v1/deploy/plans/${id}`, { method: 'DELETE' })
 }
 
-export function executeDeployPlan(id: number): Promise<void> {
+export function executeDeployPlan(id: number): Promise<{ taskId: number }> {
   return request(`/api/v1/deploy/plans/${id}/execute`, { method: 'POST' })
 }
 
@@ -283,8 +292,29 @@ export function cancelDeployPlan(id: number): Promise<void> {
   return request(`/api/v1/deploy/plans/${id}/cancel`, { method: 'POST' })
 }
 
-export function retryDeployPlan(id: number): Promise<void> {
+export function retryDeployPlan(id: number): Promise<{ taskId: number }> {
   return request(`/api/v1/deploy/plans/${id}/retry`, { method: 'POST' })
+}
+
+// ═══════════════════════════════════════════════════════════
+//  部署任务 API
+// ═══════════════════════════════════════════════════════════
+
+/** 获取部署任务详情 */
+export function getDeployTask(taskId: number): Promise<DeployTask> {
+  return request(`/api/v1/deploy/tasks/${taskId}`).then(camelizeKeys)
+}
+
+/** 获取部署任务日志（分页） */
+export function getDeployTaskLogs(taskId: number, offset = 0, limit = 200): Promise<{ logs: string[]; total: number }> {
+  return request(`/api/v1/deploy/tasks/${taskId}/logs`, {
+    params: { offset, limit },
+  })
+}
+
+/** 构建 SSE 日志流 URL */
+export function getDeployTaskLogSSEUrl(taskId: number): string {
+  return `/api/v1/deploy/tasks/${taskId}/logs/sse`
 }
 
 /** 干跑预览 - 返回部署计划的模拟运行流程 */

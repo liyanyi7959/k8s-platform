@@ -1,0 +1,128 @@
+---
+# 基础环境初始化 role
+# 在所有节点上配置 Kubernetes 所需的基础环境
+
+# 1. 关闭 swap
+- name: 临时关闭 swap
+  ansible.builtin.command: swapoff -a
+  changed_when: false
+
+- name: 永久关闭 swap (注释 /etc/fstab 中的 swap 行)
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\sswap\s)'
+    replace: '# \1'
+
+# 2. 加载内核模块
+- name: 加载所需内核模块
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ required_kernel_modules }}"
+
+- name: 持久化内核模块加载配置
+  ansible.builtin.template:
+    src: modules-load.conf.j2
+    dest: /etc/modules-load.d/k8s.conf
+    mode: '0644'
+
+# 3. 设置 sysctl 参数
+- name: 应用 sysctl 参数 (立即生效)
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop: "{{ sysctl_k8s_params | dict2items }}"
+
+- name: 持久化 sysctl 配置文件
+  ansible.builtin.template:
+    src: sysctl-k8s.conf.j2
+    dest: /etc/sysctl.d/k8s.conf
+    mode: '0644'
+
+# 4. 停止并禁用 firewalld
+- name: 停止并禁用 firewalld (RedHat)
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: no
+  when: ansible_os_family == "RedHat"
+  failed_when: false
+
+- name: 停止并禁用 ufw (Debian)
+  ansible.builtin.service:
+    name: ufw
+    state: stopped
+    enabled: no
+  when: ansible_os_family == "Debian"
+  failed_when: false
+
+# 5. 设置 SELinux 为 permissive (仅 RedHat)
+- name: 设置 SELinux 为 permissive (RedHat)
+  ansible.posix.selinux:
+    policy: targeted
+    state: permissive
+  when: ansible_os_family == "RedHat"
+
+# 6. 安装基础依赖包
+- name: 安装基础依赖包 (RedHat)
+  ansible.builtin.yum:
+    name: "{{ base_packages_redhat }}"
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: 安装基础依赖包 (Debian)
+  ansible.builtin.apt:
+    name: "{{ base_packages_debian }}"
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+# 7. 配置时间同步
+- name: 安装 chrony (RedHat)
+  ansible.builtin.yum:
+    name: chrony
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: 安装 chrony (Debian)
+  ansible.builtin.apt:
+    name: chrony
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: 启动并设置 chrony 开机自启 (RedHat)
+  ansible.builtin.service:
+    name: chronyd
+    state: started
+    enabled: yes
+  when: ansible_os_family == "RedHat"
+
+- name: 启动并设置 chrony 开机自启 (Debian)
+  ansible.builtin.service:
+    name: chrony
+    state: started
+    enabled: yes
+  when: ansible_os_family == "Debian"
+
+# 8. 确保 hostname 正确设置
+- name: 检查当前 hostname
+  ansible.builtin.command: hostname
+  register: current_hostname
+  changed_when: false
+
+- name: 设置 hostname (仅在不符合时修改)
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+  when: current_hostname.stdout != inventory_hostname
+
+# 配置 Kubernetes 仓库
+- name: 配置 Kubernetes yum 仓库 (RedHat)
+  ansible.builtin.template:
+    src: kubernetes.repo.j2
+    dest: /etc/yum.repos.d/kubernetes.repo
+    mode: '0644'
+  when: ansible_os_family == "RedHat"
