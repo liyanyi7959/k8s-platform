@@ -135,6 +135,7 @@ interface LogPaneProps {
 const LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNonce, container, previous, keyword, live }) => {
   const [liveLogs, setLiveLogs] = useState<string[]>([])
   const [liveConnected, setLiveConnected] = useState(false)
+  const [liveError, setLiveError] = useState('')
   const wsRef = useRef<WebSocket | null>(null)
   const logEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -153,16 +154,32 @@ const LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNon
     let cancelled = false
     setLiveLogs([])
     setLiveConnected(false)
+    setLiveError('')
 
     createPodLogSession(clusterId, pod.namespace, pod.name, { container, tailLines, follow: true, previous })
       .then(({ wsUrl }) => {
         if (cancelled || !wsUrl) return
-        const ws = new WebSocket(wsUrl)
+        const url = new URL(wsUrl, window.location.href)
+        url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        const token = localStorage.getItem('token')
+        if (token) url.searchParams.set('token', token)
+        const ws = new WebSocket(url.toString())
         wsRef.current = ws
 
         ws.onopen = () => setLiveConnected(true)
         ws.onmessage = (ev) => {
-          const line = typeof ev.data === 'string' ? ev.data : ''
+          let line = typeof ev.data === 'string' ? ev.data : ''
+          try {
+            const frame = JSON.parse(line) as { type?: string; data?: string; message?: string }
+            if (frame.type === 'error') {
+              setLiveError(frame.message || '日志流读取失败')
+              line = ''
+            } else {
+              line = frame.type === 'chunk' ? frame.data || '' : ''
+            }
+          } catch {
+            // Compatible with plain-text frames from older gateways.
+          }
           if (line) {
             setLiveLogs((prev) => {
               const next = [...prev, line]
@@ -170,15 +187,24 @@ const LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNon
             })
           }
         }
-        ws.onclose = () => setLiveConnected(false)
-        ws.onerror = () => setLiveConnected(false)
+        ws.onclose = (event) => {
+          setLiveConnected(false)
+          if (!cancelled && event.code !== 1000) setLiveError(`实时日志连接已断开（${event.code}）`)
+        }
+        ws.onerror = () => {
+          setLiveConnected(false)
+          setLiveError('实时日志 WebSocket 连接失败')
+        }
       })
-      .catch(() => {})
+      .catch((error) => setLiveError(error?.message || '创建实时日志会话失败'))
 
     return () => {
       cancelled = true
-      wsRef.current?.close()
+      const ws = wsRef.current
       wsRef.current = null
+      if (ws && ws.readyState !== WebSocket.CLOSED) {
+        ws.close(1000, 'log drawer closed')
+      }
     }
   }, [live, clusterId, pod.namespace, pod.name, container, previous, tailLines, refreshNonce])
 
@@ -190,7 +216,7 @@ const LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNon
   }, [liveLogs])
 
   const rawContent = live
-    ? liveLogs.join('\n')
+    ? liveError || liveLogs.join('')
     : (isLoading ? '加载中...' : data?.logs || '暂无日志')
 
   // 关键字过滤
@@ -489,6 +515,10 @@ const PodsPage: React.FC = () => {
   // ═══ Handlers ═══
   const handleViewLogs = (pod: Pod) => setLogDrawer({ open: true, pod })
   const handleMultiPodLogs = (pods: Pod[]) => setLogDrawer({ open: true, pods })
+  const handleCloseLogs = () => {
+    setLogLive(false)
+    setLogDrawer({ open: false })
+  }
 
   const handleTerminal = async (pod: Pod) => {
     // 多容器 Pod 选择容器
@@ -875,7 +905,8 @@ const PodsPage: React.FC = () => {
             : `日志 - ${logDrawer.pod?.name}`
         }
         open={logDrawer.open}
-        onClose={() => setLogDrawer({ open: false })}
+        onClose={handleCloseLogs}
+        destroyOnHidden
         width={820}
         extra={
           <Space wrap>

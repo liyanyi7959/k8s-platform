@@ -6,6 +6,7 @@ import { defineConfig } from '@umijs/max'
 import routes from './routes'
 
 export default defineConfig({
+  plugins: ['./plugins/aiops-loading.ts'],
   routes,
   conventionLayout: false,
   // 禁用 Module Federation（避免 mf-va_remoteEntry.js 加载失败）

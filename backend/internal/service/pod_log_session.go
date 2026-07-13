@@ -15,6 +15,7 @@ type PodLogSession struct {
 	Container *string
 	Follow    bool
 	TailLines int64
+	Previous  bool
 	CreatedAt time.Time
 }
 

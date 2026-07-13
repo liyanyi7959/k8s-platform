@@ -32,11 +32,21 @@ import { useQuery } from '@tanstack/react-query'
 import { getClusterOverview } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
 import { AppPage, EllipsisText } from '@/components'
+import { ResourceTrendChart } from '@/components/ResourceTrendChart'
 import { history } from '@umijs/max'
 import dayjs from 'dayjs'
 
+const LazyLine: React.FC<{ data: Array<{ time: string; type: string; value: number | null }>; [key: string]: unknown }> = ({ data }) => {
+  const labels = Array.from(new Set(data.map((point) => point.time)))
+  const points = labels.map((time) => ({
+    time,
+    cpu: data.find((point) => point.time === time && point.type === 'CPU')?.value ?? null,
+    memory: data.find((point) => point.time === time && point.type !== 'CPU')?.value ?? null,
+  }))
+  return <ResourceTrendChart points={points} empty={points.every((point) => !point.cpu && !point.memory)} height={240} />
+}
+
 // 懒加载重型图表组件，减少首屏 JS 体积
-const LazyLine = lazy(() => import('@ant-design/charts').then(m => ({ default: m.Line })))
 const LazyPie = lazy(() => import('@ant-design/charts').then(m => ({ default: m.Pie })))
 const LazyColumn = lazy(() => import('@ant-design/charts').then(m => ({ default: m.Column })))
 
@@ -89,9 +99,9 @@ const K8sDashboardPage: React.FC = () => {
     const nodeScore = s.nodes.total > 0 ? Math.round((s.nodes.ready / s.nodes.total) * 100) : 0
     const podTotal = Math.max(1, s.pods.total)
     const podScore = Math.max(0, Math.min(100, Math.round((s.pods.running / podTotal) * 100)))
-    const cpuScore = Math.max(0, 100 - s.cpu.used_percent)
-    const memScore = Math.max(0, 100 - s.memory.used_percent)
-    const pressureScore = Math.round((cpuScore + memScore) / 2)
+    const pressureScore = overview.meta?.metrics_available === false
+      ? 80
+      : Math.round((Math.max(0, 100 - s.cpu.used_percent) + Math.max(0, 100 - s.memory.used_percent)) / 2)
     return Math.round(nodeScore * 0.3 + podScore * 0.3 + pressureScore * 0.2 + 80 * 0.2)
   }, [overview])
 
@@ -101,11 +111,13 @@ const K8sDashboardPage: React.FC = () => {
     const nodeScore = s.nodes.total > 0 ? Math.round((s.nodes.ready / s.nodes.total) * 100) : 0
     const podTotal = Math.max(1, s.pods.total)
     const podScore = Math.max(0, Math.min(100, Math.round((s.pods.running / podTotal) * 100)))
-    const pressureScore = Math.max(0, Math.round(100 - (s.cpu.used_percent + s.memory.used_percent) / 2))
+    const pressureScore = overview.meta?.metrics_available === false
+      ? 80
+      : Math.max(0, Math.round(100 - (s.cpu.used_percent + s.memory.used_percent) / 2))
     return [
       { key: 'nodes', label: '节点可用性', score: nodeScore, hint: `${s.nodes.ready}/${s.nodes.total} Ready` },
       { key: 'pods', label: 'Pod 运行率', score: podScore, hint: `${s.pods.running}/${podTotal} Running` },
-      { key: 'pressure', label: '资源压力', score: pressureScore, hint: `CPU ${s.cpu.used_percent}% / Mem ${s.memory.used_percent}%` },
+      { key: 'pressure', label: '资源压力', score: pressureScore, hint: overview.meta?.metrics_available === false ? '指标服务不可用，暂按中性分计算' : `CPU ${s.cpu.used_percent}% / Mem ${s.memory.used_percent}%` },
     ].map((item) => ({ ...item, tier: getHealthTier(item.score) }))
   }, [overview])
 
@@ -117,7 +129,7 @@ const K8sDashboardPage: React.FC = () => {
   const failedPods = overview?.anomalies?.failed_pods || []
   const unscheduledPods = overview?.anomalies?.unscheduled_pods || []
   const topWorkloads = overview?.top_workloads || []
-  const certRisks = overview?.risks?.certificates || []
+  const certRisks = (overview?.risks?.certificates || []).filter((cert) => cert.status !== 'ok')
 
   if (isLoading) {
     return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
@@ -134,7 +146,10 @@ const K8sDashboardPage: React.FC = () => {
   }
 
   const s = overview.stats
-  const cpuMemData = overview.charts.cpu_memory_24h.labels.flatMap((label, i) => [
+  const trendLabels = overview.charts.cpu_memory_24h.labels.length > 0
+    ? overview.charts.cpu_memory_24h.labels
+    : Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`)
+  const cpuMemData = trendLabels.flatMap((label, i) => [
     { time: label, type: 'CPU', value: overview.charts.cpu_memory_24h.cpu[i] ?? 0 },
     { time: label, type: '内存', value: overview.charts.cpu_memory_24h.memory[i] ?? 0 },
   ])
@@ -187,7 +202,7 @@ const K8sDashboardPage: React.FC = () => {
             { label: '节点', value: `${s.nodes.ready}/${s.nodes.total}`, sub: 'Ready / Total', icon: <NodeIndexOutlined />, color: COLOR.primary, path: `/k8s/${clusterId}/nodes` },
             { label: 'Pod', value: s.pods.total, sub: `${s.pods.running} 运行 / ${s.pods.pending} 等待 / ${s.pods.failed} 异常`, icon: <AppstoreOutlined />, color: s.pods.failed > 0 ? COLOR.critical : COLOR.healthy, path: `/k8s/${clusterId}/pods` },
             { label: '工作负载', value: s.workloads.deployments + s.workloads.statefulsets + s.workloads.daemonsets, sub: `Deploy ${s.workloads.deployments} / STS ${s.workloads.statefulsets} / DS ${s.workloads.daemonsets}`, icon: <CloudServerOutlined />, color: COLOR.purple, path: `/k8s/${clusterId}/deployments` },
-            { label: 'CPU 使用率', value: `${s.cpu.used_percent}%`, sub: `内存 ${s.memory.used_percent}%`, icon: <DashboardOutlined />, color: s.cpu.used_percent >= 80 ? COLOR.critical : s.cpu.used_percent >= 70 ? COLOR.warning : COLOR.healthy, path: '' },
+            { label: 'CPU 使用率', value: overview.meta?.metrics_available === false ? '--' : `${s.cpu.used_percent}%`, sub: overview.meta?.metrics_available === false ? 'metrics-server 未就绪' : `内存 ${s.memory.used_percent}%`, icon: <DashboardOutlined />, color: overview.meta?.metrics_available === false ? COLOR.idle : s.cpu.used_percent >= 80 ? COLOR.critical : s.cpu.used_percent >= 70 ? COLOR.warning : COLOR.healthy, path: `/k8s/${clusterId}/resource-metrics` },
           ].map((kpi) => (
             <Col xs={12} sm={6} key={kpi.label}>
               <Card hoverable size="small" style={{ borderLeft: `3px solid ${kpi.color}`, cursor: kpi.path ? 'pointer' : 'default' }}
@@ -317,7 +332,7 @@ const K8sDashboardPage: React.FC = () => {
                   <div style={{ width: '100%' }}>
                     <Row justify="space-between" align="middle">
                       <Text strong style={{ fontSize: 12 }}>{cert.name}</Text>
-                      <Tag color={cert.status === 'critical' ? 'error' : cert.status === 'warn' ? 'warning' : 'success'} style={{ fontSize: 10 }}>
+                      <Tag color={cert.status === 'critical' ? 'error' : cert.status === 'warn' ? 'warning' : 'default'} style={{ fontSize: 10 }}>
                         {cert.days_left != null ? `${cert.days_left}天` : cert.status}
                       </Tag>
                     </Row>
@@ -341,13 +356,17 @@ const K8sDashboardPage: React.FC = () => {
                 {!overview.cluster.api_ok && (
                   <Tag color="error" style={{ fontSize: 10 }}>集群 API 不可达</Tag>
                 )}
+                {overview.cluster.api_ok && overview.meta?.metrics_available === false && (
+                  <Tag color="warning" style={{ fontSize: 10 }}>metrics-server 不可用</Tag>
+                )}
               </Space>
             }
             size="small"
           >
-            {overview.cluster.api_ok && cpuMemData.some((d) => d.value > 0) ? (
+            {overview.cluster.api_ok && cpuMemData.length > 0 ? (
               <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>
-                <LazyLine data={cpuMemData} xField="time" yField="value" colorField="type" color={[COLOR.cyan, COLOR.purple]}
+                <div style={{ position: 'relative' }}>
+                <LazyLine data={cpuMemData} encode={{ x: 'time', y: 'value', color: 'type' }} color={[COLOR.cyan, COLOR.purple]}
                   smooth height={240} point={{ size: 2 }}
                   xAxis={{ label: { autoRotate: true, style: { fontSize: 10 } } }}
                   yAxis={{ min: 0, max: 100, label: { formatter: (v: number) => `${v}%` } }}
@@ -356,6 +375,12 @@ const K8sDashboardPage: React.FC = () => {
                     { type: 'line', yField: 80, style: { stroke: COLOR.warning, lineDash: [4, 4] }, label: { text: '80%', position: 'end', style: { fill: COLOR.warning, fontSize: 10 } } },
                     { type: 'line', yField: 90, style: { stroke: COLOR.critical, lineDash: [4, 4] }, label: { text: '90%', position: 'end', style: { fill: COLOR.critical, fontSize: 10 } } },
                   ]} />
+                  {overview.meta?.metrics_available === false && (
+                    <Text type="secondary" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                      暂无指标采样数据，坐标轴为参考范围
+                    </Text>
+                  )}
+                </div>
               </Suspense>
             ) : (
               <div style={{ height: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -371,6 +396,11 @@ const K8sDashboardPage: React.FC = () => {
                 <Button size="small" icon={<ReloadOutlined />} onClick={() => refetch()} style={{ marginTop: 4 }}>
                   重新获取
                 </Button>
+                {overview.cluster.api_ok && overview.meta?.metrics_available === false && (
+                  <Button size="small" type="link" onClick={() => history.push(`/k8s/${clusterId}/resource-metrics`)}>
+                    查看指标服务诊断
+                  </Button>
+                )}
               </div>
             )}
           </Card>
@@ -482,7 +512,10 @@ const K8sDashboardPage: React.FC = () => {
             bodyStyle={{ padding: '8px 12px' }}>
             {topWorkloads.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="无数据" /> : (
               <Table dataSource={topWorkloads} rowKey={(r) => `${r.namespace}/${r.name}`} pagination={false} size="small"
-                onRow={() => ({ style: { cursor: 'pointer' }, onClick: () => history.push(`/k8s/${clusterId}/deployments`) })}
+                onRow={(record) => ({
+                  style: { cursor: 'pointer' },
+                  onClick: () => history.push(`/k8s/${clusterId}/${record.kind === 'StatefulSet' ? 'statefulsets' : record.kind === 'DaemonSet' ? 'daemonsets' : 'deployments'}`),
+                })}
                 columns={[
                   { title: '#', width: 36, render: (_, __, idx) => <Text strong style={{ color: COLOR.primary }}>{idx + 1}</Text> },
                   { title: '名称', dataIndex: 'name', render: (v: string) => <EllipsisText text={v} /> },

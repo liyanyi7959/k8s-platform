@@ -149,6 +149,7 @@ type createPodLogSessionReq struct {
 	Container *string `json:"container"`
 	Follow    *bool   `json:"follow"`
 	TailLines *int64  `json:"tail_lines"`
+	Previous  bool    `json:"previous"`
 }
 
 type podLogWSFrame struct {
@@ -204,6 +205,7 @@ func (kc *K8sController) CreatePodLogSession(c *gin.Context) {
 		Container: req.Container,
 		Follow:    follow,
 		TailLines: tailLines,
+		Previous:  req.Previous,
 		CreatedAt: time.Now().UTC(),
 	})
 	resp.OK(c, gin.H{"session_id": sessionID, "ws_url": wsURL})
@@ -285,7 +287,7 @@ func (kc *K8sController) PodLogWS(c *gin.Context) {
 		}
 	}()
 
-	stream, err := kc.svc.PodLogStream(ctx, sess.ClusterID, sess.Namespace, sess.Pod, derefString(sess.Container), sess.Follow, sess.TailLines, false)
+	stream, err := kc.svc.PodLogStream(ctx, sess.ClusterID, sess.Namespace, sess.Pod, derefString(sess.Container), sess.Follow, sess.TailLines, sess.Previous)
 	if err != nil {
 		_ = writeFrame(podLogWSFrame{Type: "error", Message: err.Error()})
 		return

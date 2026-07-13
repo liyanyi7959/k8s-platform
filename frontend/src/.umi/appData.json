@@ -94,7 +94,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 45
+        "register": 42
       },
       "enableBy": "register"
     },
@@ -107,7 +107,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 15
+        "register": 16
       },
       "enableBy": "register"
     },
@@ -124,7 +124,7 @@
             0
           ]
         },
-        "register": 7
+        "register": 8
       },
       "enableBy": "register"
     },
@@ -138,10 +138,10 @@
       "time": {
         "hooks": {
           "onStart": [
-            3
+            4
           ]
         },
-        "register": 5
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -172,11 +172,10 @@
       "time": {
         "hooks": {
           "onDevCompileDone": [
-            621,
-            276
+            696
           ]
         },
-        "register": 2
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -190,13 +189,13 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            127
+            188
           ],
           "onGenerateFiles": [
-            11
+            12
           ]
         },
-        "register": 32
+        "register": 30
       },
       "enableBy": "register"
     },
@@ -230,13 +229,23 @@
             0
           ],
           "onCheck": [
-            0
+            1
           ],
           "onPrepareBuildSuccess": [
             0,
             0
           ],
           "onCheckCode": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             1,
             0,
             0,
@@ -245,7 +254,143 @@
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -280,7 +425,7 @@
             0
           ]
         },
-        "register": 2
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -310,7 +455,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -327,7 +472,7 @@
             0
           ]
         },
-        "register": 18
+        "register": 19
       },
       "enableBy": "register"
     },
@@ -1179,7 +1324,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -1210,7 +1355,7 @@
       "time": {
         "hooks": {
           "addBeforeMiddlewares": [
-            13
+            20
           ]
         },
         "register": 2
@@ -1226,7 +1371,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 84
+        "register": 109
       },
       "enableBy": "register"
     },
@@ -1239,7 +1384,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 89
+        "register": 98
       },
       "enableBy": "config"
     },
@@ -1252,7 +1397,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 29
+        "register": 33
       },
       "enableBy": "config"
     },
@@ -1273,7 +1418,6 @@
           ],
           "modifyHTMLFavicon": [
             0,
-            0,
             0
           ]
         },
@@ -1291,7 +1435,7 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            4
+            5
           ],
           "addRuntimePlugin": [
             0
@@ -1310,7 +1454,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -1324,13 +1468,13 @@
       "time": {
         "hooks": {
           "onStart": [
-            1
+            2
           ],
           "addBeforeMiddlewares": [
             1
           ]
         },
-        "register": 42
+        "register": 55
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mpa/mpa": {
@@ -1355,7 +1499,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/overrides/overrides": {
@@ -1375,7 +1519,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1388,7 +1532,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1402,10 +1546,10 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            3
+            2
           ],
           "onGenerateFiles": [
-            104
+            161
           ],
           "addPolyfillImports": [
             0,
@@ -1425,7 +1569,7 @@
       "time": {
         "hooks": {
           "addPolyfillImports": [
-            0,
+            1,
             0
           ]
         },
@@ -1443,10 +1587,10 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            258
+            287
           ]
         },
-        "register": 2
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1472,7 +1616,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1486,13 +1630,13 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            0
+            1
           ],
           "addBeforeMiddlewares": [
             0
           ]
         },
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1506,11 +1650,11 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            91,
-            16
+            123,
+            19
           ]
         },
-        "register": 10
+        "register": 11
       },
       "enableBy": "register"
     },
@@ -1536,7 +1680,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/ssr/ssr": {
@@ -1548,7 +1692,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 10
+        "register": 12
       },
       "enableBy": "config"
     },
@@ -1562,10 +1706,10 @@
       "time": {
         "hooks": {
           "onGenerateFiles": [
-            539
+            674
           ]
         },
-        "register": 9
+        "register": 7
       },
       "enableBy": "register"
     },
@@ -1579,7 +1723,7 @@
       "time": {
         "hooks": {
           "addBeforeBabelPresets": [
-            1
+            0
           ]
         },
         "register": 7
@@ -1595,7 +1739,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 5
       },
       "enableBy": "config"
     },
@@ -1608,7 +1752,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -1621,7 +1765,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 16
+        "register": 14
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/monorepo/redirect": {
@@ -1633,7 +1777,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 28
+        "register": 41
       },
       "enableBy": "config"
     },
@@ -1662,7 +1806,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1730,7 +1874,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 5
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mako/mako": {
@@ -1780,12 +1924,11 @@
       "time": {
         "hooks": {
           "addHTMLHeadScripts": [
-            608,
-            0,
+            680,
             0
           ]
         },
-        "register": 35
+        "register": 57
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/forget/forget": {
@@ -1811,7 +1954,7 @@
       "time": {
         "hooks": {
           "modifyUniBundler": [
-            1816
+            1001
           ]
         },
         "register": 5
@@ -1827,7 +1970,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 9
+        "register": 12
       },
       "enableBy": "register"
     },
@@ -1840,7 +1983,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 58
+        "register": 82
       },
       "enableBy": "register"
     },
@@ -1854,10 +1997,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            47
+            46
           ]
         },
-        "register": 115
+        "register": 93
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/commands/help": {
@@ -1895,7 +2038,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1934,7 +2077,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 5
       },
       "enableBy": "register"
     },
@@ -1947,7 +2090,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1960,7 +2103,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1999,7 +2142,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2103,7 +2246,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 31
+        "register": 35
       },
       "enableBy": "register"
     },
@@ -2129,7 +2272,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 14
       },
       "enableBy": "register"
     },
@@ -2152,7 +2295,7 @@
             0
           ]
         },
-        "register": 3
+        "register": 5
       },
       "enableBy": "config"
     },
@@ -2180,7 +2323,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            7
+            6
           ],
           "modifyAppData": [
             0
@@ -2199,7 +2342,7 @@
             0
           ],
           "onGenerateFiles": [
-            7
+            8
           ],
           "addExtraBabelPlugins": [
             0
@@ -2208,7 +2351,7 @@
             0
           ]
         },
-        "register": 14
+        "register": 18
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/dva": {
@@ -2220,7 +2363,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 12
+        "register": 16
       },
       "enableBy": "config"
     },
@@ -2240,7 +2383,7 @@
             0
           ],
           "onGenerateFiles": [
-            3
+            4
           ],
           "addExtraModels": [
             0
@@ -2265,7 +2408,7 @@
             0
           ],
           "addLayouts": [
-            0
+            1
           ],
           "modifyAppData": [
             2
@@ -2277,10 +2420,10 @@
             0
           ],
           "onGenerateFiles": [
-            11
+            13
           ]
         },
-        "register": 5
+        "register": 8
       },
       "enableBy": "config"
     },
@@ -2293,7 +2436,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 5
       },
       "enableBy": "config"
     },
@@ -2306,7 +2449,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -2323,7 +2466,7 @@
             0
           ],
           "onGenerateFiles": [
-            152
+            191
           ],
           "addTmpGenerateWatcherPaths": [
             0
@@ -2359,7 +2502,7 @@
             0
           ]
         },
-        "register": 2
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -2372,7 +2515,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/qiankun/slave": {
@@ -2384,7 +2527,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 5
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/react-query": {
@@ -2397,7 +2540,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            8
+            7
           ],
           "onStart": [
             0
@@ -2412,10 +2555,10 @@
             0
           ],
           "onGenerateFiles": [
-            3
+            5
           ]
         },
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2432,7 +2575,7 @@
             0
           ],
           "onGenerateFiles": [
-            8
+            9
           ]
         },
         "register": 2
@@ -2448,7 +2591,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2474,7 +2617,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -2508,7 +2651,7 @@
             0
           ]
         },
-        "register": 0
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2541,6 +2684,23 @@
         "register": 2
       },
       "enableBy": "register"
+    },
+    "./plugins/aiops-loading.ts": {
+      "cwd": "D:\\03_学习\\soft\\k8s-platform\\frontend",
+      "type": "plugin",
+      "path": "D:/03_学习/soft/k8s-platform/frontend/plugins/aiops-loading.ts",
+      "id": "./plugins/aiops-loading.ts",
+      "key": "aiopsLoading",
+      "config": {},
+      "time": {
+        "hooks": {
+          "modifyDevToolLoadingHTML": [
+            5
+          ]
+        },
+        "register": 4
+      },
+      "enableBy": "register"
     }
   },
   "presets": [],
@@ -2549,6 +2709,9 @@
     "_": []
   },
   "userConfig": {
+    "plugins": [
+      "./plugins/aiops-loading.ts"
+    ],
     "routes": [
       {
         "path": "/login",
@@ -3285,6 +3448,9 @@
       "@tanstack/react-query": "D:/03_学习/soft/k8s-platform/frontend/node_modules/@tanstack/react-query",
       "@umijs/max": "@@/exports"
     },
+    "plugins": [
+      "./plugins/aiops-loading.ts"
+    ],
     "routes": [
       {
         "path": "/login",
@@ -5006,7 +5172,7 @@
       "parentId": "ant-design-pro-layout",
       "id": "9",
       "absPath": "/clusters/import",
-      "__content": "import React, { useRef, useState } from 'react'\nimport { history } from '@umijs/max'\nimport { ProForm, ProFormText, ProFormTextArea } from '@ant-design/pro-components'\nimport { Card, Form, Input, message, Upload } from 'antd'\nimport { InboxOutlined } from '@ant-design/icons'\nimport type { UploadChangeParam } from 'antd/es/upload'\nimport { useMutation } from '@tanstack/react-query'\nimport { AppPage } from '@/components'\nimport { importCluster } from '@/services/clusters'\nimport { clusterImportSchema } from '@/schemas/cluster'\nimport type { ClusterImportInput } from '@/schemas/cluster'\nimport type { ProFormInstance } from '@ant-design/pro-components'\n\nconst { Dragger } = Upload\n\n/** 导入集群页 */\nconst ClusterImportPage: React.FC = () => {\n  const formRef = useRef<ProFormInstance>()\n  const [fileName, setFileName] = useState<string>()\n\n  const handleKubeconfigFile = (info: UploadChangeParam) => {\n    const rawFile = info.file.originFileObj || info.file\n    if (!rawFile || !(rawFile instanceof File)) return\n\n    setFileName(rawFile.name)\n    const reader = new FileReader()\n    reader.onload = (e) => {\n      const content = e.target?.result as string\n      formRef.current?.setFieldValue('kubeconfig', content)\n      message.success(`${rawFile.name} 读取成功`)\n    }\n    reader.onerror = () => {\n      message.error('文件读取失败，请重试')\n    }\n    reader.readAsText(rawFile)\n  }\n\n  const importMutation = useMutation({\n    mutationFn: (data: ClusterImportInput) => importCluster(data),\n    onSuccess: () => {\n      message.success('导入成功')\n      history.push('/clusters')\n    },\n    onError: (error: any) => {\n      if (error?.data?.field) {\n        formRef.current?.setFields([\n          { name: error.data.field, errors: [error.data.message] },\n        ])\n      }\n    },\n  })\n\n  const handleSubmit = async (values: ClusterImportInput) => {\n    const result = clusterImportSchema.safeParse(values)\n    if (!result.success) {\n      message.error('表单校验失败')\n      return\n    }\n    importMutation.mutate(result.data)\n  }\n\n  return (\n    <AppPage>\n      <Card>\n        <ProForm<ClusterImportInput>\n          formRef={formRef}\n          onFinish={handleSubmit}\n          layout=\"vertical\"\n          submitter={{\n            submitButtonProps: { loading: importMutation.isPending },\n          }}\n        >\n          <ProFormText\n            name=\"name\"\n            label=\"集群名称\"\n            placeholder=\"请输入集群名称\"\n            rules={[{ required: true }]}\n            fieldProps={{ maxLength: 64 }}\n          />\n          <div style={{ marginBottom: 24 }}>\n            <Dragger\n              accept=\".yaml,.yml,.json,.txt,.kubeconfig,.config\"\n              maxCount={1}\n              beforeUpload={() => false}\n              onChange={handleKubeconfigFile}\n              showUploadList={false}\n            >\n              <p className=\"ant-upload-drag-icon\">\n                <InboxOutlined />\n              </p>\n              <p className=\"ant-upload-text\">点击或拖拽 kubeconfig 文件到此处</p>\n              <p className=\"ant-upload-hint\">\n                {fileName\n                  ? `已选择：${fileName}，内容已填充到下方文本框`\n                  : '支持 .yaml / .yml / .json / .txt / .kubeconfig'}\n              </p>\n            </Dragger>\n          </div>\n          <Form.Item\n            name=\"kubeconfig\"\n            label=\"Kubeconfig 内容\"\n            rules={[{ required: true, message: '请上传或粘贴 kubeconfig' }]}\n          >\n            <Input.TextArea\n              rows={8}\n              placeholder=\"或在此直接粘贴 kubeconfig 内容\"\n              style={{\n                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',\n                fontSize: 13,\n                lineHeight: 1.6,\n              }}\n            />\n          </Form.Item>\n          <ProFormTextArea\n            name=\"description\"\n            label=\"备注\"\n            placeholder=\"请输入备注信息\"\n            fieldProps={{ maxLength: 200 }}\n          />\n        </ProForm>\n      </Card>\n    </AppPage>\n  )\n}\n\nexport default ClusterImportPage\n",
+      "__content": "import React, { useRef, useState } from 'react'\nimport { history } from '@umijs/max'\nimport { ProForm, ProFormText, ProFormTextArea } from '@ant-design/pro-components'\nimport { Card, Form, Input, message, Upload } from 'antd'\nimport { InboxOutlined } from '@ant-design/icons'\nimport type { UploadChangeParam } from 'antd/es/upload'\nimport { useMutation } from '@tanstack/react-query'\nimport { AppPage } from '@/components'\nimport { importCluster } from '@/services/clusters'\nimport { clusterImportSchema } from '@/schemas/cluster'\nimport type { ClusterImportInput } from '@/schemas/cluster'\nimport type { ProFormInstance } from '@ant-design/pro-components'\n\nconst { Dragger } = Upload\n\n/** 导入集群页 */\nconst ClusterImportPage: React.FC = () => {\n  const formRef = useRef<ProFormInstance>()\n  const [fileName, setFileName] = useState<string>()\n  const [kubeconfigFile, setKubeconfigFile] = useState<File>()\n\n  const handleKubeconfigFile = (info: UploadChangeParam) => {\n    const rawFile = info.file.originFileObj || info.file\n    if (!rawFile || !(rawFile instanceof File)) return\n\n    setFileName(rawFile.name)\n    setKubeconfigFile(rawFile)\n    const reader = new FileReader()\n    reader.onload = (e) => {\n      const content = e.target?.result as string\n      formRef.current?.setFieldValue('kubeconfig', content)\n      message.success(`${rawFile.name} 读取成功`)\n    }\n    reader.onerror = () => {\n      message.error('文件读取失败，请重试')\n    }\n    reader.readAsText(rawFile)\n  }\n\n  const importMutation = useMutation({\n    mutationFn: (data: ClusterImportInput) => importCluster(data, kubeconfigFile),\n    onSuccess: () => {\n      message.success('导入成功')\n      history.push('/clusters')\n    },\n    onError: (error: any) => {\n      if (error?.data?.field) {\n        formRef.current?.setFields([\n          { name: error.data.field, errors: [error.data.message] },\n        ])\n      }\n    },\n  })\n\n  const handleSubmit = async (values: ClusterImportInput) => {\n    const result = clusterImportSchema.safeParse(values)\n    if (!result.success) {\n      message.error('表单校验失败')\n      return\n    }\n    importMutation.mutate(result.data)\n  }\n\n  return (\n    <AppPage>\n      <Card>\n        <ProForm<ClusterImportInput>\n          formRef={formRef}\n          onFinish={handleSubmit}\n          layout=\"vertical\"\n          submitter={{\n            submitButtonProps: { loading: importMutation.isPending },\n          }}\n        >\n          <ProFormText\n            name=\"name\"\n            label=\"集群名称\"\n            placeholder=\"请输入集群名称\"\n            rules={[{ required: true }]}\n            fieldProps={{ maxLength: 64 }}\n          />\n          <div style={{ marginBottom: 24 }}>\n            <Dragger\n              accept=\".yaml,.yml,.json,.txt,.kubeconfig,.config\"\n              maxCount={1}\n              beforeUpload={() => false}\n              onChange={handleKubeconfigFile}\n              showUploadList={false}\n            >\n              <p className=\"ant-upload-drag-icon\">\n                <InboxOutlined />\n              </p>\n              <p className=\"ant-upload-text\">点击或拖拽 kubeconfig 文件到此处</p>\n              <p className=\"ant-upload-hint\">\n                {fileName\n                  ? `已选择：${fileName}，内容已填充到下方文本框`\n                  : '支持 .yaml / .yml / .json / .txt / .kubeconfig'}\n              </p>\n            </Dragger>\n          </div>\n          <Form.Item\n            name=\"kubeconfig\"\n            label=\"Kubeconfig 内容\"\n            rules={[{ required: true, message: '请上传或粘贴 kubeconfig' }]}\n          >\n            <Input.TextArea\n              rows={8}\n              placeholder=\"或在此直接粘贴 kubeconfig 内容\"\n              style={{\n                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',\n                fontSize: 13,\n                lineHeight: 1.6,\n              }}\n            />\n          </Form.Item>\n          <ProFormTextArea\n            name=\"description\"\n            label=\"备注\"\n            placeholder=\"请输入备注信息\"\n            fieldProps={{ maxLength: 200 }}\n          />\n        </ProForm>\n      </Card>\n    </AppPage>\n  )\n}\n\nexport default ClusterImportPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/clusters/import.tsx"
     },
@@ -5770,7 +5936,7 @@
       "parentId": "85",
       "id": "86",
       "absPath": "/k8s/:clusterId/dashboard",
-      "__content": "import React, { useMemo, useState, lazy, Suspense } from 'react'\nimport {\n  Row,\n  Col,\n  Card,\n  Progress,\n  Tag,\n  Space,\n  Typography,\n  Badge,\n  Tooltip,\n  Button,\n  Switch,\n  Select,\n  Spin,\n  Empty,\n  Table,\n  List,\n} from 'antd'\nimport {\n  CloudServerOutlined,\n  AppstoreOutlined,\n  NodeIndexOutlined,\n  ReloadOutlined,\n  WarningOutlined,\n  LockOutlined,\n  CloseCircleFilled,\n  DashboardOutlined,\n  ClockCircleOutlined,\n} from '@ant-design/icons'\nimport { useQuery } from '@tanstack/react-query'\nimport { getClusterOverview } from '@/services/k8s'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { AppPage, EllipsisText } from '@/components'\nimport { history } from '@umijs/max'\nimport dayjs from 'dayjs'\n\n// 懒加载重型图表组件，减少首屏 JS 体积\nconst LazyLine = lazy(() => import('@ant-design/charts').then(m => ({ default: m.Line })))\nconst LazyPie = lazy(() => import('@ant-design/charts').then(m => ({ default: m.Pie })))\nconst LazyColumn = lazy(() => import('@ant-design/charts').then(m => ({ default: m.Column })))\n\nconst { Text } = Typography\n\nconst COLOR = {\n  healthy: '#52c41a',\n  warning: '#faad14',\n  critical: '#ff4d4f',\n  idle: '#bfbfbf',\n  primary: '#1890ff',\n  purple: '#7c3aed',\n  cyan: '#0891b2',\n} as const\n\nfunction getHealthTier(score: number): 'good' | 'warn' | 'bad' {\n  return score >= 80 ? 'good' : score >= 60 ? 'warn' : 'bad'\n}\n\nfunction getHealthColor(tier: 'good' | 'warn' | 'bad'): string {\n  return tier === 'good' ? COLOR.healthy : tier === 'warn' ? COLOR.warning : COLOR.critical\n}\n\nfunction timeAgo(ts: string): string {\n  if (!ts) return ''\n  const diff = Date.now() - new Date(ts).getTime()\n  if (diff < 0 || !Number.isFinite(diff)) return ''\n  const m = Math.floor(diff / 60000)\n  if (m < 1) return '刚刚'\n  if (m < 60) return `${m}分钟前`\n  const h = Math.floor(m / 60)\n  if (h < 24) return `${h}小时前`\n  return `${Math.floor(h / 24)}天前`\n}\n\nconst K8sDashboardPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const [autoRefresh, setAutoRefresh] = useState(true)\n  const [refreshInterval, setRefreshInterval] = useState(30)\n\n  const { data: overview, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-overview', clusterId],\n    queryFn: ({ signal }) => getClusterOverview(clusterId, signal),\n    refetchInterval: autoRefresh ? refreshInterval * 1000 : false,\n  })\n\n  const healthScore = useMemo(() => {\n    if (!overview) return 0\n    const s = overview.stats\n    const nodeScore = s.nodes.total > 0 ? Math.round((s.nodes.ready / s.nodes.total) * 100) : 0\n    const podTotal = Math.max(1, s.pods.total)\n    const podScore = Math.max(0, Math.min(100, Math.round((s.pods.running / podTotal) * 100)))\n    const cpuScore = Math.max(0, 100 - s.cpu.used_percent)\n    const memScore = Math.max(0, 100 - s.memory.used_percent)\n    const pressureScore = Math.round((cpuScore + memScore) / 2)\n    return Math.round(nodeScore * 0.3 + podScore * 0.3 + pressureScore * 0.2 + 80 * 0.2)\n  }, [overview])\n\n  const healthBreakdown = useMemo(() => {\n    if (!overview) return []\n    const s = overview.stats\n    const nodeScore = s.nodes.total > 0 ? Math.round((s.nodes.ready / s.nodes.total) * 100) : 0\n    const podTotal = Math.max(1, s.pods.total)\n    const podScore = Math.max(0, Math.min(100, Math.round((s.pods.running / podTotal) * 100)))\n    const pressureScore = Math.max(0, Math.round(100 - (s.cpu.used_percent + s.memory.used_percent) / 2))\n    return [\n      { key: 'nodes', label: '节点可用性', score: nodeScore, hint: `${s.nodes.ready}/${s.nodes.total} Ready` },\n      { key: 'pods', label: 'Pod 运行率', score: podScore, hint: `${s.pods.running}/${podTotal} Running` },\n      { key: 'pressure', label: '资源压力', score: pressureScore, hint: `CPU ${s.cpu.used_percent}% / Mem ${s.memory.used_percent}%` },\n    ].map((item) => ({ ...item, tier: getHealthTier(item.score) }))\n  }, [overview])\n\n  const warningEvents = useMemo(() => {\n    if (!overview?.events) return []\n    return overview.events.slice(0, 10)\n  }, [overview])\n\n  const failedPods = overview?.anomalies?.failed_pods || []\n  const unscheduledPods = overview?.anomalies?.unscheduled_pods || []\n  const topWorkloads = overview?.top_workloads || []\n  const certRisks = overview?.risks?.certificates || []\n\n  if (isLoading) {\n    return <Spin size=\"large\" style={{ display: 'block', margin: '100px auto' }} />\n  }\n\n  if (!overview) {\n    return (\n      <AppPage>\n        <Empty description=\"暂无集群概览数据\">\n          <Button type=\"primary\" icon={<ReloadOutlined />} onClick={() => refetch()}>重新加载</Button>\n        </Empty>\n      </AppPage>\n    )\n  }\n\n  const s = overview.stats\n  const cpuMemData = overview.charts.cpu_memory_24h.labels.flatMap((label, i) => [\n    { time: label, type: 'CPU', value: overview.charts.cpu_memory_24h.cpu[i] ?? 0 },\n    { time: label, type: '内存', value: overview.charts.cpu_memory_24h.memory[i] ?? 0 },\n  ])\n  const podPhaseData = [\n    { type: '运行中', value: s.pods.running },\n    { type: '等待中', value: s.pods.pending },\n    { type: '失败', value: s.pods.failed },\n    { type: '完成', value: s.pods.succeeded },\n  ].filter((d) => d.value > 0)\n  const nodeReadyPercent = overview.charts.node_ready.total > 0\n    ? Math.round((overview.charts.node_ready.ready / overview.charts.node_ready.total) * 100)\n    : 0\n\n  return (\n    <AppPage>\n      {/* ═══ Zone 1: 核心集群总览 ═══ */}\n      <Card\n        size=\"small\"\n        style={{ marginBottom: 12 }}\n        title={\n          <Space>\n            <DashboardOutlined style={{ color: COLOR.primary }} />\n            <span>集群总览</span>\n            <Tag color={overview.cluster.api_ok ? 'success' : 'error'}>\n              {overview.cluster.api_ok ? 'API 正常' : 'API 异常'}\n            </Tag>\n            {overview.cluster.k8s_version && <Tag>{overview.cluster.k8s_version}</Tag>}\n          </Space>\n        }\n        extra={\n          <Space>\n            {overview.meta?.updated_at && (\n              <Tooltip title={`来源: ${overview.meta.source || 'k8s-api'} | 更新: ${dayjs(overview.meta.updated_at).format('HH:mm:ss')}`}>\n                <Text type=\"secondary\" style={{ fontSize: 11 }}>\n                  <ClockCircleOutlined /> {timeAgo(overview.meta.updated_at)}\n                </Text>\n              </Tooltip>\n            )}\n            <Switch checkedChildren=\"自动\" unCheckedChildren=\"手动\" checked={autoRefresh} onChange={setAutoRefresh} size=\"small\" />\n            {autoRefresh && (\n              <Select size=\"small\" value={refreshInterval} onChange={setRefreshInterval} style={{ width: 65 }}\n                options={[{ label: '10s', value: 10 }, { label: '30s', value: 30 }, { label: '60s', value: 60 }]} />\n            )}\n            <Button size=\"small\" icon={<ReloadOutlined />} onClick={() => refetch()} />\n          </Space>\n        }\n      >\n        <Row gutter={[12, 12]}>\n          {[\n            { label: '节点', value: `${s.nodes.ready}/${s.nodes.total}`, sub: 'Ready / Total', icon: <NodeIndexOutlined />, color: COLOR.primary, path: `/k8s/${clusterId}/nodes` },\n            { label: 'Pod', value: s.pods.total, sub: `${s.pods.running} 运行 / ${s.pods.pending} 等待 / ${s.pods.failed} 异常`, icon: <AppstoreOutlined />, color: s.pods.failed > 0 ? COLOR.critical : COLOR.healthy, path: `/k8s/${clusterId}/pods` },\n            { label: '工作负载', value: s.workloads.deployments + s.workloads.statefulsets + s.workloads.daemonsets, sub: `Deploy ${s.workloads.deployments} / STS ${s.workloads.statefulsets} / DS ${s.workloads.daemonsets}`, icon: <CloudServerOutlined />, color: COLOR.purple, path: `/k8s/${clusterId}/deployments` },\n            { label: 'CPU 使用率', value: `${s.cpu.used_percent}%`, sub: `内存 ${s.memory.used_percent}%`, icon: <DashboardOutlined />, color: s.cpu.used_percent >= 80 ? COLOR.critical : s.cpu.used_percent >= 70 ? COLOR.warning : COLOR.healthy, path: '' },\n          ].map((kpi) => (\n            <Col xs={12} sm={6} key={kpi.label}>\n              <Card hoverable size=\"small\" style={{ borderLeft: `3px solid ${kpi.color}`, cursor: kpi.path ? 'pointer' : 'default' }}\n                onClick={() => kpi.path && history.push(kpi.path)}>\n                <Space>\n                  <div style={{ width: 38, height: 38, borderRadius: 8, background: `${kpi.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: kpi.color, fontSize: 18 }}>{kpi.icon}</div>\n                  <div>\n                    <Text type=\"secondary\" style={{ fontSize: 11 }}>{kpi.label}</Text>\n                    <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.1 }}>{kpi.value}</div>\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{kpi.sub}</Text>\n                  </div>\n                </Space>\n              </Card>\n            </Col>\n          ))}\n        </Row>\n      </Card>\n\n      {/* ═══ Zone 2: 健康度 + Pod 分布 ═══ */}\n      <Row gutter={12} style={{ marginBottom: 12 }}>\n        <Col xs={24} md={10}>\n          <Card title={<Space><DashboardOutlined style={{ color: COLOR.primary }} /> 集群健康度</Space>} size=\"small\" style={{ height: '100%' }}>\n            <Row align=\"middle\" gutter={16}>\n              <Col span={10} style={{ textAlign: 'center' }}>\n                <div style={{ position: 'relative', display: 'inline-block' }}>\n                  <Progress type=\"dashboard\" percent={healthScore} size={140}\n                    strokeColor={getHealthColor(getHealthTier(healthScore))}\n                    format={() => <div><div style={{ fontSize: 28, fontWeight: 900 }}>{healthScore}</div><div style={{ fontSize: 10 }}>健康分</div></div>} />\n                </div>\n              </Col>\n              <Col span={14}>\n                {healthBreakdown.map((item) => (\n                  <div key={item.key} style={{ marginBottom: 10 }}>\n                    <Row justify=\"space-between\" style={{ marginBottom: 2 }}>\n                      <Text strong style={{ fontSize: 12 }}>{item.label}</Text>\n                      <Text style={{ color: getHealthColor(item.tier), fontSize: 12, fontWeight: 600 }}>{item.score}分</Text>\n                    </Row>\n                    <Progress percent={item.score} size=\"small\" strokeColor={getHealthColor(item.tier)} showInfo={false} />\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{item.hint}</Text>\n                  </div>\n                ))}\n              </Col>\n            </Row>\n          </Card>\n        </Col>\n        <Col xs={24} md={7}>\n          <Card title={<Space><AppstoreOutlined style={{ color: COLOR.purple }} /> Pod 状态分布</Space>} size=\"small\" style={{ height: '100%' }}>\n            {podPhaseData.length === 0 ? (\n              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无 Pod\" />\n            ) : (\n              <>\n                <Suspense fallback={<Spin style={{ display: 'block', margin: '50px auto' }} />}>\n                  <LazyPie height={140} data={podPhaseData} angleField=\"value\" colorField=\"type\"\n                    color={[COLOR.healthy, COLOR.warning, COLOR.critical, COLOR.idle]}\n                    innerRadius={0.55} legend={false}\n                    label={{ text: 'value', position: 'outside', style: { fontSize: 11 } }} />\n                </Suspense>\n                <Row justify=\"center\" gutter={16}>\n                  {[\n                    { label: '运行', value: s.pods.running, color: COLOR.healthy },\n                    { label: '等待', value: s.pods.pending, color: COLOR.warning },\n                    { label: '失败', value: s.pods.failed, color: COLOR.critical },\n                    { label: '完成', value: s.pods.succeeded, color: COLOR.idle },\n                  ].map((p) => (\n                    <Space key={p.label} size={4}>\n                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />\n                      <Text style={{ fontSize: 11 }}>{p.label} {p.value}</Text>\n                    </Space>\n                  ))}\n                </Row>\n              </>\n            )}\n          </Card>\n        </Col>\n        <Col xs={24} md={7}>\n          <Card title={<Space><NodeIndexOutlined style={{ color: COLOR.primary }} /> 节点就绪</Space>} size=\"small\" style={{ height: '100%' }}>\n            <div style={{ textAlign: 'center' }}>\n              <Progress type=\"circle\" percent={nodeReadyPercent} size={140}\n                strokeColor={nodeReadyPercent === 100 ? COLOR.healthy : nodeReadyPercent >= 50 ? COLOR.warning : COLOR.critical}\n                format={() => <div><div style={{ fontSize: 28, fontWeight: 900 }}>{overview.charts.node_ready.ready}/{overview.charts.node_ready.total}</div><div style={{ fontSize: 10 }}>Ready 节点</div></div>} />\n            </div>\n          </Card>\n        </Col>\n      </Row>\n\n      {/* ═══ Zone 3: 实时风险预警 + 证书 ═══ */}\n      <Row gutter={12} style={{ marginBottom: 12 }}>\n        <Col xs={24} md={8}>\n          <Card title={<Space><CloseCircleFilled style={{ color: COLOR.critical }} /> 异常 Pod <Badge count={failedPods.length} style={{ backgroundColor: COLOR.critical }} /></Space>} size=\"small\" style={{ height: '100%' }}\n            bodyStyle={{ maxHeight: 200, overflow: 'auto' }}>\n            {failedPods.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无异常\" /> : (\n              <List size=\"small\" dataSource={failedPods} renderItem={(item) => (\n                <List.Item style={{ padding: '4px 0', cursor: 'pointer' }} onClick={() => history.push(`/k8s/${clusterId}/pods`)}>\n                  <Space direction=\"vertical\" size={0} style={{ width: '100%' }}>\n                    <Row justify=\"space-between\">\n                      <EllipsisText text={item.name} />\n                      <Tag color=\"error\" style={{ fontSize: 10 }}>{item.reason}</Tag>\n                    </Row>\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{item.namespace}</Text>\n                  </Space>\n                </List.Item>\n              )} />\n            )}\n          </Card>\n        </Col>\n        <Col xs={24} md={8}>\n          <Card title={<Space><WarningOutlined style={{ color: COLOR.warning }} /> 未调度 Pod <Badge count={unscheduledPods.length} style={{ backgroundColor: COLOR.warning }} /></Space>} size=\"small\" style={{ height: '100%' }}\n            bodyStyle={{ maxHeight: 200, overflow: 'auto' }}>\n            {unscheduledPods.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无未调度\" /> : (\n              <List size=\"small\" dataSource={unscheduledPods} renderItem={(item) => (\n                <List.Item style={{ padding: '4px 0', cursor: 'pointer' }} onClick={() => history.push(`/k8s/${clusterId}/pods`)}>\n                  <Space direction=\"vertical\" size={0} style={{ width: '100%' }}>\n                    <EllipsisText text={item.name} />\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{item.namespace}</Text>\n                  </Space>\n                </List.Item>\n              )} />\n            )}\n          </Card>\n        </Col>\n        <Col xs={24} md={8}>\n          <Card title={<Space><LockOutlined style={{ color: certRisks.length > 0 ? COLOR.warning : COLOR.healthy }} /> 证书过期风险 <Badge count={certRisks.length} style={{ backgroundColor: COLOR.warning }} /></Space>} size=\"small\" style={{ height: '100%' }}\n            bodyStyle={{ maxHeight: 200, overflow: 'auto' }}>\n            {certRisks.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无证书风险\" /> : (\n              <List size=\"small\" dataSource={certRisks} renderItem={(cert) => (\n                <List.Item style={{ padding: '6px 0' }}>\n                  <div style={{ width: '100%' }}>\n                    <Row justify=\"space-between\" align=\"middle\">\n                      <Text strong style={{ fontSize: 12 }}>{cert.name}</Text>\n                      <Tag color={cert.status === 'critical' ? 'error' : cert.status === 'warn' ? 'warning' : 'success'} style={{ fontSize: 10 }}>\n                        {cert.days_left != null ? `${cert.days_left}天` : cert.status}\n                      </Tag>\n                    </Row>\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{cert.component} · {cert.purpose}</Text>\n                  </div>\n                </List.Item>\n              )} />\n            )}\n          </Card>\n        </Col>\n      </Row>\n\n      {/* ═══ Zone 4: CPU/内存趋势（全宽） ═══ */}\n      <Row gutter={12} style={{ marginBottom: 12 }}>\n        <Col span={24}>\n          <Card\n            title={\n              <Space>\n                <DashboardOutlined style={{ color: COLOR.cyan }} />\n                CPU / 内存 24h 趋势\n                {!overview.cluster.api_ok && (\n                  <Tag color=\"error\" style={{ fontSize: 10 }}>集群 API 不可达</Tag>\n                )}\n              </Space>\n            }\n            size=\"small\"\n          >\n            {overview.cluster.api_ok && cpuMemData.some((d) => d.value > 0) ? (\n              <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>\n                <LazyLine data={cpuMemData} xField=\"time\" yField=\"value\" colorField=\"type\" color={[COLOR.cyan, COLOR.purple]}\n                  smooth height={240} point={{ size: 2 }}\n                  xAxis={{ label: { autoRotate: true, style: { fontSize: 10 } } }}\n                  yAxis={{ min: 0, max: 100, label: { formatter: (v: number) => `${v}%` } }}\n                  legend={{ position: 'topRight' }}\n                  annotations={[\n                    { type: 'line', yField: 80, style: { stroke: COLOR.warning, lineDash: [4, 4] }, label: { text: '80%', position: 'end', style: { fill: COLOR.warning, fontSize: 10 } } },\n                    { type: 'line', yField: 90, style: { stroke: COLOR.critical, lineDash: [4, 4] }, label: { text: '90%', position: 'end', style: { fill: COLOR.critical, fontSize: 10 } } },\n                  ]} />\n              </Suspense>\n            ) : (\n              <div style={{ height: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>\n                <DashboardOutlined style={{ fontSize: 36, color: COLOR.idle }} />\n                <Text type=\"secondary\" style={{ fontSize: 13 }}>\n                  {!overview.cluster.api_ok ? '集群 API 不可达，无法获取监控数据' : '暂无监控数据'}\n                </Text>\n                <Text type=\"secondary\" style={{ fontSize: 11 }}>\n                  {!overview.cluster.api_ok\n                    ? '请检查集群连接状态或 kubeconfig 配置'\n                    : 'metrics.k8s.io 指标服务可能未部署或暂无数据'}\n                </Text>\n                <Button size=\"small\" icon={<ReloadOutlined />} onClick={() => refetch()} style={{ marginTop: 4 }}>\n                  重新获取\n                </Button>\n              </div>\n            )}\n          </Card>\n        </Col>\n      </Row>\n\n      {/* ═══ Zone 4.5: 近期告警事件（全宽，每条独占一行） ═══ */}\n      <Card\n        title={\n          <Space>\n            <WarningOutlined style={{ color: warningEvents.length > 0 ? COLOR.critical : COLOR.idle }} />\n            <span>近期告警事件</span>\n            {warningEvents.length > 0 && (\n              <Badge count={warningEvents.length} style={{ backgroundColor: COLOR.critical }} />\n            )}\n          </Space>\n        }\n        size=\"small\"\n        style={{ marginBottom: 12 }}\n        bodyStyle={{ padding: 0 }}\n      >\n        {warningEvents.length === 0 ? (\n          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"集群运行正常，无告警事件\" style={{ margin: '40px 0' }} />\n        ) : (\n          <Table\n            dataSource={warningEvents}\n            rowKey={(_, idx) => String(idx)}\n            pagination={false}\n            size=\"small\"\n            scroll={{ y: 320 }}\n            style={{ wordBreak: 'break-word' }}\n            columns={[\n              {\n                title: '级别',\n                dataIndex: 'reason',\n                width: 140,\n                render: (reason: string) => {\n                  const isError = reason === 'Unhealthy' || reason === 'CrashLoopBackOff' || reason === 'Failed'\n                  return (\n                    <Space size={4}>\n                      <span style={{\n                        width: 6, height: 6, borderRadius: '50%',\n                        background: isError ? COLOR.critical : COLOR.warning,\n                        flexShrink: 0, boxShadow: `0 0 4px ${isError ? COLOR.critical : COLOR.warning}`,\n                      }} />\n                      <Tag color={isError ? 'error' : 'warning'} style={{ margin: 0, fontSize: 11, whiteSpace: 'normal', lineHeight: '18px' }}>\n                        {reason}\n                      </Tag>\n                    </Space>\n                  )\n                },\n              },\n              {\n                title: '事件详情',\n                dataIndex: 'message',\n                render: (msg: string) => (\n                  <Text style={{ fontSize: 13, wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'normal' }}>\n                    {msg}\n                  </Text>\n                ),\n              },\n              {\n                title: '关联资源',\n                dataIndex: 'involvedObject',\n                width: 180,\n                render: (obj: string) => (\n                  obj ? (\n                    <Tooltip title={obj}>\n                      <Text type=\"secondary\" style={{ fontSize: 12, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>\n                        {obj}\n                      </Text>\n                    </Tooltip>\n                  ) : <Text type=\"secondary\" style={{ fontSize: 12 }}>-</Text>\n                ),\n              },\n              {\n                title: '时间',\n                dataIndex: 'lastTimestamp',\n                width: 80,\n                render: (ts: string) => (\n                  <Text type=\"secondary\" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>\n                    {timeAgo(ts)}\n                  </Text>\n                ),\n              },\n            ]}\n          />\n        )}\n      </Card>\n\n      {/* ═══ Zone 5: 工作负载概览 ═══ */}\n      <Row gutter={12}>\n        <Col xs={24} lg={10}>\n          <Card title={<Space><AppstoreOutlined style={{ color: COLOR.purple }} /> Namespace Pod Top 10</Space>} size=\"small\">\n            {overview.charts.namespace_pods_top.length === 0 ? (\n              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"暂无数据\" style={{ marginTop: 60 }} />\n            ) : (\n              <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>\n                <LazyColumn data={overview.charts.namespace_pods_top} xField=\"namespace\" yField=\"pods\" height={220}\n                  color={COLOR.purple} columnStyle={{ radius: [4, 4, 0, 0] }}\n                  xAxis={{ label: { autoRotate: true, style: { fontSize: 10 } } }}\n                  yAxis={{ label: { style: { fontSize: 10 } } }} />\n              </Suspense>\n            )}\n          </Card>\n        </Col>\n        <Col xs={24} lg={14}>\n          <Card title={<Space><CloudServerOutlined style={{ color: COLOR.primary }} /> Top 5 工作负载快照</Space>} size=\"small\"\n            bodyStyle={{ padding: '8px 12px' }}>\n            {topWorkloads.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无数据\" /> : (\n              <Table dataSource={topWorkloads} rowKey={(r) => `${r.namespace}/${r.name}`} pagination={false} size=\"small\"\n                onRow={() => ({ style: { cursor: 'pointer' }, onClick: () => history.push(`/k8s/${clusterId}/deployments`) })}\n                columns={[\n                  { title: '#', width: 36, render: (_, __, idx) => <Text strong style={{ color: COLOR.primary }}>{idx + 1}</Text> },\n                  { title: '名称', dataIndex: 'name', render: (v: string) => <EllipsisText text={v} /> },\n                  { title: '类型', dataIndex: 'kind', width: 100, render: (v: string) => <Tag style={{ fontSize: 10 }}>{v}</Tag> },\n                  { title: 'Namespace', dataIndex: 'namespace', width: 120, render: (v: string) => <EllipsisText text={v} tag /> },\n                  { title: '副本', dataIndex: 'replicas', width: 60, render: (v: number, r: any) => (\n                    <Text strong style={{ color: r.ready >= v ? COLOR.healthy : COLOR.warning }}>{r.ready}/{v}</Text>\n                  ) },\n                ]} />\n            )}\n          </Card>\n        </Col>\n      </Row>\n    </AppPage>\n  )\n}\n\nexport default K8sDashboardPage",
+      "__content": "import React, { useMemo, useState, lazy, Suspense } from 'react'\nimport {\n  Row,\n  Col,\n  Card,\n  Progress,\n  Tag,\n  Space,\n  Typography,\n  Badge,\n  Tooltip,\n  Button,\n  Switch,\n  Select,\n  Spin,\n  Empty,\n  Table,\n  List,\n} from 'antd'\nimport {\n  CloudServerOutlined,\n  AppstoreOutlined,\n  NodeIndexOutlined,\n  ReloadOutlined,\n  WarningOutlined,\n  LockOutlined,\n  CloseCircleFilled,\n  DashboardOutlined,\n  ClockCircleOutlined,\n} from '@ant-design/icons'\nimport { useQuery } from '@tanstack/react-query'\nimport { getClusterOverview } from '@/services/k8s'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { AppPage, EllipsisText } from '@/components'\nimport { ResourceTrendChart } from '@/components/ResourceTrendChart'\nimport { history } from '@umijs/max'\nimport dayjs from 'dayjs'\n\nconst LazyLine: React.FC<{ data: Array<{ time: string; type: string; value: number | null }>; [key: string]: unknown }> = ({ data }) => {\n  const labels = Array.from(new Set(data.map((point) => point.time)))\n  const points = labels.map((time) => ({\n    time,\n    cpu: data.find((point) => point.time === time && point.type === 'CPU')?.value ?? null,\n    memory: data.find((point) => point.time === time && point.type !== 'CPU')?.value ?? null,\n  }))\n  return <ResourceTrendChart points={points} empty={points.every((point) => !point.cpu && !point.memory)} height={240} />\n}\n\n// 懒加载重型图表组件，减少首屏 JS 体积\nconst LazyPie = lazy(() => import('@ant-design/charts').then(m => ({ default: m.Pie })))\nconst LazyColumn = lazy(() => import('@ant-design/charts').then(m => ({ default: m.Column })))\n\nconst { Text } = Typography\n\nconst COLOR = {\n  healthy: '#52c41a',\n  warning: '#faad14',\n  critical: '#ff4d4f',\n  idle: '#bfbfbf',\n  primary: '#1890ff',\n  purple: '#7c3aed',\n  cyan: '#0891b2',\n} as const\n\nfunction getHealthTier(score: number): 'good' | 'warn' | 'bad' {\n  return score >= 80 ? 'good' : score >= 60 ? 'warn' : 'bad'\n}\n\nfunction getHealthColor(tier: 'good' | 'warn' | 'bad'): string {\n  return tier === 'good' ? COLOR.healthy : tier === 'warn' ? COLOR.warning : COLOR.critical\n}\n\nfunction timeAgo(ts: string): string {\n  if (!ts) return ''\n  const diff = Date.now() - new Date(ts).getTime()\n  if (diff < 0 || !Number.isFinite(diff)) return ''\n  const m = Math.floor(diff / 60000)\n  if (m < 1) return '刚刚'\n  if (m < 60) return `${m}分钟前`\n  const h = Math.floor(m / 60)\n  if (h < 24) return `${h}小时前`\n  return `${Math.floor(h / 24)}天前`\n}\n\nconst K8sDashboardPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const [autoRefresh, setAutoRefresh] = useState(true)\n  const [refreshInterval, setRefreshInterval] = useState(30)\n\n  const { data: overview, isLoading, refetch } = useQuery({\n    queryKey: ['k8s-overview', clusterId],\n    queryFn: ({ signal }) => getClusterOverview(clusterId, signal),\n    refetchInterval: autoRefresh ? refreshInterval * 1000 : false,\n  })\n\n  const healthScore = useMemo(() => {\n    if (!overview) return 0\n    const s = overview.stats\n    const nodeScore = s.nodes.total > 0 ? Math.round((s.nodes.ready / s.nodes.total) * 100) : 0\n    const podTotal = Math.max(1, s.pods.total)\n    const podScore = Math.max(0, Math.min(100, Math.round((s.pods.running / podTotal) * 100)))\n    const pressureScore = overview.meta?.metrics_available === false\n      ? 80\n      : Math.round((Math.max(0, 100 - s.cpu.used_percent) + Math.max(0, 100 - s.memory.used_percent)) / 2)\n    return Math.round(nodeScore * 0.3 + podScore * 0.3 + pressureScore * 0.2 + 80 * 0.2)\n  }, [overview])\n\n  const healthBreakdown = useMemo(() => {\n    if (!overview) return []\n    const s = overview.stats\n    const nodeScore = s.nodes.total > 0 ? Math.round((s.nodes.ready / s.nodes.total) * 100) : 0\n    const podTotal = Math.max(1, s.pods.total)\n    const podScore = Math.max(0, Math.min(100, Math.round((s.pods.running / podTotal) * 100)))\n    const pressureScore = overview.meta?.metrics_available === false\n      ? 80\n      : Math.max(0, Math.round(100 - (s.cpu.used_percent + s.memory.used_percent) / 2))\n    return [\n      { key: 'nodes', label: '节点可用性', score: nodeScore, hint: `${s.nodes.ready}/${s.nodes.total} Ready` },\n      { key: 'pods', label: 'Pod 运行率', score: podScore, hint: `${s.pods.running}/${podTotal} Running` },\n      { key: 'pressure', label: '资源压力', score: pressureScore, hint: overview.meta?.metrics_available === false ? '指标服务不可用，暂按中性分计算' : `CPU ${s.cpu.used_percent}% / Mem ${s.memory.used_percent}%` },\n    ].map((item) => ({ ...item, tier: getHealthTier(item.score) }))\n  }, [overview])\n\n  const warningEvents = useMemo(() => {\n    if (!overview?.events) return []\n    return overview.events.slice(0, 10)\n  }, [overview])\n\n  const failedPods = overview?.anomalies?.failed_pods || []\n  const unscheduledPods = overview?.anomalies?.unscheduled_pods || []\n  const topWorkloads = overview?.top_workloads || []\n  const certRisks = (overview?.risks?.certificates || []).filter((cert) => cert.status !== 'ok')\n\n  if (isLoading) {\n    return <Spin size=\"large\" style={{ display: 'block', margin: '100px auto' }} />\n  }\n\n  if (!overview) {\n    return (\n      <AppPage>\n        <Empty description=\"暂无集群概览数据\">\n          <Button type=\"primary\" icon={<ReloadOutlined />} onClick={() => refetch()}>重新加载</Button>\n        </Empty>\n      </AppPage>\n    )\n  }\n\n  const s = overview.stats\n  const trendLabels = overview.charts.cpu_memory_24h.labels.length > 0\n    ? overview.charts.cpu_memory_24h.labels\n    : Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`)\n  const cpuMemData = trendLabels.flatMap((label, i) => [\n    { time: label, type: 'CPU', value: overview.charts.cpu_memory_24h.cpu[i] ?? 0 },\n    { time: label, type: '内存', value: overview.charts.cpu_memory_24h.memory[i] ?? 0 },\n  ])\n  const podPhaseData = [\n    { type: '运行中', value: s.pods.running },\n    { type: '等待中', value: s.pods.pending },\n    { type: '失败', value: s.pods.failed },\n    { type: '完成', value: s.pods.succeeded },\n  ].filter((d) => d.value > 0)\n  const nodeReadyPercent = overview.charts.node_ready.total > 0\n    ? Math.round((overview.charts.node_ready.ready / overview.charts.node_ready.total) * 100)\n    : 0\n\n  return (\n    <AppPage>\n      {/* ═══ Zone 1: 核心集群总览 ═══ */}\n      <Card\n        size=\"small\"\n        style={{ marginBottom: 12 }}\n        title={\n          <Space>\n            <DashboardOutlined style={{ color: COLOR.primary }} />\n            <span>集群总览</span>\n            <Tag color={overview.cluster.api_ok ? 'success' : 'error'}>\n              {overview.cluster.api_ok ? 'API 正常' : 'API 异常'}\n            </Tag>\n            {overview.cluster.k8s_version && <Tag>{overview.cluster.k8s_version}</Tag>}\n          </Space>\n        }\n        extra={\n          <Space>\n            {overview.meta?.updated_at && (\n              <Tooltip title={`来源: ${overview.meta.source || 'k8s-api'} | 更新: ${dayjs(overview.meta.updated_at).format('HH:mm:ss')}`}>\n                <Text type=\"secondary\" style={{ fontSize: 11 }}>\n                  <ClockCircleOutlined /> {timeAgo(overview.meta.updated_at)}\n                </Text>\n              </Tooltip>\n            )}\n            <Switch checkedChildren=\"自动\" unCheckedChildren=\"手动\" checked={autoRefresh} onChange={setAutoRefresh} size=\"small\" />\n            {autoRefresh && (\n              <Select size=\"small\" value={refreshInterval} onChange={setRefreshInterval} style={{ width: 65 }}\n                options={[{ label: '10s', value: 10 }, { label: '30s', value: 30 }, { label: '60s', value: 60 }]} />\n            )}\n            <Button size=\"small\" icon={<ReloadOutlined />} onClick={() => refetch()} />\n          </Space>\n        }\n      >\n        <Row gutter={[12, 12]}>\n          {[\n            { label: '节点', value: `${s.nodes.ready}/${s.nodes.total}`, sub: 'Ready / Total', icon: <NodeIndexOutlined />, color: COLOR.primary, path: `/k8s/${clusterId}/nodes` },\n            { label: 'Pod', value: s.pods.total, sub: `${s.pods.running} 运行 / ${s.pods.pending} 等待 / ${s.pods.failed} 异常`, icon: <AppstoreOutlined />, color: s.pods.failed > 0 ? COLOR.critical : COLOR.healthy, path: `/k8s/${clusterId}/pods` },\n            { label: '工作负载', value: s.workloads.deployments + s.workloads.statefulsets + s.workloads.daemonsets, sub: `Deploy ${s.workloads.deployments} / STS ${s.workloads.statefulsets} / DS ${s.workloads.daemonsets}`, icon: <CloudServerOutlined />, color: COLOR.purple, path: `/k8s/${clusterId}/deployments` },\n            { label: 'CPU 使用率', value: overview.meta?.metrics_available === false ? '--' : `${s.cpu.used_percent}%`, sub: overview.meta?.metrics_available === false ? 'metrics-server 未就绪' : `内存 ${s.memory.used_percent}%`, icon: <DashboardOutlined />, color: overview.meta?.metrics_available === false ? COLOR.idle : s.cpu.used_percent >= 80 ? COLOR.critical : s.cpu.used_percent >= 70 ? COLOR.warning : COLOR.healthy, path: `/k8s/${clusterId}/resource-metrics` },\n          ].map((kpi) => (\n            <Col xs={12} sm={6} key={kpi.label}>\n              <Card hoverable size=\"small\" style={{ borderLeft: `3px solid ${kpi.color}`, cursor: kpi.path ? 'pointer' : 'default' }}\n                onClick={() => kpi.path && history.push(kpi.path)}>\n                <Space>\n                  <div style={{ width: 38, height: 38, borderRadius: 8, background: `${kpi.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: kpi.color, fontSize: 18 }}>{kpi.icon}</div>\n                  <div>\n                    <Text type=\"secondary\" style={{ fontSize: 11 }}>{kpi.label}</Text>\n                    <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.1 }}>{kpi.value}</div>\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{kpi.sub}</Text>\n                  </div>\n                </Space>\n              </Card>\n            </Col>\n          ))}\n        </Row>\n      </Card>\n\n      {/* ═══ Zone 2: 健康度 + Pod 分布 ═══ */}\n      <Row gutter={12} style={{ marginBottom: 12 }}>\n        <Col xs={24} md={10}>\n          <Card title={<Space><DashboardOutlined style={{ color: COLOR.primary }} /> 集群健康度</Space>} size=\"small\" style={{ height: '100%' }}>\n            <Row align=\"middle\" gutter={16}>\n              <Col span={10} style={{ textAlign: 'center' }}>\n                <div style={{ position: 'relative', display: 'inline-block' }}>\n                  <Progress type=\"dashboard\" percent={healthScore} size={140}\n                    strokeColor={getHealthColor(getHealthTier(healthScore))}\n                    format={() => <div><div style={{ fontSize: 28, fontWeight: 900 }}>{healthScore}</div><div style={{ fontSize: 10 }}>健康分</div></div>} />\n                </div>\n              </Col>\n              <Col span={14}>\n                {healthBreakdown.map((item) => (\n                  <div key={item.key} style={{ marginBottom: 10 }}>\n                    <Row justify=\"space-between\" style={{ marginBottom: 2 }}>\n                      <Text strong style={{ fontSize: 12 }}>{item.label}</Text>\n                      <Text style={{ color: getHealthColor(item.tier), fontSize: 12, fontWeight: 600 }}>{item.score}分</Text>\n                    </Row>\n                    <Progress percent={item.score} size=\"small\" strokeColor={getHealthColor(item.tier)} showInfo={false} />\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{item.hint}</Text>\n                  </div>\n                ))}\n              </Col>\n            </Row>\n          </Card>\n        </Col>\n        <Col xs={24} md={7}>\n          <Card title={<Space><AppstoreOutlined style={{ color: COLOR.purple }} /> Pod 状态分布</Space>} size=\"small\" style={{ height: '100%' }}>\n            {podPhaseData.length === 0 ? (\n              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无 Pod\" />\n            ) : (\n              <>\n                <Suspense fallback={<Spin style={{ display: 'block', margin: '50px auto' }} />}>\n                  <LazyPie height={140} data={podPhaseData} angleField=\"value\" colorField=\"type\"\n                    color={[COLOR.healthy, COLOR.warning, COLOR.critical, COLOR.idle]}\n                    innerRadius={0.55} legend={false}\n                    label={{ text: 'value', position: 'outside', style: { fontSize: 11 } }} />\n                </Suspense>\n                <Row justify=\"center\" gutter={16}>\n                  {[\n                    { label: '运行', value: s.pods.running, color: COLOR.healthy },\n                    { label: '等待', value: s.pods.pending, color: COLOR.warning },\n                    { label: '失败', value: s.pods.failed, color: COLOR.critical },\n                    { label: '完成', value: s.pods.succeeded, color: COLOR.idle },\n                  ].map((p) => (\n                    <Space key={p.label} size={4}>\n                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />\n                      <Text style={{ fontSize: 11 }}>{p.label} {p.value}</Text>\n                    </Space>\n                  ))}\n                </Row>\n              </>\n            )}\n          </Card>\n        </Col>\n        <Col xs={24} md={7}>\n          <Card title={<Space><NodeIndexOutlined style={{ color: COLOR.primary }} /> 节点就绪</Space>} size=\"small\" style={{ height: '100%' }}>\n            <div style={{ textAlign: 'center' }}>\n              <Progress type=\"circle\" percent={nodeReadyPercent} size={140}\n                strokeColor={nodeReadyPercent === 100 ? COLOR.healthy : nodeReadyPercent >= 50 ? COLOR.warning : COLOR.critical}\n                format={() => <div><div style={{ fontSize: 28, fontWeight: 900 }}>{overview.charts.node_ready.ready}/{overview.charts.node_ready.total}</div><div style={{ fontSize: 10 }}>Ready 节点</div></div>} />\n            </div>\n          </Card>\n        </Col>\n      </Row>\n\n      {/* ═══ Zone 3: 实时风险预警 + 证书 ═══ */}\n      <Row gutter={12} style={{ marginBottom: 12 }}>\n        <Col xs={24} md={8}>\n          <Card title={<Space><CloseCircleFilled style={{ color: COLOR.critical }} /> 异常 Pod <Badge count={failedPods.length} style={{ backgroundColor: COLOR.critical }} /></Space>} size=\"small\" style={{ height: '100%' }}\n            bodyStyle={{ maxHeight: 200, overflow: 'auto' }}>\n            {failedPods.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无异常\" /> : (\n              <List size=\"small\" dataSource={failedPods} renderItem={(item) => (\n                <List.Item style={{ padding: '4px 0', cursor: 'pointer' }} onClick={() => history.push(`/k8s/${clusterId}/pods`)}>\n                  <Space direction=\"vertical\" size={0} style={{ width: '100%' }}>\n                    <Row justify=\"space-between\">\n                      <EllipsisText text={item.name} />\n                      <Tag color=\"error\" style={{ fontSize: 10 }}>{item.reason}</Tag>\n                    </Row>\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{item.namespace}</Text>\n                  </Space>\n                </List.Item>\n              )} />\n            )}\n          </Card>\n        </Col>\n        <Col xs={24} md={8}>\n          <Card title={<Space><WarningOutlined style={{ color: COLOR.warning }} /> 未调度 Pod <Badge count={unscheduledPods.length} style={{ backgroundColor: COLOR.warning }} /></Space>} size=\"small\" style={{ height: '100%' }}\n            bodyStyle={{ maxHeight: 200, overflow: 'auto' }}>\n            {unscheduledPods.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无未调度\" /> : (\n              <List size=\"small\" dataSource={unscheduledPods} renderItem={(item) => (\n                <List.Item style={{ padding: '4px 0', cursor: 'pointer' }} onClick={() => history.push(`/k8s/${clusterId}/pods`)}>\n                  <Space direction=\"vertical\" size={0} style={{ width: '100%' }}>\n                    <EllipsisText text={item.name} />\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{item.namespace}</Text>\n                  </Space>\n                </List.Item>\n              )} />\n            )}\n          </Card>\n        </Col>\n        <Col xs={24} md={8}>\n          <Card title={<Space><LockOutlined style={{ color: certRisks.length > 0 ? COLOR.warning : COLOR.healthy }} /> 证书过期风险 <Badge count={certRisks.length} style={{ backgroundColor: COLOR.warning }} /></Space>} size=\"small\" style={{ height: '100%' }}\n            bodyStyle={{ maxHeight: 200, overflow: 'auto' }}>\n            {certRisks.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无证书风险\" /> : (\n              <List size=\"small\" dataSource={certRisks} renderItem={(cert) => (\n                <List.Item style={{ padding: '6px 0' }}>\n                  <div style={{ width: '100%' }}>\n                    <Row justify=\"space-between\" align=\"middle\">\n                      <Text strong style={{ fontSize: 12 }}>{cert.name}</Text>\n                      <Tag color={cert.status === 'critical' ? 'error' : cert.status === 'warn' ? 'warning' : 'default'} style={{ fontSize: 10 }}>\n                        {cert.days_left != null ? `${cert.days_left}天` : cert.status}\n                      </Tag>\n                    </Row>\n                    <Text type=\"secondary\" style={{ fontSize: 10 }}>{cert.component} · {cert.purpose}</Text>\n                  </div>\n                </List.Item>\n              )} />\n            )}\n          </Card>\n        </Col>\n      </Row>\n\n      {/* ═══ Zone 4: CPU/内存趋势（全宽） ═══ */}\n      <Row gutter={12} style={{ marginBottom: 12 }}>\n        <Col span={24}>\n          <Card\n            title={\n              <Space>\n                <DashboardOutlined style={{ color: COLOR.cyan }} />\n                CPU / 内存 24h 趋势\n                {!overview.cluster.api_ok && (\n                  <Tag color=\"error\" style={{ fontSize: 10 }}>集群 API 不可达</Tag>\n                )}\n                {overview.cluster.api_ok && overview.meta?.metrics_available === false && (\n                  <Tag color=\"warning\" style={{ fontSize: 10 }}>metrics-server 不可用</Tag>\n                )}\n              </Space>\n            }\n            size=\"small\"\n          >\n            {overview.cluster.api_ok && cpuMemData.length > 0 ? (\n              <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>\n                <div style={{ position: 'relative' }}>\n                <LazyLine data={cpuMemData} encode={{ x: 'time', y: 'value', color: 'type' }} color={[COLOR.cyan, COLOR.purple]}\n                  smooth height={240} point={{ size: 2 }}\n                  xAxis={{ label: { autoRotate: true, style: { fontSize: 10 } } }}\n                  yAxis={{ min: 0, max: 100, label: { formatter: (v: number) => `${v}%` } }}\n                  legend={{ position: 'topRight' }}\n                  annotations={[\n                    { type: 'line', yField: 80, style: { stroke: COLOR.warning, lineDash: [4, 4] }, label: { text: '80%', position: 'end', style: { fill: COLOR.warning, fontSize: 10 } } },\n                    { type: 'line', yField: 90, style: { stroke: COLOR.critical, lineDash: [4, 4] }, label: { text: '90%', position: 'end', style: { fill: COLOR.critical, fontSize: 10 } } },\n                  ]} />\n                  {overview.meta?.metrics_available === false && (\n                    <Text type=\"secondary\" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>\n                      暂无指标采样数据，坐标轴为参考范围\n                    </Text>\n                  )}\n                </div>\n              </Suspense>\n            ) : (\n              <div style={{ height: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>\n                <DashboardOutlined style={{ fontSize: 36, color: COLOR.idle }} />\n                <Text type=\"secondary\" style={{ fontSize: 13 }}>\n                  {!overview.cluster.api_ok ? '集群 API 不可达，无法获取监控数据' : '暂无监控数据'}\n                </Text>\n                <Text type=\"secondary\" style={{ fontSize: 11 }}>\n                  {!overview.cluster.api_ok\n                    ? '请检查集群连接状态或 kubeconfig 配置'\n                    : 'metrics.k8s.io 指标服务可能未部署或暂无数据'}\n                </Text>\n                <Button size=\"small\" icon={<ReloadOutlined />} onClick={() => refetch()} style={{ marginTop: 4 }}>\n                  重新获取\n                </Button>\n                {overview.cluster.api_ok && overview.meta?.metrics_available === false && (\n                  <Button size=\"small\" type=\"link\" onClick={() => history.push(`/k8s/${clusterId}/resource-metrics`)}>\n                    查看指标服务诊断\n                  </Button>\n                )}\n              </div>\n            )}\n          </Card>\n        </Col>\n      </Row>\n\n      {/* ═══ Zone 4.5: 近期告警事件（全宽，每条独占一行） ═══ */}\n      <Card\n        title={\n          <Space>\n            <WarningOutlined style={{ color: warningEvents.length > 0 ? COLOR.critical : COLOR.idle }} />\n            <span>近期告警事件</span>\n            {warningEvents.length > 0 && (\n              <Badge count={warningEvents.length} style={{ backgroundColor: COLOR.critical }} />\n            )}\n          </Space>\n        }\n        size=\"small\"\n        style={{ marginBottom: 12 }}\n        bodyStyle={{ padding: 0 }}\n      >\n        {warningEvents.length === 0 ? (\n          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"集群运行正常，无告警事件\" style={{ margin: '40px 0' }} />\n        ) : (\n          <Table\n            dataSource={warningEvents}\n            rowKey={(_, idx) => String(idx)}\n            pagination={false}\n            size=\"small\"\n            scroll={{ y: 320 }}\n            style={{ wordBreak: 'break-word' }}\n            columns={[\n              {\n                title: '级别',\n                dataIndex: 'reason',\n                width: 140,\n                render: (reason: string) => {\n                  const isError = reason === 'Unhealthy' || reason === 'CrashLoopBackOff' || reason === 'Failed'\n                  return (\n                    <Space size={4}>\n                      <span style={{\n                        width: 6, height: 6, borderRadius: '50%',\n                        background: isError ? COLOR.critical : COLOR.warning,\n                        flexShrink: 0, boxShadow: `0 0 4px ${isError ? COLOR.critical : COLOR.warning}`,\n                      }} />\n                      <Tag color={isError ? 'error' : 'warning'} style={{ margin: 0, fontSize: 11, whiteSpace: 'normal', lineHeight: '18px' }}>\n                        {reason}\n                      </Tag>\n                    </Space>\n                  )\n                },\n              },\n              {\n                title: '事件详情',\n                dataIndex: 'message',\n                render: (msg: string) => (\n                  <Text style={{ fontSize: 13, wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'normal' }}>\n                    {msg}\n                  </Text>\n                ),\n              },\n              {\n                title: '关联资源',\n                dataIndex: 'involvedObject',\n                width: 180,\n                render: (obj: string) => (\n                  obj ? (\n                    <Tooltip title={obj}>\n                      <Text type=\"secondary\" style={{ fontSize: 12, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>\n                        {obj}\n                      </Text>\n                    </Tooltip>\n                  ) : <Text type=\"secondary\" style={{ fontSize: 12 }}>-</Text>\n                ),\n              },\n              {\n                title: '时间',\n                dataIndex: 'lastTimestamp',\n                width: 80,\n                render: (ts: string) => (\n                  <Text type=\"secondary\" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>\n                    {timeAgo(ts)}\n                  </Text>\n                ),\n              },\n            ]}\n          />\n        )}\n      </Card>\n\n      {/* ═══ Zone 5: 工作负载概览 ═══ */}\n      <Row gutter={12}>\n        <Col xs={24} lg={10}>\n          <Card title={<Space><AppstoreOutlined style={{ color: COLOR.purple }} /> Namespace Pod Top 10</Space>} size=\"small\">\n            {overview.charts.namespace_pods_top.length === 0 ? (\n              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"暂无数据\" style={{ marginTop: 60 }} />\n            ) : (\n              <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>\n                <LazyColumn data={overview.charts.namespace_pods_top} xField=\"namespace\" yField=\"pods\" height={220}\n                  color={COLOR.purple} columnStyle={{ radius: [4, 4, 0, 0] }}\n                  xAxis={{ label: { autoRotate: true, style: { fontSize: 10 } } }}\n                  yAxis={{ label: { style: { fontSize: 10 } } }} />\n              </Suspense>\n            )}\n          </Card>\n        </Col>\n        <Col xs={24} lg={14}>\n          <Card title={<Space><CloudServerOutlined style={{ color: COLOR.primary }} /> Top 5 工作负载快照</Space>} size=\"small\"\n            bodyStyle={{ padding: '8px 12px' }}>\n            {topWorkloads.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=\"无数据\" /> : (\n              <Table dataSource={topWorkloads} rowKey={(r) => `${r.namespace}/${r.name}`} pagination={false} size=\"small\"\n                onRow={(record) => ({\n                  style: { cursor: 'pointer' },\n                  onClick: () => history.push(`/k8s/${clusterId}/${record.kind === 'StatefulSet' ? 'statefulsets' : record.kind === 'DaemonSet' ? 'daemonsets' : 'deployments'}`),\n                })}\n                columns={[\n                  { title: '#', width: 36, render: (_, __, idx) => <Text strong style={{ color: COLOR.primary }}>{idx + 1}</Text> },\n                  { title: '名称', dataIndex: 'name', render: (v: string) => <EllipsisText text={v} /> },\n                  { title: '类型', dataIndex: 'kind', width: 100, render: (v: string) => <Tag style={{ fontSize: 10 }}>{v}</Tag> },\n                  { title: 'Namespace', dataIndex: 'namespace', width: 120, render: (v: string) => <EllipsisText text={v} tag /> },\n                  { title: '副本', dataIndex: 'replicas', width: 60, render: (v: number, r: any) => (\n                    <Text strong style={{ color: r.ready >= v ? COLOR.healthy : COLOR.warning }}>{r.ready}/{v}</Text>\n                  ) },\n                ]} />\n            )}\n          </Card>\n        </Col>\n      </Row>\n    </AppPage>\n  )\n}\n\nexport default K8sDashboardPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/index.tsx"
     },
@@ -5803,7 +5969,7 @@
       "parentId": "85",
       "id": "89",
       "absPath": "/k8s/:clusterId/pods",
-      "__content": "/**\n * Pod 管理页\n * 完整功能：列表+搜索筛选+批量聚合日志(Tab)+批量删除+强制删除\n * 单行：日志(多容器Tab)/终端/详情(5Tab)/YAML(编辑应用)/巡检/删除\n */\nimport React, { useState, useMemo, useRef, useEffect } from 'react'\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport {\n  Button,\n  Space,\n  message,\n  Popconfirm,\n  Tag,\n  Tooltip,\n  Drawer,\n  Descriptions,\n  Tabs,\n  Badge,\n  Typography,\n  Modal,\n  Switch,\n  Alert,\n  Input,\n  Select,\n  Table,\n} from 'antd'\nimport type { TableProps } from 'antd'\nimport {\n  DeleteOutlined,\n  FileTextOutlined,\n  ReloadOutlined,\n  DesktopOutlined,\n  InfoCircleOutlined,\n  SafetyCertificateOutlined,\n  SearchOutlined,\n  EditOutlined,\n  CheckOutlined,\n  CloseOutlined,\n  ProfileOutlined,\n} from '@ant-design/icons'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { history } from '@umijs/max'\nimport {\n  listPods,\n  deletePod,\n  getPodLogs,\n  getPodTerminalUrl,\n  getPodYaml,\n  getPodInspection,\n  getPodEvents,\n  createPodLogSession,\n  listPodMetrics,\n  applyYaml,\n} from '@/services/k8s'\nimport { AppPage, PodStatusTag, NamespaceSelector, YamlEditor } from '@/components'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport { withCenterStyleBatch } from '@/utils/fieldStyle'\nimport type { Pod, PodContainer, PodVolume } from '@/types'\n\nconst { Text } = Typography\n\n/** 工作负载类型 ownerKind → 路由资源名 */\nconst WORKLOAD_KINDS = new Set(['Deployment', 'StatefulSet', 'DaemonSet'])\nconst ownerToRoute = (kind?: string): string => (kind ? `${kind.toLowerCase()}s` : '')\nconst isWorkloadOwner = (kind?: string): boolean => !!kind && WORKLOAD_KINDS.has(kind)\n\n/** 跳转到关联工作负载页面 */\nconst goOwner = (clusterId: number, kind?: string) => {\n  if (isWorkloadOwner(kind)) history.push(`/k8s/${clusterId}/${ownerToRoute(kind)}`)\n}\n\n/** 关联所属渲染：可点击跳转的工作负载显示为链接\n *  ReplicaSet 自动回溯到 Deployment（RS 名格式为 <deploy-name>-<hash>）\n */\nconst OwnerTag: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, pod }) => {\n  if (!pod.ownerName) return <Text type=\"secondary\">-</Text>\n\n  let displayKind = pod.ownerKind || 'ReplicaSet'\n  let displayName = pod.ownerName\n  let routeKind = pod.ownerKind\n\n  // ReplicaSet → Deployment 回溯：RS 名通常为 <deploy-name>-<hash>\n  if (displayKind === 'ReplicaSet') {\n    const lastDash = displayName.lastIndexOf('-')\n    if (lastDash > 0) {\n      const possibleDeployName = displayName.substring(0, lastDash)\n      // RS 名中 hash 段是最后一个 - 后的部分，前面是 Deployment 名\n      routeKind = 'Deployment'\n      displayName = possibleDeployName\n    }\n  }\n\n  const clickable = isWorkloadOwner(routeKind)\n  const full = `${displayKind}/${pod.ownerName}`\n  const tag = (\n    <Tag\n      style={{\n        maxWidth: '100%',\n        display: 'inline-block',\n        overflow: 'hidden',\n        textOverflow: 'ellipsis',\n        whiteSpace: 'nowrap',\n        verticalAlign: 'middle',\n        cursor: clickable ? 'pointer' : 'default',\n      }}\n      color={clickable ? 'blue' : undefined}\n    >\n      {clickable ? `${displayName}` : full}\n    </Tag>\n  )\n  return clickable ? (\n    <Tooltip title={`${routeKind}: ${displayName}（源: ${full}）`}>\n      <span onClick={() => goOwner(clusterId, routeKind)}>{tag}</span>\n    </Tooltip>\n  ) : (\n    <Tooltip title={full}>{tag}</Tooltip>\n  )\n}\n\n// ═══════════════════════════════════════════\n// 日志面板：每个 Tab 独立加载日志\n// 支持 HTTP 一次性拉取 + WebSocket 实时流（follow）\n// ═══════════════════════════════════════════\ninterface LogPaneProps {\n  clusterId: number\n  pod: Pod\n  tailLines: number\n  refreshNonce: number\n  container?: string\n  previous?: boolean\n  keyword?: string\n  live?: boolean\n}\nconst LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNonce, container, previous, keyword, live }) => {\n  const [liveLogs, setLiveLogs] = useState<string[]>([])\n  const [liveConnected, setLiveConnected] = useState(false)\n  const wsRef = useRef<WebSocket | null>(null)\n  const logEndRef = useRef<HTMLDivElement>(null)\n  const containerRef = useRef<HTMLDivElement>(null)\n\n  // HTTP 一次性日志（非 live 模式使用）\n  const { data, isLoading, isFetching, refetch } = useQuery({\n    queryKey: ['pod-logs', clusterId, pod.namespace, pod.name, container, tailLines, previous, refreshNonce],\n    queryFn: () => getPodLogs(clusterId, pod.namespace, pod.name, { tailLines, container, previous }),\n    enabled: !!clusterId && !!pod.namespace && !!pod.name && !live,\n  })\n\n  // WebSocket 实时流（live 模式使用）\n  useEffect(() => {\n    if (!live || !clusterId || !pod.namespace || !pod.name) return\n\n    let cancelled = false\n    setLiveLogs([])\n    setLiveConnected(false)\n\n    createPodLogSession(clusterId, pod.namespace, pod.name, { container, tailLines, follow: true, previous })\n      .then(({ wsUrl }) => {\n        if (cancelled || !wsUrl) return\n        const ws = new WebSocket(wsUrl)\n        wsRef.current = ws\n\n        ws.onopen = () => setLiveConnected(true)\n        ws.onmessage = (ev) => {\n          const line = typeof ev.data === 'string' ? ev.data : ''\n          if (line) {\n            setLiveLogs((prev) => {\n              const next = [...prev, line]\n              return next.length > 5000 ? next.slice(-5000) : next // 限制 5000 行\n            })\n          }\n        }\n        ws.onclose = () => setLiveConnected(false)\n        ws.onerror = () => setLiveConnected(false)\n      })\n      .catch(() => {})\n\n    return () => {\n      cancelled = true\n      wsRef.current?.close()\n      wsRef.current = null\n    }\n  }, [live, clusterId, pod.namespace, pod.name, container, previous, tailLines, refreshNonce])\n\n  // 自动滚动到底部\n  useEffect(() => {\n    if (containerRef.current) {\n      containerRef.current.scrollTop = containerRef.current.scrollHeight\n    }\n  }, [liveLogs])\n\n  const rawContent = live\n    ? liveLogs.join('\\n')\n    : (isLoading ? '加载中...' : data?.logs || '暂无日志')\n\n  // 关键字过滤\n  const content = keyword\n    ? rawContent.split('\\n').filter((l) => l.includes(keyword)).join('\\n') || '无匹配日志'\n    : rawContent\n\n  return (\n    <div>\n      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>\n        <Space size=\"small\">\n          {live && (\n            <Badge status={liveConnected ? 'processing' : 'error'} text={liveConnected ? '实时连接中' : '连接断开'} />\n          )}\n          {previous && <Tag color=\"orange\">历史日志</Tag>}\n          {keyword && <Text type=\"secondary\" style={{ fontSize: 11 }}>过滤: \"{keyword}\"</Text>}\n        </Space>\n        <Space size=\"small\">\n          <Tooltip title=\"复制日志\">\n            <Button size=\"small\" onClick={() => { navigator.clipboard.writeText(rawContent); message.success('已复制') }}>\n              复制\n            </Button>\n          </Tooltip>\n          <Tooltip title=\"下载日志\">\n            <Button size=\"small\" onClick={() => {\n              const blob = new Blob([rawContent], { type: 'text/plain' })\n              const a = document.createElement('a')\n              a.href = URL.createObjectURL(blob)\n              a.download = `${pod.name}${container ? '-' + container : ''}.log`\n              a.click()\n            }}>\n              下载\n            </Button>\n          </Tooltip>\n          {!live && (\n            <Button size=\"small\" icon={<ReloadOutlined />} loading={isFetching} onClick={() => refetch()}>\n              刷新\n            </Button>\n          )}\n        </Space>\n      </div>\n      <div\n        ref={containerRef}\n        style={{\n          background: '#1e1e1e',\n          color: '#d4d4d4',\n          padding: 16,\n          borderRadius: 8,\n          height: 'calc(100vh - 300px)',\n          overflow: 'auto',\n          fontSize: 13,\n          lineHeight: 1.6,\n          fontFamily: 'Consolas, Monaco, monospace',\n          whiteSpace: 'pre-wrap',\n          wordBreak: 'break-all',\n          margin: 0,\n        }}\n      >\n        {content}\n        <div ref={logEndRef} />\n      </div>\n    </div>\n  )\n}\n\n// ═══════════════════════════════════════════\n// 事件 Tab：详情抽屉打开时按需加载\n// ═══════════════════════════════════════════\ninterface PodEvent {\n  type?: string\n  reason?: string\n  message?: string\n  lastTimestamp?: string\n}\nconst PodEventsTab: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, pod }) => {\n  const { data, isLoading } = useQuery({\n    queryKey: ['pod-events', clusterId, pod.namespace, pod.name],\n    queryFn: ({ signal }) => getPodEvents(clusterId, pod.namespace, pod.name, signal),\n    enabled: !!clusterId && !!pod.namespace && !!pod.name,\n  })\n  const events: PodEvent[] = (data || []) as PodEvent[]\n  const columns: TableProps<PodEvent>['columns'] = [\n    {\n      title: '级别',\n      dataIndex: 'type',\n      width: 80,\n      render: (t: string) => (\n        <Badge status={t === 'Warning' ? 'warning' : t === 'Normal' ? 'success' : 'default'} text={t || '-'} />\n      ),\n    },\n    { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true, render: (t: string) => t || '-' },\n    { title: '消息', dataIndex: 'message', render: (t: string) => t || '-' },\n    {\n      title: '时间',\n      dataIndex: 'lastTimestamp',\n      width: 160,\n      render: (t: string) => (t ? formatDate(t) : '-'),\n    },\n  ]\n  return (\n    <Table<PodEvent>\n      rowKey={(r, i) => `${r.reason}-${i}`}\n      size=\"small\"\n      columns={columns}\n      dataSource={events}\n      loading={isLoading}\n      pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n      scroll={{ y: 320 }}\n    />\n  )\n}\n\n// ═══════════════════════════════════════════\n// 资源用量 Tab：从 PodMetrics API 获取实际使用率\n// ═══════════════════════════════════════════\nconst PodMetricsTab: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, pod }) => {\n  const { data: metricsList, isLoading } = useQuery({\n    queryKey: ['pod-metrics', clusterId, pod.namespace],\n    queryFn: ({ signal }) => listPodMetrics(clusterId, pod.namespace, signal),\n    enabled: !!clusterId && !!pod.namespace,\n    refetchInterval: 15_000, // 15s 刷新一次\n  })\n\n  // 从 metrics 列表中找到当前 Pod\n  const podMetric = useMemo(() => {\n    if (!metricsList || !pod.name) return undefined\n    return metricsList.find((m: any) => {\n      const name = m?.metadata?.name || m?.name\n      return name === pod.name\n    })\n  }, [metricsList, pod.name])\n\n  if (isLoading) return <Text type=\"secondary\">加载中...</Text>\n  if (!podMetric) return <Text type=\"secondary\">暂无资源使用率数据（需部署 metrics-server）</Text>\n\n  const containers = podMetric?.containers || podMetric?.status?.containers || []\n  if (!containers.length) return <Text type=\"secondary\">暂无容器指标数据</Text>\n\n  return (\n    <Table\n      size=\"small\"\n      rowKey=\"name\"\n      pagination={false}\n      dataSource={containers.map((c: any) => ({\n        name: c.name || c.container || '',\n        cpu: c.usage?.cpu || c.cpu || '-',\n        memory: c.usage?.memory || c.memory || '-',\n      }))}\n      columns={[\n        { title: '容器', dataIndex: 'name', width: 120, render: (t: string) => <Tag>{t}</Tag> },\n        {\n          title: 'CPU 使用',\n          dataIndex: 'cpu',\n          render: (v: string) => {\n            if (!v || v === '-') return <Text type=\"secondary\">-</Text>\n            const millicores = v.endsWith('n') ? parseInt(v) / 1_000_000 : parseInt(v)\n            return <Tag color=\"blue\">{millicores >= 1000 ? `${(millicores / 1000).toFixed(2)} Core` : `${millicores} m`}</Tag>\n          },\n        },\n        {\n          title: '内存使用',\n          dataIndex: 'memory',\n          render: (v: string) => {\n            if (!v || v === '-') return <Text type=\"secondary\">-</Text>\n            const bytes = parseInt(v.replace(/\\D/g, '')) || 0\n            const unit = v.replace(/[0-9]/g, '')\n            let display = v\n            if (unit === 'Ki') display = `${(bytes / 1024).toFixed(1)} MB`\n            else if (unit === 'Mi') display = `${bytes.toFixed(1)} MB`\n            else if (bytes > 0) display = bytes >= 1073741824 ? `${(bytes / 1073741824).toFixed(2)} GB` : `${(bytes / 1048576).toFixed(1)} MB`\n            return <Tag color=\"purple\">{display}</Tag>\n          },\n        },\n      ]}\n    />\n  )\n}\n\n// ═══════════════════════════════════════════\n// Pods 主页面\n// ═══════════════════════════════════════════\nconst PodsPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [selectedKeys, setSelectedKeys] = useState<string[]>([])\n  // 搜索筛选\n  const [searchType, setSearchType] = useState<'name' | 'node' | 'label'>('name')\n  const [searchValue, setSearchValue] = useState('')\n  const [statusFilter, setStatusFilter] = useState<string>('')\n\n  // ═══ 抽屉状态 ═══\n  const [logDrawer, setLogDrawer] = useState<{\n    open: boolean\n    pod?: Pod\n    pods?: Pod[]\n  }>({ open: false })\n  const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; pod?: Pod }>({ open: false })\n  const [yamlDrawer, setYamlDrawer] = useState<{\n    open: boolean\n    pod?: Pod\n    yaml: string\n    loading: boolean\n    editing: boolean\n  }>({ open: false, yaml: '', loading: false, editing: false })\n  const [inspectDrawer, setInspectDrawer] = useState<{\n    open: boolean\n    pod?: Pod\n    text: string\n    loading: boolean\n  }>({ open: false, text: '', loading: false })\n  const [batchDeleteModal, setBatchDeleteModal] = useState(false)\n  // 日志参数\n  const [tailLines, setTailLines] = useState<number>(200)\n  const [logRefresh, setLogRefresh] = useState(0)\n  const [logPrevious, setLogPrevious] = useState(false)\n  const [logKeyword, setLogKeyword] = useState('')\n  const [logLive, setLogLive] = useState(false)\n  // YAML 原文备份（取消编辑时回滚）\n  const [yamlOriginal, setYamlOriginal] = useState('')\n  // 强制删除\n  const [batchForce, setBatchForce] = useState(false)\n  const [singleForce, setSingleForce] = useState(false)\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['pods', clusterId, namespace],\n    queryFn: ({ signal }) => listPods(clusterId, { namespace: namespace || undefined }, signal),\n    enabled: !!clusterId,\n    // 抽屉打开时暂停轮询，避免打断编辑/查看\n    refetchInterval: (detailDrawer.open || yamlDrawer.open || logDrawer.open) ? false : 60_000,\n    staleTime: 60_000,\n  })\n\n  // 客户端搜索筛选\n  const filteredData = useMemo(() => {\n    let list = data?.items || []\n    if (searchValue.trim()) {\n      const v = searchValue.trim().toLowerCase()\n      list = list.filter((p) => {\n        if (searchType === 'name') return p.name.toLowerCase().includes(v)\n        if (searchType === 'node') return p.nodeName?.toLowerCase().includes(v)\n        // label\n        return p.labels && Object.entries(p.labels).some(([k, val]) =>\n          `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))\n      })\n    }\n    if (statusFilter) list = list.filter((p) => p.status === statusFilter)\n    return list\n  }, [data, searchValue, searchType, statusFilter])\n\n  const selectedPods = useMemo(\n    () => filteredData.filter((p) => selectedKeys.includes(`${p.namespace}/${p.name}`)),\n    [filteredData, selectedKeys],\n  )\n\n  // ═══ Mutations ═══\n  const deleteMutation = useMutation({\n    mutationFn: (params: { namespace: string; name: string; force?: boolean }) =>\n      deletePod(clusterId, params.namespace, params.name, params.force),\n    onSuccess: () => {\n      message.success('Pod 已删除')\n      queryClient.invalidateQueries({ queryKey: ['pods', clusterId] })\n    },\n    onError: () => message.error('删除失败'),\n  })\n\n  const batchDeleteMutation = useMutation({\n    mutationFn: async (pods: Pod[]) => {\n      for (const pod of pods) {\n        await deletePod(clusterId, pod.namespace, pod.name, batchForce)\n      }\n    },\n    onSuccess: () => {\n      message.success(`已删除 ${selectedKeys.length} 个 Pod`)\n      setSelectedKeys([])\n      setBatchDeleteModal(false)\n      queryClient.invalidateQueries({ queryKey: ['pods', clusterId] })\n    },\n    onError: () => message.error('批量删除失败'),\n  })\n\n  const applyYamlMutation = useMutation({\n    mutationFn: (yaml: string) => applyYaml(clusterId, yaml),\n    onSuccess: (res) => {\n      if (res?.success) {\n        message.success('YAML 应用成功')\n        queryClient.invalidateQueries({ queryKey: ['pods', clusterId] })\n        setYamlDrawer((prev) => ({ ...prev, open: false, editing: false }))\n      } else {\n        message.error(res?.message || 'YAML 应用失败')\n      }\n    },\n    onError: () => message.error('YAML 应用失败'),\n  })\n\n  // ═══ Handlers ═══\n  const handleViewLogs = (pod: Pod) => setLogDrawer({ open: true, pod })\n  const handleMultiPodLogs = (pods: Pod[]) => setLogDrawer({ open: true, pods })\n\n  const handleTerminal = async (pod: Pod) => {\n    // 多容器 Pod 选择容器\n    let container: string | undefined\n    if (pod.containers && pod.containers.length > 1) {\n      const containers = pod.containers\n      const firstContainerName = containers[0]!.name\n      // 用 Modal 让用户选择容器\n      const choice = await new Promise<string | undefined>((resolve) => {\n        Modal.confirm({\n          title: '选择终端容器',\n          content: (\n            <Select\n              style={{ width: '100%', marginTop: 8 }}\n              placeholder=\"选择容器\"\n              defaultValue={firstContainerName}\n              onChange={(v) => { container = v }}\n              options={containers.map((c) => ({ value: c.name, label: c.name }))}\n            />\n          ),\n          onOk: () => resolve(container || firstContainerName),\n          onCancel: () => resolve(undefined),\n        })\n      })\n      if (!choice) return\n      container = choice\n    } else if (pod.containers && pod.containers.length === 1) {\n      container = pod.containers[0]!.name\n    }\n    try {\n      const res = await getPodTerminalUrl(clusterId, pod.namespace, pod.name, { container })\n      const token = localStorage.getItem('token') || ''\n      const params = new URLSearchParams({ ws_url: res.url })\n      if (token) params.set('token', token)\n      window.open(`/k8s/terminal?${params.toString()}`, '_blank', 'width=900,height=600')\n    } catch {\n      message.error('获取终端连接失败')\n    }\n  }\n\n  const handleViewYaml = async (pod: Pod) => {\n    setYamlDrawer({ open: true, pod, yaml: '', loading: true, editing: false })\n    try {\n      const res = await getPodYaml(clusterId, pod.namespace, pod.name)\n      setYamlDrawer((prev) => ({ ...prev, yaml: res.yaml, loading: false }))\n      setYamlOriginal(res.yaml)\n    } catch {\n      setYamlDrawer((prev) => ({ ...prev, yaml: '获取 YAML 失败', loading: false }))\n      setYamlOriginal('')\n    }\n  }\n\n  const handleInspection = async (pod: Pod) => {\n    setInspectDrawer({ open: true, pod, text: '', loading: true })\n    try {\n      const res = await getPodInspection(clusterId, pod.namespace, pod.name)\n      setInspectDrawer((prev) => ({ ...prev, text: res.text, loading: false }))\n    } catch {\n      setInspectDrawer((prev) => ({ ...prev, text: '获取巡检结果失败', loading: false }))\n    }\n  }\n\n  // ═══ 日志 Tab 项 ═══\n  const logTabs = useMemo(() => {\n    if (logDrawer.pods?.length) {\n      return logDrawer.pods.map((p) => ({\n        key: `${p.namespace}/${p.name}`,\n        label: p.name,\n        children: (\n          <LogPane clusterId={clusterId} pod={p} tailLines={tailLines} refreshNonce={logRefresh}\n            previous={logPrevious} keyword={logKeyword} live={logLive} />\n        ),\n      }))\n    }\n    if (logDrawer.pod) {\n      const pod = logDrawer.pod\n      const containers = pod.containers\n      if (containers && containers.length > 1) {\n        return containers.map((c: PodContainer) => ({\n          key: c.name,\n          label: c.name,\n          children: (\n            <LogPane clusterId={clusterId} pod={pod} tailLines={tailLines} refreshNonce={logRefresh}\n              container={c.name} previous={logPrevious} keyword={logKeyword} live={logLive} />\n          ),\n        }))\n      }\n      return [\n        {\n          key: pod.name,\n          label: pod.name,\n          children: (\n            <LogPane clusterId={clusterId} pod={pod} tailLines={tailLines} refreshNonce={logRefresh}\n              previous={logPrevious} keyword={logKeyword} live={logLive} />\n          ),\n        },\n      ]\n    }\n    return []\n  }, [logDrawer, clusterId, tailLines, logRefresh, logPrevious, logKeyword, logLive])\n\n  // ═══ 详情-容器表格列 ═══\n  const containerColumns: TableProps<PodContainer>['columns'] = [\n    { title: '名称', dataIndex: 'name', width: 120, render: (t: string) => <Tag>{t}</Tag> },\n    { title: '镜像', dataIndex: 'image', ellipsis: true, render: (t: string) => <Text style={{ fontSize: 11 }}>{t}</Text> },\n    {\n      title: '就绪',\n      dataIndex: 'ready',\n      width: 70,\n      render: (t?: boolean) => (t ? <Badge status=\"success\" text=\"是\" /> : <Badge status=\"error\" text=\"否\" />),\n    },\n    { title: '重启', dataIndex: 'restartCount', width: 60, render: (t?: number) => t ?? 0 },\n    { title: '状态', dataIndex: 'state', width: 90, render: (t?: string) => t || '-' },\n    {\n      title: 'CPU(Request/Limit)',\n      width: 150,\n      render: (_, r) => `${r.cpuRequest || '-'} / ${r.cpuLimit || '-'}`,\n    },\n    {\n      title: '内存(Request/Limit)',\n      width: 160,\n      render: (_, r) => `${r.memoryRequest || '-'} / ${r.memoryLimit || '-'}`,\n    },\n    {\n      title: '端口',\n      dataIndex: 'ports',\n      render: (_, r) =>\n        r.ports?.length\n          ? r.ports.map((p) => (\n              <Tag key={p.containerPort}>\n                {p.containerPort}\n                {p.protocol ? `/${p.protocol}` : ''}\n              </Tag>\n            ))\n          : '-',\n    },\n  ]\n\n  // ═══ 详情-条件表格列 ═══\n  type PodCondition = NonNullable<Pod['conditions']>[number]\n  const conditionColumns: TableProps<PodCondition>['columns'] = [\n    { title: '类型', dataIndex: 'type', width: 120, render: (t: string) => <Tag>{t}</Tag> },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 90,\n      render: (t: string) => <Badge status={t === 'True' ? 'success' : 'error'} text={t} />,\n    },\n    {\n      title: '最近变更',\n      dataIndex: 'lastTransitionTime',\n      width: 160,\n      render: (t?: string) => (t ? formatDate(t) : '-'),\n    },\n  ]\n\n  // ═══ 详情-存储表格列 ═══\n  const volumeColumns: TableProps<PodVolume>['columns'] = [\n    { title: '卷名', dataIndex: 'name', width: 140, render: (t: string) => <Tag color=\"cyan\">{t}</Tag> },\n    {\n      title: '类型',\n      dataIndex: 'type',\n      width: 110,\n      render: (t: string) => <Tag color=\"geekblue\">{t || '-'}</Tag>,\n    },\n    { title: '来源', dataIndex: 'source', width: 140, render: (t?: string) => t || '-' },\n    {\n      title: '挂载路径',\n      dataIndex: 'mountPaths',\n      render: (_, r) =>\n        r.mountPaths?.length\n          ? r.mountPaths.map((m) => (\n              <Tag key={`${m.name}-${m.path}`} style={{ marginBottom: 4 }}>\n                {m.path}\n                {m.readOnly ? ' (ro)' : ''}\n              </Tag>\n            ))\n          : '-',\n    },\n  ]\n\n  // ═══ 列表列 ═══\n  const rawColumns: ProColumns<Pod>[] = [\n    {\n      title: '名称',\n      dataIndex: 'name',\n      ellipsis: true,\n      render: (_, record) => (\n        <a onClick={() => setDetailDrawer({ open: true, pod: record })} style={{ fontWeight: 500 }}>\n          {record.name}\n        </a>\n      ),\n    },\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 110,\n      render: (t) => <Tag>{t as string}</Tag>,\n    },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 130,\n      render: (_, record) => <PodStatusTag status={record.status} containerReason={record.containerReason} ready={record.ready} />,\n    },\n    {\n      title: 'Ready',\n      dataIndex: 'ready',\n      width: 70,\n      render: (t) => {\n        const v = (t as string) || ''\n        const ok = v.split('/')[0] === v.split('/')[1] && v !== '0/0' && v !== ''\n        return ok ? <Badge status=\"success\" text={v} /> : <Badge status=\"warning\" text={v || '-'} />\n      },\n    },\n    {\n      title: '重启',\n      dataIndex: 'restarts',\n      width: 70,\n      sorter: (a, b) => a.restarts - b.restarts,\n      render: (t) => {\n        const v = (t as number) || 0\n        return <span style={{ color: v > 5 ? '#ff4d4f' : v > 0 ? '#faad14' : '#52c41a' }}>{v}</span>\n      },\n    },\n    {\n      title: 'Pod IP',\n      dataIndex: 'ip',\n      width: 120,\n      render: (t) => <Tag color=\"blue\">{(t as string) || '-'}</Tag>,\n    },\n    { title: '节点', dataIndex: 'nodeName', width: 130, ellipsis: true, render: (t) => (t as string) || '-' },\n    {\n      title: '所属',\n      width: 180,\n      ellipsis: true,\n      render: (_, r) => <OwnerTag clusterId={clusterId} pod={r} />,\n    },\n    {\n      title: 'QoS',\n      dataIndex: 'qosClass',\n      width: 90,\n      render: (t) => <Tag>{(t as string) || 'BestEffort'}</Tag>,\n    },\n    { title: 'Age', dataIndex: 'createdAt', width: 90, ellipsis: true, sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(), render: (_, r) => formatDate(r.createdAt) },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 200,\n      fixed: 'right',\n      render: (_, record) => (\n        <Space size=\"small\" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\n          <Tooltip title=\"查看日志\">\n            <a onClick={() => handleViewLogs(record)}>\n              <FileTextOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"终端\">\n            <a onClick={() => handleTerminal(record)}>\n              <DesktopOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看详情\">\n            <a onClick={() => setDetailDrawer({ open: true, pod: record })}>\n              <InfoCircleOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => handleViewYaml(record)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"巡检诊断\">\n            <a onClick={() => handleInspection(record)}>\n              <SafetyCertificateOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm\n            title=\"确定删除该 Pod？\"\n            placement=\"left\"\n            description={\n              <Space size=\"small\">\n                <span style={{ fontSize: 12 }}>强制删除</span>\n                <Switch size=\"small\" checked={singleForce} onChange={setSingleForce} />\n              </Space>\n            }\n            onConfirm={() => {\n              deleteMutation.mutate({ namespace: record.namespace, name: record.name, force: singleForce })\n              setSingleForce(false)\n            }}\n            onCancel={() => setSingleForce(false)}\n          >\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  const columns = withCenterStyleBatch(rawColumns as Parameters<typeof withCenterStyleBatch>[0])\n\n  const detailPod = detailDrawer.pod\n\n  return (\n    <AppPage>\n      <ProTable<Pod>\n        headerTitle=\"Pod 列表\"\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        options={{ reload: false }}\n        pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 个 Pod` }}\n        scroll={{ x: 1500 }}\n        rowSelection={{\n          selectedRowKeys: selectedKeys,\n          onChange: (keys) => setSelectedKeys(keys as string[]),\n        }}\n        tableAlertRender={({ selectedRowKeys }) => (\n          <Space>\n            <Text>已选 {selectedRowKeys.length} 个 Pod</Text>\n            <Button\n              size=\"small\"\n              icon={<FileTextOutlined />}\n              onClick={() => handleMultiPodLogs(selectedPods)}\n              disabled={!selectedPods.length}\n            >\n              聚合日志\n            </Button>\n            <Button\n              size=\"small\"\n              danger\n              icon={<DeleteOutlined />}\n              onClick={() => setBatchDeleteModal(true)}\n              disabled={!selectedPods.length}\n            >\n              批量删除\n            </Button>\n          </Space>\n        )}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            allowClear\n            placeholder={searchType === 'name' ? '按名称搜索' : searchType === 'node' ? '按节点搜索' : '按标签搜索'}\n            value={searchValue}\n            onChange={(e) => setSearchValue(e.target.value)}\n            style={{ width: 280 }}\n            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}\n              options={[{ value: 'name', label: '名称' }, { value: 'node', label: '节点' }, { value: 'label', label: '标签' }]} />}\n            prefix={<SearchOutlined />}\n          />,\n          <Select\n            key=\"status\"\n            allowClear\n            placeholder=\"状态筛选\"\n            value={statusFilter || undefined}\n            onChange={(v) => setStatusFilter(v || '')}\n            style={{ width: 130 }}\n            options={[\n              { value: 'Running', label: 'Running' },\n              { value: 'Pending', label: 'Pending' },\n              { value: 'Failed', label: 'Failed' },\n              { value: 'Succeeded', label: 'Succeeded' },\n            ]}\n          />,\n          <NamespaceSelector key=\"ns\" clusterId={clusterId} value={namespace} onChange={setNamespace} />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>\n            刷新\n          </Button>,\n        ]}\n      />\n\n      {/* ═══ 日志抽屉（Tab 标签页）═══ */}\n      <Drawer\n        title={\n          logDrawer.pods\n            ? `聚合日志 - ${logDrawer.pods.length} 个 Pod`\n            : `日志 - ${logDrawer.pod?.name}`\n        }\n        open={logDrawer.open}\n        onClose={() => setLogDrawer({ open: false })}\n        width={820}\n        extra={\n          <Space wrap>\n            <Input.Search\n              size=\"small\"\n              allowClear\n              placeholder=\"日志过滤\"\n              value={logKeyword}\n              onChange={(e) => setLogKeyword(e.target.value)}\n              style={{ width: 120 }}\n            />\n            <Tooltip title=\"WebSocket 实时流式日志（follow）\">\n              <Button size=\"small\" type={logLive ? 'primary' : 'default'} onClick={() => setLogLive(!logLive)}>\n                实时\n              </Button>\n            </Tooltip>\n            <Tooltip title=\"查看上一容器日志\">\n              <Button size=\"small\" type={logPrevious ? 'primary' : 'default'} onClick={() => setLogPrevious(!logPrevious)} disabled={logLive}>\n                历史\n              </Button>\n            </Tooltip>\n            <Select\n              size=\"small\"\n              value={tailLines}\n              onChange={setTailLines}\n              style={{ width: 90 }}\n              options={[\n                { value: 50, label: '50 行' },\n                { value: 200, label: '200 行' },\n                { value: 500, label: '500 行' },\n                { value: 1000, label: '1000 行' },\n              ]}\n            />\n            <Button\n              size=\"small\"\n              icon={<ReloadOutlined />}\n              onClick={() => setLogRefresh((n) => n + 1)}\n            >\n              全部刷新\n            </Button>\n          </Space>\n        }\n      >\n        {logTabs.length > 0 && (\n          <Tabs items={logTabs} size=\"small\" destroyInactiveTabPane={false} />\n        )}\n      </Drawer>\n\n      {/* ═══ 详情抽屉（5 个 Tab）═══ */}\n      <Drawer\n        title={`Pod 详情 - ${detailPod?.name}`}\n        open={detailDrawer.open}\n        onClose={() => setDetailDrawer({ open: false })}\n        width={900}\n      >\n        {detailPod && (\n          <Tabs\n            items={[\n              {\n                key: 'overview',\n                label: '概览',\n                children: (\n                  <Descriptions bordered column={2} size=\"small\">\n                    <Descriptions.Item label=\"名称\" span={2}>\n                      {detailPod.name}\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"命名空间\">\n                      <Tag>{detailPod.namespace}</Tag>\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"状态\">\n                      <PodStatusTag status={detailPod.status} ready={detailPod.ready} />\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"Pod IP\">{detailPod.ip || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"节点\">{detailPod.nodeName || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"重启次数\">{detailPod.restarts}</Descriptions.Item>\n                    <Descriptions.Item label=\"QoS\">{detailPod.qosClass || 'BestEffort'}</Descriptions.Item>\n                    <Descriptions.Item label=\"所属\">\n                      <OwnerTag clusterId={clusterId} pod={detailPod} />\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"ServiceAccount\">{detailPod.serviceAccountName || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"重启策略\">{detailPod.restartPolicy || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"DNS 策略\">{detailPod.dnsPolicy || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"创建时间\" span={2}>\n                      {formatDate(detailPod.createdAt)}\n                    </Descriptions.Item>\n                    {detailPod.labels && (\n                      <Descriptions.Item label=\"标签\" span={2}>\n                        {Object.entries(detailPod.labels).map(([k, v]) => (\n                          <Tag key={k} color=\"blue\">\n                            {k}={v}\n                          </Tag>\n                        ))}\n                      </Descriptions.Item>\n                    )}\n                    {detailPod.annotations && (\n                      <Descriptions.Item label=\"注解\" span={2}>\n                        {Object.entries(detailPod.annotations)\n                          .slice(0, 10)\n                          .map(([k, v]) => (\n                            <Tooltip key={k} title={v}>\n                              <Tag style={{ marginBottom: 4 }}>{k}</Tag>\n                            </Tooltip>\n                          ))}\n                      </Descriptions.Item>\n                    )}\n                  </Descriptions>\n                ),\n              },\n              {\n                key: 'containers',\n                label: '容器',\n                children: detailPod.containers?.length ? (\n                  <Table<PodContainer>\n                    rowKey=\"name\"\n                    size=\"small\"\n                    columns={containerColumns}\n                    dataSource={detailPod.containers}\n                    pagination={false}\n                    scroll={{ x: 900 }}\n                  />\n                ) : (\n                  <Text type=\"secondary\">暂无容器数据</Text>\n                ),\n              },\n              {\n                key: 'events',\n                label: '事件',\n                children: <PodEventsTab clusterId={clusterId} pod={detailPod} />,\n              },\n              {\n                key: 'conditions',\n                label: '条件',\n                children: detailPod.conditions?.length ? (\n                  <Table\n                    rowKey=\"type\"\n                    size=\"small\"\n                    columns={conditionColumns}\n                    dataSource={detailPod.conditions}\n                    pagination={false}\n                  />\n                ) : (\n                  <Text type=\"secondary\">暂无条件数据</Text>\n                ),\n              },\n              {\n                key: 'volumes',\n                label: '存储',\n                children: detailPod.volumes?.length ? (\n                  <Table<PodVolume>\n                    rowKey=\"name\"\n                    size=\"small\"\n                    columns={volumeColumns}\n                    dataSource={detailPod.volumes}\n                    pagination={false}\n                  />\n                ) : (\n                  <Text type=\"secondary\">暂无存储数据</Text>\n                ),\n              },\n              {\n                key: 'probes',\n                label: '探针',\n                children: detailPod.probes ? (\n                  <Descriptions bordered column={1} size=\"small\">\n                    {[\n                      { key: 'liveness', label: 'Liveness' },\n                      { key: 'readiness', label: 'Readiness' },\n                      { key: 'startup', label: 'Startup' },\n                    ].map(({ key, label }) => {\n                      const probe = (detailPod.probes as any)?.[key]\n                      return (\n                        <Descriptions.Item key={key} label={label}>\n                          {probe ? (\n                            <Space size=\"small\" wrap>\n                              {probe.path && <Tag>HTTP {probe.path}:{probe.port}</Tag>}\n                              {!probe.path && probe.port && <Tag>TCP :{probe.port}</Tag>}\n                              {probe.delay != null && <Text type=\"secondary\" style={{ fontSize: 11 }}>延迟 {probe.delay}s</Text>}\n                              {probe.period != null && <Text type=\"secondary\" style={{ fontSize: 11 }}>周期 {probe.period}s</Text>}\n                              {probe.timeout != null && <Text type=\"secondary\" style={{ fontSize: 11 }}>超时 {probe.timeout}s</Text>}\n                              {probe.failure != null && <Text type=\"secondary\" style={{ fontSize: 11 }}>失败 {probe.failure}</Text>}\n                            </Space>\n                          ) : <Text type=\"secondary\">未配置</Text>}\n                        </Descriptions.Item>\n                      )\n                    })}\n                  </Descriptions>\n                ) : <Text type=\"secondary\">暂无探针数据</Text>,\n              },\n              {\n                key: 'scheduling',\n                label: '调度',\n                children: detailPod.scheduling ? (\n                  <Descriptions bordered column={1} size=\"small\">\n                    <Descriptions.Item label=\"节点选择器\">\n                      {detailPod.scheduling.nodeSelector\n                        ? Object.entries(detailPod.scheduling.nodeSelector).map(([k, v]) => <Tag key={k}>{k}={v}</Tag>)\n                        : <Text type=\"secondary\">无</Text>}\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"指定节点\">{detailPod.scheduling.nodeName || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"优先级\">{detailPod.scheduling.priorityClassName || '-'}</Descriptions.Item>\n                    {detailPod.scheduling.tolerations?.length ? (\n                      <Descriptions.Item label=\"容忍度\">\n                        <Table\n                          size=\"small\"\n                          rowKey={(_, i) => String(i)}\n                          pagination={false}\n                          dataSource={detailPod.scheduling.tolerations}\n                          columns={[\n                            { title: 'Key', dataIndex: 'key', width: 100 },\n                            { title: 'Operator', dataIndex: 'operator', width: 80 },\n                            { title: 'Value', dataIndex: 'value', width: 80 },\n                            { title: 'Effect', dataIndex: 'effect', width: 100 },\n                            { title: 'Seconds', dataIndex: 'tolerationSeconds', width: 70 },\n                          ]}\n                        />\n                      </Descriptions.Item>\n                    ) : null}\n                    {detailPod.scheduling.affinity && (\n                      <Descriptions.Item label=\"亲和性\">\n                        <pre style={{ fontSize: 11, maxHeight: 200, overflow: 'auto' }}>{detailPod.scheduling.affinity}</pre>\n                      </Descriptions.Item>\n                    )}\n                  </Descriptions>\n                ) : <Text type=\"secondary\">暂无调度数据</Text>,\n              },\n              {\n                key: 'security',\n                label: '安全',\n                children: detailPod.security ? (\n                  <Descriptions bordered column={1} size=\"small\">\n                    <Descriptions.Item label=\"ServiceAccount\">{detailPod.security.serviceAccountName || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"runAsUser\">{detailPod.security.runAsUser ?? '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"runAsGroup\">{detailPod.security.runAsGroup ?? '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"runAsNonRoot\">{detailPod.security.runAsNonRoot ? '是' : '否'}</Descriptions.Item>\n                    <Descriptions.Item label=\"privileged\">{detailPod.security.privileged ? <Tag color=\"error\">是</Tag> : '否'}</Descriptions.Item>\n                    <Descriptions.Item label=\"只读根文件系统\">{detailPod.security.readOnlyRootFilesystem ? '是' : '否'}</Descriptions.Item>\n                    {detailPod.security.capabilities && (\n                      <Descriptions.Item label=\"Capabilities\">\n                        <Space direction=\"vertical\" size={0}>\n                          {detailPod.security.capabilities.add?.length ? (\n                            <div><Text type=\"secondary\" style={{ fontSize: 11 }}>添加: </Text>{detailPod.security.capabilities.add.map((c) => <Tag key={c} color=\"warning\">{c}</Tag>)}</div>\n                          ) : null}\n                          {detailPod.security.capabilities.drop?.length ? (\n                            <div><Text type=\"secondary\" style={{ fontSize: 11 }}>移除: </Text>{detailPod.security.capabilities.drop.map((c) => <Tag key={c}>{c}</Tag>)}</div>\n                          ) : null}\n                        </Space>\n                      </Descriptions.Item>\n                    )}\n                    {detailPod.security.imagePullSecrets?.length ? (\n                      <Descriptions.Item label=\"镜像拉取密钥\">\n                        {detailPod.security.imagePullSecrets.map((s) => <Tag key={s}>{s}</Tag>)}\n                      </Descriptions.Item>\n                    ) : null}\n                  </Descriptions>\n                ) : <Text type=\"secondary\">暂无安全数据</Text>,\n              },\n              {\n                key: 'env',\n                label: '环境变量',\n                children: detailPod.envVars?.length ? (\n                  <Table\n                    size=\"small\"\n                    rowKey=\"name\"\n                    pagination={false}\n                    dataSource={detailPod.envVars}\n                    columns={[\n                      { title: '名称', dataIndex: 'name', width: 180 },\n                      { title: '值', dataIndex: 'value', ellipsis: true, render: (v: string) => v || '-' },\n                      { title: '来源', dataIndex: 'valueFrom', width: 120, render: (v: string) => v ? <Tag>{v}</Tag> : '-' },\n                    ]}\n                  />\n                ) : <Text type=\"secondary\">暂无环境变量</Text>,\n              },\n              {\n                key: 'metrics',\n                label: '资源用量',\n                children: <PodMetricsTab clusterId={clusterId} pod={detailPod} />,\n              },\n            ]}\n          />\n        )}\n      </Drawer>\n\n      {/* ═══ YAML 抽屉（编辑 + 应用）═══ */}\n      <Drawer\n        title={`YAML - ${yamlDrawer.pod?.name}`}\n        open={yamlDrawer.open}\n        onClose={() => setYamlDrawer({ open: false, yaml: '', loading: false, editing: false })}\n        width={820}\n        extra={\n          yamlDrawer.editing ? (\n            <Space>\n              <Button\n                icon={<CheckOutlined />}\n                type=\"primary\"\n                loading={applyYamlMutation.isPending}\n                onClick={() => applyYamlMutation.mutate(yamlDrawer.yaml)}\n              >\n                应用\n              </Button>\n              <Button icon={<CloseOutlined />} onClick={() => {\n                setYamlDrawer((p) => ({ ...p, yaml: yamlOriginal, editing: false }))\n              }}>\n                取消\n              </Button>\n            </Space>\n          ) : (\n            <Button icon={<EditOutlined />} onClick={() => setYamlDrawer((p) => ({ ...p, editing: true }))}>\n              编辑\n            </Button>\n          )\n        }\n      >\n        {yamlDrawer.loading ? (\n          <Text type=\"secondary\">加载中...</Text>\n        ) : (\n          <YamlEditor\n            value={yamlDrawer.yaml}\n            readOnly={!yamlDrawer.editing}\n            height={Math.max(window.innerHeight - 220, 400)}\n            onChange={(val) => setYamlDrawer((p) => ({ ...p, yaml: val }))}\n          />\n        )}\n      </Drawer>\n\n      {/* ═══ 巡检诊断抽屉 ═══ */}\n      <Drawer\n        title={`巡检诊断 - ${inspectDrawer.pod?.name}`}\n        open={inspectDrawer.open}\n        onClose={() => setInspectDrawer({ open: false, text: '', loading: false })}\n        width={820}\n      >\n        <pre\n          style={{\n            background: '#1e1e1e',\n            color: '#d4d4d4',\n            padding: 16,\n            borderRadius: 4,\n            height: 'calc(100vh - 200px)',\n            overflow: 'auto',\n            fontSize: 13,\n            lineHeight: 1.6,\n            fontFamily: 'Consolas, Monaco, monospace',\n            whiteSpace: 'pre-wrap',\n            wordBreak: 'break-all',\n            margin: 0,\n          }}\n        >\n          {inspectDrawer.loading ? '巡检中...' : inspectDrawer.text || '暂无巡检数据'}\n        </pre>\n      </Drawer>\n\n      {/* ═══ 批量删除确认 ═══ */}\n      <Modal\n        title=\"批量删除 Pod\"\n        open={batchDeleteModal}\n        onCancel={() => setBatchDeleteModal(false)}\n        onOk={() => batchDeleteMutation.mutate(selectedPods)}\n        confirmLoading={batchDeleteMutation.isPending}\n        okText=\"确认删除\"\n        okButtonProps={{ danger: true }}\n      >\n        <Alert\n          type=\"warning\"\n          showIcon\n          message={`确定删除选中的 ${selectedKeys.length} 个 Pod？`}\n          style={{ marginBottom: 12 }}\n        />\n        <Descriptions column={1} size=\"small\">\n          <Descriptions.Item label=\"强制删除\">\n            <Switch checked={batchForce} onChange={setBatchForce} />\n          </Descriptions.Item>\n        </Descriptions>\n        <div style={{ marginTop: 12 }}>\n          {selectedPods.map((p) => (\n            <Tag key={`${p.namespace}/${p.name}`} color=\"red\" style={{ marginBottom: 4 }}>\n              {p.namespace}/{p.name}\n            </Tag>\n          ))}\n        </div>\n      </Modal>\n    </AppPage>\n  )\n}\n\nexport default PodsPage\n",
+      "__content": "/**\n * Pod 管理页\n * 完整功能：列表+搜索筛选+批量聚合日志(Tab)+批量删除+强制删除\n * 单行：日志(多容器Tab)/终端/详情(5Tab)/YAML(编辑应用)/巡检/删除\n */\nimport React, { useState, useMemo, useRef, useEffect } from 'react'\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport {\n  Button,\n  Space,\n  message,\n  Popconfirm,\n  Tag,\n  Tooltip,\n  Drawer,\n  Descriptions,\n  Tabs,\n  Badge,\n  Typography,\n  Modal,\n  Switch,\n  Alert,\n  Input,\n  Select,\n  Table,\n} from 'antd'\nimport type { TableProps } from 'antd'\nimport {\n  DeleteOutlined,\n  FileTextOutlined,\n  ReloadOutlined,\n  DesktopOutlined,\n  InfoCircleOutlined,\n  SafetyCertificateOutlined,\n  SearchOutlined,\n  EditOutlined,\n  CheckOutlined,\n  CloseOutlined,\n  ProfileOutlined,\n} from '@ant-design/icons'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { history } from '@umijs/max'\nimport {\n  listPods,\n  deletePod,\n  getPodLogs,\n  getPodTerminalUrl,\n  getPodYaml,\n  getPodInspection,\n  getPodEvents,\n  createPodLogSession,\n  listPodMetrics,\n  applyYaml,\n} from '@/services/k8s'\nimport { AppPage, PodStatusTag, NamespaceSelector, YamlEditor } from '@/components'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nimport { withCenterStyleBatch } from '@/utils/fieldStyle'\nimport type { Pod, PodContainer, PodVolume } from '@/types'\n\nconst { Text } = Typography\n\n/** 工作负载类型 ownerKind → 路由资源名 */\nconst WORKLOAD_KINDS = new Set(['Deployment', 'StatefulSet', 'DaemonSet'])\nconst ownerToRoute = (kind?: string): string => (kind ? `${kind.toLowerCase()}s` : '')\nconst isWorkloadOwner = (kind?: string): boolean => !!kind && WORKLOAD_KINDS.has(kind)\n\n/** 跳转到关联工作负载页面 */\nconst goOwner = (clusterId: number, kind?: string) => {\n  if (isWorkloadOwner(kind)) history.push(`/k8s/${clusterId}/${ownerToRoute(kind)}`)\n}\n\n/** 关联所属渲染：可点击跳转的工作负载显示为链接\n *  ReplicaSet 自动回溯到 Deployment（RS 名格式为 <deploy-name>-<hash>）\n */\nconst OwnerTag: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, pod }) => {\n  if (!pod.ownerName) return <Text type=\"secondary\">-</Text>\n\n  let displayKind = pod.ownerKind || 'ReplicaSet'\n  let displayName = pod.ownerName\n  let routeKind = pod.ownerKind\n\n  // ReplicaSet → Deployment 回溯：RS 名通常为 <deploy-name>-<hash>\n  if (displayKind === 'ReplicaSet') {\n    const lastDash = displayName.lastIndexOf('-')\n    if (lastDash > 0) {\n      const possibleDeployName = displayName.substring(0, lastDash)\n      // RS 名中 hash 段是最后一个 - 后的部分，前面是 Deployment 名\n      routeKind = 'Deployment'\n      displayName = possibleDeployName\n    }\n  }\n\n  const clickable = isWorkloadOwner(routeKind)\n  const full = `${displayKind}/${pod.ownerName}`\n  const tag = (\n    <Tag\n      style={{\n        maxWidth: '100%',\n        display: 'inline-block',\n        overflow: 'hidden',\n        textOverflow: 'ellipsis',\n        whiteSpace: 'nowrap',\n        verticalAlign: 'middle',\n        cursor: clickable ? 'pointer' : 'default',\n      }}\n      color={clickable ? 'blue' : undefined}\n    >\n      {clickable ? `${displayName}` : full}\n    </Tag>\n  )\n  return clickable ? (\n    <Tooltip title={`${routeKind}: ${displayName}（源: ${full}）`}>\n      <span onClick={() => goOwner(clusterId, routeKind)}>{tag}</span>\n    </Tooltip>\n  ) : (\n    <Tooltip title={full}>{tag}</Tooltip>\n  )\n}\n\n// ═══════════════════════════════════════════\n// 日志面板：每个 Tab 独立加载日志\n// 支持 HTTP 一次性拉取 + WebSocket 实时流（follow）\n// ═══════════════════════════════════════════\ninterface LogPaneProps {\n  clusterId: number\n  pod: Pod\n  tailLines: number\n  refreshNonce: number\n  container?: string\n  previous?: boolean\n  keyword?: string\n  live?: boolean\n}\nconst LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNonce, container, previous, keyword, live }) => {\n  const [liveLogs, setLiveLogs] = useState<string[]>([])\n  const [liveConnected, setLiveConnected] = useState(false)\n  const [liveError, setLiveError] = useState('')\n  const wsRef = useRef<WebSocket | null>(null)\n  const logEndRef = useRef<HTMLDivElement>(null)\n  const containerRef = useRef<HTMLDivElement>(null)\n\n  // HTTP 一次性日志（非 live 模式使用）\n  const { data, isLoading, isFetching, refetch } = useQuery({\n    queryKey: ['pod-logs', clusterId, pod.namespace, pod.name, container, tailLines, previous, refreshNonce],\n    queryFn: () => getPodLogs(clusterId, pod.namespace, pod.name, { tailLines, container, previous }),\n    enabled: !!clusterId && !!pod.namespace && !!pod.name && !live,\n  })\n\n  // WebSocket 实时流（live 模式使用）\n  useEffect(() => {\n    if (!live || !clusterId || !pod.namespace || !pod.name) return\n\n    let cancelled = false\n    setLiveLogs([])\n    setLiveConnected(false)\n    setLiveError('')\n\n    createPodLogSession(clusterId, pod.namespace, pod.name, { container, tailLines, follow: true, previous })\n      .then(({ wsUrl }) => {\n        if (cancelled || !wsUrl) return\n        const url = new URL(wsUrl, window.location.href)\n        url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'\n        const token = localStorage.getItem('token')\n        if (token) url.searchParams.set('token', token)\n        const ws = new WebSocket(url.toString())\n        wsRef.current = ws\n\n        ws.onopen = () => setLiveConnected(true)\n        ws.onmessage = (ev) => {\n          let line = typeof ev.data === 'string' ? ev.data : ''\n          try {\n            const frame = JSON.parse(line) as { type?: string; data?: string; message?: string }\n            if (frame.type === 'error') {\n              setLiveError(frame.message || '日志流读取失败')\n              line = ''\n            } else {\n              line = frame.type === 'chunk' ? frame.data || '' : ''\n            }\n          } catch {\n            // Compatible with plain-text frames from older gateways.\n          }\n          if (line) {\n            setLiveLogs((prev) => {\n              const next = [...prev, line]\n              return next.length > 5000 ? next.slice(-5000) : next // 限制 5000 行\n            })\n          }\n        }\n        ws.onclose = (event) => {\n          setLiveConnected(false)\n          if (!cancelled && event.code !== 1000) setLiveError(`实时日志连接已断开（${event.code}）`)\n        }\n        ws.onerror = () => {\n          setLiveConnected(false)\n          setLiveError('实时日志 WebSocket 连接失败')\n        }\n      })\n      .catch((error) => setLiveError(error?.message || '创建实时日志会话失败'))\n\n    return () => {\n      cancelled = true\n      wsRef.current?.close()\n      wsRef.current = null\n    }\n  }, [live, clusterId, pod.namespace, pod.name, container, previous, tailLines, refreshNonce])\n\n  // 自动滚动到底部\n  useEffect(() => {\n    if (containerRef.current) {\n      containerRef.current.scrollTop = containerRef.current.scrollHeight\n    }\n  }, [liveLogs])\n\n  const rawContent = live\n    ? liveError || liveLogs.join('')\n    : (isLoading ? '加载中...' : data?.logs || '暂无日志')\n\n  // 关键字过滤\n  const content = keyword\n    ? rawContent.split('\\n').filter((l) => l.includes(keyword)).join('\\n') || '无匹配日志'\n    : rawContent\n\n  return (\n    <div>\n      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>\n        <Space size=\"small\">\n          {live && (\n            <Badge status={liveConnected ? 'processing' : 'error'} text={liveConnected ? '实时连接中' : '连接断开'} />\n          )}\n          {previous && <Tag color=\"orange\">历史日志</Tag>}\n          {keyword && <Text type=\"secondary\" style={{ fontSize: 11 }}>过滤: \"{keyword}\"</Text>}\n        </Space>\n        <Space size=\"small\">\n          <Tooltip title=\"复制日志\">\n            <Button size=\"small\" onClick={() => { navigator.clipboard.writeText(rawContent); message.success('已复制') }}>\n              复制\n            </Button>\n          </Tooltip>\n          <Tooltip title=\"下载日志\">\n            <Button size=\"small\" onClick={() => {\n              const blob = new Blob([rawContent], { type: 'text/plain' })\n              const a = document.createElement('a')\n              a.href = URL.createObjectURL(blob)\n              a.download = `${pod.name}${container ? '-' + container : ''}.log`\n              a.click()\n            }}>\n              下载\n            </Button>\n          </Tooltip>\n          {!live && (\n            <Button size=\"small\" icon={<ReloadOutlined />} loading={isFetching} onClick={() => refetch()}>\n              刷新\n            </Button>\n          )}\n        </Space>\n      </div>\n      <div\n        ref={containerRef}\n        style={{\n          background: '#1e1e1e',\n          color: '#d4d4d4',\n          padding: 16,\n          borderRadius: 8,\n          height: 'calc(100vh - 300px)',\n          overflow: 'auto',\n          fontSize: 13,\n          lineHeight: 1.6,\n          fontFamily: 'Consolas, Monaco, monospace',\n          whiteSpace: 'pre-wrap',\n          wordBreak: 'break-all',\n          margin: 0,\n        }}\n      >\n        {content}\n        <div ref={logEndRef} />\n      </div>\n    </div>\n  )\n}\n\n// ═══════════════════════════════════════════\n// 事件 Tab：详情抽屉打开时按需加载\n// ═══════════════════════════════════════════\ninterface PodEvent {\n  type?: string\n  reason?: string\n  message?: string\n  lastTimestamp?: string\n}\nconst PodEventsTab: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, pod }) => {\n  const { data, isLoading } = useQuery({\n    queryKey: ['pod-events', clusterId, pod.namespace, pod.name],\n    queryFn: ({ signal }) => getPodEvents(clusterId, pod.namespace, pod.name, signal),\n    enabled: !!clusterId && !!pod.namespace && !!pod.name,\n  })\n  const events: PodEvent[] = (data || []) as PodEvent[]\n  const columns: TableProps<PodEvent>['columns'] = [\n    {\n      title: '级别',\n      dataIndex: 'type',\n      width: 80,\n      render: (t: string) => (\n        <Badge status={t === 'Warning' ? 'warning' : t === 'Normal' ? 'success' : 'default'} text={t || '-'} />\n      ),\n    },\n    { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true, render: (t: string) => t || '-' },\n    { title: '消息', dataIndex: 'message', render: (t: string) => t || '-' },\n    {\n      title: '时间',\n      dataIndex: 'lastTimestamp',\n      width: 160,\n      render: (t: string) => (t ? formatDate(t) : '-'),\n    },\n  ]\n  return (\n    <Table<PodEvent>\n      rowKey={(r, i) => `${r.reason}-${i}`}\n      size=\"small\"\n      columns={columns}\n      dataSource={events}\n      loading={isLoading}\n      pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}\n      scroll={{ y: 320 }}\n    />\n  )\n}\n\n// ═══════════════════════════════════════════\n// 资源用量 Tab：从 PodMetrics API 获取实际使用率\n// ═══════════════════════════════════════════\nconst PodMetricsTab: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, pod }) => {\n  const { data: metricsList, isLoading } = useQuery({\n    queryKey: ['pod-metrics', clusterId, pod.namespace],\n    queryFn: ({ signal }) => listPodMetrics(clusterId, pod.namespace, signal),\n    enabled: !!clusterId && !!pod.namespace,\n    refetchInterval: 15_000, // 15s 刷新一次\n  })\n\n  // 从 metrics 列表中找到当前 Pod\n  const podMetric = useMemo(() => {\n    if (!metricsList || !pod.name) return undefined\n    return metricsList.find((m: any) => {\n      const name = m?.metadata?.name || m?.name\n      return name === pod.name\n    })\n  }, [metricsList, pod.name])\n\n  if (isLoading) return <Text type=\"secondary\">加载中...</Text>\n  if (!podMetric) return <Text type=\"secondary\">暂无资源使用率数据（需部署 metrics-server）</Text>\n\n  const containers = podMetric?.containers || podMetric?.status?.containers || []\n  if (!containers.length) return <Text type=\"secondary\">暂无容器指标数据</Text>\n\n  return (\n    <Table\n      size=\"small\"\n      rowKey=\"name\"\n      pagination={false}\n      dataSource={containers.map((c: any) => ({\n        name: c.name || c.container || '',\n        cpu: c.usage?.cpu || c.cpu || '-',\n        memory: c.usage?.memory || c.memory || '-',\n      }))}\n      columns={[\n        { title: '容器', dataIndex: 'name', width: 120, render: (t: string) => <Tag>{t}</Tag> },\n        {\n          title: 'CPU 使用',\n          dataIndex: 'cpu',\n          render: (v: string) => {\n            if (!v || v === '-') return <Text type=\"secondary\">-</Text>\n            const millicores = v.endsWith('n') ? parseInt(v) / 1_000_000 : parseInt(v)\n            return <Tag color=\"blue\">{millicores >= 1000 ? `${(millicores / 1000).toFixed(2)} Core` : `${millicores} m`}</Tag>\n          },\n        },\n        {\n          title: '内存使用',\n          dataIndex: 'memory',\n          render: (v: string) => {\n            if (!v || v === '-') return <Text type=\"secondary\">-</Text>\n            const bytes = parseInt(v.replace(/\\D/g, '')) || 0\n            const unit = v.replace(/[0-9]/g, '')\n            let display = v\n            if (unit === 'Ki') display = `${(bytes / 1024).toFixed(1)} MB`\n            else if (unit === 'Mi') display = `${bytes.toFixed(1)} MB`\n            else if (bytes > 0) display = bytes >= 1073741824 ? `${(bytes / 1073741824).toFixed(2)} GB` : `${(bytes / 1048576).toFixed(1)} MB`\n            return <Tag color=\"purple\">{display}</Tag>\n          },\n        },\n      ]}\n    />\n  )\n}\n\n// ═══════════════════════════════════════════\n// Pods 主页面\n// ═══════════════════════════════════════════\nconst PodsPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState<string>('')\n  const [selectedKeys, setSelectedKeys] = useState<string[]>([])\n  // 搜索筛选\n  const [searchType, setSearchType] = useState<'name' | 'node' | 'label'>('name')\n  const [searchValue, setSearchValue] = useState('')\n  const [statusFilter, setStatusFilter] = useState<string>('')\n\n  // ═══ 抽屉状态 ═══\n  const [logDrawer, setLogDrawer] = useState<{\n    open: boolean\n    pod?: Pod\n    pods?: Pod[]\n  }>({ open: false })\n  const [detailDrawer, setDetailDrawer] = useState<{ open: boolean; pod?: Pod }>({ open: false })\n  const [yamlDrawer, setYamlDrawer] = useState<{\n    open: boolean\n    pod?: Pod\n    yaml: string\n    loading: boolean\n    editing: boolean\n  }>({ open: false, yaml: '', loading: false, editing: false })\n  const [inspectDrawer, setInspectDrawer] = useState<{\n    open: boolean\n    pod?: Pod\n    text: string\n    loading: boolean\n  }>({ open: false, text: '', loading: false })\n  const [batchDeleteModal, setBatchDeleteModal] = useState(false)\n  // 日志参数\n  const [tailLines, setTailLines] = useState<number>(200)\n  const [logRefresh, setLogRefresh] = useState(0)\n  const [logPrevious, setLogPrevious] = useState(false)\n  const [logKeyword, setLogKeyword] = useState('')\n  const [logLive, setLogLive] = useState(false)\n  // YAML 原文备份（取消编辑时回滚）\n  const [yamlOriginal, setYamlOriginal] = useState('')\n  // 强制删除\n  const [batchForce, setBatchForce] = useState(false)\n  const [singleForce, setSingleForce] = useState(false)\n\n  const { data, isLoading, refetch } = useQuery({\n    queryKey: ['pods', clusterId, namespace],\n    queryFn: ({ signal }) => listPods(clusterId, { namespace: namespace || undefined }, signal),\n    enabled: !!clusterId,\n    // 抽屉打开时暂停轮询，避免打断编辑/查看\n    refetchInterval: (detailDrawer.open || yamlDrawer.open || logDrawer.open) ? false : 60_000,\n    staleTime: 60_000,\n  })\n\n  // 客户端搜索筛选\n  const filteredData = useMemo(() => {\n    let list = data?.items || []\n    if (searchValue.trim()) {\n      const v = searchValue.trim().toLowerCase()\n      list = list.filter((p) => {\n        if (searchType === 'name') return p.name.toLowerCase().includes(v)\n        if (searchType === 'node') return p.nodeName?.toLowerCase().includes(v)\n        // label\n        return p.labels && Object.entries(p.labels).some(([k, val]) =>\n          `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))\n      })\n    }\n    if (statusFilter) list = list.filter((p) => p.status === statusFilter)\n    return list\n  }, [data, searchValue, searchType, statusFilter])\n\n  const selectedPods = useMemo(\n    () => filteredData.filter((p) => selectedKeys.includes(`${p.namespace}/${p.name}`)),\n    [filteredData, selectedKeys],\n  )\n\n  // ═══ Mutations ═══\n  const deleteMutation = useMutation({\n    mutationFn: (params: { namespace: string; name: string; force?: boolean }) =>\n      deletePod(clusterId, params.namespace, params.name, params.force),\n    onSuccess: () => {\n      message.success('Pod 已删除')\n      queryClient.invalidateQueries({ queryKey: ['pods', clusterId] })\n    },\n    onError: () => message.error('删除失败'),\n  })\n\n  const batchDeleteMutation = useMutation({\n    mutationFn: async (pods: Pod[]) => {\n      for (const pod of pods) {\n        await deletePod(clusterId, pod.namespace, pod.name, batchForce)\n      }\n    },\n    onSuccess: () => {\n      message.success(`已删除 ${selectedKeys.length} 个 Pod`)\n      setSelectedKeys([])\n      setBatchDeleteModal(false)\n      queryClient.invalidateQueries({ queryKey: ['pods', clusterId] })\n    },\n    onError: () => message.error('批量删除失败'),\n  })\n\n  const applyYamlMutation = useMutation({\n    mutationFn: (yaml: string) => applyYaml(clusterId, yaml),\n    onSuccess: (res) => {\n      if (res?.success) {\n        message.success('YAML 应用成功')\n        queryClient.invalidateQueries({ queryKey: ['pods', clusterId] })\n        setYamlDrawer((prev) => ({ ...prev, open: false, editing: false }))\n      } else {\n        message.error(res?.message || 'YAML 应用失败')\n      }\n    },\n    onError: () => message.error('YAML 应用失败'),\n  })\n\n  // ═══ Handlers ═══\n  const handleViewLogs = (pod: Pod) => setLogDrawer({ open: true, pod })\n  const handleMultiPodLogs = (pods: Pod[]) => setLogDrawer({ open: true, pods })\n\n  const handleTerminal = async (pod: Pod) => {\n    // 多容器 Pod 选择容器\n    let container: string | undefined\n    if (pod.containers && pod.containers.length > 1) {\n      const containers = pod.containers\n      const firstContainerName = containers[0]!.name\n      // 用 Modal 让用户选择容器\n      const choice = await new Promise<string | undefined>((resolve) => {\n        Modal.confirm({\n          title: '选择终端容器',\n          content: (\n            <Select\n              style={{ width: '100%', marginTop: 8 }}\n              placeholder=\"选择容器\"\n              defaultValue={firstContainerName}\n              onChange={(v) => { container = v }}\n              options={containers.map((c) => ({ value: c.name, label: c.name }))}\n            />\n          ),\n          onOk: () => resolve(container || firstContainerName),\n          onCancel: () => resolve(undefined),\n        })\n      })\n      if (!choice) return\n      container = choice\n    } else if (pod.containers && pod.containers.length === 1) {\n      container = pod.containers[0]!.name\n    }\n    try {\n      const res = await getPodTerminalUrl(clusterId, pod.namespace, pod.name, { container })\n      const token = localStorage.getItem('token') || ''\n      const params = new URLSearchParams({ ws_url: res.url })\n      if (token) params.set('token', token)\n      window.open(`/k8s/terminal?${params.toString()}`, '_blank', 'width=900,height=600')\n    } catch {\n      message.error('获取终端连接失败')\n    }\n  }\n\n  const handleViewYaml = async (pod: Pod) => {\n    setYamlDrawer({ open: true, pod, yaml: '', loading: true, editing: false })\n    try {\n      const res = await getPodYaml(clusterId, pod.namespace, pod.name)\n      setYamlDrawer((prev) => ({ ...prev, yaml: res.yaml, loading: false }))\n      setYamlOriginal(res.yaml)\n    } catch {\n      setYamlDrawer((prev) => ({ ...prev, yaml: '获取 YAML 失败', loading: false }))\n      setYamlOriginal('')\n    }\n  }\n\n  const handleInspection = async (pod: Pod) => {\n    setInspectDrawer({ open: true, pod, text: '', loading: true })\n    try {\n      const res = await getPodInspection(clusterId, pod.namespace, pod.name)\n      setInspectDrawer((prev) => ({ ...prev, text: res.text, loading: false }))\n    } catch {\n      setInspectDrawer((prev) => ({ ...prev, text: '获取巡检结果失败', loading: false }))\n    }\n  }\n\n  // ═══ 日志 Tab 项 ═══\n  const logTabs = useMemo(() => {\n    if (logDrawer.pods?.length) {\n      return logDrawer.pods.map((p) => ({\n        key: `${p.namespace}/${p.name}`,\n        label: p.name,\n        children: (\n          <LogPane clusterId={clusterId} pod={p} tailLines={tailLines} refreshNonce={logRefresh}\n            previous={logPrevious} keyword={logKeyword} live={logLive} />\n        ),\n      }))\n    }\n    if (logDrawer.pod) {\n      const pod = logDrawer.pod\n      const containers = pod.containers\n      if (containers && containers.length > 1) {\n        return containers.map((c: PodContainer) => ({\n          key: c.name,\n          label: c.name,\n          children: (\n            <LogPane clusterId={clusterId} pod={pod} tailLines={tailLines} refreshNonce={logRefresh}\n              container={c.name} previous={logPrevious} keyword={logKeyword} live={logLive} />\n          ),\n        }))\n      }\n      return [\n        {\n          key: pod.name,\n          label: pod.name,\n          children: (\n            <LogPane clusterId={clusterId} pod={pod} tailLines={tailLines} refreshNonce={logRefresh}\n              previous={logPrevious} keyword={logKeyword} live={logLive} />\n          ),\n        },\n      ]\n    }\n    return []\n  }, [logDrawer, clusterId, tailLines, logRefresh, logPrevious, logKeyword, logLive])\n\n  // ═══ 详情-容器表格列 ═══\n  const containerColumns: TableProps<PodContainer>['columns'] = [\n    { title: '名称', dataIndex: 'name', width: 120, render: (t: string) => <Tag>{t}</Tag> },\n    { title: '镜像', dataIndex: 'image', ellipsis: true, render: (t: string) => <Text style={{ fontSize: 11 }}>{t}</Text> },\n    {\n      title: '就绪',\n      dataIndex: 'ready',\n      width: 70,\n      render: (t?: boolean) => (t ? <Badge status=\"success\" text=\"是\" /> : <Badge status=\"error\" text=\"否\" />),\n    },\n    { title: '重启', dataIndex: 'restartCount', width: 60, render: (t?: number) => t ?? 0 },\n    { title: '状态', dataIndex: 'state', width: 90, render: (t?: string) => t || '-' },\n    {\n      title: 'CPU(Request/Limit)',\n      width: 150,\n      render: (_, r) => `${r.cpuRequest || '-'} / ${r.cpuLimit || '-'}`,\n    },\n    {\n      title: '内存(Request/Limit)',\n      width: 160,\n      render: (_, r) => `${r.memoryRequest || '-'} / ${r.memoryLimit || '-'}`,\n    },\n    {\n      title: '端口',\n      dataIndex: 'ports',\n      render: (_, r) =>\n        r.ports?.length\n          ? r.ports.map((p) => (\n              <Tag key={p.containerPort}>\n                {p.containerPort}\n                {p.protocol ? `/${p.protocol}` : ''}\n              </Tag>\n            ))\n          : '-',\n    },\n  ]\n\n  // ═══ 详情-条件表格列 ═══\n  type PodCondition = NonNullable<Pod['conditions']>[number]\n  const conditionColumns: TableProps<PodCondition>['columns'] = [\n    { title: '类型', dataIndex: 'type', width: 120, render: (t: string) => <Tag>{t}</Tag> },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 90,\n      render: (t: string) => <Badge status={t === 'True' ? 'success' : 'error'} text={t} />,\n    },\n    {\n      title: '最近变更',\n      dataIndex: 'lastTransitionTime',\n      width: 160,\n      render: (t?: string) => (t ? formatDate(t) : '-'),\n    },\n  ]\n\n  // ═══ 详情-存储表格列 ═══\n  const volumeColumns: TableProps<PodVolume>['columns'] = [\n    { title: '卷名', dataIndex: 'name', width: 140, render: (t: string) => <Tag color=\"cyan\">{t}</Tag> },\n    {\n      title: '类型',\n      dataIndex: 'type',\n      width: 110,\n      render: (t: string) => <Tag color=\"geekblue\">{t || '-'}</Tag>,\n    },\n    { title: '来源', dataIndex: 'source', width: 140, render: (t?: string) => t || '-' },\n    {\n      title: '挂载路径',\n      dataIndex: 'mountPaths',\n      render: (_, r) =>\n        r.mountPaths?.length\n          ? r.mountPaths.map((m) => (\n              <Tag key={`${m.name}-${m.path}`} style={{ marginBottom: 4 }}>\n                {m.path}\n                {m.readOnly ? ' (ro)' : ''}\n              </Tag>\n            ))\n          : '-',\n    },\n  ]\n\n  // ═══ 列表列 ═══\n  const rawColumns: ProColumns<Pod>[] = [\n    {\n      title: '名称',\n      dataIndex: 'name',\n      ellipsis: true,\n      render: (_, record) => (\n        <a onClick={() => setDetailDrawer({ open: true, pod: record })} style={{ fontWeight: 500 }}>\n          {record.name}\n        </a>\n      ),\n    },\n    {\n      title: 'Namespace',\n      dataIndex: 'namespace',\n      width: 110,\n      render: (t) => <Tag>{t as string}</Tag>,\n    },\n    {\n      title: '状态',\n      dataIndex: 'status',\n      width: 130,\n      render: (_, record) => <PodStatusTag status={record.status} containerReason={record.containerReason} ready={record.ready} />,\n    },\n    {\n      title: 'Ready',\n      dataIndex: 'ready',\n      width: 70,\n      render: (t) => {\n        const v = (t as string) || ''\n        const ok = v.split('/')[0] === v.split('/')[1] && v !== '0/0' && v !== ''\n        return ok ? <Badge status=\"success\" text={v} /> : <Badge status=\"warning\" text={v || '-'} />\n      },\n    },\n    {\n      title: '重启',\n      dataIndex: 'restarts',\n      width: 70,\n      sorter: (a, b) => a.restarts - b.restarts,\n      render: (t) => {\n        const v = (t as number) || 0\n        return <span style={{ color: v > 5 ? '#ff4d4f' : v > 0 ? '#faad14' : '#52c41a' }}>{v}</span>\n      },\n    },\n    {\n      title: 'Pod IP',\n      dataIndex: 'ip',\n      width: 120,\n      render: (t) => <Tag color=\"blue\">{(t as string) || '-'}</Tag>,\n    },\n    { title: '节点', dataIndex: 'nodeName', width: 130, ellipsis: true, render: (t) => (t as string) || '-' },\n    {\n      title: '所属',\n      width: 180,\n      ellipsis: true,\n      render: (_, r) => <OwnerTag clusterId={clusterId} pod={r} />,\n    },\n    {\n      title: 'QoS',\n      dataIndex: 'qosClass',\n      width: 90,\n      render: (t) => <Tag>{(t as string) || 'BestEffort'}</Tag>,\n    },\n    { title: 'Age', dataIndex: 'createdAt', width: 90, ellipsis: true, sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(), render: (_, r) => formatDate(r.createdAt) },\n    {\n      title: '操作',\n      valueType: 'option',\n      width: 200,\n      fixed: 'right',\n      render: (_, record) => (\n        <Space size=\"small\" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>\n          <Tooltip title=\"查看日志\">\n            <a onClick={() => handleViewLogs(record)}>\n              <FileTextOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"终端\">\n            <a onClick={() => handleTerminal(record)}>\n              <DesktopOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看详情\">\n            <a onClick={() => setDetailDrawer({ open: true, pod: record })}>\n              <InfoCircleOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"查看 YAML\">\n            <a onClick={() => handleViewYaml(record)}>\n              <ProfileOutlined />\n            </a>\n          </Tooltip>\n          <Tooltip title=\"巡检诊断\">\n            <a onClick={() => handleInspection(record)}>\n              <SafetyCertificateOutlined />\n            </a>\n          </Tooltip>\n          <Popconfirm\n            title=\"确定删除该 Pod？\"\n            placement=\"left\"\n            description={\n              <Space size=\"small\">\n                <span style={{ fontSize: 12 }}>强制删除</span>\n                <Switch size=\"small\" checked={singleForce} onChange={setSingleForce} />\n              </Space>\n            }\n            onConfirm={() => {\n              deleteMutation.mutate({ namespace: record.namespace, name: record.name, force: singleForce })\n              setSingleForce(false)\n            }}\n            onCancel={() => setSingleForce(false)}\n          >\n            <Tooltip title=\"删除\">\n              <a style={{ color: '#ff4d4f' }}>\n                <DeleteOutlined />\n              </a>\n            </Tooltip>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  const columns = withCenterStyleBatch(rawColumns as Parameters<typeof withCenterStyleBatch>[0])\n\n  const detailPod = detailDrawer.pod\n\n  return (\n    <AppPage>\n      <ProTable<Pod>\n        headerTitle=\"Pod 列表\"\n        columns={columns}\n        dataSource={filteredData}\n        loading={isLoading}\n        rowKey={(r) => `${r.namespace}/${r.name}`}\n        search={false}\n        options={{ reload: false }}\n        pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 个 Pod` }}\n        scroll={{ x: 1500 }}\n        rowSelection={{\n          selectedRowKeys: selectedKeys,\n          onChange: (keys) => setSelectedKeys(keys as string[]),\n        }}\n        tableAlertRender={({ selectedRowKeys }) => (\n          <Space>\n            <Text>已选 {selectedRowKeys.length} 个 Pod</Text>\n            <Button\n              size=\"small\"\n              icon={<FileTextOutlined />}\n              onClick={() => handleMultiPodLogs(selectedPods)}\n              disabled={!selectedPods.length}\n            >\n              聚合日志\n            </Button>\n            <Button\n              size=\"small\"\n              danger\n              icon={<DeleteOutlined />}\n              onClick={() => setBatchDeleteModal(true)}\n              disabled={!selectedPods.length}\n            >\n              批量删除\n            </Button>\n          </Space>\n        )}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            allowClear\n            placeholder={searchType === 'name' ? '按名称搜索' : searchType === 'node' ? '按节点搜索' : '按标签搜索'}\n            value={searchValue}\n            onChange={(e) => setSearchValue(e.target.value)}\n            style={{ width: 280 }}\n            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}\n              options={[{ value: 'name', label: '名称' }, { value: 'node', label: '节点' }, { value: 'label', label: '标签' }]} />}\n            prefix={<SearchOutlined />}\n          />,\n          <Select\n            key=\"status\"\n            allowClear\n            placeholder=\"状态筛选\"\n            value={statusFilter || undefined}\n            onChange={(v) => setStatusFilter(v || '')}\n            style={{ width: 130 }}\n            options={[\n              { value: 'Running', label: 'Running' },\n              { value: 'Pending', label: 'Pending' },\n              { value: 'Failed', label: 'Failed' },\n              { value: 'Succeeded', label: 'Succeeded' },\n            ]}\n          />,\n          <NamespaceSelector key=\"ns\" clusterId={clusterId} value={namespace} onChange={setNamespace} />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} onClick={() => refetch()}>\n            刷新\n          </Button>,\n        ]}\n      />\n\n      {/* ═══ 日志抽屉（Tab 标签页）═══ */}\n      <Drawer\n        title={\n          logDrawer.pods\n            ? `聚合日志 - ${logDrawer.pods.length} 个 Pod`\n            : `日志 - ${logDrawer.pod?.name}`\n        }\n        open={logDrawer.open}\n        onClose={() => setLogDrawer({ open: false })}\n        width={820}\n        extra={\n          <Space wrap>\n            <Input.Search\n              size=\"small\"\n              allowClear\n              placeholder=\"日志过滤\"\n              value={logKeyword}\n              onChange={(e) => setLogKeyword(e.target.value)}\n              style={{ width: 120 }}\n            />\n            <Tooltip title=\"WebSocket 实时流式日志（follow）\">\n              <Button size=\"small\" type={logLive ? 'primary' : 'default'} onClick={() => setLogLive(!logLive)}>\n                实时\n              </Button>\n            </Tooltip>\n            <Tooltip title=\"查看上一容器日志\">\n              <Button size=\"small\" type={logPrevious ? 'primary' : 'default'} onClick={() => setLogPrevious(!logPrevious)} disabled={logLive}>\n                历史\n              </Button>\n            </Tooltip>\n            <Select\n              size=\"small\"\n              value={tailLines}\n              onChange={setTailLines}\n              style={{ width: 90 }}\n              options={[\n                { value: 50, label: '50 行' },\n                { value: 200, label: '200 行' },\n                { value: 500, label: '500 行' },\n                { value: 1000, label: '1000 行' },\n              ]}\n            />\n            <Button\n              size=\"small\"\n              icon={<ReloadOutlined />}\n              onClick={() => setLogRefresh((n) => n + 1)}\n            >\n              全部刷新\n            </Button>\n          </Space>\n        }\n      >\n        {logTabs.length > 0 && (\n          <Tabs items={logTabs} size=\"small\" destroyInactiveTabPane={false} />\n        )}\n      </Drawer>\n\n      {/* ═══ 详情抽屉（5 个 Tab）═══ */}\n      <Drawer\n        title={`Pod 详情 - ${detailPod?.name}`}\n        open={detailDrawer.open}\n        onClose={() => setDetailDrawer({ open: false })}\n        width={900}\n      >\n        {detailPod && (\n          <Tabs\n            items={[\n              {\n                key: 'overview',\n                label: '概览',\n                children: (\n                  <Descriptions bordered column={2} size=\"small\">\n                    <Descriptions.Item label=\"名称\" span={2}>\n                      {detailPod.name}\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"命名空间\">\n                      <Tag>{detailPod.namespace}</Tag>\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"状态\">\n                      <PodStatusTag status={detailPod.status} ready={detailPod.ready} />\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"Pod IP\">{detailPod.ip || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"节点\">{detailPod.nodeName || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"重启次数\">{detailPod.restarts}</Descriptions.Item>\n                    <Descriptions.Item label=\"QoS\">{detailPod.qosClass || 'BestEffort'}</Descriptions.Item>\n                    <Descriptions.Item label=\"所属\">\n                      <OwnerTag clusterId={clusterId} pod={detailPod} />\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"ServiceAccount\">{detailPod.serviceAccountName || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"重启策略\">{detailPod.restartPolicy || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"DNS 策略\">{detailPod.dnsPolicy || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"创建时间\" span={2}>\n                      {formatDate(detailPod.createdAt)}\n                    </Descriptions.Item>\n                    {detailPod.labels && (\n                      <Descriptions.Item label=\"标签\" span={2}>\n                        {Object.entries(detailPod.labels).map(([k, v]) => (\n                          <Tag key={k} color=\"blue\">\n                            {k}={v}\n                          </Tag>\n                        ))}\n                      </Descriptions.Item>\n                    )}\n                    {detailPod.annotations && (\n                      <Descriptions.Item label=\"注解\" span={2}>\n                        {Object.entries(detailPod.annotations)\n                          .slice(0, 10)\n                          .map(([k, v]) => (\n                            <Tooltip key={k} title={v}>\n                              <Tag style={{ marginBottom: 4 }}>{k}</Tag>\n                            </Tooltip>\n                          ))}\n                      </Descriptions.Item>\n                    )}\n                  </Descriptions>\n                ),\n              },\n              {\n                key: 'containers',\n                label: '容器',\n                children: detailPod.containers?.length ? (\n                  <Table<PodContainer>\n                    rowKey=\"name\"\n                    size=\"small\"\n                    columns={containerColumns}\n                    dataSource={detailPod.containers}\n                    pagination={false}\n                    scroll={{ x: 900 }}\n                  />\n                ) : (\n                  <Text type=\"secondary\">暂无容器数据</Text>\n                ),\n              },\n              {\n                key: 'events',\n                label: '事件',\n                children: <PodEventsTab clusterId={clusterId} pod={detailPod} />,\n              },\n              {\n                key: 'conditions',\n                label: '条件',\n                children: detailPod.conditions?.length ? (\n                  <Table\n                    rowKey=\"type\"\n                    size=\"small\"\n                    columns={conditionColumns}\n                    dataSource={detailPod.conditions}\n                    pagination={false}\n                  />\n                ) : (\n                  <Text type=\"secondary\">暂无条件数据</Text>\n                ),\n              },\n              {\n                key: 'volumes',\n                label: '存储',\n                children: detailPod.volumes?.length ? (\n                  <Table<PodVolume>\n                    rowKey=\"name\"\n                    size=\"small\"\n                    columns={volumeColumns}\n                    dataSource={detailPod.volumes}\n                    pagination={false}\n                  />\n                ) : (\n                  <Text type=\"secondary\">暂无存储数据</Text>\n                ),\n              },\n              {\n                key: 'probes',\n                label: '探针',\n                children: detailPod.probes ? (\n                  <Descriptions bordered column={1} size=\"small\">\n                    {[\n                      { key: 'liveness', label: 'Liveness' },\n                      { key: 'readiness', label: 'Readiness' },\n                      { key: 'startup', label: 'Startup' },\n                    ].map(({ key, label }) => {\n                      const probe = (detailPod.probes as any)?.[key]\n                      return (\n                        <Descriptions.Item key={key} label={label}>\n                          {probe ? (\n                            <Space size=\"small\" wrap>\n                              {probe.path && <Tag>HTTP {probe.path}:{probe.port}</Tag>}\n                              {!probe.path && probe.port && <Tag>TCP :{probe.port}</Tag>}\n                              {probe.delay != null && <Text type=\"secondary\" style={{ fontSize: 11 }}>延迟 {probe.delay}s</Text>}\n                              {probe.period != null && <Text type=\"secondary\" style={{ fontSize: 11 }}>周期 {probe.period}s</Text>}\n                              {probe.timeout != null && <Text type=\"secondary\" style={{ fontSize: 11 }}>超时 {probe.timeout}s</Text>}\n                              {probe.failure != null && <Text type=\"secondary\" style={{ fontSize: 11 }}>失败 {probe.failure}</Text>}\n                            </Space>\n                          ) : <Text type=\"secondary\">未配置</Text>}\n                        </Descriptions.Item>\n                      )\n                    })}\n                  </Descriptions>\n                ) : <Text type=\"secondary\">暂无探针数据</Text>,\n              },\n              {\n                key: 'scheduling',\n                label: '调度',\n                children: detailPod.scheduling ? (\n                  <Descriptions bordered column={1} size=\"small\">\n                    <Descriptions.Item label=\"节点选择器\">\n                      {detailPod.scheduling.nodeSelector\n                        ? Object.entries(detailPod.scheduling.nodeSelector).map(([k, v]) => <Tag key={k}>{k}={v}</Tag>)\n                        : <Text type=\"secondary\">无</Text>}\n                    </Descriptions.Item>\n                    <Descriptions.Item label=\"指定节点\">{detailPod.scheduling.nodeName || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"优先级\">{detailPod.scheduling.priorityClassName || '-'}</Descriptions.Item>\n                    {detailPod.scheduling.tolerations?.length ? (\n                      <Descriptions.Item label=\"容忍度\">\n                        <Table\n                          size=\"small\"\n                          rowKey={(_, i) => String(i)}\n                          pagination={false}\n                          dataSource={detailPod.scheduling.tolerations}\n                          columns={[\n                            { title: 'Key', dataIndex: 'key', width: 100 },\n                            { title: 'Operator', dataIndex: 'operator', width: 80 },\n                            { title: 'Value', dataIndex: 'value', width: 80 },\n                            { title: 'Effect', dataIndex: 'effect', width: 100 },\n                            { title: 'Seconds', dataIndex: 'tolerationSeconds', width: 70 },\n                          ]}\n                        />\n                      </Descriptions.Item>\n                    ) : null}\n                    {detailPod.scheduling.affinity && (\n                      <Descriptions.Item label=\"亲和性\">\n                        <pre style={{ fontSize: 11, maxHeight: 200, overflow: 'auto' }}>{detailPod.scheduling.affinity}</pre>\n                      </Descriptions.Item>\n                    )}\n                  </Descriptions>\n                ) : <Text type=\"secondary\">暂无调度数据</Text>,\n              },\n              {\n                key: 'security',\n                label: '安全',\n                children: detailPod.security ? (\n                  <Descriptions bordered column={1} size=\"small\">\n                    <Descriptions.Item label=\"ServiceAccount\">{detailPod.security.serviceAccountName || '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"runAsUser\">{detailPod.security.runAsUser ?? '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"runAsGroup\">{detailPod.security.runAsGroup ?? '-'}</Descriptions.Item>\n                    <Descriptions.Item label=\"runAsNonRoot\">{detailPod.security.runAsNonRoot ? '是' : '否'}</Descriptions.Item>\n                    <Descriptions.Item label=\"privileged\">{detailPod.security.privileged ? <Tag color=\"error\">是</Tag> : '否'}</Descriptions.Item>\n                    <Descriptions.Item label=\"只读根文件系统\">{detailPod.security.readOnlyRootFilesystem ? '是' : '否'}</Descriptions.Item>\n                    {detailPod.security.capabilities && (\n                      <Descriptions.Item label=\"Capabilities\">\n                        <Space direction=\"vertical\" size={0}>\n                          {detailPod.security.capabilities.add?.length ? (\n                            <div><Text type=\"secondary\" style={{ fontSize: 11 }}>添加: </Text>{detailPod.security.capabilities.add.map((c) => <Tag key={c} color=\"warning\">{c}</Tag>)}</div>\n                          ) : null}\n                          {detailPod.security.capabilities.drop?.length ? (\n                            <div><Text type=\"secondary\" style={{ fontSize: 11 }}>移除: </Text>{detailPod.security.capabilities.drop.map((c) => <Tag key={c}>{c}</Tag>)}</div>\n                          ) : null}\n                        </Space>\n                      </Descriptions.Item>\n                    )}\n                    {detailPod.security.imagePullSecrets?.length ? (\n                      <Descriptions.Item label=\"镜像拉取密钥\">\n                        {detailPod.security.imagePullSecrets.map((s) => <Tag key={s}>{s}</Tag>)}\n                      </Descriptions.Item>\n                    ) : null}\n                  </Descriptions>\n                ) : <Text type=\"secondary\">暂无安全数据</Text>,\n              },\n              {\n                key: 'env',\n                label: '环境变量',\n                children: detailPod.envVars?.length ? (\n                  <Table\n                    size=\"small\"\n                    rowKey=\"name\"\n                    pagination={false}\n                    dataSource={detailPod.envVars}\n                    columns={[\n                      { title: '名称', dataIndex: 'name', width: 180 },\n                      { title: '值', dataIndex: 'value', ellipsis: true, render: (v: string) => v || '-' },\n                      { title: '来源', dataIndex: 'valueFrom', width: 120, render: (v: string) => v ? <Tag>{v}</Tag> : '-' },\n                    ]}\n                  />\n                ) : <Text type=\"secondary\">暂无环境变量</Text>,\n              },\n              {\n                key: 'metrics',\n                label: '资源用量',\n                children: <PodMetricsTab clusterId={clusterId} pod={detailPod} />,\n              },\n            ]}\n          />\n        )}\n      </Drawer>\n\n      {/* ═══ YAML 抽屉（编辑 + 应用）═══ */}\n      <Drawer\n        title={`YAML - ${yamlDrawer.pod?.name}`}\n        open={yamlDrawer.open}\n        onClose={() => setYamlDrawer({ open: false, yaml: '', loading: false, editing: false })}\n        width={820}\n        extra={\n          yamlDrawer.editing ? (\n            <Space>\n              <Button\n                icon={<CheckOutlined />}\n                type=\"primary\"\n                loading={applyYamlMutation.isPending}\n                onClick={() => applyYamlMutation.mutate(yamlDrawer.yaml)}\n              >\n                应用\n              </Button>\n              <Button icon={<CloseOutlined />} onClick={() => {\n                setYamlDrawer((p) => ({ ...p, yaml: yamlOriginal, editing: false }))\n              }}>\n                取消\n              </Button>\n            </Space>\n          ) : (\n            <Button icon={<EditOutlined />} onClick={() => setYamlDrawer((p) => ({ ...p, editing: true }))}>\n              编辑\n            </Button>\n          )\n        }\n      >\n        {yamlDrawer.loading ? (\n          <Text type=\"secondary\">加载中...</Text>\n        ) : (\n          <YamlEditor\n            value={yamlDrawer.yaml}\n            readOnly={!yamlDrawer.editing}\n            height={Math.max(window.innerHeight - 220, 400)}\n            onChange={(val) => setYamlDrawer((p) => ({ ...p, yaml: val }))}\n          />\n        )}\n      </Drawer>\n\n      {/* ═══ 巡检诊断抽屉 ═══ */}\n      <Drawer\n        title={`巡检诊断 - ${inspectDrawer.pod?.name}`}\n        open={inspectDrawer.open}\n        onClose={() => setInspectDrawer({ open: false, text: '', loading: false })}\n        width={820}\n      >\n        <pre\n          style={{\n            background: '#1e1e1e',\n            color: '#d4d4d4',\n            padding: 16,\n            borderRadius: 4,\n            height: 'calc(100vh - 200px)',\n            overflow: 'auto',\n            fontSize: 13,\n            lineHeight: 1.6,\n            fontFamily: 'Consolas, Monaco, monospace',\n            whiteSpace: 'pre-wrap',\n            wordBreak: 'break-all',\n            margin: 0,\n          }}\n        >\n          {inspectDrawer.loading ? '巡检中...' : inspectDrawer.text || '暂无巡检数据'}\n        </pre>\n      </Drawer>\n\n      {/* ═══ 批量删除确认 ═══ */}\n      <Modal\n        title=\"批量删除 Pod\"\n        open={batchDeleteModal}\n        onCancel={() => setBatchDeleteModal(false)}\n        onOk={() => batchDeleteMutation.mutate(selectedPods)}\n        confirmLoading={batchDeleteMutation.isPending}\n        okText=\"确认删除\"\n        okButtonProps={{ danger: true }}\n      >\n        <Alert\n          type=\"warning\"\n          showIcon\n          message={`确定删除选中的 ${selectedKeys.length} 个 Pod？`}\n          style={{ marginBottom: 12 }}\n        />\n        <Descriptions column={1} size=\"small\">\n          <Descriptions.Item label=\"强制删除\">\n            <Switch checked={batchForce} onChange={setBatchForce} />\n          </Descriptions.Item>\n        </Descriptions>\n        <div style={{ marginTop: 12 }}>\n          {selectedPods.map((p) => (\n            <Tag key={`${p.namespace}/${p.name}`} color=\"red\" style={{ marginBottom: 4 }}>\n              {p.namespace}/{p.name}\n            </Tag>\n          ))}\n        </div>\n      </Modal>\n    </AppPage>\n  )\n}\n\nexport default PodsPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/pods.tsx"
     },
@@ -6421,11 +6587,10 @@
     "done": true,
     "progresses": [
       {
-        "percent": 0.9243589743589743,
-        "status": "sealing",
+        "percent": 0.4666666666666667,
+        "status": "building",
         "details": [
-          "asset processing",
-          "copy-webpack-plugin"
+          "2/3 entries 517/518 dependencies 7099/193 modules"
         ]
       }
     ]
@@ -6467,7 +6632,7 @@
   "faviconFiles": [],
   "port": 8000,
   "host": "0.0.0.0",
-  "ip": "192.168.28.1",
+  "ip": "10.12.250.151",
   "antd": {
     "pkgPath": "D:\\03_学习\\soft\\k8s-platform\\frontend\\node_modules\\antd",
     "version": "5.29.3"
@@ -7721,7 +7886,7 @@
             "format": "esm"
           },
           "src/services/clusters.ts": {
-            "bytes": 2598,
+            "bytes": 2845,
             "imports": [
               {
                 "path": "src/.umi/exports.ts",
@@ -8027,7 +8192,7 @@
             "format": "esm"
           },
           "src/services/k8s/cluster.ts": {
-            "bytes": 9657,
+            "bytes": 9686,
             "imports": [
               {
                 "path": "src/.umi/exports.ts",
@@ -9701,7 +9866,7 @@
             "format": "esm"
           },
           "src/pages/clusters/import.tsx": {
-            "bytes": 4156,
+            "bytes": 4266,
             "imports": [
               {
                 "path": "react",
@@ -10842,8 +11007,24 @@
             ],
             "format": "esm"
           },
+          "src/components/ResourceTrendChart.tsx": {
+            "bytes": 3649,
+            "imports": [
+              {
+                "path": "react",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              }
+            ],
+            "format": "esm"
+          },
           "src/pages/k8s/$clusterId/index.tsx": {
-            "bytes": 24892,
+            "bytes": 27131,
             "imports": [
               {
                 "path": "react",
@@ -10881,6 +11062,11 @@
                 "original": "@/components"
               },
               {
+                "path": "src/components/ResourceTrendChart.tsx",
+                "kind": "import-statement",
+                "original": "@/components/ResourceTrendChart"
+              },
+              {
                 "path": "src/.umi/exports.ts",
                 "kind": "import-statement",
                 "original": "@umijs/max"
@@ -10888,11 +11074,6 @@
               {
                 "path": "dayjs",
                 "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/charts",
-                "kind": "dynamic-import",
                 "external": true
               },
               {
@@ -10991,7 +11172,7 @@
             "format": "esm"
           },
           "src/pages/k8s/$clusterId/pods.tsx": {
-            "bytes": 48649,
+            "bytes": 49723,
             "imports": [
               {
                 "path": "react",
@@ -15451,6 +15632,16 @@
                 "external": true
               },
               {
+                "path": "react/jsx-runtime",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
+                "path": "react",
+                "kind": "import-statement",
+                "external": true
+              },
+              {
                 "path": "antd",
                 "kind": "import-statement",
                 "external": true
@@ -15473,11 +15664,6 @@
               {
                 "path": "react/jsx-runtime",
                 "kind": "import-statement",
-                "external": true
-              },
-              {
-                "path": "@ant-design/charts",
-                "kind": "dynamic-import",
                 "external": true
               },
               {
@@ -17772,7 +17958,7 @@
                 "bytesInOutput": 3756
               },
               "src/services/clusters.ts": {
-                "bytesInOutput": 1825
+                "bytesInOutput": 2070
               },
               "src/components/ErrorBoundary/index.tsx": {
                 "bytesInOutput": 1408
@@ -17793,7 +17979,7 @@
                 "bytesInOutput": 215
               },
               "src/components/YamlEditor/index.tsx": {
-                "bytesInOutput": 1001
+                "bytesInOutput": 1019
               },
               "src/services/k8s/shared.ts": {
                 "bytesInOutput": 22478
@@ -17994,7 +18180,7 @@
                 "bytesInOutput": 1201
               },
               "src/pages/clusters/import.tsx": {
-                "bytesInOutput": 5228
+                "bytesInOutput": 5344
               },
               "src/services/monitor.ts": {
                 "bytesInOutput": 6336
@@ -18089,8 +18275,11 @@
               "src/pages/cluster/redirect.tsx": {
                 "bytesInOutput": 1292
               },
+              "src/components/ResourceTrendChart.tsx": {
+                "bytesInOutput": 4438
+              },
               "src/pages/k8s/$clusterId/index.tsx": {
-                "bytesInOutput": 31130
+                "bytesInOutput": 33298
               },
               "src/pages/k8s/$clusterId/log-workbench.tsx": {
                 "bytesInOutput": 6078
@@ -18099,7 +18288,7 @@
                 "bytesInOutput": 3099
               },
               "src/pages/k8s/$clusterId/pods.tsx": {
-                "bytesInOutput": 54434
+                "bytesInOutput": 55546
               },
               "src/pages/k8s/$clusterId/podmetrics.tsx": {
                 "bytesInOutput": 5531
@@ -18213,7 +18402,7 @@
                 "bytesInOutput": 27987
               },
               "src/pages/k8s/$clusterId/leases.tsx": {
-                "bytesInOutput": 2032
+                "bytesInOutput": 2042
               },
               "src/pages/k8s/$clusterId/events.tsx": {
                 "bytesInOutput": 7871
@@ -18285,7 +18474,7 @@
                 "bytesInOutput": 2108
               }
             },
-            "bytes": 1366237
+            "bytes": 1374386
           }
         }
       }

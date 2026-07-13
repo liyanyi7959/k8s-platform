@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -172,17 +173,18 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 	var unscheduledPods []map[string]any
 
 	var (
-		deployments    []any
-		statefulsets   []any
-		daemonsets     []any
-		cpuUsedPercent int
-		memUsedPercent int
-		failedPods     []map[string]any
-		nodeItems      []corev1.Node // shared between health check & usage calc — used below in post-process
-		recentEvents   []map[string]any
-		wg             sync.WaitGroup
-		nodeItemsReady = make(chan struct{})
-		mu             sync.Mutex // protects ready, total, nodeItems
+		deployments      []any
+		statefulsets     []any
+		daemonsets       []any
+		cpuUsedPercent   int
+		memUsedPercent   int
+		metricsAvailable bool
+		failedPods       []map[string]any
+		nodeItems        []corev1.Node // shared between health check & usage calc — used below in post-process
+		recentEvents     []map[string]any
+		wg               sync.WaitGroup
+		nodeItemsReady   = make(chan struct{})
+		mu               sync.Mutex // protects ready, total, nodeItems
 	)
 
 	// 0. Health check + node list — single call, reused by usage calc
@@ -277,6 +279,11 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 					if ns != "" {
 						nsPods[ns]++
 					}
+					if p.Status.Phase != corev1.PodFailed {
+						if reason := unhealthyPodReason(p); reason != "" && len(failedPods) < 10 {
+							failedPods = append(failedPods, map[string]any{"name": p.Name, "namespace": p.Namespace, "reason": reason})
+						}
+					}
 				}
 				return
 			}
@@ -329,6 +336,11 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 				ns := p.Namespace
 				if ns != "" {
 					nsPods[ns]++
+				}
+				if p.Status.Phase != corev1.PodFailed {
+					if reason := unhealthyPodReason(&p); reason != "" && len(failedPods) < 10 {
+						failedPods = append(failedPods, map[string]any{"name": p.Name, "namespace": p.Namespace, "reason": reason})
+					}
 				}
 			}
 			token := strings.TrimSpace(pods.Continue)
@@ -433,7 +445,7 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 		mu.Lock()
 		nodes := append([]corev1.Node(nil), nodeItems...)
 		mu.Unlock()
-		cpuUsedPercent, memUsedPercent = s.getClusterUsagePercent(ctx, clusterID, nodes)
+		cpuUsedPercent, memUsedPercent, metricsAvailable = s.getClusterUsagePercent(ctx, clusterID, nodes)
 	}()
 
 	wg.Wait()
@@ -572,9 +584,10 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 		"events": recentEvents,
 		// 数据溯源：标注采集来源与更新时间
 		"meta": map[string]any{
-			"source":     "k8s-api",
-			"updated_at": time.Now().Format(time.RFC3339),
-			"cached":     false,
+			"source":            "k8s-api",
+			"updated_at":        time.Now().Format(time.RFC3339),
+			"cached":            false,
+			"metrics_available": metricsAvailable,
 		},
 	}
 
@@ -618,6 +631,28 @@ func toInt32(v any) int32 {
 	}
 }
 
+func unhealthyPodReason(p *corev1.Pod) string {
+	if p == nil || p.DeletionTimestamp != nil || p.Status.Phase == corev1.PodSucceeded {
+		return ""
+	}
+	statuses := append(append([]corev1.ContainerStatus{}, p.Status.InitContainerStatuses...), p.Status.ContainerStatuses...)
+	for _, status := range statuses {
+		if status.State.Waiting != nil && status.State.Waiting.Reason != "" && status.State.Waiting.Reason != "ContainerCreating" && status.State.Waiting.Reason != "PodInitializing" {
+			return status.State.Waiting.Reason
+		}
+		if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
+			if status.State.Terminated.Reason != "" {
+				return status.State.Terminated.Reason
+			}
+			return "ExitError"
+		}
+	}
+	if p.Status.Phase == corev1.PodFailed {
+		return string(corev1.PodFailed)
+	}
+	return ""
+}
+
 // extractTopWorkloads 从工作负载列表中提取 Top5 快照（按副本数排序）
 func (s *DashboardService) extractTopWorkloads(deployments, statefulsets, daemonsets []any) []map[string]any {
 	type wl struct {
@@ -631,6 +666,17 @@ func (s *DashboardService) extractTopWorkloads(deployments, statefulsets, daemon
 
 	extract := func(items []any, kind string) {
 		for _, item := range items {
+			switch workload := item.(type) {
+			case *appsv1.Deployment:
+				all = append(all, wl{name: workload.Name, namespace: workload.Namespace, kind: kind, replicas: workload.Status.Replicas, ready: workload.Status.ReadyReplicas})
+				continue
+			case *appsv1.StatefulSet:
+				all = append(all, wl{name: workload.Name, namespace: workload.Namespace, kind: kind, replicas: workload.Status.Replicas, ready: workload.Status.ReadyReplicas})
+				continue
+			case *appsv1.DaemonSet:
+				all = append(all, wl{name: workload.Name, namespace: workload.Namespace, kind: kind, replicas: workload.Status.DesiredNumberScheduled, ready: workload.Status.NumberReady})
+				continue
+			}
 			m, ok := item.(map[string]any)
 			if !ok {
 				continue
@@ -654,6 +700,10 @@ func (s *DashboardService) extractTopWorkloads(deployments, statefulsets, daemon
 			}
 			if status, ok := m["status"].(map[string]any); ok {
 				ready = toInt32(status["readyReplicas"])
+				if kind == "DaemonSet" {
+					replicas = toInt32(status["desiredNumberScheduled"])
+					ready = toInt32(status["numberReady"])
+				}
 			}
 			all = append(all, wl{name: name, namespace: ns, kind: kind, replicas: replicas, ready: ready})
 		}
@@ -722,18 +772,18 @@ func (s *DashboardService) GetClusterCertificateRisks(ctx context.Context, clust
 // - 分母：所有节点 allocatable 资源总和
 // - 分子：metrics.k8s.io/v1beta1 nodes 指标中的 usage 总和
 // 若指标不可用或解析失败，返回 (0, 0)。
-func (s *DashboardService) getClusterUsagePercent(ctx context.Context, clusterID uint64, nodeItems []corev1.Node) (cpuUsedPercent int, memoryUsedPercent int) {
+func (s *DashboardService) getClusterUsagePercent(ctx context.Context, clusterID uint64, nodeItems []corev1.Node) (cpuUsedPercent int, memoryUsedPercent int, available bool) {
 	if s.k8sSvc == nil || clusterID == 0 {
-		return 0, 0
+		return 0, 0, false
 	}
 	if len(nodeItems) == 0 {
 		cs, err := s.k8sSvc.typedClient(ctx, clusterID)
 		if err != nil {
-			return 0, 0
+			return 0, 0, false
 		}
 		nodes, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		if err != nil || len(nodes.Items) == 0 {
-			return 0, 0
+			return 0, 0, false
 		}
 		nodeItems = nodes.Items
 	}
@@ -745,12 +795,12 @@ func (s *DashboardService) getClusterUsagePercent(ctx context.Context, clusterID
 		allocMem += n.Status.Allocatable.Memory().Value()
 	}
 	if allocCPU <= 0 || allocMem <= 0 {
-		return 0, 0
+		return 0, 0, false
 	}
 
 	metrics, err := s.k8sSvc.List(ctx, clusterID, schema.GroupVersionResource{Group: "metrics.k8s.io", Version: "v1beta1", Resource: "nodes"}, "", "", "", nil)
 	if err != nil || len(metrics) == 0 {
-		return 0, 0
+		return 0, 0, false
 	}
 	var usedCPU int64
 	var usedMem int64
@@ -775,7 +825,7 @@ func (s *DashboardService) getClusterUsagePercent(ctx context.Context, clusterID
 		}
 	}
 	if usedCPU < 0 || usedMem < 0 {
-		return 0, 0
+		return 0, 0, false
 	}
 	cpuP := int(float64(usedCPU) * 100 / float64(allocCPU))
 	memP := int(float64(usedMem) * 100 / float64(allocMem))
@@ -791,7 +841,7 @@ func (s *DashboardService) getClusterUsagePercent(ctx context.Context, clusterID
 	if memP > 100 {
 		memP = 100
 	}
-	return cpuP, memP
+	return cpuP, memP, true
 }
 
 // lastNDaysLabels 生成最近 n 天（含当天）的日期标签列表，格式为 MM-DD。

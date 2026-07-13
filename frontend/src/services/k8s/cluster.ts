@@ -170,7 +170,7 @@ export interface ClusterOverview {
     unscheduled_pods?: Array<{ name: string; namespace: string; reason: string }>
   }
   top_workloads?: Array<{ name: string; namespace: string; kind: string; replicas: number; ready: number }>
-  meta?: { source: string; updated_at: string; cached: boolean }
+  meta?: { source: string; updated_at: string; cached: boolean; metrics_available?: boolean }
   events?: K8sEvent[]
 }
 
