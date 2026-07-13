@@ -57,8 +57,13 @@ export async function getClusterById(id: number, signal?: AbortSignal): Promise<
 }
 
 /** 导入集群 */
-export async function importCluster(data: CreateClusterRequest): Promise<{ clusterId: number }> {
-  const res = await request<any>('/api/v1/clusters/import', { method: 'POST', data })
+export async function importCluster(data: CreateClusterRequest, file?: File): Promise<{ clusterId: number }> {
+  const formData = new FormData()
+  formData.append('name', data.name)
+  formData.append('description', data.description || '')
+  if (file) formData.append('file', file)
+  else formData.append('kubeconfig', data.kubeconfig)
+  const res = await request<any>('/api/v1/clusters/import', { method: 'POST', data: formData })
   return { clusterId: res?.cluster_id || 0 }
 }
 

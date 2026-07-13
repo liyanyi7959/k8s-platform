@@ -195,7 +195,6 @@ const buildGlobalMenuItems = (): MenuItem[] => [
     children: [
       { key: '/clusters', path: '/clusters', name: '集群列表', icon: <UnorderedListOutlined /> },
       { key: '/clusters/import', path: '/clusters/import', name: '集群导入', icon: <PlusOutlined /> },
-      { key: '/topology', path: '/topology', name: '资源视图', icon: <ApartmentOutlined /> },
     ],
   },
   // ---- 项目管理 ----
@@ -503,7 +502,7 @@ const buildClusterMenuItems = (clusterId: string): MenuItem[] => [
 // ============================================================
 const getGlobalOpenKeys = (pathname: string): string[] => {
   const openKeys: string[] = []
-  if (pathname.startsWith('/clusters') || pathname.startsWith('/topology')) {
+  if (pathname.startsWith('/clusters')) {
     openKeys.push('/clusters')
   }
   if (pathname.startsWith('/deploy')) {

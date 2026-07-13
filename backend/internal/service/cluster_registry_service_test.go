@@ -32,7 +32,7 @@ func TestListClusters_NilDB(t *testing.T) {
 
 func TestImportCluster_NilDB(t *testing.T) {
 	svc := NewClusterRegistryService(nil, "")
-	_, err := svc.ImportCluster(context.Background(), "test", "kc")
+	_, err := svc.ImportCluster(context.Background(), "test", "kc", "")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -44,7 +44,7 @@ func TestImportCluster_NilDB(t *testing.T) {
 func TestImportCluster_EmptyName(t *testing.T) {
 	// With nil db, db check happens first. This tests the nil-db path.
 	svc := NewClusterRegistryService(nil, "")
-	_, err := svc.ImportCluster(context.Background(), "", "kc")
+	_, err := svc.ImportCluster(context.Background(), "", "kc", "")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -52,7 +52,7 @@ func TestImportCluster_EmptyName(t *testing.T) {
 
 func TestImportCluster_EmptyKubeconfig(t *testing.T) {
 	svc := NewClusterRegistryService(nil, "")
-	_, err := svc.ImportCluster(context.Background(), "test", "")
+	_, err := svc.ImportCluster(context.Background(), "test", "", "")
 	if err == nil {
 		t.Fatal("expected error")
 	}

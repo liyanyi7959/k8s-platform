@@ -22,6 +22,8 @@ type Cluster struct {
 	KubeconfigEnc *string `gorm:"column:kubeconfig_enc;type:longtext"`
 	// K8sVersion 为 K8s 集群版本号（健康检查时更新）。
 	K8sVersion string `gorm:"column:k8s_version;type:varchar(32);not null;default:''"`
+	// Description 为集群备注说明。
+	Description string `gorm:"column:description;type:varchar(500);not null;default:''"`
 	// NodeCount 为集群节点总数（健康检查时更新）。
 	NodeCount int `gorm:"column:node_count;not null;default:0"`
 	// LastHealthAt 为最近一次健康检查时间（可为空，表示尚未检查）。

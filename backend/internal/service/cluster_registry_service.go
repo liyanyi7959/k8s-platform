@@ -17,6 +17,7 @@ type ClusterItem struct {
 	Type         string `json:"type"`
 	Status       string `json:"status"`
 	K8sVersion   string `json:"k8s_version,omitempty"`
+	Description  string `json:"description,omitempty"`
 	NodeCount    int    `json:"node_count"`
 	CreatedAt    string `json:"created_at,omitempty"`
 	LastHealthAt string `json:"last_health_at,omitempty"`
@@ -101,6 +102,7 @@ func (s *ClusterRegistryService) ListClusters(ctx context.Context, req ListClust
 			Type:         c.Type,
 			Status:       c.Status,
 			K8sVersion:   c.K8sVersion,
+			Description:  c.Description,
 			NodeCount:    c.NodeCount,
 			CreatedAt:    c.CreatedAt.UTC().Format(time.RFC3339),
 			LastHealthAt: lastHealth,
@@ -109,12 +111,13 @@ func (s *ClusterRegistryService) ListClusters(ctx context.Context, req ListClust
 	return PageResult[ClusterItem]{List: list, Total: int(total), Page: page, PageSize: pageSize}, nil
 }
 
-func (s *ClusterRegistryService) ImportCluster(ctx context.Context, name, kubeconfig string) (uint64, error) {
+func (s *ClusterRegistryService) ImportCluster(ctx context.Context, name, kubeconfig, description string) (uint64, error) {
 	if s.db == nil {
 		return 0, errors.New("db is required")
 	}
 	n := strings.TrimSpace(name)
 	kc := strings.TrimSpace(kubeconfig)
+	desc := strings.TrimSpace(description)
 	if n == "" {
 		return 0, ErrWithMessage(ErrInvalidParams, "集群名称不能为空")
 	}
@@ -138,6 +141,7 @@ func (s *ClusterRegistryService) ImportCluster(ctx context.Context, name, kubeco
 			Name:          n,
 			Type:          "imported",
 			Status:        "active",
+			Description:   desc,
 			KubeconfigEnc: &enc,
 		}
 		return tx.Create(&created).Error
@@ -172,6 +176,7 @@ func (s *ClusterRegistryService) GetCluster(ctx context.Context, id uint64) (Clu
 			Name:         c.Name,
 			Type:         c.Type,
 			Status:       c.Status,
+			Description:  c.Description,
 			CreatedAt:    c.CreatedAt.UTC().Format(time.RFC3339),
 			LastHealthAt: lastHealth,
 		},

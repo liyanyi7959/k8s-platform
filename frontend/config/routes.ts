@@ -120,12 +120,6 @@ const routes: any[] = [
       { name: '部署配置', path: '/deploy/config', component: '@/pages/deploy/config' },
     ],
   },
-  // ---- 资源拓扑（"集群管理"菜单的子项，独立路由） ----
-  {
-    name: '资源视图',
-    path: '/topology',
-    component: '@/pages/topology',
-  },
   // ========== 集群钻取路由（currentCluster 有值） ==========
   {
     path: '/cluster',

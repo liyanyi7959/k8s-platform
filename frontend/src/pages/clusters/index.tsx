@@ -105,6 +105,7 @@ const ClusterListPage: React.FC = () => {
     const healthy = items.filter((c) => isHealthy(c.status)).length
     const attention = items.filter((c) => needsAttention(c.status)).length
     const checked = items.filter((c) => Boolean(c.lastHealthAt)).length
+    const hasUnknownNodes = items.some((c) => c.nodeCount == null || (c.nodeCount === 0 && !isHealthy(c.status)))
     const nodeCount = items.reduce((sum, c) => sum + (c.nodeCount || 0), 0)
 
     return {
@@ -112,7 +113,7 @@ const ClusterListPage: React.FC = () => {
       healthy,
       attention,
       checked,
-      nodeCount,
+      nodeCount: hasUnknownNodes ? null : nodeCount,
       healthPercent: getHealthPercent(total, healthy),
     }
   }, [data?.items])
@@ -135,6 +136,7 @@ const ClusterListPage: React.FC = () => {
       hint: '纳管中的 Kubernetes 集群',
       icon: <Badge status="processing" />,
       active: !statusFilter,
+      tone: 'blue',
       onClick: () => setStatusFilter(undefined),
     },
     {
@@ -142,7 +144,7 @@ const ClusterListPage: React.FC = () => {
       label: '稳定运行',
       value: formatNumber(summary.healthy),
       hint: `健康率 ${summary.healthPercent}%`,
-      icon: <CheckCircleOutlined style={{ color: 'var(--app-success)' }} />,
+      icon: <CheckCircleOutlined />,
       active: statusFilter === 'active',
       tone: 'success',
       onClick: () => setStatusFilter(statusFilter === 'active' ? undefined : 'active'),
@@ -152,7 +154,7 @@ const ClusterListPage: React.FC = () => {
       label: '需要关注',
       value: formatNumber(summary.attention),
       hint: summary.attention > 0 ? '建议优先排查连接与节点状态' : '当前没有异常集群',
-      icon: <WarningOutlined style={{ color: 'var(--app-orange)' }} />,
+      icon: <WarningOutlined />,
       active: statusFilter === 'attention',
       tone: 'warning',
       onClick: () => setStatusFilter(statusFilter === 'attention' ? undefined : 'attention'),
@@ -160,10 +162,11 @@ const ClusterListPage: React.FC = () => {
     {
       key: 'nodes',
       label: '节点总量',
-      value: formatNumber(summary.nodeCount),
+      value: summary.nodeCount == null ? '—' : formatNumber(summary.nodeCount),
       hint: `已完成健康检查 ${formatNumber(summary.checked)} 个`,
-      icon: <HeartOutlined style={{ color: 'var(--app-blue)' }} />,
+      icon: <HeartOutlined />,
       active: false,
+      tone: 'purple',
       onClick: undefined,
     },
   ]
@@ -200,14 +203,18 @@ const ClusterListPage: React.FC = () => {
       dataIndex: 'nodeCount',
       width: 150,
       align: 'center',
-      render: (_, record) => (
-        <div className="app-cluster-metric">
-          <strong className="app-cluster-metric__value">
-            {formatNumber(record.nodeCount || 0)}
-          </strong>
-          <span className="app-cluster-metric__label">节点</span>
-        </div>
-      ),
+      render: (_, record) => {
+        const nodeCount = record.nodeCount
+        const isUnknown = nodeCount == null || (nodeCount === 0 && !isHealthy(record.status))
+        return (
+          <div className="app-cluster-metric">
+            <strong className="app-cluster-metric__value">
+              {isUnknown ? '—' : formatNumber(nodeCount)}
+            </strong>
+            <span className="app-cluster-metric__label">节点</span>
+          </div>
+        )
+      },
     },
     {
       title: '运行状态',
@@ -292,8 +299,18 @@ const ClusterListPage: React.FC = () => {
       breadcrumbRender={false}
       content={
         <div className="app-cluster-page-header">
-          <span className="app-console-toolbar__metric">
-            健康率 <strong>{summary.healthPercent}%</strong>
+          <span
+            className={[
+              'app-console-toolbar__metric',
+              summary.healthPercent >= 90
+                ? 'is-high'
+                : summary.healthPercent >= 70
+                  ? 'is-medium'
+                  : 'is-low',
+            ].join(' ')}
+          >
+            <span>健康率</span>
+            <strong>{summary.healthPercent}%</strong>
           </span>
           <Progress
             percent={summary.healthPercent}
@@ -345,10 +362,12 @@ const ClusterListPage: React.FC = () => {
               disabled={!card.onClick}
             >
               <div className="app-cluster-summary-card__top">
-                <span className="app-cluster-summary-card__label">{card.label}</span>
-                <span className="app-cluster-summary-card__icon">{card.icon}</span>
+                <div className="app-cluster-summary-card__title">
+                  <span className="app-cluster-summary-card__icon">{card.icon}</span>
+                  <span className="app-cluster-summary-card__label">{card.label}</span>
+                </div>
+                <strong className="app-cluster-summary-card__value">{card.value}</strong>
               </div>
-              <strong className="app-cluster-summary-card__value">{card.value}</strong>
               <span className="app-cluster-summary-card__hint">{card.hint}</span>
             </button>
           ))}
@@ -409,6 +428,9 @@ const ClusterListPage: React.FC = () => {
           dataSource={filteredData}
           loading={isLoading}
           rowKey="id"
+          rowClassName={(record) =>
+            needsAttention(record.status) ? 'app-cluster-row--attention' : ''
+          }
           search={false}
           options={false}
           cardBordered={false}

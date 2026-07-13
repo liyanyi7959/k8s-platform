@@ -166,7 +166,7 @@ func (s *DeployService) registerClusterAfterDeploy(ctx context.Context, plan mod
 		return 0, fmt.Errorf("kubeconfig 内容为空")
 	}
 
-	clusterID, err := s.clusterRegistry.ImportCluster(ctx, plan.ClusterName, kubeconfig)
+	clusterID, err := s.clusterRegistry.ImportCluster(ctx, plan.ClusterName, kubeconfig, "")
 	if err != nil {
 		return 0, fmt.Errorf("注册集群失败: %w", err)
 	}

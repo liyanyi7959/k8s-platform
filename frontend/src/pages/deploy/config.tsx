@@ -2,8 +2,8 @@
  * 部署配置页 - Ansible 流水线概览 + 仓库配置
  * 基于 Ansible Playbook 的 K8s 部署流程说明
  */
-import React, { useState } from 'react'
-import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Alert, Typography } from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Typography } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AppPage } from '@/components'
 import {
@@ -21,9 +21,12 @@ import {
   ClusterOutlined,
   ApartmentOutlined,
   CloudUploadOutlined,
+  RightOutlined,
 } from '@ant-design/icons'
 
 const { Text } = Typography
+
+type AnsiblePhase = 'preflight' | 'install' | 'init' | 'join' | 'addon' | 'finalize'
 
 /** Ansible 部署流水线步骤定义 */
 interface AnsibleStep {
@@ -32,7 +35,20 @@ interface AnsibleStep {
   description: string
   icon: React.ReactNode
   appliesTo: string
+  phase: AnsiblePhase
   tasks: string[]
+}
+
+const phaseConfig: Record<
+  AnsiblePhase,
+  { color: string; label: string; borderColor: string; bgColor: string }
+> = {
+  preflight: { color: 'default', label: '环境预检', borderColor: '#d9d9d9', bgColor: '#f5f5f5' },
+  install: { color: 'blue', label: '软件安装', borderColor: '#1677ff', bgColor: '#e6f4ff' },
+  init: { color: 'gold', label: '集群初始化', borderColor: '#faad14', bgColor: '#fffbe6' },
+  join: { color: 'cyan', label: '节点加入', borderColor: '#13c2c2', bgColor: '#e6fffb' },
+  addon: { color: 'green', label: '网络插件', borderColor: '#52c41a', bgColor: '#f6ffed' },
+  finalize: { color: 'purple', label: '平台注册', borderColor: '#722ed1', bgColor: '#f9f0ff' },
 }
 
 const ansibleSteps: AnsibleStep[] = [
@@ -42,6 +58,7 @@ const ansibleSteps: AnsibleStep[] = [
     description: '检查目标节点的 CPU、内存、磁盘、端口、hostname 等环境要求',
     icon: <CheckCircleOutlined />,
     appliesTo: '所有节点',
+    phase: 'preflight',
     tasks: [
       'Ping 测试 SSH 连通性',
       '检查 OS 发行版和版本号',
@@ -58,6 +75,7 @@ const ansibleSteps: AnsibleStep[] = [
     description: '关闭 swap、加载内核模块、设置 sysctl、禁用防火墙、安装基础依赖',
     icon: <DesktopOutlined />,
     appliesTo: '所有节点',
+    phase: 'preflight',
     tasks: [
       '关闭 swap 并注释 /etc/fstab',
       '加载内核模块 br_netfilter, overlay, nf_conntrack',
@@ -74,6 +92,7 @@ const ansibleSteps: AnsibleStep[] = [
     description: '安装 containerd，配置 SystemdCgroup 和 sandbox 镜像',
     icon: <ContainerOutlined />,
     appliesTo: '所有节点',
+    phase: 'install',
     tasks: [
       '安装 Docker CE 仓库（RedHat/Debian 兼容）',
       '安装 containerd.io',
@@ -89,6 +108,7 @@ const ansibleSteps: AnsibleStep[] = [
     description: '安装 kubeadm/kubelet/kubectl，执行 kubeadm init 初始化集群',
     icon: <ClusterOutlined />,
     appliesTo: 'Master 节点',
+    phase: 'init',
     tasks: [
       '安装 kubeadm, kubelet, kubectl',
       '锁定版本不自动更新',
@@ -104,6 +124,7 @@ const ansibleSteps: AnsibleStep[] = [
     description: '在 Worker 节点安装 kubeadm/kubelet，执行 kubeadm join',
     icon: <ApartmentOutlined />,
     appliesTo: 'Worker 节点',
+    phase: 'join',
     tasks: [
       '安装 kubeadm, kubelet',
       '锁定版本不自动更新',
@@ -116,6 +137,7 @@ const ansibleSteps: AnsibleStep[] = [
     description: '安装 Flannel/Calico/Cilium 网络插件，等待 Pods 就绪',
     icon: <ApartmentOutlined />,
     appliesTo: 'Master 节点',
+    phase: 'addon',
     tasks: [
       '根据 cni_type 变量选择 CNI 插件',
       'Flannel: 下载并应用 kube-flannel.yml',
@@ -131,6 +153,7 @@ const ansibleSteps: AnsibleStep[] = [
     description: '提取 kubeconfig，注册集群到 K8s 管理平台',
     icon: <CloudUploadOutlined />,
     appliesTo: 'Master 节点',
+    phase: 'finalize',
     tasks: [
       '读取 /etc/kubernetes/admin.conf',
       '替换 API Server 地址为 Master 实际 IP',
@@ -140,14 +163,6 @@ const ansibleSteps: AnsibleStep[] = [
   },
 ]
 
-const phaseColorMap: Record<string, string> = {
-  preflight: 'default',
-  install: 'blue',
-  init: 'gold',
-  join: 'cyan',
-  addon: 'green',
-  finalize: 'purple',
-}
 
 const DeployConfig: React.FC = () => {
   const [activeTab, setActiveTab] = useState('pipeline')
@@ -171,91 +186,161 @@ const DeployConfig: React.FC = () => {
 // ==================== Ansible 部署流水线概览 ====================
 
 const AnsiblePipelinePanel: React.FC = () => {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [expandedKeys, setExpandedKeys] = useState<string[]>([])
+
+  // 点击顶部卡片后：高亮并展开对应表格行，再滚动定位
+  useEffect(() => {
+    if (!selectedKey) return
+    setExpandedKeys((prev) => (prev.includes(selectedKey) ? prev : [...prev, selectedKey]))
+    const row = document.querySelector(`.deploy-step-row-${selectedKey}`)
+    row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [selectedKey])
+
   return (
     <>
-      <Alert
-        type="info"
-        showIcon
-        message="基于 Ansible Playbook 的标准化部署"
-        description="部署流程由 Ansible Playbook 管理，位于 backend/ansible/ 目录下。每个步骤对应一个独立的 Ansible Role，支持幂等执行、多环境兼容。步骤配置通过修改 Playbook 文件管理，无需数据库存储。"
-        style={{ marginBottom: 24 }}
-      />
-
       {/* 流程可视化 */}
-      <div style={{ display: 'flex', gap: 0, overflowX: 'auto', paddingBottom: 8, marginBottom: 24 }}>
-        {ansibleSteps.map((step, idx) => (
-          <div key={step.key} style={{ display: 'flex', alignItems: 'center' }}>
-            <div
-              style={{
-                width: 220,
-                minHeight: 140,
-                border: '1px solid #d6e4ff',
-                borderRadius: 8,
-                padding: 12,
-                background: '#f6f9ff',
-                position: 'relative',
-              }}
-            >
-              {/* 步骤编号 + 图标 */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 0, overflowX: 'auto', paddingBottom: 16, marginBottom: 24 }}>
+        {ansibleSteps.map((step, idx) => {
+          const phase = phaseConfig[step.phase]
+          const isSelected = selectedKey === step.key
+          return (
+            <div key={step.key} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+              <div
+                onClick={() => setSelectedKey(step.key)}
+                style={{
+                  width: 220,
+                  minHeight: 150,
+                  border: `${isSelected ? 2 : 1}px solid ${phase.borderColor}`,
+                  borderRadius: 10,
+                  padding: 14,
+                  background: isSelected ? phase.bgColor : '#fff',
+                  boxShadow: isSelected ? `0 0 0 2px ${phase.borderColor}33, 0 8px 20px rgba(0, 0, 0, 0.1)` : '0 2px 8px rgba(0, 0, 0, 0.06)',
+                  transition: 'all 0.2s ease',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedKey === step.key) return
+                  e.currentTarget.style.transform = 'translateY(-4px)'
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedKey === step.key) return
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)'
+                }}
+              >
+                {/* 阶段色顶部条 */}
                 <div
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: '#1677ff',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 16,
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 3,
+                    background: phase.borderColor,
                   }}
-                >
-                  {step.icon}
+                />
+
+                {/* 步骤图标 + 标题 */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10, marginTop: 4 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      background: isSelected ? '#fff' : phase.bgColor,
+                      color: phase.color === 'default' ? '#595959' : phase.borderColor,
+                      border: `1px solid ${phase.borderColor}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 16,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {step.icon}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <Text strong style={{ fontSize: 14, display: 'block' }}>{step.title}</Text>
+                    <Text code style={{ fontSize: 11 }}>{step.key}</Text>
+                  </div>
                 </div>
-                <div>
-                  <Text strong style={{ fontSize: 13, display: 'block' }}>{step.title}</Text>
-                  <Text code style={{ fontSize: 10 }}>{step.key}</Text>
+
+                {/* 阶段 + 适用范围 */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  <Tag color={phase.color} style={{ fontSize: 11, margin: 0 }}>{phase.label}</Tag>
+                  <Tag color={step.appliesTo.includes('所有') ? 'blue' : step.appliesTo.includes('Master') ? 'volcano' : 'cyan'} style={{ fontSize: 11, margin: 0 }}>
+                    {step.appliesTo}
+                  </Tag>
+                </div>
+
+                {/* 描述 */}
+                <div style={{ fontSize: 12, color: '#595959', minHeight: 36, lineHeight: '18px', overflow: 'hidden', marginBottom: 8 }}>
+                  {step.description}
+                </div>
+
+                {/* 任务数量 */}
+                <div style={{ fontSize: 12, color: '#8c8c8c', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Badge count={step.tasks.length} style={{ backgroundColor: '#1677ff' }} />
+                  <span>个 Ansible 任务</span>
                 </div>
               </div>
-              {/* 适用范围 */}
-              <Tag color={step.appliesTo.includes('所有') ? 'blue' : step.appliesTo.includes('Master') ? 'red' : 'cyan'} style={{ fontSize: 10, margin: '4px 0' }}>
-                {step.appliesTo}
-              </Tag>
-              {/* 描述 */}
-              <div style={{ fontSize: 11, color: '#8c8c8c', height: 40, overflow: 'hidden', marginTop: 4 }}>
-                {step.description}
-              </div>
-              {/* 任务数量 */}
-              <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
-                {step.tasks.length} 个任务
-              </div>
+
+              {/* 连接箭头 */}
+              {idx < ansibleSteps.length - 1 && (
+                <div style={{ padding: '0 10px', color: '#bfbfbf', fontSize: 16, display: 'flex', alignItems: 'center' }}>
+                  <RightOutlined />
+                </div>
+              )}
             </div>
-            {/* 连接箭头 */}
-            {idx < ansibleSteps.length - 1 && (
-              <div style={{ padding: '0 4px', color: '#d9d9d9', fontSize: 18 }}>→</div>
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* 详细步骤列表 */}
-      <Card bodyStyle={{ padding: 0 }} title="步骤详情" size="small">
+      <Card bodyStyle={{ padding: '0 16px' }} title="步骤详情" size="small">
         <Table
           rowKey="key"
           dataSource={ansibleSteps}
           pagination={false}
           size="small"
-          scroll={{ x: 900 }}
+          scroll={{ x: 700 }}
+          rowClassName={(record) => `deploy-step-row-${record.key}`}
+          expandable={{
+            expandRowByClick: true,
+            expandedRowKeys: expandedKeys,
+            onExpandedRowsChange: (keys) => setExpandedKeys(keys as string[]),
+            expandedRowRender: (record: AnsibleStep) => (
+              <div style={{ padding: '8px 16px' }}>
+                <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>Ansible 任务</Text>
+                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, lineHeight: '1.8', color: '#595959' }}>
+                  {record.tasks.map((task, i) => <li key={i}>{task}</li>)}
+                </ul>
+              </div>
+            ),
+          }}
+          onRow={(record) => ({
+            onClick: () => setSelectedKey(record.key),
+            style: {
+              cursor: 'pointer',
+              backgroundColor: record.key === selectedKey ? phaseConfig[record.phase].bgColor : undefined,
+              transition: 'background-color 0.2s ease',
+            },
+          })}
           columns={[
             {
               title: '步骤',
               dataIndex: 'key',
               key: 'key',
-              width: 180,
+              width: 200,
               render: (key: string, record: AnsibleStep) => (
                 <Space>
-                  {record.icon}
+                  <span style={{ color: phaseConfig[record.phase].color === 'default' ? '#595959' : phaseConfig[record.phase].color, fontSize: 16 }}>
+                    {record.icon}
+                  </span>
                   <div>
                     <Text strong>{record.title}</Text>
                     <div><Text code style={{ fontSize: 11 }}>{key}</Text></div>
@@ -264,30 +349,29 @@ const AnsiblePipelinePanel: React.FC = () => {
               ),
             },
             {
+              title: '阶段',
+              dataIndex: 'phase',
+              key: 'phase',
+              width: 100,
+              render: (phase: AnsiblePhase) => {
+                const cfg = phaseConfig[phase]
+                return <Tag color={cfg.color} style={{ margin: 0 }}>{cfg.label}</Tag>
+              },
+            },
+            {
               title: '适用范围',
               dataIndex: 'appliesTo',
               key: 'appliesTo',
-              width: 120,
+              width: 110,
               render: (text: string) => (
-                <Tag color={text.includes('所有') ? 'blue' : text.includes('Master') ? 'red' : 'cyan'}>{text}</Tag>
+                <Tag color={text.includes('所有') ? 'blue' : text.includes('Master') ? 'volcano' : 'cyan'} style={{ margin: 0 }}>{text}</Tag>
               ),
             },
             {
               title: '说明',
               dataIndex: 'description',
               key: 'description',
-              width: 280,
               ellipsis: true,
-            },
-            {
-              title: 'Ansible 任务',
-              dataIndex: 'tasks',
-              key: 'tasks',
-              render: (tasks: string[]) => (
-                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, lineHeight: '1.6' }}>
-                  {tasks.map((task, i) => <li key={i}>{task}</li>)}
-                </ul>
-              ),
             },
           ]}
         />

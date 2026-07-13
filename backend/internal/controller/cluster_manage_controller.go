@@ -1,7 +1,12 @@
 package controller
 
 import (
+	"fmt"
+	"io"
+	"mime/multipart"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -62,12 +67,62 @@ func (cc *ClusterManageController) List(c *gin.Context) {
 }
 
 type importClusterReq struct {
-	Name       string `json:"name"`
-	Kubeconfig string `json:"kubeconfig"`
+	Name        string `json:"name"`
+	Kubeconfig  string `json:"kubeconfig"`
+	Description string `json:"description"`
 }
 
 type ImportClusterResp struct {
 	ClusterID uint64 `json:"cluster_id"`
+}
+
+const maxKubeconfigFileSize = 1024 * 1024
+
+var allowedKubeconfigExtensions = map[string]struct{}{
+	".yaml": {}, ".yml": {}, ".json": {}, ".txt": {}, ".kubeconfig": {}, ".config": {},
+}
+
+func readKubeconfigFile(file *multipart.FileHeader) (string, error) {
+	if file == nil {
+		return "", fmt.Errorf("未上传 kubeconfig 文件")
+	}
+	if file.Size > maxKubeconfigFileSize {
+		return "", fmt.Errorf("kubeconfig 文件不能超过 1MB")
+	}
+	if _, ok := allowedKubeconfigExtensions[strings.ToLower(filepath.Ext(file.Filename))]; !ok {
+		return "", fmt.Errorf("不支持的 kubeconfig 文件类型")
+	}
+	src, err := file.Open()
+	if err != nil {
+		return "", fmt.Errorf("读取 kubeconfig 文件失败")
+	}
+	defer src.Close()
+	content, err := io.ReadAll(io.LimitReader(src, maxKubeconfigFileSize+1))
+	if err != nil {
+		return "", fmt.Errorf("读取 kubeconfig 文件失败")
+	}
+	if len(content) > maxKubeconfigFileSize {
+		return "", fmt.Errorf("kubeconfig 文件不能超过 1MB")
+	}
+	return string(content), nil
+}
+
+func bindImportClusterReq(c *gin.Context, req *importClusterReq) error {
+	if !strings.HasPrefix(strings.ToLower(c.GetHeader("Content-Type")), "multipart/form-data") {
+		return c.ShouldBindJSON(req)
+	}
+	req.Name = c.PostForm("name")
+	req.Description = c.PostForm("description")
+	req.Kubeconfig = c.PostForm("kubeconfig")
+	file, err := c.FormFile("file")
+	if err == nil {
+		req.Kubeconfig, err = readKubeconfigFile(file)
+		return err
+	}
+	if strings.TrimSpace(req.Kubeconfig) != "" {
+		return nil
+	}
+	return fmt.Errorf("请上传或填写 kubeconfig")
 }
 
 // @Summary 导入集群
@@ -84,7 +139,7 @@ type ImportClusterResp struct {
 // @Router /clusters/import [post]
 func (cc *ClusterManageController) Import(c *gin.Context) {
 	var req importClusterReq
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := bindImportClusterReq(c, &req); err != nil {
 		resp.Fail(c, 4000, "参数错误")
 		return
 	}
@@ -92,7 +147,7 @@ func (cc *ClusterManageController) Import(c *gin.Context) {
 		cc.writeServiceErr(c, err)
 		return
 	}
-	id, err := cc.svc.ImportCluster(c.Request.Context(), req.Name, req.Kubeconfig)
+	id, err := cc.svc.ImportCluster(c.Request.Context(), req.Name, req.Kubeconfig, req.Description)
 	if err != nil {
 		cc.writeServiceErr(c, err)
 		return
