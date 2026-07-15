@@ -12,19 +12,31 @@ import type { ClusterImportInput } from '@/schemas/cluster'
 import type { ProFormInstance } from '@ant-design/pro-components'
 
 const { Dragger } = Upload
+const MAX_KUBECONFIG_SIZE = 1024 * 1024
+const KUBECONFIG_EXTENSIONS = ['.yaml', '.yml', '.json', '.txt', '.kubeconfig', '.config']
 
 /** 导入集群页 */
 const ClusterImportPage: React.FC = () => {
   const formRef = useRef<ProFormInstance>()
   const [fileName, setFileName] = useState<string>()
-  const [kubeconfigFile, setKubeconfigFile] = useState<File>()
 
   const handleKubeconfigFile = (info: UploadChangeParam) => {
     const rawFile = info.file.originFileObj || info.file
     if (!rawFile || !(rawFile instanceof File)) return
 
+    const extension = rawFile.name.slice(rawFile.name.lastIndexOf('.')).toLowerCase()
+    if (!KUBECONFIG_EXTENSIONS.includes(extension)) {
+      setFileName(undefined)
+      message.error('不支持的文件类型，请选择 kubeconfig、YAML、JSON 或文本文件')
+      return
+    }
+    if (rawFile.size > MAX_KUBECONFIG_SIZE) {
+      setFileName(undefined)
+      message.error('kubeconfig 文件不能超过 1MB')
+      return
+    }
+
     setFileName(rawFile.name)
-    setKubeconfigFile(rawFile)
     const reader = new FileReader()
     reader.onload = (e) => {
       const content = e.target?.result as string
@@ -38,24 +50,29 @@ const ClusterImportPage: React.FC = () => {
   }
 
   const importMutation = useMutation({
-    mutationFn: (data: ClusterImportInput) => importCluster(data, kubeconfigFile),
+    mutationFn: (data: ClusterImportInput) => importCluster(data),
     onSuccess: () => {
       message.success('导入成功')
       history.push('/clusters')
     },
     onError: (error: any) => {
       if (error?.data?.field) {
-        formRef.current?.setFields([
-          { name: error.data.field, errors: [error.data.message] },
-        ])
+        formRef.current?.setFields([{ name: error.data.field, errors: [error.data.message] }])
       }
+      message.error(error?.message || '集群导入失败')
     },
   })
 
   const handleSubmit = async (values: ClusterImportInput) => {
     const result = clusterImportSchema.safeParse(values)
     if (!result.success) {
-      message.error('表单校验失败')
+      formRef.current?.setFields(
+        result.error.issues.map((issue) => ({
+          name: issue.path,
+          errors: [issue.message],
+        })),
+      )
+      message.error(result.error.issues[0]?.message || '表单校验失败')
       return
     }
     importMutation.mutate(result.data)
@@ -77,7 +94,7 @@ const ClusterImportPage: React.FC = () => {
             label="集群名称"
             placeholder="请输入集群名称"
             rules={[{ required: true }]}
-            fieldProps={{ maxLength: 64 }}
+            fieldProps={{ maxLength: 120 }}
           />
           <div style={{ marginBottom: 24 }}>
             <Dragger
@@ -117,7 +134,7 @@ const ClusterImportPage: React.FC = () => {
             name="description"
             label="备注"
             placeholder="请输入备注信息"
-            fieldProps={{ maxLength: 200 }}
+            fieldProps={{ maxLength: 500, showCount: true }}
           />
         </ProForm>
       </Card>

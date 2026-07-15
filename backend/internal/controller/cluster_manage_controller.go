@@ -109,7 +109,10 @@ func readKubeconfigFile(file *multipart.FileHeader) (string, error) {
 
 func bindImportClusterReq(c *gin.Context, req *importClusterReq) error {
 	if !strings.HasPrefix(strings.ToLower(c.GetHeader("Content-Type")), "multipart/form-data") {
-		return c.ShouldBindJSON(req)
+		if err := c.ShouldBindJSON(req); err != nil {
+			return fmt.Errorf("请求参数格式错误")
+		}
+		return nil
 	}
 	req.Name = c.PostForm("name")
 	req.Description = c.PostForm("description")
@@ -140,14 +143,19 @@ func bindImportClusterReq(c *gin.Context, req *importClusterReq) error {
 func (cc *ClusterManageController) Import(c *gin.Context) {
 	var req importClusterReq
 	if err := bindImportClusterReq(c, &req); err != nil {
-		resp.Fail(c, 4000, "参数错误")
+		resp.Fail(c, 4000, err.Error())
 		return
 	}
-	if err := cc.k8sSvc.ValidateKubeconfig(c.Request.Context(), req.Kubeconfig); err != nil {
+	normalizedKubeconfig, err := service.NormalizeKubeconfigContent(req.Kubeconfig)
+	if err != nil {
 		cc.writeServiceErr(c, err)
 		return
 	}
-	id, err := cc.svc.ImportCluster(c.Request.Context(), req.Name, req.Kubeconfig, req.Description)
+	if err := cc.k8sSvc.ValidateKubeconfig(c.Request.Context(), normalizedKubeconfig); err != nil {
+		cc.writeServiceErr(c, err)
+		return
+	}
+	id, err := cc.svc.ImportCluster(c.Request.Context(), req.Name, normalizedKubeconfig, req.Description)
 	if err != nil {
 		cc.writeServiceErr(c, err)
 		return
@@ -274,10 +282,12 @@ func (cc *ClusterManageController) Patch(c *gin.Context) {
 	}
 
 	if req.Kubeconfig != nil {
-		if err := cc.k8sSvc.ValidateKubeconfigFormat(c.Request.Context(), *req.Kubeconfig); err != nil {
+		normalizedKubeconfig, err := service.NormalizeKubeconfigContent(*req.Kubeconfig)
+		if err != nil {
 			cc.writeServiceErr(c, err)
 			return
 		}
+		req.Kubeconfig = &normalizedKubeconfig
 	}
 
 	if err := cc.svc.PatchCluster(c.Request.Context(), id, service.PatchClusterRequest{Name: req.Name, Kubeconfig: req.Kubeconfig}); err != nil {

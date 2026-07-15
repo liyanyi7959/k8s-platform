@@ -3,13 +3,17 @@ package service
 import (
 	"context"
 	"errors"
+	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gorm.io/gorm"
 
 	"k8s-platform-backend/internal/model"
 )
+
+var clusterNamePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
 
 type ClusterItem struct {
 	ID           uint64 `json:"id"`
@@ -121,8 +125,17 @@ func (s *ClusterRegistryService) ImportCluster(ctx context.Context, name, kubeco
 	if n == "" {
 		return 0, ErrWithMessage(ErrInvalidParams, "集群名称不能为空")
 	}
+	if err := validateClusterName(n); err != nil {
+		return 0, err
+	}
 	if kc == "" {
 		return 0, ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
+	}
+	if err := validateKubeconfigSize(kc); err != nil {
+		return 0, err
+	}
+	if utf8.RuneCountInString(desc) > 500 {
+		return 0, ErrWithMessage(ErrInvalidParams, "备注最长 500 字符")
 	}
 	enc, err := encryptText(s.kubeconfigKey, kc)
 	if err != nil {
@@ -254,6 +267,9 @@ func (s *ClusterRegistryService) PatchCluster(ctx context.Context, id uint64, re
 			if v == "" {
 				return ErrWithMessage(ErrInvalidParams, "集群名称不能为空")
 			}
+			if err := validateClusterName(v); err != nil {
+				return err
+			}
 			if v != strings.TrimSpace(row.Name) {
 				var existing model.Cluster
 				if err := tx.Select("id").Where("deleted_at IS NULL AND name = ? AND id <> ?", v, id).First(&existing).Error; err == nil {
@@ -272,6 +288,9 @@ func (s *ClusterRegistryService) PatchCluster(ctx context.Context, id uint64, re
 			kc := strings.TrimSpace(*req.Kubeconfig)
 			if kc == "" {
 				return ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
+			}
+			if err := validateKubeconfigSize(kc); err != nil {
+				return err
 			}
 			enc, err := encryptText(s.kubeconfigKey, kc)
 			if err != nil {

@@ -219,7 +219,7 @@ func TestClusterService_ErrorsAreWrapped(t *testing.T) {
 	}
 
 	// ImportCluster returns plain errors.New for nil db
-	_, err = svc.ImportCluster(context.Background(), "c1", "kc")
+	_, err = svc.ImportCluster(context.Background(), "c1", "kc", "")
 	if err.Error() != "db is required" {
 		t.Fatalf("unexpected error: %v", err)
 	}

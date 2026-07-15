@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,6 +29,36 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
 )
+
+// NormalizeKubeconfigContent accepts a regular kubeconfig or a kubeconfig whose
+// complete content was Base64 encoded, and returns canonical plaintext content.
+func NormalizeKubeconfigContent(kubeconfig string) (string, error) {
+	kc := strings.TrimSpace(kubeconfig)
+	if kc == "" {
+		return "", ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
+	}
+	if len(kc) <= maxKubeconfigContentSize {
+		if _, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc)); err == nil {
+			return kc, nil
+		}
+	}
+	if len(kc) > maxEncodedKubeconfigSize {
+		return "", ErrWithMessage(ErrInvalidParams, "kubeconfig 内容不能超过 1MB")
+	}
+
+	encoded := strings.Join(strings.Fields(kc), "")
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err == nil && len(decoded) <= maxKubeconfigContentSize {
+		decodedKubeconfig := strings.TrimSpace(string(decoded))
+		if _, parseErr := clientcmd.RESTConfigFromKubeConfig([]byte(decodedKubeconfig)); parseErr == nil {
+			return decodedKubeconfig, nil
+		}
+	}
+	if len(kc) > maxKubeconfigContentSize {
+		return "", ErrWithMessage(ErrInvalidParams, "kubeconfig 内容不能超过 1MB")
+	}
+	return "", ErrWithMessage(ErrInvalidParams, "kubeconfig 格式无效，请上传原始 YAML/JSON 或其 Base64 内容")
+}
 
 // K8s 哨兵错误已统一迁移至 errors.go（ErrK8s / ErrK8sNetwork / ErrK8sTimeout 等）。
 
@@ -98,9 +129,9 @@ func (s *K8sService) GetKubeconfig(ctx context.Context, clusterID uint64) (strin
 }
 
 func (s *K8sService) ValidateKubeconfig(ctx context.Context, kubeconfig string) error {
-	kc := strings.TrimSpace(kubeconfig)
-	if kc == "" {
-		return ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
+	kc, err := NormalizeKubeconfigContent(kubeconfig)
+	if err != nil {
+		return err
 	}
 	cfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
 	if err != nil {
@@ -123,15 +154,8 @@ func (s *K8sService) ValidateKubeconfig(ctx context.Context, kubeconfig string) 
 // ValidateKubeconfigFormat 仅校验 kubeconfig 格式是否合法（能正确解析出 REST 配置），
 // 不会实际连接 K8s API Server。适用于编辑/更新场景——用户可能在离线环境中更新凭据。
 func (s *K8sService) ValidateKubeconfigFormat(_ context.Context, kubeconfig string) error {
-	kc := strings.TrimSpace(kubeconfig)
-	if kc == "" {
-		return ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
-	}
-	_, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
-	if err != nil {
-		return ErrWithMessage(ErrInvalidParams, "kubeconfig 格式无效")
-	}
-	return nil
+	_, err := NormalizeKubeconfigContent(kubeconfig)
+	return err
 }
 
 // dynamicClient 创建 dynamic client，用于访问任意 GVR（包含 CRD）资源。

@@ -24,9 +24,13 @@ type cachedOverview struct {
 }
 
 type trendDataCache struct {
-	Labels []string `json:"labels"`
-	CPU    []int    `json:"cpu"`
-	Mem    []int    `json:"mem"`
+	Samples []resourceTrendSample `json:"samples"`
+}
+
+type resourceTrendSample struct {
+	Timestamp time.Time `json:"timestamp"`
+	CPU       float64   `json:"cpu"`
+	Memory    float64   `json:"memory"`
 }
 
 type cachedClusterCertRisks struct {
@@ -61,6 +65,8 @@ type DashboardService struct {
 	certRiskMu         sync.Mutex
 	certRiskCache      map[uint64]cachedClusterCertRisks
 	certRiskRefreshing map[uint64]bool
+	trendMu            sync.Mutex
+	trendCache         map[string][]resourceTrendSample
 }
 
 // NewDashboardService 创建 DashboardService。
@@ -73,7 +79,53 @@ func NewDashboardService(db *gorm.DB, clusterReg *ClusterRegistryService, k8sSvc
 		cache:              cache,
 		certRiskCache:      make(map[uint64]cachedClusterCertRisks),
 		certRiskRefreshing: make(map[uint64]bool),
+		trendCache:         make(map[string][]resourceTrendSample),
 	}
+}
+
+func appendResourceTrendSample(samples []resourceTrendSample, sample resourceTrendSample) []resourceTrendSample {
+	cutoff := sample.Timestamp.Add(-24 * time.Hour)
+	filtered := make([]resourceTrendSample, 0, len(samples)+1)
+	for _, existing := range samples {
+		if existing.Timestamp.Before(cutoff) || existing.Timestamp.After(sample.Timestamp.Add(5*time.Minute)) {
+			continue
+		}
+		if existing.CPU < 0 || existing.CPU > 100 || existing.Memory < 0 || existing.Memory > 100 {
+			continue
+		}
+		filtered = append(filtered, existing)
+	}
+	if len(filtered) > 0 && sample.Timestamp.Sub(filtered[len(filtered)-1].Timestamp) < time.Minute {
+		filtered[len(filtered)-1] = sample
+	} else {
+		filtered = append(filtered, sample)
+	}
+	return filtered
+}
+
+func (s *DashboardService) recordResourceTrend(ctx context.Context, clusterID uint64, scope string, sample resourceTrendSample) []resourceTrendSample {
+	s.trendMu.Lock()
+	defer s.trendMu.Unlock()
+
+	trendID := fmt.Sprintf("%d:%s", clusterID, scope)
+	samples := append([]resourceTrendSample(nil), s.trendCache[trendID]...)
+	cacheKey := fmt.Sprintf("dashboard:trend:v3:%d:%s", clusterID, scope)
+	if len(samples) == 0 && s.cache != nil && s.cache.Enabled() {
+		if value, ok, _ := s.cache.Get(ctx, cacheKey); ok {
+			var cached trendDataCache
+			if json.Unmarshal(value, &cached) == nil {
+				samples = cached.Samples
+			}
+		}
+	}
+	samples = appendResourceTrendSample(samples, sample)
+	s.trendCache[trendID] = append([]resourceTrendSample(nil), samples...)
+	if s.cache != nil && s.cache.Enabled() {
+		if value, err := json.Marshal(trendDataCache{Samples: samples}); err == nil {
+			_ = s.cache.Set(ctx, cacheKey, value, 25*time.Hour)
+		}
+	}
+	return samples
 }
 
 func (s *DashboardService) getCachedClusterCertRisks(clusterID uint64) ([]map[string]any, bool) {
@@ -176,9 +228,10 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 		deployments      []any
 		statefulsets     []any
 		daemonsets       []any
-		cpuUsedPercent   int
-		memUsedPercent   int
+		cpuUsedPercent   float64
+		memUsedPercent   float64
 		metricsAvailable bool
+		nodeUsage        []nodeUsagePercent
 		failedPods       []map[string]any
 		nodeItems        []corev1.Node // shared between health check & usage calc — used below in post-process
 		recentEvents     []map[string]any
@@ -445,14 +498,14 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 		mu.Lock()
 		nodes := append([]corev1.Node(nil), nodeItems...)
 		mu.Unlock()
-		cpuUsedPercent, memUsedPercent, metricsAvailable = s.getClusterUsagePercent(ctx, clusterID, nodes)
+		usage, available := s.getClusterUsageSnapshot(ctx, clusterID, nodes)
+		cpuUsedPercent = usage.CPU
+		memUsedPercent = usage.Memory
+		nodeUsage = usage.Nodes
+		metricsAvailable = available
 	}()
 
 	wg.Wait()
-
-	// nodeItems is populated by the health-check goroutine; suppress unused warning
-	// (will be used for per-node usage comparison in a future iteration)
-	_ = nodeItems
 
 	// Post-process: Namespace Top Pods
 	type nsCount struct {
@@ -474,72 +527,63 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 		nsTop = append(nsTop, map[string]any{"namespace": v.Name, "pods": v.Count})
 	}
 
-	// Post-process: 24h Trends
-	// 先尝试从缓存读取真实历史数据点，无缓存时用当前值 ± 随机波动生成模拟趋势
-	labels24h := make([]string, 0, 24)
-	cpu24 := make([]int, 0, 24)
-	mem24 := make([]int, 0, 24)
-	chartNow := time.Now()
-
-	trendCacheKey := fmt.Sprintf("dashboard:trend:cluster:%d", clusterID)
-	trendLoaded := false
-	if s.cache != nil && s.cache.Enabled() {
-		if val, ok, _ := s.cache.Get(ctx, trendCacheKey); ok {
-			var td trendDataCache
-			if err := json.Unmarshal(val, &td); err == nil && len(td.CPU) == 24 && len(td.Mem) == 24 {
-				labels24h = td.Labels
-				cpu24 = td.CPU
-				mem24 = td.Mem
-				trendLoaded = true
+	// Post-process: 24h Trends. Only real metrics-server samples are retained.
+	labels24h := make([]string, 0)
+	timestamps24h := make([]string, 0)
+	cpu24 := make([]float64, 0)
+	mem24 := make([]float64, 0)
+	nodeTrends24h := make([]map[string]any, 0, len(nodeItems))
+	nodeUsageByName := make(map[string]nodeUsagePercent, len(nodeUsage))
+	for _, usage := range nodeUsage {
+		nodeUsageByName[usage.Name] = usage
+	}
+	if metricsAvailable {
+		sampledAt := time.Now()
+		samples := s.recordResourceTrend(ctx, clusterID, "cluster", resourceTrendSample{
+			Timestamp: sampledAt,
+			CPU:       cpuUsedPercent,
+			Memory:    memUsedPercent,
+		})
+		labels24h = make([]string, 0, len(samples))
+		timestamps24h = make([]string, 0, len(samples))
+		cpu24 = make([]float64, 0, len(samples))
+		mem24 = make([]float64, 0, len(samples))
+		for _, sample := range samples {
+			labels24h = append(labels24h, sample.Timestamp.Format("01-02 15:04"))
+			timestamps24h = append(timestamps24h, sample.Timestamp.Format(time.RFC3339))
+			cpu24 = append(cpu24, sample.CPU)
+			mem24 = append(mem24, sample.Memory)
+		}
+		for _, node := range nodeItems {
+			usage, ok := nodeUsageByName[node.Name]
+			if !ok {
+				continue
 			}
+			nodeSamples := s.recordResourceTrend(ctx, clusterID, "node:"+node.Name, resourceTrendSample{
+				Timestamp: sampledAt,
+				CPU:       usage.CPU,
+				Memory:    usage.Memory,
+			})
+			nodeLabels := make([]string, 0, len(nodeSamples))
+			nodeTimestamps := make([]string, 0, len(nodeSamples))
+			nodeCPU := make([]float64, 0, len(nodeSamples))
+			nodeMemory := make([]float64, 0, len(nodeSamples))
+			for _, sample := range nodeSamples {
+				nodeLabels = append(nodeLabels, sample.Timestamp.Format("01-02 15:04"))
+				nodeTimestamps = append(nodeTimestamps, sample.Timestamp.Format(time.RFC3339))
+				nodeCPU = append(nodeCPU, sample.CPU)
+				nodeMemory = append(nodeMemory, sample.Memory)
+			}
+			nodeTrends24h = append(nodeTrends24h, map[string]any{
+				"name": node.Name, "ip": usage.IP,
+				"labels": nodeLabels, "timestamps": nodeTimestamps,
+				"cpu": nodeCPU, "memory": nodeMemory, "sample_count": len(nodeLabels),
+			})
 		}
 	}
-	if !trendLoaded {
-		for i := 23; i >= 0; i-- {
-			t := chartNow.Add(time.Duration(-i) * time.Hour)
-			labels24h = append(labels24h, t.Format("15:00"))
-			// 生成递进模拟趋势：从基准值逐渐接近当前值，加入小幅波动
-			progress := float64(24-i) / 24.0
-			baseCPU := float64(cpuUsedPercent) * (0.7 + 0.3*progress)
-			baseMem := float64(memUsedPercent) * (0.75 + 0.25*progress)
-			// 波动因子：基于小时偏移产生伪随机抖动（日间偏高，夜间偏低）
-			hour := t.Hour()
-			var dayFactor float64
-			if hour >= 9 && hour <= 18 {
-				dayFactor = 1.05 + float64(hour%3)*0.02
-			} else {
-				dayFactor = 0.85 + float64(hour%5)*0.02
-			}
-			cpuVal := int(baseCPU * dayFactor)
-			memVal := int(baseMem * dayFactor)
-			if cpuVal < 0 {
-				cpuVal = 0
-			}
-			if cpuVal > 100 {
-				cpuVal = 100
-			}
-			if memVal < 0 {
-				memVal = 0
-			}
-			if memVal > 100 {
-				memVal = 100
-			}
-			cpu24 = append(cpu24, cpuVal)
-			mem24 = append(mem24, memVal)
-		}
-	}
-	// 缓存当前趋势数据（用最新真实值更新最后一个点）
-	if len(cpu24) == 24 {
-		cpu24[23] = cpuUsedPercent
-		mem24[23] = memUsedPercent
-		labels24h[23] = chartNow.Format("15:00")
-	}
-	if s.cache != nil && s.cache.Enabled() {
-		td := trendDataCache{Labels: labels24h, CPU: cpu24, Mem: mem24}
-		if b, err := json.Marshal(td); err == nil {
-			_ = s.cache.Set(ctx, trendCacheKey, b, 65*time.Minute)
-		}
-	}
+	sort.Slice(nodeTrends24h, func(i, j int) bool {
+		return nodeTrends24h[i]["name"].(string) < nodeTrends24h[j]["name"].(string)
+	})
 
 	out := map[string]any{
 		"cluster": map[string]any{
@@ -567,7 +611,11 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 			"memory": map[string]any{"used_percent": memUsedPercent},
 		},
 		"charts": map[string]any{
-			"cpu_memory_24h": map[string]any{"labels": labels24h, "cpu": cpu24, "memory": mem24},
+			"cpu_memory_24h": map[string]any{
+				"labels": labels24h, "timestamps": timestamps24h, "cpu": cpu24, "memory": mem24,
+				"scope": "cluster", "sample_count": len(labels24h),
+			},
+			"node_cpu_memory_24h": nodeTrends24h,
 			"pod_phase": map[string]any{
 				"running":   podsRunning,
 				"pending":   podsPending,
@@ -588,6 +636,9 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 			"updated_at":        time.Now().Format(time.RFC3339),
 			"cached":            false,
 			"metrics_available": metricsAvailable,
+			"metrics_source":    "metrics.k8s.io/v1beta1 nodes",
+			"metrics_scope":     "cluster",
+			"metrics_basis":     "sum(sampled node usage) / sum(sampled node allocatable)",
 		},
 	}
 
@@ -767,43 +818,77 @@ func (s *DashboardService) GetClusterCertificateRisks(ctx context.Context, clust
 	return risks, nil
 }
 
-// getClusterUsagePercent 计算集群 CPU/内存使用率（0-100）。
+type nodeUsagePercent struct {
+	Name   string
+	IP     string
+	CPU    float64
+	Memory float64
+}
+
+type clusterUsageSnapshot struct {
+	CPU    float64
+	Memory float64
+	Nodes  []nodeUsagePercent
+}
+
+func nodePrimaryIP(node corev1.Node) string {
+	for _, addressType := range []corev1.NodeAddressType{corev1.NodeInternalIP, corev1.NodeExternalIP} {
+		for _, address := range node.Status.Addresses {
+			if address.Type == addressType && strings.TrimSpace(address.Address) != "" {
+				return strings.TrimSpace(address.Address)
+			}
+		}
+	}
+	return ""
+}
+
+// getClusterUsageSnapshot 计算集群及各节点 CPU/内存使用率（0-100）。
 // 计算方式：
-// - 分母：所有节点 allocatable 资源总和
-// - 分子：metrics.k8s.io/v1beta1 nodes 指标中的 usage 总和
+// - 分母：本次成功返回指标的节点 allocatable 资源总和
+// - 分子：同一批节点在 metrics.k8s.io/v1beta1 中的 usage 总和
 // 若指标不可用或解析失败，返回 (0, 0)。
-func (s *DashboardService) getClusterUsagePercent(ctx context.Context, clusterID uint64, nodeItems []corev1.Node) (cpuUsedPercent int, memoryUsedPercent int, available bool) {
+func (s *DashboardService) getClusterUsageSnapshot(ctx context.Context, clusterID uint64, nodeItems []corev1.Node) (clusterUsageSnapshot, bool) {
 	if s.k8sSvc == nil || clusterID == 0 {
-		return 0, 0, false
+		return clusterUsageSnapshot{}, false
 	}
 	if len(nodeItems) == 0 {
 		cs, err := s.k8sSvc.typedClient(ctx, clusterID)
 		if err != nil {
-			return 0, 0, false
+			return clusterUsageSnapshot{}, false
 		}
 		nodes, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		if err != nil || len(nodes.Items) == 0 {
-			return 0, 0, false
+			return clusterUsageSnapshot{}, false
 		}
 		nodeItems = nodes.Items
 	}
-	var allocCPU int64
-	var allocMem int64
-	for i := range nodeItems {
-		n := &nodeItems[i]
-		allocCPU += n.Status.Allocatable.Cpu().MilliValue()
-		allocMem += n.Status.Allocatable.Memory().Value()
-	}
-	if allocCPU <= 0 || allocMem <= 0 {
-		return 0, 0, false
-	}
-
 	metrics, err := s.k8sSvc.List(ctx, clusterID, schema.GroupVersionResource{Group: "metrics.k8s.io", Version: "v1beta1", Resource: "nodes"}, "", "", "", nil)
 	if err != nil || len(metrics) == 0 {
-		return 0, 0, false
+		return clusterUsageSnapshot{}, false
+	}
+	return calculateClusterUsageSnapshot(nodeItems, metrics)
+}
+
+func calculateClusterUsageSnapshot(nodeItems []corev1.Node, metrics []any) (clusterUsageSnapshot, bool) {
+	type nodeAllocatable struct {
+		CPU    int64
+		Memory int64
+		Node   *corev1.Node
+	}
+	allocatableByNode := make(map[string]nodeAllocatable, len(nodeItems))
+	for i := range nodeItems {
+		node := &nodeItems[i]
+		allocatableByNode[node.Name] = nodeAllocatable{
+			CPU:    node.Status.Allocatable.Cpu().MilliValue(),
+			Memory: node.Status.Allocatable.Memory().Value(),
+			Node:   node,
+		}
 	}
 	var usedCPU int64
 	var usedMem int64
+	var allocCPU int64
+	var allocMem int64
+	nodeUsages := make([]nodeUsagePercent, 0, len(metrics))
 	for i := range metrics {
 		m, ok := metrics[i].(map[string]any)
 		if !ok {
@@ -813,35 +898,53 @@ func (s *DashboardService) getClusterUsagePercent(ctx context.Context, clusterID
 		if !ok {
 			continue
 		}
-		if v, ok := usage["cpu"].(string); ok && v != "" {
-			if q, err := resource.ParseQuantity(v); err == nil {
-				usedCPU += q.MilliValue()
-			}
+		metadata, ok := m["metadata"].(map[string]any)
+		if !ok {
+			continue
 		}
-		if v, ok := usage["memory"].(string); ok && v != "" {
-			if q, err := resource.ParseQuantity(v); err == nil {
-				usedMem += q.Value()
-			}
+		name, _ := metadata["name"].(string)
+		allocatable, ok := allocatableByNode[name]
+		if !ok || allocatable.CPU <= 0 || allocatable.Memory <= 0 {
+			continue
 		}
+		cpuRaw, cpuOK := usage["cpu"].(string)
+		memoryRaw, memoryOK := usage["memory"].(string)
+		if !cpuOK || !memoryOK {
+			continue
+		}
+		cpuQuantity, cpuErr := resource.ParseQuantity(cpuRaw)
+		memoryQuantity, memoryErr := resource.ParseQuantity(memoryRaw)
+		if cpuErr != nil || memoryErr != nil {
+			continue
+		}
+		usedCPU += cpuQuantity.MilliValue()
+		usedMem += memoryQuantity.Value()
+		allocCPU += allocatable.CPU
+		allocMem += allocatable.Memory
+		nodeUsages = append(nodeUsages, nodeUsagePercent{
+			Name: name, IP: nodePrimaryIP(*allocatable.Node),
+			CPU:    usagePercent(cpuQuantity.MilliValue(), allocatable.CPU),
+			Memory: usagePercent(memoryQuantity.Value(), allocatable.Memory),
+		})
 	}
-	if usedCPU < 0 || usedMem < 0 {
-		return 0, 0, false
+	if usedCPU < 0 || usedMem < 0 || allocCPU <= 0 || allocMem <= 0 {
+		return clusterUsageSnapshot{}, false
 	}
-	cpuP := int(float64(usedCPU) * 100 / float64(allocCPU))
-	memP := int(float64(usedMem) * 100 / float64(allocMem))
-	if cpuP < 0 {
-		cpuP = 0
+	sort.Slice(nodeUsages, func(i, j int) bool { return nodeUsages[i].Name < nodeUsages[j].Name })
+	return clusterUsageSnapshot{
+		CPU: usagePercent(usedCPU, allocCPU), Memory: usagePercent(usedMem, allocMem), Nodes: nodeUsages,
+	}, true
+}
+
+func usagePercent(used, allocatable int64) float64 {
+	value := float64(used) * 100 / float64(allocatable)
+	if value < 0 {
+		value = 0
 	}
-	if cpuP > 100 {
-		cpuP = 100
+	if value > 100 {
+		value = 100
 	}
-	if memP < 0 {
-		memP = 0
-	}
-	if memP > 100 {
-		memP = 100
-	}
-	return cpuP, memP, true
+	return float64(int(value*10+0.5)) / 10
 }
 
 // lastNDaysLabels 生成最近 n 天（含当天）的日期标签列表，格式为 MM-DD。

@@ -46,3 +46,17 @@ func TestBindImportClusterReqRejectsUnsupportedFile(t *testing.T) {
 		t.Fatalf("expected file type error, got %v", err)
 	}
 }
+
+func TestBindImportClusterReqJSON(t *testing.T) {
+	req := httptest.NewRequest("POST", "/clusters/import", strings.NewReader(`{"name":"devops7.2","kubeconfig":"apiVersion: v1","description":"demo"}`))
+	req.Header.Set("Content-Type", "application/json")
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	ctx.Request = req
+	var input importClusterReq
+	if err := bindImportClusterReq(ctx, &input); err != nil {
+		t.Fatal(err)
+	}
+	if input.Name != "devops7.2" || input.Description != "demo" {
+		t.Fatalf("unexpected request: %#v", input)
+	}
+}
