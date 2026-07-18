@@ -28,6 +28,18 @@ function makePath(points: ResourceTrendPoint[], key: 'cpu' | 'memory') {
     .map((point, index) => ({ index, value: valueOf(point[key]) }))
     .filter((item): item is { index: number; value: number } => item.value !== null)
   if (valid.length < 2) return ''
+  const sampleGaps = valid
+    .slice(1)
+    .map((item, index) => {
+      const previous = points[valid[index]!.index]
+      const current = points[item.index]
+      if (!previous?.sampledAt || !current?.sampledAt) return 0
+      return new Date(current.sampledAt).getTime() - new Date(previous.sampledAt).getTime()
+    })
+    .filter((gap) => gap > 0)
+    .sort((a, b) => a - b)
+  const typicalGap = sampleGaps.length ? sampleGaps[Math.floor(sampleGaps.length / 2)]! : 0
+  const disconnectAfter = Math.max(30 * 60 * 1000, typicalGap * 3)
   return valid
     .map((item, index) => {
       const x = left + (item.index / Math.max(1, points.length - 1)) * (width - left - right)
@@ -39,7 +51,7 @@ function makePath(points: ResourceTrendPoint[], key: 'cpu' | 'memory') {
         previous?.sampledAt && current.sampledAt
           ? new Date(current.sampledAt).getTime() - new Date(previous.sampledAt).getTime()
           : 0
-      return `${index === 0 || gap > 10 * 60 * 1000 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
+      return `${index === 0 || gap > disconnectAfter ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
     })
     .join(' ')
 }

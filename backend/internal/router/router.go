@@ -46,6 +46,7 @@ func New(d Deps) (*gin.Engine, error) {
 	var permissionAuditCtl *controller.K8sPermissionAuditController
 	var auditCtl *controller.AuditController
 	var userCtl *controller.UserController
+	var systemSettingCtl *controller.SystemSettingController
 	var aiCtl *controller.AIController
 	var deployCtl *controller.DeployController
 	var deployConfigCtl *controller.DeployConfigController
@@ -65,6 +66,8 @@ func New(d Deps) (*gin.Engine, error) {
 		permissionAuditCtl = controller.NewK8sPermissionAuditController(permissionAuditSvc)
 		auditCtl = controller.NewAuditController(auditSvc)
 		userCtl = controller.NewUserController(d.RbacSvc)
+		systemSettingsSvc := service.NewSystemSettingsService(d.DB)
+		systemSettingCtl = controller.NewSystemSettingController(systemSettingsSvc)
 		aiProviderSvc := service.NewAIProviderService(d.DB, d.EncryptionKey)
 		aiRouteSettingsSvc := service.NewAIRouteSettingsService(d.DB)
 		aiGatewaySvc := service.NewAIGatewayService(d.DB, d.EncryptionKey)
@@ -107,7 +110,7 @@ func New(d Deps) (*gin.Engine, error) {
 	})
 
 	// ── 路由注册 ──
-	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, aiCtl, deployCtl, deployConfigCtl, projectCtl, appTemplateCtl)
+	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, systemSettingCtl, aiCtl, deployCtl, deployConfigCtl, projectCtl, appTemplateCtl)
 
 	return r, nil
 }
@@ -122,6 +125,7 @@ func registerRoutes(
 	permissionAuditCtl *controller.K8sPermissionAuditController,
 	auditCtl *controller.AuditController,
 	userCtl *controller.UserController,
+	systemSettingCtl *controller.SystemSettingController,
 	aiCtl *controller.AIController,
 	deployCtl *controller.DeployController,
 	deployConfigCtl *controller.DeployConfigController,
@@ -156,6 +160,7 @@ func registerRoutes(
 	registerWebSocketRoutes(authed, k8sCtl)
 	registerAuditRoutes(authed, auditCtl)
 	registerUserRoutes(authed, userCtl)
+	registerSystemRoutes(authed, systemSettingCtl)
 	registerAIRoutes(authed, aiCtl)
 	registerDeployRoutes(authed, deployCtl, deployConfigCtl)
 	registerProjectRoutes(authed, projectCtl)
@@ -714,6 +719,8 @@ func registerHelmRoutes(a k8sRouteArgs) {
 	k8s.GET("/clusters/:id/helm/releases", p.read, ctl.ListHelmReleases)
 	k8s.GET("/clusters/:id/helm/releases/detail", p.read, ctl.GetHelmReleaseDetail)
 	k8s.POST("/clusters/:id/helm/install", p.write, ctl.HelmInstall)
+	k8s.POST("/clusters/:id/helm/releases/:ns/:name/upgrade", p.write, ctl.HelmUpgrade)
+	k8s.POST("/clusters/:id/helm/releases/:ns/:name/rollback", p.write, ctl.HelmRollback)
 	k8s.DELETE("/clusters/:id/helm/releases/:ns/:name", p.write, ctl.HelmUninstall)
 	k8s.GET("/clusters/:id/helm/repos", p.read, ctl.HelmRepoList)
 	k8s.GET("/clusters/:id/helm/search", p.read, ctl.HelmSearch)
@@ -758,6 +765,17 @@ func registerUserRoutes(authed *gin.RouterGroup, ctl *controller.UserController)
 
 	// 权限点列表
 	authed.GET("/permissions", read, ctl.ListPermissions)
+}
+
+func registerSystemRoutes(authed *gin.RouterGroup, ctl *controller.SystemSettingController) {
+	if ctl == nil {
+		return
+	}
+	read := middleware.RequirePerm("user:read")
+	write := middleware.RequirePerm("user:write")
+
+	authed.GET("/system/settings", read, ctl.Get)
+	authed.PUT("/system/settings", write, ctl.Update)
 }
 
 func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController) {

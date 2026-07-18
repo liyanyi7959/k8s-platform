@@ -82,7 +82,7 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 				return err
 			}
 			desc := "内置管理员"
-			role = model.Role{Name: "admin", Desc: &desc}
+			role = model.Role{Name: "admin", Code: "admin", Desc: &desc}
 			if err := tx.Create(&role).Error; err != nil {
 				return err
 			}

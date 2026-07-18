@@ -11,8 +11,10 @@ import "time"
 type Cluster struct {
 	// ID 为主键，自增。
 	ID uint64 `gorm:"column:id;primaryKey;autoIncrement"`
-	// Name 为集群名称，业务上要求唯一。
-	Name string `gorm:"column:name;type:varchar(120);not null;uniqueIndex:uk_clusters_name"`
+	// Name 为集群名称，业务上要求唯一（未删除记录）。
+	Name string `gorm:"column:name;type:varchar(120);not null;index:idx_clusters_name"`
+	// NameUnique 为生成列，仅在 deleted_at IS NULL 时等于 name，用于实现部分唯一索引。
+	NameUnique string `gorm:"column:name_unique;type:varchar(120);uniqueIndex:uk_clusters_name_active;->"`
 	// Type 表示集群来源：例如 imported（导入）/created（平台创建）等。
 	Type string `gorm:"column:type;type:varchar(16);not null;default:imported;index:idx_clusters_type"`
 	// Status 表示集群状态：例如 active/disabled 等（用于管理台展示与过滤）。

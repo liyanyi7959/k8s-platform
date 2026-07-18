@@ -37,6 +37,14 @@ import {
   CheckOutlined,
   CloseOutlined,
   ProfileOutlined,
+  UpOutlined,
+  DownOutlined,
+  PauseOutlined,
+  CaretRightOutlined,
+  VerticalAlignBottomOutlined,
+  FontSizeOutlined,
+  CopyOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { history } from '@umijs/max'
@@ -132,18 +140,70 @@ interface LogPaneProps {
   keyword?: string
   live?: boolean
 }
-const LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNonce, container, previous, keyword, live }) => {
-  const [liveLogs, setLiveLogs] = useState<string[]>([])
+
+interface LogLine {
+  number: number
+  text: string
+}
+
+const MAX_LIVE_LOG_LINES = 5000
+const LOG_BOTTOM_THRESHOLD = 32
+
+const getLogLevel = (line: string): 'error' | 'warn' | 'debug' | 'info' | 'default' => {
+  if (/\b(?:fatal|panic|error|err)\b/i.test(line)) return 'error'
+  if (/\b(?:warning|warn)\b/i.test(line)) return 'warn'
+  if (/\b(?:debug|trace)\b/i.test(line)) return 'debug'
+  if (/\binfo\b/i.test(line)) return 'info'
+  return 'default'
+}
+
+const LOG_LEVEL_COLORS: Record<ReturnType<typeof getLogLevel>, string> = {
+  error: '#ff7875',
+  warn: '#ffc53d',
+  debug: '#69c0ff',
+  info: '#d6e4ff',
+  default: '#d4d4d4',
+}
+
+const LogPane: React.FC<LogPaneProps> = ({
+  clusterId,
+  pod,
+  tailLines,
+  refreshNonce,
+  container,
+  previous,
+  keyword,
+  live,
+}) => {
+  const [liveLines, setLiveLines] = useState<LogLine[]>([])
+  const [livePartialLine, setLivePartialLine] = useState('')
   const [liveConnected, setLiveConnected] = useState(false)
   const [liveError, setLiveError] = useState('')
+  const [autoFollow, setAutoFollow] = useState(true)
+  const [unreadLines, setUnreadLines] = useState(0)
+  const [wrapLines, setWrapLines] = useState(true)
+  const [activeMatch, setActiveMatch] = useState(0)
   const wsRef = useRef<WebSocket | null>(null)
-  const logEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const nextLineNumberRef = useRef(1)
+  const pendingTextRef = useRef('')
+  const lastScrollTopRef = useRef(0)
+  const autoFollowRef = useRef(true)
 
   // HTTP 一次性日志（非 live 模式使用）
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['pod-logs', clusterId, pod.namespace, pod.name, container, tailLines, previous, refreshNonce],
-    queryFn: () => getPodLogs(clusterId, pod.namespace, pod.name, { tailLines, container, previous }),
+    queryKey: [
+      'pod-logs',
+      clusterId,
+      pod.namespace,
+      pod.name,
+      container,
+      tailLines,
+      previous,
+      refreshNonce,
+    ],
+    queryFn: () =>
+      getPodLogs(clusterId, pod.namespace, pod.name, { tailLines, container, previous }),
     enabled: !!clusterId && !!pod.namespace && !!pod.name && !live,
   })
 
@@ -152,11 +212,21 @@ const LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNon
     if (!live || !clusterId || !pod.namespace || !pod.name) return
 
     let cancelled = false
-    setLiveLogs([])
+    setLiveLines([])
+    setLivePartialLine('')
     setLiveConnected(false)
     setLiveError('')
+    setAutoFollow(true)
+    setUnreadLines(0)
+    nextLineNumberRef.current = 1
+    pendingTextRef.current = ''
 
-    createPodLogSession(clusterId, pod.namespace, pod.name, { container, tailLines, follow: true, previous })
+    createPodLogSession(clusterId, pod.namespace, pod.name, {
+      container,
+      tailLines,
+      follow: true,
+      previous,
+    })
       .then(({ wsUrl }) => {
         if (cancelled || !wsUrl) return
         const url = new URL(wsUrl, window.location.href)
@@ -174,6 +244,17 @@ const LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNon
             if (frame.type === 'error') {
               setLiveError(frame.message || '日志流读取失败')
               line = ''
+            } else if (frame.type === 'eof') {
+              if (pendingTextRef.current) {
+                const finalLine = {
+                  number: nextLineNumberRef.current++,
+                  text: pendingTextRef.current,
+                }
+                setLiveLines((prev) => [...prev, finalLine].slice(-MAX_LIVE_LOG_LINES))
+                pendingTextRef.current = ''
+                setLivePartialLine('')
+              }
+              line = ''
             } else {
               line = frame.type === 'chunk' ? frame.data || '' : ''
             }
@@ -181,10 +262,15 @@ const LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNon
             // Compatible with plain-text frames from older gateways.
           }
           if (line) {
-            setLiveLogs((prev) => {
-              const next = [...prev, line]
-              return next.length > 5000 ? next.slice(-5000) : next // 限制 5000 行
-            })
+            const combined = pendingTextRef.current + line
+            const parts = combined.split(/\r?\n/)
+            pendingTextRef.current = parts.pop() || ''
+            const appended = parts.map((text) => ({ number: nextLineNumberRef.current++, text }))
+            setLivePartialLine(pendingTextRef.current)
+            if (appended.length) {
+              setLiveLines((prev) => [...prev, ...appended].slice(-MAX_LIVE_LOG_LINES))
+              if (!autoFollowRef.current) setUnreadLines((count) => count + appended.length)
+            }
           }
         }
         ws.onclose = (event) => {
@@ -208,75 +294,331 @@ const LogPane: React.FC<LogPaneProps> = ({ clusterId, pod, tailLines, refreshNon
     }
   }, [live, clusterId, pod.namespace, pod.name, container, previous, tailLines, refreshNonce])
 
-  // 自动滚动到底部
+  // 仅在跟随模式下滚动；用户上滚后流仍继续接收，但视口保持不动。
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight
+    if (autoFollow && containerRef.current) {
+      containerRef.current.scrollTo({ top: containerRef.current.scrollHeight })
+      lastScrollTopRef.current = containerRef.current.scrollTop
+      setUnreadLines(0)
     }
-  }, [liveLogs])
+  }, [liveLines, livePartialLine, autoFollow])
+
+  useEffect(() => {
+    autoFollowRef.current = autoFollow
+  }, [autoFollow])
+
+  useEffect(() => {
+    setActiveMatch(0)
+  }, [keyword])
+
+  const staticContent = isLoading ? '加载中...' : data?.logs || '暂无日志'
+  const lines = useMemo<LogLine[]>(() => {
+    if (live) {
+      if (liveLines.length || livePartialLine) {
+        return livePartialLine
+          ? [...liveLines, { number: nextLineNumberRef.current, text: livePartialLine }]
+          : liveLines
+      }
+      return liveError ? [{ number: 1, text: liveError }] : []
+    }
+    return staticContent.split(/\r?\n/).map((text, index) => ({ number: index + 1, text }))
+  }, [live, liveLines, livePartialLine, liveError, staticContent])
 
   const rawContent = live
-    ? liveError || liveLogs.join('')
-    : (isLoading ? '加载中...' : data?.logs || '暂无日志')
+    ? [liveLines.map((item) => item.text).join('\n'), livePartialLine].filter(Boolean).join('\n') ||
+      liveError
+    : staticContent
+  const normalizedKeyword = keyword?.trim().toLocaleLowerCase() || ''
+  const matchesByLine = useMemo(() => {
+    const result = new Map<number, Array<{ start: number; end: number; index: number }>>()
+    if (!normalizedKeyword) return result
+    let matchIndex = 0
+    lines.forEach((line) => {
+      const haystack = line.text.toLocaleLowerCase()
+      let start = 0
+      const matches: Array<{ start: number; end: number; index: number }> = []
+      while ((start = haystack.indexOf(normalizedKeyword, start)) !== -1) {
+        matches.push({ start, end: start + normalizedKeyword.length, index: matchIndex++ })
+        start += Math.max(normalizedKeyword.length, 1)
+      }
+      if (matches.length) result.set(line.number, matches)
+    })
+    return result
+  }, [lines, normalizedKeyword])
+  const matchCount = useMemo(
+    () => Array.from(matchesByLine.values()).reduce((count, matches) => count + matches.length, 0),
+    [matchesByLine],
+  )
 
-  // 关键字过滤
-  const content = keyword
-    ? rawContent.split('\n').filter((l) => l.includes(keyword)).join('\n') || '无匹配日志'
-    : rawContent
+  useEffect(() => {
+    if (activeMatch >= matchCount) setActiveMatch(Math.max(matchCount - 1, 0))
+  }, [activeMatch, matchCount])
+
+  const goToMatch = (direction: -1 | 1) => {
+    if (!matchCount) return
+    const next = (activeMatch + direction + matchCount) % matchCount
+    setActiveMatch(next)
+    autoFollowRef.current = false
+    setAutoFollow(false)
+    requestAnimationFrame(() => {
+      containerRef.current
+        ?.querySelector<HTMLElement>(`[data-log-match="${next}"]`)
+        ?.scrollIntoView({ block: 'center' })
+    })
+  }
+
+  const resumeFollowing = () => {
+    autoFollowRef.current = true
+    setAutoFollow(true)
+    setUnreadLines(0)
+    requestAnimationFrame(() =>
+      containerRef.current?.scrollTo({ top: containerRef.current.scrollHeight }),
+    )
+  }
+
+  const pauseFollowing = () => {
+    autoFollowRef.current = false
+    setAutoFollow(false)
+  }
+
+  const handleLogScroll = () => {
+    const element = containerRef.current
+    if (!element) return
+    const nearBottom =
+      element.scrollHeight - element.scrollTop - element.clientHeight <= LOG_BOTTOM_THRESHOLD
+    const scrollingUp = element.scrollTop < lastScrollTopRef.current - 2
+    if (scrollingUp && !nearBottom && autoFollowRef.current) {
+      autoFollowRef.current = false
+      setAutoFollow(false)
+    } else if (nearBottom && !autoFollowRef.current) {
+      autoFollowRef.current = true
+      setAutoFollow(true)
+      setUnreadLines(0)
+    }
+    lastScrollTopRef.current = element.scrollTop
+  }
+
+  const renderLine = (line: LogLine) => {
+    const matches = matchesByLine.get(line.number) || []
+    if (!matches.length) return line.text || ' '
+    const nodes: React.ReactNode[] = []
+    let cursor = 0
+    matches.forEach((match) => {
+      if (match.start > cursor) nodes.push(line.text.slice(cursor, match.start))
+      nodes.push(
+        <mark
+          key={match.index}
+          data-log-match={match.index}
+          style={{
+            background: match.index === activeMatch ? '#ff7a45' : '#ffe58f',
+            color: '#141414',
+            padding: 0,
+            outline: match.index === activeMatch ? '1px solid #fff' : undefined,
+          }}
+        >
+          {line.text.slice(match.start, match.end)}
+        </mark>,
+      )
+      cursor = match.end
+    })
+    if (cursor < line.text.length) nodes.push(line.text.slice(cursor))
+    return nodes
+  }
 
   return (
     <div>
-      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          marginBottom: 8,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <Space size="small">
           {live && (
-            <Badge status={liveConnected ? 'processing' : 'error'} text={liveConnected ? '实时连接中' : '连接断开'} />
+            <Badge
+              status={liveConnected ? 'processing' : 'error'}
+              text={liveConnected ? '实时连接中' : '连接断开'}
+            />
           )}
           {previous && <Tag color="orange">历史日志</Tag>}
-          {keyword && <Text type="secondary" style={{ fontSize: 11 }}>过滤: "{keyword}"</Text>}
+          {live && (
+            <Tag
+              color={autoFollow ? 'green' : 'gold'}
+              icon={autoFollow ? <CaretRightOutlined /> : <PauseOutlined />}
+            >
+              {autoFollow
+                ? '正在跟随'
+                : `已暂停跟随${unreadLines ? ` · ${unreadLines} 条新日志` : ''}`}
+            </Tag>
+          )}
+          {normalizedKeyword && (
+            <Space size={2}>
+              <Text type={matchCount ? 'secondary' : 'danger'} style={{ fontSize: 12 }}>
+                {matchCount ? `${activeMatch + 1} / ${matchCount}` : '无匹配'}
+              </Text>
+              <Tooltip title="上一个匹配">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<UpOutlined />}
+                  disabled={!matchCount}
+                  onClick={() => goToMatch(-1)}
+                />
+              </Tooltip>
+              <Tooltip title="下一个匹配">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<DownOutlined />}
+                  disabled={!matchCount}
+                  onClick={() => goToMatch(1)}
+                />
+              </Tooltip>
+            </Space>
+          )}
         </Space>
         <Space size="small">
+          {live && (
+            <Tooltip title={autoFollow ? '暂停视图跟随（日志仍继续接收）' : '继续跟随并回到底部'}>
+              <Button
+                size="small"
+                icon={autoFollow ? <PauseOutlined /> : <VerticalAlignBottomOutlined />}
+                onClick={() => (autoFollow ? pauseFollowing() : resumeFollowing())}
+              >
+                {autoFollow ? '暂停' : '继续跟随'}
+              </Button>
+            </Tooltip>
+          )}
+          <Tooltip title={wrapLines ? '关闭自动换行' : '开启自动换行'}>
+            <Button
+              size="small"
+              type={wrapLines ? 'primary' : 'default'}
+              icon={<FontSizeOutlined />}
+              onClick={() => setWrapLines((value) => !value)}
+            />
+          </Tooltip>
           <Tooltip title="复制日志">
-            <Button size="small" onClick={() => { navigator.clipboard.writeText(rawContent); message.success('已复制') }}>
-              复制
-            </Button>
+            <Button
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => {
+                navigator.clipboard.writeText(rawContent)
+                message.success('已复制')
+              }}
+            />
           </Tooltip>
           <Tooltip title="下载日志">
-            <Button size="small" onClick={() => {
-              const blob = new Blob([rawContent], { type: 'text/plain' })
-              const a = document.createElement('a')
-              a.href = URL.createObjectURL(blob)
-              a.download = `${pod.name}${container ? '-' + container : ''}.log`
-              a.click()
-            }}>
-              下载
-            </Button>
+            <Button
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={() => {
+                const blob = new Blob([rawContent], { type: 'text/plain' })
+                const a = document.createElement('a')
+                a.href = URL.createObjectURL(blob)
+                a.download = `${pod.name}${container ? '-' + container : ''}.log`
+                a.click()
+                window.setTimeout(() => URL.revokeObjectURL(a.href), 0)
+              }}
+            />
           </Tooltip>
           {!live && (
-            <Button size="small" icon={<ReloadOutlined />} loading={isFetching} onClick={() => refetch()}>
+            <Button
+              size="small"
+              icon={<ReloadOutlined />}
+              loading={isFetching}
+              onClick={() => refetch()}
+            >
               刷新
             </Button>
           )}
         </Space>
       </div>
+      {liveError && (
+        <Alert
+          type="error"
+          showIcon
+          message="实时日志连接异常"
+          description={liveError}
+          style={{ marginBottom: 8 }}
+        />
+      )}
       <div
         ref={containerRef}
+        onScroll={handleLogScroll}
         style={{
           background: '#1e1e1e',
           color: '#d4d4d4',
-          padding: 16,
+          padding: '8px 0',
           borderRadius: 8,
           height: 'calc(100vh - 300px)',
           overflow: 'auto',
           fontSize: 13,
           lineHeight: 1.6,
           fontFamily: 'Consolas, Monaco, monospace',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-all',
           margin: 0,
+          position: 'relative',
         }}
       >
-        {content}
-        <div ref={logEndRef} />
+        {!lines.length ? (
+          <div style={{ padding: 16, color: '#8c8c8c' }}>等待日志输出...</div>
+        ) : (
+          lines.map((line) => (
+            <div
+              key={line.number}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '64px minmax(0, 1fr)',
+                minWidth: wrapLines ? 0 : 'max-content',
+                background: getLogLevel(line.text) === 'error' ? 'rgba(255,77,79,.08)' : undefined,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  position: 'sticky',
+                  left: 0,
+                  zIndex: 1,
+                  padding: '0 12px 0 8px',
+                  color: '#6b7280',
+                  textAlign: 'right',
+                  userSelect: 'none',
+                  borderRight: '1px solid #303030',
+                  background: '#181818',
+                }}
+              >
+                {line.number}
+              </span>
+              <span
+                style={{
+                  padding: '0 12px',
+                  color: LOG_LEVEL_COLORS[getLogLevel(line.text)],
+                  whiteSpace: wrapLines ? 'pre-wrap' : 'pre',
+                  overflowWrap: wrapLines ? 'anywhere' : undefined,
+                }}
+              >
+                {renderLine(line)}
+              </span>
+            </div>
+          ))
+        )}
+        {live && !autoFollow && (
+          <Button
+            type="primary"
+            icon={<VerticalAlignBottomOutlined />}
+            onClick={resumeFollowing}
+            style={{
+              position: 'sticky',
+              left: '50%',
+              bottom: 12,
+              transform: 'translateX(-50%)',
+              zIndex: 3,
+            }}
+          >
+            {unreadLines ? `${unreadLines} 条新日志` : '回到底部'}
+          </Button>
+        )}
       </div>
     </div>
   )
@@ -703,6 +1045,12 @@ const PodsPage: React.FC = () => {
   // ═══ 列表列 ═══
   const rawColumns: ProColumns<Pod>[] = [
     {
+      title: 'Namespace',
+      dataIndex: 'namespace',
+      width: 110,
+      render: (t) => <Tag>{t as string}</Tag>,
+    },
+    {
       title: '名称',
       dataIndex: 'name',
       ellipsis: true,
@@ -711,12 +1059,6 @@ const PodsPage: React.FC = () => {
           {record.name}
         </a>
       ),
-    },
-    {
-      title: 'Namespace',
-      dataIndex: 'namespace',
-      width: 110,
-      render: (t) => <Tag>{t as string}</Tag>,
     },
     {
       title: '状态',
@@ -913,13 +1255,17 @@ const PodsPage: React.FC = () => {
             <Input.Search
               size="small"
               allowClear
-              placeholder="日志过滤"
+              placeholder="搜索日志"
               value={logKeyword}
               onChange={(e) => setLogKeyword(e.target.value)}
-              style={{ width: 120 }}
+              style={{ width: 180 }}
             />
             <Tooltip title="WebSocket 实时流式日志（follow）">
-              <Button size="small" type={logLive ? 'primary' : 'default'} onClick={() => setLogLive(!logLive)}>
+              <Button size="small" type={logLive ? 'primary' : 'default'} onClick={() => {
+                const nextLive = !logLive
+                if (nextLive) setLogPrevious(false)
+                setLogLive(nextLive)
+              }}>
                 实时
               </Button>
             </Tooltip>

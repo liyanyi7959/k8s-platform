@@ -279,13 +279,10 @@ const buildAdminMenuItems = (): MenuItem[] => [
   },
   {
     key: 'group-admin-platform',
-    path: '/config/yaml',
+    path: '/config/settings',
     name: '平台配置',
     icon: <SettingOutlined />,
-    children: [
-      { key: '/config/yaml', path: '/config/yaml', name: 'YAML 编辑' },
-      { key: '/config/settings', path: '/config/settings', name: '系统设置' },
-    ],
+    children: [{ key: '/config/settings', path: '/config/settings', name: '系统设置' }],
   },
   {
     key: 'group-admin-audit',

@@ -7,6 +7,8 @@ type User struct {
 	ID uint64 `gorm:"column:id;primaryKey;autoIncrement"`
 	// Username 为登录名，全局唯一。
 	Username string `gorm:"column:username;type:varchar(80);not null;uniqueIndex:uk_users_username"`
+	// Nickname 为用户昵称，可为空。
+	Nickname string `gorm:"column:nickname;type:varchar(80)"`
 	// Email 为用户邮箱，用于找回密码，可为空。
 	Email string `gorm:"column:email;type:varchar(120);uniqueIndex:uk_users_email"`
 	// PasswordHash 存储 bcrypt hash，不存储明文密码。
@@ -26,6 +28,8 @@ type Role struct {
 	ID uint64 `gorm:"column:id;primaryKey;autoIncrement"`
 	// Name 为角色名称，全局唯一（例如 admin）。
 	Name string `gorm:"column:name;type:varchar(80);not null;uniqueIndex:uk_roles_name"`
+	// Code 为角色编码，全局唯一（例如 admin）。
+	Code string `gorm:"column:code;type:varchar(32);uniqueIndex:uk_roles_code"`
 	// Desc 为可选描述。
 	Desc      *string    `gorm:"column:desc;type:varchar(255)"`
 	CreatedAt time.Time  `gorm:"column:created_at;autoCreateTime"`

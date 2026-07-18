@@ -21,19 +21,31 @@ type UserListParams struct {
 	PageSize int
 	Keyword  string
 	Status   string
+	RoleID   uint64
+}
+
+type UserRoleItem struct {
+	ID   uint64 `json:"id"`
+	Name string `json:"name"`
+	Code string `json:"code"`
 }
 
 type UserListItem struct {
-	ID        uint64   `json:"id"`
-	Username  string   `json:"username"`
-	Status    string   `json:"status"`
-	Roles     []string `json:"roles"`
-	CreatedAt string   `json:"created_at"`
+	ID        uint64         `json:"id"`
+	Username  string         `json:"username"`
+	Nickname  string         `json:"nickname"`
+	Email     string         `json:"email"`
+	Status    string         `json:"status"`
+	Enabled   bool           `json:"enabled"`
+	Roles     []UserRoleItem `json:"roles"`
+	CreatedAt string         `json:"created_at"`
 }
 
 type UserListResult struct {
-	Total int64          `json:"total"`
-	Items []UserListItem `json:"items"`
+	Total    int64          `json:"total"`
+	Page     int            `json:"page"`
+	PageSize int            `json:"page_size"`
+	Items    []UserListItem `json:"items"`
 }
 
 func (s *RbacService) ListUsers(ctx context.Context, p UserListParams) (*UserListResult, error) {
@@ -46,10 +58,13 @@ func (s *RbacService) ListUsers(ctx context.Context, p UserListParams) (*UserLis
 
 	q := s.db.WithContext(ctx).Model(&model.User{}).Where("deleted_at IS NULL")
 	if v := strings.TrimSpace(p.Keyword); v != "" {
-		q = q.Where("username LIKE ?", "%"+v+"%")
+		q = q.Where("username LIKE ? OR nickname LIKE ? OR email LIKE ?", "%"+v+"%", "%"+v+"%", "%"+v+"%")
 	}
 	if v := strings.TrimSpace(p.Status); v != "" {
 		q = q.Where("status = ?", v)
+	}
+	if p.RoleID > 0 {
+		q = q.Where("EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = users.id AND ur.role_id = ?)", p.RoleID)
 	}
 
 	var total int64
@@ -71,12 +86,14 @@ func (s *RbacService) ListUsers(ctx context.Context, p UserListParams) (*UserLis
 
 	type userRoleRow struct {
 		UserID   uint64 `gorm:"column:user_id"`
+		RoleID   uint64 `gorm:"column:role_id"`
 		RoleName string `gorm:"column:name"`
+		RoleCode string `gorm:"column:code"`
 	}
 	var urRows []userRoleRow
 	if len(userIDs) > 0 {
 		if err := s.db.WithContext(ctx).Raw(`
-			SELECT ur.user_id, r.name
+			SELECT ur.user_id, r.id AS role_id, r.name, r.code
 			FROM user_roles ur
 			JOIN roles r ON r.id = ur.role_id AND r.deleted_at IS NULL
 			WHERE ur.user_id IN ?
@@ -84,9 +101,13 @@ func (s *RbacService) ListUsers(ctx context.Context, p UserListParams) (*UserLis
 			return nil, err
 		}
 	}
-	roleMap := map[uint64][]string{}
+	roleMap := map[uint64][]UserRoleItem{}
 	for _, row := range urRows {
-		roleMap[row.UserID] = append(roleMap[row.UserID], row.RoleName)
+		roleMap[row.UserID] = append(roleMap[row.UserID], UserRoleItem{
+			ID:   row.RoleID,
+			Name: row.RoleName,
+			Code: row.RoleCode,
+		})
 	}
 
 	items := make([]UserListItem, 0, len(users))
@@ -94,16 +115,21 @@ func (s *RbacService) ListUsers(ctx context.Context, p UserListParams) (*UserLis
 		items = append(items, UserListItem{
 			ID:        u.ID,
 			Username:  u.Username,
+			Nickname:  u.Nickname,
+			Email:     u.Email,
 			Status:    u.Status,
+			Enabled:   u.Status == "active",
 			Roles:     roleMap[u.ID],
 			CreatedAt: u.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	return &UserListResult{Total: total, Items: items}, nil
+	return &UserListResult{Total: total, Page: p.Page, PageSize: p.PageSize, Items: items}, nil
 }
 
 type CreateUserReq struct {
 	Username string   `json:"username"`
+	Nickname string   `json:"nickname"`
+	Email    string   `json:"email"`
 	Password string   `json:"password"`
 	RoleIDs  []uint64 `json:"role_ids"`
 	Roles    []string `json:"roles"`
@@ -115,8 +141,8 @@ func (s *RbacService) CreateUser(ctx context.Context, req CreateUserReq) (uint64
 	if username == "" || password == "" {
 		return 0, ErrInvalidParams
 	}
-	if len(password) < 4 {
-		return 0, &ServiceError{Kind: ErrInvalidParams, Message: "密码至少4位"}
+	if len(password) < 8 {
+		return 0, &ServiceError{Kind: ErrInvalidParams, Message: "密码至少8位"}
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -140,7 +166,18 @@ func (s *RbacService) CreateUser(ctx context.Context, req CreateUserReq) (uint64
 			return &ServiceError{Kind: ErrConflict, Message: "用户名已存在"}
 		}
 
-		user := model.User{Username: username, PasswordHash: string(hash), Status: "active"}
+		nickname := strings.TrimSpace(req.Nickname)
+		if nickname == "" {
+			nickname = username
+		}
+		email := strings.TrimSpace(req.Email)
+		user := model.User{
+			Username:     username,
+			Nickname:     nickname,
+			Email:        email,
+			PasswordHash: string(hash),
+			Status:       "active",
+		}
 		if err2 := tx.Create(&user).Error; err2 != nil {
 			return err2
 		}
@@ -160,9 +197,11 @@ func (s *RbacService) CreateUser(ctx context.Context, req CreateUserReq) (uint64
 }
 
 type UpdateUserReq struct {
-	Status  *string  `json:"status"`
-	RoleIDs []uint64 `json:"role_ids"`
-	Roles   []string `json:"roles"`
+	Nickname *string  `json:"nickname"`
+	Email    *string  `json:"email"`
+	Status   *string  `json:"status"`
+	RoleIDs  []uint64 `json:"role_ids"`
+	Roles    []string `json:"roles"`
 }
 
 func (s *RbacService) UpdateUser(ctx context.Context, userID uint64, req UpdateUserReq) error {
@@ -183,12 +222,22 @@ func (s *RbacService) UpdateUser(ctx context.Context, userID uint64, req UpdateU
 			return err
 		}
 
+		updates := map[string]interface{}{}
+		if req.Nickname != nil {
+			updates["nickname"] = strings.TrimSpace(*req.Nickname)
+		}
+		if req.Email != nil {
+			updates["email"] = strings.TrimSpace(*req.Email)
+		}
 		if req.Status != nil {
 			st := strings.TrimSpace(*req.Status)
 			if st != "active" && st != "disabled" {
 				return &ServiceError{Kind: ErrInvalidParams, Message: "status 无效"}
 			}
-			if err := tx.Model(&model.User{}).Where("id = ?", userID).Update("status", st).Error; err != nil {
+			updates["status"] = st
+		}
+		if len(updates) > 0 {
+			if err := tx.Model(&model.User{}).Where("id = ?", userID).Updates(updates).Error; err != nil {
 				return err
 			}
 		}
@@ -375,6 +424,7 @@ func (s *RbacService) ResetPassword(ctx context.Context, userID uint64, newPassw
 type RoleListItem struct {
 	ID             uint64                     `json:"id"`
 	Name           string                     `json:"name"`
+	Code           string                     `json:"code"`
 	Description    string                     `json:"description"`
 	Permissions    []string                   `json:"permissions"`
 	NamespaceScope *RoleNamespaceScopeSummary `json:"namespace_scope,omitempty"`
@@ -497,11 +547,12 @@ func (s *RbacService) ListRoles(ctx context.Context) ([]RoleListItem, error) {
 		items = append(items, RoleListItem{
 			ID:             r.ID,
 			Name:           r.Name,
+			Code:           r.Code,
 			Description:    desc,
 			Permissions:    permissions,
 			NamespaceScope: namespaceScope,
 			UserCount:      userCountMap[r.ID],
-			Builtin:        r.Name == "admin",
+			Builtin:        r.Name == "admin" || r.Code == "admin",
 			CreatedAt:      r.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
@@ -510,6 +561,7 @@ func (s *RbacService) ListRoles(ctx context.Context) ([]RoleListItem, error) {
 
 type CreateRoleReq struct {
 	Name           string                 `json:"name"`
+	Code           string                 `json:"code"`
 	Description    string                 `json:"description"`
 	Desc           string                 `json:"desc"`
 	Permissions    []string               `json:"permissions"`
@@ -612,7 +664,8 @@ func (s *RbacService) currentRolePermissionCodes(tx *gorm.DB, roleID uint64) ([]
 
 func (s *RbacService) CreateRole(ctx context.Context, req CreateRoleReq) (uint64, error) {
 	name := strings.TrimSpace(req.Name)
-	if name == "" {
+	code := strings.TrimSpace(req.Code)
+	if name == "" || code == "" {
 		return 0, ErrInvalidParams
 	}
 
@@ -634,8 +687,14 @@ func (s *RbacService) CreateRole(ctx context.Context, req CreateRoleReq) (uint64
 		if count > 0 {
 			return &ServiceError{Kind: ErrConflict, Message: "角色名已存在"}
 		}
+		if err2 := tx.Model(&model.Role{}).Where("deleted_at IS NULL AND code = ?", code).Count(&count).Error; err2 != nil {
+			return err2
+		}
+		if count > 0 {
+			return &ServiceError{Kind: ErrConflict, Message: "角色编码已存在"}
+		}
 
-		role := model.Role{Name: name, Desc: req.normalizedDescription()}
+		role := model.Role{Name: name, Code: code, Desc: req.normalizedDescription()}
 		if err2 := tx.Create(&role).Error; err2 != nil {
 			return err2
 		}
@@ -657,6 +716,8 @@ func (s *RbacService) CreateRole(ctx context.Context, req CreateRoleReq) (uint64
 }
 
 type UpdateRoleReq struct {
+	Name           *string                `json:"name"`
+	Code           *string                `json:"code"`
 	Description    *string                `json:"description"`
 	Desc           *string                `json:"desc"`
 	Permissions    []string               `json:"permissions"`
@@ -693,8 +754,48 @@ func (s *RbacService) UpdateRole(ctx context.Context, roleID uint64, req UpdateR
 			return err
 		}
 
+		if role.Name == "admin" && ((req.Name != nil && strings.TrimSpace(*req.Name) != "admin") || (req.Code != nil && strings.TrimSpace(*req.Code) != "admin")) {
+			return &ServiceError{Kind: ErrConflict, Message: "内置管理员角色不可修改标识"}
+		}
+
+		updates := map[string]interface{}{}
+		if req.Name != nil {
+			newName := strings.TrimSpace(*req.Name)
+			if newName == "" {
+				return &ServiceError{Kind: ErrInvalidParams, Message: "角色名称不能为空"}
+			}
+			if newName != role.Name {
+				var count int64
+				if err := tx.Model(&model.Role{}).Where("deleted_at IS NULL AND name = ? AND id != ?", newName, roleID).Count(&count).Error; err != nil {
+					return err
+				}
+				if count > 0 {
+					return &ServiceError{Kind: ErrConflict, Message: "角色名已存在"}
+				}
+			}
+			updates["name"] = newName
+		}
+		if req.Code != nil {
+			newCode := strings.TrimSpace(*req.Code)
+			if newCode == "" {
+				return &ServiceError{Kind: ErrInvalidParams, Message: "角色编码不能为空"}
+			}
+			if newCode != role.Code {
+				var count int64
+				if err := tx.Model(&model.Role{}).Where("deleted_at IS NULL AND code = ? AND id != ?", newCode, roleID).Count(&count).Error; err != nil {
+					return err
+				}
+				if count > 0 {
+					return &ServiceError{Kind: ErrConflict, Message: "角色编码已存在"}
+				}
+			}
+			updates["code"] = newCode
+		}
 		if descPtr, ok := req.normalizedDescription(); ok {
-			if err := tx.Model(&model.Role{}).Where("id = ?", roleID).Update("desc", descPtr).Error; err != nil {
+			updates["desc"] = descPtr
+		}
+		if len(updates) > 0 {
+			if err := tx.Model(&model.Role{}).Where("id = ?", roleID).Updates(updates).Error; err != nil {
 				return err
 			}
 		}

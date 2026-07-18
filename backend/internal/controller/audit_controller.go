@@ -28,10 +28,12 @@ func (ac *AuditController) List(c *gin.Context) {
 	params := service.AuditListParams{
 		Page:      page,
 		PageSize:  pageSize,
+		Keyword:   strings.TrimSpace(c.Query("keyword")),
 		Username:  strings.TrimSpace(c.Query("username")),
 		Action:    strings.TrimSpace(c.Query("action")),
 		Resource:  strings.TrimSpace(c.Query("resource")),
 		ClusterID: clusterID,
+		Status:    strings.TrimSpace(c.Query("status")),
 	}
 
 	if v := strings.TrimSpace(c.Query("start_time")); v != "" {

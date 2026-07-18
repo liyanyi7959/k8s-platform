@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import {
   ModalForm,
   ProFormSelect,
@@ -7,7 +7,17 @@ import {
   ProTable,
   type ProColumns,
 } from '@ant-design/pro-components'
-import { Button, Input, message, Popconfirm, Select, Space, Tag, Tooltip } from 'antd'
+import {
+  Button,
+  Input,
+  message,
+  Popconfirm,
+  Select,
+  Space,
+  Switch,
+  Tag,
+  Tooltip,
+} from 'antd'
 import {
   DeleteOutlined,
   EditOutlined,
@@ -21,19 +31,24 @@ import { AppPage } from '@/components'
 import {
   createUser,
   deleteUser,
-  listRoles,
+  listAllRoles,
   listUsers,
   resetPassword,
   updateUser,
 } from '@/services/system'
-import { userCreateSchema } from '@/schemas/system'
+import {
+  resetPasswordSchema,
+  userCreateSchema,
+  userEditSchema,
+} from '@/schemas/system'
 import { formatDate } from '@/utils'
-import type { User } from '@/types'
-import type { UserCreateInput } from '@/schemas/system'
+import type { Role, User } from '@/types'
+import type { UserCreateInput, UserEditInput } from '@/schemas/system'
 
-type StatusFilter = 'enabled' | 'disabled' | undefined
+type StatusFilter = 'active' | 'disabled' | undefined
 
-const getRoleIds = (user?: User | null) => user?.roles?.map((role) => role.id) || []
+const getRoleIds = (user?: User | null): number[] =>
+  user?.roles?.map((role) => role.id) || []
 
 /** 用户管理页 */
 const UsersPage: React.FC = () => {
@@ -42,60 +57,58 @@ const UsersPage: React.FC = () => {
   const [editVisible, setEditVisible] = useState(false)
   const [resetVisible, setResetVisible] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+
   const [searchText, setSearchText] = useState('')
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(undefined)
   const [roleFilter, setRoleFilter] = useState<number | undefined>(undefined)
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 10 })
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedKeyword(searchText.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [searchText])
+
+  const params = useMemo(
+    () => ({
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      keyword: debouncedKeyword || undefined,
+      status: statusFilter,
+      roleId: roleFilter,
+    }),
+    [debouncedKeyword, pagination.page, pagination.pageSize, roleFilter, statusFilter]
+  )
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => listUsers(),
+    queryKey: ['users', params],
+    queryFn: () => listUsers(params),
   })
 
   const { data: roleOptionsData = [] } = useQuery({
     queryKey: ['roles-all'],
-    queryFn: async () => {
-      const result = await listRoles({ page: 1, pageSize: 100 })
-      return result.items || []
-    },
+    queryFn: async () => listAllRoles(),
   })
 
-  const roleOptions = roleOptionsData.map((role) => ({
-    label: role.name,
-    value: role.id,
-  }))
-
-  const users = useMemo(() => {
-    return (data?.items || []).filter((user) => {
-      const keyword = searchText.trim().toLowerCase()
-      const matchKeyword =
-        !keyword ||
-        user.username.toLowerCase().includes(keyword) ||
-        user.nickname?.toLowerCase().includes(keyword) ||
-        user.email?.toLowerCase().includes(keyword)
-
-      const matchStatus =
-        !statusFilter ||
-        (statusFilter === 'enabled' && user.enabled) ||
-        (statusFilter === 'disabled' && !user.enabled)
-
-      const matchRole = !roleFilter || user.roles?.some((role) => role.id === roleFilter)
-
-      return matchKeyword && matchStatus && matchRole
-    })
-  }, [data?.items, roleFilter, searchText, statusFilter])
-
-  const summary = useMemo(() => {
-    const source = data?.items || []
-    return {
-      total: source.length,
-      enabled: source.filter((item) => item.enabled).length,
-      disabled: source.filter((item) => !item.enabled).length,
-      admins: source.filter((item) => item.roles?.some((role) => role.code === 'admin')).length,
-    }
-  }, [data?.items])
+  const roleOptions = useMemo(
+    () =>
+      roleOptionsData.map((role: Role) => ({
+        label: role.name,
+        value: role.id,
+      })),
+    [roleOptionsData]
+  )
 
   const createMutation = useMutation({
-    mutationFn: (payload: Omit<UserCreateInput, 'confirmPassword'>) => createUser(payload),
+    mutationFn: (payload: UserCreateInput) =>
+      createUser({
+        username: payload.username,
+        nickname: payload.nickname,
+        email: payload.email,
+        password: payload.password,
+        roleIds: payload.roleIds,
+        enabled: payload.enabled,
+      }),
     onSuccess: () => {
       message.success('创建成功')
       setCreateVisible(false)
@@ -105,8 +118,13 @@ const UsersPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Record<string, unknown> }) =>
-      updateUser(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: UserEditInput }) =>
+      updateUser(id, {
+        nickname: payload.nickname,
+        email: payload.email,
+        enabled: payload.enabled,
+        roleIds: payload.roleIds,
+      }),
     onSuccess: () => {
       message.success('更新成功')
       setEditVisible(false)
@@ -126,7 +144,8 @@ const UsersPage: React.FC = () => {
   })
 
   const resetMutation = useMutation({
-    mutationFn: ({ id, password }: { id: number; password: string }) => resetPassword(id, password),
+    mutationFn: ({ id, password }: { id: number; password: string }) =>
+      resetPassword(id, { password }),
     onSuccess: () => {
       message.success('密码重置成功')
       setResetVisible(false)
@@ -135,15 +154,28 @@ const UsersPage: React.FC = () => {
     onError: () => message.error('密码重置失败'),
   })
 
+  const handleToggleEnabled = (user: User, checked: boolean) => {
+    updateMutation.mutate({
+      id: user.id,
+      payload: {
+        id: user.id,
+        nickname: user.nickname,
+        email: user.email,
+        enabled: checked,
+        roleIds: getRoleIds(user),
+      },
+    })
+  }
+
   const columns: ProColumns<User>[] = [
     {
       title: '用户',
       dataIndex: 'username',
       width: 260,
       render: (_, record) => (
-        <div className="app-table-user">
-          <span className="app-table-user__name">{record.nickname || record.username}</span>
-          <span className="app-table-user__meta">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+          <span style={{ fontWeight: 500 }}>{record.nickname || record.username}</span>
+          <span style={{ color: 'rgba(0, 0, 0, 0.45)', fontSize: 12 }}>
             {record.username}
             {record.email ? ` · ${record.email}` : ''}
           </span>
@@ -156,15 +188,11 @@ const UsersPage: React.FC = () => {
       width: 220,
       align: 'center',
       render: (_, record) => (
-        <Space size={[6, 6]} wrap>
+        <Space size={[6, 6]} wrap style={{ justifyContent: 'center' }}>
           {record.roles?.length ? (
-            record.roles.map((role) => (
-              <Tag key={role.id} color={role.code === 'admin' ? 'processing' : 'blue'}>
-                {role.name}
-              </Tag>
-            ))
+            record.roles.map((role) => <Tag key={role.id}>{role.name}</Tag>)
           ) : (
-            <span className="app-table-stack__sub">未分配角色</span>
+            <span style={{ color: 'rgba(0, 0, 0, 0.25)' }}>未分配角色</span>
           )}
         </Space>
       ),
@@ -175,12 +203,14 @@ const UsersPage: React.FC = () => {
       width: 120,
       align: 'center',
       render: (_, record) => (
-        <div className="app-table-stack">
-          <span className="app-table-stack__main">{record.enabled ? '启用' : '禁用'}</span>
-          <span className="app-table-stack__sub">
-            {record.enabled ? '可登录并执行授权操作' : '已阻止登录与变更'}
-          </span>
-        </div>
+        <Switch
+          size="small"
+          checked={record.enabled}
+          checkedChildren="启用"
+          unCheckedChildren="禁用"
+          onChange={(checked) => handleToggleEnabled(record, checked)}
+          loading={updateMutation.isPending && currentUser?.id === record.id}
+        />
       ),
     },
     {
@@ -188,14 +218,7 @@ const UsersPage: React.FC = () => {
       dataIndex: 'createdAt',
       width: 180,
       align: 'center',
-      render: (_, record) => (
-        <div className="app-table-stack">
-          <span className="app-table-stack__main">
-            {formatDate(record.createdAt, 'YYYY-MM-DD')}
-          </span>
-          <span className="app-table-stack__sub">{formatDate(record.createdAt, 'HH:mm:ss')}</span>
-        </div>
-      ),
+      render: (_, record) => formatDate(record.createdAt),
     },
     {
       title: '操作',
@@ -203,7 +226,7 @@ const UsersPage: React.FC = () => {
       width: 132,
       align: 'center',
       render: (_, record) => (
-        <div className="app-table-actions app-table-actions--icon">
+        <Space size={4}>
           <Tooltip title="编辑">
             <Button
               type="text"
@@ -226,12 +249,15 @@ const UsersPage: React.FC = () => {
               }}
             />
           </Tooltip>
-          <Popconfirm title="确定删除该用户？" onConfirm={() => deleteMutation.mutate(record.id)}>
+          <Popconfirm
+            title="确定删除该用户？"
+            onConfirm={() => deleteMutation.mutate(record.id)}
+          >
             <Tooltip title="删除">
               <Button type="text" size="small" danger icon={<DeleteOutlined />} />
             </Tooltip>
           </Popconfirm>
-        </div>
+        </Space>
       ),
     },
   ]
@@ -240,50 +266,49 @@ const UsersPage: React.FC = () => {
 
   return (
     <AppPage>
-      <div className="app-data-console">
-        <section className="app-data-console__statgrid">
-          <div className="app-data-console__stat">
-            <span className="app-data-console__stat-label">启用账号</span>
-            <strong className="app-data-console__stat-value">{summary.enabled}</strong>
-            <span className="app-data-console__stat-hint">正常参与平台操作</span>
-          </div>
-          <div className="app-data-console__stat">
-            <span className="app-data-console__stat-label">禁用账号</span>
-            <strong className="app-data-console__stat-value">{summary.disabled}</strong>
-            <span className="app-data-console__stat-hint">已阻断登录与控制动作</span>
-          </div>
-          <div className="app-data-console__stat">
-            <span className="app-data-console__stat-label">当前结果</span>
-            <strong className="app-data-console__stat-value">{users.length}</strong>
-            <span className="app-data-console__stat-hint">基于当前筛选条件展示</span>
-          </div>
-        </section>
-
-        <section className="app-data-console__filters">
-          <div className="app-data-console__filters-left">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <section
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 12,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Space size={12} wrap>
             <Input
               placeholder="搜索用户名、昵称或邮箱"
               prefix={<SearchOutlined />}
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              onChange={(event) => {
+                setSearchText(event.target.value)
+                setPagination((prev) => ({ ...prev, page: 1 }))
+              }}
               style={{ width: 260 }}
               allowClear
             />
             <Select
               placeholder="账号状态"
               value={statusFilter}
-              onChange={setStatusFilter}
+              onChange={(value) => {
+                setStatusFilter(value)
+                setPagination((prev) => ({ ...prev, page: 1 }))
+              }}
               style={{ width: 140 }}
               allowClear
               options={[
-                { label: '启用', value: 'enabled' },
+                { label: '启用', value: 'active' },
                 { label: '禁用', value: 'disabled' },
               ]}
             />
             <Select
               placeholder="角色筛选"
               value={roleFilter}
-              onChange={setRoleFilter}
+              onChange={(value) => {
+                setRoleFilter(value)
+                setPagination((prev) => ({ ...prev, page: 1 }))
+              }}
               style={{ width: 180 }}
               allowClear
               options={roleOptions}
@@ -297,29 +322,21 @@ const UsersPage: React.FC = () => {
                   setSearchText('')
                   setStatusFilter(undefined)
                   setRoleFilter(undefined)
+                  setPagination({ page: 1, pageSize: 10 })
                 }}
               >
                 重置
               </Button>
             ) : null}
-          </div>
-          <div className="app-data-console__filters-right">
-            <span className="app-data-console__meta">
-              管理员 <strong>{summary.admins}</strong>
-            </span>
-            <span className="app-data-console__meta">
-              当前展示 <strong>{users.length}</strong> / {summary.total}
-            </span>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
-              创建用户
-            </Button>
-          </div>
+          </Space>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
+            创建用户
+          </Button>
         </section>
 
         <ProTable<User>
-          className="app-data-console__protable"
           columns={columns}
-          dataSource={users}
+          dataSource={data?.items || []}
           loading={isLoading}
           rowKey="id"
           search={false}
@@ -327,12 +344,18 @@ const UsersPage: React.FC = () => {
           cardBordered
           tableAlertRender={false}
           pagination={{
-            pageSize: 10,
+            current: pagination.page,
+            pageSize: pagination.pageSize,
+            total: data?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`,
+            onChange: (page, pageSize) => {
+              setPagination({ page, pageSize: pageSize || 10 })
+            },
           }}
           toolBarRender={false}
+          scroll={{ x: 800 }}
         />
       </div>
 
@@ -346,9 +369,7 @@ const UsersPage: React.FC = () => {
             message.error(result.error.issues[0]?.message || '请检查表单输入')
             return false
           }
-
-          const { confirmPassword, ...payload } = result.data
-          createMutation.mutate(payload)
+          createMutation.mutate(result.data)
           return true
         }}
         width={560}
@@ -358,10 +379,10 @@ const UsersPage: React.FC = () => {
           name="username"
           label="用户名"
           rules={[{ required: true }]}
-          extra="以字母开头，可包含数字与下划线。"
+          fieldProps={{ maxLength: 32 }}
         />
-        <ProFormText name="nickname" label="昵称" />
-        <ProFormText name="email" label="邮箱" />
+        <ProFormText name="nickname" label="昵称" fieldProps={{ maxLength: 80 }} />
+        <ProFormText name="email" label="邮箱" fieldProps={{ maxLength: 120 }} />
         <ProFormSelect
           name="roleIds"
           label="角色"
@@ -369,13 +390,8 @@ const UsersPage: React.FC = () => {
           rules={[{ required: true, message: '请选择角色' }]}
           options={roleOptions}
         />
-        <ProFormSwitch name="enabled" label="启用" initialValue />
-        <ProFormText.Password
-          name="password"
-          label="密码"
-          rules={[{ required: true }]}
-          extra="至少 8 位，需包含大小写字母、数字和特殊字符。"
-        />
+        <ProFormSwitch name="enabled" label="启用状态" initialValue />
+        <ProFormText.Password name="password" label="密码" rules={[{ required: true }]} />
         <ProFormText.Password
           name="confirmPassword"
           label="确认密码"
@@ -396,11 +412,19 @@ const UsersPage: React.FC = () => {
           if (!currentUser) {
             return false
           }
-
-          updateMutation.mutate({
+          const payload: UserEditInput = {
             id: currentUser.id,
-            payload: values,
-          })
+            nickname: values.nickname,
+            email: values.email,
+            enabled: values.enabled,
+            roleIds: values.roleIds,
+          }
+          const result = userEditSchema.safeParse(payload)
+          if (!result.success) {
+            message.error(result.error.issues[0]?.message || '请检查表单输入')
+            return false
+          }
+          updateMutation.mutate({ id: currentUser.id, payload: result.data })
           return true
         }}
         width={560}
@@ -418,10 +442,16 @@ const UsersPage: React.FC = () => {
         }
       >
         <ProFormText name="username" label="用户名" disabled />
-        <ProFormText name="nickname" label="昵称" />
-        <ProFormText name="email" label="邮箱" />
-        <ProFormSelect name="roleIds" label="角色" mode="multiple" options={roleOptions} />
-        <ProFormSwitch name="enabled" label="启用" />
+        <ProFormText name="nickname" label="昵称" fieldProps={{ maxLength: 80 }} />
+        <ProFormText name="email" label="邮箱" fieldProps={{ maxLength: 120 }} />
+        <ProFormSelect
+          name="roleIds"
+          label="角色"
+          mode="multiple"
+          rules={[{ required: true, message: '请选择角色' }]}
+          options={roleOptions}
+        />
+        <ProFormSwitch name="enabled" label="启用状态" />
       </ModalForm>
 
       <ModalForm
@@ -437,10 +467,14 @@ const UsersPage: React.FC = () => {
           if (!currentUser) {
             return false
           }
-
+          const result = resetPasswordSchema.safeParse(values)
+          if (!result.success) {
+            message.error(result.error.issues[0]?.message || '请检查表单输入')
+            return false
+          }
           resetMutation.mutate({
             id: currentUser.id,
-            password: values.newPassword,
+            password: result.data.newPassword,
           })
           return true
         }}
@@ -450,26 +484,12 @@ const UsersPage: React.FC = () => {
         <ProFormText.Password
           name="newPassword"
           label="新密码"
-          rules={[
-            { required: true, message: '请输入新密码' },
-            { min: 8, message: '密码至少 8 位' },
-          ]}
-          extra="建议使用高强度密码。"
+          rules={[{ required: true, message: '请输入新密码' }]}
         />
         <ProFormText.Password
           name="confirmPassword"
           label="确认密码"
-          rules={[
-            { required: true, message: '请再次输入密码' },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                if (!value || getFieldValue('newPassword') === value) {
-                  return Promise.resolve()
-                }
-                return Promise.reject(new Error('两次密码不一致'))
-              },
-            }),
-          ]}
+          rules={[{ required: true, message: '请再次输入密码' }]}
         />
       </ModalForm>
     </AppPage>

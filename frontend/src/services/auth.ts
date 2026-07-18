@@ -16,45 +16,38 @@ const MOCK_USER: User = {
       name: '超级管理员',
       code: 'admin',
       description: '拥有所有权限',
-      permissions: [
-        { id: 1, code: 'cluster:read', name: '查看集群' },
-        { id: 2, code: 'cluster:write', name: '管理集群' },
-        { id: 3, code: 'k8s:read', name: '查看K8s资源' },
-        { id: 4, code: 'k8s:write', name: '管理K8s资源' },
-      ],
+      permissions: ['cluster:read', 'cluster:write', 'k8s:read', 'k8s:write'],
       createdAt: '2025-01-01T00:00:00Z',
     },
   ],
   createdAt: '2025-01-01T00:00:00Z',
 }
 
-function toUser(raw: any): User {
-  if (!raw || typeof raw.id !== 'number' || raw.id <= 0 || !String(raw.username || '').trim()) {
+function toUser(raw: unknown): User {
+  if (!raw || typeof (raw as Record<string, unknown>).id !== 'number' || (raw as Record<string, unknown>).id as number <= 0 || !String((raw as Record<string, unknown>).username || '').trim()) {
     throw new Error('未登录')
   }
 
-  const roles = Array.isArray(raw.roles) ? raw.roles : []
-  const permissions = Array.isArray(raw.permissions) ? raw.permissions : []
+  const rawRoles = (raw as Record<string, unknown>).roles
+  const rawPermissions = (raw as Record<string, unknown>).permissions
+  const roles = Array.isArray(rawRoles) ? rawRoles as string[] : []
+  const permissions = Array.isArray(rawPermissions) ? rawPermissions as string[] : []
 
   return {
-    id: raw.id,
-    username: raw.username || '',
-    nickname: raw.nickname || raw.username || '',
-    email: raw.email || '',
-    enabled: raw.status === 'active' || raw.enabled === true,
+    id: (raw as Record<string, unknown>).id as number,
+    username: String((raw as Record<string, unknown>).username || ''),
+    nickname: String((raw as Record<string, unknown>).nickname || (raw as Record<string, unknown>).username || ''),
+    email: String((raw as Record<string, unknown>).email || ''),
+    enabled: (raw as Record<string, unknown>).status === 'active' || (raw as Record<string, unknown>).enabled === true,
     roles: roles.map((role: string, roleIndex: number) => ({
       id: roleIndex + 1,
       name: role,
       code: role,
       description: '',
-      permissions: permissions.map((permission: string, permissionIndex: number) => ({
-        id: permissionIndex + 1,
-        code: permission,
-        name: permission,
-      })),
+      permissions,
       createdAt: '',
     })),
-    createdAt: raw.created_at || '',
+    createdAt: String((raw as Record<string, unknown>).created_at || ''),
   }
 }
 

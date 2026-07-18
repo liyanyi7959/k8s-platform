@@ -86,8 +86,7 @@ const routes: any[] = [
     name: '系统配置',
     path: '/config',
     routes: [
-      { path: '/config', redirect: '/config/yaml' },
-      { name: 'YAML 编辑', path: '/config/yaml', component: '@/pages/config/yaml' },
+      { path: '/config', redirect: '/config/settings' },
       { name: '用户管理', path: '/config/users', component: '@/pages/system/users' },
       { name: '角色管理', path: '/config/roles', component: '@/pages/system/roles' },
       { name: '审计日志', path: '/config/audit-logs', component: '@/pages/system/audit-logs' },

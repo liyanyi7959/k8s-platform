@@ -57,6 +57,7 @@ export default function PodMetricsPage() {
     {
       title: '容器数',
       width: 80,
+      align: 'center',
       search: false,
       render: (_, record) => {
         const containers = (rawField(record, 'containers') as Array<unknown>) || []

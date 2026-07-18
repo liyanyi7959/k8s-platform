@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { useParams, history, useModel } from '@umijs/max'
-import { Card, Descriptions, Button, Space, Spin, Table, Tag, Typography, message } from 'antd'
+import { Card, Descriptions, Button, Form, Input, Space, Spin, Table, Tag, Typography, Upload, message } from 'antd'
 import { ModalForm, ProFormText } from '@ant-design/pro-components'
+import { InboxOutlined } from '@ant-design/icons'
+import type { UploadChangeParam } from 'antd/es/upload'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClusterById, updateCluster } from '@/services/clusters'
 import { listProjects, type Project } from '@/services/project'
@@ -125,6 +127,26 @@ const ClusterDetailPage: React.FC = () => {
   const queryClient = useQueryClient()
   const [editVisible, setEditVisible] = useState(false)
   const [activeTab, setActiveTab] = useState('info')
+  const [editForm] = Form.useForm()
+  const [kubeconfigFileName, setKubeconfigFileName] = useState<string>()
+
+  const handleKubeconfigFile = (info: UploadChangeParam) => {
+    const rawFile = info.file.originFileObj || info.file
+    if (!rawFile || !(rawFile instanceof File)) return
+    if (rawFile.size > 1024 * 1024) {
+      setKubeconfigFileName(undefined)
+      message.error('kubeconfig 文件不能超过 1MB')
+      return
+    }
+    setKubeconfigFileName(rawFile.name)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      editForm.setFieldValue('kubeconfig', e.target?.result as string)
+      message.success(`${rawFile.name} 读取成功`)
+    }
+    reader.onerror = () => message.error('文件读取失败，请重试')
+    reader.readAsText(rawFile)
+  }
 
   const { data: cluster, isLoading } = useQuery({
     queryKey: ['cluster', id],
@@ -202,12 +224,22 @@ const ClusterDetailPage: React.FC = () => {
       <ModalForm
         title="编辑集群"
         open={editVisible}
-        onOpenChange={setEditVisible}
+        onOpenChange={(visible) => {
+          setEditVisible(visible)
+          if (!visible) {
+            setKubeconfigFileName(undefined)
+          }
+        }}
+        form={editForm}
         onFinish={async (values) => {
-          updateMutation.mutate(values)
+          const payload: Record<string, string> = { name: values.name }
+          if (values.kubeconfig) {
+            payload.kubeconfig = values.kubeconfig
+          }
+          updateMutation.mutate(payload)
           return true
         }}
-        width={520}
+        width={560}
         modalProps={{ destroyOnClose: true }}
         initialValues={cluster}
       >
@@ -216,6 +248,40 @@ const ClusterDetailPage: React.FC = () => {
           label="集群名称"
           rules={[{ required: true, message: '请输入集群名称' }]}
         />
+        <Form.Item label="更新 Kubeconfig">
+          <Upload.Dragger
+            accept=".yaml,.yml,.json,.txt,.kubeconfig,.config"
+            maxCount={1}
+            beforeUpload={() => false}
+            onChange={handleKubeconfigFile}
+            showUploadList={false}
+          >
+            <p className="ant-upload-drag-icon">
+              <InboxOutlined />
+            </p>
+            <p className="ant-upload-text">
+              {kubeconfigFileName
+                ? `已选择：${kubeconfigFileName}`
+                : '点击或拖拽 kubeconfig 文件到此处'}
+            </p>
+            <p className="ant-upload-hint">留空则不更新凭据</p>
+          </Upload.Dragger>
+        </Form.Item>
+        <Form.Item
+          name="kubeconfig"
+          label="Kubeconfig 内容"
+          extra="粘贴或上传新的 kubeconfig 以更新集群凭据，留空则保持不变"
+        >
+          <Input.TextArea
+            rows={6}
+            placeholder="或在此直接粘贴新的 kubeconfig 内容"
+            style={{
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              fontSize: 13,
+              lineHeight: 1.6,
+            }}
+          />
+        </Form.Item>
       </ModalForm>
     </AppPage>
   )

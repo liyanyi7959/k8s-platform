@@ -151,7 +151,7 @@ func (cc *ClusterManageController) Import(c *gin.Context) {
 		cc.writeServiceErr(c, err)
 		return
 	}
-	if err := cc.k8sSvc.ValidateKubeconfig(c.Request.Context(), normalizedKubeconfig); err != nil {
+	if err := cc.k8sSvc.ValidateKubeconfigFormat(c.Request.Context(), normalizedKubeconfig); err != nil {
 		cc.writeServiceErr(c, err)
 		return
 	}

@@ -352,7 +352,7 @@ const K8sTopologyPage: React.FC = () => {
     ...topoQueryOpts,
   })
   const { data: k8sNamespaces, isLoading: loadingNS } = useQuery({
-    queryKey: ['k8s-namespaces', clusterId],
+    queryKey: ['k8s-topology-namespaces', clusterId],
     queryFn: ({ signal }) => getNamespaces(clusterId, signal),
     ...topoQueryOpts,
   })

@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react'
 import {
   ModalForm,
+  ProFormSelect,
   ProFormText,
   ProFormTextArea,
   ProTable,
   type ProColumns,
 } from '@ant-design/pro-components'
-import { Button, Input, message, Popconfirm, Tooltip } from 'antd'
+import { Button, Input, message, Popconfirm, Space, Tooltip } from 'antd'
 import {
   DeleteOutlined,
   EditOutlined,
@@ -16,11 +17,11 @@ import {
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage } from '@/components'
-import { createRole, deleteRole, listRoles, updateRole } from '@/services/system'
-import { roleCreateSchema } from '@/schemas/system'
+import { createRole, deleteRole, listPermissions, listRoles, updateRole } from '@/services/system'
+import { roleCreateSchema, roleEditSchema } from '@/schemas/system'
 import { formatDate } from '@/utils'
-import type { Role } from '@/types'
-import type { RoleCreateInput } from '@/schemas/system'
+import type { Permission, Role } from '@/types'
+import type { RoleCreateInput, RoleEditInput } from '@/schemas/system'
 
 /** 角色管理页 */
 const RolesPage: React.FC = () => {
@@ -33,6 +34,11 @@ const RolesPage: React.FC = () => {
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['roles'],
     queryFn: () => listRoles(),
+  })
+
+  const { data: permissionsData = [] } = useQuery({
+    queryKey: ['permissions-all'],
+    queryFn: () => listPermissions(),
   })
 
   const roles = useMemo(() => {
@@ -49,18 +55,32 @@ const RolesPage: React.FC = () => {
     })
   }, [data?.items, searchText])
 
-  const summary = useMemo(() => {
-    const source = data?.items || []
-    return {
-      total: source.length,
-      withPermissions: source.filter((role) => (role.permissions?.length || 0) > 0).length,
-      systemRoles: source.filter((role) => ['admin', 'operator', 'viewer'].includes(role.code))
-        .length,
-    }
-  }, [data?.items])
+  const permissionOptions = useMemo(() => {
+    const groups = new Map<string, Permission[]>()
+    permissionsData.forEach((perm) => {
+      const label = perm.categoryLabel || '其他'
+      if (!groups.has(label)) {
+        groups.set(label, [])
+      }
+      groups.get(label)?.push(perm)
+    })
+    return Array.from(groups.entries()).map(([label, items]) => ({
+      label,
+      options: items.map((perm) => ({
+        label: `${perm.name} (${perm.code})`,
+        value: perm.code,
+      })),
+    }))
+  }, [permissionsData])
 
   const createMutation = useMutation({
-    mutationFn: (payload: RoleCreateInput) => createRole(payload),
+    mutationFn: (payload: RoleCreateInput) =>
+      createRole({
+        name: payload.name,
+        code: payload.code,
+        description: payload.description,
+        permissions: payload.permissions,
+      }),
     onSuccess: () => {
       message.success('创建成功')
       setCreateVisible(false)
@@ -70,8 +90,12 @@ const RolesPage: React.FC = () => {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<RoleCreateInput> }) =>
-      updateRole(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: RoleEditInput }) =>
+      updateRole(id, {
+        name: payload.name,
+        description: payload.description,
+        permissions: payload.permissions,
+      }),
     onSuccess: () => {
       message.success('更新成功')
       setEditVisible(false)
@@ -96,36 +120,31 @@ const RolesPage: React.FC = () => {
       dataIndex: 'name',
       width: 260,
       render: (_, record) => (
-        <div className="app-table-user">
-          <span className="app-table-user__name">{record.name}</span>
-          <span className="app-table-user__meta">{record.code}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+          <span style={{ fontWeight: 500 }}>{record.name}</span>
+          <span style={{ color: 'rgba(0, 0, 0, 0.45)', fontSize: 12 }}>{record.code}</span>
         </div>
       ),
     },
     {
       title: '说明',
       dataIndex: 'description',
+      ellipsis: true,
+      render: (_, record) => record.description || '—',
+    },
+    {
+      title: '权限数量',
+      dataIndex: 'permissions',
+      width: 120,
       align: 'center',
-      render: (_, record) => (
-        <div className="app-table-stack">
-          <span className="app-table-stack__main">{record.description || '未填写描述'}</span>
-          <span className="app-table-stack__sub">权限项 {record.permissions?.length || 0} 个</span>
-        </div>
-      ),
+      render: (_, record) => record.permissions?.length || 0,
     },
     {
       title: '创建时间',
       dataIndex: 'createdAt',
       width: 180,
       align: 'center',
-      render: (_, record) => (
-        <div className="app-table-stack">
-          <span className="app-table-stack__main">
-            {formatDate(record.createdAt, 'YYYY-MM-DD')}
-          </span>
-          <span className="app-table-stack__sub">{formatDate(record.createdAt, 'HH:mm:ss')}</span>
-        </div>
-      ),
+      render: (_, record) => formatDate(record.createdAt),
     },
     {
       title: '操作',
@@ -133,7 +152,7 @@ const RolesPage: React.FC = () => {
       width: 96,
       align: 'center',
       render: (_, record) => (
-        <div className="app-table-actions app-table-actions--icon">
+        <Space size={4}>
           <Tooltip title="编辑">
             <Button
               type="text"
@@ -150,36 +169,26 @@ const RolesPage: React.FC = () => {
               <Button type="text" size="small" danger icon={<DeleteOutlined />} />
             </Tooltip>
           </Popconfirm>
-        </div>
+        </Space>
       ),
     },
   ]
 
   return (
     <AppPage>
-      <div className="app-data-console">
-        <section className="app-data-console__statgrid">
-          <div className="app-data-console__stat">
-            <span className="app-data-console__stat-label">已有角色</span>
-            <strong className="app-data-console__stat-value">{summary.total}</strong>
-            <span className="app-data-console__stat-hint">覆盖当前权限模型</span>
-          </div>
-          <div className="app-data-console__stat">
-            <span className="app-data-console__stat-label">已配置权限</span>
-            <strong className="app-data-console__stat-value">{summary.withPermissions}</strong>
-            <span className="app-data-console__stat-hint">已具备权限项映射</span>
-          </div>
-          <div className="app-data-console__stat">
-            <span className="app-data-console__stat-label">当前结果</span>
-            <strong className="app-data-console__stat-value">{roles.length}</strong>
-            <span className="app-data-console__stat-hint">基于当前搜索条件</span>
-          </div>
-        </section>
-
-        <section className="app-data-console__filters">
-          <div className="app-data-console__filters-left">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <section
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 12,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Space size={12} wrap>
             <Input
-              placeholder="搜索角色名称、编码或说明"
+              placeholder="搜索角色名称、编码或描述"
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
@@ -189,22 +198,14 @@ const RolesPage: React.FC = () => {
             <Button icon={<ReloadOutlined />} loading={isRefetching} onClick={() => refetch()}>
               刷新
             </Button>
-          </div>
-          <div className="app-data-console__filters-right">
-            <span className="app-data-console__meta">
-              系统内置 <strong>{summary.systemRoles}</strong>
-            </span>
-            <span className="app-data-console__meta">
-              当前展示 <strong>{roles.length}</strong> / {summary.total}
-            </span>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
-              创建角色
-            </Button>
-          </div>
+            {searchText ? <Button onClick={() => setSearchText('')}>重置</Button> : null}
+          </Space>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
+            创建角色
+          </Button>
         </section>
 
         <ProTable<Role>
-          className="app-data-console__protable"
           columns={columns}
           dataSource={roles}
           loading={isLoading}
@@ -220,6 +221,7 @@ const RolesPage: React.FC = () => {
             showTotal: (total) => `共 ${total} 条`,
           }}
           toolBarRender={false}
+          scroll={{ x: 700 }}
         />
       </div>
 
@@ -233,16 +235,36 @@ const RolesPage: React.FC = () => {
             message.error(result.error.issues[0]?.message || '请检查表单输入')
             return false
           }
-
           createMutation.mutate(result.data)
           return true
         }}
-        width={560}
+        width={600}
         modalProps={{ destroyOnClose: true }}
       >
-        <ProFormText name="name" label="角色名称" rules={[{ required: true }]} />
-        <ProFormText name="code" label="角色编码" rules={[{ required: true }]} />
-        <ProFormTextArea name="description" label="描述" fieldProps={{ rows: 4 }} />
+        <ProFormText
+          name="name"
+          label="角色名称"
+          rules={[{ required: true }]}
+          fieldProps={{ maxLength: 64 }}
+        />
+        <ProFormText
+          name="code"
+          label="角色编码"
+          rules={[{ required: true }]}
+          fieldProps={{ maxLength: 32 }}
+        />
+        <ProFormTextArea
+          name="description"
+          label="描述"
+          fieldProps={{ rows: 3, maxLength: 200 }}
+        />
+        <ProFormSelect
+          name="permissions"
+          label="权限"
+          mode="multiple"
+          options={permissionOptions}
+          fieldProps={{ placeholder: '请选择权限' }}
+        />
       </ModalForm>
 
       <ModalForm
@@ -258,17 +280,52 @@ const RolesPage: React.FC = () => {
           if (!currentRole) {
             return false
           }
-
-          updateMutation.mutate({ id: currentRole.id, payload: values })
+          const payload: RoleEditInput = {
+            id: currentRole.id,
+            name: values.name,
+            description: values.description,
+            permissions: values.permissions,
+          }
+          const result = roleEditSchema.safeParse(payload)
+          if (!result.success) {
+            message.error(result.error.issues[0]?.message || '请检查表单输入')
+            return false
+          }
+          updateMutation.mutate({ id: currentRole.id, payload: result.data })
           return true
         }}
-        width={560}
+        width={600}
         modalProps={{ destroyOnClose: true }}
-        initialValues={currentRole || undefined}
+        initialValues={
+          currentRole
+            ? {
+                name: currentRole.name,
+                code: currentRole.code,
+                description: currentRole.description,
+                permissions: currentRole.permissions || [],
+              }
+            : undefined
+        }
       >
-        <ProFormText name="name" label="角色名称" rules={[{ required: true }]} />
-        <ProFormText name="code" label="角色编码" rules={[{ required: true }]} disabled />
-        <ProFormTextArea name="description" label="描述" fieldProps={{ rows: 4 }} />
+        <ProFormText
+          name="name"
+          label="角色名称"
+          rules={[{ required: true }]}
+          fieldProps={{ maxLength: 64 }}
+        />
+        <ProFormText name="code" label="角色编码" disabled fieldProps={{ maxLength: 32 }} />
+        <ProFormTextArea
+          name="description"
+          label="描述"
+          fieldProps={{ rows: 3, maxLength: 200 }}
+        />
+        <ProFormSelect
+          name="permissions"
+          label="权限"
+          mode="multiple"
+          options={permissionOptions}
+          fieldProps={{ placeholder: '请选择权限' }}
+        />
       </ModalForm>
     </AppPage>
   )

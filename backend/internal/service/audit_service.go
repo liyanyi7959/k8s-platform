@@ -61,10 +61,12 @@ func (s *AuditService) Record(ctx context.Context, entry AuditEntry) {
 type AuditListParams struct {
 	Page      int
 	PageSize  int
+	Keyword   string
 	Username  string
 	Action    string
 	Resource  string
 	ClusterID uint64
+	Status    string
 	StartTime *time.Time
 	EndTime   *time.Time
 }
@@ -85,6 +87,13 @@ func (s *AuditService) List(ctx context.Context, p AuditListParams) (*AuditListR
 	}
 
 	q := s.db.WithContext(ctx).Model(&model.AuditLog{})
+	if v := strings.TrimSpace(p.Keyword); v != "" {
+		like := "%" + v + "%"
+		q = q.Where(
+			"username LIKE ? OR resource LIKE ? OR resource_name LIKE ? OR detail LIKE ? OR client_ip LIKE ?",
+			like, like, like, like, like,
+		)
+	}
 	if v := strings.TrimSpace(p.Username); v != "" {
 		q = q.Where("username = ?", v)
 	}
@@ -96,6 +105,12 @@ func (s *AuditService) List(ctx context.Context, p AuditListParams) (*AuditListR
 	}
 	if p.ClusterID > 0 {
 		q = q.Where("cluster_id = ?", p.ClusterID)
+	}
+	switch strings.ToLower(p.Status) {
+	case "success":
+		q = q.Where("status_code >= ? AND status_code < ?", 200, 300)
+	case "failure":
+		q = q.Where("status_code >= ?", 400)
 	}
 	if p.StartTime != nil {
 		q = q.Where("created_at >= ?", *p.StartTime)

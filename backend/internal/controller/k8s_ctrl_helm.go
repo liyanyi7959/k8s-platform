@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -26,8 +27,28 @@ func (kc *K8sController) ListHelmReleases(c *gin.Context) {
 		resp.Fail(c, 4000, "invalid params")
 		return
 	}
-	// 用 K8sService.List 查询所有 Secret（会走缓存的脱敏逻辑，但 metadata.labels/annotations 保留）
-	list, err := kc.svc.List(c.Request.Context(), id, gvrSecrets(), "", "", "", nil)
+	namespace := strings.TrimSpace(c.Query("namespace"))
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 20*time.Second)
+	defer cancel()
+	if kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id); err == nil {
+		defer os.Remove(kubeconfigFile)
+		args := []string{"list", "--all", "--output", "json", "--kubeconfig", kubeconfigFile}
+		if namespace == "" {
+			args = append(args, "--all-namespaces")
+		} else {
+			args = append(args, "--namespace", namespace)
+		}
+		if output, runErr := runHelm(ctx, args...); runErr == nil {
+			var releases []map[string]any
+			if jsonErr := json.Unmarshal([]byte(output), &releases); jsonErr == nil {
+				resp.OK(c, gin.H{"list": releases, "source": "helm"})
+				return
+			}
+		}
+	}
+
+	// Helm CLI 不可用时降级到只查询 Helm Secret，避免扫描集群内全部 Secret。
+	list, err := kc.svc.List(c.Request.Context(), id, gvrSecrets(), namespace, "", "", map[string]string{"labelSelector": "owner=helm"})
 	if err != nil {
 		kc.writeServiceErr(c, err)
 		return
@@ -81,7 +102,10 @@ func (kc *K8sController) ListHelmReleases(c *gin.Context) {
 	for _, r := range releaseMap {
 		releases = append(releases, r)
 	}
-	resp.OK(c, gin.H{"list": releases})
+	sort.Slice(releases, func(i, j int) bool {
+		return fmt.Sprint(releases[i]["namespace"], "/", releases[i]["name"]) < fmt.Sprint(releases[j]["namespace"], "/", releases[j]["name"])
+	})
+	resp.OK(c, gin.H{"list": releases, "source": "kubernetes-secrets"})
 }
 
 // GetHelmReleaseDetail 获取 Helm release 详情。
@@ -141,14 +165,35 @@ func (kc *K8sController) GetHelmReleaseDetail(c *gin.Context) {
 	if ts, err := strconv.ParseInt(modified, 10, 64); err == nil {
 		updated = time.Unix(ts, 0).UTC().Format(time.RFC3339)
 	}
-	resp.OK(c, gin.H{
+	detail := gin.H{
 		"name":      labels["name"],
 		"namespace": latestMeta["namespace"],
 		"revision":  latestVersion,
 		"status":    labels["status"],
 		"chart":     annotations["helm.sh/chart"],
 		"updated":   updated,
-	})
+	}
+
+	// 详情是用户按需触发，补充 values、渲染清单和 revision 历史。
+	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
+	defer cancel()
+	if kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id); err == nil {
+		defer os.Remove(kubeconfigFile)
+		common := []string{"--namespace", ns, "--kubeconfig", kubeconfigFile}
+		if output, runErr := runHelm(ctx, append([]string{"get", "values", name, "--all", "--output", "yaml"}, common...)...); runErr == nil {
+			detail["values_yaml"] = strings.TrimSpace(output)
+		}
+		if output, runErr := runHelm(ctx, append([]string{"get", "manifest", name}, common...)...); runErr == nil {
+			detail["manifest"] = strings.TrimSpace(output)
+		}
+		if output, runErr := runHelm(ctx, append([]string{"history", name, "--output", "json"}, common...)...); runErr == nil {
+			var history []any
+			if json.Unmarshal([]byte(output), &history) == nil {
+				detail["history"] = history
+			}
+		}
+	}
+	resp.OK(c, detail)
 }
 
 // ---------------------------------------------------------------------------
@@ -303,6 +348,107 @@ func (kc *K8sController) HelmUninstall(c *gin.Context) {
 	output, err := runHelm(ctx, "uninstall", name, "-n", ns, "--kubeconfig", kubeconfigFile)
 	if err != nil {
 		resp.Fail(c, 5001, "Helm 卸载失败: "+output+err.Error())
+		return
+	}
+	resp.OK(c, gin.H{"output": strings.TrimSpace(output)})
+}
+
+// HelmUpgrade 升级 Release，支持 values、版本锁定以及原子回滚。
+func (kc *K8sController) HelmUpgrade(c *gin.Context) {
+	id, ok := parseClusterID(c)
+	if !ok {
+		resp.Fail(c, 4000, "invalid params")
+		return
+	}
+	ns, name := strings.TrimSpace(c.Param("ns")), strings.TrimSpace(c.Param("name"))
+	var req struct {
+		Chart      string `json:"chart"`
+		Version    string `json:"version"`
+		ValuesYAML string `json:"values_yaml"`
+		Atomic     bool   `json:"atomic"`
+		Wait       bool   `json:"wait"`
+		Timeout    string `json:"timeout"`
+	}
+	if ns == "" || name == "" || c.ShouldBindJSON(&req) != nil || strings.TrimSpace(req.Chart) == "" {
+		resp.Fail(c, 4000, "namespace、name 和 chart 不能为空")
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
+	defer cancel()
+	kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id)
+	if err != nil {
+		resp.Fail(c, 5000, err.Error())
+		return
+	}
+	defer os.Remove(kubeconfigFile)
+	args := []string{"upgrade", name, strings.TrimSpace(req.Chart), "--namespace", ns, "--kubeconfig", kubeconfigFile}
+	if version := strings.TrimSpace(req.Version); version != "" {
+		args = append(args, "--version", version)
+	}
+	if req.Atomic {
+		args = append(args, "--atomic")
+	}
+	if req.Wait {
+		args = append(args, "--wait")
+	}
+	if timeout := strings.TrimSpace(req.Timeout); timeout != "" {
+		args = append(args, "--timeout", timeout)
+	}
+	if strings.TrimSpace(req.ValuesYAML) != "" {
+		valuesFile, fileErr := os.CreateTemp("", "helm-values-*.yaml")
+		if fileErr != nil {
+			resp.Fail(c, 5000, fileErr.Error())
+			return
+		}
+		if _, fileErr = valuesFile.WriteString(req.ValuesYAML); fileErr != nil {
+			valuesFile.Close()
+			os.Remove(valuesFile.Name())
+			resp.Fail(c, 5000, fileErr.Error())
+			return
+		}
+		valuesFile.Close()
+		defer os.Remove(valuesFile.Name())
+		args = append(args, "--values", valuesFile.Name())
+	}
+	output, runErr := runHelm(ctx, args...)
+	if runErr != nil {
+		resp.Fail(c, 5001, "Helm 升级失败: "+output+runErr.Error())
+		return
+	}
+	resp.OK(c, gin.H{"output": strings.TrimSpace(output)})
+}
+
+// HelmRollback 将 Release 回滚到指定 revision。
+func (kc *K8sController) HelmRollback(c *gin.Context) {
+	id, ok := parseClusterID(c)
+	if !ok {
+		resp.Fail(c, 4000, "invalid params")
+		return
+	}
+	ns, name := strings.TrimSpace(c.Param("ns")), strings.TrimSpace(c.Param("name"))
+	var req struct {
+		Revision int  `json:"revision"`
+		Wait     bool `json:"wait"`
+	}
+	if ns == "" || name == "" || c.ShouldBindJSON(&req) != nil || req.Revision <= 0 {
+		resp.Fail(c, 4000, "namespace、name 和有效 revision 不能为空")
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
+	defer cancel()
+	kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id)
+	if err != nil {
+		resp.Fail(c, 5000, err.Error())
+		return
+	}
+	defer os.Remove(kubeconfigFile)
+	args := []string{"rollback", name, strconv.Itoa(req.Revision), "--namespace", ns, "--kubeconfig", kubeconfigFile}
+	if req.Wait {
+		args = append(args, "--wait")
+	}
+	output, runErr := runHelm(ctx, args...)
+	if runErr != nil {
+		resp.Fail(c, 5001, "Helm 回滚失败: "+output+runErr.Error())
 		return
 	}
 	resp.OK(c, gin.H{"output": strings.TrimSpace(output)})

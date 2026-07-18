@@ -18,6 +18,7 @@ import {
 import {
   CheckCircleOutlined,
   DeleteOutlined,
+  EditOutlined,
   EyeOutlined,
   HeartOutlined,
   ImportOutlined,
@@ -264,6 +265,14 @@ const ClusterListPage: React.FC = () => {
               type="text"
               size="small"
               icon={<EyeOutlined />}
+              onClick={() => history.push(`/clusters/${record.id}`)}
+            />
+          </Tooltip>
+          <Tooltip title="编辑">
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
               onClick={() => history.push(`/clusters/${record.id}`)}
             />
           </Tooltip>

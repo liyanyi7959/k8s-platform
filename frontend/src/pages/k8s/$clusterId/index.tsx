@@ -332,7 +332,7 @@ const K8sDashboardPage: React.FC = () => {
                 }}
                 onClick={() => kpi.path && history.push(kpi.path)}
               >
-                <Space>
+                <div style={{ display: 'grid', gridTemplateColumns: '44px minmax(0, 1fr)', gap: 16, alignItems: 'center' }}>
                   <div
                     style={{
                       width: 38,
@@ -348,7 +348,7 @@ const K8sDashboardPage: React.FC = () => {
                   >
                     {kpi.icon}
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0, paddingLeft: 2 }}>
                     <Text type="secondary" style={{ fontSize: 11 }}>
                       {kpi.label}
                     </Text>
@@ -359,7 +359,7 @@ const K8sDashboardPage: React.FC = () => {
                       {kpi.sub}
                     </Text>
                   </div>
-                </Space>
+                </div>
               </Card>
             </Col>
           ))}

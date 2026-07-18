@@ -1,7 +1,13 @@
 import React, { useEffect } from 'react'
-import { ProForm, ProFormDigit, ProFormSwitch, ProFormText } from '@ant-design/pro-components'
-import { Button, Card, Form, message } from 'antd'
+import {
+  ProForm,
+  ProFormDigit,
+  ProFormSwitch,
+  ProFormText,
+} from '@ant-design/pro-components'
+import { Button, Card, Form, message, Space } from 'antd'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { ReloadOutlined, RotateLeftOutlined, SaveOutlined } from '@ant-design/icons'
 import { AppPage } from '@/components'
 import { getSystemSettings, updateSystemSettings } from '@/services/system'
 import { systemSettingsSchema } from '@/schemas/system'
@@ -42,33 +48,19 @@ const SettingsPage: React.FC = () => {
       message.error(result.error.issues[0]?.message || '表单校验失败')
       return false
     }
-
     updateMutation.mutate(result.data)
     return true
   }
 
   return (
     <AppPage>
-      <div className="app-data-console">
-        <Card className="app-data-console__card app-form-card" bordered={false}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <Card bordered={false} loading={isLoading} style={{ maxWidth: 720 }}>
           <ProForm<SystemSettingsInput>
             form={form}
             onFinish={handleSubmit}
-            loading={isLoading}
-            submitter={{
-              render: (_, dom) => (
-                <div className="app-data-console__filters-right">
-                  <Button loading={isRefetching} onClick={() => refetch()}>
-                    重新加载
-                  </Button>
-                  {dom}
-                </div>
-              ),
-              submitButtonProps: {
-                type: 'primary',
-                loading: updateMutation.isPending,
-              },
-            }}
+            submitter={false}
+            layout="vertical"
           >
             <ProFormText
               name="siteName"
@@ -104,6 +96,36 @@ const SettingsPage: React.FC = () => {
             <ProFormSwitch name="enableTwoFactorAuth" label="启用双因素认证" />
           </ProForm>
         </Card>
+
+        <Space>
+          <Button
+            loading={isRefetching}
+            icon={<ReloadOutlined />}
+            onClick={() => refetch()}
+          >
+            重新加载
+          </Button>
+          <Button
+            icon={<RotateLeftOutlined />}
+            onClick={() => {
+              if (settings) {
+                form.setFieldsValue(settings)
+              } else {
+                form.resetFields()
+              }
+            }}
+          >
+            重置
+          </Button>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            loading={updateMutation.isPending}
+            onClick={() => form.submit()}
+          >
+            提交
+          </Button>
+        </Space>
       </div>
     </AppPage>
   )

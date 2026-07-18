@@ -6,9 +6,51 @@ import { request } from '@umijs/max'
 import { extractMappedList } from './shared'
 import type { RBACMatrixRequest } from '@/types'
 
-/** 应用 YAML 清单 */
-export function applyYaml(clusterId: number, yaml: string): Promise<{ success: boolean; message: string }> {
-  return request(`/api/v1/clusters/${clusterId}/manifests/apply`, { method: 'POST', data: { yaml } })
+export type ManifestApplyResult = {
+  record_id?: number
+  status: string
+  dry_run: boolean
+  summary: string
+  items: Array<{ kind: string; namespace?: string; name: string; action: string }>
+  success: boolean
+  message: string
+}
+
+/** 应用或服务端 DryRun 校验 YAML 清单 */
+export function applyYaml(
+  clusterId: number,
+  yaml: string,
+  options?: { defaultNamespace?: string; dryRun?: boolean; createOnly?: boolean; sourceLabel?: string },
+): Promise<ManifestApplyResult> {
+  return request(`/api/v1/clusters/${clusterId}/manifests/apply`, {
+    method: 'POST',
+    data: {
+      yaml,
+      default_namespace: options?.defaultNamespace,
+      dry_run: options?.dryRun || false,
+      create_only: options?.createOnly || false,
+      source_label: options?.sourceLabel || 'YAML 工作台',
+    },
+  }).then((res: any) => ({
+    ...res,
+    status: res?.status || (res?.success === false ? 'failed' : 'success'),
+    dry_run: Boolean(res?.dry_run),
+    summary: res?.summary || res?.message || '',
+    items: Array.isArray(res?.items) ? res.items : [],
+    success: res?.success !== false && res?.status !== 'failed',
+    message: res?.message || res?.summary || '',
+  }))
+}
+
+export function listManifestRecords(
+  clusterId: number,
+  params?: { page?: number; pageSize?: number; status?: string },
+  signal?: AbortSignal,
+): Promise<{ list: any[]; total: number }> {
+  return request(`/api/v1/clusters/${clusterId}/manifests/records`, {
+    params: { page: params?.page || 1, page_size: params?.pageSize || 10, status: params?.status },
+    signal,
+  }).then((res: any) => ({ list: res?.list || [], total: Number(res?.total || 0) }))
 }
 
 type GenericResourceRouteConfig = {
@@ -205,9 +247,10 @@ export function getResourceYaml(clusterId: number, resource: string, namespace: 
 }
 
 /** Helm release 列表 */
-export function listHelmReleases(clusterId: number, signal?: AbortSignal): Promise<{ items: any[] }> {
-  return request(`/api/v1/clusters/${clusterId}/helm/releases`, { signal }).then((res: any) => ({
+export function listHelmReleases(clusterId: number, namespace?: string, signal?: AbortSignal): Promise<{ items: any[]; source?: string }> {
+  return request(`/api/v1/clusters/${clusterId}/helm/releases`, { params: { namespace }, signal }).then((res: any) => ({
     items: Array.isArray(res?.list) ? res.list : [],
+    source: res?.source,
   }))
 }
 
@@ -253,6 +296,23 @@ export function helmInstall(clusterId: number, data: {
 /** Helm 卸载 release */
 export function helmUninstall(clusterId: number, namespace: string, name: string) {
   return request(`/api/v1/clusters/${clusterId}/helm/releases/${namespace}/${name}`, { method: 'DELETE' })
+}
+
+export function helmUpgrade(clusterId: number, namespace: string, name: string, data: {
+  chart: string
+  version?: string
+  values_yaml?: string
+  atomic?: boolean
+  wait?: boolean
+  timeout?: string
+}) {
+  return request(`/api/v1/clusters/${clusterId}/helm/releases/${namespace}/${name}/upgrade`, { method: 'POST', data })
+}
+
+export function helmRollback(clusterId: number, namespace: string, name: string, revision: number) {
+  return request(`/api/v1/clusters/${clusterId}/helm/releases/${namespace}/${name}/rollback`, {
+    method: 'POST', data: { revision, wait: true },
+  })
 }
 
 /** Helm 仓库列表 */
