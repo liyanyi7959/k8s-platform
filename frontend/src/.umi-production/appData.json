@@ -94,7 +94,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 62
+        "register": 34
       },
       "enableBy": "register"
     },
@@ -107,7 +107,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 26
+        "register": 16
       },
       "enableBy": "register"
     },
@@ -124,7 +124,7 @@
             0
           ]
         },
-        "register": 15
+        "register": 9
       },
       "enableBy": "register"
     },
@@ -138,10 +138,10 @@
       "time": {
         "hooks": {
           "onStart": [
-            4
+            6
           ]
         },
-        "register": 9
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -155,7 +155,7 @@
       "time": {
         "hooks": {
           "modifyRoutes": [
-            1
+            0
           ]
         },
         "register": 2
@@ -171,7 +171,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -185,10 +185,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            216
+            128
           ]
         },
-        "register": 48
+        "register": 34
       },
       "enableBy": "register"
     },
@@ -221,7 +221,7 @@
             0
           ]
         },
-        "register": 3
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -265,10 +265,10 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            0
+            1
           ]
         },
-        "register": 23
+        "register": 21
       },
       "enableBy": "register"
     },
@@ -1163,7 +1163,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 137
+        "register": 104
       },
       "enableBy": "register"
     },
@@ -1176,7 +1176,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 140
+        "register": 87
       },
       "enableBy": "config"
     },
@@ -1189,7 +1189,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 36
+        "register": 24
       },
       "enableBy": "config"
     },
@@ -1219,7 +1219,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1232,7 +1232,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 5
       },
       "enableBy": "config"
     },
@@ -1245,7 +1245,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 57
+        "register": 42
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mpa/mpa": {
@@ -1257,7 +1257,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -1270,7 +1270,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/overrides/overrides": {
@@ -1282,7 +1282,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1295,7 +1295,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1309,10 +1309,10 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            5
+            2
           ]
         },
-        "register": 11
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/polyfill/publicPathPolyfill": {
@@ -1324,7 +1324,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1337,7 +1337,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1350,7 +1350,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -1363,7 +1363,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1376,7 +1376,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1427,7 +1427,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 22
+        "register": 8
       },
       "enableBy": "config"
     },
@@ -1440,7 +1440,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 19
+        "register": 9
       },
       "enableBy": "register"
     },
@@ -1453,7 +1453,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 10
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -1466,7 +1466,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -1492,7 +1492,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 36
+        "register": 18
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/monorepo/redirect": {
@@ -1504,7 +1504,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 47
+        "register": 30
       },
       "enableBy": "config"
     },
@@ -1517,7 +1517,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 3
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/clickToComponent/clickToComponent": {
@@ -1529,7 +1529,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/legacy/legacy": {
@@ -1541,7 +1541,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1567,7 +1567,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/swc/swc": {
@@ -1583,7 +1583,7 @@
             0
           ]
         },
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1596,7 +1596,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 10
+        "register": 6
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mako/mako": {
@@ -1608,7 +1608,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1621,7 +1621,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 3
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/hmrGuardian/hmrGuardian": {
@@ -1645,7 +1645,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 46
+        "register": 38
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/forget/forget": {
@@ -1657,7 +1657,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 5
       },
       "enableBy": "config"
     },
@@ -1670,7 +1670,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 5
       },
       "enableBy": "register"
     },
@@ -1683,7 +1683,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 13
+        "register": 7
       },
       "enableBy": "register"
     },
@@ -1696,7 +1696,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 86
+        "register": 60
       },
       "enableBy": "register"
     },
@@ -1709,7 +1709,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 146
+        "register": 92
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/commands/help": {
@@ -1747,7 +1747,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1786,7 +1786,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 9
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -1799,7 +1799,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1825,7 +1825,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1838,7 +1838,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1851,7 +1851,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1864,7 +1864,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1877,7 +1877,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1916,7 +1916,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1955,7 +1955,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 36
+        "register": 30
       },
       "enableBy": "register"
     },
@@ -1981,7 +1981,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 23
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -1994,7 +1994,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -2022,7 +2022,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            4
+            5
           ],
           "modifyAppData": [
             0
@@ -2031,7 +2031,7 @@
             0
           ]
         },
-        "register": 23
+        "register": 15
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/dva": {
@@ -2043,7 +2043,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 21
+        "register": 11
       },
       "enableBy": "config"
     },
@@ -2056,7 +2056,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2081,7 +2081,7 @@
             2
           ]
         },
-        "register": 10
+        "register": 6
       },
       "enableBy": "config"
     },
@@ -2094,7 +2094,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 12
+        "register": 10
       },
       "enableBy": "config"
     },
@@ -2120,7 +2120,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -2146,7 +2146,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2159,7 +2159,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/qiankun/slave": {
@@ -2171,7 +2171,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 3
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/react-query": {
@@ -2184,7 +2184,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            9
+            5
           ],
           "onStart": [
             1
@@ -2203,7 +2203,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2216,7 +2216,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2259,7 +2259,7 @@
             0
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2276,7 +2276,7 @@
             0
           ]
         },
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2306,7 +2306,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2319,7 +2319,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 4
       },
       "enableBy": "register"
     }
@@ -4993,7 +4993,7 @@
       "parentId": "27",
       "id": "31",
       "absPath": "/deploy/plans/:id",
-      "__content": "/**\n * 部署计划详情页\n * 展示计划信息、节点拓扑、任务步骤进度、SSE 实时日志\n */\nimport { useEffect, useRef, useState, useCallback, useMemo } from 'react'\nimport { Card, Descriptions, Tag, Badge, Button, Space, Steps, Typography, message, Popconfirm, Tooltip, Progress, Empty, Input } from 'antd'\nimport { ArrowLeftOutlined, StopOutlined, RedoOutlined, DownloadOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, DesktopOutlined } from '@ant-design/icons'\nimport { history, useParams } from '@umijs/max'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { AppPage } from '@/components'\nimport { getDeployPlanById, getDeployTask, getDeployTaskLogs, getDeployTaskLogSSEUrl, cancelDeployPlan, retryDeployPlan, executeDeployPlan, getServers } from '@/services/deploy'\n\nconst { Text, Title } = Typography\n\nconst statusMap: Record<string, { badge: string; text: string }> = {\n  draft: { badge: 'default', text: '草稿' },\n  running: { badge: 'processing', text: '执行中' },\n  success: { badge: 'success', text: '成功' },\n  failed: { badge: 'error', text: '失败' },\n  cancelled: { badge: 'warning', text: '已取消' },\n}\n\nconst taskStatusMap: Record<string, { badge: string; text: string }> = {\n  pending: { badge: 'default', text: '等待中' },\n  running: { badge: 'processing', text: '执行中' },\n  success: { badge: 'success', text: '成功' },\n  failed: { badge: 'error', text: '失败' },\n  canceled: { badge: 'warning', text: '已取消' },\n  timeout: { badge: 'error', text: '超时' },\n}\n\nconst stepStatusMap: Record<string, 'wait' | 'process' | 'finish' | 'error'> = {\n  pending: 'wait',\n  running: 'process',\n  success: 'finish',\n  failed: 'error',\n}\n\nconst roleColorMap: Record<string, string> = {\n  master: 'red',\n  worker: 'blue',\n}\n\nexport default function DeployPlanDetailPage() {\n  const params = useParams<{ id: string }>()\n  const planId = Number(params.id)\n  const queryClient = useQueryClient()\n  const [logs, setLogs] = useState<string[]>([])\n  const [sseConnected, setSseConnected] = useState(false)\n  const [logFilter, setLogFilter] = useState('')\n  const logOffsetRef = useRef(0)\n  const logContainerRef = useRef<HTMLDivElement>(null)\n  const eventSourceRef = useRef<EventSource | null>(null)\n  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)\n\n  // 获取计划详情\n  const { data: plan, isLoading: planLoading } = useQuery({\n    queryKey: ['deploy-plan-detail', planId],\n    queryFn: () => getDeployPlanById(planId),\n    enabled: Number.isFinite(planId) && planId > 0,\n    refetchInterval: (query) => {\n      // 运行中时轮询刷新计划状态\n      return query.state.data?.status === 'running' ? 3000 : false\n    },\n  })\n\n  // 获取服务器列表（用于节点信息展示）\n  const { data: serversData } = useQuery({\n    queryKey: ['deploy-servers-for-detail'],\n    queryFn: () => getServers({ page: 1, pageSize: 200 }),\n    enabled: Number.isFinite(planId) && planId > 0,\n  })\n\n  const taskId = plan?.taskId\n\n  // 获取任务详情（运行中时轮询）\n  const { data: task } = useQuery({\n    queryKey: ['deploy-task', taskId],\n    queryFn: () => getDeployTask(taskId!),\n    enabled: !!taskId,\n    refetchInterval: (query) => {\n      const status = query.state.data?.status\n      return status === 'running' || status === 'pending' ? 2000 : false\n    },\n  })\n\n  // 构建节点信息（匹配服务器数据）\n  const nodeDetails = useMemo(() => {\n    if (!plan?.nodes || !serversData?.items) return []\n    const serverMap = new Map(serversData.items.map((s) => [s.id, s]))\n    return plan.nodes.map((node) => {\n      const server = serverMap.get(node.serverId)\n      return {\n        ...node,\n        serverName: server?.name || `#${node.serverId}`,\n        serverIP: server?.ip || '-',\n        serverOS: server?.os || '-',\n        serverStatus: server?.status || '-',\n      }\n    })\n  }, [plan?.nodes, serversData])\n\n  // 执行部署\n  const executeMutation = useMutation({\n    mutationFn: () => executeDeployPlan(planId),\n    onSuccess: () => {\n      message.success('部署已启动')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n    },\n    onError: (err: any) => message.error(err?.message || '执行失败'),\n  })\n\n  // 取消部署\n  const cancelMutation = useMutation({\n    mutationFn: () => cancelDeployPlan(planId),\n    onSuccess: () => {\n      message.success('取消指令已发送')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n      queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n    },\n    onError: () => message.error('取消失败'),\n  })\n\n  // 重试部署\n  const retryMutation = useMutation({\n    mutationFn: () => retryDeployPlan(planId),\n    onSuccess: () => {\n      message.success('重试已启动')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n    },\n    onError: () => message.error('重试失败'),\n  })\n\n  // 初始加载历史日志\n  useEffect(() => {\n    if (!taskId) {\n      setLogs([])\n      logOffsetRef.current = 0\n      return\n    }\n    getDeployTaskLogs(taskId, 0, 500).then((res) => {\n      setLogs(res.logs || [])\n      logOffsetRef.current = (res.logs || []).length\n    }).catch(() => {\n      setLogs([])\n      logOffsetRef.current = 0\n    })\n  }, [taskId])\n\n  // SSE 实时日志连接\n  const connectSSE = useCallback(() => {\n    if (!taskId) return\n    eventSourceRef.current?.close()\n    if (reconnectTimerRef.current) {\n      clearTimeout(reconnectTimerRef.current)\n      reconnectTimerRef.current = null\n    }\n\n    const token = localStorage.getItem('token') || ''\n    const url = getDeployTaskLogSSEUrl(taskId)\n    const sep = url.includes('?') ? '&' : '?'\n    const fullUrl = `${url}${sep}token=${encodeURIComponent(token)}`\n\n    const es = new EventSource(fullUrl)\n    eventSourceRef.current = es\n\n    es.onopen = () => setSseConnected(true)\n\n    es.onmessage = (event) => {\n      try {\n        const data = JSON.parse(event.data)\n        if (data.log) {\n          setLogs((prev) => [...prev, data.log])\n        }\n      } catch {\n        setLogs((prev) => [...prev, event.data])\n      }\n    }\n\n    es.addEventListener('done', (event: any) => {\n      try {\n        const data = JSON.parse(event.data)\n        message.info(`任务已结束：${data.status || ''}`)\n      } catch { /* ignore */ }\n      es.close()\n      setSseConnected(false)\n      if (taskId) {\n        queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n        queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n      }\n    })\n\n    es.onerror = () => {\n      setSseConnected(false)\n      es.close()\n      // 任务可能仍在运行，尝试重连\n      const currentStatus = task?.status\n      if (currentStatus === 'running' || currentStatus === 'pending') {\n        reconnectTimerRef.current = setTimeout(() => connectSSE(), 3000)\n      }\n    }\n  }, [taskId, planId, queryClient, task?.status])\n\n  useEffect(() => {\n    if (!taskId) return\n    const taskStatus = task?.status\n    if (taskStatus === 'running' || taskStatus === 'pending' || taskStatus === undefined) {\n      connectSSE()\n    }\n    return () => {\n      eventSourceRef.current?.close()\n      eventSourceRef.current = null\n      if (reconnectTimerRef.current) {\n        clearTimeout(reconnectTimerRef.current)\n        reconnectTimerRef.current = null\n      }\n    }\n  }, [taskId, task?.status, connectSSE])\n\n  // 自动滚动到底部\n  useEffect(() => {\n    if (logContainerRef.current && !logFilter) {\n      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight\n    }\n  }, [logs, logFilter])\n\n  // 下载日志\n  const handleDownloadLogs = () => {\n    const content = logs.join('\\n')\n    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })\n    const url = URL.createObjectURL(blob)\n    const a = document.createElement('a')\n    a.href = url\n    a.download = `deploy-plan-${planId}-logs.txt`\n    a.click()\n    URL.revokeObjectURL(url)\n  }\n\n  const planStatus = plan?.status || 'draft'\n  const isRunning = planStatus === 'running'\n  const isDraft = planStatus === 'draft'\n  const canRetry = planStatus === 'failed' || planStatus === 'cancelled'\n  const stepItems = (task?.steps || []).map((step) => ({\n    title: step.title,\n    description: step.message,\n    status: stepStatusMap[step.status] || 'wait',\n  }))\n\n  const currentTaskStatus = task?.status\n  const taskBadge = taskStatusMap[currentTaskStatus || ''] || { badge: 'default', text: currentTaskStatus || '-' }\n  const filteredLogs = logFilter ? logs.filter((line) => line.toLowerCase().includes(logFilter.toLowerCase())) : logs\n\n  return (\n    <AppPage>\n      <Card loading={planLoading}>\n        {/* 顶部操作栏 */}\n        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>\n          <Space>\n            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/deploy/plans')}>返回列表</Button>\n            <Title level={4} style={{ margin: 0 }}>{plan?.name || '部署详情'}</Title>\n            <Badge status={statusMap[planStatus]?.badge as any} text={statusMap[planStatus]?.text || planStatus} />\n          </Space>\n          <Space>\n            {isDraft && (\n              <Popconfirm title=\"确认执行该部署方案？\" onConfirm={() => executeMutation.mutate()}>\n                <Button type=\"primary\" icon={<PlayCircleOutlined />} loading={executeMutation.isPending}>执行部署</Button>\n              </Popconfirm>\n            )}\n            {isRunning && (\n              <Popconfirm title=\"确认取消该部署任务？\" onConfirm={() => cancelMutation.mutate()}>\n                <Button danger icon={<StopOutlined />} loading={cancelMutation.isPending}>取消部署</Button>\n              </Popconfirm>\n            )}\n            {canRetry && (\n              <Popconfirm title=\"确认重试该部署方案？\" onConfirm={() => retryMutation.mutate()}>\n                <Button type=\"primary\" icon={<RedoOutlined />} loading={retryMutation.isPending}>重试部署</Button>\n              </Popconfirm>\n            )}\n            <Tooltip title=\"刷新\">\n              <Button icon={<ReloadOutlined />} onClick={() => {\n                queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n                if (taskId) queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n              }} />\n            </Tooltip>\n          </Space>\n        </div>\n\n        {/* 计划基本信息 */}\n        <Descriptions bordered column={3} size=\"small\" style={{ marginBottom: 16 }}>\n          <Descriptions.Item label=\"集群名称\">{plan?.clusterName || '-'}</Descriptions.Item>\n          <Descriptions.Item label=\"K8s 版本\">\n            {plan?.k8sVersion ? <Tag color=\"blue\">{plan.k8sVersion}</Tag> : '-'}\n          </Descriptions.Item>\n          <Descriptions.Item label=\"CNI 类型\">\n            {plan?.cniType ? <Tag color=\"green\">{plan.cniType}</Tag> : '-'}\n          </Descriptions.Item>\n          <Descriptions.Item label=\"Pod 网段\"><Text code>{plan?.podCidr || '-'}</Text></Descriptions.Item>\n          <Descriptions.Item label=\"Service 网段\"><Text code>{plan?.svcCidr || '-'}</Text></Descriptions.Item>\n          <Descriptions.Item label=\"任务状态\">\n            {taskId ? <Badge status={taskBadge.badge as any} text={taskBadge.text} /> : <Text type=\"secondary\">未执行</Text>}\n          </Descriptions.Item>\n          {plan?.addons && plan.addons.length > 0 && (\n            <Descriptions.Item label=\"附加组件\" span={3}>\n              <Space wrap>\n                {plan.addons.map((addon) => <Tag key={addon}>{addon}</Tag>)}\n              </Space>\n            </Descriptions.Item>\n          )}\n        </Descriptions>\n\n        {/* 节点拓扑 */}\n        {nodeDetails.length > 0 && (\n          <Card size=\"small\" title={<Space><DesktopOutlined />节点拓扑</Space>} style={{ marginBottom: 16 }}>\n            <Space wrap size={[16, 8]}>\n              {nodeDetails.map((node, i) => (\n                <Card\n                  key={i}\n                  size=\"small\"\n                  style={{ width: 260, background: '#fafafa' }}\n                  title={\n                    <Space>\n                      <Tag color={roleColorMap[node.role] || 'default'}>{node.role?.toUpperCase()}</Tag>\n                      <Text strong>{node.serverName}</Text>\n                    </Space>\n                  }\n                >\n                  <Space direction=\"vertical\" size={2} style={{ width: '100%' }}>\n                    <Text type=\"secondary\">IP: <Text code>{node.serverIP}</Text></Text>\n                    <Text type=\"secondary\">OS: {node.serverOS}</Text>\n                    <Space>\n                      <Badge status={node.serverStatus === 'available' ? 'success' : 'default'} text={node.serverStatus} />\n                    </Space>\n                  </Space>\n                </Card>\n              ))}\n            </Space>\n          </Card>\n        )}\n\n        {/* 步骤进度 */}\n        {stepItems.length > 0 && (\n          <Card size=\"small\" title=\"部署进度\" style={{ marginBottom: 16 }}>\n            <Steps size=\"small\" current={stepItems.findIndex((s) => s.status === 'process')} items={stepItems} />\n            {task?.percent != null && (\n              <Progress\n                percent={task.percent}\n                status={task.status === 'failed' ? 'exception' : task.status === 'success' ? 'success' : 'active'}\n                style={{ marginTop: 12 }}\n              />\n            )}\n          </Card>\n        )}\n\n        {/* 草稿状态提示 */}\n        {isDraft && !taskId && (\n          <Card style={{ marginBottom: 16 }}>\n            <Empty\n              description=\"该部署方案尚未执行\"\n              image={Empty.PRESENTED_IMAGE_SIMPLE}\n            >\n              <Popconfirm title=\"确认执行该部署方案？\" onConfirm={() => executeMutation.mutate()}>\n                <Button type=\"primary\" icon={<PlayCircleOutlined />} loading={executeMutation.isPending}>\n                  立即执行部署\n                </Button>\n              </Popconfirm>\n            </Empty>\n          </Card>\n        )}\n\n        {/* 实时日志终端 */}\n        <Card\n          size=\"small\"\n          title={\n            <Space>\n              <span>实时日志</span>\n              {sseConnected && <Badge status=\"processing\" text=\"实时连接\" />}\n              {!sseConnected && isRunning && <Badge status=\"warning\" text=\"重连中\" />}\n              {task && task.status !== 'running' && task.status !== 'pending' && taskId && (\n                <Badge status=\"default\" text=\"已结束\" />\n              )}\n              {logs.length > 0 && <Text type=\"secondary\" style={{ fontSize: 12 }}>({logs.length} 行)</Text>}\n            </Space>\n          }\n          extra={\n            <Space>\n              <Input\n                size=\"small\"\n                placeholder=\"过滤日志...\"\n                prefix={<SearchOutlined />}\n                value={logFilter}\n                onChange={(e) => setLogFilter(e.target.value)}\n                style={{ width: 180 }}\n                allowClear\n              />\n              <Tooltip title=\"下载日志\">\n                <Button size=\"small\" icon={<DownloadOutlined />} onClick={handleDownloadLogs} disabled={logs.length === 0} />\n              </Tooltip>\n            </Space>\n          }\n        >\n          <div\n            ref={logContainerRef}\n            style={{\n              background: '#1e1e1e',\n              color: '#d4d4d4',\n              fontFamily: 'Consolas, Monaco, \"Courier New\", monospace',\n              fontSize: 13,\n              lineHeight: 1.6,\n              padding: 16,\n              borderRadius: 6,\n              maxHeight: 500,\n              overflowY: 'auto',\n              whiteSpace: 'pre-wrap',\n              wordBreak: 'break-all',\n            }}\n          >\n            {logs.length === 0 ? (\n              <span style={{ color: '#666' }}>\n                {isDraft ? '# 当前方案尚未执行，点击上方\"执行部署\"按钮开始' : '# 暂无日志，等待任务开始...'}\n              </span>\n            ) : filteredLogs.length === 0 ? (\n              <span style={{ color: '#666' }}># 无匹配的日志行</span>\n            ) : (\n              filteredLogs.map((line, i) => (\n                <div key={i} style={{ color: getLogColor(line) }}>\n                  {line || ' '}\n                </div>\n              ))\n            )}\n          </div>\n        </Card>\n      </Card>\n    </AppPage>\n  )\n}\n\n/** 根据 Ansible 输出格式着色 */\nfunction getLogColor(line: string): string {\n  const trimmed = line.trim()\n  if (trimmed.startsWith('PLAY [') || trimmed.startsWith('PLAY RECAP')) return '#569cd6'\n  if (trimmed.startsWith('TASK [')) return '#c586c0'\n  if (trimmed.includes('ok:') && !trimmed.includes('failed')) return '#4ec9b0'\n  if (trimmed.startsWith('changed:') || trimmed.includes('changed=1')) return '#cca700'\n  if (trimmed.includes('failed:') || trimmed.includes('FAILED') || trimmed.includes('fatal:')) return '#f44747'\n  if (trimmed.startsWith('skipping:') || trimmed.includes('skipped')) return '#808080'\n  if (line.includes('[error]') || line.includes('[ERROR]')) return '#f44747'\n  if (line.includes('[warn]') || line.includes('[WARN]')) return '#cca700'\n  if (line.includes('[info]') || line.includes('[INFO]')) return '#4ec9b0'\n  return '#d4d4d4'\n}\n",
+      "__content": "/**\n * 部署计划详情页\n * 展示计划信息、节点拓扑、任务步骤进度、SSE 实时日志\n */\nimport { useEffect, useRef, useState, useCallback, useMemo } from 'react'\nimport { Card, Descriptions, Tag, Badge, Button, Space, Steps, Typography, message, Popconfirm, Tooltip, Progress, Empty, Input, Collapse, Alert, Spin } from 'antd'\nimport { ArrowLeftOutlined, StopOutlined, RedoOutlined, DownloadOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, DesktopOutlined } from '@ant-design/icons'\nimport { history, useParams } from '@umijs/max'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { AppPage, YamlEditor } from '@/components'\nimport { getDeployPlanById, getDeployTask, getDeployTaskLogs, getDeployTaskLogSSEUrl, cancelDeployPlan, retryDeployPlan, executeDeployPlan, getServers, getPlanAnsibleConfig } from '@/services/deploy'\n\nconst { Text, Title } = Typography\n\nconst statusMap: Record<string, { badge: string; text: string }> = {\n  draft: { badge: 'default', text: '草稿' },\n  running: { badge: 'processing', text: '执行中' },\n  success: { badge: 'success', text: '成功' },\n  failed: { badge: 'error', text: '失败' },\n  cancelled: { badge: 'warning', text: '已取消' },\n}\n\nconst taskStatusMap: Record<string, { badge: string; text: string }> = {\n  pending: { badge: 'default', text: '等待中' },\n  running: { badge: 'processing', text: '执行中' },\n  success: { badge: 'success', text: '成功' },\n  failed: { badge: 'error', text: '失败' },\n  canceled: { badge: 'warning', text: '已取消' },\n  timeout: { badge: 'error', text: '超时' },\n}\n\nconst stepStatusMap: Record<string, 'wait' | 'process' | 'finish' | 'error'> = {\n  pending: 'wait',\n  running: 'process',\n  success: 'finish',\n  failed: 'error',\n}\n\nconst roleColorMap: Record<string, string> = {\n  master: 'red',\n  worker: 'blue',\n}\n\nexport default function DeployPlanDetailPage() {\n  const params = useParams<{ id: string }>()\n  const planId = Number(params.id)\n  const queryClient = useQueryClient()\n  const [logs, setLogs] = useState<string[]>([])\n  const [sseConnected, setSseConnected] = useState(false)\n  const [logFilter, setLogFilter] = useState('')\n  const logOffsetRef = useRef(0)\n  const logContainerRef = useRef<HTMLDivElement>(null)\n  const eventSourceRef = useRef<EventSource | null>(null)\n  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)\n\n  // 获取计划详情\n  const { data: plan, isLoading: planLoading } = useQuery({\n    queryKey: ['deploy-plan-detail', planId],\n    queryFn: () => getDeployPlanById(planId),\n    enabled: Number.isFinite(planId) && planId > 0,\n    refetchInterval: (query) => {\n      // 运行中时轮询刷新计划状态\n      return query.state.data?.status === 'running' ? 3000 : false\n    },\n  })\n\n  // 获取服务器列表（用于节点信息展示）\n  const { data: serversData } = useQuery({\n    queryKey: ['deploy-servers-for-detail'],\n    queryFn: () => getServers({ page: 1, pageSize: 200 }),\n    enabled: Number.isFinite(planId) && planId > 0,\n  })\n\n  // 获取 Ansible 执行配置\n  const { data: ansibleConfig, isLoading: ansibleConfigLoading } = useQuery({\n    queryKey: ['deploy-plan-ansible-config', planId],\n    queryFn: () => getPlanAnsibleConfig(planId),\n    enabled: Number.isFinite(planId) && planId > 0,\n  })\n\n  const taskId = plan?.taskId\n\n  // 获取任务详情（运行中时轮询）\n  const { data: task } = useQuery({\n    queryKey: ['deploy-task', taskId],\n    queryFn: () => getDeployTask(taskId!),\n    enabled: !!taskId,\n    refetchInterval: (query) => {\n      const status = query.state.data?.status\n      return status === 'running' || status === 'pending' ? 2000 : false\n    },\n  })\n\n  // 构建节点信息（匹配服务器数据）\n  const nodeDetails = useMemo(() => {\n    if (!plan?.nodes || !serversData?.items) return []\n    const serverMap = new Map(serversData.items.map((s) => [s.id, s]))\n    return plan.nodes.map((node) => {\n      const server = serverMap.get(node.serverId)\n      return {\n        ...node,\n        serverName: server?.name || `#${node.serverId}`,\n        serverIP: server?.ip || '-',\n        serverOS: server?.os || '-',\n        serverStatus: server?.status || '-',\n      }\n    })\n  }, [plan?.nodes, serversData])\n\n  // 执行部署\n  const executeMutation = useMutation({\n    mutationFn: () => executeDeployPlan(planId),\n    onSuccess: () => {\n      message.success('部署已启动')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n    },\n    onError: (err: any) => message.error(err?.message || '执行失败'),\n  })\n\n  // 取消部署\n  const cancelMutation = useMutation({\n    mutationFn: () => cancelDeployPlan(planId),\n    onSuccess: () => {\n      message.success('取消指令已发送')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n      queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n    },\n    onError: () => message.error('取消失败'),\n  })\n\n  // 重试部署\n  const retryMutation = useMutation({\n    mutationFn: () => retryDeployPlan(planId),\n    onSuccess: () => {\n      message.success('重试已启动')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n    },\n    onError: () => message.error('重试失败'),\n  })\n\n  // 初始加载历史日志\n  useEffect(() => {\n    if (!taskId) {\n      setLogs([])\n      logOffsetRef.current = 0\n      return\n    }\n    getDeployTaskLogs(taskId, 0, 500).then((res) => {\n      setLogs(res.logs || [])\n      logOffsetRef.current = (res.logs || []).length\n    }).catch(() => {\n      setLogs([])\n      logOffsetRef.current = 0\n    })\n  }, [taskId])\n\n  // SSE 实时日志连接\n  const connectSSE = useCallback(() => {\n    if (!taskId) return\n    eventSourceRef.current?.close()\n    if (reconnectTimerRef.current) {\n      clearTimeout(reconnectTimerRef.current)\n      reconnectTimerRef.current = null\n    }\n\n    const token = localStorage.getItem('token') || ''\n    const url = getDeployTaskLogSSEUrl(taskId)\n    const sep = url.includes('?') ? '&' : '?'\n    const fullUrl = `${url}${sep}token=${encodeURIComponent(token)}`\n\n    const es = new EventSource(fullUrl)\n    eventSourceRef.current = es\n\n    es.onopen = () => setSseConnected(true)\n\n    es.onmessage = (event) => {\n      try {\n        const data = JSON.parse(event.data)\n        if (data.log) {\n          setLogs((prev) => [...prev, data.log])\n        }\n      } catch {\n        setLogs((prev) => [...prev, event.data])\n      }\n    }\n\n    es.addEventListener('done', (event: any) => {\n      try {\n        const data = JSON.parse(event.data)\n        message.info(`任务已结束：${data.status || ''}`)\n      } catch { /* ignore */ }\n      es.close()\n      setSseConnected(false)\n      if (taskId) {\n        queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n        queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n      }\n    })\n\n    es.onerror = () => {\n      setSseConnected(false)\n      es.close()\n      // 任务可能仍在运行，尝试重连\n      const currentStatus = task?.status\n      if (currentStatus === 'running' || currentStatus === 'pending') {\n        reconnectTimerRef.current = setTimeout(() => connectSSE(), 3000)\n      }\n    }\n  }, [taskId, planId, queryClient, task?.status])\n\n  useEffect(() => {\n    if (!taskId) return\n    const taskStatus = task?.status\n    if (taskStatus === 'running' || taskStatus === 'pending' || taskStatus === undefined) {\n      connectSSE()\n    }\n    return () => {\n      eventSourceRef.current?.close()\n      eventSourceRef.current = null\n      if (reconnectTimerRef.current) {\n        clearTimeout(reconnectTimerRef.current)\n        reconnectTimerRef.current = null\n      }\n    }\n  }, [taskId, task?.status, connectSSE])\n\n  // 自动滚动到底部\n  useEffect(() => {\n    if (logContainerRef.current && !logFilter) {\n      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight\n    }\n  }, [logs, logFilter])\n\n  // 下载日志\n  const handleDownloadLogs = () => {\n    const content = logs.join('\\n')\n    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })\n    const url = URL.createObjectURL(blob)\n    const a = document.createElement('a')\n    a.href = url\n    a.download = `deploy-plan-${planId}-logs.txt`\n    a.click()\n    URL.revokeObjectURL(url)\n  }\n\n  const planStatus = plan?.status || 'draft'\n  const isRunning = planStatus === 'running'\n  const isDraft = planStatus === 'draft'\n  const canRetry = planStatus === 'failed' || planStatus === 'cancelled'\n  const stepItems = (task?.steps || []).map((step) => ({\n    title: step.title,\n    description: step.message,\n    status: stepStatusMap[step.status] || 'wait',\n  }))\n\n  const currentTaskStatus = task?.status\n  const taskBadge = taskStatusMap[currentTaskStatus || ''] || { badge: 'default', text: currentTaskStatus || '-' }\n  const filteredLogs = logFilter ? logs.filter((line) => line.toLowerCase().includes(logFilter.toLowerCase())) : logs\n\n  return (\n    <AppPage>\n      <Card loading={planLoading}>\n        {/* 顶部操作栏 */}\n        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>\n          <Space>\n            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/deploy/plans')}>返回列表</Button>\n            <Title level={4} style={{ margin: 0 }}>{plan?.name || '部署详情'}</Title>\n            <Badge status={statusMap[planStatus]?.badge as any} text={statusMap[planStatus]?.text || planStatus} />\n          </Space>\n          <Space>\n            {isDraft && (\n              <Popconfirm title=\"确认执行该部署方案？\" onConfirm={() => executeMutation.mutate()}>\n                <Button type=\"primary\" icon={<PlayCircleOutlined />} loading={executeMutation.isPending}>执行部署</Button>\n              </Popconfirm>\n            )}\n            {isRunning && (\n              <Popconfirm title=\"确认取消该部署任务？\" onConfirm={() => cancelMutation.mutate()}>\n                <Button danger icon={<StopOutlined />} loading={cancelMutation.isPending}>取消部署</Button>\n              </Popconfirm>\n            )}\n            {canRetry && (\n              <Popconfirm title=\"确认重试该部署方案？\" onConfirm={() => retryMutation.mutate()}>\n                <Button type=\"primary\" icon={<RedoOutlined />} loading={retryMutation.isPending}>重试部署</Button>\n              </Popconfirm>\n            )}\n            <Tooltip title=\"刷新\">\n              <Button icon={<ReloadOutlined />} onClick={() => {\n                queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n                if (taskId) queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n              }} />\n            </Tooltip>\n          </Space>\n        </div>\n\n        {/* 计划基本信息 */}\n        <Descriptions bordered column={3} size=\"small\" style={{ marginBottom: 16 }}>\n          <Descriptions.Item label=\"集群名称\">{plan?.clusterName || '-'}</Descriptions.Item>\n          <Descriptions.Item label=\"K8s 版本\">\n            {plan?.k8sVersion ? <Tag color=\"blue\">{plan.k8sVersion}</Tag> : '-'}\n          </Descriptions.Item>\n          <Descriptions.Item label=\"CNI 类型\">\n            {plan?.cniType ? <Tag color=\"green\">{plan.cniType}</Tag> : '-'}\n          </Descriptions.Item>\n          <Descriptions.Item label=\"Pod 网段\"><Text code>{plan?.podCidr || '-'}</Text></Descriptions.Item>\n          <Descriptions.Item label=\"Service 网段\"><Text code>{plan?.svcCidr || '-'}</Text></Descriptions.Item>\n          <Descriptions.Item label=\"任务状态\">\n            {taskId ? <Badge status={taskBadge.badge as any} text={taskBadge.text} /> : <Text type=\"secondary\">未执行</Text>}\n          </Descriptions.Item>\n          {plan?.addons && plan.addons.length > 0 && (\n            <Descriptions.Item label=\"附加组件\" span={3}>\n              <Space wrap>\n                {plan.addons.map((addon) => <Tag key={addon}>{addon}</Tag>)}\n              </Space>\n            </Descriptions.Item>\n          )}\n        </Descriptions>\n\n        {/* 节点拓扑 */}\n        {nodeDetails.length > 0 && (\n          <Card size=\"small\" title={<Space><DesktopOutlined />节点拓扑</Space>} style={{ marginBottom: 16 }}>\n            <Space wrap size={[16, 8]}>\n              {nodeDetails.map((node, i) => (\n                <Card\n                  key={i}\n                  size=\"small\"\n                  style={{ width: 260, background: '#fafafa' }}\n                  title={\n                    <Space>\n                      <Tag color={roleColorMap[node.role] || 'default'}>{node.role?.toUpperCase()}</Tag>\n                      <Text strong>{node.serverName}</Text>\n                    </Space>\n                  }\n                >\n                  <Space direction=\"vertical\" size={2} style={{ width: '100%' }}>\n                    <Text type=\"secondary\">IP: <Text code>{node.serverIP}</Text></Text>\n                    <Text type=\"secondary\">OS: {node.serverOS}</Text>\n                    <Space>\n                      <Badge status={node.serverStatus === 'available' ? 'success' : 'default'} text={node.serverStatus} />\n                    </Space>\n                  </Space>\n                </Card>\n              ))}\n            </Space>\n          </Card>\n        )}\n\n        {/* Ansible 执行配置 */}\n        <Card size=\"small\" title=\"Ansible 执行配置\" style={{ marginBottom: 16 }} loading={ansibleConfigLoading}>\n          {!ansibleConfig ? (\n            <Alert type=\"warning\" showIcon message=\"暂无执行配置\" />\n          ) : (\n            <Collapse ghost>\n              <Collapse.Panel header={<Text strong>Playbook：{ansibleConfig.playbookPath}</Text>} key=\"playbook\">\n                <Alert type=\"info\" showIcon message=\"该 playbook 为项目内置，实际执行时会根据计划生成动态 inventory 和 extra vars。\" style={{ marginBottom: 8 }} />\n                <YamlEditor readOnly value={`# 实际执行命令示例\\nansible-playbook ${ansibleConfig.playbookPath} -i <动态 inventory> \\\\\\n  -e k8s_version=${ansibleConfig.extraVars?.k8sVersion || ''} \\\\\\n  -e pod_cidr=${ansibleConfig.extraVars?.podCidr || ''} \\\\\\n  -e svc_cidr=${ansibleConfig.extraVars?.svcCidr || ''} \\\\\\n  -e cni_type=${ansibleConfig.extraVars?.cniType || ''}\\\\n\\\\n# 完整 extra vars\\\\n${JSON.stringify(ansibleConfig.extraVars || {}, null, 2)}`} height={260} />\n              </Collapse.Panel>\n              <Collapse.Panel header={<Text strong>Inventory（密码已脱敏）</Text>} key=\"inventory\">\n                <YamlEditor readOnly value={ansibleConfig.inventory || '# 暂无 inventory'} height={320} />\n              </Collapse.Panel>\n            </Collapse>\n          )}\n        </Card>\n\n        {/* 步骤进度 */}\n        {stepItems.length > 0 && (\n          <Card size=\"small\" title=\"部署进度\" style={{ marginBottom: 16 }}>\n            <Steps size=\"small\" current={stepItems.findIndex((s) => s.status === 'process')} items={stepItems} />\n            {task?.percent != null && (\n              <Progress\n                percent={task.percent}\n                status={task.status === 'failed' ? 'exception' : task.status === 'success' ? 'success' : 'active'}\n                style={{ marginTop: 12 }}\n              />\n            )}\n          </Card>\n        )}\n\n        {/* 草稿状态提示 */}\n        {isDraft && !taskId && (\n          <Card style={{ marginBottom: 16 }}>\n            <Empty\n              description=\"该部署方案尚未执行\"\n              image={Empty.PRESENTED_IMAGE_SIMPLE}\n            >\n              <Popconfirm title=\"确认执行该部署方案？\" onConfirm={() => executeMutation.mutate()}>\n                <Button type=\"primary\" icon={<PlayCircleOutlined />} loading={executeMutation.isPending}>\n                  立即执行部署\n                </Button>\n              </Popconfirm>\n            </Empty>\n          </Card>\n        )}\n\n        {/* 实时日志终端 */}\n        <Card\n          size=\"small\"\n          title={\n            <Space>\n              <span>实时日志</span>\n              {sseConnected && <Badge status=\"processing\" text=\"实时连接\" />}\n              {!sseConnected && isRunning && <Badge status=\"warning\" text=\"重连中\" />}\n              {task && task.status !== 'running' && task.status !== 'pending' && taskId && (\n                <Badge status=\"default\" text=\"已结束\" />\n              )}\n              {logs.length > 0 && <Text type=\"secondary\" style={{ fontSize: 12 }}>({logs.length} 行)</Text>}\n            </Space>\n          }\n          extra={\n            <Space>\n              <Input\n                size=\"small\"\n                placeholder=\"过滤日志...\"\n                prefix={<SearchOutlined />}\n                value={logFilter}\n                onChange={(e) => setLogFilter(e.target.value)}\n                style={{ width: 180 }}\n                allowClear\n              />\n              <Tooltip title=\"下载日志\">\n                <Button size=\"small\" icon={<DownloadOutlined />} onClick={handleDownloadLogs} disabled={logs.length === 0} />\n              </Tooltip>\n            </Space>\n          }\n        >\n          <div\n            ref={logContainerRef}\n            style={{\n              background: '#1e1e1e',\n              color: '#d4d4d4',\n              fontFamily: 'Consolas, Monaco, \"Courier New\", monospace',\n              fontSize: 13,\n              lineHeight: 1.6,\n              padding: 16,\n              borderRadius: 6,\n              maxHeight: 500,\n              overflowY: 'auto',\n              whiteSpace: 'pre-wrap',\n              wordBreak: 'break-all',\n            }}\n          >\n            {logs.length === 0 ? (\n              <span style={{ color: '#666' }}>\n                {isDraft ? '# 当前方案尚未执行，点击上方\"执行部署\"按钮开始' : '# 暂无日志，等待任务开始...'}\n              </span>\n            ) : filteredLogs.length === 0 ? (\n              <span style={{ color: '#666' }}># 无匹配的日志行</span>\n            ) : (\n              filteredLogs.map((line, i) => (\n                <div key={i} style={{ color: getLogColor(line) }}>\n                  {line || ' '}\n                </div>\n              ))\n            )}\n          </div>\n        </Card>\n      </Card>\n    </AppPage>\n  )\n}\n\n/** 根据 Ansible 输出格式着色 */\nfunction getLogColor(line: string): string {\n  const trimmed = line.trim()\n  if (trimmed.startsWith('PLAY [') || trimmed.startsWith('PLAY RECAP')) return '#569cd6'\n  if (trimmed.startsWith('TASK [')) return '#c586c0'\n  if (trimmed.includes('ok:') && !trimmed.includes('failed')) return '#4ec9b0'\n  if (trimmed.startsWith('changed:') || trimmed.includes('changed=1')) return '#cca700'\n  if (trimmed.includes('failed:') || trimmed.includes('FAILED') || trimmed.includes('fatal:')) return '#f44747'\n  if (trimmed.startsWith('skipping:') || trimmed.includes('skipped')) return '#808080'\n  if (line.includes('[error]') || line.includes('[ERROR]')) return '#f44747'\n  if (line.includes('[warn]') || line.includes('[WARN]')) return '#cca700'\n  if (line.includes('[info]') || line.includes('[INFO]')) return '#4ec9b0'\n  return '#d4d4d4'\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/deploy/detail.tsx"
     },
@@ -5037,7 +5037,7 @@
       "parentId": "27",
       "id": "35",
       "absPath": "/deploy/config",
-      "__content": "/**\n * 部署配置页 - Ansible 流水线概览 + 仓库配置\n * 基于 Ansible Playbook 的 K8s 部署流程说明\n */\nimport React, { useEffect, useState } from 'react'\nimport { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Typography } from 'antd'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { AppPage } from '@/components'\nimport {\n  listRepositories,\n  createRepository,\n  updateRepository,\n  deleteRepository,\n} from '@/services/deploy'\nimport type { RepositoryConfig } from '@/types'\nimport {\n  PlusOutlined,\n  DesktopOutlined,\n  CheckCircleOutlined,\n  ContainerOutlined,\n  ClusterOutlined,\n  ApartmentOutlined,\n  CloudUploadOutlined,\n  RightOutlined,\n} from '@ant-design/icons'\n\nconst { Text } = Typography\n\ntype AnsiblePhase = 'preflight' | 'install' | 'init' | 'join' | 'addon' | 'finalize'\n\n/** Ansible 部署流水线步骤定义 */\ninterface AnsibleStep {\n  key: string\n  title: string\n  description: string\n  icon: React.ReactNode\n  appliesTo: string\n  phase: AnsiblePhase\n  tasks: string[]\n}\n\nconst phaseConfig: Record<\n  AnsiblePhase,\n  { color: string; label: string; borderColor: string; bgColor: string }\n> = {\n  preflight: { color: 'default', label: '环境预检', borderColor: '#d9d9d9', bgColor: '#f5f5f5' },\n  install: { color: 'blue', label: '软件安装', borderColor: '#1677ff', bgColor: '#e6f4ff' },\n  init: { color: 'gold', label: '集群初始化', borderColor: '#faad14', bgColor: '#fffbe6' },\n  join: { color: 'cyan', label: '节点加入', borderColor: '#13c2c2', bgColor: '#e6fffb' },\n  addon: { color: 'green', label: '网络插件', borderColor: '#52c41a', bgColor: '#f6ffed' },\n  finalize: { color: 'purple', label: '平台注册', borderColor: '#722ed1', bgColor: '#f9f0ff' },\n}\n\nconst ansibleSteps: AnsibleStep[] = [\n  {\n    key: 'pre_check',\n    title: '环境预检',\n    description: '检查目标节点的 CPU、内存、磁盘、端口、hostname 等环境要求',\n    icon: <CheckCircleOutlined />,\n    appliesTo: '所有节点',\n    phase: 'preflight',\n    tasks: [\n      'Ping 测试 SSH 连通性',\n      '检查 OS 发行版和版本号',\n      '检查 CPU 核数 >= 2',\n      '检查内存 >= 2048MB',\n      '检查磁盘可用空间 >= 20GB',\n      '检查 hostname 是否设置且唯一',\n      'Master 节点检查端口 6443/2379/2380 等未被占用',\n    ],\n  },\n  {\n    key: 'bootstrap',\n    title: '基础环境初始化',\n    description: '关闭 swap、加载内核模块、设置 sysctl、禁用防火墙、安装基础依赖',\n    icon: <DesktopOutlined />,\n    appliesTo: '所有节点',\n    phase: 'preflight',\n    tasks: [\n      '关闭 swap 并注释 /etc/fstab',\n      '加载内核模块 br_netfilter, overlay, nf_conntrack',\n      '设置 sysctl 参数（ip_forward 等）',\n      '停止并禁用 firewalld',\n      '设置 SELinux 为 permissive/disabled',\n      '安装基础包: lvm2, wget, curl, vim, chrony',\n      '配置 Kubernetes yum/apt 仓库',\n    ],\n  },\n  {\n    key: 'container_runtime',\n    title: '容器运行时安装',\n    description: '安装 containerd，配置 SystemdCgroup 和 sandbox 镜像',\n    icon: <ContainerOutlined />,\n    appliesTo: '所有节点',\n    phase: 'install',\n    tasks: [\n      '安装 Docker CE 仓库（RedHat/Debian 兼容）',\n      '安装 containerd.io',\n      '生成 containerd 默认配置',\n      '设置 SystemdCgroup=true',\n      '设置 sandbox_image=registry.k8s.io/pause:3.9',\n      '启动 containerd 并设置开机自启',\n    ],\n  },\n  {\n    key: 'kubeadm_init',\n    title: 'Master 初始化',\n    description: '安装 kubeadm/kubelet/kubectl，执行 kubeadm init 初始化集群',\n    icon: <ClusterOutlined />,\n    appliesTo: 'Master 节点',\n    phase: 'init',\n    tasks: [\n      '安装 kubeadm, kubelet, kubectl',\n      '锁定版本不自动更新',\n      '生成 kubeadm-init.yaml 配置文件',\n      '执行 kubeadm init --config /tmp/kubeadm-init.yaml',\n      '配置 kubeconfig (~/.kube/config)',\n      '生成 worker join 命令',\n    ],\n  },\n  {\n    key: 'join_workers',\n    title: 'Worker 加入集群',\n    description: '在 Worker 节点安装 kubeadm/kubelet，执行 kubeadm join',\n    icon: <ApartmentOutlined />,\n    appliesTo: 'Worker 节点',\n    phase: 'join',\n    tasks: [\n      '安装 kubeadm, kubelet',\n      '锁定版本不自动更新',\n      '执行 kubeadm join <master_ip>:6443',\n    ],\n  },\n  {\n    key: 'install_cni',\n    title: '安装 CNI 网络插件',\n    description: '安装 Flannel/Calico/Cilium 网络插件，等待 Pods 就绪',\n    icon: <ApartmentOutlined />,\n    appliesTo: 'Master 节点',\n    phase: 'addon',\n    tasks: [\n      '根据 cni_type 变量选择 CNI 插件',\n      'Flannel: 下载并应用 kube-flannel.yml',\n      'Calico: 下载并应用 calico.yaml',\n      'Cilium: 安装 cilium CLI 并部署',\n      '等待 CNI Pods 就绪',\n      '检查所有节点状态为 Ready',\n    ],\n  },\n  {\n    key: 'register',\n    title: '注册到管理平台',\n    description: '提取 kubeconfig，注册集群到 K8s 管理平台',\n    icon: <CloudUploadOutlined />,\n    appliesTo: 'Master 节点',\n    phase: 'finalize',\n    tasks: [\n      '读取 /etc/kubernetes/admin.conf',\n      '替换 API Server 地址为 Master 实际 IP',\n      '写入 kubeconfig 到临时文件',\n      '后端读取 kubeconfig 并注册集群',\n    ],\n  },\n]\n\n\nconst DeployConfig: React.FC = () => {\n  const [activeTab, setActiveTab] = useState('pipeline')\n\n  return (\n    <AppPage>\n      <Card>\n        <Tabs\n          activeKey={activeTab}\n          onChange={setActiveTab}\n          items={[\n            { key: 'pipeline', label: 'Ansible 部署流水线', children: <AnsiblePipelinePanel /> },\n            { key: 'repos', label: '仓库配置', children: <RepoConfigPanel /> },\n          ]}\n        />\n      </Card>\n    </AppPage>\n  )\n}\n\n// ==================== Ansible 部署流水线概览 ====================\n\nconst AnsiblePipelinePanel: React.FC = () => {\n  const [selectedKey, setSelectedKey] = useState<string | null>(null)\n  const [expandedKeys, setExpandedKeys] = useState<string[]>([])\n\n  // 点击顶部卡片后：高亮并展开对应表格行，再滚动定位\n  useEffect(() => {\n    if (!selectedKey) return\n    setExpandedKeys((prev) => (prev.includes(selectedKey) ? prev : [...prev, selectedKey]))\n    const row = document.querySelector(`.deploy-step-row-${selectedKey}`)\n    row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })\n  }, [selectedKey])\n\n  return (\n    <>\n      {/* 流程可视化 */}\n      <div style={{ display: 'flex', gap: 0, overflowX: 'auto', paddingBottom: 16, marginBottom: 24 }}>\n        {ansibleSteps.map((step, idx) => {\n          const phase = phaseConfig[step.phase]\n          const isSelected = selectedKey === step.key\n          return (\n            <div key={step.key} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>\n              <div\n                onClick={() => setSelectedKey(step.key)}\n                style={{\n                  width: 220,\n                  minHeight: 150,\n                  border: `${isSelected ? 2 : 1}px solid ${phase.borderColor}`,\n                  borderRadius: 10,\n                  padding: 14,\n                  background: isSelected ? phase.bgColor : '#fff',\n                  boxShadow: isSelected ? `0 0 0 2px ${phase.borderColor}33, 0 8px 20px rgba(0, 0, 0, 0.1)` : '0 2px 8px rgba(0, 0, 0, 0.06)',\n                  transition: 'all 0.2s ease',\n                  position: 'relative',\n                  overflow: 'hidden',\n                  cursor: 'pointer',\n                }}\n                onMouseEnter={(e) => {\n                  if (selectedKey === step.key) return\n                  e.currentTarget.style.transform = 'translateY(-4px)'\n                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.1)'\n                }}\n                onMouseLeave={(e) => {\n                  if (selectedKey === step.key) return\n                  e.currentTarget.style.transform = 'translateY(0)'\n                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)'\n                }}\n              >\n                {/* 阶段色顶部条 */}\n                <div\n                  style={{\n                    position: 'absolute',\n                    top: 0,\n                    left: 0,\n                    right: 0,\n                    height: 3,\n                    background: phase.borderColor,\n                  }}\n                />\n\n                {/* 步骤图标 + 标题 */}\n                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10, marginTop: 4 }}>\n                  <div\n                    style={{\n                      width: 36,\n                      height: 36,\n                      borderRadius: '50%',\n                      background: isSelected ? '#fff' : phase.bgColor,\n                      color: phase.color === 'default' ? '#595959' : phase.borderColor,\n                      border: `1px solid ${phase.borderColor}`,\n                      display: 'flex',\n                      alignItems: 'center',\n                      justifyContent: 'center',\n                      fontSize: 16,\n                      flexShrink: 0,\n                    }}\n                  >\n                    {step.icon}\n                  </div>\n                  <div style={{ minWidth: 0 }}>\n                    <Text strong style={{ fontSize: 14, display: 'block' }}>{step.title}</Text>\n                    <Text code style={{ fontSize: 11 }}>{step.key}</Text>\n                  </div>\n                </div>\n\n                {/* 阶段 + 适用范围 */}\n                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>\n                  <Tag color={phase.color} style={{ fontSize: 11, margin: 0 }}>{phase.label}</Tag>\n                  <Tag color={step.appliesTo.includes('所有') ? 'blue' : step.appliesTo.includes('Master') ? 'volcano' : 'cyan'} style={{ fontSize: 11, margin: 0 }}>\n                    {step.appliesTo}\n                  </Tag>\n                </div>\n\n                {/* 描述 */}\n                <div style={{ fontSize: 12, color: '#595959', minHeight: 36, lineHeight: '18px', overflow: 'hidden', marginBottom: 8 }}>\n                  {step.description}\n                </div>\n\n                {/* 任务数量 */}\n                <div style={{ fontSize: 12, color: '#8c8c8c', display: 'flex', alignItems: 'center', gap: 6 }}>\n                  <Badge count={step.tasks.length} style={{ backgroundColor: '#1677ff' }} />\n                  <span>个 Ansible 任务</span>\n                </div>\n              </div>\n\n              {/* 连接箭头 */}\n              {idx < ansibleSteps.length - 1 && (\n                <div style={{ padding: '0 10px', color: '#bfbfbf', fontSize: 16, display: 'flex', alignItems: 'center' }}>\n                  <RightOutlined />\n                </div>\n              )}\n            </div>\n          )\n        })}\n      </div>\n\n      {/* 详细步骤列表 */}\n      <Card bodyStyle={{ padding: '0 16px' }} title=\"步骤详情\" size=\"small\">\n        <Table\n          rowKey=\"key\"\n          dataSource={ansibleSteps}\n          pagination={false}\n          size=\"small\"\n          scroll={{ x: 700 }}\n          rowClassName={(record) => `deploy-step-row-${record.key}`}\n          expandable={{\n            expandRowByClick: true,\n            expandedRowKeys: expandedKeys,\n            onExpandedRowsChange: (keys) => setExpandedKeys(keys as string[]),\n            expandedRowRender: (record: AnsibleStep) => (\n              <div style={{ padding: '8px 16px' }}>\n                <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>Ansible 任务</Text>\n                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, lineHeight: '1.8', color: '#595959' }}>\n                  {record.tasks.map((task, i) => <li key={i}>{task}</li>)}\n                </ul>\n              </div>\n            ),\n          }}\n          onRow={(record) => ({\n            onClick: () => setSelectedKey(record.key),\n            style: {\n              cursor: 'pointer',\n              backgroundColor: record.key === selectedKey ? phaseConfig[record.phase].bgColor : undefined,\n              transition: 'background-color 0.2s ease',\n            },\n          })}\n          columns={[\n            {\n              title: '步骤',\n              dataIndex: 'key',\n              key: 'key',\n              width: 200,\n              render: (key: string, record: AnsibleStep) => (\n                <Space>\n                  <span style={{ color: phaseConfig[record.phase].color === 'default' ? '#595959' : phaseConfig[record.phase].color, fontSize: 16 }}>\n                    {record.icon}\n                  </span>\n                  <div>\n                    <Text strong>{record.title}</Text>\n                    <div><Text code style={{ fontSize: 11 }}>{key}</Text></div>\n                  </div>\n                </Space>\n              ),\n            },\n            {\n              title: '阶段',\n              dataIndex: 'phase',\n              key: 'phase',\n              width: 100,\n              render: (phase: AnsiblePhase) => {\n                const cfg = phaseConfig[phase]\n                return <Tag color={cfg.color} style={{ margin: 0 }}>{cfg.label}</Tag>\n              },\n            },\n            {\n              title: '适用范围',\n              dataIndex: 'appliesTo',\n              key: 'appliesTo',\n              width: 110,\n              render: (text: string) => (\n                <Tag color={text.includes('所有') ? 'blue' : text.includes('Master') ? 'volcano' : 'cyan'} style={{ margin: 0 }}>{text}</Tag>\n              ),\n            },\n            {\n              title: '说明',\n              dataIndex: 'description',\n              key: 'description',\n              ellipsis: true,\n            },\n          ]}\n        />\n      </Card>\n    </>\n  )\n}\n\n// ==================== 仓库配置 ====================\n\nconst REPO_TYPE_OPTIONS = [\n  { value: 'container_mirror', label: '容器镜像加速' },\n  { value: 'registry', label: '容器镜像仓库' },\n  { value: 'yum', label: 'YUM 源' },\n  { value: 'apt', label: 'APT 源' },\n]\n\nconst AUTH_TYPE_OPTIONS = [\n  { value: 'none', label: '无需认证' },\n  { value: 'basic', label: '用户名/密码' },\n  { value: 'token', label: 'Token' },\n]\n\nconst RepoConfigPanel: React.FC = () => {\n  const [modalOpen, setModalOpen] = useState(false)\n  const [editRecord, setEditRecord] = useState<RepositoryConfig | null>(null)\n  const [form] = Form.useForm()\n  const queryClient = useQueryClient()\n\n  const { data: repos, isLoading } = useQuery({\n    queryKey: ['repositories'],\n    queryFn: ({ signal }) => listRepositories(undefined, signal),\n  })\n\n  const createMutation = useMutation({\n    mutationFn: createRepository,\n    onSuccess: () => {\n      message.success('仓库创建成功')\n      queryClient.invalidateQueries({ queryKey: ['repositories'] })\n      setModalOpen(false)\n      form.resetFields()\n    },\n  })\n\n  const updateMutation = useMutation({\n    mutationFn: (values: Partial<RepositoryConfig>) => updateRepository(editRecord!.id, values),\n    onSuccess: () => {\n      message.success('仓库更新成功')\n      queryClient.invalidateQueries({ queryKey: ['repositories'] })\n      setModalOpen(false)\n      setEditRecord(null)\n      form.resetFields()\n    },\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: deleteRepository,\n    onSuccess: () => {\n      message.success('仓库已删除')\n      queryClient.invalidateQueries({ queryKey: ['repositories'] })\n    },\n  })\n\n  const handleAdd = () => {\n    setEditRecord(null)\n    form.resetFields()\n    form.setFieldsValue({ authType: 'none', priority: 1, enabled: true })\n    setModalOpen(true)\n  }\n\n  const handleEdit = (record: RepositoryConfig) => {\n    setEditRecord(record)\n    form.setFieldsValue(record)\n    setModalOpen(true)\n  }\n\n  const columns = [\n    {\n      title: '仓库名称',\n      dataIndex: 'name',\n      key: 'name',\n      render: (text: string, record: RepositoryConfig) => (\n        <Space>\n          <strong>{text}</strong>\n          {record.isDefault && <Tag color=\"blue\">默认</Tag>}\n        </Space>\n      ),\n    },\n    {\n      title: '类型',\n      dataIndex: 'repoType',\n      key: 'repoType',\n      width: 120,\n      render: (t: string) => {\n        const opt = REPO_TYPE_OPTIONS.find((o) => o.value === t)\n        return <Tag>{opt?.label || t}</Tag>\n      },\n    },\n    {\n      title: '地址',\n      dataIndex: 'url',\n      key: 'url',\n      ellipsis: true,\n    },\n    {\n      title: '认证',\n      dataIndex: 'authType',\n      key: 'authType',\n      width: 100,\n      render: (t: string) => {\n        const opt = AUTH_TYPE_OPTIONS.find((o) => o.value === t)\n        return opt?.label || t\n      },\n    },\n    {\n      title: '优先级',\n      dataIndex: 'priority',\n      key: 'priority',\n      width: 100,\n      sorter: (a: RepositoryConfig, b: RepositoryConfig) => (a.priority ?? 0) - (b.priority ?? 0),\n    },\n    {\n      title: '状态',\n      dataIndex: 'enabled',\n      key: 'enabled',\n      width: 80,\n      render: (enabled: boolean) => (\n        <Badge status={enabled ? 'success' : 'default'} text={enabled ? '启用' : '禁用'} />\n      ),\n    },\n    {\n      title: '操作',\n      key: 'action',\n      width: 120,\n      render: (_: unknown, record: RepositoryConfig) => (\n        <Space>\n          <a onClick={() => handleEdit(record)}>编辑</a>\n          <Popconfirm title=\"确认删除该仓库配置？\" onConfirm={() => deleteMutation.mutate(record.id)}>\n            <a style={{ color: '#ff4d4f' }}>删除</a>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <>\n      <div style={{ marginBottom: 16 }}>\n        <Button type=\"primary\" icon={<PlusOutlined />} onClick={handleAdd}>\n          添加仓库\n        </Button>\n      </div>\n\n      <Table\n        rowKey=\"id\"\n        columns={columns}\n        dataSource={repos}\n        loading={isLoading}\n        pagination={false}\n      />\n\n      <Modal\n        title={editRecord ? '编辑仓库' : '添加仓库'}\n        open={modalOpen}\n        onCancel={() => { setModalOpen(false); setEditRecord(null); form.resetFields() }}\n        onOk={() => form.submit()}\n        confirmLoading={createMutation.isPending || updateMutation.isPending}\n        width={560}\n      >\n        <Form\n          form={form}\n          layout=\"vertical\"\n          onFinish={(values) => {\n            if (editRecord) {\n              updateMutation.mutate(values)\n            } else {\n              createMutation.mutate(values)\n            }\n          }}\n        >\n          <Form.Item name=\"name\" label=\"仓库名称\" rules={[{ required: true, message: '请输入仓库名称' }]}>\n            <Input placeholder=\"如 Harbor 私有仓库\" />\n          </Form.Item>\n          <Form.Item name=\"repoType\" label=\"仓库类型\" rules={[{ required: true, message: '请选择仓库类型' }]}>\n            <Select options={REPO_TYPE_OPTIONS} />\n          </Form.Item>\n          <Form.Item name=\"url\" label=\"仓库地址\" rules={[{ required: true, message: '请输入仓库地址' }]}>\n            <Input placeholder=\"https://harbor.example.com\" />\n          </Form.Item>\n          <Form.Item name=\"description\" label=\"说明\">\n            <Input.TextArea rows={2} />\n          </Form.Item>\n          <Form.Item name=\"authType\" label=\"认证方式\">\n            <Select options={AUTH_TYPE_OPTIONS} />\n          </Form.Item>\n          <Space>\n            <Form.Item name=\"priority\" label=\"优先级\">\n              <InputNumber min={1} max={100} />\n            </Form.Item>\n            <Form.Item name=\"enabled\" label=\"启用\" valuePropName=\"checked\">\n              <Switch />\n            </Form.Item>\n          </Space>\n        </Form>\n      </Modal>\n    </>\n  )\n}\n\nexport default DeployConfig\n",
+      "__content": "/**\n * 部署配置页 - Ansible 流水线概览 + 仓库配置\n * 基于 Ansible Playbook 的 K8s 部署流程说明\n */\nimport React, { useEffect, useState } from 'react'\nimport { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Typography, Alert, Spin } from 'antd'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { AppPage, YamlEditor } from '@/components'\nimport {\n  listRepositories,\n  createRepository,\n  updateRepository,\n  deleteRepository,\n  getAnsiblePlaybook,\n  getAnsibleInventoryTemplate,\n  checkAnsibleEnv,\n} from '@/services/deploy'\nimport type { RepositoryConfig } from '@/types'\nimport {\n  PlusOutlined,\n  DesktopOutlined,\n  CheckCircleOutlined,\n  ContainerOutlined,\n  ClusterOutlined,\n  ApartmentOutlined,\n  CloudUploadOutlined,\n  RightOutlined,\n} from '@ant-design/icons'\n\nconst { Text } = Typography\n\ntype AnsiblePhase = 'preflight' | 'install' | 'init' | 'join' | 'addon' | 'finalize'\n\n/** Ansible 部署流水线步骤定义 */\ninterface AnsibleStep {\n  key: string\n  title: string\n  description: string\n  icon: React.ReactNode\n  appliesTo: string\n  phase: AnsiblePhase\n  tasks: string[]\n}\n\nconst phaseConfig: Record<\n  AnsiblePhase,\n  { color: string; label: string; borderColor: string; bgColor: string }\n> = {\n  preflight: { color: 'default', label: '环境预检', borderColor: '#d9d9d9', bgColor: '#f5f5f5' },\n  install: { color: 'blue', label: '软件安装', borderColor: '#1677ff', bgColor: '#e6f4ff' },\n  init: { color: 'gold', label: '集群初始化', borderColor: '#faad14', bgColor: '#fffbe6' },\n  join: { color: 'cyan', label: '节点加入', borderColor: '#13c2c2', bgColor: '#e6fffb' },\n  addon: { color: 'green', label: '网络插件', borderColor: '#52c41a', bgColor: '#f6ffed' },\n  finalize: { color: 'purple', label: '平台注册', borderColor: '#722ed1', bgColor: '#f9f0ff' },\n}\n\nconst ansibleSteps: AnsibleStep[] = [\n  {\n    key: 'pre_check',\n    title: '环境预检',\n    description: '检查目标节点的 CPU、内存、磁盘、端口、hostname 等环境要求',\n    icon: <CheckCircleOutlined />,\n    appliesTo: '所有节点',\n    phase: 'preflight',\n    tasks: [\n      'Ping 测试 SSH 连通性',\n      '检查 OS 发行版和版本号',\n      '检查 CPU 核数 >= 2',\n      '检查内存 >= 2048MB',\n      '检查磁盘可用空间 >= 20GB',\n      '检查 hostname 是否设置且唯一',\n      'Master 节点检查端口 6443/2379/2380 等未被占用',\n    ],\n  },\n  {\n    key: 'bootstrap',\n    title: '基础环境初始化',\n    description: '关闭 swap、加载内核模块、设置 sysctl、禁用防火墙、安装基础依赖',\n    icon: <DesktopOutlined />,\n    appliesTo: '所有节点',\n    phase: 'preflight',\n    tasks: [\n      '关闭 swap 并注释 /etc/fstab',\n      '加载内核模块 br_netfilter, overlay, nf_conntrack',\n      '设置 sysctl 参数（ip_forward 等）',\n      '停止并禁用 firewalld',\n      '设置 SELinux 为 permissive/disabled',\n      '安装基础包: lvm2, wget, curl, vim, chrony',\n      '配置 Kubernetes yum/apt 仓库',\n    ],\n  },\n  {\n    key: 'container_runtime',\n    title: '容器运行时安装',\n    description: '安装 containerd，配置 SystemdCgroup 和 sandbox 镜像',\n    icon: <ContainerOutlined />,\n    appliesTo: '所有节点',\n    phase: 'install',\n    tasks: [\n      '安装 Docker CE 仓库（RedHat/Debian 兼容）',\n      '安装 containerd.io',\n      '生成 containerd 默认配置',\n      '设置 SystemdCgroup=true',\n      '设置 sandbox_image=registry.k8s.io/pause:3.9',\n      '启动 containerd 并设置开机自启',\n    ],\n  },\n  {\n    key: 'kubeadm_init',\n    title: 'Master 初始化',\n    description: '安装 kubeadm/kubelet/kubectl，执行 kubeadm init 初始化集群',\n    icon: <ClusterOutlined />,\n    appliesTo: 'Master 节点',\n    phase: 'init',\n    tasks: [\n      '安装 kubeadm, kubelet, kubectl',\n      '锁定版本不自动更新',\n      '生成 kubeadm-init.yaml 配置文件',\n      '执行 kubeadm init --config /tmp/kubeadm-init.yaml',\n      '配置 kubeconfig (~/.kube/config)',\n      '生成 worker join 命令',\n    ],\n  },\n  {\n    key: 'join_workers',\n    title: 'Worker 加入集群',\n    description: '在 Worker 节点安装 kubeadm/kubelet，执行 kubeadm join',\n    icon: <ApartmentOutlined />,\n    appliesTo: 'Worker 节点',\n    phase: 'join',\n    tasks: [\n      '安装 kubeadm, kubelet',\n      '锁定版本不自动更新',\n      '执行 kubeadm join <master_ip>:6443',\n    ],\n  },\n  {\n    key: 'install_cni',\n    title: '安装 CNI 网络插件',\n    description: '安装 Flannel/Calico/Cilium 网络插件，等待 Pods 就绪',\n    icon: <ApartmentOutlined />,\n    appliesTo: 'Master 节点',\n    phase: 'addon',\n    tasks: [\n      '根据 cni_type 变量选择 CNI 插件',\n      'Flannel: 下载并应用 kube-flannel.yml',\n      'Calico: 下载并应用 calico.yaml',\n      'Cilium: 安装 cilium CLI 并部署',\n      '等待 CNI Pods 就绪',\n      '检查所有节点状态为 Ready',\n    ],\n  },\n  {\n    key: 'register',\n    title: '注册到管理平台',\n    description: '提取 kubeconfig，注册集群到 K8s 管理平台',\n    icon: <CloudUploadOutlined />,\n    appliesTo: 'Master 节点',\n    phase: 'finalize',\n    tasks: [\n      '读取 /etc/kubernetes/admin.conf',\n      '替换 API Server 地址为 Master 实际 IP',\n      '写入 kubeconfig 到临时文件',\n      '后端读取 kubeconfig 并注册集群',\n    ],\n  },\n]\n\n\nconst DeployConfig: React.FC = () => {\n  const [activeTab, setActiveTab] = useState('pipeline')\n\n  return (\n    <AppPage>\n      <Card>\n        <Tabs\n          activeKey={activeTab}\n          onChange={setActiveTab}\n          items={[\n            { key: 'pipeline', label: 'Ansible 部署流水线', children: <AnsiblePipelinePanel /> },\n            { key: 'playbook', label: 'Playbook 源码', children: <AnsiblePlaybookPanel /> },\n            { key: 'inventory', label: 'Inventory 模板', children: <AnsibleInventoryPanel /> },\n            { key: 'env', label: '环境检查', children: <AnsibleEnvPanel /> },\n            { key: 'repos', label: '仓库配置', children: <RepoConfigPanel /> },\n          ]}\n        />\n      </Card>\n    </AppPage>\n  )\n}\n\n// ==================== Ansible 部署流水线概览 ====================\n\nconst AnsiblePipelinePanel: React.FC = () => {\n  const [selectedKey, setSelectedKey] = useState<string | null>(null)\n  const [expandedKeys, setExpandedKeys] = useState<string[]>([])\n\n  // 点击顶部卡片后：高亮并展开对应表格行，再滚动定位\n  useEffect(() => {\n    if (!selectedKey) return\n    setExpandedKeys((prev) => (prev.includes(selectedKey) ? prev : [...prev, selectedKey]))\n    const row = document.querySelector(`.deploy-step-row-${selectedKey}`)\n    row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })\n  }, [selectedKey])\n\n  return (\n    <>\n      {/* 流程可视化 */}\n      <div style={{ display: 'flex', gap: 0, overflowX: 'auto', paddingBottom: 16, marginBottom: 24 }}>\n        {ansibleSteps.map((step, idx) => {\n          const phase = phaseConfig[step.phase]\n          const isSelected = selectedKey === step.key\n          return (\n            <div key={step.key} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>\n              <div\n                onClick={() => setSelectedKey(step.key)}\n                style={{\n                  width: 220,\n                  minHeight: 150,\n                  border: `${isSelected ? 2 : 1}px solid ${phase.borderColor}`,\n                  borderRadius: 10,\n                  padding: 14,\n                  background: isSelected ? phase.bgColor : '#fff',\n                  boxShadow: isSelected ? `0 0 0 2px ${phase.borderColor}33, 0 8px 20px rgba(0, 0, 0, 0.1)` : '0 2px 8px rgba(0, 0, 0, 0.06)',\n                  transition: 'all 0.2s ease',\n                  position: 'relative',\n                  overflow: 'hidden',\n                  cursor: 'pointer',\n                }}\n                onMouseEnter={(e) => {\n                  if (selectedKey === step.key) return\n                  e.currentTarget.style.transform = 'translateY(-4px)'\n                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.1)'\n                }}\n                onMouseLeave={(e) => {\n                  if (selectedKey === step.key) return\n                  e.currentTarget.style.transform = 'translateY(0)'\n                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)'\n                }}\n              >\n                {/* 阶段色顶部条 */}\n                <div\n                  style={{\n                    position: 'absolute',\n                    top: 0,\n                    left: 0,\n                    right: 0,\n                    height: 3,\n                    background: phase.borderColor,\n                  }}\n                />\n\n                {/* 步骤图标 + 标题 */}\n                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10, marginTop: 4 }}>\n                  <div\n                    style={{\n                      width: 36,\n                      height: 36,\n                      borderRadius: '50%',\n                      background: isSelected ? '#fff' : phase.bgColor,\n                      color: phase.color === 'default' ? '#595959' : phase.borderColor,\n                      border: `1px solid ${phase.borderColor}`,\n                      display: 'flex',\n                      alignItems: 'center',\n                      justifyContent: 'center',\n                      fontSize: 16,\n                      flexShrink: 0,\n                    }}\n                  >\n                    {step.icon}\n                  </div>\n                  <div style={{ minWidth: 0 }}>\n                    <Text strong style={{ fontSize: 14, display: 'block' }}>{step.title}</Text>\n                    <Text code style={{ fontSize: 11 }}>{step.key}</Text>\n                  </div>\n                </div>\n\n                {/* 阶段 + 适用范围 */}\n                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>\n                  <Tag color={phase.color} style={{ fontSize: 11, margin: 0 }}>{phase.label}</Tag>\n                  <Tag color={step.appliesTo.includes('所有') ? 'blue' : step.appliesTo.includes('Master') ? 'volcano' : 'cyan'} style={{ fontSize: 11, margin: 0 }}>\n                    {step.appliesTo}\n                  </Tag>\n                </div>\n\n                {/* 描述 */}\n                <div style={{ fontSize: 12, color: '#595959', minHeight: 36, lineHeight: '18px', overflow: 'hidden', marginBottom: 8 }}>\n                  {step.description}\n                </div>\n\n                {/* 任务数量 */}\n                <div style={{ fontSize: 12, color: '#8c8c8c', display: 'flex', alignItems: 'center', gap: 6 }}>\n                  <Badge count={step.tasks.length} style={{ backgroundColor: '#1677ff' }} />\n                  <span>个 Ansible 任务</span>\n                </div>\n              </div>\n\n              {/* 连接箭头 */}\n              {idx < ansibleSteps.length - 1 && (\n                <div style={{ padding: '0 10px', color: '#bfbfbf', fontSize: 16, display: 'flex', alignItems: 'center' }}>\n                  <RightOutlined />\n                </div>\n              )}\n            </div>\n          )\n        })}\n      </div>\n\n      {/* 详细步骤列表 */}\n      <Card bodyStyle={{ padding: '0 16px' }} title=\"步骤详情\" size=\"small\">\n        <Table\n          rowKey=\"key\"\n          dataSource={ansibleSteps}\n          pagination={false}\n          size=\"small\"\n          scroll={{ x: 700 }}\n          rowClassName={(record) => `deploy-step-row-${record.key}`}\n          expandable={{\n            expandRowByClick: true,\n            expandedRowKeys: expandedKeys,\n            onExpandedRowsChange: (keys) => setExpandedKeys(keys as string[]),\n            expandedRowRender: (record: AnsibleStep) => (\n              <div style={{ padding: '8px 16px' }}>\n                <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>Ansible 任务</Text>\n                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, lineHeight: '1.8', color: '#595959' }}>\n                  {record.tasks.map((task, i) => <li key={i}>{task}</li>)}\n                </ul>\n              </div>\n            ),\n          }}\n          onRow={(record) => ({\n            onClick: () => setSelectedKey(record.key),\n            style: {\n              cursor: 'pointer',\n              backgroundColor: record.key === selectedKey ? phaseConfig[record.phase].bgColor : undefined,\n              transition: 'background-color 0.2s ease',\n            },\n          })}\n          columns={[\n            {\n              title: '步骤',\n              dataIndex: 'key',\n              key: 'key',\n              width: 200,\n              render: (key: string, record: AnsibleStep) => (\n                <Space>\n                  <span style={{ color: phaseConfig[record.phase].color === 'default' ? '#595959' : phaseConfig[record.phase].color, fontSize: 16 }}>\n                    {record.icon}\n                  </span>\n                  <div>\n                    <Text strong>{record.title}</Text>\n                    <div><Text code style={{ fontSize: 11 }}>{key}</Text></div>\n                  </div>\n                </Space>\n              ),\n            },\n            {\n              title: '阶段',\n              dataIndex: 'phase',\n              key: 'phase',\n              width: 100,\n              render: (phase: AnsiblePhase) => {\n                const cfg = phaseConfig[phase]\n                return <Tag color={cfg.color} style={{ margin: 0 }}>{cfg.label}</Tag>\n              },\n            },\n            {\n              title: '适用范围',\n              dataIndex: 'appliesTo',\n              key: 'appliesTo',\n              width: 110,\n              render: (text: string) => (\n                <Tag color={text.includes('所有') ? 'blue' : text.includes('Master') ? 'volcano' : 'cyan'} style={{ margin: 0 }}>{text}</Tag>\n              ),\n            },\n            {\n              title: '说明',\n              dataIndex: 'description',\n              key: 'description',\n              ellipsis: true,\n            },\n          ]}\n        />\n      </Card>\n    </>\n  )\n}\n\n// ==================== Playbook 源码 ====================\n\nconst AnsiblePlaybookPanel: React.FC = () => {\n  const { data, isLoading } = useQuery({\n    queryKey: ['ansible-playbook'],\n    queryFn: () => getAnsiblePlaybook(),\n  })\n\n  return (\n    <Spin spinning={isLoading}>\n      {data?.content ? (\n        <>\n          <Alert\n            type=\"info\"\n            showIcon\n            message={`Playbook 路径：${data.path || 'ansible/site.yml'}`}\n            style={{ marginBottom: 12 }}\n          />\n          <YamlEditor readOnly value={data.content} height={640} />\n        </>\n      ) : (\n        <Alert type=\"warning\" showIcon message=\"未找到 Playbook 文件，请确认后端 ansible/site.yml 是否存在\" />\n      )}\n    </Spin>\n  )\n}\n\n// ==================== Inventory 模板 ====================\n\nconst AnsibleInventoryPanel: React.FC = () => {\n  const { data, isLoading } = useQuery({\n    queryKey: ['ansible-inventory-template'],\n    queryFn: () => getAnsibleInventoryTemplate(),\n  })\n\n  return (\n    <Spin spinning={isLoading}>\n      {data?.content ? (\n        <>\n          <Alert\n            type=\"info\"\n            showIcon\n            message={`Inventory 模板路径：${data.path || 'ansible/inventory.ini'}`}\n            style={{ marginBottom: 12 }}\n          />\n          <YamlEditor readOnly value={data.content} height={640} />\n        </>\n      ) : (\n        <Alert type=\"warning\" showIcon message=\"未找到 Inventory 模板文件\" />\n      )}\n    </Spin>\n  )\n}\n\n// ==================== Ansible 环境检查 ====================\n\nconst AnsibleEnvPanel: React.FC = () => {\n  const { data, isLoading } = useQuery({\n    queryKey: ['ansible-env-check'],\n    queryFn: () => checkAnsibleEnv(),\n  })\n\n  return (\n    <Spin spinning={isLoading}>\n      {data?.installed ? (\n        <Alert\n          type=\"success\"\n          showIcon\n          message=\"Ansible 已安装\"\n          description={data.version}\n        />\n      ) : (\n        <Alert\n          type=\"error\"\n          showIcon\n          message=\"Ansible 未安装\"\n          description={\n            <div>\n              <p>后端执行 Ansible 部署需要系统安装 ansible-playbook 命令。</p>\n              <p>安装方式：</p>\n              <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 4 }}>\n{`# Ubuntu/Debian\napt install ansible\n\n# CentOS/RHEL\nyum install ansible\n\n# 或 pip\npip install ansible`}\n              </pre>\n            </div>\n          }\n        />\n      )}\n    </Spin>\n  )\n}\n\n// ==================== 仓库配置 ====================\n\nconst REPO_TYPE_OPTIONS = [\n  { value: 'container_mirror', label: '容器镜像加速' },\n  { value: 'registry', label: '容器镜像仓库' },\n  { value: 'yum', label: 'YUM 源' },\n  { value: 'apt', label: 'APT 源' },\n]\n\nconst AUTH_TYPE_OPTIONS = [\n  { value: 'none', label: '无需认证' },\n  { value: 'basic', label: '用户名/密码' },\n  { value: 'token', label: 'Token' },\n]\n\nconst RepoConfigPanel: React.FC = () => {\n  const [modalOpen, setModalOpen] = useState(false)\n  const [editRecord, setEditRecord] = useState<RepositoryConfig | null>(null)\n  const [form] = Form.useForm()\n  const queryClient = useQueryClient()\n\n  const { data: repos, isLoading } = useQuery({\n    queryKey: ['repositories'],\n    queryFn: ({ signal }) => listRepositories(undefined, signal),\n  })\n\n  const createMutation = useMutation({\n    mutationFn: createRepository,\n    onSuccess: () => {\n      message.success('仓库创建成功')\n      queryClient.invalidateQueries({ queryKey: ['repositories'] })\n      setModalOpen(false)\n      form.resetFields()\n    },\n  })\n\n  const updateMutation = useMutation({\n    mutationFn: (values: Partial<RepositoryConfig>) => updateRepository(editRecord!.id, values),\n    onSuccess: () => {\n      message.success('仓库更新成功')\n      queryClient.invalidateQueries({ queryKey: ['repositories'] })\n      setModalOpen(false)\n      setEditRecord(null)\n      form.resetFields()\n    },\n  })\n\n  const deleteMutation = useMutation({\n    mutationFn: deleteRepository,\n    onSuccess: () => {\n      message.success('仓库已删除')\n      queryClient.invalidateQueries({ queryKey: ['repositories'] })\n    },\n  })\n\n  const handleAdd = () => {\n    setEditRecord(null)\n    form.resetFields()\n    form.setFieldsValue({ authType: 'none', priority: 1, enabled: true })\n    setModalOpen(true)\n  }\n\n  const handleEdit = (record: RepositoryConfig) => {\n    setEditRecord(record)\n    form.setFieldsValue(record)\n    setModalOpen(true)\n  }\n\n  const columns = [\n    {\n      title: '仓库名称',\n      dataIndex: 'name',\n      key: 'name',\n      render: (text: string, record: RepositoryConfig) => (\n        <Space>\n          <strong>{text}</strong>\n          {record.isDefault && <Tag color=\"blue\">默认</Tag>}\n        </Space>\n      ),\n    },\n    {\n      title: '类型',\n      dataIndex: 'repoType',\n      key: 'repoType',\n      width: 120,\n      render: (t: string) => {\n        const opt = REPO_TYPE_OPTIONS.find((o) => o.value === t)\n        return <Tag>{opt?.label || t}</Tag>\n      },\n    },\n    {\n      title: '地址',\n      dataIndex: 'url',\n      key: 'url',\n      ellipsis: true,\n    },\n    {\n      title: '认证',\n      dataIndex: 'authType',\n      key: 'authType',\n      width: 100,\n      render: (t: string) => {\n        const opt = AUTH_TYPE_OPTIONS.find((o) => o.value === t)\n        return opt?.label || t\n      },\n    },\n    {\n      title: '优先级',\n      dataIndex: 'priority',\n      key: 'priority',\n      width: 100,\n      sorter: (a: RepositoryConfig, b: RepositoryConfig) => (a.priority ?? 0) - (b.priority ?? 0),\n    },\n    {\n      title: '状态',\n      dataIndex: 'enabled',\n      key: 'enabled',\n      width: 80,\n      render: (enabled: boolean) => (\n        <Badge status={enabled ? 'success' : 'default'} text={enabled ? '启用' : '禁用'} />\n      ),\n    },\n    {\n      title: '操作',\n      key: 'action',\n      width: 120,\n      render: (_: unknown, record: RepositoryConfig) => (\n        <Space>\n          <a onClick={() => handleEdit(record)}>编辑</a>\n          <Popconfirm title=\"确认删除该仓库配置？\" onConfirm={() => deleteMutation.mutate(record.id)}>\n            <a style={{ color: '#ff4d4f' }}>删除</a>\n          </Popconfirm>\n        </Space>\n      ),\n    },\n  ]\n\n  return (\n    <>\n      <div style={{ marginBottom: 16 }}>\n        <Button type=\"primary\" icon={<PlusOutlined />} onClick={handleAdd}>\n          添加仓库\n        </Button>\n      </div>\n\n      <Table\n        rowKey=\"id\"\n        columns={columns}\n        dataSource={repos}\n        loading={isLoading}\n        pagination={false}\n      />\n\n      <Modal\n        title={editRecord ? '编辑仓库' : '添加仓库'}\n        open={modalOpen}\n        onCancel={() => { setModalOpen(false); setEditRecord(null); form.resetFields() }}\n        onOk={() => form.submit()}\n        confirmLoading={createMutation.isPending || updateMutation.isPending}\n        width={560}\n      >\n        <Form\n          form={form}\n          layout=\"vertical\"\n          onFinish={(values) => {\n            if (editRecord) {\n              updateMutation.mutate(values)\n            } else {\n              createMutation.mutate(values)\n            }\n          }}\n        >\n          <Form.Item name=\"name\" label=\"仓库名称\" rules={[{ required: true, message: '请输入仓库名称' }]}>\n            <Input placeholder=\"如 Harbor 私有仓库\" />\n          </Form.Item>\n          <Form.Item name=\"repoType\" label=\"仓库类型\" rules={[{ required: true, message: '请选择仓库类型' }]}>\n            <Select options={REPO_TYPE_OPTIONS} />\n          </Form.Item>\n          <Form.Item name=\"url\" label=\"仓库地址\" rules={[{ required: true, message: '请输入仓库地址' }]}>\n            <Input placeholder=\"https://harbor.example.com\" />\n          </Form.Item>\n          <Form.Item name=\"description\" label=\"说明\">\n            <Input.TextArea rows={2} />\n          </Form.Item>\n          <Form.Item name=\"authType\" label=\"认证方式\">\n            <Select options={AUTH_TYPE_OPTIONS} />\n          </Form.Item>\n          <Space>\n            <Form.Item name=\"priority\" label=\"优先级\">\n              <InputNumber min={1} max={100} />\n            </Form.Item>\n            <Form.Item name=\"enabled\" label=\"启用\" valuePropName=\"checked\">\n              <Switch />\n            </Form.Item>\n          </Space>\n        </Form>\n      </Modal>\n    </>\n  )\n}\n\nexport default DeployConfig\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/deploy/config.tsx"
     },
@@ -6119,7 +6119,7 @@
       "parentId": "84",
       "id": "138",
       "absPath": "/k8s/:clusterId/helm-releases",
-      "__content": "import React, { useDeferredValue, useMemo, useState } from 'react'\nimport { Alert, Button, Card, Col, Descriptions, Drawer, Dropdown, Form, Input, Modal, Row, Select, Space, Statistic, Table, Tabs, Tag, Tooltip, Typography, message } from 'antd'\nimport { DeleteOutlined, EyeOutlined, HistoryOutlined, MoreOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons'\nimport { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'\nimport { AppPage, NamespaceSelector, YamlEditor } from '@/components'\nimport { getHelmReleaseDetail, helmInstall, helmRollback, helmUninstall, helmUpgrade, listHelmReleases } from '@/services/k8s'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\n\nconst { Text, Title } = Typography\nconst statusColorMap: Record<string, string> = { deployed: 'success', failed: 'error', superseded: 'default', uninstalled: 'default', 'pending-upgrade': 'warning', 'pending-rollback': 'warning', 'pending-install': 'processing' }\n\nconst HelmReleasesPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState('')\n  const [search, setSearch] = useState('')\n  const deferredSearch = useDeferredValue(search.trim().toLowerCase())\n  const [detailTarget, setDetailTarget] = useState<any>()\n  const [installOpen, setInstallOpen] = useState(false)\n  const [upgradeTarget, setUpgradeTarget] = useState<any>()\n  const [rollbackTarget, setRollbackTarget] = useState<any>()\n  const [valuesYaml, setValuesYaml] = useState('')\n  const [installForm] = Form.useForm()\n  const [upgradeForm] = Form.useForm()\n  const [rollbackForm] = Form.useForm()\n\n  const releasesQuery = useQuery({\n    queryKey: ['helm-releases', clusterId, namespace],\n    queryFn: ({ signal }) => listHelmReleases(clusterId, namespace || undefined, signal),\n    enabled: !!clusterId,\n    staleTime: 30_000,\n    gcTime: 10 * 60_000,\n    refetchOnWindowFocus: false,\n  })\n  const detailQuery = useQuery({\n    queryKey: ['helm-release-detail', clusterId, detailTarget?.namespace, detailTarget?.name],\n    queryFn: ({ signal }) => getHelmReleaseDetail(clusterId, detailTarget.namespace, detailTarget.name, signal),\n    enabled: !!detailTarget,\n    staleTime: 30_000,\n  })\n\n  const refresh = () => queryClient.invalidateQueries({ queryKey: ['helm-releases', clusterId] })\n  const closeForms = () => { setInstallOpen(false); setUpgradeTarget(undefined); installForm.resetFields(); upgradeForm.resetFields(); setValuesYaml('') }\n  const operationMutation = useMutation({\n    mutationFn: async (operation: { type: 'install' | 'upgrade' | 'rollback' | 'uninstall'; payload: any }) => {\n      if (operation.type === 'install') return helmInstall(clusterId, operation.payload)\n      if (operation.type === 'upgrade') return helmUpgrade(clusterId, operation.payload.namespace, operation.payload.name, operation.payload)\n      if (operation.type === 'rollback') return helmRollback(clusterId, operation.payload.namespace, operation.payload.name, operation.payload.revision)\n      return helmUninstall(clusterId, operation.payload.namespace, operation.payload.name)\n    },\n    onSuccess: (_, operation) => { message.success({ install: '安装', upgrade: '升级', rollback: '回滚', uninstall: '卸载' }[operation.type] + '操作已完成'); closeForms(); setRollbackTarget(undefined); refresh() },\n    onError: (error: any) => message.error(error?.message || 'Helm 操作失败'),\n  })\n\n  const releases = useMemo(() => (releasesQuery.data?.items || []).filter((item: any) => !deferredSearch || `${item.name} ${item.namespace} ${item.chart} ${item.status}`.toLowerCase().includes(deferredSearch)), [releasesQuery.data, deferredSearch])\n  const stats = useMemo(() => ({ total: releases.length, deployed: releases.filter((item: any) => item.status === 'deployed').length, failed: releases.filter((item: any) => item.status === 'failed').length, pending: releases.filter((item: any) => String(item.status).startsWith('pending')).length }), [releases])\n\n  const submitInstall = async () => {\n    const values = await installForm.validateFields()\n    operationMutation.mutate({ type: 'install', payload: { ...values, values_yaml: valuesYaml } })\n  }\n  const submitUpgrade = async () => {\n    const values = await upgradeForm.validateFields()\n    operationMutation.mutate({ type: 'upgrade', payload: { ...values, namespace: upgradeTarget.namespace, name: upgradeTarget.name, values_yaml: valuesYaml } })\n  }\n  const submitRollback = async () => {\n    const values = await rollbackForm.validateFields()\n    operationMutation.mutate({ type: 'rollback', payload: { ...values, namespace: rollbackTarget.namespace, name: rollbackTarget.name } })\n  }\n\n  const columns: any[] = [\n    { title: 'Release', dataIndex: 'name', width: 210, fixed: 'left', ellipsis: true, render: (value: string, record: any) => <Button type=\"link\" style={{ padding: 0 }} onClick={() => setDetailTarget(record)}>{value}</Button> },\n    { title: '命名空间', dataIndex: 'namespace', width: 150, render: (value: string) => <Tag>{value}</Tag> },\n    { title: 'Revision', dataIndex: 'revision', width: 90, align: 'center' },\n    { title: '状态', dataIndex: 'status', width: 140, render: (value: string) => <Tag color={statusColorMap[value] || 'default'}>{value || 'unknown'}</Tag> },\n    { title: 'Chart', dataIndex: 'chart', width: 240, ellipsis: true, render: (value: string) => value || '-' },\n    { title: 'App 版本', dataIndex: 'app_version', width: 130, render: (value: string) => value || '-' },\n    { title: '更新时间', dataIndex: 'updated', width: 200, render: (value: string) => value ? formatDate(value) : '-' },\n    { title: '操作', width: 150, fixed: 'right', render: (_: any, record: any) => <Space>\n      <Tooltip title=\"查看详情\"><Button type=\"text\" icon={<EyeOutlined />} onClick={() => setDetailTarget(record)} /></Tooltip>\n      <Tooltip title=\"升级\"><Button type=\"text\" icon={<SyncOutlined />} onClick={() => { setUpgradeTarget(record); setValuesYaml(''); upgradeForm.setFieldsValue({ chart: record.chart?.replace(/-[^-]+$/, '') || '', atomic: true, wait: true, timeout: '5m' }) }} /></Tooltip>\n      <Dropdown trigger={['click']} menu={{ items: [\n        { key: 'rollback', icon: <HistoryOutlined />, label: '回滚到历史版本', onClick: () => { setRollbackTarget(record); rollbackForm.resetFields() } },\n        { key: 'uninstall', danger: true, icon: <DeleteOutlined />, label: '卸载 Release', onClick: () => Modal.confirm({ title: `卸载 ${record.namespace}/${record.name}？`, content: 'Release 管理的资源将被删除，此操作不可撤销。', okText: '确认卸载', okButtonProps: { danger: true }, onOk: () => operationMutation.mutateAsync({ type: 'uninstall', payload: record }) }) },\n      ] }}><Button type=\"text\" icon={<MoreOutlined />} /></Dropdown>\n    </Space> },\n  ]\n\n  return <AppPage>\n    <Space direction=\"vertical\" size={12} style={{ width: '100%' }}>\n      <Card size=\"small\">\n        <Row justify=\"space-between\" align=\"middle\" gutter={[12, 12]}>\n          <Col><Title level={4} style={{ margin: 0 }}>Helm Releases</Title><Text type=\"secondary\">Release 生命周期、配置、清单与版本历史统一管理</Text></Col>\n          <Col><Space><Button icon={<ReloadOutlined />} loading={releasesQuery.isFetching} onClick={() => releasesQuery.refetch()}>刷新</Button><Button type=\"primary\" icon={<PlusOutlined />} onClick={() => setInstallOpen(true)}>安装 Chart</Button></Space></Col>\n        </Row>\n        <Row gutter={[12, 12]} style={{ marginTop: 16 }}>\n          <Col xs={24} lg={12}><Space.Compact block><NamespaceSelector clusterId={clusterId} value={namespace} onChange={setNamespace} style={{ width: 220 }} /><Input allowClear prefix={<SearchOutlined />} placeholder=\"搜索 Release、Chart 或状态\" value={search} onChange={(event) => setSearch(event.target.value)} /></Space.Compact></Col>\n          <Col xs={6} lg={3}><Statistic title=\"全部\" value={stats.total} /></Col><Col xs={6} lg={3}><Statistic title=\"已部署\" value={stats.deployed} valueStyle={{ color: '#16a34a' }} /></Col><Col xs={6} lg={3}><Statistic title=\"失败\" value={stats.failed} valueStyle={{ color: '#dc2626' }} /></Col><Col xs={6} lg={3}><Statistic title=\"处理中\" value={stats.pending} valueStyle={{ color: '#d97706' }} /></Col>\n        </Row>\n      </Card>\n      {releasesQuery.data?.source === 'kubernetes-secrets' && <Alert type=\"warning\" showIcon message=\"Helm CLI 数据源暂不可用，当前使用 Kubernetes Secret 降级数据；Chart 与应用版本字段可能不完整。\" />}\n      <Card size=\"small\" styles={{ body: { padding: 0 } }}>\n        <Table rowKey={(record) => `${record.namespace}/${record.name}`} loading={releasesQuery.isLoading} dataSource={releases} columns={columns} scroll={{ x: 1320 }} pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 个 Release` }} />\n      </Card>\n    </Space>\n\n    <Drawer width=\"min(960px, 92vw)\" title={detailTarget ? `${detailTarget.namespace}/${detailTarget.name}` : 'Release 详情'} open={!!detailTarget} onClose={() => setDetailTarget(undefined)} loading={detailQuery.isLoading}>\n      {detailQuery.data && <Tabs items={[\n        { key: 'overview', label: '概览', children: <Descriptions bordered column={2} size=\"small\"><Descriptions.Item label=\"名称\">{detailQuery.data.name}</Descriptions.Item><Descriptions.Item label=\"命名空间\">{detailQuery.data.namespace}</Descriptions.Item><Descriptions.Item label=\"Revision\">{detailQuery.data.revision}</Descriptions.Item><Descriptions.Item label=\"状态\"><Tag color={statusColorMap[detailQuery.data.status]}>{detailQuery.data.status}</Tag></Descriptions.Item><Descriptions.Item label=\"Chart\">{detailQuery.data.chart || '-'}</Descriptions.Item><Descriptions.Item label=\"更新时间\">{detailQuery.data.updated ? formatDate(detailQuery.data.updated) : '-'}</Descriptions.Item></Descriptions> },\n        { key: 'values', label: 'Values', children: <YamlEditor readOnly value={detailQuery.data.values_yaml || '# 未配置自定义 values'} height={560} /> },\n        { key: 'manifest', label: '渲染清单', children: <YamlEditor readOnly value={detailQuery.data.manifest || '# 暂无渲染清单'} height={560} /> },\n        { key: 'history', label: `版本历史 (${detailQuery.data.history?.length || 0})`, children: <Table size=\"small\" rowKey=\"revision\" pagination={false} dataSource={detailQuery.data.history || []} columns={[{ title: 'Revision', dataIndex: 'revision' }, { title: '状态', dataIndex: 'status', render: (value) => <Tag>{value}</Tag> }, { title: 'Chart', dataIndex: 'chart' }, { title: '更新时间', dataIndex: 'updated' }, { title: '说明', dataIndex: 'description', ellipsis: true }]} /> },\n      ]} />}\n    </Drawer>\n\n    <Modal title=\"安装 Helm Chart\" width={760} open={installOpen} onCancel={closeForms} onOk={submitInstall} confirmLoading={operationMutation.isPending} okText=\"安装\">\n      <Form form={installForm} layout=\"vertical\" initialValues={{ namespace: 'default' }}><Row gutter={12}><Col span={12}><Form.Item name=\"release_name\" label=\"Release 名称\" rules={[{ required: true }]}><Input placeholder=\"my-redis\" /></Form.Item></Col><Col span={12}><Form.Item name=\"namespace\" label=\"命名空间\" rules={[{ required: true }]}><Input placeholder=\"default\" /></Form.Item></Col></Row><Form.Item name=\"chart\" label=\"Chart\" rules={[{ required: true }]}><Input placeholder=\"bitnami/redis\" /></Form.Item><Row gutter={12}><Col span={12}><Form.Item name=\"repo_name\" label=\"仓库名称（首次添加时填写）\"><Input placeholder=\"bitnami\" /></Form.Item></Col><Col span={12}><Form.Item name=\"repo_url\" label=\"仓库地址\"><Input placeholder=\"https://charts.bitnami.com/bitnami\" /></Form.Item></Col></Row><Form.Item label=\"values.yaml\"><YamlEditor value={valuesYaml} onChange={setValuesYaml} height={280} /></Form.Item></Form>\n    </Modal>\n    <Modal title={`升级 ${upgradeTarget?.namespace}/${upgradeTarget?.name}`} width={760} open={!!upgradeTarget} onCancel={closeForms} onOk={submitUpgrade} confirmLoading={operationMutation.isPending} okText=\"执行升级\">\n      <Alert type=\"info\" showIcon message=\"建议启用 Atomic：升级失败时 Helm 会自动回滚。\" style={{ marginBottom: 16 }} />\n      <Form form={upgradeForm} layout=\"vertical\"><Row gutter={12}><Col span={16}><Form.Item name=\"chart\" label=\"Chart\" rules={[{ required: true }]}><Input /></Form.Item></Col><Col span={8}><Form.Item name=\"version\" label=\"Chart 版本\"><Input placeholder=\"留空使用最新版本\" /></Form.Item></Col></Row><Row gutter={12}><Col span={8}><Form.Item name=\"atomic\" label=\"失败自动回滚\"><Select options={[{ label: '启用', value: true }, { label: '关闭', value: false }]} /></Form.Item></Col><Col span={8}><Form.Item name=\"wait\" label=\"等待资源就绪\"><Select options={[{ label: '启用', value: true }, { label: '关闭', value: false }]} /></Form.Item></Col><Col span={8}><Form.Item name=\"timeout\" label=\"超时\"><Input placeholder=\"5m\" /></Form.Item></Col></Row><Form.Item label=\"values.yaml\"><YamlEditor value={valuesYaml} onChange={setValuesYaml} height={280} /></Form.Item></Form>\n    </Modal>\n    <Modal title={`回滚 ${rollbackTarget?.namespace}/${rollbackTarget?.name}`} open={!!rollbackTarget} onCancel={() => setRollbackTarget(undefined)} onOk={submitRollback} confirmLoading={operationMutation.isPending} okButtonProps={{ danger: true }} okText=\"确认回滚\"><Alert type=\"warning\" showIcon message=\"回滚会重新应用目标 revision 的 Chart 与 values。\" style={{ marginBottom: 16 }} /><Form form={rollbackForm} layout=\"vertical\"><Form.Item name=\"revision\" label=\"目标 Revision\" rules={[{ required: true }]}><Input type=\"number\" min={1} placeholder=\"例如 3\" /></Form.Item></Form></Modal>\n  </AppPage>\n}\n\nexport default HelmReleasesPage\n",
+      "__content": "import React, { useDeferredValue, useMemo, useState } from 'react'\nimport { Alert, Button, Col, Descriptions, Drawer, Dropdown, Form, Input, Modal, Row, Select, Space, Tabs, Tag, Tooltip, message } from 'antd'\nimport { DeleteOutlined, EyeOutlined, HistoryOutlined, MoreOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons'\nimport { ProTable, type ProColumns } from '@ant-design/pro-components'\nimport { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'\nimport { AppPage, NamespaceSelector, YamlEditor } from '@/components'\nimport { getHelmReleaseDetail, helmInstall, helmRollback, helmUninstall, helmUpgrade, listHelmReleases } from '@/services/k8s'\nimport { useClusterId } from '@/hooks/useClusterId'\nimport { formatDate } from '@/utils'\nconst statusColorMap: Record<string, string> = { deployed: 'success', failed: 'error', superseded: 'default', uninstalled: 'default', 'pending-upgrade': 'warning', 'pending-rollback': 'warning', 'pending-install': 'processing' }\n\nconst HelmReleasesPage: React.FC = () => {\n  const clusterId = useClusterId()\n  const queryClient = useQueryClient()\n  const [namespace, setNamespace] = useState('')\n  const [search, setSearch] = useState('')\n  const deferredSearch = useDeferredValue(search.trim().toLowerCase())\n  const [detailTarget, setDetailTarget] = useState<any>()\n  const [installOpen, setInstallOpen] = useState(false)\n  const [upgradeTarget, setUpgradeTarget] = useState<any>()\n  const [rollbackTarget, setRollbackTarget] = useState<any>()\n  const [valuesYaml, setValuesYaml] = useState('')\n  const [installForm] = Form.useForm()\n  const [upgradeForm] = Form.useForm()\n  const [rollbackForm] = Form.useForm()\n\n  const releasesQuery = useQuery({\n    queryKey: ['helm-releases', clusterId, namespace],\n    queryFn: ({ signal }) => listHelmReleases(clusterId, namespace || undefined, signal),\n    enabled: !!clusterId,\n    staleTime: 30_000,\n    gcTime: 10 * 60_000,\n    refetchOnWindowFocus: false,\n  })\n  const detailQuery = useQuery({\n    queryKey: ['helm-release-detail', clusterId, detailTarget?.namespace, detailTarget?.name],\n    queryFn: ({ signal }) => getHelmReleaseDetail(clusterId, detailTarget.namespace, detailTarget.name, signal),\n    enabled: !!detailTarget,\n    staleTime: 30_000,\n  })\n\n  const refresh = () => queryClient.invalidateQueries({ queryKey: ['helm-releases', clusterId] })\n  const closeForms = () => { setInstallOpen(false); setUpgradeTarget(undefined); installForm.resetFields(); upgradeForm.resetFields(); setValuesYaml('') }\n  const operationMutation = useMutation({\n    mutationFn: async (operation: { type: 'install' | 'upgrade' | 'rollback' | 'uninstall'; payload: any }) => {\n      if (operation.type === 'install') return helmInstall(clusterId, operation.payload)\n      if (operation.type === 'upgrade') return helmUpgrade(clusterId, operation.payload.namespace, operation.payload.name, operation.payload)\n      if (operation.type === 'rollback') return helmRollback(clusterId, operation.payload.namespace, operation.payload.name, operation.payload.revision)\n      return helmUninstall(clusterId, operation.payload.namespace, operation.payload.name)\n    },\n    onSuccess: (_, operation) => { message.success({ install: '安装', upgrade: '升级', rollback: '回滚', uninstall: '卸载' }[operation.type] + '操作已完成'); closeForms(); setRollbackTarget(undefined); refresh() },\n    onError: (error: any) => message.error(error?.message || 'Helm 操作失败'),\n  })\n\n  const releases = useMemo(() => (releasesQuery.data?.items || []).filter((item: any) => !deferredSearch || `${item.name} ${item.namespace} ${item.chart} ${item.status}`.toLowerCase().includes(deferredSearch)), [releasesQuery.data, deferredSearch])\n\n  const submitInstall = async () => {\n    const values = await installForm.validateFields()\n    operationMutation.mutate({ type: 'install', payload: { ...values, values_yaml: valuesYaml } })\n  }\n  const submitUpgrade = async () => {\n    const values = await upgradeForm.validateFields()\n    operationMutation.mutate({ type: 'upgrade', payload: { ...values, namespace: upgradeTarget.namespace, name: upgradeTarget.name, values_yaml: valuesYaml } })\n  }\n  const submitRollback = async () => {\n    const values = await rollbackForm.validateFields()\n    operationMutation.mutate({ type: 'rollback', payload: { ...values, namespace: rollbackTarget.namespace, name: rollbackTarget.name } })\n  }\n\n  const columns: ProColumns<any>[] = [\n    { title: 'Release', dataIndex: 'name', width: 210, fixed: 'left', ellipsis: true, render: (value: string, record: any) => <Button type=\"link\" style={{ padding: 0 }} onClick={() => setDetailTarget(record)}>{value}</Button> },\n    { title: '命名空间', dataIndex: 'namespace', width: 150, render: (value: string) => <Tag>{value}</Tag> },\n    { title: 'Revision', dataIndex: 'revision', width: 90, align: 'center' },\n    { title: '状态', dataIndex: 'status', width: 140, render: (value: string) => <Tag color={statusColorMap[value] || 'default'}>{value || 'unknown'}</Tag> },\n    { title: 'Chart', dataIndex: 'chart', width: 240, ellipsis: true, render: (value: string) => value || '-' },\n    { title: 'App 版本', dataIndex: 'app_version', width: 130, render: (value: string) => value || '-' },\n    { title: '更新时间', dataIndex: 'updated', width: 200, render: (value: string) => value ? formatDate(value) : '-' },\n    { title: '操作', width: 150, fixed: 'right', render: (_: any, record: any) => <Space>\n      <Tooltip title=\"查看详情\"><Button type=\"text\" icon={<EyeOutlined />} onClick={() => setDetailTarget(record)} /></Tooltip>\n      <Tooltip title=\"升级\"><Button type=\"text\" icon={<SyncOutlined />} onClick={() => { setUpgradeTarget(record); setValuesYaml(''); upgradeForm.setFieldsValue({ chart: record.chart?.replace(/-[^-]+$/, '') || '', atomic: true, wait: true, timeout: '5m' }) }} /></Tooltip>\n      <Dropdown trigger={['click']} menu={{ items: [\n        { key: 'rollback', icon: <HistoryOutlined />, label: '回滚到历史版本', onClick: () => { setRollbackTarget(record); rollbackForm.resetFields() } },\n        { key: 'uninstall', danger: true, icon: <DeleteOutlined />, label: '卸载 Release', onClick: () => Modal.confirm({ title: `卸载 ${record.namespace}/${record.name}？`, content: 'Release 管理的资源将被删除，此操作不可撤销。', okText: '确认卸载', okButtonProps: { danger: true }, onOk: () => operationMutation.mutateAsync({ type: 'uninstall', payload: record }) }) },\n      ] }}><Button type=\"text\" icon={<MoreOutlined />} /></Dropdown>\n    </Space> },\n  ]\n\n  return <AppPage>\n    <Space direction=\"vertical\" size={12} style={{ width: '100%' }}>\n      {releasesQuery.data?.source === 'kubernetes-secrets' && <Alert type=\"warning\" showIcon message=\"Helm CLI 数据源暂不可用，当前使用 Kubernetes Secret 降级数据；Chart 与应用版本字段可能不完整。\" />}\n      <ProTable<any>\n        headerTitle=\"Helm Releases\"\n        rowKey={(record) => `${record.namespace}/${record.name}`}\n        loading={releasesQuery.isLoading}\n        dataSource={releases}\n        columns={columns}\n        search={false}\n        options={{ reload: false }}\n        scroll={{ x: 1320 }}\n        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 个 Release` }}\n        toolBarRender={() => [\n          <Input.Search\n            key=\"search\"\n            allowClear\n            placeholder=\"搜索 Release、Chart 或状态\"\n            value={search}\n            onChange={(event) => setSearch(event.target.value)}\n            style={{ width: 280 }}\n            prefix={<SearchOutlined />}\n          />,\n          <NamespaceSelector key=\"ns\" clusterId={clusterId} value={namespace} onChange={setNamespace} />,\n          <Button key=\"refresh\" icon={<ReloadOutlined />} loading={releasesQuery.isFetching} onClick={() => releasesQuery.refetch()}>\n            刷新\n          </Button>,\n          <Button key=\"install\" type=\"primary\" icon={<PlusOutlined />} onClick={() => setInstallOpen(true)}>\n            安装 Chart\n          </Button>,\n        ]}\n      />\n    </Space>\n\n    <Drawer width=\"min(960px, 92vw)\" title={detailTarget ? `${detailTarget.namespace}/${detailTarget.name}` : 'Release 详情'} open={!!detailTarget} onClose={() => setDetailTarget(undefined)} loading={detailQuery.isLoading}>\n      {detailQuery.data && <Tabs items={[\n        { key: 'overview', label: '概览', children: <Descriptions bordered column={2} size=\"small\"><Descriptions.Item label=\"名称\">{detailQuery.data.name}</Descriptions.Item><Descriptions.Item label=\"命名空间\">{detailQuery.data.namespace}</Descriptions.Item><Descriptions.Item label=\"Revision\">{detailQuery.data.revision}</Descriptions.Item><Descriptions.Item label=\"状态\"><Tag color={statusColorMap[detailQuery.data.status]}>{detailQuery.data.status}</Tag></Descriptions.Item><Descriptions.Item label=\"Chart\">{detailQuery.data.chart || '-'}</Descriptions.Item><Descriptions.Item label=\"更新时间\">{detailQuery.data.updated ? formatDate(detailQuery.data.updated) : '-'}</Descriptions.Item></Descriptions> },\n        { key: 'values', label: 'Values', children: <YamlEditor readOnly value={detailQuery.data.values_yaml || '# 未配置自定义 values'} height={560} /> },\n        { key: 'manifest', label: '渲染清单', children: <YamlEditor readOnly value={detailQuery.data.manifest || '# 暂无渲染清单'} height={560} /> },\n        { key: 'history', label: `版本历史 (${detailQuery.data.history?.length || 0})`, children: <Table size=\"small\" rowKey=\"revision\" pagination={false} dataSource={detailQuery.data.history || []} columns={[{ title: 'Revision', dataIndex: 'revision' }, { title: '状态', dataIndex: 'status', render: (value) => <Tag>{value}</Tag> }, { title: 'Chart', dataIndex: 'chart' }, { title: '更新时间', dataIndex: 'updated' }, { title: '说明', dataIndex: 'description', ellipsis: true }]} /> },\n      ]} />}\n    </Drawer>\n\n    <Modal title=\"安装 Helm Chart\" width={760} open={installOpen} onCancel={closeForms} onOk={submitInstall} confirmLoading={operationMutation.isPending} okText=\"安装\">\n      <Form form={installForm} layout=\"vertical\" initialValues={{ namespace: 'default' }}><Row gutter={12}><Col span={12}><Form.Item name=\"release_name\" label=\"Release 名称\" rules={[{ required: true }]}><Input placeholder=\"my-redis\" /></Form.Item></Col><Col span={12}><Form.Item name=\"namespace\" label=\"命名空间\" rules={[{ required: true }]}><Input placeholder=\"default\" /></Form.Item></Col></Row><Form.Item name=\"chart\" label=\"Chart\" rules={[{ required: true }]}><Input placeholder=\"bitnami/redis\" /></Form.Item><Row gutter={12}><Col span={12}><Form.Item name=\"repo_name\" label=\"仓库名称（首次添加时填写）\"><Input placeholder=\"bitnami\" /></Form.Item></Col><Col span={12}><Form.Item name=\"repo_url\" label=\"仓库地址\"><Input placeholder=\"https://charts.bitnami.com/bitnami\" /></Form.Item></Col></Row><Form.Item label=\"values.yaml\"><YamlEditor value={valuesYaml} onChange={setValuesYaml} height={280} /></Form.Item></Form>\n    </Modal>\n    <Modal title={`升级 ${upgradeTarget?.namespace}/${upgradeTarget?.name}`} width={760} open={!!upgradeTarget} onCancel={closeForms} onOk={submitUpgrade} confirmLoading={operationMutation.isPending} okText=\"执行升级\">\n      <Alert type=\"info\" showIcon message=\"建议启用 Atomic：升级失败时 Helm 会自动回滚。\" style={{ marginBottom: 16 }} />\n      <Form form={upgradeForm} layout=\"vertical\"><Row gutter={12}><Col span={16}><Form.Item name=\"chart\" label=\"Chart\" rules={[{ required: true }]}><Input /></Form.Item></Col><Col span={8}><Form.Item name=\"version\" label=\"Chart 版本\"><Input placeholder=\"留空使用最新版本\" /></Form.Item></Col></Row><Row gutter={12}><Col span={8}><Form.Item name=\"atomic\" label=\"失败自动回滚\"><Select options={[{ label: '启用', value: true }, { label: '关闭', value: false }]} /></Form.Item></Col><Col span={8}><Form.Item name=\"wait\" label=\"等待资源就绪\"><Select options={[{ label: '启用', value: true }, { label: '关闭', value: false }]} /></Form.Item></Col><Col span={8}><Form.Item name=\"timeout\" label=\"超时\"><Input placeholder=\"5m\" /></Form.Item></Col></Row><Form.Item label=\"values.yaml\"><YamlEditor value={valuesYaml} onChange={setValuesYaml} height={280} /></Form.Item></Form>\n    </Modal>\n    <Modal title={`回滚 ${rollbackTarget?.namespace}/${rollbackTarget?.name}`} open={!!rollbackTarget} onCancel={() => setRollbackTarget(undefined)} onOk={submitRollback} confirmLoading={operationMutation.isPending} okButtonProps={{ danger: true }} okText=\"确认回滚\"><Alert type=\"warning\" showIcon message=\"回滚会重新应用目标 revision 的 Chart 与 values。\" style={{ marginBottom: 16 }} /><Form form={rollbackForm} layout=\"vertical\"><Form.Item name=\"revision\" label=\"目标 Revision\" rules={[{ required: true }]}><Input type=\"number\" min={1} placeholder=\"例如 3\" /></Form.Item></Form></Modal>\n  </AppPage>\n}\n\nexport default HelmReleasesPage\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/k8s/$clusterId/helm-releases.tsx"
     },

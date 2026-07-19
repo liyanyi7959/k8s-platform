@@ -176,6 +176,36 @@ func (dc *DeployConfigController) UpdateRepository(c *gin.Context) {
 	resp.OK[any](c, nil)
 }
 
+// GetAnsiblePlaybook 读取 Ansible site.yml 源码。
+func (dc *DeployConfigController) GetAnsiblePlaybook(c *gin.Context) {
+	content, err := dc.svc.ReadAnsiblePlaybook(c.Request.Context())
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"content": content, "path": "ansible/site.yml"})
+}
+
+// GetAnsibleInventoryTemplate 读取 Ansible inventory 模板。
+func (dc *DeployConfigController) GetAnsibleInventoryTemplate(c *gin.Context) {
+	content, err := dc.svc.ReadAnsibleInventoryTemplate(c.Request.Context())
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"content": content, "path": "ansible/inventory.ini"})
+}
+
+// CheckAnsibleEnv 检查当前环境是否已安装 ansible-playbook。
+func (dc *DeployConfigController) CheckAnsibleEnv(c *gin.Context) {
+	installed, version, err := dc.svc.CheckAnsibleEnv(c.Request.Context())
+	if err != nil {
+		resp.Fail(c, 5000, "检查 Ansible 环境失败")
+		return
+	}
+	resp.OK(c, gin.H{"installed": installed, "version": version})
+}
+
 // DeleteRepository 删除仓库配置
 func (dc *DeployConfigController) DeleteRepository(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)

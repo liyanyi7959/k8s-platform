@@ -1,13 +1,12 @@
 import React, { useDeferredValue, useMemo, useState } from 'react'
-import { Alert, Button, Card, Col, Descriptions, Drawer, Dropdown, Form, Input, Modal, Row, Select, Space, Statistic, Table, Tabs, Tag, Tooltip, Typography, message } from 'antd'
+import { Alert, Button, Col, Descriptions, Drawer, Dropdown, Form, Input, Modal, Row, Select, Space, Tabs, Tag, Tooltip, message } from 'antd'
 import { DeleteOutlined, EyeOutlined, HistoryOutlined, MoreOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons'
+import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage, NamespaceSelector, YamlEditor } from '@/components'
 import { getHelmReleaseDetail, helmInstall, helmRollback, helmUninstall, helmUpgrade, listHelmReleases } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
-
-const { Text, Title } = Typography
 const statusColorMap: Record<string, string> = { deployed: 'success', failed: 'error', superseded: 'default', uninstalled: 'default', 'pending-upgrade': 'warning', 'pending-rollback': 'warning', 'pending-install': 'processing' }
 
 const HelmReleasesPage: React.FC = () => {
@@ -54,7 +53,6 @@ const HelmReleasesPage: React.FC = () => {
   })
 
   const releases = useMemo(() => (releasesQuery.data?.items || []).filter((item: any) => !deferredSearch || `${item.name} ${item.namespace} ${item.chart} ${item.status}`.toLowerCase().includes(deferredSearch)), [releasesQuery.data, deferredSearch])
-  const stats = useMemo(() => ({ total: releases.length, deployed: releases.filter((item: any) => item.status === 'deployed').length, failed: releases.filter((item: any) => item.status === 'failed').length, pending: releases.filter((item: any) => String(item.status).startsWith('pending')).length }), [releases])
 
   const submitInstall = async () => {
     const values = await installForm.validateFields()
@@ -69,7 +67,7 @@ const HelmReleasesPage: React.FC = () => {
     operationMutation.mutate({ type: 'rollback', payload: { ...values, namespace: rollbackTarget.namespace, name: rollbackTarget.name } })
   }
 
-  const columns: any[] = [
+  const columns: ProColumns<any>[] = [
     { title: 'Release', dataIndex: 'name', width: 210, fixed: 'left', ellipsis: true, render: (value: string, record: any) => <Button type="link" style={{ padding: 0 }} onClick={() => setDetailTarget(record)}>{value}</Button> },
     { title: '命名空间', dataIndex: 'namespace', width: 150, render: (value: string) => <Tag>{value}</Tag> },
     { title: 'Revision', dataIndex: 'revision', width: 90, align: 'center' },
@@ -89,20 +87,36 @@ const HelmReleasesPage: React.FC = () => {
 
   return <AppPage>
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
-      <Card size="small">
-        <Row justify="space-between" align="middle" gutter={[12, 12]}>
-          <Col><Title level={4} style={{ margin: 0 }}>Helm Releases</Title><Text type="secondary">Release 生命周期、配置、清单与版本历史统一管理</Text></Col>
-          <Col><Space><Button icon={<ReloadOutlined />} loading={releasesQuery.isFetching} onClick={() => releasesQuery.refetch()}>刷新</Button><Button type="primary" icon={<PlusOutlined />} onClick={() => setInstallOpen(true)}>安装 Chart</Button></Space></Col>
-        </Row>
-        <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
-          <Col xs={24} lg={12}><Space.Compact block><NamespaceSelector clusterId={clusterId} value={namespace} onChange={setNamespace} style={{ width: 220 }} /><Input allowClear prefix={<SearchOutlined />} placeholder="搜索 Release、Chart 或状态" value={search} onChange={(event) => setSearch(event.target.value)} /></Space.Compact></Col>
-          <Col xs={6} lg={3}><Statistic title="全部" value={stats.total} /></Col><Col xs={6} lg={3}><Statistic title="已部署" value={stats.deployed} valueStyle={{ color: '#16a34a' }} /></Col><Col xs={6} lg={3}><Statistic title="失败" value={stats.failed} valueStyle={{ color: '#dc2626' }} /></Col><Col xs={6} lg={3}><Statistic title="处理中" value={stats.pending} valueStyle={{ color: '#d97706' }} /></Col>
-        </Row>
-      </Card>
       {releasesQuery.data?.source === 'kubernetes-secrets' && <Alert type="warning" showIcon message="Helm CLI 数据源暂不可用，当前使用 Kubernetes Secret 降级数据；Chart 与应用版本字段可能不完整。" />}
-      <Card size="small" styles={{ body: { padding: 0 } }}>
-        <Table rowKey={(record) => `${record.namespace}/${record.name}`} loading={releasesQuery.isLoading} dataSource={releases} columns={columns} scroll={{ x: 1320 }} pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 个 Release` }} />
-      </Card>
+      <ProTable<any>
+        headerTitle="Helm Releases"
+        rowKey={(record) => `${record.namespace}/${record.name}`}
+        loading={releasesQuery.isLoading}
+        dataSource={releases}
+        columns={columns}
+        search={false}
+        options={{ reload: false }}
+        scroll={{ x: 1320 }}
+        pagination={{ defaultPageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 个 Release` }}
+        toolBarRender={() => [
+          <Input.Search
+            key="search"
+            allowClear
+            placeholder="搜索 Release、Chart 或状态"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            style={{ width: 280 }}
+            prefix={<SearchOutlined />}
+          />,
+          <NamespaceSelector key="ns" clusterId={clusterId} value={namespace} onChange={setNamespace} />,
+          <Button key="refresh" icon={<ReloadOutlined />} loading={releasesQuery.isFetching} onClick={() => releasesQuery.refetch()}>
+            刷新
+          </Button>,
+          <Button key="install" type="primary" icon={<PlusOutlined />} onClick={() => setInstallOpen(true)}>
+            安装 Chart
+          </Button>,
+        ]}
+      />
     </Space>
 
     <Drawer width="min(960px, 92vw)" title={detailTarget ? `${detailTarget.namespace}/${detailTarget.name}` : 'Release 详情'} open={!!detailTarget} onClose={() => setDetailTarget(undefined)} loading={detailQuery.isLoading}>

@@ -30,6 +30,14 @@ type Cluster struct {
 	NodeCount int `gorm:"column:node_count;not null;default:0"`
 	// LastHealthAt 为最近一次健康检查时间（可为空，表示尚未检查）。
 	LastHealthAt *time.Time `gorm:"column:last_health_at"`
+	// MonitorSource 为监控数据源：auto/prometheus/metrics_server。
+	MonitorSource string `gorm:"column:monitor_source;type:varchar(32);not null;default:auto"`
+	// PrometheusURL 为检测到的 Prometheus 访问地址。
+	PrometheusURL string `gorm:"column:prometheus_url;type:varchar(500);not null;default:''"`
+	// PrometheusStatus 为 Prometheus 健康状态：unknown/healthy/unhealthy。
+	PrometheusStatus string `gorm:"column:prometheus_status;type:varchar(32);not null;default:'unknown'"`
+	// PrometheusDetectedAt 为最近一次 Prometheus 检测时间。
+	PrometheusDetectedAt *time.Time `gorm:"column:prometheus_detected_at"`
 	// CreatedAt/UpdatedAt/DeletedAt 为通用审计字段。
 	CreatedAt time.Time  `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time  `gorm:"column:updated_at;autoUpdateTime"`

@@ -159,3 +159,87 @@ func (s *DeployService) ansiblePlaybookDir() string {
 func (s *DeployService) ansiblePlaybookPath() string {
 	return filepath.Join(s.ansiblePlaybookDir(), "site.yml")
 }
+
+// PlanAnsibleConfig 是部署计划对应的 Ansible 执行配置。
+type PlanAnsibleConfig struct {
+	PlaybookPath string         `json:"playbook_path"`
+	Inventory    string         `json:"inventory"`
+	ExtraVars    map[string]any `json:"extra_vars"`
+}
+
+// GetPlanAnsibleConfig 根据部署计划生成 Ansible 执行配置（inventory + vars）。
+// 返回的 inventory 中密码已脱敏。
+func (s *DeployService) GetPlanAnsibleConfig(ctx context.Context, planID uint64) (*PlanAnsibleConfig, error) {
+	plan, nodes, err := s.getPlanWithNodes(ctx, planID)
+	if err != nil {
+		return nil, err
+	}
+
+	inventory, err := s.buildInventoryContent(ctx, nodes, true)
+	if err != nil {
+		return nil, err
+	}
+
+	extraVars := map[string]any{
+		"k8s_version":       plan.K8sVersion,
+		"k8s_minor_version": extractMinorVersion(plan.K8sVersion),
+		"pod_cidr":          plan.PodCIDR,
+		"svc_cidr":          plan.SvcCIDR,
+		"cni_type":          plan.CNIType,
+		"cluster_name":      plan.ClusterName,
+	}
+
+	return &PlanAnsibleConfig{
+		PlaybookPath: s.ansiblePlaybookPath(),
+		Inventory:    inventory,
+		ExtraVars:    extraVars,
+	}, nil
+}
+
+// buildInventoryContent 生成 inventory 字符串。
+// maskSecret 为 true 时密码显示为 ***。
+func (s *DeployService) buildInventoryContent(ctx context.Context, nodes []model.DeployPlanNode, maskSecret bool) (string, error) {
+	var masters, workers []inventoryHost
+	for _, node := range nodes {
+		server, cred, authType, err := s.getServerCredentialForNode(ctx, node.ServerID)
+		if err != nil {
+			return "", fmt.Errorf("获取服务器 %d 凭据失败: %w", node.ServerID, err)
+		}
+		host := inventoryHost{
+			IP:       server.IP,
+			SSHPort:  server.SSHPort,
+			User:     server.User,
+			AuthType: authType,
+		}
+		if authType == "key" {
+			host.KeyFile = "~/.ssh/id_rsa"
+		} else {
+			if maskSecret {
+				host.Password = "***"
+			} else {
+				host.Password = cred
+			}
+		}
+		if node.Role == "master" {
+			masters = append(masters, host)
+		} else {
+			workers = append(workers, host)
+		}
+	}
+
+	var sb strings.Builder
+	sb.WriteString("[master]\n")
+	for _, h := range masters {
+		sb.WriteString(formatHostLine(h))
+	}
+	sb.WriteString("\n[worker]\n")
+	for _, h := range workers {
+		sb.WriteString(formatHostLine(h))
+	}
+	if len(workers) == 0 {
+		sb.WriteString("localhost ansible_connection=local\n")
+	}
+	sb.WriteString("\n[all:vars]\n")
+	sb.WriteString("ansible_python_interpreter=/usr/bin/python3\n")
+	return sb.String(), nil
+}

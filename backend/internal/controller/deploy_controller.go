@@ -257,6 +257,20 @@ func (dc *DeployController) DeletePlan(c *gin.Context) {
 	resp.OK[any](c, nil)
 }
 
+// GetPlanAnsibleConfig 获取部署计划对应的 Ansible 执行配置。
+func (dc *DeployController) GetPlanAnsibleConfig(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	cfg, err := dc.svc.GetPlanAnsibleConfig(c.Request.Context(), id)
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, cfg)
+}
+
 func (dc *DeployController) ExecutePlan(c *gin.Context) {
 	id, ok := parseUintParam(c, "id")
 	if !ok {

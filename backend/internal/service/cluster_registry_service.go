@@ -245,6 +245,43 @@ type PatchClusterRequest struct {
 	Kubeconfig *string
 }
 
+// UpdateClusterMonitorSource 更新集群监控数据源状态。
+func (s *ClusterRegistryService) UpdateClusterMonitorSource(ctx context.Context, id uint64, source MonitorSource, url string, status PrometheusStatus) error {
+	if s.db == nil {
+		return errors.New("db is required")
+	}
+	if id == 0 {
+		return ErrWithMessage(ErrInvalidParams, "集群ID无效")
+	}
+	now := time.Now().UTC()
+	updates := map[string]any{
+		"monitor_source":         string(source),
+		"prometheus_url":         url,
+		"prometheus_status":      string(status),
+		"prometheus_detected_at": &now,
+	}
+	return s.db.WithContext(ctx).Model(&model.Cluster{}).Where("id = ? AND deleted_at IS NULL", id).Updates(updates).Error
+}
+
+// GetClusterMonitorSource 获取集群监控数据源配置。
+func (s *ClusterRegistryService) GetClusterMonitorSource(ctx context.Context, id uint64) (*model.Cluster, error) {
+	if s.db == nil {
+		return nil, errors.New("db is required")
+	}
+	if id == 0 {
+		return nil, ErrWithMessage(ErrInvalidParams, "集群ID无效")
+	}
+	var c model.Cluster
+	if err := s.db.WithContext(ctx).Select("id", "monitor_source", "prometheus_url", "prometheus_status", "prometheus_detected_at").
+		Where("deleted_at IS NULL AND id = ?", id).First(&c).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &c, nil
+}
+
 func (s *ClusterRegistryService) PatchCluster(ctx context.Context, id uint64, req PatchClusterRequest) error {
 	if s.db == nil {
 		return errors.New("db is required")

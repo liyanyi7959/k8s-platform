@@ -514,3 +514,23 @@ export function updateRepository(id: number, data: Partial<RepositoryConfig>): P
 export function deleteRepository(id: number): Promise<void> {
   return request(`/api/v1/deploy/repositories/${id}`, { method: 'DELETE' })
 }
+
+/** 获取 Ansible playbook 源码 */
+export function getAnsiblePlaybook(): Promise<{ content: string; path: string }> {
+  return request('/api/v1/deploy/ansible/playbook').then(camelizeKeys)
+}
+
+/** 获取 Ansible inventory 模板 */
+export function getAnsibleInventoryTemplate(): Promise<{ content: string; path: string }> {
+  return request('/api/v1/deploy/ansible/inventory-template').then(camelizeKeys)
+}
+
+/** 检查 Ansible 环境 */
+export function checkAnsibleEnv(): Promise<{ installed: boolean; version: string }> {
+  return request('/api/v1/deploy/ansible/env-check').then(camelizeKeys)
+}
+
+/** 获取部署计划的 Ansible 执行配置 */
+export function getPlanAnsibleConfig(id: number): Promise<{ playbookPath: string; inventory: string; extraVars: Record<string, any> }> {
+  return request(`/api/v1/deploy/plans/${id}/ansible-config`).then(camelizeKeys)
+}

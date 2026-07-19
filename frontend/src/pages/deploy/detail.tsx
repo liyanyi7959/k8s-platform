@@ -3,12 +3,12 @@
  * 展示计划信息、节点拓扑、任务步骤进度、SSE 实时日志
  */
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { Card, Descriptions, Tag, Badge, Button, Space, Steps, Typography, message, Popconfirm, Tooltip, Progress, Empty, Input } from 'antd'
+import { Card, Descriptions, Tag, Badge, Button, Space, Steps, Typography, message, Popconfirm, Tooltip, Progress, Empty, Input, Collapse, Alert, Spin } from 'antd'
 import { ArrowLeftOutlined, StopOutlined, RedoOutlined, DownloadOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, DesktopOutlined } from '@ant-design/icons'
 import { history, useParams } from '@umijs/max'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AppPage } from '@/components'
-import { getDeployPlanById, getDeployTask, getDeployTaskLogs, getDeployTaskLogSSEUrl, cancelDeployPlan, retryDeployPlan, executeDeployPlan, getServers } from '@/services/deploy'
+import { AppPage, YamlEditor } from '@/components'
+import { getDeployPlanById, getDeployTask, getDeployTaskLogs, getDeployTaskLogSSEUrl, cancelDeployPlan, retryDeployPlan, executeDeployPlan, getServers, getPlanAnsibleConfig } from '@/services/deploy'
 
 const { Text, Title } = Typography
 
@@ -68,6 +68,13 @@ export default function DeployPlanDetailPage() {
   const { data: serversData } = useQuery({
     queryKey: ['deploy-servers-for-detail'],
     queryFn: () => getServers({ page: 1, pageSize: 200 }),
+    enabled: Number.isFinite(planId) && planId > 0,
+  })
+
+  // 获取 Ansible 执行配置
+  const { data: ansibleConfig, isLoading: ansibleConfigLoading } = useQuery({
+    queryKey: ['deploy-plan-ansible-config', planId],
+    queryFn: () => getPlanAnsibleConfig(planId),
     enabled: Number.isFinite(planId) && planId > 0,
   })
 
@@ -336,6 +343,23 @@ export default function DeployPlanDetailPage() {
             </Space>
           </Card>
         )}
+
+        {/* Ansible 执行配置 */}
+        <Card size="small" title="Ansible 执行配置" style={{ marginBottom: 16 }} loading={ansibleConfigLoading}>
+          {!ansibleConfig ? (
+            <Alert type="warning" showIcon message="暂无执行配置" />
+          ) : (
+            <Collapse ghost>
+              <Collapse.Panel header={<Text strong>Playbook：{ansibleConfig.playbookPath}</Text>} key="playbook">
+                <Alert type="info" showIcon message="该 playbook 为项目内置，实际执行时会根据计划生成动态 inventory 和 extra vars。" style={{ marginBottom: 8 }} />
+                <YamlEditor readOnly value={`# 实际执行命令示例\nansible-playbook ${ansibleConfig.playbookPath} -i <动态 inventory> \\\n  -e k8s_version=${ansibleConfig.extraVars?.k8sVersion || ''} \\\n  -e pod_cidr=${ansibleConfig.extraVars?.podCidr || ''} \\\n  -e svc_cidr=${ansibleConfig.extraVars?.svcCidr || ''} \\\n  -e cni_type=${ansibleConfig.extraVars?.cniType || ''}\\n\\n# 完整 extra vars\\n${JSON.stringify(ansibleConfig.extraVars || {}, null, 2)}`} height={260} />
+              </Collapse.Panel>
+              <Collapse.Panel header={<Text strong>Inventory（密码已脱敏）</Text>} key="inventory">
+                <YamlEditor readOnly value={ansibleConfig.inventory || '# 暂无 inventory'} height={320} />
+              </Collapse.Panel>
+            </Collapse>
+          )}
+        </Card>
 
         {/* 步骤进度 */}
         {stepItems.length > 0 && (

@@ -203,6 +203,7 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.GET("/plans/:id", readPlan, ctl.GetPlan)
 	deploy.PUT("/plans/:id", writePlan, ctl.UpdatePlan)
 	deploy.GET("/plans/:id/dry-run", readPlan, ctl.DryRunPlan)
+	deploy.GET("/plans/:id/ansible-config", readPlan, ctl.GetPlanAnsibleConfig)
 	deploy.POST("/plans/:id/execute", execDeploy, ctl.ExecutePlan)
 	deploy.POST("/plans/:id/cancel", execDeploy, ctl.CancelPlan)
 	deploy.POST("/plans/:id/retry", execDeploy, ctl.RetryPlan)
@@ -227,6 +228,11 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 		deploy.GET("/repositories/:id", readPlan, configCtl.GetRepository)
 		deploy.PUT("/repositories/:id", writePlan, configCtl.UpdateRepository)
 		deploy.DELETE("/repositories/:id", deletePlan, configCtl.DeleteRepository)
+
+		// Ansible 部署配置展示
+		deploy.GET("/ansible/playbook", readPlan, configCtl.GetAnsiblePlaybook)
+		deploy.GET("/ansible/inventory-template", readPlan, configCtl.GetAnsibleInventoryTemplate)
+		deploy.GET("/ansible/env-check", readPlan, configCtl.CheckAnsibleEnv)
 	}
 }
 
@@ -482,6 +488,11 @@ func registerClusterResourceRoutes(a k8sRouteArgs) {
 
 	// 资源使用率监控
 	k8s.GET("/clusters/:id/nodes/metrics", p.read, ctl.ListNodeMetrics)
+	k8s.GET("/clusters/:id/metrics/source", p.read, ctl.GetMetricsSource)
+	k8s.POST("/clusters/:id/metrics/detect", p.write, ctl.DetectMetricsSource)
+	k8s.POST("/clusters/:id/metrics/switch", p.write, ctl.SwitchMetricsSource)
+	k8s.GET("/clusters/:id/metrics/trend", p.read, ctl.GetMetricsTrend)
+	k8s.POST("/clusters/:id/metrics/health-check", p.read, ctl.HealthCheckMetricsSource)
 }
 
 // ── 工作负载：Pod / Deployment / StatefulSet / DaemonSet / ReplicaSet / Manifest ──

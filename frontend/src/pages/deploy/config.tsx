@@ -3,14 +3,17 @@
  * 基于 Ansible Playbook 的 K8s 部署流程说明
  */
 import React, { useEffect, useState } from 'react'
-import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Typography } from 'antd'
+import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Typography, Alert, Spin } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AppPage } from '@/components'
+import { AppPage, YamlEditor } from '@/components'
 import {
   listRepositories,
   createRepository,
   updateRepository,
   deleteRepository,
+  getAnsiblePlaybook,
+  getAnsibleInventoryTemplate,
+  checkAnsibleEnv,
 } from '@/services/deploy'
 import type { RepositoryConfig } from '@/types'
 import {
@@ -175,6 +178,9 @@ const DeployConfig: React.FC = () => {
           onChange={setActiveTab}
           items={[
             { key: 'pipeline', label: 'Ansible 部署流水线', children: <AnsiblePipelinePanel /> },
+            { key: 'playbook', label: 'Playbook 源码', children: <AnsiblePlaybookPanel /> },
+            { key: 'inventory', label: 'Inventory 模板', children: <AnsibleInventoryPanel /> },
+            { key: 'env', label: '环境检查', children: <AnsibleEnvPanel /> },
             { key: 'repos', label: '仓库配置', children: <RepoConfigPanel /> },
           ]}
         />
@@ -377,6 +383,104 @@ const AnsiblePipelinePanel: React.FC = () => {
         />
       </Card>
     </>
+  )
+}
+
+// ==================== Playbook 源码 ====================
+
+const AnsiblePlaybookPanel: React.FC = () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['ansible-playbook'],
+    queryFn: () => getAnsiblePlaybook(),
+  })
+
+  return (
+    <Spin spinning={isLoading}>
+      {data?.content ? (
+        <>
+          <Alert
+            type="info"
+            showIcon
+            message={`Playbook 路径：${data.path || 'ansible/site.yml'}`}
+            style={{ marginBottom: 12 }}
+          />
+          <YamlEditor readOnly value={data.content} height={640} />
+        </>
+      ) : (
+        <Alert type="warning" showIcon message="未找到 Playbook 文件，请确认后端 ansible/site.yml 是否存在" />
+      )}
+    </Spin>
+  )
+}
+
+// ==================== Inventory 模板 ====================
+
+const AnsibleInventoryPanel: React.FC = () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['ansible-inventory-template'],
+    queryFn: () => getAnsibleInventoryTemplate(),
+  })
+
+  return (
+    <Spin spinning={isLoading}>
+      {data?.content ? (
+        <>
+          <Alert
+            type="info"
+            showIcon
+            message={`Inventory 模板路径：${data.path || 'ansible/inventory.ini'}`}
+            style={{ marginBottom: 12 }}
+          />
+          <YamlEditor readOnly value={data.content} height={640} />
+        </>
+      ) : (
+        <Alert type="warning" showIcon message="未找到 Inventory 模板文件" />
+      )}
+    </Spin>
+  )
+}
+
+// ==================== Ansible 环境检查 ====================
+
+const AnsibleEnvPanel: React.FC = () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['ansible-env-check'],
+    queryFn: () => checkAnsibleEnv(),
+  })
+
+  return (
+    <Spin spinning={isLoading}>
+      {data?.installed ? (
+        <Alert
+          type="success"
+          showIcon
+          message="Ansible 已安装"
+          description={data.version}
+        />
+      ) : (
+        <Alert
+          type="error"
+          showIcon
+          message="Ansible 未安装"
+          description={
+            <div>
+              <p>后端执行 Ansible 部署需要系统安装 ansible-playbook 命令。</p>
+              <p>安装方式：</p>
+              <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 4 }}>
+{`# Ubuntu/Debian
+apt install ansible
+
+# CentOS/RHEL
+yum install ansible
+
+# 或 pip
+pip install ansible`}
+              </pre>
+            </div>
+          }
+        />
+      )}
+    </Spin>
   )
 }
 

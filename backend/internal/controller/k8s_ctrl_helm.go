@@ -1,251 +1,231 @@
 package controller
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
-	"sort"
-	"strconv"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/yaml.v3"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/repo"
 
 	"k8s-platform-backend/pkg/resp"
 )
 
-// ListHelmReleases 列出集群中所有 Helm Release。
-// 通过查询所有命名空间中 label owner=helm 的 Secret 来获取 release 信息：
-// Helm v3 将 release 存储在 Secret 中，label 包含 name/status/version，
-// annotation 包含 chart/modifiedAt。
-// Secret 脱敏只修改 data，metadata.labels/annotations 保留。
-func (kc *K8sController) ListHelmReleases(c *gin.Context) {
+// debugLog 用于抑制 Helm SDK 内部调试日志。
+func debugLog(format string, v ...interface{}) {}
+
+// helmRepoDir 返回当前集群独立的 Helm 仓库配置目录。
+func (kc *K8sController) helmRepoDir(c *gin.Context) (string, error) {
 	id, ok := parseClusterID(c)
 	if !ok {
-		resp.Fail(c, 4000, "invalid params")
-		return
+		return "", fmt.Errorf("invalid cluster id")
 	}
-	namespace := strings.TrimSpace(c.Query("namespace"))
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 20*time.Second)
-	defer cancel()
-	if kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id); err == nil {
-		defer os.Remove(kubeconfigFile)
-		args := []string{"list", "--all", "--output", "json", "--kubeconfig", kubeconfigFile}
-		if namespace == "" {
-			args = append(args, "--all-namespaces")
-		} else {
-			args = append(args, "--namespace", namespace)
-		}
-		if output, runErr := runHelm(ctx, args...); runErr == nil {
-			var releases []map[string]any
-			if jsonErr := json.Unmarshal([]byte(output), &releases); jsonErr == nil {
-				resp.OK(c, gin.H{"list": releases, "source": "helm"})
-				return
-			}
-		}
+	dir := filepath.Join("data", "helm-repos", fmt.Sprintf("%d", id))
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", fmt.Errorf("创建 Helm 仓库目录失败: %w", err)
+	}
+	return dir, nil
+}
+
+// newHelmConfig 使用集群 kubeconfig 初始化 Helm SDK action.Configuration。
+// namespace 为空字符串表示跨所有命名空间（list --all-namespaces）。
+// 返回的 settings 已配置集群独立的仓库路径，cleanup 负责清理临时 kubeconfig 文件。
+func (kc *K8sController) newHelmConfig(c *gin.Context, namespace string) (*action.Configuration, *cli.EnvSettings, func(), error) {
+	id, ok := parseClusterID(c)
+	if !ok {
+		return nil, nil, func() {}, fmt.Errorf("invalid cluster id")
+	}
+	kubeconfig, err := kc.svc.GetKubeconfig(c.Request.Context(), id)
+	if err != nil {
+		return nil, nil, func() {}, err
 	}
 
-	// Helm CLI 不可用时降级到只查询 Helm Secret，避免扫描集群内全部 Secret。
-	list, err := kc.svc.List(c.Request.Context(), id, gvrSecrets(), namespace, "", "", map[string]string{"labelSelector": "owner=helm"})
+	f, err := os.CreateTemp("", "helm-kubeconfig-*.yaml")
+	if err != nil {
+		return nil, nil, func() {}, fmt.Errorf("创建临时 kubeconfig 失败: %w", err)
+	}
+	cleanup := func() { os.Remove(f.Name()) }
+	if _, err := f.WriteString(kubeconfig); err != nil {
+		f.Close()
+		cleanup()
+		return nil, nil, func() {}, fmt.Errorf("写入 kubeconfig 失败: %w", err)
+	}
+	f.Close()
+
+	repoDir, err := kc.helmRepoDir(c)
+	if err != nil {
+		cleanup()
+		return nil, nil, func() {}, err
+	}
+
+	settings := cli.New()
+	settings.KubeConfig = f.Name()
+	settings.RepositoryConfig = filepath.Join(repoDir, "repositories.yaml")
+	settings.RepositoryCache = filepath.Join(repoDir, "cache")
+
+	cfg := new(action.Configuration)
+	if err := cfg.Init(settings.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), debugLog); err != nil {
+		cleanup()
+		return nil, nil, func() {}, fmt.Errorf("初始化 Helm 配置失败: %w", err)
+	}
+	return cfg, settings, cleanup, nil
+}
+
+func releaseToMap(r *release.Release) map[string]any {
+	chart := ""
+	appVersion := ""
+	if r.Chart != nil && r.Chart.Metadata != nil {
+		chart = fmt.Sprintf("%s-%s", r.Chart.Metadata.Name, r.Chart.Metadata.Version)
+		appVersion = r.Chart.Metadata.AppVersion
+	}
+	updated := ""
+	if r.Info != nil && !r.Info.LastDeployed.IsZero() {
+		updated = r.Info.LastDeployed.UTC().Format(time.RFC3339)
+	}
+	status := ""
+	if r.Info != nil {
+		status = r.Info.Status.String()
+	}
+	return map[string]any{
+		"name":        r.Name,
+		"namespace":   r.Namespace,
+		"revision":    r.Version,
+		"status":      status,
+		"chart":       chart,
+		"app_version": appVersion,
+		"updated":     updated,
+	}
+}
+
+func historyReleaseToMap(r *release.Release) map[string]any {
+	m := releaseToMap(r)
+	desc := ""
+	if r.Info != nil {
+		desc = r.Info.Description
+	}
+	m["description"] = desc
+	return m
+}
+
+// addHelmRepo 添加 Helm 仓库并下载索引。
+func addHelmRepo(settings *cli.EnvSettings, name, url string) error {
+	repoFile := settings.RepositoryConfig
+	if err := os.MkdirAll(filepath.Dir(repoFile), 0755); err != nil {
+		return err
+	}
+
+	var f *repo.File
+	if _, err := os.Stat(repoFile); err == nil {
+		var loadErr error
+		f, loadErr = repo.LoadFile(repoFile)
+		if loadErr != nil {
+			return loadErr
+		}
+	} else {
+		f = repo.NewFile()
+	}
+
+	entry := &repo.Entry{Name: name, URL: url}
+	f.Update(entry)
+
+	r, err := repo.NewChartRepository(entry, getter.All(settings))
+	if err != nil {
+		return err
+	}
+	if _, err := r.DownloadIndexFile(); err != nil {
+		return err
+	}
+	return f.WriteFile(repoFile, 0644)
+}
+
+// ListHelmReleases 列出集群中所有 Helm Release（使用 Helm SDK）。
+func (kc *K8sController) ListHelmReleases(c *gin.Context) {
+	namespace := strings.TrimSpace(c.Query("namespace"))
+	cfg, _, cleanup, err := kc.newHelmConfig(c, namespace)
 	if err != nil {
 		kc.writeServiceErr(c, err)
 		return
 	}
-	// 从 Secret 的 label/annotation 中提取 Helm release 信息
-	releaseMap := map[string]map[string]any{}
-	for _, item := range list {
-		raw, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-		meta, _ := raw["metadata"].(map[string]any)
-		if meta == nil {
-			continue
-		}
-		labels, _ := meta["labels"].(map[string]any)
-		if labels == nil || labels["owner"] != "helm" {
-			continue
-		}
-		name, _ := labels["name"].(string)
-		if name == "" {
-			continue
-		}
-		versionStr, _ := labels["version"].(string)
-		version, _ := strconv.Atoi(versionStr)
-		status, _ := labels["status"].(string)
-		ns, _ := meta["namespace"].(string)
-		annotations, _ := meta["annotations"].(map[string]any)
-		chart, _ := annotations["helm.sh/chart"].(string)
-		modified, _ := annotations["modifiedAt"].(string)
-		// 转换时间戳
-		updated := ""
-		if ts, err := strconv.ParseInt(modified, 10, 64); err == nil {
-			updated = time.Unix(ts, 0).UTC().Format(time.RFC3339)
-		}
-		key := ns + "/" + name
-		existing, exists := releaseMap[key]
-		if !exists || version > existing["revision"].(int) {
-			releaseMap[key] = map[string]any{
-				"name":      name,
-				"namespace": ns,
-				"revision":  version,
-				"status":    status,
-				"chart":     chart,
-				"updated":   updated,
-			}
-		}
-	}
-	// 转为列表
-	releases := make([]map[string]any, 0, len(releaseMap))
-	for _, r := range releaseMap {
-		releases = append(releases, r)
-	}
-	sort.Slice(releases, func(i, j int) bool {
-		return fmt.Sprint(releases[i]["namespace"], "/", releases[i]["name"]) < fmt.Sprint(releases[j]["namespace"], "/", releases[j]["name"])
-	})
-	resp.OK(c, gin.H{"list": releases, "source": "kubernetes-secrets"})
-}
+	defer cleanup()
 
-// GetHelmReleaseDetail 获取 Helm release 详情。
-// 通过 labelSelector owner=helm,name=<release> 查询指定 release 的所有版本 Secret，
-// 返回最新版本的基本信息。
-func (kc *K8sController) GetHelmReleaseDetail(c *gin.Context) {
-	id, ok := parseClusterID(c)
-	if !ok {
-		resp.Fail(c, 4000, "invalid params")
+	list := action.NewList(cfg)
+	list.All = true
+	list.AllNamespaces = namespace == ""
+
+	releases, err := list.Run()
+	if err != nil {
+		resp.Fail(c, 5000, "获取 Helm Releases 失败: "+err.Error())
 		return
 	}
+
+	out := make([]map[string]any, 0, len(releases))
+	for _, r := range releases {
+		out = append(out, releaseToMap(r))
+	}
+	resp.OK(c, gin.H{"list": out, "source": "helm-sdk"})
+}
+
+// GetHelmReleaseDetail 获取 Helm release 详情（使用 Helm SDK）。
+func (kc *K8sController) GetHelmReleaseDetail(c *gin.Context) {
 	ns := strings.TrimSpace(c.Query("namespace"))
 	name := strings.TrimSpace(c.Query("name"))
 	if name == "" {
 		resp.Fail(c, 4000, "name is required")
 		return
 	}
-	// 查询指定命名空间的 Helm release Secret
-	labelSelector := "owner=helm,name=" + name
-	list, err := kc.svc.List(c.Request.Context(), id, gvrSecrets(), ns, "", "", map[string]string{"labelSelector": labelSelector})
+	cfg, _, cleanup, err := kc.newHelmConfig(c, ns)
 	if err != nil {
 		kc.writeServiceErr(c, err)
 		return
 	}
-	// 找到最新版本的 Secret
-	var latestVersion int
-	var latestMeta map[string]any
-	for _, item := range list {
-		raw, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-		meta, _ := raw["metadata"].(map[string]any)
-		if meta == nil {
-			continue
-		}
-		labels, _ := meta["labels"].(map[string]any)
-		if labels == nil {
-			continue
-		}
-		versionStr, _ := labels["version"].(string)
-		version, _ := strconv.Atoi(versionStr)
-		if version > latestVersion {
-			latestVersion = version
-			latestMeta = meta
-		}
-	}
-	if latestMeta == nil {
-		resp.Fail(c, 4040, "release not found")
+	defer cleanup()
+
+	get := action.NewGet(cfg)
+	rel, err := get.Run(name)
+	if err != nil {
+		resp.Fail(c, 5000, "获取 Helm Release 详情失败: "+err.Error())
 		return
 	}
-	// 返回基本信息
-	labels, _ := latestMeta["labels"].(map[string]any)
-	annotations, _ := latestMeta["annotations"].(map[string]any)
-	modified, _ := annotations["modifiedAt"].(string)
-	updated := ""
-	if ts, err := strconv.ParseInt(modified, 10, 64); err == nil {
-		updated = time.Unix(ts, 0).UTC().Format(time.RFC3339)
-	}
-	detail := gin.H{
-		"name":      labels["name"],
-		"namespace": latestMeta["namespace"],
-		"revision":  latestVersion,
-		"status":    labels["status"],
-		"chart":     annotations["helm.sh/chart"],
-		"updated":   updated,
+
+	detail := releaseToMap(rel)
+
+	valuesGet := action.NewGetValues(cfg)
+	valuesGet.AllValues = true
+	if values, err := valuesGet.Run(name); err == nil {
+		if b, err := yaml.Marshal(values); err == nil {
+			detail["values_yaml"] = string(b)
+		}
 	}
 
-	// 详情是用户按需触发，补充 values、渲染清单和 revision 历史。
-	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
-	defer cancel()
-	if kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id); err == nil {
-		defer os.Remove(kubeconfigFile)
-		common := []string{"--namespace", ns, "--kubeconfig", kubeconfigFile}
-		if output, runErr := runHelm(ctx, append([]string{"get", "values", name, "--all", "--output", "yaml"}, common...)...); runErr == nil {
-			detail["values_yaml"] = strings.TrimSpace(output)
-		}
-		if output, runErr := runHelm(ctx, append([]string{"get", "manifest", name}, common...)...); runErr == nil {
-			detail["manifest"] = strings.TrimSpace(output)
-		}
-		if output, runErr := runHelm(ctx, append([]string{"history", name, "--output", "json"}, common...)...); runErr == nil {
-			var history []any
-			if json.Unmarshal([]byte(output), &history) == nil {
-				detail["history"] = history
-			}
-		}
+	if rel.Manifest != "" {
+		detail["manifest"] = rel.Manifest
 	}
+
+	hist := action.NewHistory(cfg)
+	hist.Max = 256
+	if history, err := hist.Run(name); err == nil {
+		historyItems := make([]map[string]any, 0, len(history))
+		for _, h := range history {
+			historyItems = append(historyItems, historyReleaseToMap(h))
+		}
+		detail["history"] = historyItems
+	}
+
 	resp.OK(c, detail)
 }
 
-// ---------------------------------------------------------------------------
-// Helm CLI 集成（安装 / 卸载 / 仓库管理 / 搜索）
-// ---------------------------------------------------------------------------
-
-// helmCmdTimeout Helm CLI 命令超时时间
-const helmCmdTimeout = 60 * time.Second
-
-// writeKubeconfigTmp 将集群 kubeconfig 写入临时文件，返回文件路径。
-// 调用方需在使用完成后 defer os.Remove(path) 清理。
-func (kc *K8sController) writeKubeconfigTmp(ctx context.Context, id uint64) (string, error) {
-	kubeconfig, err := kc.svc.GetKubeconfig(ctx, id)
-	if err != nil {
-		return "", err
-	}
-	f, err := os.CreateTemp("", "kubeconfig-*")
-	if err != nil {
-		return "", fmt.Errorf("创建临时文件失败: %w", err)
-	}
-	if _, err := f.WriteString(kubeconfig); err != nil {
-		f.Close()
-		os.Remove(f.Name())
-		return "", fmt.Errorf("写入 kubeconfig 失败: %w", err)
-	}
-	f.Close()
-	return f.Name(), nil
-}
-
-// runHelm 执行 helm CLI 命令并返回合并输出。
-// 如果 helm 未安装返回友好错误。
-func runHelm(ctx context.Context, args ...string) (string, error) {
-	if _, err := exec.LookPath("helm"); err != nil {
-		return "", fmt.Errorf("helm CLI 未安装")
-	}
-	cmd := exec.CommandContext(ctx, "helm", args...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return string(out), fmt.Errorf("helm 命令执行失败: %w", err)
-	}
-	return string(out), nil
-}
-
-// HelmInstall 通过 helm CLI 安装 chart。
+// HelmInstall 通过 Helm SDK 安装 chart。
 // POST /clusters/:id/helm/install
 // body: { release_name, namespace, chart, repo_url, repo_name, values_yaml }
 func (kc *K8sController) HelmInstall(c *gin.Context) {
-	id, ok := parseClusterID(c)
-	if !ok {
-		resp.Fail(c, 4000, "invalid params")
-		return
-	}
 	var req struct {
 		ReleaseName string `json:"release_name"`
 		Namespace   string `json:"namespace"`
@@ -266,100 +246,79 @@ func (kc *K8sController) HelmInstall(c *gin.Context) {
 		req.Namespace = "default"
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
-	defer cancel()
-
-	// 写入 kubeconfig 临时文件
-	kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id)
+	cfg, settings, cleanup, err := kc.newHelmConfig(c, req.Namespace)
 	if err != nil {
-		resp.Fail(c, 5000, err.Error())
+		kc.writeServiceErr(c, err)
 		return
 	}
-	defer os.Remove(kubeconfigFile)
+	defer cleanup()
 
-	// 如果提供了仓库地址，先添加仓库
 	if req.RepoURL != "" && req.RepoName != "" {
-		if _, err := runHelm(ctx, "repo", "add", req.RepoName, req.RepoURL, "--kubeconfig", kubeconfigFile); err != nil {
+		if err := addHelmRepo(settings, req.RepoName, req.RepoURL); err != nil {
 			resp.Fail(c, 5001, "添加 Helm 仓库失败: "+err.Error())
 			return
 		}
 	}
-	// 更新仓库索引
-	if req.RepoName != "" {
-		if _, err := runHelm(ctx, "repo", "update", "--kubeconfig", kubeconfigFile); err != nil {
-			resp.Fail(c, 5001, "更新 Helm 仓库失败: "+err.Error())
-			return
-		}
-	}
 
-	// 构建 install 命令参数
-	args := []string{"install", req.ReleaseName, req.Chart, "-n", req.Namespace, "--kubeconfig", kubeconfigFile}
-	// 写入 values.yaml 临时文件
-	if strings.TrimSpace(req.ValuesYAML) != "" {
-		valuesFile, err := os.CreateTemp("", "values-*.yaml")
-		if err != nil {
-			resp.Fail(c, 5000, "创建临时文件失败: "+err.Error())
-			return
-		}
-		if _, err := valuesFile.WriteString(req.ValuesYAML); err != nil {
-			valuesFile.Close()
-			os.Remove(valuesFile.Name())
-			resp.Fail(c, 5000, "写入 values 文件失败: "+err.Error())
-			return
-		}
-		valuesFile.Close()
-		defer os.Remove(valuesFile.Name())
-		args = append(args, "-f", valuesFile.Name())
-	}
+	client := action.NewInstall(cfg)
+	client.ReleaseName = req.ReleaseName
+	client.Namespace = req.Namespace
+	client.CreateNamespace = true
 
-	output, err := runHelm(ctx, args...)
+	cp, err := client.ChartPathOptions.LocateChart(req.Chart, settings)
 	if err != nil {
-		resp.Fail(c, 5001, "Helm 安装失败: "+output+err.Error())
+		resp.Fail(c, 5001, "定位 Chart 失败: "+err.Error())
 		return
 	}
-	resp.OK(c, gin.H{"output": strings.TrimSpace(output)})
+
+	chart, err := loader.Load(cp)
+	if err != nil {
+		resp.Fail(c, 5001, "加载 Chart 失败: "+err.Error())
+		return
+	}
+
+	values := map[string]any{}
+	if strings.TrimSpace(req.ValuesYAML) != "" {
+		if err := yaml.Unmarshal([]byte(req.ValuesYAML), &values); err != nil {
+			resp.Fail(c, 4000, "解析 values.yaml 失败: "+err.Error())
+			return
+		}
+	}
+
+	rel, err := client.Run(chart, values)
+	if err != nil {
+		resp.Fail(c, 5001, "Helm 安装失败: "+err.Error())
+		return
+	}
+	resp.OK(c, gin.H{"output": fmt.Sprintf("Release %s/%s 已安装，revision %d", rel.Namespace, rel.Name, rel.Version)})
 }
 
 // HelmUninstall 卸载 Helm release。
 // DELETE /clusters/:id/helm/releases/:ns/:name
 func (kc *K8sController) HelmUninstall(c *gin.Context) {
-	id, ok := parseClusterID(c)
-	if !ok {
-		resp.Fail(c, 4000, "invalid params")
-		return
-	}
 	ns := strings.TrimSpace(c.Param("ns"))
 	name := strings.TrimSpace(c.Param("name"))
 	if ns == "" || name == "" {
 		resp.Fail(c, 4000, "namespace 和 name 不能为空")
 		return
 	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
-	defer cancel()
-
-	kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id)
+	cfg, _, cleanup, err := kc.newHelmConfig(c, ns)
 	if err != nil {
-		resp.Fail(c, 5000, err.Error())
+		kc.writeServiceErr(c, err)
 		return
 	}
-	defer os.Remove(kubeconfigFile)
+	defer cleanup()
 
-	output, err := runHelm(ctx, "uninstall", name, "-n", ns, "--kubeconfig", kubeconfigFile)
-	if err != nil {
-		resp.Fail(c, 5001, "Helm 卸载失败: "+output+err.Error())
+	client := action.NewUninstall(cfg)
+	if _, err := client.Run(name); err != nil {
+		resp.Fail(c, 5001, "Helm 卸载失败: "+err.Error())
 		return
 	}
-	resp.OK(c, gin.H{"output": strings.TrimSpace(output)})
+	resp.OK(c, gin.H{"output": fmt.Sprintf("Release %s/%s 已卸载", ns, name)})
 }
 
 // HelmUpgrade 升级 Release，支持 values、版本锁定以及原子回滚。
 func (kc *K8sController) HelmUpgrade(c *gin.Context) {
-	id, ok := parseClusterID(c)
-	if !ok {
-		resp.Fail(c, 4000, "invalid params")
-		return
-	}
 	ns, name := strings.TrimSpace(c.Param("ns")), strings.TrimSpace(c.Param("name"))
 	var req struct {
 		Chart      string `json:"chart"`
@@ -373,58 +332,53 @@ func (kc *K8sController) HelmUpgrade(c *gin.Context) {
 		resp.Fail(c, 4000, "namespace、name 和 chart 不能为空")
 		return
 	}
-	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
-	defer cancel()
-	kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id)
+	cfg, settings, cleanup, err := kc.newHelmConfig(c, ns)
 	if err != nil {
-		resp.Fail(c, 5000, err.Error())
+		kc.writeServiceErr(c, err)
 		return
 	}
-	defer os.Remove(kubeconfigFile)
-	args := []string{"upgrade", name, strings.TrimSpace(req.Chart), "--namespace", ns, "--kubeconfig", kubeconfigFile}
-	if version := strings.TrimSpace(req.Version); version != "" {
-		args = append(args, "--version", version)
+	defer cleanup()
+
+	client := action.NewUpgrade(cfg)
+	client.Namespace = ns
+	client.ChartPathOptions.Version = req.Version
+	client.Atomic = req.Atomic
+	client.Wait = req.Wait
+	if req.Timeout != "" {
+		if d, err := time.ParseDuration(req.Timeout); err == nil {
+			client.Timeout = d
+		}
 	}
-	if req.Atomic {
-		args = append(args, "--atomic")
+
+	cp, err := client.ChartPathOptions.LocateChart(req.Chart, settings)
+	if err != nil {
+		resp.Fail(c, 5001, "定位 Chart 失败: "+err.Error())
+		return
 	}
-	if req.Wait {
-		args = append(args, "--wait")
+	chart, err := loader.Load(cp)
+	if err != nil {
+		resp.Fail(c, 5001, "加载 Chart 失败: "+err.Error())
+		return
 	}
-	if timeout := strings.TrimSpace(req.Timeout); timeout != "" {
-		args = append(args, "--timeout", timeout)
-	}
+
+	values := map[string]any{}
 	if strings.TrimSpace(req.ValuesYAML) != "" {
-		valuesFile, fileErr := os.CreateTemp("", "helm-values-*.yaml")
-		if fileErr != nil {
-			resp.Fail(c, 5000, fileErr.Error())
+		if err := yaml.Unmarshal([]byte(req.ValuesYAML), &values); err != nil {
+			resp.Fail(c, 4000, "解析 values.yaml 失败: "+err.Error())
 			return
 		}
-		if _, fileErr = valuesFile.WriteString(req.ValuesYAML); fileErr != nil {
-			valuesFile.Close()
-			os.Remove(valuesFile.Name())
-			resp.Fail(c, 5000, fileErr.Error())
-			return
-		}
-		valuesFile.Close()
-		defer os.Remove(valuesFile.Name())
-		args = append(args, "--values", valuesFile.Name())
 	}
-	output, runErr := runHelm(ctx, args...)
-	if runErr != nil {
-		resp.Fail(c, 5001, "Helm 升级失败: "+output+runErr.Error())
+
+	rel, err := client.Run(name, chart, values)
+	if err != nil {
+		resp.Fail(c, 5001, "Helm 升级失败: "+err.Error())
 		return
 	}
-	resp.OK(c, gin.H{"output": strings.TrimSpace(output)})
+	resp.OK(c, gin.H{"output": fmt.Sprintf("Release %s/%s 已升级至 revision %d", rel.Namespace, rel.Name, rel.Version)})
 }
 
 // HelmRollback 将 Release 回滚到指定 revision。
 func (kc *K8sController) HelmRollback(c *gin.Context) {
-	id, ok := parseClusterID(c)
-	if !ok {
-		resp.Fail(c, 4000, "invalid params")
-		return
-	}
 	ns, name := strings.TrimSpace(c.Param("ns")), strings.TrimSpace(c.Param("name"))
 	var req struct {
 		Revision int  `json:"revision"`
@@ -434,100 +388,97 @@ func (kc *K8sController) HelmRollback(c *gin.Context) {
 		resp.Fail(c, 4000, "namespace、name 和有效 revision 不能为空")
 		return
 	}
-	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
-	defer cancel()
-	kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id)
+	cfg, _, cleanup, err := kc.newHelmConfig(c, ns)
 	if err != nil {
-		resp.Fail(c, 5000, err.Error())
+		kc.writeServiceErr(c, err)
 		return
 	}
-	defer os.Remove(kubeconfigFile)
-	args := []string{"rollback", name, strconv.Itoa(req.Revision), "--namespace", ns, "--kubeconfig", kubeconfigFile}
-	if req.Wait {
-		args = append(args, "--wait")
-	}
-	output, runErr := runHelm(ctx, args...)
-	if runErr != nil {
-		resp.Fail(c, 5001, "Helm 回滚失败: "+output+runErr.Error())
+	defer cleanup()
+
+	client := action.NewRollback(cfg)
+	client.Version = req.Revision
+	client.Wait = req.Wait
+	if err := client.Run(name); err != nil {
+		resp.Fail(c, 5001, "Helm 回滚失败: "+err.Error())
 		return
 	}
-	resp.OK(c, gin.H{"output": strings.TrimSpace(output)})
+	resp.OK(c, gin.H{"output": fmt.Sprintf("Release %s/%s 已回滚到 revision %d", ns, name, req.Revision)})
 }
 
-// HelmRepoList 列出已添加的 Helm 仓库。
+// HelmRepoList 列出当前集群已添加的 Helm 仓库。
 // GET /clusters/:id/helm/repos
 func (kc *K8sController) HelmRepoList(c *gin.Context) {
-	id, ok := parseClusterID(c)
-	if !ok {
-		resp.Fail(c, 4000, "invalid params")
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
-	defer cancel()
-
-	kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id)
+	repoDir, err := kc.helmRepoDir(c)
 	if err != nil {
 		resp.Fail(c, 5000, err.Error())
 		return
 	}
-	defer os.Remove(kubeconfigFile)
-
-	output, err := runHelm(ctx, "repo", "list", "--kubeconfig", kubeconfigFile, "-o", "json")
+	settings := cli.New()
+	settings.RepositoryConfig = filepath.Join(repoDir, "repositories.yaml")
+	settings.RepositoryCache = filepath.Join(repoDir, "cache")
+	repoFile := settings.RepositoryConfig
+	f, err := repo.LoadFile(repoFile)
 	if err != nil {
-		// helm repo list 在没有仓库时退出码非零，返回空列表
-		if strings.Contains(output, "no repositories") {
+		if os.IsNotExist(err) {
 			resp.OK(c, gin.H{"list": []any{}})
 			return
 		}
-		resp.Fail(c, 5001, "获取 Helm 仓库列表失败: "+err.Error())
+		resp.Fail(c, 5000, "读取 Helm 仓库配置失败: "+err.Error())
 		return
 	}
-	var list []any
-	if strings.TrimSpace(output) != "" {
-		if err := json.Unmarshal([]byte(output), &list); err != nil {
-			resp.Fail(c, 5000, "解析 Helm 仓库列表失败: "+err.Error())
-			return
-		}
+	list := make([]any, 0, len(f.Repositories))
+	for _, e := range f.Repositories {
+		list = append(list, map[string]any{"name": e.Name, "url": e.URL})
 	}
 	resp.OK(c, gin.H{"list": list})
 }
 
-// HelmSearch 搜索 Helm chart。
+// HelmSearch 搜索当前集群 Helm 仓库中的 chart。
 // GET /clusters/:id/helm/search?keyword=xxx
 func (kc *K8sController) HelmSearch(c *gin.Context) {
-	id, ok := parseClusterID(c)
-	if !ok {
-		resp.Fail(c, 4000, "invalid params")
-		return
-	}
 	keyword := strings.TrimSpace(c.Query("keyword"))
 	if keyword == "" {
 		resp.Fail(c, 4000, "keyword 不能为空")
 		return
 	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), helmCmdTimeout)
-	defer cancel()
-
-	kubeconfigFile, err := kc.writeKubeconfigTmp(ctx, id)
+	repoDir, err := kc.helmRepoDir(c)
 	if err != nil {
 		resp.Fail(c, 5000, err.Error())
 		return
 	}
-	defer os.Remove(kubeconfigFile)
-
-	output, err := runHelm(ctx, "search", "repo", keyword, "--kubeconfig", kubeconfigFile, "-o", "json")
+	settings := cli.New()
+	settings.RepositoryConfig = filepath.Join(repoDir, "repositories.yaml")
+	settings.RepositoryCache = filepath.Join(repoDir, "cache")
+	repoFile := settings.RepositoryConfig
+	f, err := repo.LoadFile(repoFile)
 	if err != nil {
-		resp.Fail(c, 5001, "搜索 Helm chart 失败: "+err.Error())
-		return
-	}
-	var list []any
-	if strings.TrimSpace(output) != "" {
-		if err := json.Unmarshal([]byte(output), &list); err != nil {
-			resp.Fail(c, 5000, "解析搜索结果失败: "+err.Error())
+		if os.IsNotExist(err) {
+			resp.OK(c, gin.H{"list": []any{}})
 			return
 		}
+		resp.Fail(c, 5000, "读取 Helm 仓库配置失败: "+err.Error())
+		return
 	}
-	resp.OK(c, gin.H{"list": list})
+
+	results := make([]any, 0)
+	for _, e := range f.Repositories {
+		idxFile := filepath.Join(filepath.Dir(repoFile), e.Name+"-index.yaml")
+		idx, err := repo.LoadIndexFile(idxFile)
+		if err != nil {
+			continue
+		}
+		for name, versions := range idx.Entries {
+			for _, v := range versions {
+				if strings.Contains(name, keyword) || strings.Contains(v.Description, keyword) ||
+					(v.Name != "" && strings.Contains(v.Name, keyword)) {
+					results = append(results, map[string]any{
+						"name":        name,
+						"version":     v.Version,
+						"description": v.Description,
+					})
+				}
+			}
+		}
+	}
+	resp.OK(c, gin.H{"list": results})
 }

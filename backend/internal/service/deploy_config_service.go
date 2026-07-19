@@ -3,7 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"gorm.io/gorm"
 
@@ -359,4 +363,54 @@ func (s *DeployConfigService) DeleteRepository(ctx context.Context, id uint64) e
 		return ErrNotFound
 	}
 	return nil
+}
+
+// ReadAnsiblePlaybook 读取 Ansible playbook（site.yml）内容。
+func (s *DeployConfigService) ReadAnsiblePlaybook(ctx context.Context) (string, error) {
+	path := s.ansiblePlaybookPath()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", ErrNotFound
+		}
+		return "", err
+	}
+	return string(data), nil
+}
+
+// ReadAnsibleInventoryTemplate 读取 inventory 模板内容。
+func (s *DeployConfigService) ReadAnsibleInventoryTemplate(ctx context.Context) (string, error) {
+	path := filepath.Join(s.ansiblePlaybookDir(), "inventory.ini")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", ErrNotFound
+		}
+		return "", err
+	}
+	return string(data), nil
+}
+
+// CheckAnsibleEnv 检查当前环境是否已安装 ansible-playbook。
+func (s *DeployConfigService) CheckAnsibleEnv(ctx context.Context) (installed bool, version string, err error) {
+	cmd := exec.CommandContext(ctx, "ansible-playbook", "--version")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, "", nil
+	}
+	lines := strings.Split(string(out), "\n")
+	if len(lines) > 0 {
+		version = strings.TrimSpace(lines[0])
+	}
+	return true, version, nil
+}
+
+// ansiblePlaybookDir 获取 Ansible playbook 目录路径。
+func (s *DeployConfigService) ansiblePlaybookDir() string {
+	return "ansible"
+}
+
+// ansiblePlaybookPath 获取 site.yml 完整路径。
+func (s *DeployConfigService) ansiblePlaybookPath() string {
+	return filepath.Join(s.ansiblePlaybookDir(), "site.yml")
 }
