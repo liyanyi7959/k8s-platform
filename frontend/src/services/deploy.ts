@@ -296,6 +296,11 @@ export function retryDeployPlan(id: number): Promise<{ taskId: number }> {
   return request(`/api/v1/deploy/plans/${id}/retry`, { method: 'POST' })
 }
 
+/** 从指定步骤重试部署 */
+export function retryDeployStep(id: number, stepKey: string): Promise<{ taskId: number }> {
+  return request(`/api/v1/deploy/plans/${id}/steps/${stepKey}/retry`, { method: 'POST' })
+}
+
 /** 执行部署前的控制端、拓扑和目标主机就绪检查 */
 export function preflightDeployPlan(id: number): Promise<import('@/types').DeployPreflightResult> {
   return request(`/api/v1/deploy/plans/${id}/preflight`, { method: 'POST' }).then(camelizeKeys)
@@ -314,16 +319,24 @@ export function getDeployTask(taskId: number): Promise<DeployTask> {
   return request(`/api/v1/deploy/tasks/${taskId}`).then(camelizeKeys)
 }
 
-/** 获取部署任务日志（分页） */
-export function getDeployTaskLogs(taskId: number, offset = 0, limit = 200): Promise<{ logs: string[]; total: number }> {
+/** 获取部署任务日志（分页），可按 stepKey 过滤 */
+export function getDeployTaskLogs(
+  taskId: number,
+  offset = 0,
+  limit = 200,
+  stepKey?: string
+): Promise<{ logs: string[]; total: number; stepKey: string }> {
   return request(`/api/v1/deploy/tasks/${taskId}/logs`, {
-    params: { offset, limit },
+    params: { offset, limit, step_key: stepKey },
   })
 }
 
-/** 构建 SSE 日志流 URL */
-export function getDeployTaskLogSSEUrl(taskId: number): string {
-  return `/api/v1/deploy/tasks/${taskId}/logs/sse`
+/** 构建 SSE 日志流 URL，可按 stepKey 过滤 */
+export function getDeployTaskLogSSEUrl(taskId: number, stepKey?: string): string {
+  const params = new URLSearchParams()
+  if (stepKey) params.set('step_key', stepKey)
+  const qs = params.toString()
+  return `/api/v1/deploy/tasks/${taskId}/logs/sse${qs ? `?${qs}` : ''}`
 }
 
 /** 干跑预览 - 返回部署计划的模拟运行流程 */

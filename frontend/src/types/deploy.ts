@@ -77,6 +77,15 @@ export interface DeployPlan {
   updatedAt: string
 }
 
+/** 部署任务子步骤 */
+export interface DeployTaskSubStep {
+  key: string
+  title: string
+  status: string // pending / running / success / failed
+  startedAt?: string
+  finishedAt?: string
+}
+
 /** 部署任务步骤 */
 export interface DeployTaskStep {
   key: string
@@ -85,6 +94,7 @@ export interface DeployTaskStep {
   startedAt?: string
   finishedAt?: string
   message?: string
+  subSteps?: DeployTaskSubStep[]
 }
 
 /** 部署任务 */

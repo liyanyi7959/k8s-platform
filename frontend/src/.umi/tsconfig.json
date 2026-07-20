@@ -10,7 +10,7 @@
     "allowJs": true,
     "skipLibCheck": true,
     "moduleResolution": "bundler",
-    "importHelpers": false,
+    "importHelpers": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "esModuleInterop": true,
@@ -30,6 +30,9 @@
       ],
       "@umijs/max/typings": [
         "../../src/.umi/typings"
+      ],
+      "@tanstack/query-core": [
+        "D:/03_学习/soft/k8s-platform/frontend/node_modules/.pnpm/@tanstack+query-core@5.101.0/node_modules/@tanstack/query-core"
       ]
     }
   },

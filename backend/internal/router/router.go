@@ -209,6 +209,7 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.POST("/plans/:id/execute", execDeploy, ctl.ExecutePlan)
 	deploy.POST("/plans/:id/cancel", execDeploy, ctl.CancelPlan)
 	deploy.POST("/plans/:id/retry", execDeploy, ctl.RetryPlan)
+	deploy.POST("/plans/:id/steps/:stepKey/retry", execDeploy, ctl.RetryDeployStep)
 	deploy.DELETE("/plans/:id", deletePlan, ctl.DeletePlan)
 
 	// 部署任务日志

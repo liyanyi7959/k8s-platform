@@ -94,7 +94,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 119
+        "register": 20
       },
       "enableBy": "register"
     },
@@ -107,7 +107,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 29
+        "register": 9
       },
       "enableBy": "register"
     },
@@ -124,7 +124,7 @@
             0
           ]
         },
-        "register": 14
+        "register": 4
       },
       "enableBy": "register"
     },
@@ -138,10 +138,10 @@
       "time": {
         "hooks": {
           "onStart": [
-            6
+            3
           ]
         },
-        "register": 7
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -171,7 +171,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -185,10 +185,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            2340
+            172
           ]
         },
-        "register": 49
+        "register": 24
       },
       "enableBy": "register"
     },
@@ -201,7 +201,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -218,10 +218,10 @@
             0
           ],
           "onCheck": [
-            1
+            0
           ]
         },
-        "register": 4
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -268,7 +268,7 @@
             0
           ]
         },
-        "register": 29
+        "register": 13
       },
       "enableBy": "register"
     },
@@ -1120,7 +1120,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -1134,7 +1134,7 @@
       "time": {
         "hooks": {
           "onStart": [
-            1
+            0
           ]
         },
         "register": 2
@@ -1150,7 +1150,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1163,7 +1163,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 130
+        "register": 77
       },
       "enableBy": "register"
     },
@@ -1176,7 +1176,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 355
+        "register": 49
       },
       "enableBy": "config"
     },
@@ -1189,7 +1189,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 37
+        "register": 19
       },
       "enableBy": "config"
     },
@@ -1203,10 +1203,10 @@
       "time": {
         "hooks": {
           "modifyAppData": [
-            1
+            0
           ]
         },
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1219,7 +1219,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1232,7 +1232,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1245,7 +1245,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 60
+        "register": 31
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mpa/mpa": {
@@ -1257,7 +1257,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1270,7 +1270,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/overrides/overrides": {
@@ -1282,7 +1282,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1295,7 +1295,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1309,10 +1309,10 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            3
+            1
           ]
         },
-        "register": 7
+        "register": 3
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/polyfill/publicPathPolyfill": {
@@ -1324,7 +1324,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1337,7 +1337,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -1350,7 +1350,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 1
+        "register": 0
       },
       "enableBy": "config"
     },
@@ -1363,7 +1363,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1376,7 +1376,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1389,7 +1389,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 15
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -1402,7 +1402,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1427,7 +1427,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 9
+        "register": 7
       },
       "enableBy": "config"
     },
@@ -1440,7 +1440,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 12
+        "register": 5
       },
       "enableBy": "register"
     },
@@ -1453,7 +1453,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 9
+        "register": 5
       },
       "enableBy": "register"
     },
@@ -1466,7 +1466,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 7
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -1492,7 +1492,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 30
+        "register": 8
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/monorepo/redirect": {
@@ -1504,7 +1504,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 100
+        "register": 22
       },
       "enableBy": "config"
     },
@@ -1517,7 +1517,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 58
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/clickToComponent/clickToComponent": {
@@ -1529,7 +1529,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 24
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/legacy/legacy": {
@@ -1541,7 +1541,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 27
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1554,7 +1554,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1567,7 +1567,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 11
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/swc/swc": {
@@ -1583,7 +1583,7 @@
             0
           ]
         },
-        "register": 5
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1596,7 +1596,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 29
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/mako/mako": {
@@ -1608,7 +1608,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -1621,7 +1621,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/hmrGuardian/hmrGuardian": {
@@ -1633,7 +1633,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 9
+        "register": 4
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/routePreloadOnLoad/routePreloadOnLoad": {
@@ -1645,7 +1645,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 77
+        "register": 27
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/features/forget/forget": {
@@ -1657,7 +1657,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 20
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -1670,7 +1670,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 28
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1683,7 +1683,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 66
+        "register": 6
       },
       "enableBy": "register"
     },
@@ -1696,7 +1696,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 270
+        "register": 41
       },
       "enableBy": "register"
     },
@@ -1709,7 +1709,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 206
+        "register": 54
       }
     },
     "./node_modules/.pnpm/@umijs+preset-umi@4.6.65_@t_67a07cb5e4defc5aa420ebdff1b8b730/node_modules/@umijs/preset-umi/dist/commands/help": {
@@ -1721,7 +1721,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1734,7 +1734,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1747,7 +1747,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1760,7 +1760,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1773,7 +1773,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1786,7 +1786,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 18
+        "register": 3
       },
       "enableBy": "register"
     },
@@ -1799,7 +1799,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1812,7 +1812,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1825,7 +1825,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1838,7 +1838,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1851,7 +1851,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1864,7 +1864,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1877,7 +1877,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1890,7 +1890,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1903,7 +1903,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1916,7 +1916,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 6
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1929,7 +1929,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 20
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -1942,7 +1942,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 13
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1955,7 +1955,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 137
+        "register": 24
       },
       "enableBy": "register"
     },
@@ -1968,7 +1968,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 73
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -1981,7 +1981,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 109
+        "register": 5
       },
       "enableBy": "register"
     },
@@ -1994,7 +1994,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 20
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2009,7 +2009,7 @@
       },
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 1
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/antd": {
@@ -2022,7 +2022,7 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            8
+            3
           ],
           "modifyAppData": [
             0
@@ -2031,7 +2031,7 @@
             0
           ]
         },
-        "register": 149
+        "register": 9
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/dva": {
@@ -2043,7 +2043,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 121
+        "register": 9
       },
       "enableBy": "config"
     },
@@ -2056,7 +2056,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 3
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2075,13 +2075,13 @@
             0
           ],
           "addLayouts": [
-            1
+            0
           ],
           "modifyAppData": [
-            2
+            1
           ]
         },
-        "register": 14
+        "register": 5
       },
       "enableBy": "config"
     },
@@ -2094,7 +2094,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 13
+        "register": 4
       },
       "enableBy": "config"
     },
@@ -2107,7 +2107,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 13
+        "register": 3
       },
       "enableBy": "config"
     },
@@ -2120,7 +2120,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 8
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2133,7 +2133,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2146,7 +2146,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 14
+        "register": 2
       },
       "enableBy": "register"
     },
@@ -2159,7 +2159,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 11
+        "register": 3
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/qiankun/slave": {
@@ -2171,7 +2171,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 28
+        "register": 2
       }
     },
     "./node_modules/.pnpm/@umijs+plugins@4.6.65_@babe_8464d114d55497d7303e60fb364d544f/node_modules/@umijs/plugins/dist/react-query": {
@@ -2184,13 +2184,13 @@
       "time": {
         "hooks": {
           "modifyConfig": [
-            13
+            4
           ],
           "onStart": [
-            0
+            1
           ]
         },
-        "register": 3
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2203,7 +2203,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2216,7 +2216,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 5
+        "register": 2
       },
       "enableBy": "config"
     },
@@ -2229,7 +2229,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2242,7 +2242,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 4
+        "register": 1
       },
       "enableBy": "config"
     },
@@ -2276,7 +2276,7 @@
             0
           ]
         },
-        "register": 2
+        "register": 0
       },
       "enableBy": "register"
     },
@@ -2306,7 +2306,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 2
+        "register": 1
       },
       "enableBy": "register"
     },
@@ -2319,7 +2319,7 @@
       "config": {},
       "time": {
         "hooks": {},
-        "register": 9
+        "register": 5
       },
       "enableBy": "register"
     }
@@ -4993,7 +4993,7 @@
       "parentId": "27",
       "id": "31",
       "absPath": "/deploy/plans/:id",
-      "__content": "/**\n * 部署计划详情页\n * 展示计划信息、节点拓扑、任务步骤进度、SSE 实时日志\n */\nimport { useEffect, useRef, useState, useCallback, useMemo } from 'react'\nimport { Card, Descriptions, Tag, Badge, Button, Space, Steps, Typography, message, Popconfirm, Tooltip, Progress, Empty, Input, Collapse, Alert, Spin } from 'antd'\nimport { ArrowLeftOutlined, StopOutlined, RedoOutlined, DownloadOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, DesktopOutlined, SafetyCertificateOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'\nimport { history, useParams } from '@umijs/max'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { AppPage, YamlEditor } from '@/components'\nimport { getDeployPlanById, getDeployTask, getDeployTaskLogs, getDeployTaskLogSSEUrl, cancelDeployPlan, retryDeployPlan, executeDeployPlan, getServers, getPlanAnsibleConfig, preflightDeployPlan, setDeployPreflightIgnore } from '@/services/deploy'\n\nconst { Text, Title } = Typography\n\nconst statusMap: Record<string, { badge: string; text: string }> = {\n  draft: { badge: 'default', text: '草稿' },\n  running: { badge: 'processing', text: '执行中' },\n  success: { badge: 'success', text: '成功' },\n  failed: { badge: 'error', text: '失败' },\n  cancelled: { badge: 'warning', text: '已取消' },\n}\n\nconst taskStatusMap: Record<string, { badge: string; text: string }> = {\n  pending: { badge: 'default', text: '等待中' },\n  running: { badge: 'processing', text: '执行中' },\n  success: { badge: 'success', text: '成功' },\n  failed: { badge: 'error', text: '失败' },\n  canceled: { badge: 'warning', text: '已取消' },\n  timeout: { badge: 'error', text: '超时' },\n}\n\nconst stepStatusMap: Record<string, 'wait' | 'process' | 'finish' | 'error'> = {\n  pending: 'wait',\n  running: 'process',\n  success: 'finish',\n  failed: 'error',\n}\n\nconst roleColorMap: Record<string, string> = {\n  master: 'red',\n  worker: 'blue',\n}\n\nexport default function DeployPlanDetailPage() {\n  const params = useParams<{ id: string }>()\n  const planId = Number(params.id)\n  const queryClient = useQueryClient()\n  const [logs, setLogs] = useState<string[]>([])\n  const [sseConnected, setSseConnected] = useState(false)\n  const [logFilter, setLogFilter] = useState('')\n  const logOffsetRef = useRef(0)\n  const logContainerRef = useRef<HTMLDivElement>(null)\n  const eventSourceRef = useRef<EventSource | null>(null)\n  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)\n\n  // 获取计划详情\n  const { data: plan, isLoading: planLoading } = useQuery({\n    queryKey: ['deploy-plan-detail', planId],\n    queryFn: () => getDeployPlanById(planId),\n    enabled: Number.isFinite(planId) && planId > 0,\n    refetchInterval: (query) => {\n      // 运行中时轮询刷新计划状态\n      return query.state.data?.status === 'running' ? 3000 : false\n    },\n  })\n\n  // 获取服务器列表（用于节点信息展示）\n  const { data: serversData } = useQuery({\n    queryKey: ['deploy-servers-for-detail'],\n    queryFn: () => getServers({ page: 1, pageSize: 200 }),\n    enabled: Number.isFinite(planId) && planId > 0,\n  })\n\n  // 获取 Ansible 执行配置\n  const { data: ansibleConfig, isLoading: ansibleConfigLoading } = useQuery({\n    queryKey: ['deploy-plan-ansible-config', planId],\n    queryFn: () => getPlanAnsibleConfig(planId),\n    enabled: Number.isFinite(planId) && planId > 0,\n  })\n\n  const {\n    data: preflight,\n    isFetching: preflightLoading,\n    isError: preflightFailed,\n    refetch: runPreflight,\n  } = useQuery({\n    queryKey: ['deploy-plan-preflight', planId],\n    queryFn: () => preflightDeployPlan(planId),\n    enabled: !!plan && ['draft', 'failed', 'cancelled'].includes(plan.status),\n    refetchOnWindowFocus: false,\n    retry: false,\n  })\n\n  const taskId = plan?.taskId\n\n  const preflightIgnoreMutation = useMutation({\n    mutationFn: ({ key, ignored }: { key: string; ignored: boolean }) => setDeployPreflightIgnore(planId, key, ignored),\n    onSuccess: () => {\n      message.success('预检放行设置已保存')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-preflight', planId] })\n    },\n    onError: (err: any) => message.error(err?.message || '保存预检设置失败'),\n  })\n\n  // 获取任务详情（运行中时轮询）\n  const { data: task } = useQuery({\n    queryKey: ['deploy-task', taskId],\n    queryFn: () => getDeployTask(taskId!),\n    enabled: !!taskId,\n    refetchInterval: (query) => {\n      const status = query.state.data?.status\n      return status === 'running' || status === 'pending' ? 2000 : false\n    },\n  })\n\n  // 构建节点信息（匹配服务器数据）\n  const nodeDetails = useMemo(() => {\n    if (!plan?.nodes || !serversData?.items) return []\n    const serverMap = new Map(serversData.items.map((s) => [s.id, s]))\n    return plan.nodes.map((node) => {\n      const server = serverMap.get(node.serverId)\n      return {\n        ...node,\n        serverName: server?.name || `#${node.serverId}`,\n        serverIP: server?.ip || '-',\n        serverOS: server?.os || '-',\n        serverStatus: server?.status || '-',\n      }\n    })\n  }, [plan?.nodes, serversData])\n\n  // 执行部署\n  const executeMutation = useMutation({\n    mutationFn: () => executeDeployPlan(planId),\n    onSuccess: () => {\n      message.success('部署已启动')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n    },\n    onError: (err: any) => message.error(err?.message || '执行失败'),\n  })\n\n  // 取消部署\n  const cancelMutation = useMutation({\n    mutationFn: () => cancelDeployPlan(planId),\n    onSuccess: () => {\n      message.success('取消指令已发送')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n      queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n    },\n    onError: () => message.error('取消失败'),\n  })\n\n  // 重试部署\n  const retryMutation = useMutation({\n    mutationFn: () => retryDeployPlan(planId),\n    onSuccess: () => {\n      message.success('重试已启动')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n    },\n    onError: () => message.error('重试失败'),\n  })\n\n  // 初始加载历史日志\n  useEffect(() => {\n    if (!taskId) {\n      setLogs([])\n      logOffsetRef.current = 0\n      return\n    }\n    getDeployTaskLogs(taskId, 0, 500).then((res) => {\n      setLogs(res.logs || [])\n      logOffsetRef.current = (res.logs || []).length\n    }).catch(() => {\n      setLogs([])\n      logOffsetRef.current = 0\n    })\n  }, [taskId])\n\n  // SSE 实时日志连接\n  const connectSSE = useCallback(() => {\n    if (!taskId) return\n    eventSourceRef.current?.close()\n    if (reconnectTimerRef.current) {\n      clearTimeout(reconnectTimerRef.current)\n      reconnectTimerRef.current = null\n    }\n\n    const token = localStorage.getItem('token') || ''\n    const url = getDeployTaskLogSSEUrl(taskId)\n    const sep = url.includes('?') ? '&' : '?'\n    const fullUrl = `${url}${sep}token=${encodeURIComponent(token)}`\n\n    const es = new EventSource(fullUrl)\n    eventSourceRef.current = es\n\n    es.onopen = () => setSseConnected(true)\n\n    es.onmessage = (event) => {\n      try {\n        const data = JSON.parse(event.data)\n        if (data.log) {\n          setLogs((prev) => [...prev, data.log])\n        }\n      } catch {\n        setLogs((prev) => [...prev, event.data])\n      }\n    }\n\n    es.addEventListener('done', (event: any) => {\n      try {\n        const data = JSON.parse(event.data)\n        message.info(`任务已结束：${data.status || ''}`)\n      } catch { /* ignore */ }\n      es.close()\n      setSseConnected(false)\n      if (taskId) {\n        queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n        queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n      }\n    })\n\n    es.onerror = () => {\n      setSseConnected(false)\n      es.close()\n      // 任务可能仍在运行，尝试重连\n      const currentStatus = task?.status\n      if (currentStatus === 'running' || currentStatus === 'pending') {\n        reconnectTimerRef.current = setTimeout(() => connectSSE(), 3000)\n      }\n    }\n  }, [taskId, planId, queryClient, task?.status])\n\n  useEffect(() => {\n    if (!taskId) return\n    const taskStatus = task?.status\n    if (taskStatus === 'running' || taskStatus === 'pending' || taskStatus === undefined) {\n      connectSSE()\n    }\n    return () => {\n      eventSourceRef.current?.close()\n      eventSourceRef.current = null\n      if (reconnectTimerRef.current) {\n        clearTimeout(reconnectTimerRef.current)\n        reconnectTimerRef.current = null\n      }\n    }\n  }, [taskId, task?.status, connectSSE])\n\n  // 自动滚动到底部\n  useEffect(() => {\n    if (logContainerRef.current && !logFilter) {\n      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight\n    }\n  }, [logs, logFilter])\n\n  // 下载日志\n  const handleDownloadLogs = () => {\n    const content = logs.join('\\n')\n    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })\n    const url = URL.createObjectURL(blob)\n    const a = document.createElement('a')\n    a.href = url\n    a.download = `deploy-plan-${planId}-logs.txt`\n    a.click()\n    URL.revokeObjectURL(url)\n  }\n\n  const planStatus = plan?.status || 'draft'\n  const isRunning = planStatus === 'running'\n  const isDraft = planStatus === 'draft'\n  const canRetry = planStatus === 'failed' || planStatus === 'cancelled'\n  const stepItems = (task?.steps || []).map((step) => ({\n    title: step.title,\n    description: step.message,\n    status: stepStatusMap[step.status] || 'wait',\n  }))\n\n  const currentTaskStatus = task?.status\n  const taskBadge = taskStatusMap[currentTaskStatus || ''] || { badge: 'default', text: currentTaskStatus || '-' }\n  const filteredLogs = logFilter ? logs.filter((line) => line.toLowerCase().includes(logFilter.toLowerCase())) : logs\n\n  return (\n    <AppPage>\n      <Card loading={planLoading}>\n        {/* 顶部操作栏 */}\n        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>\n          <Space>\n            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/deploy/plans')}>返回列表</Button>\n            <Title level={4} style={{ margin: 0 }}>{plan?.name || '部署详情'}</Title>\n            <Badge status={statusMap[planStatus]?.badge as any} text={statusMap[planStatus]?.text || planStatus} />\n          </Space>\n          <Space>\n            {isDraft && (\n              <Popconfirm title=\"确认执行该部署方案？\" onConfirm={() => executeMutation.mutate()}>\n                <Button type=\"primary\" icon={<PlayCircleOutlined />} disabled={!preflight?.ready} loading={executeMutation.isPending}>执行部署</Button>\n              </Popconfirm>\n            )}\n            {isRunning && (\n              <Popconfirm title=\"确认取消该部署任务？\" onConfirm={() => cancelMutation.mutate()}>\n                <Button danger icon={<StopOutlined />} loading={cancelMutation.isPending}>取消部署</Button>\n              </Popconfirm>\n            )}\n            {canRetry && (\n              <Popconfirm title=\"确认重试该部署方案？\" onConfirm={() => retryMutation.mutate()}>\n                <Button type=\"primary\" icon={<RedoOutlined />} disabled={!preflight?.ready} loading={retryMutation.isPending}>重试部署</Button>\n              </Popconfirm>\n            )}\n            <Tooltip title=\"刷新\">\n              <Button icon={<ReloadOutlined />} onClick={() => {\n                queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n                if (taskId) queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n              }} />\n            </Tooltip>\n          </Space>\n        </div>\n\n        {/* 计划基本信息 */}\n        <Descriptions bordered column={3} size=\"small\" style={{ marginBottom: 16 }}>\n          <Descriptions.Item label=\"集群名称\">{plan?.clusterName || '-'}</Descriptions.Item>\n          <Descriptions.Item label=\"K8s 版本\">\n            {plan?.k8sVersion ? <Tag color=\"blue\">{plan.k8sVersion}</Tag> : '-'}\n          </Descriptions.Item>\n          <Descriptions.Item label=\"CNI 类型\">\n            {plan?.cniType ? <Tag color=\"green\">{plan.cniType}</Tag> : '-'}\n          </Descriptions.Item>\n          <Descriptions.Item label=\"Pod 网段\"><Text code>{plan?.podCidr || '-'}</Text></Descriptions.Item>\n          <Descriptions.Item label=\"Service 网段\"><Text code>{plan?.svcCidr || '-'}</Text></Descriptions.Item>\n          <Descriptions.Item label=\"任务状态\">\n            {taskId ? <Badge status={taskBadge.badge as any} text={taskBadge.text} /> : <Text type=\"secondary\">未执行</Text>}\n          </Descriptions.Item>\n          {plan?.addons && plan.addons.length > 0 && (\n            <Descriptions.Item label=\"附加组件\" span={3}>\n              <Space wrap>\n                {plan.addons.map((addon) => <Tag key={addon}>{addon}</Tag>)}\n              </Space>\n            </Descriptions.Item>\n          )}\n        </Descriptions>\n\n        {(isDraft || canRetry) && (\n          <Card\n            size=\"small\"\n            title={<Space><SafetyCertificateOutlined />部署就绪检查</Space>}\n            extra={<Button size=\"small\" icon={<ReloadOutlined />} loading={preflightLoading} onClick={() => runPreflight()}>重新检查</Button>}\n            style={{ marginBottom: 16 }}\n          >\n            {preflightFailed ? (\n              <Alert type=\"error\" showIcon message=\"无法完成部署预检\" description=\"请确认后端服务可用且当前账号具有部署执行权限，然后重新检查。\" />\n            ) : !preflight ? (\n              <Spin />\n            ) : (\n              <>\n                <Alert\n                  type={preflight.ready ? 'success' : 'error'}\n                  showIcon\n                  message={preflight.ready ? '预检通过，可以执行部署' : '预检未通过，执行已被阻止'}\n                  description={`检查时间：${new Date(preflight.checkedAt).toLocaleString()}`}\n                  style={{ marginBottom: 12 }}\n                />\n                <Space direction=\"vertical\" size={8} style={{ width: '100%' }}>\n                  {preflight.checks.map((check) => (\n                    <div key={check.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>\n                      {check.status === 'passed'\n                        ? <CheckCircleOutlined style={{ color: '#52c41a', marginTop: 3 }} />\n                        : <CloseCircleOutlined style={{ color: check.status === 'warning' ? '#faad14' : '#ff4d4f', marginTop: 3 }} />}\n                      <div style={{ minWidth: 0, flex: 1 }}>\n                        <Text strong>{check.serverName ? `${check.serverName} · ` : ''}{check.message}</Text>\n                        {check.remediation && <div><Text type=\"secondary\">处理建议：{check.remediation}</Text></div>}\n                      </div>\n                      {check.ignorable && (\n                        <Popconfirm\n                          title={check.ignored ? '恢复该项强制检查？' : '确认已评估风险并忽略该项？'}\n                          onConfirm={() => preflightIgnoreMutation.mutate({ key: check.key, ignored: !check.ignored })}\n                        >\n                          <Button size=\"small\" loading={preflightIgnoreMutation.isPending}>\n                            {check.ignored ? '恢复检查' : '忽略此项'}\n                          </Button>\n                        </Popconfirm>\n                      )}\n                    </div>\n                  ))}\n                </Space>\n              </>\n            )}\n          </Card>\n        )}\n\n        {/* 节点拓扑 */}\n        {nodeDetails.length > 0 && (\n          <Card size=\"small\" title={<Space><DesktopOutlined />节点拓扑</Space>} style={{ marginBottom: 16 }}>\n            <Space wrap size={[16, 8]}>\n              {nodeDetails.map((node, i) => (\n                <Card\n                  key={i}\n                  size=\"small\"\n                  style={{ width: 260, background: '#fafafa' }}\n                  title={\n                    <Space>\n                      <Tag color={roleColorMap[node.role] || 'default'}>{node.role?.toUpperCase()}</Tag>\n                      <Text strong>{node.serverName}</Text>\n                    </Space>\n                  }\n                >\n                  <Space direction=\"vertical\" size={2} style={{ width: '100%' }}>\n                    <Text type=\"secondary\">IP: <Text code>{node.serverIP}</Text></Text>\n                    <Text type=\"secondary\">OS: {node.serverOS}</Text>\n                    <Space>\n                      <Badge status={node.serverStatus === 'available' ? 'success' : 'default'} text={node.serverStatus} />\n                    </Space>\n                  </Space>\n                </Card>\n              ))}\n            </Space>\n          </Card>\n        )}\n\n        {/* Ansible 执行配置 */}\n        <Card size=\"small\" title=\"Ansible 执行配置\" style={{ marginBottom: 16 }} loading={ansibleConfigLoading}>\n          {!ansibleConfig ? (\n            <Alert type=\"warning\" showIcon message=\"暂无执行配置\" />\n          ) : (\n            <Collapse ghost>\n              <Collapse.Panel header={<Text strong>Playbook：{ansibleConfig.playbookPath}</Text>} key=\"playbook\">\n                <Alert type=\"info\" showIcon message=\"该 playbook 为项目内置，实际执行时会根据计划生成动态 inventory 和 extra vars。\" style={{ marginBottom: 8 }} />\n                <YamlEditor readOnly value={`# 实际执行命令示例\\nansible-playbook ${ansibleConfig.playbookPath} -i <动态 inventory> \\\\\\n  -e k8s_version=${ansibleConfig.extraVars?.k8sVersion || ''} \\\\\\n  -e pod_cidr=${ansibleConfig.extraVars?.podCidr || ''} \\\\\\n  -e svc_cidr=${ansibleConfig.extraVars?.svcCidr || ''} \\\\\\n  -e cni_type=${ansibleConfig.extraVars?.cniType || ''}\\\\n\\\\n# 完整 extra vars\\\\n${JSON.stringify(ansibleConfig.extraVars || {}, null, 2)}`} height={260} />\n              </Collapse.Panel>\n              <Collapse.Panel header={<Text strong>Inventory（密码已脱敏）</Text>} key=\"inventory\">\n                <YamlEditor readOnly value={ansibleConfig.inventory || '# 暂无 inventory'} height={320} />\n              </Collapse.Panel>\n            </Collapse>\n          )}\n        </Card>\n\n        {/* 步骤进度 */}\n        {stepItems.length > 0 && (\n          <Card size=\"small\" title=\"部署进度\" style={{ marginBottom: 16 }}>\n            <Steps size=\"small\" current={stepItems.findIndex((s) => s.status === 'process')} items={stepItems} />\n            {task?.percent != null && (\n              <Progress\n                percent={task.percent}\n                status={task.status === 'failed' ? 'exception' : task.status === 'success' ? 'success' : 'active'}\n                style={{ marginTop: 12 }}\n              />\n            )}\n          </Card>\n        )}\n\n        {/* 草稿状态提示 */}\n        {isDraft && !taskId && (\n          <Card style={{ marginBottom: 16 }}>\n            <Empty\n              description=\"该部署方案尚未执行\"\n              image={Empty.PRESENTED_IMAGE_SIMPLE}\n            >\n              <Popconfirm title=\"确认执行该部署方案？\" onConfirm={() => executeMutation.mutate()}>\n                <Button type=\"primary\" icon={<PlayCircleOutlined />} disabled={!preflight?.ready} loading={executeMutation.isPending}>\n                  立即执行部署\n                </Button>\n              </Popconfirm>\n            </Empty>\n          </Card>\n        )}\n\n        {/* 实时日志终端 */}\n        <Card\n          size=\"small\"\n          title={\n            <Space>\n              <span>实时日志</span>\n              {sseConnected && <Badge status=\"processing\" text=\"实时连接\" />}\n              {!sseConnected && isRunning && <Badge status=\"warning\" text=\"重连中\" />}\n              {task && task.status !== 'running' && task.status !== 'pending' && taskId && (\n                <Badge status=\"default\" text=\"已结束\" />\n              )}\n              {logs.length > 0 && <Text type=\"secondary\" style={{ fontSize: 12 }}>({logs.length} 行)</Text>}\n            </Space>\n          }\n          extra={\n            <Space>\n              <Input\n                size=\"small\"\n                placeholder=\"过滤日志...\"\n                prefix={<SearchOutlined />}\n                value={logFilter}\n                onChange={(e) => setLogFilter(e.target.value)}\n                style={{ width: 180 }}\n                allowClear\n              />\n              <Tooltip title=\"下载日志\">\n                <Button size=\"small\" icon={<DownloadOutlined />} onClick={handleDownloadLogs} disabled={logs.length === 0} />\n              </Tooltip>\n            </Space>\n          }\n        >\n          <div\n            ref={logContainerRef}\n            style={{\n              background: '#1e1e1e',\n              color: '#d4d4d4',\n              fontFamily: 'Consolas, Monaco, \"Courier New\", monospace',\n              fontSize: 13,\n              lineHeight: 1.6,\n              padding: 16,\n              borderRadius: 6,\n              maxHeight: 500,\n              overflowY: 'auto',\n              whiteSpace: 'pre-wrap',\n              wordBreak: 'break-all',\n            }}\n          >\n            {logs.length === 0 ? (\n              <span style={{ color: '#666' }}>\n                {isDraft ? '# 当前方案尚未执行，点击上方\"执行部署\"按钮开始' : '# 暂无日志，等待任务开始...'}\n              </span>\n            ) : filteredLogs.length === 0 ? (\n              <span style={{ color: '#666' }}># 无匹配的日志行</span>\n            ) : (\n              filteredLogs.map((line, i) => (\n                <div key={i} style={{ color: getLogColor(line) }}>\n                  {line || ' '}\n                </div>\n              ))\n            )}\n          </div>\n        </Card>\n      </Card>\n    </AppPage>\n  )\n}\n\n/** 根据 Ansible 输出格式着色 */\nfunction getLogColor(line: string): string {\n  const trimmed = line.trim()\n  if (trimmed.startsWith('PLAY [') || trimmed.startsWith('PLAY RECAP')) return '#569cd6'\n  if (trimmed.startsWith('TASK [')) return '#c586c0'\n  if (trimmed.includes('ok:') && !trimmed.includes('failed')) return '#4ec9b0'\n  if (trimmed.startsWith('changed:') || trimmed.includes('changed=1')) return '#cca700'\n  if (trimmed.includes('failed:') || trimmed.includes('FAILED') || trimmed.includes('fatal:')) return '#f44747'\n  if (trimmed.startsWith('skipping:') || trimmed.includes('skipped')) return '#808080'\n  if (line.includes('[error]') || line.includes('[ERROR]')) return '#f44747'\n  if (line.includes('[warn]') || line.includes('[WARN]')) return '#cca700'\n  if (line.includes('[info]') || line.includes('[INFO]')) return '#4ec9b0'\n  return '#d4d4d4'\n}\n",
+      "__content": "/**\n * 部署计划详情页\n * 展示计划信息、节点拓扑、分阶段步骤树、SSE 实时日志\n */\nimport { useEffect, useRef, useState, useCallback, useMemo } from 'react'\nimport { Card, Descriptions, Tag, Badge, Button, Space, Typography, message, Popconfirm, Tooltip, Progress, Empty, Input, Collapse, Alert, Spin, Divider } from 'antd'\nimport { ArrowLeftOutlined, StopOutlined, RedoOutlined, DownloadOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, DesktopOutlined, SafetyCertificateOutlined, CheckCircleOutlined, CloseCircleOutlined, CaretRightOutlined, CodeOutlined } from '@ant-design/icons'\nimport { history, useParams } from '@umijs/max'\nimport { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'\nimport { AppPage, YamlEditor } from '@/components'\nimport {\n  getDeployPlanById,\n  getDeployTask,\n  getDeployTaskLogs,\n  getDeployTaskLogSSEUrl,\n  cancelDeployPlan,\n  retryDeployPlan,\n  retryDeployStep,\n  executeDeployPlan,\n  getServers,\n  getPlanAnsibleConfig,\n  preflightDeployPlan,\n  setDeployPreflightIgnore,\n} from '@/services/deploy'\nimport type { DeployTask, DeployTaskStep, DeployTaskSubStep } from '@/types'\n\nconst { Text, Title } = Typography\n\nconst statusMap: Record<string, { badge: string; text: string }> = {\n  draft: { badge: 'default', text: '草稿' },\n  running: { badge: 'processing', text: '执行中' },\n  success: { badge: 'success', text: '成功' },\n  failed: { badge: 'error', text: '失败' },\n  cancelled: { badge: 'warning', text: '已取消' },\n}\n\nconst taskStatusMap: Record<string, { badge: string; text: string }> = {\n  pending: { badge: 'default', text: '等待中' },\n  running: { badge: 'processing', text: '执行中' },\n  success: { badge: 'success', text: '成功' },\n  failed: { badge: 'error', text: '失败' },\n  canceled: { badge: 'warning', text: '已取消' },\n  timeout: { badge: 'error', text: '超时' },\n}\n\nconst roleColorMap: Record<string, string> = {\n  master: 'red',\n  worker: 'blue',\n}\n\n// 步骤分组（stage -> steps）\nconst stageGroups = [\n  { key: 'init', title: '初始化', steps: ['pre_check', 'bootstrap'] },\n  { key: 'install', title: '安装 k8s 集群', steps: ['container_runtime', 'kubeadm_init', 'join_workers', 'install_cni'] },\n  { key: 'extend', title: '补充扩展', steps: ['install_addons', 'register'] },\n]\n\n// 步骤标题映射\nconst stepTitleMap: Record<string, string> = {\n  pre_check: '环境预检',\n  bootstrap: '基础环境初始化',\n  container_runtime: '容器运行时安装',\n  kubeadm_init: 'Kubernetes Master 初始化',\n  join_workers: 'Worker 节点加入集群',\n  install_cni: '安装 CNI 网络插件',\n  install_addons: '安装 Kubernetes 扩展组件',\n  register: '节点注册到管理平台',\n}\n\nexport default function DeployPlanDetailPage() {\n  const params = useParams<{ id: string }>()\n  const planId = Number(params.id)\n  const queryClient = useQueryClient()\n  const [selectedStepKey, setSelectedStepKey] = useState<string | null>(null)\n  const [selectedSubStepKey, setSelectedSubStepKey] = useState<string | null>(null)\n  const [logs, setLogs] = useState<string[]>([])\n  const [sseConnected, setSseConnected] = useState(false)\n  const [logFilter, setLogFilter] = useState('')\n  const logOffsetRef = useRef(0)\n  const logContainerRef = useRef<HTMLDivElement>(null)\n  const eventSourceRef = useRef<EventSource | null>(null)\n  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)\n\n  // 获取计划详情\n  const { data: plan, isLoading: planLoading } = useQuery({\n    queryKey: ['deploy-plan-detail', planId],\n    queryFn: () => getDeployPlanById(planId),\n    enabled: Number.isFinite(planId) && planId > 0,\n    refetchInterval: (query) => {\n      return query.state.data?.status === 'running' ? 3000 : false\n    },\n  })\n\n  // 获取服务器列表\n  const { data: serversData } = useQuery({\n    queryKey: ['deploy-servers-for-detail'],\n    queryFn: () => getServers({ page: 1, pageSize: 200 }),\n    enabled: Number.isFinite(planId) && planId > 0,\n  })\n\n  // 获取 Ansible 执行配置\n  const { data: ansibleConfig, isLoading: ansibleConfigLoading } = useQuery({\n    queryKey: ['deploy-plan-ansible-config', planId],\n    queryFn: () => getPlanAnsibleConfig(planId),\n    enabled: Number.isFinite(planId) && planId > 0,\n  })\n\n  const {\n    data: preflight,\n    isFetching: preflightLoading,\n    isError: preflightFailed,\n    refetch: runPreflight,\n  } = useQuery({\n    queryKey: ['deploy-plan-preflight', planId],\n    queryFn: () => preflightDeployPlan(planId),\n    enabled: !!plan && ['draft', 'failed', 'cancelled'].includes(plan.status),\n    refetchOnWindowFocus: false,\n    retry: false,\n  })\n\n  const taskId = plan?.taskId\n\n  const preflightIgnoreMutation = useMutation({\n    mutationFn: ({ key, ignored }: { key: string; ignored: boolean }) => setDeployPreflightIgnore(planId, key, ignored),\n    onSuccess: () => {\n      message.success('预检放行设置已保存')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-preflight', planId] })\n    },\n    onError: (err: any) => message.error(err?.message || '保存预检设置失败'),\n  })\n\n  // 获取任务详情\n  const { data: task } = useQuery({\n    queryKey: ['deploy-task', taskId],\n    queryFn: () => getDeployTask(taskId!),\n    enabled: !!taskId,\n    refetchInterval: (query) => {\n      const status = query.state.data?.status\n      return status === 'running' || status === 'pending' ? 2000 : false\n    },\n  })\n\n  // 构建节点信息\n  const nodeDetails = useMemo(() => {\n    if (!plan?.nodes || !serversData?.items) return []\n    const serverMap = new Map(serversData.items.map((s: any) => [s.id, s]))\n    return plan.nodes.map((node: any) => {\n      const server = serverMap.get(node.serverId)\n      return {\n        ...node,\n        serverName: server?.name || `#${node.serverId}`,\n        serverIP: server?.ip || '-',\n        serverOS: server?.os || '-',\n        serverStatus: server?.status || '-',\n      }\n    })\n  }, [plan?.nodes, serversData])\n\n  // 执行部署\n  const executeMutation = useMutation({\n    mutationFn: () => executeDeployPlan(planId),\n    onSuccess: () => {\n      message.success('部署已启动')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n    },\n    onError: (err: any) => message.error(err?.message || '执行失败'),\n  })\n\n  // 取消部署\n  const cancelMutation = useMutation({\n    mutationFn: () => cancelDeployPlan(planId),\n    onSuccess: () => {\n      message.success('取消指令已发送')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n      queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n    },\n    onError: () => message.error('取消失败'),\n  })\n\n  // 重试部署\n  const retryMutation = useMutation({\n    mutationFn: () => retryDeployPlan(planId),\n    onSuccess: () => {\n      message.success('重试已启动')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n    },\n    onError: () => message.error('重试失败'),\n  })\n\n  // 重试步骤\n  const retryStepMutation = useMutation({\n    mutationFn: ({ stepKey }: { stepKey: string }) => retryDeployStep(planId, stepKey),\n    onSuccess: () => {\n      message.success('步骤重试已启动')\n      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n    },\n    onError: () => message.error('步骤重试失败'),\n  })\n\n  // 当前选中的 step key（用于日志过滤）\n  const effectiveStepKey = useMemo(() => {\n    if (selectedSubStepKey) {\n      // sub step key 格式为 {stepKey}-{index}，提取大 step key\n      return selectedSubStepKey.split('-')[0]\n    }\n    return selectedStepKey\n  }, [selectedStepKey, selectedSubStepKey])\n\n  // 初始加载历史日志\n  useEffect(() => {\n    if (!taskId) {\n      setLogs([])\n      logOffsetRef.current = 0\n      return\n    }\n    // 默认选中第一个非成功的步骤，或第一个步骤\n    const steps = task?.steps || []\n    if (!selectedStepKey && steps.length > 0) {\n      const active = steps.find((s: DeployTaskStep) => s.status === 'running' || s.status === 'failed')\n      setSelectedStepKey(active?.key || steps[0].key)\n    }\n\n    setLogs([])\n    logOffsetRef.current = 0\n    getDeployTaskLogs(taskId, 0, 500, effectiveStepKey || undefined).then((res) => {\n      setLogs(res.logs || [])\n      logOffsetRef.current = (res.logs || []).length\n    }).catch(() => {\n      setLogs([])\n      logOffsetRef.current = 0\n    })\n  }, [taskId, effectiveStepKey, task?.steps])\n\n  // SSE 实时日志连接\n  const connectSSE = useCallback(() => {\n    if (!taskId) return\n    eventSourceRef.current?.close()\n    if (reconnectTimerRef.current) {\n      clearTimeout(reconnectTimerRef.current)\n      reconnectTimerRef.current = null\n    }\n\n    const token = localStorage.getItem('token') || ''\n    const url = getDeployTaskLogSSEUrl(taskId, effectiveStepKey || undefined)\n    const sep = url.includes('?') ? '&' : '?'\n    const fullUrl = `${url}${sep}token=${encodeURIComponent(token)}`\n\n    const es = new EventSource(fullUrl)\n    eventSourceRef.current = es\n\n    es.onopen = () => setSseConnected(true)\n\n    es.onmessage = (event) => {\n      try {\n        const data = JSON.parse(event.data)\n        if (data.log) {\n          setLogs((prev) => [...prev, data.log])\n        }\n      } catch {\n        setLogs((prev) => [...prev, event.data])\n      }\n    }\n\n    es.addEventListener('done', (event: any) => {\n      try {\n        const data = JSON.parse(event.data)\n        message.info(`任务已结束：${data.status || ''}`)\n      } catch { /* ignore */ }\n      es.close()\n      setSseConnected(false)\n      if (taskId) {\n        queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n        queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n      }\n    })\n\n    es.onerror = () => {\n      setSseConnected(false)\n      es.close()\n      const currentStatus = task?.status\n      if (currentStatus === 'running' || currentStatus === 'pending') {\n        reconnectTimerRef.current = setTimeout(() => connectSSE(), 3000)\n      }\n    }\n  }, [taskId, planId, queryClient, task?.status, effectiveStepKey])\n\n  useEffect(() => {\n    if (!taskId) return\n    const taskStatus = task?.status\n    if (taskStatus === 'running' || taskStatus === 'pending' || taskStatus === undefined) {\n      connectSSE()\n    }\n    return () => {\n      eventSourceRef.current?.close()\n      eventSourceRef.current = null\n      if (reconnectTimerRef.current) {\n        clearTimeout(reconnectTimerRef.current)\n        reconnectTimerRef.current = null\n      }\n    }\n  }, [taskId, task?.status, connectSSE])\n\n  // 自动滚动到底部\n  useEffect(() => {\n    if (logContainerRef.current && !logFilter) {\n      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight\n    }\n  }, [logs, logFilter])\n\n  // 下载日志\n  const handleDownloadLogs = () => {\n    const content = logs.join('\\n')\n    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })\n    const url = URL.createObjectURL(blob)\n    const a = document.createElement('a')\n    a.href = url\n    a.download = `deploy-plan-${planId}-logs.txt`\n    a.click()\n    URL.revokeObjectURL(url)\n  }\n\n  const planStatus = plan?.status || 'draft'\n  const isRunning = planStatus === 'running'\n  const isDraft = planStatus === 'draft'\n  const canRetry = planStatus === 'failed' || planStatus === 'cancelled'\n\n  const currentTaskStatus = task?.status\n  const taskBadge = taskStatusMap[currentTaskStatus || ''] || { badge: 'default', text: currentTaskStatus || '-' }\n\n  // 根据选中 sub step 进一步过滤日志（客户端过滤）\n  const filteredLogs = useMemo(() => {\n    let list = logFilter ? logs.filter((line) => line.toLowerCase().includes(logFilter.toLowerCase())) : logs\n    if (selectedSubStepKey && task) {\n      const step = task.steps?.find((s: DeployTaskStep) => s.key === selectedStepKey)\n      const sub = step?.subSteps?.find((s: DeployTaskSubStep) => s.key === selectedSubStepKey)\n      if (sub) {\n        // 高亮子步骤：只保留包含子步骤标题的 TASK 行及其后直到下一个 TASK 行\n        const subTitle = sub.title\n        const result: string[] = []\n        let inSubStep = false\n        for (const line of list) {\n          const trimmed = line.trim()\n          if (trimmed.startsWith('TASK [')) {\n            inSubStep = trimmed.includes(subTitle)\n          }\n          if (inSubStep || trimmed.includes(subTitle)) {\n            result.push(line)\n          }\n        }\n        // 如果没有匹配到 TASK 行（可能日志格式不同），返回整个 step 日志\n        return result.length > 0 ? result : list\n      }\n    }\n    return list\n  }, [logs, logFilter, selectedSubStepKey, selectedStepKey, task])\n\n  // 步骤选择处理\n  const handleSelectStep = (stepKey: string) => {\n    setSelectedStepKey(stepKey)\n    setSelectedSubStepKey(null)\n  }\n\n  const handleSelectSubStep = (stepKey: string, subKey: string) => {\n    setSelectedStepKey(stepKey)\n    setSelectedSubStepKey(subKey)\n  }\n\n  return (\n    <AppPage>\n      <Card loading={planLoading}>\n        {/* 顶部操作栏 */}\n        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>\n          <Space>\n            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/deploy/plans')}>返回列表</Button>\n            <Title level={4} style={{ margin: 0 }}>{plan?.name || '部署详情'}</Title>\n            <Badge status={statusMap[planStatus]?.badge as any} text={statusMap[planStatus]?.text || planStatus} />\n          </Space>\n          <Space>\n            {isDraft && (\n              <Popconfirm title=\"确认执行该部署方案？\" onConfirm={() => executeMutation.mutate()}>\n                <Button type=\"primary\" icon={<PlayCircleOutlined />} disabled={!preflight?.ready} loading={executeMutation.isPending}>执行部署</Button>\n              </Popconfirm>\n            )}\n            {isRunning && (\n              <Popconfirm title=\"确认取消该部署任务？\" onConfirm={() => cancelMutation.mutate()}>\n                <Button danger icon={<StopOutlined />} loading={cancelMutation.isPending}>取消部署</Button>\n              </Popconfirm>\n            )}\n            {canRetry && (\n              <Popconfirm title=\"确认重试该部署方案？\" onConfirm={() => retryMutation.mutate()}>\n                <Button type=\"primary\" icon={<RedoOutlined />} disabled={!preflight?.ready} loading={retryMutation.isPending}>重试部署</Button>\n              </Popconfirm>\n            )}\n            <Tooltip title=\"刷新\">\n              <Button icon={<ReloadOutlined />} onClick={() => {\n                queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })\n                if (taskId) queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })\n              }} />\n            </Tooltip>\n          </Space>\n        </div>\n\n        {/* 计划基本信息 */}\n        <Descriptions bordered column={3} size=\"small\" style={{ marginBottom: 16 }}>\n          <Descriptions.Item label=\"集群名称\">{plan?.clusterName || '-'}</Descriptions.Item>\n          <Descriptions.Item label=\"K8s 版本\">\n            {plan?.k8sVersion ? <Tag color=\"blue\">{plan.k8sVersion}</Tag> : '-'}\n          </Descriptions.Item>\n          <Descriptions.Item label=\"CNI 类型\">\n            {plan?.cniType ? <Tag color=\"green\">{plan.cniType}</Tag> : '-'}\n          </Descriptions.Item>\n          <Descriptions.Item label=\"Pod 网段\"><Text code>{plan?.podCidr || '-'}</Text></Descriptions.Item>\n          <Descriptions.Item label=\"Service 网段\"><Text code>{plan?.svcCidr || '-'}</Text></Descriptions.Item>\n          <Descriptions.Item label=\"任务状态\">\n            {taskId ? <Badge status={taskBadge.badge as any} text={taskBadge.text} /> : <Text type=\"secondary\">未执行</Text>}\n          </Descriptions.Item>\n          {plan?.addons && plan.addons.length > 0 && (\n            <Descriptions.Item label=\"附加组件\" span={3}>\n              <Space wrap>\n                {plan.addons.map((addon: string) => <Tag key={addon}>{addon}</Tag>)}\n              </Space>\n            </Descriptions.Item>\n          )}\n        </Descriptions>\n\n        {(isDraft || canRetry) && (\n          <Card\n            size=\"small\"\n            title={<Space><SafetyCertificateOutlined />部署就绪检查</Space>}\n            extra={<Button size=\"small\" icon={<ReloadOutlined />} loading={preflightLoading} onClick={() => runPreflight()}>重新检查</Button>}\n            style={{ marginBottom: 16 }}\n          >\n            {preflightFailed ? (\n              <Alert type=\"error\" showIcon message=\"无法完成部署预检\" description=\"请确认后端服务可用且当前账号具有部署执行权限，然后重新检查。\" />\n            ) : !preflight ? (\n              <Spin />\n            ) : (\n              <>\n                <Alert\n                  type={preflight.ready ? 'success' : 'error'}\n                  showIcon\n                  message={preflight.ready ? '预检通过，可以执行部署' : '预检未通过，执行已被阻止'}\n                  description={`检查时间：${new Date(preflight.checkedAt).toLocaleString()}`}\n                  style={{ marginBottom: 12 }}\n                />\n                <Space direction=\"vertical\" size={8} style={{ width: '100%' }}>\n                  {preflight.checks.map((check: any) => (\n                    <div key={check.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>\n                      {check.status === 'passed'\n                        ? <CheckCircleOutlined style={{ color: '#52c41a', marginTop: 3 }} />\n                        : <CloseCircleOutlined style={{ color: check.status === 'warning' ? '#faad14' : '#ff4d4f', marginTop: 3 }} />}\n                      <div style={{ minWidth: 0, flex: 1 }}>\n                        <Text strong>{check.serverName ? `${check.serverName} · ` : ''}{check.message}</Text>\n                        {check.remediation && <div><Text type=\"secondary\">处理建议：{check.remediation}</Text></div>}\n                      </div>\n                      {check.ignorable && (\n                        <Popconfirm\n                          title={check.ignored ? '恢复该项强制检查？' : '确认已评估风险并忽略该项？'}\n                          onConfirm={() => preflightIgnoreMutation.mutate({ key: check.key, ignored: !check.ignored })}\n                        >\n                          <Button size=\"small\" loading={preflightIgnoreMutation.isPending}>\n                            {check.ignored ? '恢复检查' : '忽略此项'}\n                          </Button>\n                        </Popconfirm>\n                      )}\n                    </div>\n                  ))}\n                </Space>\n              </>\n            )}\n          </Card>\n        )}\n\n        {/* 节点拓扑 */}\n        {nodeDetails.length > 0 && (\n          <Card size=\"small\" title={<Space><DesktopOutlined />节点拓扑</Space>} style={{ marginBottom: 16 }}>\n            <Space wrap size={[16, 8]}>\n              {nodeDetails.map((node, i) => (\n                <Card\n                  key={i}\n                  size=\"small\"\n                  style={{ width: 260, background: '#fafafa' }}\n                  title={\n                    <Space>\n                      <Tag color={roleColorMap[node.role] || 'default'}>{node.role?.toUpperCase()}</Tag>\n                      <Text strong>{node.serverName}</Text>\n                    </Space>\n                  }\n                >\n                  <Space direction=\"vertical\" size={2} style={{ width: '100%' }}>\n                    <Text type=\"secondary\">IP: <Text code>{node.serverIP}</Text></Text>\n                    <Text type=\"secondary\">OS: {node.serverOS}</Text>\n                    <Space>\n                      <Badge status={node.serverStatus === 'available' ? 'success' : 'default'} text={node.serverStatus} />\n                    </Space>\n                  </Space>\n                </Card>\n              ))}\n            </Space>\n          </Card>\n        )}\n\n        {/* Ansible 执行配置 */}\n        <Card size=\"small\" title=\"Ansible 执行配置\" style={{ marginBottom: 16 }} loading={ansibleConfigLoading}>\n          {!ansibleConfig ? (\n            <Alert type=\"warning\" showIcon message=\"暂无执行配置\" />\n          ) : (\n            <Collapse ghost>\n              <Collapse.Panel header={<Text strong>Playbook：{ansibleConfig.playbookPath}</Text>} key=\"playbook\">\n                <Alert type=\"info\" showIcon message=\"该 playbook 为项目内置，实际执行时会根据计划生成动态 inventory 和 extra vars。\" style={{ marginBottom: 8 }} />\n                <YamlEditor readOnly value={`# 实际执行命令示例\\nansible-playbook ${ansibleConfig.playbookPath} -i <动态 inventory> \\\\\\n  -e k8s_version=${ansibleConfig.extraVars?.k8sVersion || ''} \\\\\\n  -e pod_cidr=${ansibleConfig.extraVars?.podCidr || ''} \\\\\\n  -e svc_cidr=${ansibleConfig.extraVars?.svcCidr || ''} \\\\\\n  -e cni_type=${ansibleConfig.extraVars?.cniType || ''}\\\\n\\\\n# 完整 extra vars\\\\n${JSON.stringify(ansibleConfig.extraVars || {}, null, 2)}`} height={260} />\n              </Collapse.Panel>\n              <Collapse.Panel header={<Text strong>Inventory（密码已脱敏）</Text>} key=\"inventory\">\n                <YamlEditor readOnly value={ansibleConfig.inventory || '# 暂无 inventory'} height={320} />\n              </Collapse.Panel>\n            </Collapse>\n          )}\n        </Card>\n\n        {/* 草稿状态提示 */}\n        {isDraft && !taskId && (\n          <Card style={{ marginBottom: 16 }}>\n            <Empty\n              description=\"该部署方案尚未执行\"\n              image={Empty.PRESENTED_IMAGE_SIMPLE}\n            >\n              <Popconfirm title=\"确认执行该部署方案？\" onConfirm={() => executeMutation.mutate()}>\n                <Button type=\"primary\" icon={<PlayCircleOutlined />} disabled={!preflight?.ready} loading={executeMutation.isPending}>\n                  立即执行部署\n                </Button>\n              </Popconfirm>\n            </Empty>\n          </Card>\n        )}\n\n        {/* 部署进度 + 日志 左右布局 */}\n        {task && task.steps && task.steps.length > 0 && (\n          <Card size=\"small\" title=\"部署进度\" style={{ marginBottom: 16 }}>\n            {task?.percent != null && (\n              <Progress\n                percent={task.percent}\n                status={task.status === 'failed' ? 'exception' : task.status === 'success' ? 'success' : 'active'}\n                style={{ marginBottom: 16 }}\n              />\n            )}\n            <div style={{ display: 'flex', gap: 16, minHeight: 520 }}>\n              {/* 左侧步骤树 */}\n              <div style={{ width: 360, flexShrink: 0, borderRight: '1px solid #f0f0f0', paddingRight: 12 }}>\n                <StepTree\n                  task={task}\n                  canRetry={canRetry}\n                  selectedStepKey={selectedStepKey}\n                  selectedSubStepKey={selectedSubStepKey}\n                  onSelectStep={handleSelectStep}\n                  onSelectSubStep={handleSelectSubStep}\n                  onRetryStep={(stepKey) => retryStepMutation.mutate({ stepKey })}\n                  retrying={retryStepMutation.isPending}\n                />\n              </div>\n\n              {/* 右侧日志面板 */}\n              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>\n                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>\n                  <Space>\n                    <Text strong>\n                      {selectedSubStepKey\n                        ? task.steps?.find((s: DeployTaskStep) => s.key === selectedStepKey)?.subSteps?.find((s: DeployTaskSubStep) => s.key === selectedSubStepKey)?.title\n                        : selectedStepKey\n                          ? stepTitleMap[selectedStepKey] || selectedStepKey\n                          : '全部日志'}\n                    </Text>\n                    {sseConnected && <Badge status=\"processing\" text=\"实时连接\" />}\n                    {!sseConnected && isRunning && <Badge status=\"warning\" text=\"重连中\" />}\n                    {task && task.status !== 'running' && task.status !== 'pending' && (\n                      <Badge status=\"default\" text=\"已结束\" />\n                    )}\n                    {logs.length > 0 && <Text type=\"secondary\" style={{ fontSize: 12 }}>({filteredLogs.length} / {logs.length} 行)</Text>}\n                  </Space>\n                  <Space>\n                    <Input\n                      size=\"small\"\n                      placeholder=\"过滤日志...\"\n                      prefix={<SearchOutlined />}\n                      value={logFilter}\n                      onChange={(e) => setLogFilter(e.target.value)}\n                      style={{ width: 180 }}\n                      allowClear\n                    />\n                    <Tooltip title=\"下载日志\">\n                      <Button size=\"small\" icon={<DownloadOutlined />} onClick={handleDownloadLogs} disabled={logs.length === 0} />\n                    </Tooltip>\n                  </Space>\n                </div>\n                <div\n                  ref={logContainerRef}\n                  style={{\n                    flex: 1,\n                    background: '#1e1e1e',\n                    color: '#d4d4d4',\n                    fontFamily: 'Consolas, Monaco, \"Courier New\", monospace',\n                    fontSize: 13,\n                    lineHeight: 1.6,\n                    padding: 16,\n                    borderRadius: 6,\n                    overflowY: 'auto',\n                    whiteSpace: 'pre-wrap',\n                    wordBreak: 'break-all',\n                  }}\n                >\n                  {logs.length === 0 ? (\n                    <span style={{ color: '#666' }}>\n                      {isDraft ? '# 当前方案尚未执行，点击上方\"执行部署\"按钮开始' : '# 暂无日志，等待任务开始...'}\n                    </span>\n                  ) : filteredLogs.length === 0 ? (\n                    <span style={{ color: '#666' }}># 无匹配的日志行</span>\n                  ) : (\n                    filteredLogs.map((line, i) => (\n                      <div key={i} style={{ color: getLogColor(line) }}>\n                        {line || ' '}\n                      </div>\n                    ))\n                  )}\n                </div>\n              </div>\n            </div>\n          </Card>\n        )}\n      </Card>\n    </AppPage>\n  )\n}\n\n// 步骤树组件\nfunction StepTree({\n  task,\n  canRetry,\n  selectedStepKey,\n  selectedSubStepKey,\n  onSelectStep,\n  onSelectSubStep,\n  onRetryStep,\n  retrying,\n}: {\n  task: DeployTask\n  canRetry: boolean\n  selectedStepKey: string | null\n  selectedSubStepKey: string | null\n  onSelectStep: (key: string) => void\n  onSelectSubStep: (stepKey: string, subKey: string) => void\n  onRetryStep: (key: string) => void\n  retrying: boolean\n}) {\n  const stepMap = useMemo(() => {\n    const map = new Map<string, DeployTaskStep>()\n    task.steps?.forEach((s) => map.set(s.key, s))\n    return map\n  }, [task.steps])\n\n  return (\n    <Space direction=\"vertical\" size={16} style={{ width: '100%' }}>\n      {stageGroups.map((stage, stageIdx) => (\n        <div key={stage.key}>\n          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>\n            <div style={{\n              width: 24,\n              height: 24,\n              borderRadius: '50%',\n              background: '#1677ff',\n              color: '#fff',\n              display: 'flex',\n              alignItems: 'center',\n              justifyContent: 'center',\n              fontSize: 12,\n              fontWeight: 'bold',\n            }}>\n              {stageIdx + 1}\n            </div>\n            <Text strong style={{ fontSize: 14 }}>{stage.title}</Text>\n          </div>\n          <div style={{ paddingLeft: 12, borderLeft: '2px solid #e6e6e6', marginLeft: 11 }}>\n            {stage.steps.map((stepKey, idx) => {\n              const step = stepMap.get(stepKey)\n              if (!step) return null\n              const isSelected = selectedStepKey === stepKey && !selectedSubStepKey\n              const stepFailed = step.status === 'failed'\n              const stepSuccess = step.status === 'success'\n              const stepRunning = step.status === 'running'\n              return (\n                <div key={stepKey} style={{ marginBottom: 8 }}>\n                  <div\n                    onClick={() => onSelectStep(stepKey)}\n                    style={{\n                      display: 'flex',\n                      alignItems: 'center',\n                      justifyContent: 'space-between',\n                      padding: '8px 12px',\n                      borderRadius: 6,\n                      background: isSelected ? '#e6f4ff' : stepSuccess ? '#f6ffed' : '#fafafa',\n                      border: `1px solid ${isSelected ? '#91caff' : stepSuccess ? '#b7eb8f' : '#f0f0f0'}`,\n                      cursor: 'pointer',\n                      transition: 'all 0.2s',\n                    }}\n                  >\n                    <Space>\n                      <span style={{ color: stepSuccess ? '#52c41a' : stepFailed ? '#ff4d4f' : stepRunning ? '#1677ff' : '#999', fontWeight: 500 }}>\n                        {stageIdx + 1}-{idx + 1} {step.title}\n                      </span>\n                      {stepRunning && <Badge status=\"processing\" />}\n                    </Space>\n                    <Space>\n                      {stepSuccess && <CheckCircleOutlined style={{ color: '#52c41a' }} />}\n                      {stepFailed && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}\n                      {stepFailed && canRetry && (\n                        <Button\n                          size=\"small\"\n                          type=\"primary\"\n                          danger\n                          icon={<RedoOutlined />}\n                          loading={retrying}\n                          onClick={(e) => {\n                            e.stopPropagation()\n                            onRetryStep(stepKey)\n                          }}\n                        >\n                          重试\n                        </Button>\n                      )}\n                    </Space>\n                  </div>\n                  {step.subSteps && step.subSteps.length > 0 && (\n                    <div style={{ paddingLeft: 12, marginTop: 4 }}>\n                      {step.subSteps.map((sub) => {\n                        const subSelected = selectedSubStepKey === sub.key\n                        const subSuccess = sub.status === 'success'\n                        const subFailed = sub.status === 'failed'\n                        const subRunning = sub.status === 'running'\n                        return (\n                          <div\n                            key={sub.key}\n                            onClick={() => onSelectSubStep(stepKey, sub.key)}\n                            style={{\n                              display: 'flex',\n                              alignItems: 'center',\n                              gap: 8,\n                              padding: '6px 10px',\n                              marginBottom: 4,\n                              borderRadius: 4,\n                              background: subSelected ? '#e6f4ff' : '#fff',\n                              cursor: 'pointer',\n                            }}\n                          >\n                            <CodeOutlined style={{ color: '#8c8c8c', fontSize: 12 }} />\n                            <Text style={{ fontSize: 13, flex: 1, color: subSuccess ? '#52c41a' : subFailed ? '#ff4d4f' : subRunning ? '#1677ff' : '#595959' }}>\n                              {sub.title}\n                            </Text>\n                            {subSuccess && <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 12 }} />}\n                            {subFailed && <CloseCircleOutlined style={{ color: '#ff4d4f', fontSize: 12 }} />}\n                            {subRunning && <Badge status=\"processing\" />}\n                          </div>\n                        )\n                      })}\n                    </div>\n                  )}\n                </div>\n              )\n            })}\n          </div>\n        </div>\n      ))}\n    </Space>\n  )\n}\n\n/** 根据 Ansible 输出格式着色 */\nfunction getLogColor(line: string): string {\n  const trimmed = line.trim()\n  if (trimmed.startsWith('PLAY [') || trimmed.startsWith('PLAY RECAP')) return '#569cd6'\n  if (trimmed.startsWith('TASK [')) return '#c586c0'\n  if (trimmed.includes('ok:') && !trimmed.includes('failed')) return '#4ec9b0'\n  if (trimmed.startsWith('changed:') || trimmed.includes('changed=1')) return '#cca700'\n  if (trimmed.includes('failed:') || trimmed.includes('FAILED') || trimmed.includes('fatal:')) return '#f44747'\n  if (trimmed.startsWith('skipping:') || trimmed.includes('skipped')) return '#808080'\n  if (line.includes('[error]') || line.includes('[ERROR]')) return '#f44747'\n  if (line.includes('[warn]') || line.includes('[WARN]')) return '#cca700'\n  if (line.includes('[info]') || line.includes('[INFO]')) return '#4ec9b0'\n  return '#d4d4d4'\n}\n",
       "__isJSFile": true,
       "__absFile": "D:/03_学习/soft/k8s-platform/frontend/src/pages/deploy/detail.tsx"
     },
@@ -6204,7 +6204,7 @@
       "rootContainer"
     ]
   },
-  "locale": "en-US",
+  "locale": "zh-CN",
   "globalCSS": [
     "D:\\03_学习\\soft\\k8s-platform\\frontend\\src\\global.less"
   ],
@@ -6218,8 +6218,7 @@
   },
   "framework": "react",
   "typescript": {
-    "tsVersion": "5.9.3",
-    "tslibVersion": "2.8.1"
+    "tsVersion": "5.9.3"
   },
   "faviconFiles": [],
   "antd": {

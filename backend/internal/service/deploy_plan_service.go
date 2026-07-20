@@ -380,6 +380,10 @@ func (s *DeployService) DeletePlan(ctx context.Context, id uint64) error {
 }
 
 func (s *DeployService) ExecutePlan(ctx context.Context, id uint64, userID uint64) (uint64, error) {
+	return s.executePlanWithRetryStep(ctx, id, userID, "")
+}
+
+func (s *DeployService) executePlanWithRetryStep(ctx context.Context, id uint64, userID uint64, retryFromStep string) (uint64, error) {
 	if id == 0 {
 		return 0, ErrInvalidParams
 	}
@@ -403,9 +407,16 @@ func (s *DeployService) ExecutePlan(ctx context.Context, id uint64, userID uint6
 			return ErrWithMessage(ErrConflict, "当前状态不允许执行部署")
 		}
 		title := "部署集群 " + plan.ClusterName
+		if retryFromStep != "" {
+			title += "（从步骤重试）"
+		}
 		percent := 0
 		message := "部署任务已创建，正在执行"
-		task := &Task{Type: "deploy_cluster", Status: TaskPending, Title: &title, CreatedBy: int64(userID), Percent: &percent, Message: &message, Meta: map[string]any{"deploy_plan_id": plan.ID}}
+		meta := map[string]any{"deploy_plan_id": plan.ID}
+		if retryFromStep != "" {
+			meta["retry_from_step"] = retryFromStep
+		}
+		task := &Task{Type: "deploy_cluster", Status: TaskPending, Title: &title, CreatedBy: int64(userID), Percent: &percent, Message: &message, Meta: meta}
 		if err := s.taskStore.Put(task); err != nil {
 			return err
 		}
@@ -418,6 +429,34 @@ func (s *DeployService) ExecutePlan(ctx context.Context, id uint64, userID uint6
 	// 异步启动 Ansible 部署流水线
 	go s.ansiblePipeline(context.Background(), id, int64(taskID))
 	return taskID, nil
+}
+
+// RetryStep 从指定步骤开始重试部署。
+func (s *DeployService) RetryStep(ctx context.Context, id uint64, stepKey string, userID uint64) (uint64, error) {
+	if stepKey == "" {
+		return 0, ErrWithMessage(ErrInvalidParams, "步骤 key 不能为空")
+	}
+	var found bool
+	for _, st := range ansibleSteps {
+		if st.Key == stepKey {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return 0, ErrWithMessage(ErrInvalidParams, "未知的步骤 key")
+	}
+	var plan model.DeployPlan
+	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&plan).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, ErrNotFound
+		}
+		return 0, err
+	}
+	if plan.Status != "failed" && plan.Status != "cancelled" {
+		return 0, ErrWithMessage(ErrConflict, "仅失败或已取消的计划可重试步骤")
+	}
+	return s.executePlanWithRetryStep(ctx, id, userID, stepKey)
 }
 
 func (s *DeployService) CancelPlan(ctx context.Context, id uint64) error {
@@ -449,7 +488,25 @@ func (s *DeployService) RetryPlan(ctx context.Context, id uint64, userID uint64)
 	if plan.Status != "failed" && plan.Status != "cancelled" {
 		return 0, ErrWithMessage(ErrConflict, "仅失败或已取消的计划可重试")
 	}
-	return s.ExecutePlan(ctx, id, userID)
+	// 默认从上次任务的第一个失败步骤开始重试，避免从头全部重跑
+	retryFromStep := ""
+	if plan.TaskID != nil && *plan.TaskID > 0 {
+		if task, ok := s.taskStore.Get(int64(*plan.TaskID)); ok {
+			validKeys := make(map[string]struct{}, len(ansibleSteps))
+			for _, st := range ansibleSteps {
+				validKeys[st.Key] = struct{}{}
+			}
+			for _, st := range task.Steps {
+				if st.Status == StepFailed {
+					if _, ok := validKeys[st.Key]; ok {
+						retryFromStep = st.Key
+						break
+					}
+				}
+			}
+		}
+	}
+	return s.executePlanWithRetryStep(ctx, id, userID, retryFromStep)
 }
 
 func (s *DeployService) updatePlanStatus(ctx context.Context, id uint64, from string, to string) error {

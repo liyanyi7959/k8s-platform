@@ -13,8 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/crypto/ssh"
 	"k8s-platform-backend/internal/model"
+
+	"golang.org/x/crypto/ssh"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -74,7 +75,7 @@ func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.Deplo
 		task.AppendLog("[runner] " + strings.TrimSpace(output))
 	}
 
-	archive, err := s.buildRunnerArchive(ctx, plan, nodes, workspace)
+	archive, err := s.buildRunnerArchive(ctx, plan, nodes, workspace, task)
 	if err != nil {
 		return "", err
 	}
@@ -125,7 +126,7 @@ command -v tar >/dev/null 2>&1
 ansible-playbook --version | head -n 1`
 }
 
-func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, workspace string) ([]byte, error) {
+func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, workspace string, task *Task) ([]byte, error) {
 	var masters, workers []inventoryHost
 	keys := map[string]string{}
 	ignoredDiskHosts := make([]string, 0)
@@ -155,12 +156,23 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 	if err != nil {
 		return nil, err
 	}
-	extraVars, err := json.Marshal(map[string]any{
+	// 计算重试时需要执行的步骤列表；为空表示全部执行（不传 retry_enabled_steps）
+	retryFromStep, _ := task.Meta["retry_from_step"].(string)
+	enabledSteps := computeEnabledSteps(retryFromStep)
+	if retryFromStep != "" {
+		task.AppendLog(fmt.Sprintf("[info] 从步骤 %s 开始重试，将跳过已成功的步骤", retryFromStep), "")
+		_ = s.taskStore.Put(task)
+	}
+	extraVarsMap := map[string]any{
 		"k8s_version": plan.K8sVersion, "k8s_package_version": strings.TrimPrefix(plan.K8sVersion, "v"),
 		"k8s_minor_version": extractMinorVersion(plan.K8sVersion), "pod_cidr": plan.PodCIDR,
 		"svc_cidr": plan.SvcCIDR, "cni_type": plan.CNIType, "cluster_name": plan.ClusterName,
 		"addons": []string(plan.Addons), "preflight_ignored_disk_hosts": ignoredDiskHosts,
-	})
+	}
+	if len(enabledSteps) > 0 {
+		extraVarsMap["retry_enabled_steps"] = enabledSteps
+	}
+	extraVars, err := json.Marshal(extraVarsMap)
 	if err != nil {
 		return nil, err
 	}

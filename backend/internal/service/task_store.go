@@ -72,6 +72,16 @@ type TaskStep struct {
 	StartedAt  *time.Time     `json:"started_at,omitempty"`
 	FinishedAt *time.Time     `json:"finished_at,omitempty"`
 	Message    *string        `json:"message,omitempty"`
+	SubSteps   []TaskSubStep  `json:"sub_steps,omitempty"`
+}
+
+// TaskSubStep 表示大步骤下的子命令/子任务。
+type TaskSubStep struct {
+	Key        string         `json:"key"`
+	Title      string         `json:"title"`
+	Status     TaskStepStatus `json:"status"`
+	StartedAt  *time.Time     `json:"started_at,omitempty"`
+	FinishedAt *time.Time     `json:"finished_at,omitempty"`
 }
 
 type TaskStore struct {
@@ -176,6 +186,7 @@ func taskToModelAndUpdates(t *Task) (*model.Task, map[string]any) {
 				Status:     string(st.Status),
 				StartedAt:  st.StartedAt,
 				FinishedAt: st.FinishedAt,
+				SubSteps:   subStepsToModel(st.SubSteps),
 			}
 			if st.Message != nil {
 				steps[i].Message = *st.Message
@@ -256,6 +267,7 @@ func (s *TaskStore) toDTO(m *model.Task) *Task {
 				Status:     TaskStepStatus(st.Status),
 				StartedAt:  st.StartedAt,
 				FinishedAt: st.FinishedAt,
+				SubSteps:   subStepsFromModel(st.SubSteps),
 			}
 			if st.Message != "" {
 				msg := st.Message
@@ -267,28 +279,70 @@ func (s *TaskStore) toDTO(m *model.Task) *Task {
 	return t
 }
 
-// AppendLog 写入日志到 DB
-func (t *Task) AppendLog(line string) {
+func subStepsToModel(subs []TaskSubStep) []model.TaskSubStep {
+	if subs == nil {
+		return nil
+	}
+	out := make([]model.TaskSubStep, len(subs))
+	for i, s := range subs {
+		out[i] = model.TaskSubStep{
+			Key:        s.Key,
+			Title:      s.Title,
+			Status:     string(s.Status),
+			StartedAt:  s.StartedAt,
+			FinishedAt: s.FinishedAt,
+		}
+	}
+	return out
+}
+
+func subStepsFromModel(subs []model.TaskSubStep) []TaskSubStep {
+	if subs == nil {
+		return nil
+	}
+	out := make([]TaskSubStep, len(subs))
+	for i, s := range subs {
+		out[i] = TaskSubStep{
+			Key:        s.Key,
+			Title:      s.Title,
+			Status:     TaskStepStatus(s.Status),
+			StartedAt:  s.StartedAt,
+			FinishedAt: s.FinishedAt,
+		}
+	}
+	return out
+}
+
+// AppendLog 写入日志到 DB，stepKey 用于按步骤过滤日志。
+func (t *Task) AppendLog(line string, stepKey ...string) {
 	if t.store == nil || t.store.db == nil {
 		return
 	}
+	key := ""
+	if len(stepKey) > 0 {
+		key = stepKey[0]
+	}
 	t.store.db.Create(&model.TaskLog{
 		TaskID:  uint64(t.ID),
+		StepKey: key,
 		Content: line,
 	})
 }
 
-// Logs 分页获取日志
-func (t *Task) Logs(offset, limit int) []string {
+// Logs 分页获取日志，支持按 stepKey 过滤。
+func (t *Task) Logs(offset, limit int, stepKey ...string) []string {
 	if t.store == nil || t.store.db == nil {
 		return []string{}
 	}
 	var logs []model.TaskLog
-	t.store.db.Where("task_id = ?", t.ID).
-		Order("id asc").
-		Offset(offset).
-		Limit(limit).
-		Find(&logs)
+	q := t.store.db.Where("task_id = ?", t.ID).Order("id asc")
+	if len(stepKey) > 0 && stepKey[0] != "" {
+		q = q.Where("step_key = ?", stepKey[0])
+	}
+	if limit > 0 {
+		q = q.Offset(offset).Limit(limit)
+	}
+	q.Find(&logs)
 
 	out := make([]string, len(logs))
 	for i, l := range logs {

@@ -35,6 +35,7 @@ type Task struct {
 type TaskLog struct {
 	ID        uint64    `gorm:"primaryKey;autoIncrement"`
 	TaskID    uint64    `gorm:"index;not null"`
+	StepKey   string    `gorm:"column:step_key;size:128;not null;default:'';index"`
 	Content   string    `gorm:"type:text;not null"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP(3)"`
 }
@@ -65,12 +66,22 @@ func (j JSONMap) Value() (driver.Value, error) {
 type JSONSteps []TaskStep
 
 type TaskStep struct {
+	Key        string      `json:"key"`
+	Title      string      `json:"title"`
+	Status     string      `json:"status"` // pending/running/success/failed
+	StartedAt  *time.Time  `json:"started_at,omitempty"`
+	FinishedAt *time.Time  `json:"finished_at,omitempty"`
+	Message    string      `json:"message,omitempty"`
+	SubSteps   []TaskSubStep `json:"sub_steps,omitempty"`
+}
+
+// TaskSubStep 任务子步骤。
+type TaskSubStep struct {
 	Key        string     `json:"key"`
 	Title      string     `json:"title"`
-	Status     string     `json:"status"` // pending/running/success/failed
+	Status     string     `json:"status"`
 	StartedAt  *time.Time `json:"started_at,omitempty"`
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
-	Message    string     `json:"message,omitempty"`
 }
 
 func (j *JSONSteps) Scan(value interface{}) error {

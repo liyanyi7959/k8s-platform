@@ -30,11 +30,32 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 
 	// 初始化步骤状态
 	task.Steps = make([]TaskStep, len(ansibleSteps))
+	retryFromStep, _ := task.Meta["retry_from_step"].(string)
+	startIdx := 0
+	if retryFromStep != "" {
+		for i, step := range ansibleSteps {
+			if step.Key == retryFromStep {
+				startIdx = i
+				break
+			}
+		}
+	}
+	now := time.Now().UTC()
 	for i, step := range ansibleSteps {
+		status := StepPending
+		if retryFromStep != "" && i < startIdx {
+			status = StepSuccess
+		}
 		task.Steps[i] = TaskStep{
-			Key:    step.Key,
-			Title:  step.Title,
-			Status: StepPending,
+			Key:        step.Key,
+			Title:      step.Title,
+			Status:     status,
+			StartedAt:  nil,
+			FinishedAt: nil,
+		}
+		if status == StepSuccess {
+			task.Steps[i].StartedAt = &now
+			task.Steps[i].FinishedAt = &now
 		}
 	}
 	percent := 0
@@ -56,15 +77,18 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 		return
 	}
 
-	task.AppendLog("[info] 正在准备 Master 临时 Runner")
-	task.AppendLog(fmt.Sprintf("[info] 集群: %s, K8s 版本: %s, CNI: %s", plan.ClusterName, plan.K8sVersion, plan.CNIType))
+	task.AppendLog("[info] 正在准备 Master 临时 Runner", "")
+	task.AppendLog(fmt.Sprintf("[info] 集群: %s, K8s 版本: %s, CNI: %s", plan.ClusterName, plan.K8sVersion, plan.CNIType), "")
 	_ = s.taskStore.Put(task)
 
-	// 标记第一个步骤为运行中
-	if len(task.Steps) > 0 {
-		task.Steps[0].Status = StepRunning
-		_ = s.taskStore.Put(task)
+	// 标记第一个待执行步骤为运行中（重试场景下会跳过已标记为 success 的步骤）
+	for i := range task.Steps {
+		if task.Steps[i].Status != StepSuccess {
+			task.Steps[i].Status = StepRunning
+			break
+		}
 	}
+	_ = s.taskStore.Put(task)
 
 	kubeconfig, err := s.runAnsibleOnMaster(ctx, plan, nodes, task)
 
@@ -110,7 +134,7 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 		s.updatePlanStatusDirect(ctx, planID, "failed")
 		return
 	}
-	task.AppendLog(fmt.Sprintf("[info] 集群 %s 注册成功，ID: %d", plan.ClusterName, clusterID))
+	task.AppendLog(fmt.Sprintf("[info] 集群 %s 注册成功，ID: %d", plan.ClusterName, clusterID), "")
 	_ = s.taskStore.Put(task)
 
 	// 全部成功

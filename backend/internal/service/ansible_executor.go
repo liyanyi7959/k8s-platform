@@ -33,6 +33,25 @@ var ansibleSteps = []ansibleStepDef{
 	{Key: "register", Title: "节点注册到管理平台", PlayName: "节点注册到管理平台"},
 }
 
+// computeEnabledSteps 根据起始步骤 key 返回需要执行的步骤 key 列表。
+// retryFromStep 为空时返回 nil，表示执行全部步骤（不传 retry_enabled_steps）。
+func computeEnabledSteps(retryFromStep string) []string {
+	if retryFromStep == "" {
+		return nil
+	}
+	started := false
+	var steps []string
+	for _, step := range ansibleSteps {
+		if step.Key == retryFromStep {
+			started = true
+		}
+		if started {
+			steps = append(steps, step.Key)
+		}
+	}
+	return steps
+}
+
 // ansibleLogWriter 自定义 io.Writer，逐行捕获 Ansible 输出并写入 Task 日志
 type ansibleLogWriter struct {
 	task      *Task
@@ -45,8 +64,9 @@ type ansibleLogWriter struct {
 
 func newAnsibleLogWriter(task *Task, store *TaskStore) *ansibleLogWriter {
 	return &ansibleLogWriter{
-		task:  task,
-		store: store,
+		task:      task,
+		store:     store,
+		stepIndex: -1,
 	}
 }
 
@@ -68,8 +88,8 @@ func (w *ansibleLogWriter) Write(p []byte) (n int, err error) {
 		// 解析步骤进度
 		w.parseStepProgress(line)
 
-		// 写入日志
-		w.task.AppendLog(line)
+		// 写入日志（带当前 step key）
+		w.task.AppendLog(line, w.currentStepKey())
 	}
 
 	// 批量保存任务状态
@@ -82,32 +102,41 @@ func (w *ansibleLogWriter) flush() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if len(w.buf) > 0 {
-		w.task.AppendLog(string(w.buf))
+		w.task.AppendLog(string(w.buf), w.currentStepKey())
 		w.buf = nil
 		_ = w.store.Put(w.task)
 	}
 }
 
+// currentStepKey 返回当前执行步骤的 key。
+func (w *ansibleLogWriter) currentStepKey() string {
+	if w.stepIndex >= 0 && w.stepIndex < len(ansibleSteps) {
+		return ansibleSteps[w.stepIndex].Key
+	}
+	return ""
+}
+
 // parseStepProgress 从 Ansible 输出行中解析步骤进度
-// 匹配 "PLAY [名称]" 格式的行来更新步骤状态
+// 匹配 "PLAY [名称]" 更新大步骤，匹配 "TASK [role : task]" 更新子步骤。
 func (w *ansibleLogWriter) parseStepProgress(line string) {
 	trimmed := strings.TrimSpace(line)
+	now := time.Now().UTC()
 
 	// 检测 PLAY 开始：PLAY [环境预检 - 所有节点] 或 PLAY [Kubernetes Master 初始化]
 	if strings.HasPrefix(trimmed, "PLAY [") {
 		playName := extractPlayName(trimmed)
 		for i, step := range ansibleSteps {
 			if strings.Contains(playName, step.PlayName) {
-				now := time.Now().UTC()
 				// 标记前序步骤为完成
 				for j := 0; j < i && j < len(w.task.Steps); j++ {
 					if w.task.Steps[j].Status == StepRunning {
 						w.task.Steps[j].Status = StepSuccess
 						w.task.Steps[j].FinishedAt = &now
+						w.finishRunningSubStep(j, now)
 					}
 				}
-				// 标记当前步骤为执行中
-				if i < len(w.task.Steps) {
+				// 标记当前步骤为执行中（重试场景下已被标记为 success 的步骤不覆盖，避免把跳过的步骤重新置为 running）
+				if i < len(w.task.Steps) && w.task.Steps[i].Status != StepSuccess {
 					w.task.Steps[i].Status = StepRunning
 					if w.task.Steps[i].StartedAt == nil {
 						w.task.Steps[i].StartedAt = &now
@@ -121,21 +150,71 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 		}
 	}
 
+	// 检测 TASK 开始
+	if strings.HasPrefix(trimmed, "TASK [") {
+		taskName := extractPlayName(trimmed)
+		if taskName != "" && w.stepIndex >= 0 && w.stepIndex < len(w.task.Steps) {
+			step := &w.task.Steps[w.stepIndex]
+			// 结束当前运行中的子步骤
+			w.finishRunningSubStep(w.stepIndex, now)
+			// 查找或创建子步骤
+			found := false
+			for k := range step.SubSteps {
+				if step.SubSteps[k].Title == taskName {
+					step.SubSteps[k].Status = StepRunning
+					step.SubSteps[k].StartedAt = &now
+					step.SubSteps[k].FinishedAt = nil
+					found = true
+					break
+				}
+			}
+			if !found {
+				key := fmt.Sprintf("%s-%d", step.Key, len(step.SubSteps))
+				step.SubSteps = append(step.SubSteps, TaskSubStep{
+					Key:       key,
+					Title:     taskName,
+					Status:    StepRunning,
+					StartedAt: &now,
+				})
+			}
+		}
+	}
+
 	// 检测 PLAY RECAP（全部完成）
 	if strings.HasPrefix(trimmed, "PLAY RECAP") {
-		now := time.Now().UTC()
 		for i := range w.task.Steps {
 			if w.task.Steps[i].Status == StepRunning {
 				w.task.Steps[i].Status = StepSuccess
 				w.task.Steps[i].FinishedAt = &now
+				w.finishRunningSubStep(i, now)
 			}
 		}
 	}
 
 	// 检测失败：failed=1
 	if strings.Contains(trimmed, "failed=1") || strings.Contains(trimmed, "FAILED") {
-		if w.stepIndex < len(w.task.Steps) {
+		if w.stepIndex >= 0 && w.stepIndex < len(w.task.Steps) {
 			w.task.Steps[w.stepIndex].Status = StepFailed
+			w.task.Steps[w.stepIndex].FinishedAt = &now
+			w.finishRunningSubStep(w.stepIndex, now)
+		}
+	}
+}
+
+// finishRunningSubStep 将指定大步骤下运行中的子步骤标记为完成（根据最终状态）。
+func (w *ansibleLogWriter) finishRunningSubStep(stepIdx int, t time.Time) {
+	if stepIdx < 0 || stepIdx >= len(w.task.Steps) {
+		return
+	}
+	step := &w.task.Steps[stepIdx]
+	for k := range step.SubSteps {
+		if step.SubSteps[k].Status == StepRunning {
+			step.SubSteps[k].FinishedAt = &t
+			if step.Status == StepFailed {
+				step.SubSteps[k].Status = StepFailed
+			} else {
+				step.SubSteps[k].Status = StepSuccess
+			}
 		}
 	}
 }
