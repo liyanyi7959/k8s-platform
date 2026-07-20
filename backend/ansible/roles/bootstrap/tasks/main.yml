@@ -1,52 +1,57 @@
----
+﻿---
 # 基础环境初始化 role
 # 在所有节点上配置 Kubernetes 所需的基础环境
 
 # 1. 关闭 swap
 - name: 临时关闭 swap
-  ansible.builtin.command: swapoff -a
+  command: swapoff -a
   changed_when: false
 
 - name: 永久关闭 swap (注释 /etc/fstab 中的 swap 行)
-  ansible.builtin.replace:
+  replace:
     path: /etc/fstab
     regexp: '^([^#].*\sswap\s)'
     replace: '# \1'
 
 # 2. 加载内核模块
 - name: 加载所需内核模块
-  ansible.builtin.command: "modprobe {{ item }}"
+  command: "modprobe {{ item }}"
   changed_when: false
   loop: "{{ required_kernel_modules }}"
 
 - name: 持久化内核模块加载配置
-  ansible.builtin.template:
+  template:
     src: modules-load.conf.j2
     dest: /etc/modules-load.d/k8s.conf
     mode: '0644'
 
 # 3. 设置 sysctl 参数
 - name: 持久化 sysctl 配置文件
-  ansible.builtin.template:
+  template:
     src: sysctl-k8s.conf.j2
     dest: /etc/sysctl.d/k8s.conf
     mode: '0644'
 
 - name: 应用 Kubernetes sysctl 参数
-  ansible.builtin.command: sysctl --system
+  command: sysctl --system
+  changed_when: false
+
+- name: 强制应用 Kubernetes 运行时内核参数
+  command: "sysctl -w {{ item.key }}={{ item.value }}"
+  loop: "{{ sysctl_k8s_params | dict2items }}"
   changed_when: false
 
 # 4. 停止并禁用 firewalld
 - name: 停止并禁用 firewalld (RedHat)
-  ansible.builtin.service:
+  service:
     name: firewalld
     state: stopped
     enabled: no
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
   failed_when: false
 
 - name: 停止并禁用 ufw (Debian)
-  ansible.builtin.service:
+  service:
     name: ufw
     state: stopped
     enabled: no
@@ -55,27 +60,27 @@
 
 # 5. 设置 SELinux 为 permissive (仅 RedHat)
 - name: 临时设置 SELinux 为 permissive (RedHat)
-  ansible.builtin.command: setenforce 0
+  command: setenforce 0
   changed_when: false
   failed_when: false
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 - name: 永久设置 SELinux 为 permissive (RedHat)
-  ansible.builtin.replace:
+  replace:
     path: /etc/selinux/config
     regexp: '^SELINUX=.*$'
     replace: 'SELINUX=permissive'
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 # 6. 安装基础依赖包
 - name: 安装基础依赖包 (RedHat)
-  ansible.builtin.yum:
+  yum:
     name: "{{ base_packages_redhat }}"
     state: present
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 - name: 安装基础依赖包 (Debian)
-  ansible.builtin.apt:
+  apt:
     name: "{{ base_packages_debian }}"
     state: present
     update_cache: yes
@@ -83,27 +88,27 @@
 
 # 7. 配置时间同步
 - name: 安装 chrony (RedHat)
-  ansible.builtin.yum:
+  yum:
     name: chrony
     state: present
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 - name: 安装 chrony (Debian)
-  ansible.builtin.apt:
+  apt:
     name: chrony
     state: present
     update_cache: yes
   when: ansible_os_family == "Debian"
 
 - name: 启动并设置 chrony 开机自启 (RedHat)
-  ansible.builtin.service:
+  service:
     name: chronyd
     state: started
     enabled: yes
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 - name: 启动并设置 chrony 开机自启 (Debian)
-  ansible.builtin.service:
+  service:
     name: chrony
     state: started
     enabled: yes
@@ -111,19 +116,26 @@
 
 # 8. 确保 hostname 正确设置
 - name: 检查当前 hostname
-  ansible.builtin.command: hostname
+  command: hostname
   register: current_hostname
   changed_when: false
 
 - name: 设置 hostname (仅在不符合时修改)
-  ansible.builtin.hostname:
+  hostname:
     name: "{{ inventory_hostname }}"
   when: current_hostname.stdout != inventory_hostname
 
+- name: 写入节点 hostname 本地解析
+  lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ ansible_host | regex_escape }}\\s+{{ inventory_hostname | regex_escape }}$"
+    line: "{{ ansible_host }} {{ inventory_hostname }}"
+    state: present
+
 # 配置 Kubernetes 仓库
 - name: 配置 Kubernetes yum 仓库 (RedHat)
-  ansible.builtin.template:
+  template:
     src: kubernetes.repo.j2
     dest: /etc/yum.repos.d/kubernetes.repo
     mode: '0644'
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)

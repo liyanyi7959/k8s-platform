@@ -12,7 +12,7 @@ sysctl_k8s_params:
   net.bridge.bridge-nf-call-iptables: 1
   net.bridge.bridge-nf-call-ip6tables: 1
   net.ipv4.ip_forward: 1
-  fs.inotify.max_persistent_watches: 524288
+  fs.inotify.max_user_watches: 524288
 
 # RedHat 系列基础依赖包
 base_packages_redhat:
@@ -21,7 +21,6 @@ base_packages_redhat:
   - wget
   - curl
   - vim
-  - yum-utils
 
 # Debian 系列基础依赖包
 base_packages_debian:

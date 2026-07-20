@@ -19,6 +19,9 @@ container_runtime: "containerd"
 # API Server
 k8s_api_server_port: 6443
 
+# Kubernetes 控制面镜像源（国内网络默认使用阿里云镜像）
+k8s_image_repository: "registry.aliyuncs.com/google_containers"
+
 # kubeadm init 额外参数
 kubeadm_init_extra_args: ""
 

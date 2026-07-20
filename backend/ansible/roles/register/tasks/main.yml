@@ -1,14 +1,14 @@
----
+﻿---
 # 注册集群到平台
 
 # 0. 在交付 kubeconfig 前验证集群已经可用
 - name: 等待所有 Kubernetes 节点 Ready
-  ansible.builtin.command: kubectl wait --for=condition=Ready nodes --all --timeout=300s
+  command: kubectl wait --for=condition=Ready nodes --all --timeout=300s
   changed_when: false
 
 # kubeconfig 由后端通过 SSH 从 Master 读取，避免依赖控制器操作系统。
 - name: 输出注册信息
-  ansible.builtin.debug:
+  debug:
     msg:
       - "集群注册信息已准备完成"
       - "Master IP: {{ master_ip }}"

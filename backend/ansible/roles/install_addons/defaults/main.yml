@@ -3,3 +3,5 @@ addons: []
 metrics_server_version: "v0.7.2"
 ingress_nginx_version: "controller-v1.11.3"
 local_path_provisioner_version: "v0.0.30"
+kubernetes_image_prefix: "k8s.m.daocloud.io"
+dockerhub_image_prefix: "docker.m.daocloud.io"

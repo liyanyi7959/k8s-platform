@@ -1,27 +1,33 @@
----
+﻿---
 # 容器运行时 (containerd) 安装 role
 # 在所有节点上安装并配置 containerd
 
 # 1. 安装 Docker CE 仓库 (RedHat 系列需要先配置仓库)
 - name: 添加 Docker CE yum 仓库 (RedHat)
-  ansible.builtin.yum_repository:
+  yum_repository:
     name: docker-ce
     description: Docker CE Stable Repository
     # 麒麟 V10 的 RPM ABI 与 EL8 兼容，不能直接拼出不存在的 CentOS 10 仓库。
     baseurl: "https://download.docker.com/linux/centos/{{ '8' if 'kylin' in (ansible_distribution | lower) else ansible_distribution_major_version }}/$basearch/stable"
     gpgcheck: yes
     gpgkey: "https://download.docker.com/linux/centos/gpg"
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
+
+- name: 移除麒麟预装的旧 docker-runc 冲突包
+  yum:
+    name: docker-runc
+    state: absent
+  when: '"Kylin" in ansible_distribution'
 
 # 1. 安装 Docker CE apt 仓库 (Debian 系列需要先配置仓库)
 - name: 添加 Docker CE GPG key (Debian)
-  ansible.builtin.apt_key:
+  apt_key:
     url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
     state: present
   when: ansible_os_family == "Debian"
 
 - name: 添加 Docker CE apt 仓库 (Debian)
-  ansible.builtin.apt_repository:
+  apt_repository:
     repo: "deb https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
     state: present
     update_cache: yes
@@ -29,13 +35,17 @@
 
 # 2. 安装 containerd.io
 - name: 安装 containerd.io (RedHat)
-  ansible.builtin.yum:
+  yum:
     name: "{{ 'containerd.io' if containerd_version == '' else 'containerd.io-' + containerd_version }}"
     state: present
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
+  register: containerd_package_install
+  retries: 3
+  delay: 10
+  until: containerd_package_install is succeeded
 
 - name: 安装 containerd.io (Debian)
-  ansible.builtin.apt:
+  apt:
     name: "{{ 'containerd.io' if containerd_version == '' else 'containerd.io=' + containerd_version }}"
     state: present
     update_cache: yes
@@ -43,53 +53,71 @@
 
 # 3. 创建 containerd 配置目录
 - name: 创建 containerd 配置目录
-  ansible.builtin.file:
+  file:
     path: /etc/containerd
     state: directory
     mode: '0755'
 
-# 4. 生成默认 containerd 配置
-- name: 生成默认 containerd 配置文件
-  ansible.builtin.shell: containerd config default > /etc/containerd/config.toml
-  args:
-    creates: /etc/containerd/config.toml
+- name: 创建标准 CNI 插件目录
+  file:
+    path: /opt/cni/bin
+    state: directory
+    mode: '0755'
 
-# 5. 修改 SystemdCgroup 设置为 true
-- name: 设置 SystemdCgroup 为 true
-  ansible.builtin.lineinfile:
-    path: /etc/containerd/config.toml
-    regexp: '(\s*)SystemdCgroup = .*'
-    line: '\1SystemdCgroup = {{ systemd_cgroup | lower }}'
-    backrefs: yes
-  register: cgroup_changed
+- name: 检查系统 CNI 插件目录
+  stat:
+    path: /usr/libexec/cni
+  register: system_cni_plugin_dir
 
-# 6. 修改 sandbox_image
-- name: 设置 sandbox_image
-  ansible.builtin.lineinfile:
-    path: /etc/containerd/config.toml
-    regexp: '(\s*)sandbox_image = .*'
-    line: '\1sandbox_image = "{{ sandbox_image }}"'
-    backrefs: yes
-  register: sandbox_image_changed
+- name: 同步系统 CNI 插件到 containerd 标准目录
+  copy:
+    src: /usr/libexec/cni/
+    dest: /opt/cni/bin/
+    remote_src: true
+    mode: preserve
+  when: system_cni_plugin_dir.stat.isdir | default(false)
+
+- name: 确保 CNI 插件具备执行权限
+  file:
+    path: /opt/cni/bin
+    state: directory
+    mode: '0755'
+    recurse: true
+  when: system_cni_plugin_dir.stat.isdir | default(false)
+
+- name: 设置 CNI 插件 SELinux 可执行上下文
+  command: chcon -R -t bin_t /opt/cni/bin
+  changed_when: false
+  when:
+    - system_cni_plugin_dir.stat.isdir | default(false)
+    - ansible_selinux.status | default('disabled') == 'enabled'
+
+# 4. 使用受控模板配置 CRI、systemd cgroup 和国内 sandbox 镜像
+- name: 写入 containerd 完整配置
+  template:
+    src: config.toml.j2
+    dest: /etc/containerd/config.toml
+    mode: '0644'
+  register: containerd_config_changed
 
 # 7. 启动并设置 containerd 开机自启
 - name: 重新加载 systemd 配置
-  ansible.builtin.systemd:
+  systemd:
     daemon_reload: yes
-  when: cgroup_changed.changed or sandbox_image_changed.changed
+  when: containerd_config_changed.changed
 
 - name: 启动并设置 containerd 开机自启
-  ansible.builtin.systemd:
+  systemd:
     name: containerd
-    state: "{{ 'restarted' if cgroup_changed.changed or sandbox_image_changed.changed else 'started' }}"
+    state: "{{ 'restarted' if containerd_config_changed.changed else 'started' }}"
     enabled: yes
 
 # 8. 验证 containerd 运行状态
 - name: 验证 containerd 运行状态
-  ansible.builtin.command: ctr version
+  command: ctr version
   register: containerd_status
   changed_when: false
 
 - name: 显示 containerd 版本信息
-  ansible.builtin.debug:
+  debug:
     msg: "containerd 已安装并运行: {{ containerd_status.stdout_lines[0] }}"

@@ -20,6 +20,7 @@ networking:
   serviceSubnet: {{ svc_cidr }}
   dnsDomain: cluster.local
 kubernetesVersion: {{ k8s_version }}
+imageRepository: {{ k8s_image_repository }}
 controlPlaneEndpoint: {{ ansible_default_ipv4.address }}:{{ k8s_api_server_port }}
 apiServer:
   certSANs:

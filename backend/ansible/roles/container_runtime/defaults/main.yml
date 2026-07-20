@@ -5,7 +5,7 @@
 containerd_version: ""
 
 # sandbox 镜像
-sandbox_image: "registry.k8s.io/pause:3.9"
+sandbox_image: "registry.aliyuncs.com/google_containers/pause:3.10"
 
 # 是否使用 systemd cgroup
 systemd_cgroup: true

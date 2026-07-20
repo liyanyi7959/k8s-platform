@@ -1,9 +1,9 @@
----
+﻿---
 # Worker 节点加入集群
 
 # 1. 添加 Kubernetes yum/apt 仓库
 - name: 添加 Kubernetes 仓库 (RedHat 系列)
-  ansible.builtin.yum_repository:
+  yum_repository:
     name: kubernetes
     description: Kubernetes
     baseurl: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/rpm/"
@@ -11,24 +11,24 @@
     gpgcheck: true
     repo_gpgcheck: true
     gpgkey: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/rpm/repodata/repomd.xml.key"
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 - name: 创建 apt keyrings 目录 (Debian 系列)
-  ansible.builtin.file:
+  file:
     path: /etc/apt/keyrings
     state: directory
     mode: "0755"
   when: ansible_os_family == "Debian"
 
 - name: 下载 Kubernetes 仓库签名密钥 (Debian 系列)
-  ansible.builtin.get_url:
+  get_url:
     url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/deb/Release.key"
     dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
     mode: "0644"
   when: ansible_os_family == "Debian"
 
 - name: 添加 Kubernetes 仓库 (Debian 系列)
-  ansible.builtin.apt_repository:
+  apt_repository:
     repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/deb/ /"
     state: present
     filename: kubernetes
@@ -36,16 +36,16 @@
 
 # 2. 安装 kubeadm, kubelet
 - name: 安装 kubeadm/kubelet (RedHat 系列)
-  ansible.builtin.yum:
+  yum:
     name:
       - "kubeadm-{{ k8s_package_version }}"
       - "kubelet-{{ k8s_package_version }}"
     state: present
     disable_excludes: kubernetes
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 - name: 安装 kubeadm/kubelet (Debian 系列)
-  ansible.builtin.apt:
+  apt:
     name:
       - "kubeadm={{ k8s_package_version }}-1.1"
       - "kubelet={{ k8s_package_version }}-1.1"
@@ -54,12 +54,14 @@
   when: ansible_os_family == "Debian"
 
 - name: 锁定 kubeadm/kubelet 版本 (RedHat 系列)
-  ansible.builtin.command: yum versionlock add kubeadm kubelet
+  command: yum versionlock add kubeadm kubelet
   changed_when: false
-  when: ansible_os_family == "RedHat"
+  when:
+    - ansible_os_family == "RedHat"
+    - '"Kylin" not in ansible_distribution'
 
 - name: 锁定 kubeadm/kubelet 版本 (Debian 系列)
-  ansible.builtin.dpkg_selections:
+  dpkg_selections:
     name: "{{ item }}"
     selection: hold
   loop:
@@ -69,7 +71,7 @@
 
 # 3. 启用并启动 kubelet
 - name: 启用并启动 kubelet
-  ansible.builtin.systemd:
+  systemd:
     name: kubelet
     state: started
     enabled: true
@@ -77,20 +79,20 @@
 
 # 4. 检查是否已加入集群
 - name: 检查是否已加入集群
-  ansible.builtin.stat:
+  stat:
     path: /etc/kubernetes/kubelet.conf
   register: kubelet_conf
 
 # 5. 执行 join 命令
 - name: 执行 join 命令加入集群
-  ansible.builtin.command: "{{ hostvars[groups['master'][0]]['join_command'] }}"
+  command: "{{ hostvars[groups['master'][0]]['join_command'] }}"
   args:
     creates: /etc/kubernetes/kubelet.conf
   when: not kubelet_conf.stat.exists
 
 # 6. 等待节点 Ready (可选)
 - name: 等待节点 Ready
-  ansible.builtin.shell: "kubectl --kubeconfig=/etc/kubernetes/kubelet.conf get nodes || true"
+  shell: "kubectl --kubeconfig=/etc/kubernetes/kubelet.conf get nodes || true"
   register: node_status
   changed_when: false
   when: not kubelet_conf.stat.exists

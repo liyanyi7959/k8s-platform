@@ -1,31 +1,38 @@
----
+﻿---
 # 安装网络插件 (在 master 节点执行)
 
 # ============================================
 # Flannel
 # ============================================
 - name: 下载 Flannel YAML 文件
-  ansible.builtin.get_url:
+  get_url:
     url: "https://raw.githubusercontent.com/flannel-io/flannel/{{ flannel_version }}/Documentation/kube-flannel.yml"
     dest: /tmp/kube-flannel.yml
     mode: "0644"
   when: cni_type == "flannel"
 
 - name: 替换 Flannel pod 网段
-  ansible.builtin.replace:
+  replace:
     path: /tmp/kube-flannel.yml
     regexp: '10\.244\.0\.0/16'
     replace: "{{ pod_cidr }}"
   when: cni_type == "flannel"
 
+- name: 替换 Flannel Docker Hub 镜像源
+  replace:
+    path: /tmp/kube-flannel.yml
+    regexp: 'docker\.io/'
+    replace: "{{ dockerhub_image_prefix }}/"
+  when: cni_type == "flannel"
+
 - name: 安装 Flannel CNI
-  ansible.builtin.command: kubectl apply -f /tmp/kube-flannel.yml
+  command: kubectl apply -f /tmp/kube-flannel.yml
   register: flannel_apply
   changed_when: "'created' in flannel_apply.stdout or 'configured' in flannel_apply.stdout"
   when: cni_type == "flannel"
 
 - name: 等待 Flannel DaemonSet 就绪
-  ansible.builtin.command: kubectl rollout status daemonset/kube-flannel-ds -n kube-flannel --timeout=300s
+  command: kubectl rollout status daemonset/kube-flannel-ds -n kube-flannel --timeout=300s
   changed_when: false
   when: cni_type == "flannel"
 
@@ -33,27 +40,34 @@
 # Calico
 # ============================================
 - name: 下载 Calico YAML 文件
-  ansible.builtin.get_url:
+  get_url:
     url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/calico.yaml"
     dest: /tmp/calico.yaml
     mode: "0644"
   when: cni_type == "calico"
 
 - name: 替换 Calico pod 网段 (CALICO_IPV4POOL_CIDR)
-  ansible.builtin.replace:
+  replace:
     path: /tmp/calico.yaml
     regexp: '192\.168\.0\.0/16'
     replace: "{{ pod_cidr }}"
   when: cni_type == "calico"
 
+- name: 替换 Calico Docker Hub 镜像源
+  replace:
+    path: /tmp/calico.yaml
+    regexp: 'docker\.io/'
+    replace: "{{ dockerhub_image_prefix }}/"
+  when: cni_type == "calico"
+
 - name: 安装 Calico CNI
-  ansible.builtin.command: kubectl apply -f /tmp/calico.yaml
+  command: kubectl apply -f /tmp/calico.yaml
   register: calico_apply
   changed_when: "'created' in calico_apply.stdout or 'configured' in calico_apply.stdout"
   when: cni_type == "calico"
 
 - name: 等待 Calico DaemonSet 就绪
-  ansible.builtin.command: kubectl rollout status daemonset/calico-node -n kube-system --timeout=300s
+  command: kubectl rollout status daemonset/calico-node -n kube-system --timeout=300s
   changed_when: false
   when: cni_type == "calico"
 
@@ -61,27 +75,27 @@
 # Cilium
 # ============================================
 - name: 下载 Cilium YAML 文件
-  ansible.builtin.get_url:
+  get_url:
     url: "https://raw.githubusercontent.com/cilium/cilium/{{ cilium_version }}/install/kubernetes/quick-install.yaml"
     dest: /tmp/cilium-quick-install.yaml
     mode: "0644"
   when: cni_type == "cilium"
 
 - name: 替换 Cilium pod 网段
-  ansible.builtin.replace:
+  replace:
     path: /tmp/cilium-quick-install.yaml
     regexp: '10\.0\.0\.0/8'
     replace: "{{ pod_cidr }}"
   when: cni_type == "cilium"
 
 - name: 安装 Cilium CNI
-  ansible.builtin.command: kubectl apply -f /tmp/cilium-quick-install.yaml
+  command: kubectl apply -f /tmp/cilium-quick-install.yaml
   register: cilium_apply
   changed_when: "'created' in cilium_apply.stdout or 'configured' in cilium_apply.stdout"
   when: cni_type == "cilium"
 
 - name: 等待 Cilium DaemonSet 就绪
-  ansible.builtin.command: kubectl rollout status daemonset/cilium -n kube-system --timeout=300s
+  command: kubectl rollout status daemonset/cilium -n kube-system --timeout=300s
   changed_when: false
   when: cni_type == "cilium"
 
@@ -89,10 +103,10 @@
 # 检查节点状态
 # ============================================
 - name: 检查节点状态是否 Ready
-  ansible.builtin.command: kubectl get nodes
+  command: kubectl get nodes
   register: node_status
   changed_when: false
 
 - name: 输出节点状态
-  ansible.builtin.debug:
+  debug:
     msg: "{{ node_status.stdout_lines }}"

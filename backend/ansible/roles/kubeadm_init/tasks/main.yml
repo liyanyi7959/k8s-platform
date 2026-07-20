@@ -1,9 +1,9 @@
----
+﻿---
 # 初始化 Master 节点
 
 # 1. 添加 Kubernetes yum/apt 仓库
 - name: 添加 Kubernetes 仓库 (RedHat 系列)
-  ansible.builtin.yum_repository:
+  yum_repository:
     name: kubernetes
     description: Kubernetes
     baseurl: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/rpm/"
@@ -11,24 +11,24 @@
     gpgcheck: true
     repo_gpgcheck: true
     gpgkey: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/rpm/repodata/repomd.xml.key"
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 - name: 创建 apt keyrings 目录 (Debian 系列)
-  ansible.builtin.file:
+  file:
     path: /etc/apt/keyrings
     state: directory
     mode: "0755"
   when: ansible_os_family == "Debian"
 
 - name: 下载 Kubernetes 仓库签名密钥 (Debian 系列)
-  ansible.builtin.get_url:
+  get_url:
     url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/deb/Release.key"
     dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
     mode: "0644"
   when: ansible_os_family == "Debian"
 
 - name: 添加 Kubernetes 仓库 (Debian 系列)
-  ansible.builtin.apt_repository:
+  apt_repository:
     repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/deb/ /"
     state: present
     filename: kubernetes
@@ -36,17 +36,17 @@
 
 # 2. 安装 kubeadm, kubelet, kubectl
 - name: 安装 kubeadm/kubelet/kubectl (RedHat 系列)
-  ansible.builtin.yum:
+  yum:
     name:
       - "kubeadm-{{ k8s_package_version }}"
       - "kubelet-{{ k8s_package_version }}"
       - "kubectl-{{ k8s_package_version }}"
     state: present
     disable_excludes: kubernetes
-  when: ansible_os_family == "RedHat"
+  when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 - name: 安装 kubeadm/kubelet/kubectl (Debian 系列)
-  ansible.builtin.apt:
+  apt:
     name:
       - "kubeadm={{ k8s_package_version }}-1.1"
       - "kubelet={{ k8s_package_version }}-1.1"
@@ -56,12 +56,14 @@
   when: ansible_os_family == "Debian"
 
 - name: 锁定 kubeadm/kubelet/kubectl 版本 (RedHat 系列)
-  ansible.builtin.command: yum versionlock add kubeadm kubelet kubectl
+  command: yum versionlock add kubeadm kubelet kubectl
   changed_when: false
-  when: ansible_os_family == "RedHat"
+  when:
+    - ansible_os_family == "RedHat"
+    - '"Kylin" not in ansible_distribution'
 
 - name: 锁定 kubeadm/kubelet/kubectl 版本 (Debian 系列)
-  ansible.builtin.dpkg_selections:
+  dpkg_selections:
     name: "{{ item }}"
     selection: hold
   loop:
@@ -72,7 +74,7 @@
 
 # 3. 启用并启动 kubelet
 - name: 启用并启动 kubelet
-  ansible.builtin.systemd:
+  systemd:
     name: kubelet
     state: started
     enabled: true
@@ -80,44 +82,130 @@
 
 # 4. 生成 kubeadm 初始化配置文件
 - name: 生成 kubeadm 初始化配置文件
-  ansible.builtin.template:
+  template:
     src: kubeadm-init.yaml.j2
     dest: /tmp/kubeadm-init.yaml
     mode: "0644"
 
-# 5. 执行 kubeadm init
+# 5. 预拉取控制平面镜像，设置明确超时并提前暴露仓库问题
+- name: 预拉取 Kubernetes 控制平面镜像
+  command: "timeout 300 kubeadm config images pull --config /tmp/kubeadm-init.yaml"
+  when: not (master_admin_conf.stat.exists | default(false))
+  register: kubeadm_images_pull
+  retries: 2
+  delay: 10
+  until: kubeadm_images_pull is succeeded
+
+# 6. 执行 kubeadm init
 - name: 执行 kubeadm init
-  ansible.builtin.command: "kubeadm init --config /tmp/kubeadm-init.yaml {{ kubeadm_init_extra_args }}"
+  command: "kubeadm init --config /tmp/kubeadm-init.yaml {{ kubeadm_init_extra_args }}"
   args:
     creates: /etc/kubernetes/admin.conf
 
-# 6. 创建 kubeconfig 目录并复制 admin.conf
+# 7. 创建 kubeconfig 目录并复制 admin.conf
 - name: 创建 kubeconfig 目录
-  ansible.builtin.file:
+  file:
     path: "{{ ansible_env.HOME }}/.kube"
     state: directory
     mode: "0755"
 
 - name: 复制 admin.conf 到 kubeconfig 目录
-  ansible.builtin.copy:
+  copy:
     src: /etc/kubernetes/admin.conf
     dest: "{{ ansible_env.HOME }}/.kube/config"
     remote_src: true
     mode: "0600"
     owner: "{{ ansible_env.USER | default(ansible_user_id) }}"
 
-# 7. 生成 join command
+- name: 等待 Kubernetes API Server Ready
+  command: kubectl --kubeconfig /etc/kubernetes/admin.conf get --raw=/readyz
+  register: api_server_ready
+  changed_when: false
+  retries: 30
+  delay: 5
+  until: api_server_ready.rc == 0
+
+- name: 检查 kubeadm 管理员 RBAC 是否完整
+  command: kubectl --kubeconfig /etc/kubernetes/admin.conf auth can-i '*' '*' --all-namespaces
+  register: kubeadm_admin_access
+  changed_when: false
+  failed_when: false
+
+- name: 检查 kubeadm 超级管理员配置
+  stat:
+    path: /etc/kubernetes/super-admin.conf
+  register: kubeadm_super_admin_conf
+
+- name: 检查 kubeadm 阶段恢复标记
+  stat:
+    path: /etc/kubernetes/.platform-init-phases-complete
+  register: kubeadm_phase_recovery_marker
+
+- name: 拒绝在缺少恢复凭据时继续半初始化集群
+  fail:
+    msg: "检测到 kubeadm 半初始化状态，但 /etc/kubernetes/super-admin.conf 不存在，无法安全恢复 RBAC"
+  when:
+    - kubeadm_admin_access.stdout | trim != "yes"
+    - not (kubeadm_super_admin_conf.stat.exists | default(false))
+
+- name: 选择 kubeadm 阶段恢复凭据
+  set_fact:
+    kubeadm_recovery_kubeconfig: "{{ '/etc/kubernetes/super-admin.conf' if kubeadm_super_admin_conf.stat.exists else '/etc/kubernetes/admin.conf' }}"
+
+- name: 恢复 kubeadm 配置上传阶段
+  command: "kubeadm init phase upload-config all --config /tmp/kubeadm-init.yaml --kubeconfig {{ kubeadm_recovery_kubeconfig }}"
+  when:
+    - master_admin_conf.stat.exists | default(false)
+    - not (kubeadm_phase_recovery_marker.stat.exists | default(false))
+
+- name: 恢复 kubeadm 控制平面节点标记阶段
+  command: kubeadm init phase mark-control-plane --config /tmp/kubeadm-init.yaml
+  when:
+    - master_admin_conf.stat.exists | default(false)
+    - not (kubeadm_phase_recovery_marker.stat.exists | default(false))
+
+- name: 恢复 kubeadm bootstrap token 阶段
+  command: "kubeadm init phase bootstrap-token --config /tmp/kubeadm-init.yaml --kubeconfig {{ kubeadm_recovery_kubeconfig }}"
+  when:
+    - master_admin_conf.stat.exists | default(false)
+    - not (kubeadm_phase_recovery_marker.stat.exists | default(false))
+
+- name: 恢复 kubeadm kubelet 收尾阶段
+  command: kubeadm init phase kubelet-finalize all --config /tmp/kubeadm-init.yaml
+  when:
+    - master_admin_conf.stat.exists | default(false)
+    - not (kubeadm_phase_recovery_marker.stat.exists | default(false))
+
+- name: 恢复 kubeadm 内置插件阶段
+  command: "kubeadm init phase addon all --config /tmp/kubeadm-init.yaml --kubeconfig {{ kubeadm_recovery_kubeconfig }}"
+  when:
+    - master_admin_conf.stat.exists | default(false)
+    - not (kubeadm_phase_recovery_marker.stat.exists | default(false))
+
+- name: 写入 kubeadm 阶段完成标记
+  copy:
+    dest: /etc/kubernetes/.platform-init-phases-complete
+    content: "completed\n"
+    mode: "0600"
+
+- name: 验证 kubeadm 管理员 RBAC 已恢复
+  command: kubectl --kubeconfig /etc/kubernetes/admin.conf auth can-i '*' '*' --all-namespaces
+  register: kubeadm_admin_access_after_recovery
+  changed_when: false
+  failed_when: kubeadm_admin_access_after_recovery.stdout | trim != "yes"
+
+# 8. 生成 join command
 - name: 生成 join command
-  ansible.builtin.command: kubeadm token create --print-join-command
+  command: kubeadm token create --print-join-command
   register: join_command_result
   changed_when: false
 
-# 8. 将 join command 设置为 fact
+# 9. 将 join command 设置为 fact
 - name: 设置 join_command fact
-  ansible.builtin.set_fact:
+  set_fact:
     join_command: "{{ join_command_result.stdout }}"
 
-# 9. 输出初始化结果
+# 10. 输出初始化结果
 - name: 输出初始化结果
-  ansible.builtin.debug:
+  debug:
     msg: "Kubernetes Master 初始化完成。Join command: {{ join_command }}"

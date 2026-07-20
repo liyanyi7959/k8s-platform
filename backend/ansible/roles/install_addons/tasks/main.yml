@@ -1,14 +1,46 @@
----
+﻿---
+- name: 创建 metrics-server 清单目录
+  file:
+    path: /tmp/metrics-server
+    state: directory
+    mode: "0755"
+  when: "'metrics-server' in addons"
+
+- name: 复制内置 metrics-server 官方基础清单
+  copy:
+    src: "metrics-server/{{ item }}"
+    dest: "/tmp/metrics-server/{{ item }}"
+    mode: "0644"
+  loop:
+    - kustomization.yaml
+    - apiservice.yaml
+    - deployment.yaml
+    - rbac.yaml
+    - service.yaml
+  when: "'metrics-server' in addons"
+
+- name: 替换 metrics-server 镜像源
+  replace:
+    path: /tmp/metrics-server/deployment.yaml
+    regexp: 'registry\.k8s\.io/'
+    replace: "{{ kubernetes_image_prefix }}/"
+  when: "'metrics-server' in addons"
+
+- name: 固定 metrics-server 生产镜像版本
+  replace:
+    path: /tmp/metrics-server/deployment.yaml
+    regexp: 'gcr\.io/k8s-staging-metrics-server/metrics-server:master'
+    replace: "{{ kubernetes_image_prefix }}/metrics-server/metrics-server:{{ metrics_server_version }}"
+  when: "'metrics-server' in addons"
+
 - name: 安装 metrics-server
-  ansible.builtin.command: >-
-    kubectl apply -f
-    https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ metrics_server_version }}/components.yaml
+  command: kubectl apply -k /tmp/metrics-server
   register: metrics_server_apply
   changed_when: "'created' in metrics_server_apply.stdout or 'configured' in metrics_server_apply.stdout"
   when: "'metrics-server' in addons"
 
 - name: 配置 metrics-server 兼容自签名 kubelet 证书
-  ansible.builtin.shell: |
+  shell: |
     set -o pipefail
     if ! kubectl -n kube-system get deployment metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}' | grep -q -- '--kubelet-insecure-tls'; then
       kubectl -n kube-system patch deployment metrics-server --type=json -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
@@ -20,32 +52,56 @@
   when: "'metrics-server' in addons"
 
 - name: 等待 metrics-server 就绪
-  ansible.builtin.command: kubectl rollout status deployment/metrics-server -n kube-system --timeout=300s
+  command: kubectl rollout status deployment/metrics-server -n kube-system --timeout=300s
   changed_when: false
   when: "'metrics-server' in addons"
 
+- name: 下载 ingress-nginx 清单
+  get_url:
+    url: "https://raw.githubusercontent.com/kubernetes/ingress-nginx/{{ ingress_nginx_version }}/deploy/static/provider/cloud/deploy.yaml"
+    dest: /tmp/ingress-nginx.yaml
+    mode: "0644"
+  when: "'ingress-nginx' in addons"
+
+- name: 替换 ingress-nginx 镜像源
+  replace:
+    path: /tmp/ingress-nginx.yaml
+    regexp: 'registry\.k8s\.io/'
+    replace: "{{ kubernetes_image_prefix }}/"
+  when: "'ingress-nginx' in addons"
+
 - name: 安装 ingress-nginx
-  ansible.builtin.command: >-
-    kubectl apply -f
-    https://raw.githubusercontent.com/kubernetes/ingress-nginx/{{ ingress_nginx_version }}/deploy/static/provider/cloud/deploy.yaml
+  command: kubectl apply -f /tmp/ingress-nginx.yaml
   register: ingress_nginx_apply
   changed_when: "'created' in ingress_nginx_apply.stdout or 'configured' in ingress_nginx_apply.stdout"
   when: "'ingress-nginx' in addons"
 
 - name: 等待 ingress-nginx 就绪
-  ansible.builtin.command: kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s
+  command: kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s
   changed_when: false
   when: "'ingress-nginx' in addons"
 
+- name: 下载 local-path-provisioner 清单
+  get_url:
+    url: "https://raw.githubusercontent.com/rancher/local-path-provisioner/{{ local_path_provisioner_version }}/deploy/local-path-storage.yaml"
+    dest: /tmp/local-path-provisioner.yaml
+    mode: "0644"
+  when: "'local-storage' in addons"
+
+- name: 替换 local-path-provisioner 镜像源
+  replace:
+    path: /tmp/local-path-provisioner.yaml
+    regexp: 'image: rancher/'
+    replace: "image: {{ dockerhub_image_prefix }}/rancher/"
+  when: "'local-storage' in addons"
+
 - name: 安装 local-path-provisioner
-  ansible.builtin.command: >-
-    kubectl apply -f
-    https://raw.githubusercontent.com/rancher/local-path-provisioner/{{ local_path_provisioner_version }}/deploy/local-path-storage.yaml
+  command: kubectl apply -f /tmp/local-path-provisioner.yaml
   register: local_path_apply
   changed_when: "'created' in local_path_apply.stdout or 'configured' in local_path_apply.stdout"
   when: "'local-storage' in addons"
 
 - name: 等待 local-path-provisioner 就绪
-  ansible.builtin.command: kubectl rollout status deployment/local-path-provisioner -n local-path-storage --timeout=300s
+  command: kubectl rollout status deployment/local-path-provisioner -n local-path-storage --timeout=300s
   changed_when: false
   when: "'local-storage' in addons"
