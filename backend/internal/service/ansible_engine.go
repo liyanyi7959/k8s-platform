@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -33,8 +32,8 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 	task.Steps = make([]TaskStep, len(ansibleSteps))
 	for i, step := range ansibleSteps {
 		task.Steps[i] = TaskStep{
-			Key:   step.Key,
-			Title: step.Title,
+			Key:    step.Key,
+			Title:  step.Title,
 			Status: StepPending,
 		}
 	}
@@ -57,35 +56,7 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 		return
 	}
 
-	// 生成 inventory 文件
-	task.AppendLog("[info] 正在生成 Ansible inventory...")
-	_ = s.taskStore.Put(task)
-	inventoryPath, cleanup, err := s.generateInventoryFile(ctx, plan, nodes)
-	if err != nil {
-		s.markTaskFailed(task, fmt.Sprintf("生成 inventory 失败: %v", err))
-		s.updatePlanStatusDirect(ctx, planID, "failed")
-		return
-	}
-	defer cleanup()
-
-	task.AppendLog(fmt.Sprintf("[info] Inventory 文件已生成: %s", inventoryPath))
-	_ = s.taskStore.Put(task)
-
-	// 构建 extra vars
-	extraVars := map[string]interface{}{
-		"k8s_version":      plan.K8sVersion,
-		"k8s_minor_version": extractMinorVersion(plan.K8sVersion),
-		"pod_cidr":         plan.PodCIDR,
-		"svc_cidr":         plan.SvcCIDR,
-		"cni_type":         plan.CNIType,
-		"cluster_name":     plan.ClusterName,
-	}
-
-	// 执行 playbook
-	playbookPath := s.ansiblePlaybookPath()
-	cmdRunDir := s.ansiblePlaybookDir()
-
-	task.AppendLog(fmt.Sprintf("[info] 开始执行部署，Playbook: %s", playbookPath))
+	task.AppendLog("[info] 正在准备 Master 临时 Runner")
 	task.AppendLog(fmt.Sprintf("[info] 集群: %s, K8s 版本: %s, CNI: %s", plan.ClusterName, plan.K8sVersion, plan.CNIType))
 	_ = s.taskStore.Put(task)
 
@@ -95,12 +66,7 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 		_ = s.taskStore.Put(task)
 	}
 
-	err = s.runAnsiblePlaybook(ctx, ansibleExecuteOptions{
-		PlaybookPath: playbookPath,
-		Inventory:    inventoryPath,
-		ExtraVars:    extraVars,
-		CmdRunDir:    cmdRunDir,
-	}, task)
+	kubeconfig, err := s.runAnsibleOnMaster(ctx, plan, nodes, task)
 
 	// 检查取消
 	if ctx.Err() != nil {
@@ -132,14 +98,20 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 	_ = s.taskStore.Put(task)
 
 	// 注册集群到平台
-	clusterID, regErr := s.registerClusterAfterDeploy(ctx, plan)
+	clusterID, regErr := s.registerClusterAfterDeploy(ctx, plan, kubeconfig)
 	if regErr != nil {
-		task.AppendLog(fmt.Sprintf("[warn] 集群注册失败: %v（部署已完成，可手动导入集群）", regErr))
-		_ = s.taskStore.Put(task)
-	} else {
-		task.AppendLog(fmt.Sprintf("[info] 集群 %s 注册成功，ID: %d", plan.ClusterName, clusterID))
-		_ = s.taskStore.Put(task)
+		if len(task.Steps) > 0 {
+			last := len(task.Steps) - 1
+			task.Steps[last].Status = StepFailed
+			message := fmt.Sprintf("集群已安装但注册平台失败: %v", regErr)
+			task.Steps[last].Message = &message
+		}
+		s.markTaskFailed(task, fmt.Sprintf("集群已安装但注册平台失败: %v，请检查日志后重试注册流程", regErr))
+		s.updatePlanStatusDirect(ctx, planID, "failed")
+		return
 	}
+	task.AppendLog(fmt.Sprintf("[info] 集群 %s 注册成功，ID: %d", plan.ClusterName, clusterID))
+	_ = s.taskStore.Put(task)
 
 	// 全部成功
 	percent = 100
@@ -151,17 +123,8 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 	s.updatePlanStatusDirect(ctx, planID, "success")
 }
 
-// registerClusterAfterDeploy 从 Ansible 输出的 kubeconfig 文件注册集群
-func (s *DeployService) registerClusterAfterDeploy(ctx context.Context, plan model.DeployPlan) (uint64, error) {
-	// register role 将 kubeconfig 写到 /tmp/k8s-deploy-{cluster_name}-kubeconfig.yml
-	kubeconfigPath := fmt.Sprintf("/tmp/k8s-deploy-%s-kubeconfig.yml", plan.ClusterName)
-	data, err := os.ReadFile(kubeconfigPath)
-	if err != nil {
-		return 0, fmt.Errorf("读取 kubeconfig 文件失败: %w", err)
-	}
-	defer os.Remove(kubeconfigPath)
-
-	kubeconfig := string(data)
+// registerClusterAfterDeploy 使用从 Master SSH 回收的 kubeconfig 注册集群。
+func (s *DeployService) registerClusterAfterDeploy(ctx context.Context, plan model.DeployPlan, kubeconfig string) (uint64, error) {
 	if strings.TrimSpace(kubeconfig) == "" {
 		return 0, fmt.Errorf("kubeconfig 内容为空")
 	}

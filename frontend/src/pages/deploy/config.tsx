@@ -3,7 +3,8 @@
  * 基于 Ansible Playbook 的 K8s 部署流程说明
  */
 import React, { useEffect, useState } from 'react'
-import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Typography, Alert, Spin } from 'antd'
+import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Typography, Alert, Spin, Tree } from 'antd'
+import type { DataNode } from 'antd/lib/tree'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AppPage, YamlEditor } from '@/components'
 import {
@@ -11,9 +12,10 @@ import {
   createRepository,
   updateRepository,
   deleteRepository,
-  getAnsiblePlaybook,
   getAnsibleInventoryTemplate,
   checkAnsibleEnv,
+  getAnsibleTree,
+  type AnsibleTreeNode,
 } from '@/services/deploy'
 import type { RepositoryConfig } from '@/types'
 import {
@@ -25,6 +27,8 @@ import {
   ApartmentOutlined,
   CloudUploadOutlined,
   RightOutlined,
+  FolderOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons'
 
 const { Text } = Typography
@@ -50,7 +54,7 @@ const phaseConfig: Record<
   install: { color: 'blue', label: '软件安装', borderColor: '#1677ff', bgColor: '#e6f4ff' },
   init: { color: 'gold', label: '集群初始化', borderColor: '#faad14', bgColor: '#fffbe6' },
   join: { color: 'cyan', label: '节点加入', borderColor: '#13c2c2', bgColor: '#e6fffb' },
-  addon: { color: 'green', label: '网络插件', borderColor: '#52c41a', bgColor: '#f6ffed' },
+  addon: { color: 'green', label: '集群组件', borderColor: '#52c41a', bgColor: '#f6ffed' },
   finalize: { color: 'purple', label: '平台注册', borderColor: '#722ed1', bgColor: '#f9f0ff' },
 }
 
@@ -148,6 +152,20 @@ const ansibleSteps: AnsibleStep[] = [
       'Cilium: 安装 cilium CLI 并部署',
       '等待 CNI Pods 就绪',
       '检查所有节点状态为 Ready',
+    ],
+  },
+  {
+    key: 'install_addons',
+    title: '安装扩展组件',
+    description: '按计划安装监控指标、Ingress 与本地存储组件并等待就绪',
+    icon: <PlusOutlined />,
+    appliesTo: 'Master 节点',
+    phase: 'addon',
+    tasks: [
+      '安装 metrics-server',
+      '安装 ingress-nginx',
+      '安装 local-path-provisioner',
+      '等待所选组件完成 rollout',
     ],
   },
   {
@@ -388,26 +406,90 @@ const AnsiblePipelinePanel: React.FC = () => {
 
 // ==================== Playbook 源码 ====================
 
+const buildTreeData = (node: AnsibleTreeNode): DataNode => {
+  const children = node.children?.map(buildTreeData)
+  return {
+    title: node.name,
+    key: node.path,
+    icon: node.type === 'dir' ? <FolderOutlined /> : <FileTextOutlined />,
+    isLeaf: node.type === 'file',
+    children: children && children.length > 0 ? children : undefined,
+    node,
+  } as DataNode
+}
+
+const findTreeNode = (nodes: AnsibleTreeNode[], path: string): AnsibleTreeNode | undefined => {
+  for (const n of nodes) {
+    if (n.path === path) return n
+    if (n.children) {
+      const found = findTreeNode(n.children, path)
+      if (found) return found
+    }
+  }
+  return undefined
+}
+
 const AnsiblePlaybookPanel: React.FC = () => {
   const { data, isLoading } = useQuery({
-    queryKey: ['ansible-playbook'],
-    queryFn: () => getAnsiblePlaybook(),
+    queryKey: ['ansible-tree'],
+    queryFn: () => getAnsibleTree(),
   })
+  const [selectedPath, setSelectedPath] = useState<string | undefined>()
+
+  const treeData = data ? [buildTreeData(data)] : []
+  const flatten = (node: AnsibleTreeNode): AnsibleTreeNode[] => {
+    const list = [node]
+    node.children?.forEach((child) => list.push(...flatten(child)))
+    return list
+  }
+  const allNodes = data ? flatten(data) : []
+  const selectedNode = selectedPath ? findTreeNode(data ? [data] : [], selectedPath) : undefined
+
+  // 默认选中 site.yml
+  useEffect(() => {
+    if (data && !selectedPath) {
+      const site = allNodes.find((n) => n.name === 'site.yml' && n.type === 'file')
+      if (site) setSelectedPath(site.path)
+    }
+  }, [data])
 
   return (
     <Spin spinning={isLoading}>
-      {data?.content ? (
-        <>
-          <Alert
-            type="info"
-            showIcon
-            message={`Playbook 路径：${data.path || 'ansible/site.yml'}`}
-            style={{ marginBottom: 12 }}
-          />
-          <YamlEditor readOnly value={data.content} height={640} />
-        </>
+      {data ? (
+        <div style={{ display: 'flex', gap: 16, minHeight: 640 }}>
+          <Card size="small" style={{ width: 280, flexShrink: 0, overflow: 'auto' }}>
+            <Tree
+			  showIcon
+              treeData={treeData}
+              defaultExpandAll
+              selectedKeys={selectedPath ? [selectedPath] : []}
+              onSelect={(keys) => {
+                if (keys.length > 0) setSelectedPath(keys[0] as string)
+              }}
+            />
+          </Card>
+          <Card size="small" style={{ flex: 1, minWidth: 0 }}>
+            {selectedNode?.type === 'file' ? (
+              <>
+                <Alert
+                  type="info"
+                  showIcon
+                  message={`文件路径：ansible/${selectedNode.path}`}
+                  style={{ marginBottom: 12 }}
+                />
+                {selectedNode.content !== undefined ? (
+                  <YamlEditor readOnly value={selectedNode.content} height={560} />
+                ) : (
+                  <Alert type="warning" showIcon message="该文件非文本文件，暂不支持预览" />
+                )}
+              </>
+            ) : (
+              <Alert type="info" showIcon message="请在左侧选择文件查看源码" />
+            )}
+          </Card>
+        </div>
       ) : (
-        <Alert type="warning" showIcon message="未找到 Playbook 文件，请确认后端 ansible/site.yml 是否存在" />
+        <Alert type="warning" showIcon message="未找到 Ansible 目录，请确认后端 ansible/ 是否存在" />
       )}
     </Spin>
   )
@@ -464,7 +546,7 @@ const AnsibleEnvPanel: React.FC = () => {
           message="Ansible 未安装"
           description={
             <div>
-              <p>后端执行 Ansible 部署需要系统安装 ansible-playbook 命令。</p>
+              <p>部署默认使用首个 Master 作为临时 Ansible Runner，缺失的 Ansible 会在执行时自动安装。</p>
               <p>安装方式：</p>
               <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 4 }}>
 {`# Ubuntu/Debian

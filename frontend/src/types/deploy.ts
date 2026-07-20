@@ -213,6 +213,24 @@ export interface DeployDryRunResult {
   summary: Record<string, number>
 }
 
+export interface DeployPreflightCheck {
+  key: string
+  category: 'controller' | 'plan' | 'node'
+  status: 'passed' | 'warning' | 'error'
+  message: string
+  remediation?: string
+  serverId?: number
+  serverName?: string
+  ignorable?: boolean
+  ignored?: boolean
+}
+
+export interface DeployPreflightResult {
+  ready: boolean
+  checkedAt: string
+  checks: DeployPreflightCheck[]
+}
+
 /** 仓库配置（config.tsx 使用） */
 export interface RepositoryConfig {
   id: number

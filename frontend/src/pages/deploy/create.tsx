@@ -98,8 +98,8 @@ export default function CreateDeployPlanPage() {
         masterCount += 1
       }
     }
-    if (masterCount === 0) {
-      throw new Error('至少需要一个 master 节点')
+    if (masterCount !== 1) {
+      throw new Error('当前部署模式必须且只能选择一个 Master 节点')
     }
   }
 
@@ -215,8 +215,8 @@ export default function CreateDeployPlanPage() {
               type="warning"
               showIcon
               style={{ marginBottom: 16 }}
-              message="至少需要一个 master 节点"
-              description="只有状态为“可用”或“已注册”的服务器会出现在这里。若列表为空，请先到服务器管理页完成录入和 SSH 测试。"
+              message="当前模式支持 1 个 Master 和任意数量 Worker"
+              description="只有状态为“可用”或“已注册”的服务器会出现在这里。多控制平面需要 VIP/负载均衡与专用 HA 流程，本向导会拒绝多个 Master。"
             />
 
             {availableServers.length === 0 ? (

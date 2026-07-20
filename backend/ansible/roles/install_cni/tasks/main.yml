@@ -20,16 +20,13 @@
 
 - name: 安装 Flannel CNI
   ansible.builtin.command: kubectl apply -f /tmp/kube-flannel.yml
-  args:
-    creates: /tmp/.cni_flannel_installed
-  changed_when: true
+  register: flannel_apply
+  changed_when: "'created' in flannel_apply.stdout or 'configured' in flannel_apply.stdout"
   when: cni_type == "flannel"
 
-- name: 标记 Flannel 已安装
-  ansible.builtin.file:
-    path: /tmp/.cni_flannel_installed
-    state: touch
-    mode: "0644"
+- name: 等待 Flannel DaemonSet 就绪
+  ansible.builtin.command: kubectl rollout status daemonset/kube-flannel-ds -n kube-flannel --timeout=300s
+  changed_when: false
   when: cni_type == "flannel"
 
 # ============================================
@@ -37,7 +34,7 @@
 # ============================================
 - name: 下载 Calico YAML 文件
   ansible.builtin.get_url:
-    url: "https://docs.projectcalico.org/manifests/calico.yaml"
+    url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/calico.yaml"
     dest: /tmp/calico.yaml
     mode: "0644"
   when: cni_type == "calico"
@@ -51,16 +48,13 @@
 
 - name: 安装 Calico CNI
   ansible.builtin.command: kubectl apply -f /tmp/calico.yaml
-  args:
-    creates: /tmp/.cni_calico_installed
-  changed_when: true
+  register: calico_apply
+  changed_when: "'created' in calico_apply.stdout or 'configured' in calico_apply.stdout"
   when: cni_type == "calico"
 
-- name: 标记 Calico 已安装
-  ansible.builtin.file:
-    path: /tmp/.cni_calico_installed
-    state: touch
-    mode: "0644"
+- name: 等待 Calico DaemonSet 就绪
+  ansible.builtin.command: kubectl rollout status daemonset/calico-node -n kube-system --timeout=300s
+  changed_when: false
   when: cni_type == "calico"
 
 # ============================================
@@ -82,26 +76,14 @@
 
 - name: 安装 Cilium CNI
   ansible.builtin.command: kubectl apply -f /tmp/cilium-quick-install.yaml
-  args:
-    creates: /tmp/.cni_cilium_installed
-  changed_when: true
+  register: cilium_apply
+  changed_when: "'created' in cilium_apply.stdout or 'configured' in cilium_apply.stdout"
   when: cni_type == "cilium"
 
-- name: 标记 Cilium 已安装
-  ansible.builtin.file:
-    path: /tmp/.cni_cilium_installed
-    state: touch
-    mode: "0644"
-  when: cni_type == "cilium"
-
-# ============================================
-# 等待 CNI pods 就绪
-# ============================================
-- name: 等待 CNI pods 就绪
-  ansible.builtin.command: kubectl wait --for=condition=Ready pods -A -l app={{ cni_type }} --timeout=300s
-  register: cni_ready
+- name: 等待 Cilium DaemonSet 就绪
+  ansible.builtin.command: kubectl rollout status daemonset/cilium -n kube-system --timeout=300s
   changed_when: false
-  failed_when: false
+  when: cni_type == "cilium"
 
 # ============================================
 # 检查节点状态

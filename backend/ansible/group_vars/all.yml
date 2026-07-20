@@ -3,6 +3,7 @@
 
 # Kubernetes 版本
 k8s_version: "v1.31.0"
+k8s_package_version: "1.31.0"
 k8s_minor_version: "1.31"
 
 # 网络 CIDR
@@ -20,3 +21,9 @@ k8s_api_server_port: 6443
 
 # kubeadm init 额外参数
 kubeadm_init_extra_args: ""
+
+# 可选扩展组件
+addons: []
+
+# 由后端为每次任务注入唯一的临时输出路径
+preflight_ignored_disk_hosts: []

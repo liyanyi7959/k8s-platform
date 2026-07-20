@@ -4,11 +4,11 @@
  */
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { Card, Descriptions, Tag, Badge, Button, Space, Steps, Typography, message, Popconfirm, Tooltip, Progress, Empty, Input, Collapse, Alert, Spin } from 'antd'
-import { ArrowLeftOutlined, StopOutlined, RedoOutlined, DownloadOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, DesktopOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, StopOutlined, RedoOutlined, DownloadOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, DesktopOutlined, SafetyCertificateOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import { history, useParams } from '@umijs/max'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AppPage, YamlEditor } from '@/components'
-import { getDeployPlanById, getDeployTask, getDeployTaskLogs, getDeployTaskLogSSEUrl, cancelDeployPlan, retryDeployPlan, executeDeployPlan, getServers, getPlanAnsibleConfig } from '@/services/deploy'
+import { getDeployPlanById, getDeployTask, getDeployTaskLogs, getDeployTaskLogSSEUrl, cancelDeployPlan, retryDeployPlan, executeDeployPlan, getServers, getPlanAnsibleConfig, preflightDeployPlan, setDeployPreflightIgnore } from '@/services/deploy'
 
 const { Text, Title } = Typography
 
@@ -78,7 +78,29 @@ export default function DeployPlanDetailPage() {
     enabled: Number.isFinite(planId) && planId > 0,
   })
 
+  const {
+    data: preflight,
+    isFetching: preflightLoading,
+    isError: preflightFailed,
+    refetch: runPreflight,
+  } = useQuery({
+    queryKey: ['deploy-plan-preflight', planId],
+    queryFn: () => preflightDeployPlan(planId),
+    enabled: !!plan && ['draft', 'failed', 'cancelled'].includes(plan.status),
+    refetchOnWindowFocus: false,
+    retry: false,
+  })
+
   const taskId = plan?.taskId
+
+  const preflightIgnoreMutation = useMutation({
+    mutationFn: ({ key, ignored }: { key: string; ignored: boolean }) => setDeployPreflightIgnore(planId, key, ignored),
+    onSuccess: () => {
+      message.success('预检放行设置已保存')
+      queryClient.invalidateQueries({ queryKey: ['deploy-plan-preflight', planId] })
+    },
+    onError: (err: any) => message.error(err?.message || '保存预检设置失败'),
+  })
 
   // 获取任务详情（运行中时轮询）
   const { data: task } = useQuery({
@@ -270,7 +292,7 @@ export default function DeployPlanDetailPage() {
           <Space>
             {isDraft && (
               <Popconfirm title="确认执行该部署方案？" onConfirm={() => executeMutation.mutate()}>
-                <Button type="primary" icon={<PlayCircleOutlined />} loading={executeMutation.isPending}>执行部署</Button>
+                <Button type="primary" icon={<PlayCircleOutlined />} disabled={!preflight?.ready} loading={executeMutation.isPending}>执行部署</Button>
               </Popconfirm>
             )}
             {isRunning && (
@@ -280,7 +302,7 @@ export default function DeployPlanDetailPage() {
             )}
             {canRetry && (
               <Popconfirm title="确认重试该部署方案？" onConfirm={() => retryMutation.mutate()}>
-                <Button type="primary" icon={<RedoOutlined />} loading={retryMutation.isPending}>重试部署</Button>
+                <Button type="primary" icon={<RedoOutlined />} disabled={!preflight?.ready} loading={retryMutation.isPending}>重试部署</Button>
               </Popconfirm>
             )}
             <Tooltip title="刷新">
@@ -314,6 +336,54 @@ export default function DeployPlanDetailPage() {
             </Descriptions.Item>
           )}
         </Descriptions>
+
+        {(isDraft || canRetry) && (
+          <Card
+            size="small"
+            title={<Space><SafetyCertificateOutlined />部署就绪检查</Space>}
+            extra={<Button size="small" icon={<ReloadOutlined />} loading={preflightLoading} onClick={() => runPreflight()}>重新检查</Button>}
+            style={{ marginBottom: 16 }}
+          >
+            {preflightFailed ? (
+              <Alert type="error" showIcon message="无法完成部署预检" description="请确认后端服务可用且当前账号具有部署执行权限，然后重新检查。" />
+            ) : !preflight ? (
+              <Spin />
+            ) : (
+              <>
+                <Alert
+                  type={preflight.ready ? 'success' : 'error'}
+                  showIcon
+                  message={preflight.ready ? '预检通过，可以执行部署' : '预检未通过，执行已被阻止'}
+                  description={`检查时间：${new Date(preflight.checkedAt).toLocaleString()}`}
+                  style={{ marginBottom: 12 }}
+                />
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  {preflight.checks.map((check) => (
+                    <div key={check.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      {check.status === 'passed'
+                        ? <CheckCircleOutlined style={{ color: '#52c41a', marginTop: 3 }} />
+                        : <CloseCircleOutlined style={{ color: check.status === 'warning' ? '#faad14' : '#ff4d4f', marginTop: 3 }} />}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <Text strong>{check.serverName ? `${check.serverName} · ` : ''}{check.message}</Text>
+                        {check.remediation && <div><Text type="secondary">处理建议：{check.remediation}</Text></div>}
+                      </div>
+                      {check.ignorable && (
+                        <Popconfirm
+                          title={check.ignored ? '恢复该项强制检查？' : '确认已评估风险并忽略该项？'}
+                          onConfirm={() => preflightIgnoreMutation.mutate({ key: check.key, ignored: !check.ignored })}
+                        >
+                          <Button size="small" loading={preflightIgnoreMutation.isPending}>
+                            {check.ignored ? '恢复检查' : '忽略此项'}
+                          </Button>
+                        </Popconfirm>
+                      )}
+                    </div>
+                  ))}
+                </Space>
+              </>
+            )}
+          </Card>
+        )}
 
         {/* 节点拓扑 */}
         {nodeDetails.length > 0 && (
@@ -383,7 +453,7 @@ export default function DeployPlanDetailPage() {
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             >
               <Popconfirm title="确认执行该部署方案？" onConfirm={() => executeMutation.mutate()}>
-                <Button type="primary" icon={<PlayCircleOutlined />} loading={executeMutation.isPending}>
+                <Button type="primary" icon={<PlayCircleOutlined />} disabled={!preflight?.ready} loading={executeMutation.isPending}>
                   立即执行部署
                 </Button>
               </Popconfirm>

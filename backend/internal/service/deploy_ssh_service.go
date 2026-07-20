@@ -92,9 +92,26 @@ func (s *DeployService) ProbeServerSSH(ctx context.Context, id uint64) (SSHProbe
 }
 
 func probeSSH(ctx context.Context, row model.DeployServer, credential string) (SSHProbeResult, error) {
-	auth, err := buildSSHAuth(row.AuthType, credential)
+	client, err := dialDeploySSH(ctx, row, credential)
 	if err != nil {
 		return SSHProbeResult{}, err
+	}
+	defer client.Close()
+	// 采集系统信息：OS、内核、CPU 核数、内存(MB)、磁盘(GB)
+	output, err := runSSHCommand(client, `uname -s && uname -r && (grep -E '^(NAME|ID|ID_LIKE|VERSION_ID)=' /etc/os-release 2>/dev/null || true) && echo "---HW---" && nproc 2>/dev/null && (free -m 2>/dev/null | awk '/^Mem:/{print $2}' || cat /proc/meminfo 2>/dev/null | awk '/MemTotal/{print $2}') && (df -BG / 2>/dev/null | awk 'NR==2{gsub(/G/,"",$2);print $2}' || echo 0)`)
+	if err != nil {
+		return SSHProbeResult{}, err
+	}
+	result := parseSSHProbeOutput(output)
+	result.Status = "available"
+	result.Message = "SSH 连接成功"
+	return result, nil
+}
+
+func dialDeploySSH(ctx context.Context, row model.DeployServer, credential string) (*ssh.Client, error) {
+	auth, err := buildSSHAuth(row.AuthType, credential)
+	if err != nil {
+		return nil, err
 	}
 	config := &ssh.ClientConfig{
 		User:            row.User,
@@ -106,32 +123,22 @@ func probeSSH(ctx context.Context, row model.DeployServer, credential string) (S
 	dialer := &net.Dialer{Timeout: 8 * time.Second}
 	conn, err := dialer.DialContext(ctx, "tcp", addr)
 	if err != nil {
-		return SSHProbeResult{}, fmt.Errorf("SSH 连接失败：%w", err)
+		return nil, fmt.Errorf("SSH 连接失败：%w", err)
 	}
-	defer conn.Close()
 	sshConn, chans, reqs, err := ssh.NewClientConn(conn, addr, config)
 	if err != nil {
+		conn.Close()
 		// 将技术性 SSH 错误转换为用户友好的提示
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "unable to authenticate") || strings.Contains(errMsg, "no supported methods remain") {
-			return SSHProbeResult{}, fmt.Errorf("SSH 认证失败：密码错误或用户名不正确")
+			return nil, fmt.Errorf("SSH 认证失败：密码错误或用户名不正确")
 		}
 		if strings.Contains(errMsg, "handshake failed") {
-			return SSHProbeResult{}, fmt.Errorf("SSH 认证失败：服务器拒绝连接，请检查用户名和密码")
+			return nil, fmt.Errorf("SSH 认证失败：服务器拒绝连接，请检查用户名和密码")
 		}
-		return SSHProbeResult{}, fmt.Errorf("SSH 认证失败：%w", err)
+		return nil, fmt.Errorf("SSH 认证失败：%w", err)
 	}
-	client := ssh.NewClient(sshConn, chans, reqs)
-	defer client.Close()
-	// 采集系统信息：OS、内核、CPU 核数、内存(MB)、磁盘(GB)
-	output, err := runSSHCommand(client, `uname -s && uname -r && (grep -E '^(NAME|VERSION_ID)=' /etc/os-release 2>/dev/null || true) && echo "---HW---" && nproc 2>/dev/null && (free -m 2>/dev/null | awk '/^Mem:/{print $2}' || cat /proc/meminfo 2>/dev/null | awk '/MemTotal/{print $2}') && (df -BG / 2>/dev/null | awk 'NR==2{gsub(/G/,"",$2);print $2}' || echo 0)`)
-	if err != nil {
-		return SSHProbeResult{}, err
-	}
-	result := parseSSHProbeOutput(output)
-	result.Status = "available"
-	result.Message = "SSH 连接成功"
-	return result, nil
+	return ssh.NewClient(sshConn, chans, reqs), nil
 }
 
 func buildSSHAuth(authType, credential string) (ssh.AuthMethod, error) {

@@ -13,9 +13,23 @@
     gpgkey: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/rpm/repodata/repomd.xml.key"
   when: ansible_os_family == "RedHat"
 
+- name: 创建 apt keyrings 目录 (Debian 系列)
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  when: ansible_os_family == "Debian"
+
+- name: 下载 Kubernetes 仓库签名密钥 (Debian 系列)
+  ansible.builtin.get_url:
+    url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/deb/Release.key"
+    dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+    mode: "0644"
+  when: ansible_os_family == "Debian"
+
 - name: 添加 Kubernetes 仓库 (Debian 系列)
   ansible.builtin.apt_repository:
-    repo: "deb https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/deb/ /"
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/deb/ /"
     state: present
     filename: kubernetes
   when: ansible_os_family == "Debian"
@@ -24,9 +38,9 @@
 - name: 安装 kubeadm/kubelet/kubectl (RedHat 系列)
   ansible.builtin.yum:
     name:
-      - "kubeadm-{{ k8s_version }}"
-      - "kubelet-{{ k8s_version }}"
-      - "kubectl-{{ k8s_version }}"
+      - "kubeadm-{{ k8s_package_version }}"
+      - "kubelet-{{ k8s_package_version }}"
+      - "kubectl-{{ k8s_package_version }}"
     state: present
     disable_excludes: kubernetes
   when: ansible_os_family == "RedHat"
@@ -34,17 +48,15 @@
 - name: 安装 kubeadm/kubelet/kubectl (Debian 系列)
   ansible.builtin.apt:
     name:
-      - "kubeadm={{ k8s_version }}-1.1"
-      - "kubelet={{ k8s_version }}-1.1"
-      - "kubectl={{ k8s_version }}-1.1"
+      - "kubeadm={{ k8s_package_version }}-1.1"
+      - "kubelet={{ k8s_package_version }}-1.1"
+      - "kubectl={{ k8s_package_version }}-1.1"
     state: present
     update_cache: true
   when: ansible_os_family == "Debian"
 
 - name: 锁定 kubeadm/kubelet/kubectl 版本 (RedHat 系列)
   ansible.builtin.command: yum versionlock add kubeadm kubelet kubectl
-  args:
-    warn: false
   changed_when: false
   when: ansible_os_family == "RedHat"
 

@@ -53,7 +53,7 @@ type ansibleDryRunStepDef struct {
 	DependsOn   []string
 }
 
-// ansibleDryRunSteps Ansible 部署流水线的 7 个步骤定义
+// ansibleDryRunSteps Ansible 部署流水线步骤定义
 var ansibleDryRunSteps = []ansibleDryRunStepDef{
 	{
 		Key:         "pre_check",
@@ -148,6 +148,18 @@ var ansibleDryRunSteps = []ansibleDryRunStepDef{
 		DependsOn: []string{"kubeadm_init"},
 	},
 	{
+		Key:         "install_addons",
+		Title:       "安装 Kubernetes 扩展组件",
+		Description: "按部署计划安装 metrics-server、ingress-nginx 和本地存储插件，并等待工作负载就绪",
+		Phase:       "addon",
+		AppliesTo:   "master",
+		Tasks: []string{
+			"应用计划选择的扩展组件清单",
+			"等待 Deployment rollout 完成",
+		},
+		DependsOn: []string{"install_cni"},
+	},
+	{
 		Key:         "register",
 		Title:       "节点注册到管理平台",
 		Description: "从 Master 节点提取 kubeconfig，替换 API Server 地址为实际 IP，写回到 Ansible 控制器供后端 Go 代码注册集群",
@@ -159,7 +171,7 @@ var ansibleDryRunSteps = []ansibleDryRunStepDef{
 			"写入 kubeconfig 到 /tmp/k8s-deploy-{cluster_name}-kubeconfig.yml",
 			"后端读取 kubeconfig 并注册集群到管理平台",
 		},
-		DependsOn: []string{"install_cni", "join_workers"},
+		DependsOn: []string{"install_addons", "join_workers"},
 	},
 }
 

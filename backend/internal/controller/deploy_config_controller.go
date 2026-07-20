@@ -206,6 +206,16 @@ func (dc *DeployConfigController) CheckAnsibleEnv(c *gin.Context) {
 	resp.OK(c, gin.H{"installed": installed, "version": version})
 }
 
+// GetAnsibleTree 获取完整 Ansible 目录树（包含 roles、group_vars 等文件内容）。
+func (dc *DeployConfigController) GetAnsibleTree(c *gin.Context) {
+	tree, err := dc.svc.ReadAnsibleTree(c.Request.Context())
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, tree)
+}
+
 // DeleteRepository 删除仓库配置
 func (dc *DeployConfigController) DeleteRepository(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)

@@ -42,15 +42,15 @@
   when:
     - item.mount == '/'
     - (item.size_available / 1024 / 1024 / 1024) < min_disk_gb
+    - inventory_hostname not in preflight_ignored_disk_hosts
   loop: "{{ ansible_mounts }}"
 
-# 6. 检查 hostname 是否设置
-- name: 检查 hostname 是否已设置
-  ansible.builtin.fail:
-    msg: "hostname 未设置或为 localhost，请设置主机名后再执行部署"
-  when: ansible_hostname == '' or ansible_hostname == 'localhost'
+- name: 提示已人工放行磁盘容量检查
+  ansible.builtin.debug:
+    msg: "该节点的 20GB 磁盘建议值已由操作人员确认并放行"
+  when: inventory_hostname in preflight_ignored_disk_hosts
 
-# 7. 检查 swap 是否关闭 (非关键检查，仅输出警告)
+# 6. 检查 swap 是否关闭 (非关键检查，仅输出警告)
 - name: 检查 swap 状态
   ansible.builtin.command: swapon --show
   register: swap_status
@@ -61,9 +61,14 @@
     msg: "警告: swap 未关闭，将在 bootstrap 阶段处理"
   when: swap_status.stdout | length > 0
 
-# 8. master 节点检查关键端口未被占用
+# 7. master 节点检查关键端口未被占用；已初始化节点允许幂等重试
 - name: 检查 master 节点关键端口是否被占用
   block:
+    - name: 检查控制平面是否已经初始化
+      ansible.builtin.stat:
+        path: /etc/kubernetes/admin.conf
+      register: master_admin_conf
+
     - name: 收集 master 关键端口占用情况
       ansible.builtin.command: "ss -tlnp"
       register: master_port_status
@@ -73,10 +78,12 @@
       ansible.builtin.fail:
         msg: "端口 {{ item }} 已被占用，请释放该端口后再执行部署"
       loop: "{{ master_required_ports }}"
-      when: master_port_status.stdout | regex_search(':' + item | string + '\\b')
+      when:
+        - not master_admin_conf.stat.exists
+        - master_port_status.stdout | regex_search(':' + item | string + '\\b')
   when: "'master' in group_names"
 
-# 9. 输出预检结果摘要
+# 8. 输出预检结果摘要
 - name: 输出预检结果摘要
   ansible.builtin.debug:
     msg:

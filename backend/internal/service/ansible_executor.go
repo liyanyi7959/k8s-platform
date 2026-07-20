@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/apenella/go-ansible/pkg/execute"
 	"github.com/apenella/go-ansible/pkg/options"
@@ -28,17 +29,18 @@ var ansibleSteps = []ansibleStepDef{
 	{Key: "kubeadm_init", Title: "Kubernetes Master 初始化", PlayName: "Kubernetes Master 初始化"},
 	{Key: "join_workers", Title: "Worker 节点加入集群", PlayName: "Worker 节点加入集群"},
 	{Key: "install_cni", Title: "安装 CNI 网络插件", PlayName: "安装 CNI 网络插件"},
+	{Key: "install_addons", Title: "安装 Kubernetes 扩展组件", PlayName: "安装 Kubernetes 扩展组件"},
 	{Key: "register", Title: "节点注册到管理平台", PlayName: "节点注册到管理平台"},
 }
 
 // ansibleLogWriter 自定义 io.Writer，逐行捕获 Ansible 输出并写入 Task 日志
 type ansibleLogWriter struct {
-	task       *Task
-	store      *TaskStore
-	mu         sync.Mutex
-	buf        []byte
-	stepIndex  int // 当前执行的步骤索引
-	stepDone   bool
+	task      *Task
+	store     *TaskStore
+	mu        sync.Mutex
+	buf       []byte
+	stepIndex int // 当前执行的步骤索引
+	stepDone  bool
 }
 
 func newAnsibleLogWriter(task *Task, store *TaskStore) *ansibleLogWriter {
@@ -76,6 +78,16 @@ func (w *ansibleLogWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func (w *ansibleLogWriter) flush() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if len(w.buf) > 0 {
+		w.task.AppendLog(string(w.buf))
+		w.buf = nil
+		_ = w.store.Put(w.task)
+	}
+}
+
 // parseStepProgress 从 Ansible 输出行中解析步骤进度
 // 匹配 "PLAY [名称]" 格式的行来更新步骤状态
 func (w *ansibleLogWriter) parseStepProgress(line string) {
@@ -86,16 +98,23 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 		playName := extractPlayName(trimmed)
 		for i, step := range ansibleSteps {
 			if strings.Contains(playName, step.PlayName) {
+				now := time.Now().UTC()
 				// 标记前序步骤为完成
 				for j := 0; j < i && j < len(w.task.Steps); j++ {
 					if w.task.Steps[j].Status == StepRunning {
 						w.task.Steps[j].Status = StepSuccess
+						w.task.Steps[j].FinishedAt = &now
 					}
 				}
 				// 标记当前步骤为执行中
 				if i < len(w.task.Steps) {
 					w.task.Steps[i].Status = StepRunning
+					if w.task.Steps[i].StartedAt == nil {
+						w.task.Steps[i].StartedAt = &now
+					}
 				}
+				percent := i * 100 / len(ansibleSteps)
+				w.task.Percent = &percent
 				w.stepIndex = i
 				break
 			}
@@ -104,9 +123,11 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 
 	// 检测 PLAY RECAP（全部完成）
 	if strings.HasPrefix(trimmed, "PLAY RECAP") {
+		now := time.Now().UTC()
 		for i := range w.task.Steps {
 			if w.task.Steps[i].Status == StepRunning {
 				w.task.Steps[i].Status = StepSuccess
+				w.task.Steps[i].FinishedAt = &now
 			}
 		}
 	}
@@ -148,12 +169,15 @@ func (s *DeployService) runAnsiblePlaybook(ctx context.Context, opts ansibleExec
 		execute.WithWrite(writer),
 		execute.WithWriteError(writer), // stderr 也写入同一 writer
 		execute.WithCmdRunDir(opts.CmdRunDir),
+		execute.WithEnvVar("ANSIBLE_HOST_KEY_CHECKING", "False"),
+		execute.WithEnvVar("ANSIBLE_RETRY_FILES_ENABLED", "False"),
+		execute.WithEnvVar("ANSIBLE_NOCOLOR", "True"),
 	)
 
 	// 连接选项
 	connOptions := &options.AnsibleConnectionOptions{
 		Connection: "ssh",
-		Timeout:     30,
+		Timeout:    30,
 	}
 
 	// 提权选项
@@ -171,12 +195,12 @@ func (s *DeployService) runAnsiblePlaybook(ctx context.Context, opts ansibleExec
 
 	// 创建 playbook 命令
 	cmd := &playbook.AnsiblePlaybookCmd{
-		Playbooks:               []string{opts.PlaybookPath},
-		Options:                 pbOptions,
-		ConnectionOptions:       connOptions,
+		Playbooks:                  []string{opts.PlaybookPath},
+		Options:                    pbOptions,
+		ConnectionOptions:          connOptions,
 		PrivilegeEscalationOptions: privOptions,
-		Exec:                    exec,
-		StdoutCallback:          "default",
+		Exec:                       exec,
+		StdoutCallback:             "default",
 	}
 
 	// 记录开始

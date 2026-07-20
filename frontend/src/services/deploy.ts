@@ -296,6 +296,15 @@ export function retryDeployPlan(id: number): Promise<{ taskId: number }> {
   return request(`/api/v1/deploy/plans/${id}/retry`, { method: 'POST' })
 }
 
+/** 执行部署前的控制端、拓扑和目标主机就绪检查 */
+export function preflightDeployPlan(id: number): Promise<import('@/types').DeployPreflightResult> {
+  return request(`/api/v1/deploy/plans/${id}/preflight`, { method: 'POST' }).then(camelizeKeys)
+}
+
+export function setDeployPreflightIgnore(id: number, key: string, ignored: boolean): Promise<void> {
+  return request(`/api/v1/deploy/plans/${id}/preflight/ignore`, { method: 'POST', data: { key, ignored } })
+}
+
 // ═══════════════════════════════════════════════════════════
 //  部署任务 API
 // ═══════════════════════════════════════════════════════════
@@ -528,6 +537,19 @@ export function getAnsibleInventoryTemplate(): Promise<{ content: string; path: 
 /** 检查 Ansible 环境 */
 export function checkAnsibleEnv(): Promise<{ installed: boolean; version: string }> {
   return request('/api/v1/deploy/ansible/env-check').then(camelizeKeys)
+}
+
+export interface AnsibleTreeNode {
+  name: string
+  path: string
+  type: 'file' | 'dir'
+  content?: string
+  children?: AnsibleTreeNode[]
+}
+
+/** 获取完整 Ansible 目录树 */
+export function getAnsibleTree(): Promise<AnsibleTreeNode> {
+  return request('/api/v1/deploy/ansible/tree').then(camelizeKeys)
 }
 
 /** 获取部署计划的 Ansible 执行配置 */

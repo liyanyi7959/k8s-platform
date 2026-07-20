@@ -1,32 +1,16 @@
 ---
 # 注册集群到平台
 
-# 1. 从 master 节点提取 kubeconfig
-- name: 提取 kubeconfig 内容
-  ansible.builtin.command: cat /etc/kubernetes/admin.conf
-  register: kubeconfig_raw
+# 0. 在交付 kubeconfig 前验证集群已经可用
+- name: 等待所有 Kubernetes 节点 Ready
+  ansible.builtin.command: kubectl wait --for=condition=Ready nodes --all --timeout=300s
   changed_when: false
 
-# 2. 替换 kubeconfig 中的 127.0.0.1:6443 为 master 节点实际 IP:6443
-- name: 替换 kubeconfig 中的 API Server 地址
-  ansible.builtin.set_fact:
-    kubeconfig_content: "{{ kubeconfig_raw.stdout | replace('127.0.0.1:' ~ k8s_api_server_port, master_ip ~ ':' ~ k8s_api_server_port) }}"
-
-# 3. 将 kubeconfig 写回到 Ansible 控制器（后端服务器），供 Go 代码读取
-- name: 写入 kubeconfig 到控制器临时文件
-  ansible.builtin.copy:
-    content: "{{ kubeconfig_content }}"
-    dest: "/tmp/k8s-deploy-{{ cluster_name | default('default') }}-kubeconfig.yml"
-    mode: "0600"
-  delegate_to: localhost
-  become: false
-
-# 4. 输出注册信息
+# kubeconfig 由后端通过 SSH 从 Master 读取，避免依赖控制器操作系统。
 - name: 输出注册信息
   ansible.builtin.debug:
     msg:
       - "集群注册信息已准备完成"
       - "Master IP: {{ master_ip }}"
       - "API Server Port: {{ k8s_api_server_port }}"
-      - "Kubeconfig 已保存到: /tmp/k8s-deploy-{{ cluster_name | default('default') }}-kubeconfig.yml"
-      - "后续注册步骤将由后端 Go 代码接管"
+      - "Kubeconfig 将由后端通过 SSH 安全回收"

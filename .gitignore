@@ -79,3 +79,4 @@ desktop.ini
 plan.md
 allplan.md
 *.md
+!docs/automated-k8s-deployment-design.md

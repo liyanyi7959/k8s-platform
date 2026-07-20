@@ -203,6 +203,8 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.GET("/plans/:id", readPlan, ctl.GetPlan)
 	deploy.PUT("/plans/:id", writePlan, ctl.UpdatePlan)
 	deploy.GET("/plans/:id/dry-run", readPlan, ctl.DryRunPlan)
+	deploy.POST("/plans/:id/preflight", execDeploy, ctl.PreflightPlan)
+	deploy.POST("/plans/:id/preflight/ignore", execDeploy, ctl.SetPreflightIgnore)
 	deploy.GET("/plans/:id/ansible-config", readPlan, ctl.GetPlanAnsibleConfig)
 	deploy.POST("/plans/:id/execute", execDeploy, ctl.ExecutePlan)
 	deploy.POST("/plans/:id/cancel", execDeploy, ctl.CancelPlan)
@@ -233,6 +235,7 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 		deploy.GET("/ansible/playbook", readPlan, configCtl.GetAnsiblePlaybook)
 		deploy.GET("/ansible/inventory-template", readPlan, configCtl.GetAnsibleInventoryTemplate)
 		deploy.GET("/ansible/env-check", readPlan, configCtl.CheckAnsibleEnv)
+		deploy.GET("/ansible/tree", readPlan, configCtl.GetAnsibleTree)
 	}
 }
 

@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -381,8 +383,15 @@ func (s *DeployService) ExecutePlan(ctx context.Context, id uint64, userID uint6
 	if id == 0 {
 		return 0, ErrInvalidParams
 	}
+	preflight, err := s.PreflightPlan(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+	if !preflight.Ready {
+		return 0, ErrWithMessage(ErrInvalidParams, preflightFailureMessage(preflight))
+	}
 	var taskID uint64
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var plan model.DeployPlan
 		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&plan).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -476,6 +485,15 @@ func normalizeDeployPlan(req CreateDeployPlanRequest, createdBy uint64) (model.D
 	if name == "" || clusterName == "" || k8sVersion == "" {
 		return model.DeployPlan{}, nil, ErrWithMessage(ErrInvalidParams, "计划名称、集群名称和 K8s 版本不能为空")
 	}
+	if len(clusterName) > 63 || !regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`).MatchString(clusterName) {
+		return model.DeployPlan{}, nil, ErrWithMessage(ErrInvalidParams, "集群名称必须为 1-63 位小写字母、数字或连字符")
+	}
+	if !regexp.MustCompile(`^v?1\.[0-9]+\.[0-9]+$`).MatchString(k8sVersion) {
+		return model.DeployPlan{}, nil, ErrWithMessage(ErrInvalidParams, "K8s 版本格式必须类似 v1.31.0")
+	}
+	if !strings.HasPrefix(k8sVersion, "v") {
+		k8sVersion = "v" + k8sVersion
+	}
 	podCIDR := strings.TrimSpace(req.PodCIDR)
 	if podCIDR == "" {
 		podCIDR = "10.244.0.0/16"
@@ -517,15 +535,47 @@ func normalizeDeployPlan(req CreateDeployPlanRequest, createdBy uint64) (model.D
 		}
 		nodes = append(nodes, model.DeployPlanNode{ServerID: n.ServerID, Role: role, SortOrder: n.SortOrder})
 	}
-	if masterCount == 0 {
-		return model.DeployPlan{}, nil, ErrWithMessage(ErrInvalidParams, "至少需要一个 master 节点")
+	if masterCount != 1 {
+		return model.DeployPlan{}, nil, ErrWithMessage(ErrInvalidParams, "当前部署模式必须且只能配置一个 master 节点")
+	}
+	if cidrsOverlap(podCIDR, svcCIDR) {
+		return model.DeployPlan{}, nil, ErrWithMessage(ErrInvalidParams, "Pod 网段与 Service 网段不能重叠")
 	}
 	overrides, err := normalizePlanStepOverrides(req.StepOverrides)
 	if err != nil {
 		return model.DeployPlan{}, nil, err
 	}
-	plan := model.DeployPlan{Name: name, ClusterName: clusterName, K8sVersion: k8sVersion, PodCIDR: podCIDR, SvcCIDR: svcCIDR, CNIType: cniType, CNIConfig: model.JSONMap(req.CNIConfig), Addons: model.JSONStringSlice(req.Addons), StepOverrides: model.JSONMap(overrides), Status: "draft", CreatedBy: createdBy}
+	allowedAddons := map[string]bool{"metrics-server": true, "ingress-nginx": true, "local-storage": true}
+	addons := make([]string, 0, len(req.Addons))
+	seenAddons := map[string]bool{}
+	for _, addon := range req.Addons {
+		addon = strings.TrimSpace(addon)
+		if !allowedAddons[addon] {
+			return model.DeployPlan{}, nil, ErrWithMessage(ErrInvalidParams, "包含不支持的扩展组件")
+		}
+		if !seenAddons[addon] {
+			addons = append(addons, addon)
+			seenAddons[addon] = true
+		}
+	}
+	plan := model.DeployPlan{Name: name, ClusterName: clusterName, K8sVersion: k8sVersion, PodCIDR: podCIDR, SvcCIDR: svcCIDR, CNIType: cniType, CNIConfig: model.JSONMap(req.CNIConfig), Addons: model.JSONStringSlice(addons), StepOverrides: model.JSONMap(overrides), Status: "draft", CreatedBy: createdBy}
 	return plan, nodes, nil
+}
+
+func preflightFailureMessage(result DeployPreflightResult) string {
+	messages := make([]string, 0, 3)
+	for _, check := range result.Checks {
+		if check.Status == preflightError {
+			messages = append(messages, check.Message)
+		}
+		if len(messages) == 3 {
+			break
+		}
+	}
+	if len(messages) == 0 {
+		return "部署预检未通过"
+	}
+	return fmt.Sprintf("部署预检未通过：%s", strings.Join(messages, "；"))
 }
 
 func normalizePlanStepOverrides(input map[string]model.DeployPlanStepOverride) (map[string]any, error) {

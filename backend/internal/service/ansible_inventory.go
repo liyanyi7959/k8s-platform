@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"gopkg.in/yaml.v3"
 	"k8s-platform-backend/internal/model"
 )
 
 // inventoryHost 表示 inventory 中的单个主机
 type inventoryHost struct {
+	Alias    string
 	IP       string
 	SSHPort  int
 	User     string
@@ -33,6 +34,7 @@ func (s *DeployService) generateInventoryFile(ctx context.Context, plan model.De
 		}
 
 		host := inventoryHost{
+			Alias:    fmt.Sprintf("node-%d", node.ServerID),
 			IP:       server.IP,
 			SSHPort:  server.SSHPort,
 			User:     server.User,
@@ -65,29 +67,22 @@ func (s *DeployService) generateInventoryFile(ctx context.Context, plan model.De
 		}
 	}
 
-	// 生成 inventory 内容
-	var sb strings.Builder
-	sb.WriteString("[master]\n")
-	for _, h := range masters {
-		sb.WriteString(formatHostLine(h))
+	inventoryContent, err := marshalInventory(masters, workers, false)
+	if err != nil {
+		return "", nil, fmt.Errorf("生成 inventory 内容失败: %w", err)
 	}
-	sb.WriteString("\n[worker]\n")
-	for _, h := range workers {
-		sb.WriteString(formatHostLine(h))
-	}
-	// 如果没有 worker 节点，添加一个空行避免空组错误
-	if len(workers) == 0 {
-		sb.WriteString("localhost ansible_connection=local\n")
-	}
-	sb.WriteString("\n[all:vars]\n")
-	sb.WriteString("ansible_python_interpreter=/usr/bin/python3\n")
 
 	// 写入临时 inventory 文件
 	inventoryFile, err := os.CreateTemp("", "ansible-inventory-*.ini")
 	if err != nil {
 		return "", nil, fmt.Errorf("创建 inventory 文件失败: %w", err)
 	}
-	if _, err := inventoryFile.WriteString(sb.String()); err != nil {
+	if err := inventoryFile.Chmod(0600); err != nil {
+		inventoryFile.Close()
+		os.Remove(inventoryFile.Name())
+		return "", nil, fmt.Errorf("设置 inventory 文件权限失败: %w", err)
+	}
+	if _, err := inventoryFile.WriteString(inventoryContent); err != nil {
 		inventoryFile.Close()
 		os.Remove(inventoryFile.Name())
 		return "", nil, fmt.Errorf("写入 inventory 文件失败: %w", err)
@@ -104,17 +99,52 @@ func (s *DeployService) generateInventoryFile(ctx context.Context, plan model.De
 	return inventoryFile.Name(), cleanup, nil
 }
 
-// formatHostLine 格式化 inventory 中的主机行
-func formatHostLine(h inventoryHost) string {
-	var line string
-	if h.KeyFile != "" {
-		line = fmt.Sprintf("%s ansible_port=%d ansible_user=%s ansible_ssh_private_key_file=%s\n",
-			h.IP, h.SSHPort, h.User, h.KeyFile)
-	} else {
-		line = fmt.Sprintf("%s ansible_port=%d ansible_user=%s ansible_ssh_pass=%s\n",
-			h.IP, h.SSHPort, h.User, h.Password)
+func marshalInventory(masters, workers []inventoryHost, maskSecret bool) (string, error) {
+	hosts := func(items []inventoryHost) map[string]any {
+		result := make(map[string]any, len(items))
+		for _, host := range items {
+			vars := map[string]any{
+				"ansible_host": host.IP,
+				"ansible_port": host.SSHPort,
+				"ansible_user": host.User,
+			}
+			if host.KeyFile != "" {
+				keyFile := host.KeyFile
+				if maskSecret {
+					keyFile = "<temporary-private-key>"
+				}
+				vars["ansible_ssh_private_key_file"] = keyFile
+			} else {
+				password := host.Password
+				if maskSecret {
+					password = "***"
+				}
+				vars["ansible_password"] = password
+				vars["ansible_become_password"] = password
+			}
+			alias := host.Alias
+			if alias == "" {
+				alias = host.IP
+			}
+			result[alias] = vars
+		}
+		return result
 	}
-	return line
+
+	document := map[string]any{
+		"all": map[string]any{
+			"vars": map[string]any{"ansible_python_interpreter": "/usr/bin/python3"},
+			"children": map[string]any{
+				"master": map[string]any{"hosts": hosts(masters)},
+				"worker": map[string]any{"hosts": hosts(workers)},
+			},
+		},
+	}
+	data, err := yaml.Marshal(document)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 // getServerCredentialForNode 获取节点服务器的凭据信息
@@ -148,9 +178,21 @@ func (s *DeployService) getServerCredentialForNode(ctx context.Context, serverID
 
 // ansiblePlaybookDir 获取 Ansible playbook 的目录路径
 func (s *DeployService) ansiblePlaybookDir() string {
-	// 优先使用配置的路径，否则使用相对路径
-	if s.ansibleDir != "" {
-		return s.ansibleDir
+	return resolveAnsibleDir(s.ansibleDir)
+}
+
+func resolveAnsibleDir(configured string) string {
+	if configured != "" {
+		return configured
+	}
+	candidates := []string{"ansible", filepath.Join("backend", "ansible")}
+	if executable, err := os.Executable(); err == nil {
+		candidates = append([]string{filepath.Join(filepath.Dir(executable), "ansible")}, candidates...)
+	}
+	for _, candidate := range candidates {
+		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+			return candidate
+		}
 	}
 	return "ansible"
 }
@@ -206,6 +248,7 @@ func (s *DeployService) buildInventoryContent(ctx context.Context, nodes []model
 			return "", fmt.Errorf("获取服务器 %d 凭据失败: %w", node.ServerID, err)
 		}
 		host := inventoryHost{
+			Alias:    fmt.Sprintf("node-%d", node.ServerID),
 			IP:       server.IP,
 			SSHPort:  server.SSHPort,
 			User:     server.User,
@@ -227,19 +270,5 @@ func (s *DeployService) buildInventoryContent(ctx context.Context, nodes []model
 		}
 	}
 
-	var sb strings.Builder
-	sb.WriteString("[master]\n")
-	for _, h := range masters {
-		sb.WriteString(formatHostLine(h))
-	}
-	sb.WriteString("\n[worker]\n")
-	for _, h := range workers {
-		sb.WriteString(formatHostLine(h))
-	}
-	if len(workers) == 0 {
-		sb.WriteString("localhost ansible_connection=local\n")
-	}
-	sb.WriteString("\n[all:vars]\n")
-	sb.WriteString("ansible_python_interpreter=/usr/bin/python3\n")
-	return sb.String(), nil
+	return marshalInventory(masters, workers, maskSecret)
 }

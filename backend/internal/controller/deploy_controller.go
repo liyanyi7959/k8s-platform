@@ -245,6 +245,42 @@ func (dc *DeployController) DryRunPlan(c *gin.Context) {
 	resp.OK(c, data)
 }
 
+// PreflightPlan 对控制端、拓扑和目标主机执行部署就绪检查。
+func (dc *DeployController) PreflightPlan(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	data, err := dc.svc.PreflightPlan(c.Request.Context(), id)
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, data)
+}
+
+type setPreflightIgnoreRequest struct {
+	Key     string `json:"key" binding:"required"`
+	Ignored bool   `json:"ignored"`
+}
+
+func (dc *DeployController) SetPreflightIgnore(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	var req setPreflightIgnoreRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+	if err := dc.svc.SetPreflightIgnore(c.Request.Context(), id, req.Key, req.Ignored); err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK[any](c, nil)
+}
+
 func (dc *DeployController) DeletePlan(c *gin.Context) {
 	id, ok := parseUintParam(c, "id")
 	if !ok {

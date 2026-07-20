@@ -407,10 +407,82 @@ func (s *DeployConfigService) CheckAnsibleEnv(ctx context.Context) (installed bo
 
 // ansiblePlaybookDir 获取 Ansible playbook 目录路径。
 func (s *DeployConfigService) ansiblePlaybookDir() string {
-	return "ansible"
+	return resolveAnsibleDir("")
 }
 
 // ansiblePlaybookPath 获取 site.yml 完整路径。
 func (s *DeployConfigService) ansiblePlaybookPath() string {
 	return filepath.Join(s.ansiblePlaybookDir(), "site.yml")
+}
+
+// AnsibleTreeNode 表示 Ansible 目录树中的一个节点。
+type AnsibleTreeNode struct {
+	Name     string            `json:"name"`
+	Path     string            `json:"path"`
+	Type     string            `json:"type"` // file | dir
+	Content  string            `json:"content,omitempty"`
+	Children []AnsibleTreeNode `json:"children,omitempty"`
+}
+
+// ReadAnsibleTree 递归读取 Ansible 目录树及文件内容。
+func (s *DeployConfigService) ReadAnsibleTree(ctx context.Context) (*AnsibleTreeNode, error) {
+	root := s.ansiblePlaybookDir()
+	info, err := os.Stat(root)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	node, err := s.readAnsibleTreeNode(root, info)
+	if err != nil {
+		return nil, err
+	}
+	node.Name = "ansible"
+	node.Path = "ansible"
+	return node, nil
+}
+
+func (s *DeployConfigService) readAnsibleTreeNode(fullPath string, info os.FileInfo) (*AnsibleTreeNode, error) {
+	relPath := strings.TrimPrefix(fullPath, s.ansiblePlaybookDir())
+	relPath = strings.TrimPrefix(relPath, string(filepath.Separator))
+	if relPath == "" {
+		relPath = s.ansiblePlaybookDir()
+	}
+
+	node := &AnsibleTreeNode{
+		Name: info.Name(),
+		Path: relPath,
+		Type: "file",
+	}
+	if info.IsDir() {
+		node.Type = "dir"
+		entries, err := os.ReadDir(fullPath)
+		if err != nil {
+			return nil, err
+		}
+		for _, entry := range entries {
+			childInfo, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			child, err := s.readAnsibleTreeNode(filepath.Join(fullPath, entry.Name()), childInfo)
+			if err != nil {
+				continue
+			}
+			node.Children = append(node.Children, *child)
+		}
+		return node, nil
+	}
+
+	// 只读取文本文件（.yml/.yaml/.ini/.j2/.conf）。
+	ext := strings.ToLower(filepath.Ext(info.Name()))
+	if ext == ".yml" || ext == ".yaml" || ext == ".ini" || ext == ".j2" || ext == ".conf" {
+		data, err := os.ReadFile(fullPath)
+		if err != nil {
+			return nil, err
+		}
+		node.Content = string(data)
+	}
+	return node, nil
 }
