@@ -223,8 +223,20 @@ export default function DeployPlanDetailPage() {
     setLogs([])
     logOffsetRef.current = 0
     getDeployTaskLogs(taskId, 0, 500, effectiveStepKey || undefined).then((res) => {
-      setLogs(res.logs || [])
-      logOffsetRef.current = (res.logs || []).length
+      const fetched = res.logs || []
+      // 当按步骤过滤后没有日志时（如部署准备阶段的日志 step_key 为空），回退到全部日志
+      if (effectiveStepKey && fetched.length === 0) {
+        getDeployTaskLogs(taskId, 0, 500).then((allRes) => {
+          setLogs(allRes.logs || [])
+          logOffsetRef.current = (allRes.logs || []).length
+        }).catch(() => {
+          setLogs([])
+          logOffsetRef.current = 0
+        })
+      } else {
+        setLogs(fetched)
+        logOffsetRef.current = fetched.length
+      }
     }).catch(() => {
       setLogs([])
       logOffsetRef.current = 0

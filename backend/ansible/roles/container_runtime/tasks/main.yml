@@ -1,4 +1,4 @@
-﻿---
+---
 # 容器运行时 (containerd) 安装 role
 # 在所有节点上安装并配置 containerd
 
@@ -8,9 +8,9 @@
     name: docker-ce
     description: Docker CE Stable Repository
     # 麒麟 V10 的 RPM ABI 与 EL8 兼容，不能直接拼出不存在的 CentOS 10 仓库。
-    baseurl: "https://download.docker.com/linux/centos/{{ '8' if 'kylin' in (ansible_distribution | lower) else ansible_distribution_major_version }}/$basearch/stable"
+    baseurl: "{{ docker_yum_baseurl | replace(ansible_distribution_major_version, '8' if 'kylin' in (ansible_distribution | lower) else ansible_distribution_major_version) }}"
     gpgcheck: yes
-    gpgkey: "https://download.docker.com/linux/centos/gpg"
+    gpgkey: "{{ docker_yum_gpgkey }}"
   when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
 - name: 移除麒麟预装的旧 docker-runc 冲突包

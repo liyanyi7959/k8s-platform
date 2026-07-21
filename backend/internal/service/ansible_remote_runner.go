@@ -22,6 +22,13 @@ import (
 // runAnsibleOnMaster uses the plan's only Master as an ephemeral Linux runner.
 // Only the runner workspace is cleaned; target state is intentionally preserved for idempotent retry.
 func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, task *Task) (string, error) {
+	// logErr 记录错误到 task 日志并返回包装后的 error
+	logErr := func(msg string, err error) error {
+		task.AppendLog(fmt.Sprintf("[error] %s: %v", msg, err), "")
+		_ = s.taskStore.Put(task)
+		return fmt.Errorf("%s: %w", msg, err)
+	}
+
 	var masterNode *model.DeployPlanNode
 	for i := range nodes {
 		if nodes[i].Role == "master" {
@@ -30,17 +37,17 @@ func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.Deplo
 		}
 	}
 	if masterNode == nil {
-		return "", fmt.Errorf("部署计划未配置 Master 节点")
+		return "", logErr("部署计划未配置 Master 节点", fmt.Errorf("master node not found"))
 	}
 
 	master, credential, authType, err := s.getServerCredentialForNode(ctx, masterNode.ServerID)
 	if err != nil {
-		return "", fmt.Errorf("读取 Master Runner 凭据失败: %w", err)
+		return "", logErr("读取 Master Runner 凭据失败", err)
 	}
 	master.AuthType = authType
 	client, err := dialDeploySSH(ctx, master, credential)
 	if err != nil {
-		return "", fmt.Errorf("连接 Master Runner 失败: %w", err)
+		return "", logErr("连接 Master Runner 失败", err)
 	}
 	defer client.Close()
 
@@ -62,7 +69,7 @@ func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.Deplo
 	for _, node := range nodes {
 		_, _, nodeAuthType, credErr := s.getServerCredentialForNode(ctx, node.ServerID)
 		if credErr != nil {
-			return "", credErr
+			return "", logErr(fmt.Sprintf("读取节点 %d 凭据失败", node.ServerID), credErr)
 		}
 		if nodeAuthType != "key" {
 			needSSHPass = true
@@ -70,17 +77,22 @@ func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.Deplo
 	}
 	bootstrap := runnerBootstrapScript(needSSHPass)
 	if output, bootstrapErr := runPrivilegedSSHCommand(client, master, credential, bootstrap); bootstrapErr != nil {
-		return "", fmt.Errorf("Master Runner 依赖安装失败: %w", bootstrapErr)
+		// 将依赖安装的 stdout 和 stderr 完整写入日志，方便排查
+		if strings.TrimSpace(output) != "" {
+			task.AppendLog("[runner] "+strings.TrimSpace(output), "")
+		}
+		return "", logErr("Master Runner 依赖安装失败", bootstrapErr)
 	} else if strings.TrimSpace(output) != "" {
 		task.AppendLog("[runner] " + strings.TrimSpace(output))
+		_ = s.taskStore.Put(task)
 	}
 
 	archive, err := s.buildRunnerArchive(ctx, plan, nodes, workspace, task)
 	if err != nil {
-		return "", err
+		return "", logErr("构建 Runner 执行包失败", err)
 	}
 	if err := uploadRunnerArchive(client, workspace, archive); err != nil {
-		return "", fmt.Errorf("上传 Runner 执行包失败: %w", err)
+		return "", logErr("上传 Runner 执行包失败", err)
 	}
 	task.AppendLog("[info] Playbook、inventory 和临时凭据已上传")
 	_ = s.taskStore.Put(task)
@@ -91,11 +103,11 @@ func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.Deplo
 		"ANSIBLE_HOST_KEY_CHECKING=False ANSIBLE_RETRY_FILES_ENABLED=False ANSIBLE_NOCOLOR=True " +
 		"ansible-playbook site.yml -i ../inventory.yml --extra-vars @../extra-vars.json --forks 10"
 	if err := runStreamingSSHCommand(ctx, client, command, writer); err != nil {
-		return "", fmt.Errorf("Ansible Playbook 执行失败: %w", err)
+		return "", logErr("Ansible Playbook 执行失败", err)
 	}
 	kubeconfig, err := runPrivilegedSSHCommand(client, master, credential, "cat /etc/kubernetes/admin.conf")
 	if err != nil {
-		return "", fmt.Errorf("从 Master 读取 kubeconfig 失败: %w", err)
+		return "", logErr("从 Master 读取 kubeconfig 失败", err)
 	}
 	return normalizeMasterKubeconfig(kubeconfig, master.IP)
 }
@@ -130,12 +142,21 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 	var masters, workers []inventoryHost
 	keys := map[string]string{}
 	ignoredDiskHosts := make([]string, 0)
+	masterIdx, workerIdx := 0, 0
 	for _, node := range nodes {
 		server, credential, authType, err := s.getServerCredentialForNode(ctx, node.ServerID)
 		if err != nil {
 			return nil, fmt.Errorf("读取节点 %d 凭据失败: %w", node.ServerID, err)
 		}
-		host := inventoryHost{Alias: fmt.Sprintf("node-%d", node.ServerID), IP: server.IP, SSHPort: server.SSHPort, User: server.User, AuthType: authType}
+		var alias string
+		if node.Role == "master" {
+			masterIdx++
+			alias = nodeAlias("master", masterIdx, server.IP)
+		} else {
+			workerIdx++
+			alias = nodeAlias("worker", workerIdx, server.IP)
+		}
+		host := inventoryHost{Alias: alias, IP: server.IP, SSHPort: server.SSHPort, User: server.User, AuthType: authType}
 		if containsString(plan.PreflightIgnores, fmt.Sprintf("node.%d.disk", node.ServerID)) {
 			ignoredDiskHosts = append(ignoredDiskHosts, host.Alias)
 		}
@@ -168,6 +189,22 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 		"k8s_minor_version": extractMinorVersion(plan.K8sVersion), "pod_cidr": plan.PodCIDR,
 		"svc_cidr": plan.SvcCIDR, "cni_type": plan.CNIType, "cluster_name": plan.ClusterName,
 		"addons": []string(plan.Addons), "preflight_ignored_disk_hosts": ignoredDiskHosts,
+	}
+	// 从仓库配置中提取启用的镜像源，注入 Ansible extra vars
+	if repos, repoErr := s.deployConfig.ListRepositories(ctx, ""); repoErr == nil {
+		for _, repo := range repos {
+			if !repo.Enabled {
+				continue
+			}
+			// 容器镜像仓库：覆盖默认的 k8s_image_repository
+			// kubeadm imageRepository 不接受 URL 协议前缀，需去除 http(s)://
+			if repo.RepoType == "container_mirror" && repo.IsDefault {
+				imageRepo := strings.TrimPrefix(repo.URL, "https://")
+				imageRepo = strings.TrimPrefix(imageRepo, "http://")
+				imageRepo = strings.TrimSuffix(imageRepo, "/")
+				extraVarsMap["k8s_image_repository"] = imageRepo
+			}
+		}
 	}
 	if len(enabledSteps) > 0 {
 		extraVarsMap["retry_enabled_steps"] = enabledSteps

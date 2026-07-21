@@ -5,10 +5,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"k8s-platform-backend/internal/model"
 
 	"gopkg.in/yaml.v3"
-	"k8s-platform-backend/internal/model"
 )
+
+// nodeAlias 生成 inventory 中的节点别名：角色+序号+IP（IP 的 . 替换为 -）。
+// 例如：master01-192-168-19-129、worker02-192-168-19-130。
+// 该别名同时作为 k8s 节点名称（bootstrap role 会将 hostname 设为 inventory_hostname）。
+func nodeAlias(role string, idx int, ip string) string {
+	prefix := "worker"
+	if role == "master" {
+		prefix = "master"
+	}
+	return fmt.Sprintf("%s%02d-%s", prefix, idx, strings.ReplaceAll(ip, ".", "-"))
+}
 
 // inventoryHost 表示 inventory 中的单个主机
 type inventoryHost struct {
@@ -26,6 +39,7 @@ type inventoryHost struct {
 func (s *DeployService) generateInventoryFile(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode) (string, func(), error) {
 	var masters, workers []inventoryHost
 	var keyFiles []string
+	masterIdx, workerIdx := 0, 0
 
 	for _, node := range nodes {
 		server, cred, authType, err := s.getServerCredentialForNode(ctx, node.ServerID)
@@ -33,8 +47,16 @@ func (s *DeployService) generateInventoryFile(ctx context.Context, plan model.De
 			return "", nil, fmt.Errorf("获取服务器 %d 凭据失败: %w", node.ServerID, err)
 		}
 
+		var alias string
+		if node.Role == "master" {
+			masterIdx++
+			alias = nodeAlias("master", masterIdx, server.IP)
+		} else {
+			workerIdx++
+			alias = nodeAlias("worker", workerIdx, server.IP)
+		}
 		host := inventoryHost{
-			Alias:    fmt.Sprintf("node-%d", node.ServerID),
+			Alias:    alias,
 			IP:       server.IP,
 			SSHPort:  server.SSHPort,
 			User:     server.User,
@@ -242,13 +264,22 @@ func (s *DeployService) GetPlanAnsibleConfig(ctx context.Context, planID uint64)
 // maskSecret 为 true 时密码显示为 ***。
 func (s *DeployService) buildInventoryContent(ctx context.Context, nodes []model.DeployPlanNode, maskSecret bool) (string, error) {
 	var masters, workers []inventoryHost
+	masterIdx, workerIdx := 0, 0
 	for _, node := range nodes {
 		server, cred, authType, err := s.getServerCredentialForNode(ctx, node.ServerID)
 		if err != nil {
 			return "", fmt.Errorf("获取服务器 %d 凭据失败: %w", node.ServerID, err)
 		}
+		var alias string
+		if node.Role == "master" {
+			masterIdx++
+			alias = nodeAlias("master", masterIdx, server.IP)
+		} else {
+			workerIdx++
+			alias = nodeAlias("worker", workerIdx, server.IP)
+		}
 		host := inventoryHost{
-			Alias:    fmt.Sprintf("node-%d", node.ServerID),
+			Alias:    alias,
 			IP:       server.IP,
 			SSHPort:  server.SSHPort,
 			User:     server.User,

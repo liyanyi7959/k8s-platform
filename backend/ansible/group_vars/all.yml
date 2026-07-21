@@ -30,3 +30,11 @@ addons: []
 
 # 由后端为每次任务注入唯一的临时输出路径
 preflight_ignored_disk_hosts: []
+
+# Docker CE 仓库（国内默认使用阿里云镜像，避免 download.docker.com 不可达）
+docker_yum_baseurl: "https://mirrors.aliyun.com/docker-ce/linux/centos/{{ ansible_distribution_major_version }}/$basearch/stable"
+docker_yum_gpgkey: "https://mirrors.aliyun.com/docker-ce/linux/centos/gpg"
+
+# Kubernetes yum 仓库（默认使用官方 pkgs.k8s.io，可被后端仓库配置覆盖）
+k8s_yum_baseurl: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/rpm/"
+k8s_yum_gpgkey: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/rpm/repodata/repomd.xml.key"

@@ -54,11 +54,14 @@ func AuthRequiredWithRBAC(mgr *auth.Manager, rbacSvc *service.RbacService) gin.H
 			// 常规 HTTP 请求：从 Authorization 取 Bearer token。
 			token = strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 		} else {
-			// WebSocket 兼容：浏览器/代理在 upgrade 时可能无法携带自定义 header，
-			// 这里允许通过 query 参数 token 传递。
+			// WebSocket/SSE 兼容：浏览器 EventSource 无法携带自定义 header，
+			// 允许通过 query 参数 token 传递。
 			connHdr := strings.ToLower(c.GetHeader("Connection"))
 			upHdr := strings.ToLower(c.GetHeader("Upgrade"))
-			if strings.Contains(connHdr, "upgrade") && upHdr == "websocket" {
+			acceptHdr := strings.ToLower(c.GetHeader("Accept"))
+			isWebSocket := strings.Contains(connHdr, "upgrade") && upHdr == "websocket"
+			isSSE := strings.Contains(acceptHdr, "text/event-stream")
+			if isWebSocket || isSSE {
 				token = strings.TrimSpace(c.Query("token"))
 			}
 		}
