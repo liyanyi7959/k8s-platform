@@ -8,6 +8,7 @@
 - name: 环境预检 - 所有节点
   hosts: all
   become: yes
+  any_errors_fatal: true
   roles:
     - role: pre_check
       when: retry_enabled_steps is not defined or 'pre_check' in retry_enabled_steps
@@ -15,6 +16,7 @@
 - name: 基础环境初始化 - 所有节点
   hosts: all
   become: yes
+  any_errors_fatal: true
   roles:
     - role: bootstrap
       when: retry_enabled_steps is not defined or 'bootstrap' in retry_enabled_steps
@@ -22,6 +24,7 @@
 - name: 容器运行时安装 - 所有节点
   hosts: all
   become: yes
+  any_errors_fatal: true
   roles:
     - role: container_runtime
       when: retry_enabled_steps is not defined or 'container_runtime' in retry_enabled_steps
@@ -29,6 +32,7 @@
 - name: Kubernetes Master 初始化
   hosts: master
   become: yes
+  any_errors_fatal: true
   roles:
     - role: kubeadm_init
       when: retry_enabled_steps is not defined or 'kubeadm_init' in retry_enabled_steps
@@ -36,6 +40,7 @@
 - name: Worker 节点加入集群
   hosts: worker
   become: yes
+  any_errors_fatal: true
   roles:
     - role: join_workers
       when: retry_enabled_steps is not defined or 'join_workers' in retry_enabled_steps
@@ -43,6 +48,7 @@
 - name: 安装 CNI 网络插件
   hosts: master
   become: yes
+  any_errors_fatal: true
   roles:
     - role: install_cni
       when: retry_enabled_steps is not defined or 'install_cni' in retry_enabled_steps
@@ -50,6 +56,7 @@
 - name: 安装 Kubernetes 扩展组件
   hosts: master
   become: yes
+  any_errors_fatal: true
   roles:
     - role: install_addons
       when: retry_enabled_steps is not defined or 'install_addons' in retry_enabled_steps
@@ -57,6 +64,7 @@
 - name: 节点注册到管理平台
   hosts: master
   become: yes
+  any_errors_fatal: true
   roles:
     - role: register
       when: retry_enabled_steps is not defined or 'register' in retry_enabled_steps

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, lazy, Suspense } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Row,
   Col,
@@ -12,7 +12,7 @@ import {
   Button,
   Switch,
   Select,
-  Spin,
+  Skeleton,
   Empty,
   Table,
   List,
@@ -29,7 +29,7 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { getClusterOverview } from '@/services/k8s'
+import { getClusterCertificateRisks, getClusterOverview } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
 import { AppPage, EllipsisText } from '@/components'
 import { ResourceTrendChart } from '@/components/ResourceTrendChart'
@@ -56,10 +56,6 @@ const LazyLine: React.FC<{
   )
 }
 
-// 懒加载重型图表组件，减少首屏 JS 体积
-const LazyPie = lazy(() => import('@ant-design/charts').then((m) => ({ default: m.Pie })))
-const LazyColumn = lazy(() => import('@ant-design/charts').then((m) => ({ default: m.Column })))
-
 const { Text } = Typography
 
 const COLOR = {
@@ -71,6 +67,77 @@ const COLOR = {
   purple: '#7c3aed',
   cyan: '#0891b2',
 } as const
+
+const PodPhaseDonut: React.FC<{
+  data: Array<{ type: string; value: number; color: string }>
+}> = ({ data }) => {
+  const total = data.reduce((sum, item) => sum + item.value, 0)
+  let cursor = 0
+  const segments = data.map((item) => {
+    const start = cursor
+    cursor += total > 0 ? (item.value / total) * 100 : 0
+    return `${item.color} ${start}% ${cursor}%`
+  })
+  return (
+    <div
+      role="img"
+      aria-label={`Pod 状态分布，共 ${total} 个`}
+      style={{
+        width: 140,
+        height: 140,
+        margin: '0 auto 10px',
+        borderRadius: '50%',
+        background: `conic-gradient(${segments.join(',')})`,
+        display: 'grid',
+        placeItems: 'center',
+      }}
+    >
+      <div
+        style={{
+          width: 78,
+          height: 78,
+          borderRadius: '50%',
+          background: '#fff',
+          display: 'grid',
+          placeItems: 'center',
+          color: '#14213d',
+          fontSize: 24,
+          fontWeight: 800,
+        }}
+      >
+        {total}
+      </div>
+    </div>
+  )
+}
+
+const NamespacePodBars: React.FC<{
+  data: Array<{ namespace: string; pods: number }>
+}> = ({ data }) => {
+  const max = Math.max(1, ...data.map((item) => item.pods))
+  return (
+    <div style={{ height: 220, overflowY: 'auto', padding: '4px 2px' }}>
+      {data.map((item) => (
+        <div key={item.namespace} style={{ marginBottom: 10 }}>
+          <Row justify="space-between" wrap={false} style={{ marginBottom: 4 }}>
+            <EllipsisText text={item.namespace} maxWidth="80%" />
+            <Text strong>{item.pods}</Text>
+          </Row>
+          <div style={{ height: 8, borderRadius: 999, background: '#f0ecff', overflow: 'hidden' }}>
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.max(3, (item.pods / max) * 100)}%`,
+                borderRadius: 999,
+                background: COLOR.purple,
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function getHealthTier(score: number): 'good' | 'warn' | 'bad' {
   return score >= 80 ? 'good' : score >= 60 ? 'warn' : 'bad'
@@ -92,6 +159,36 @@ function timeAgo(ts: string): string {
   return `${Math.floor(h / 24)}天前`
 }
 
+const HealthOverviewSkeleton: React.FC = () => (
+  <AppPage>
+    <Card size="small" style={{ marginBottom: 12 }}>
+      <Skeleton active title={{ width: 220 }} paragraph={false} />
+      <Row gutter={12} style={{ marginTop: 18 }}>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Col xs={24} md={12} xl={6} key={index}>
+            <Card size="small" style={{ minHeight: 108 }}>
+              <Skeleton
+                active
+                title={{ width: '45%' }}
+                paragraph={{ rows: 2, width: ['34%', '70%'] }}
+              />
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    </Card>
+    <Row gutter={12}>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <Col xs={24} lg={8} key={index}>
+          <Card size="small" style={{ minHeight: 300 }}>
+            <Skeleton active title={{ width: '42%' }} paragraph={{ rows: 7 }} />
+          </Card>
+        </Col>
+      ))}
+    </Row>
+  </AppPage>
+)
+
 const K8sDashboardPage: React.FC = () => {
   const clusterId = useClusterId()
   const [autoRefresh, setAutoRefresh] = useState(true)
@@ -110,6 +207,14 @@ const K8sDashboardPage: React.FC = () => {
     queryKey: ['k8s-overview', clusterId],
     queryFn: ({ signal }) => getClusterOverview(clusterId, signal),
     refetchInterval: autoRefresh ? refreshInterval * 1000 : false,
+  })
+
+  const { data: certificateRisksData, isLoading: certificateRisksLoading } = useQuery({
+    queryKey: ['k8s-certificate-risks', clusterId],
+    queryFn: ({ signal }) => getClusterCertificateRisks(clusterId, signal),
+    enabled: Boolean(overview?.cluster.api_ok),
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
   })
 
   const healthScore = useMemo(() => {
@@ -170,10 +275,12 @@ const K8sDashboardPage: React.FC = () => {
   const failedPods = overview?.anomalies?.failed_pods || []
   const unscheduledPods = overview?.anomalies?.unscheduled_pods || []
   const topWorkloads = overview?.top_workloads || []
-  const certRisks = (overview?.risks?.certificates || []).filter((cert) => cert.status !== 'ok')
+  const certRisks = (certificateRisksData ?? overview?.risks?.certificates ?? []).filter(
+    (cert) => cert.status !== 'ok',
+  )
 
   if (isLoading) {
-    return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
+    return <HealthOverviewSkeleton />
   }
 
   if (!overview) {
@@ -216,10 +323,10 @@ const K8sDashboardPage: React.FC = () => {
     })),
   ]
   const podPhaseData = [
-    { type: '运行中', value: s.pods.running },
-    { type: '等待中', value: s.pods.pending },
-    { type: '失败', value: s.pods.failed },
-    { type: '完成', value: s.pods.succeeded },
+    { type: '运行中', value: s.pods.running, color: COLOR.healthy },
+    { type: '等待中', value: s.pods.pending, color: COLOR.warning },
+    { type: '失败', value: s.pods.failed, color: COLOR.critical },
+    { type: '完成', value: s.pods.succeeded, color: COLOR.idle },
   ].filter((d) => d.value > 0)
   const nodeReadyPercent =
     overview.charts.node_ready.total > 0
@@ -332,7 +439,14 @@ const K8sDashboardPage: React.FC = () => {
                 }}
                 onClick={() => kpi.path && history.push(kpi.path)}
               >
-                <div style={{ display: 'grid', gridTemplateColumns: '44px minmax(0, 1fr)', gap: 16, alignItems: 'center' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '44px minmax(0, 1fr)',
+                    gap: 16,
+                    alignItems: 'center',
+                  }}
+                >
                   <div
                     style={{
                       width: 38,
@@ -437,24 +551,7 @@ const K8sDashboardPage: React.FC = () => {
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="无 Pod" />
             ) : (
               <>
-                <Suspense fallback={<Spin style={{ display: 'block', margin: '50px auto' }} />}>
-                  <LazyPie
-                    height={140}
-                    data={podPhaseData}
-                    angleField="value"
-                    colorField="type"
-                    scale={{
-                      color: {
-                        domain: ['运行中', '等待中', '失败', '完成'],
-                        range: [COLOR.healthy, COLOR.warning, COLOR.critical, COLOR.idle],
-                      },
-                    }}
-                    innerRadius={0.55}
-                    legend={false}
-                    label={{ text: 'value', position: 'outside', style: { fontSize: 11 } }}
-                    tooltip={{ title: 'type', items: [{ channel: 'y', name: 'Pod 数量' }] }}
-                  />
-                </Suspense>
+                <PodPhaseDonut data={podPhaseData} />
                 <Row justify="center" gutter={16}>
                   {[
                     { label: '运行', value: s.pods.running, color: COLOR.healthy },
@@ -610,7 +707,9 @@ const K8sDashboardPage: React.FC = () => {
             style={{ height: '100%' }}
             bodyStyle={{ maxHeight: 200, overflow: 'auto' }}
           >
-            {certRisks.length === 0 ? (
+            {certificateRisksLoading && certRisks.length === 0 ? (
+              <Skeleton active title={false} paragraph={{ rows: 3 }} />
+            ) : certRisks.length === 0 ? (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="无证书风险" />
             ) : (
               <List
@@ -693,7 +792,7 @@ const K8sDashboardPage: React.FC = () => {
               个点。
             </Text>
             {overview.cluster.api_ok && cpuMemData.length > 0 ? (
-              <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>
+              <>
                 <div style={{ position: 'relative' }}>
                   <LazyLine
                     data={cpuMemData}
@@ -744,7 +843,7 @@ const K8sDashboardPage: React.FC = () => {
                     </Text>
                   )}
                 </div>
-              </Suspense>
+              </>
             ) : (
               <div
                 style={{
@@ -929,18 +1028,7 @@ const K8sDashboardPage: React.FC = () => {
                 style={{ marginTop: 60 }}
               />
             ) : (
-              <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>
-                <LazyColumn
-                  data={overview.charts.namespace_pods_top}
-                  xField="namespace"
-                  yField="pods"
-                  height={220}
-                  color={COLOR.purple}
-                  columnStyle={{ radius: [4, 4, 0, 0] }}
-                  xAxis={{ label: { autoRotate: true, style: { fontSize: 10 } } }}
-                  yAxis={{ label: { style: { fontSize: 10 } } }}
-                />
-              </Suspense>
+              <NamespacePodBars data={overview.charts.namespace_pods_top} />
             )}
           </Card>
         </Col>

@@ -288,12 +288,24 @@ export interface ClusterOverview {
   events?: K8sEvent[]
 }
 
+export type ClusterCertificateRisk = NonNullable<
+  NonNullable<ClusterOverview['risks']>['certificates']
+>[number]
+
 /** 获取集群概览 */
 export function getClusterOverview(
   clusterId: number,
   signal?: AbortSignal,
 ): Promise<ClusterOverview> {
   return request(`/api/v1/dashboard/clusters/${clusterId}/overview`, { signal })
+}
+
+/** 证书探测独立于总览首屏加载，避免远程 TLS 握手阻塞核心健康数据。 */
+export function getClusterCertificateRisks(
+  clusterId: number,
+  signal?: AbortSignal,
+): Promise<ClusterCertificateRisk[]> {
+  return request(`/api/v1/dashboard/clusters/${clusterId}/certificate-risks`, { signal })
 }
 
 // ==================== Topology ====================

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -59,14 +60,16 @@ type ansibleLogWriter struct {
 	mu        sync.Mutex
 	buf       []byte
 	stepIndex int // 当前执行的步骤索引
-	stepDone  bool
+	// failedStepIndex 锁定首个失败步骤。失败一旦发生，后续 PLAY 不得再推进状态。
+	failedStepIndex int
 }
 
 func newAnsibleLogWriter(task *Task, store *TaskStore) *ansibleLogWriter {
 	return &ansibleLogWriter{
-		task:      task,
-		store:     store,
-		stepIndex: -1,
+		task:            task,
+		store:           store,
+		stepIndex:       -1,
+		failedStepIndex: -1,
 	}
 }
 
@@ -110,10 +113,15 @@ func (w *ansibleLogWriter) flush() {
 
 // currentStepKey 返回当前执行步骤的 key。
 func (w *ansibleLogWriter) currentStepKey() string {
+	if w.failedStepIndex >= 0 && w.failedStepIndex < len(ansibleSteps) {
+		return ansibleSteps[w.failedStepIndex].Key
+	}
 	if w.stepIndex >= 0 && w.stepIndex < len(ansibleSteps) {
 		return ansibleSteps[w.stepIndex].Key
 	}
-	return ""
+	// ansible-playbook 在第一个 PLAY 之前也会输出解析/配置错误，仍应归属到
+	// 当前运行步骤，避免按步骤查看时出现“失败但无日志”。
+	return activeDeployStepKey(w.task)
 }
 
 // parseStepProgress 从 Ansible 输出行中解析步骤进度
@@ -124,6 +132,11 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 
 	// 检测 PLAY 开始：PLAY [环境预检 - 所有节点] 或 PLAY [Kubernetes Master 初始化]
 	if strings.HasPrefix(trimmed, "PLAY [") {
+		// 理论上 any_errors_fatal 会阻止后续 PLAY；这里再锁一道状态机，避免异常
+		// 输出把失败后的步骤错误标记为运行或成功。
+		if w.failedStepIndex >= 0 {
+			return
+		}
 		playName := extractPlayName(trimmed)
 		for i, step := range ansibleSteps {
 			if strings.Contains(playName, step.PlayName) {
@@ -180,8 +193,17 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 		}
 	}
 
-	// 检测 PLAY RECAP（全部完成）
+	// 检测明确的任务失败。必须先于 PLAY RECAP 处理并锁定首个失败步骤。
+	if strings.Contains(trimmed, "FAILED!") || strings.Contains(trimmed, "UNREACHABLE!") {
+		w.markCurrentStepFailed(now)
+		return
+	}
+
+	// 检测 PLAY RECAP（全部完成）。已有失败时不能把任何运行步骤改回成功。
 	if strings.HasPrefix(trimmed, "PLAY RECAP") {
+		if w.failedStepIndex >= 0 {
+			return
+		}
 		for i := range w.task.Steps {
 			if w.task.Steps[i].Status == StepRunning {
 				w.task.Steps[i].Status = StepSuccess
@@ -189,16 +211,37 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 				w.finishRunningSubStep(i, now)
 			}
 		}
+		return
 	}
 
-	// 检测失败：failed=1
-	if strings.Contains(trimmed, "failed=1") || strings.Contains(trimmed, "FAILED") {
-		if w.stepIndex >= 0 && w.stepIndex < len(w.task.Steps) {
-			w.task.Steps[w.stepIndex].Status = StepFailed
-			w.task.Steps[w.stepIndex].FinishedAt = &now
-			w.finishRunningSubStep(w.stepIndex, now)
+	// 某些回调插件只在 recap 中给出失败计数，没有 FAILED! 明细。
+	if hasAnsibleRecapFailure(trimmed) {
+		w.markCurrentStepFailed(now)
+	}
+}
+
+func (w *ansibleLogWriter) markCurrentStepFailed(now time.Time) {
+	if w.failedStepIndex >= 0 || w.stepIndex < 0 || w.stepIndex >= len(w.task.Steps) {
+		return
+	}
+	w.failedStepIndex = w.stepIndex
+	w.task.Steps[w.stepIndex].Status = StepFailed
+	w.task.Steps[w.stepIndex].FinishedAt = &now
+	w.finishRunningSubStep(w.stepIndex, now)
+}
+
+func hasAnsibleRecapFailure(line string) bool {
+	for _, field := range strings.Fields(line) {
+		parts := strings.SplitN(field, "=", 2)
+		if len(parts) != 2 || (parts[0] != "failed" && parts[0] != "unreachable") {
+			continue
+		}
+		count, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err == nil && count > 0 {
+			return true
 		}
 	}
+	return false
 }
 
 // finishRunningSubStep 将指定大步骤下运行中的子步骤标记为完成（根据最终状态）。

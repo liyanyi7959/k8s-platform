@@ -80,6 +80,39 @@ a {
   color: #fff;
 }
 
+.app-global-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  display: none;
+  width: 24px;
+  height: 27px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-64px, -64px, 0);
+  will-change: transform;
+}
+
+.app-global-cursor img {
+  display: block;
+  width: 24px;
+  height: 27px;
+  user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html,
+  body,
+  body * {
+    cursor: none !important;
+  }
+
+  .app-global-cursor {
+    display: block;
+  }
+}
+
 .ant-app,
 .ant-layout,
 .ant-pro-layout,

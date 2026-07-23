@@ -1,5 +1,5 @@
 import { history, useModel, type RequestConfig } from '@umijs/max'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   App as AntdApp,
   Avatar,
@@ -83,6 +83,55 @@ const ensureStaticHolder = () => {
   staticHolderConfigured = true
 }
 
+const AppGlobalCursor = () => {
+  const cursorRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const cursor = cursorRef.current
+    if (!cursor || typeof window === 'undefined') return
+
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)')
+    const hideCursor = () => {
+      cursor.style.opacity = '0'
+    }
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!finePointer.matches || event.pointerType === 'touch') {
+        hideCursor()
+        return
+      }
+
+      const x = Math.round(event.clientX - 3)
+      const y = Math.round(event.clientY - 2)
+      cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`
+      cursor.style.opacity = '1'
+    }
+    const handlePointerOut = (event: PointerEvent) => {
+      if (event.relatedTarget === null) hideCursor()
+    }
+    const handlePointerCapabilityChange = () => {
+      if (!finePointer.matches) hideCursor()
+    }
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true })
+    window.addEventListener('pointerout', handlePointerOut)
+    window.addEventListener('blur', hideCursor)
+    finePointer.addEventListener('change', handlePointerCapabilityChange)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerout', handlePointerOut)
+      window.removeEventListener('blur', hideCursor)
+      finePointer.removeEventListener('change', handlePointerCapabilityChange)
+    }
+  }, [])
+
+  return (
+    <span ref={cursorRef} className="app-global-cursor" aria-hidden="true">
+      <img src="/brand/aiops-cursor.svg?v=5" alt="" width="24" height="27" draggable={false} />
+    </span>
+  )
+}
+
 const AppRuntimeBranding = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -104,7 +153,12 @@ const AppRuntimeBranding = ({ children }: { children: React.ReactNode }) => {
     ensureFaviconLink('shortcut icon')
   }, [])
 
-  return <>{children}</>
+  return (
+    <>
+      {children}
+      <AppGlobalCursor />
+    </>
+  )
 }
 
 export const rootContainer = (container: React.ReactNode) => {

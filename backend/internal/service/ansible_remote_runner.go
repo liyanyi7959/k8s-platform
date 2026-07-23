@@ -24,7 +24,7 @@ import (
 func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, task *Task) (string, error) {
 	// logErr 记录错误到 task 日志并返回包装后的 error
 	logErr := func(msg string, err error) error {
-		task.AppendLog(fmt.Sprintf("[error] %s: %v", msg, err), "")
+		task.AppendLog(fmt.Sprintf("[error] %s: %v", msg, err), activeDeployStepKey(task))
 		_ = s.taskStore.Put(task)
 		return fmt.Errorf("%s: %w", msg, err)
 	}
@@ -55,15 +55,15 @@ func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.Deplo
 	defer func() {
 		_, cleanupErr := runSSHCommand(client, "rm -rf -- "+shellQuote(workspace))
 		if cleanupErr != nil {
-			task.AppendLog(fmt.Sprintf("[warn] Runner 临时目录清理失败: %v", cleanupErr))
+			task.AppendLog(fmt.Sprintf("[warn] Runner 临时目录清理失败: %v", cleanupErr), activeDeployStepKey(task))
 		} else {
-			task.AppendLog("[info] Runner 临时目录已清理")
+			task.AppendLog("[info] Runner 临时目录已清理", activeDeployStepKey(task))
 		}
 		_ = s.taskStore.Put(task)
 	}()
 
-	task.AppendLog(fmt.Sprintf("[info] 使用 Master %s (%s) 作为临时 Ansible Runner", master.Name, master.IP))
-	task.AppendLog("[info] 正在检查并安装 Runner 依赖...")
+	task.AppendLog(fmt.Sprintf("[info] 使用 Master %s (%s) 作为临时 Ansible Runner", master.Name, master.IP), activeDeployStepKey(task))
+	task.AppendLog("[info] 正在检查并安装 Runner 依赖...", activeDeployStepKey(task))
 	_ = s.taskStore.Put(task)
 	needSSHPass := false
 	for _, node := range nodes {
@@ -79,11 +79,11 @@ func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.Deplo
 	if output, bootstrapErr := runPrivilegedSSHCommand(client, master, credential, bootstrap); bootstrapErr != nil {
 		// 将依赖安装的 stdout 和 stderr 完整写入日志，方便排查
 		if strings.TrimSpace(output) != "" {
-			task.AppendLog("[runner] "+strings.TrimSpace(output), "")
+			task.AppendLog("[runner] "+strings.TrimSpace(output), activeDeployStepKey(task))
 		}
 		return "", logErr("Master Runner 依赖安装失败", bootstrapErr)
 	} else if strings.TrimSpace(output) != "" {
-		task.AppendLog("[runner] " + strings.TrimSpace(output))
+		task.AppendLog("[runner] "+strings.TrimSpace(output), activeDeployStepKey(task))
 		_ = s.taskStore.Put(task)
 	}
 
@@ -94,7 +94,7 @@ func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.Deplo
 	if err := uploadRunnerArchive(client, workspace, archive); err != nil {
 		return "", logErr("上传 Runner 执行包失败", err)
 	}
-	task.AppendLog("[info] Playbook、inventory 和临时凭据已上传")
+	task.AppendLog("[info] Playbook、inventory 和临时凭据已上传", activeDeployStepKey(task))
 	_ = s.taskStore.Put(task)
 
 	writer := newAnsibleLogWriter(task, s.taskStore)
@@ -181,7 +181,7 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 	retryFromStep, _ := task.Meta["retry_from_step"].(string)
 	enabledSteps := computeEnabledSteps(retryFromStep)
 	if retryFromStep != "" {
-		task.AppendLog(fmt.Sprintf("[info] 从步骤 %s 开始重试，将跳过已成功的步骤", retryFromStep), "")
+		task.AppendLog(fmt.Sprintf("[info] 从步骤 %s 开始重试，将跳过已成功的步骤", retryFromStep), activeDeployStepKey(task))
 		_ = s.taskStore.Put(task)
 	}
 	extraVarsMap := map[string]any{

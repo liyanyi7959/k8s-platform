@@ -56,6 +56,7 @@ const stageGroups = [
   { key: 'install', title: '安装 k8s 集群', steps: ['container_runtime', 'kubeadm_init', 'join_workers', 'install_cni'] },
   { key: 'extend', title: '补充扩展', steps: ['install_addons', 'register'] },
 ]
+const deploymentStepKeys = stageGroups.flatMap((stage) => stage.steps)
 
 // 步骤标题映射
 const stepTitleMap: Record<string, string> = {
@@ -271,7 +272,8 @@ export default function DeployPlanDetailPage() {
     return selectedStepKey
   }, [selectedStepKey, selectedSubStepKey, task?.steps])
 
-  // 初始加载历史日志
+  // 初始加载历史日志。旧任务在 Ansible PLAY 开始前产生的 Runner/SSH 错误没有
+  // step_key；步骤日志为空时回退到完整任务日志，保证历史失败也可诊断。
   useEffect(() => {
     if (!taskId) {
       setLogs([])
@@ -286,19 +288,31 @@ export default function DeployPlanDetailPage() {
       setSelectedStepKey(active?.key || steps[0]?.key || null)
     }
 
+    let active = true
     setLogs([])
     setLogTimestamps([])
     logOffsetRef.current = 0
-    getDeployTaskLogs(taskId, 0, 500, effectiveStepKey || undefined).then((res) => {
-      const fetched = res.logs || []
-      setLogs(fetched)
-      setLogTimestamps((res.entries || []).map((entry) => entry.createdAt))
-      logOffsetRef.current = fetched.length
-    }).catch(() => {
-      setLogs([])
-      setLogTimestamps([])
-      logOffsetRef.current = 0
-    })
+    const loadLogs = async () => {
+      try {
+        let res = await getDeployTaskLogs(taskId, 0, 500, effectiveStepKey || undefined)
+        const selectedStepFailed = steps.find((step: DeployTaskStep) => step.key === effectiveStepKey)?.status === 'failed'
+        if (effectiveStepKey && selectedStepFailed && (res.logs || []).length === 0) {
+          res = await getDeployTaskLogs(taskId, 0, 500)
+        }
+        if (!active) return
+        const fetched = res.logs || []
+        setLogs(fetched)
+        setLogTimestamps((res.entries || []).map((entry) => entry.createdAt))
+        logOffsetRef.current = fetched.length
+      } catch {
+        if (!active) return
+        setLogs([])
+        setLogTimestamps([])
+        logOffsetRef.current = 0
+      }
+    }
+    void loadLogs()
+    return () => { active = false }
   }, [taskId, effectiveStepKey, task?.steps])
 
   // SSE 实时日志连接
@@ -442,6 +456,12 @@ export default function DeployPlanDetailPage() {
   }, [logs, logTimestamps, logFilter, selectedSubStepKey, selectedStepKey, task])
 
   const filteredLogs = useMemo(() => filteredLogEntries.map((entry) => entry.content), [filteredLogEntries])
+  const selectedFailureMessage = useMemo(() => {
+    const selectedStep = task?.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)
+    if (selectedStep?.status === 'failed' && selectedStep.message) return selectedStep.message
+    if (task?.status === 'failed') return task.message || '部署任务失败，请查看后端服务日志。'
+    return ''
+  }, [selectedStepKey, task])
   const logThemeTokens = logTheme === 'dark'
     ? { panel: '#161616', header: '#202020', headerBorder: '#383838', text: '#f5f5f5', muted: '#a6a6a6', viewer: '#101010', viewerBorder: '#343434', empty: '#a6a6a6', button: '#262626', buttonBorder: '#454545' }
     : { panel: '#ffffff', header: '#fafafa', headerBorder: '#e8e8e8', text: '#262626', muted: '#8c8c8c', viewer: '#fafafa', viewerBorder: '#d9d9d9', empty: '#8c8c8c', button: '#ffffff', buttonBorder: '#d9d9d9' }
@@ -695,7 +715,14 @@ export default function DeployPlanDetailPage() {
                         }}
                       >
                         {logs.length === 0 ? (
-                          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: logThemeTokens.empty }}>该步骤暂未产生可展示的日志</div>
+                          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, color: logThemeTokens.empty }}>
+                            {selectedFailureMessage ? (
+                              <div style={{ width: '100%', maxWidth: 720, padding: '14px 16px', border: '1px solid #fecaca', borderRadius: 8, background: '#fff7f7', color: '#b91c1c' }}>
+                                <div style={{ marginBottom: 6, fontWeight: 600 }}>失败原因</div>
+                                <div style={{ color: '#7f1d1d', lineHeight: 1.6 }}>{selectedFailureMessage}</div>
+                              </div>
+                            ) : '该步骤暂未产生可展示的日志'}
+                          </div>
                         ) : filteredLogs.length === 0 ? (
                           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: logThemeTokens.empty }}>没有匹配的日志内容</div>
                         ) : (
@@ -1200,6 +1227,7 @@ function StepTree({
   const statusStyle = (status: string) => {
     if (status === 'failed') return { color: '#dc2626', soft: '#fff7f7', border: '#fecaca', label: '失败' }
     if (status === 'canceled' || status === 'cancelled') return { color: '#b45309', soft: '#fffaf0', border: '#fed7aa', label: '已取消' }
+    if (status === 'blocked') return { color: '#64748b', soft: '#f7faff', border: '#cbdcf4', label: '已阻断' }
     if (status === 'success') return { color: '#047857', soft: '#f7fffb', border: '#a7e3c4', label: '成功' }
     if (status === 'running') return { color: '#2563eb', soft: '#f6f9ff', border: '#b9cff8', label: '执行中' }
     return { color: '#64748b', soft: '#f8fbff', border: '#dbe7f5', label: '等待中' }
@@ -1210,17 +1238,22 @@ function StepTree({
     if (status === 'success') return <CheckCircleOutlined style={style} />
     if (status === 'failed') return <CloseCircleOutlined style={style} />
     if (status === 'canceled' || status === 'cancelled') return <StopOutlined style={style} />
+    if (status === 'blocked') return <StopOutlined style={style} />
     if (status === 'running') return <Badge status="processing" />
     return <span style={{ ...style, fontWeight: 700 }}>○</span>
   }
 
   const taskCanceled = task.status === 'canceled' || task.status === 'cancelled'
-  const resolveStepStatus = (stepStatus: string) => {
+  const firstFailedStepIndex = deploymentStepKeys.findIndex((key) => stepMap.get(key)?.status === 'failed')
+  const resolveStepStatus = (stepKey: string, stepStatus: string) => {
     if (taskCanceled && (stepStatus === 'pending' || stepStatus === 'running')) return 'canceled'
+    const stepIndex = deploymentStepKeys.indexOf(stepKey)
+    if (task.status === 'failed' && firstFailedStepIndex >= 0 && stepIndex > firstFailedStepIndex && stepStatus === 'pending') return 'blocked'
     return stepStatus
   }
   const resolveSubStepStatus = (parentStatus: string, subStepStatus: string) => {
     if (taskCanceled && (subStepStatus === 'pending' || subStepStatus === 'running')) return 'canceled'
+    if (parentStatus === 'blocked' && subStepStatus === 'pending') return 'blocked'
     if (subStepStatus === 'running' && (parentStatus === 'success' || parentStatus === 'failed')) {
       return parentStatus
     }
@@ -1242,10 +1275,11 @@ function StepTree({
           const steps = stage.steps.map((key) => stepMap.get(key)).filter(Boolean) as DeployTaskStep[]
           const completed = steps.filter((step) => step.status === 'success').length
           const failed = steps.filter((step) => step.status === 'failed').length
-          const stepStatuses = steps.map((step) => resolveStepStatus(step.status))
+          const stepStatuses = steps.map((step) => resolveStepStatus(step.key, step.status))
           const canceled = stepStatuses.filter((status) => status === 'canceled').length
+          const blocked = stepStatuses.filter((status) => status === 'blocked').length
           const running = stepStatuses.filter((status) => status === 'running').length
-          const aggregateStatus = failed > 0 ? 'failed' : canceled > 0 ? 'canceled' : running > 0 ? 'running' : completed === steps.length && steps.length > 0 ? 'success' : 'pending'
+          const aggregateStatus = failed > 0 ? 'failed' : canceled > 0 ? 'canceled' : running > 0 ? 'running' : blocked > 0 ? 'blocked' : completed === steps.length && steps.length > 0 ? 'success' : 'pending'
           const stageStyle = statusStyle(aggregateStatus)
           return (
             <div key={stage.key} style={{ display: 'flex', alignItems: 'stretch', minWidth: 300, flex: '1 1 0' }}>
@@ -1256,14 +1290,14 @@ function StepTree({
                   <span style={{ position: 'absolute', left: 14, top: '50%', width: 25, height: 25, marginTop: -12, borderRadius: '50%', background: stageStyle.color, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>{stageIdx + 2}</span>
                   <span style={{ minWidth: 0, maxWidth: '100%', textAlign: 'center' }}>
                     <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, color: '#262626', fontWeight: 600 }}>{statusIcon(aggregateStatus)} {stage.title}</span>
-                    <span style={{ display: 'block', color: '#8c8c8c', fontSize: 12, marginTop: 3 }}>任务 {steps.length} · 成功 {completed}{failed ? ` · 失败 ${failed}` : ''}{canceled ? ` · 已取消 ${canceled}` : ''}</span>
+                    <span style={{ display: 'block', color: '#8c8c8c', fontSize: 12, marginTop: 3 }}>任务 {steps.length} · 成功 {completed}{failed ? ` · 失败 ${failed}` : ''}{canceled ? ` · 已取消 ${canceled}` : ''}{blocked ? ` · 已阻断 ${blocked}` : ''}</span>
                   </span>
                 </div>
 
                 <div style={{ padding: 10, overflowY: 'auto', background: '#fff', flex: 1 }}>
                     {steps.map((step, index) => {
                       const isSelected = selectedStepKey === step.key && !selectedSubStepKey
-                      const displayStepStatus = resolveStepStatus(step.status)
+                      const displayStepStatus = resolveStepStatus(step.key, step.status)
                       const itemStyle = statusStyle(displayStepStatus)
                       const subSteps = step.subSteps || []
                       const subCompleted = subSteps.filter((sub) => resolveSubStepStatus(displayStepStatus, sub.status) === 'success').length
@@ -1307,14 +1341,30 @@ function StepTree({
                               )}
                             </div>
                             <div style={{ padding: '7px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#8c8c8c', fontSize: 12 }}>
-                              <span>{subSteps.length ? `任务 ${subSteps.length} · 已完成 ${subCompleted}` : itemStyle.label}</span>
+                              <Tooltip title={displayStepStatus === 'failed' ? step.message : undefined}>
+                                <span style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: displayStepStatus === 'failed' ? itemStyle.color : undefined }}>
+                                  {displayStepStatus === 'failed' && step.message
+                                    ? step.message
+                                    : subSteps.length ? `任务 ${subSteps.length} · 已完成 ${subCompleted}` : itemStyle.label}
+                                </span>
+                              </Tooltip>
                               {displayStepStatus === 'running' ? (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#1677ff', fontWeight: 600 }}>
                                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#1677ff', boxShadow: '0 0 0 0 rgba(22, 119, 255, .45)', animation: 'deploy-step-pulse 1.4s ease-out infinite' }} />
                                   进行中
                                 </span>
+                              ) : displayStepStatus === 'failed' ? (
+                                <Button
+                                  type="link"
+                                  size="small"
+                                  icon={<CodeOutlined />}
+                                  onClick={(event) => { event.stopPropagation(); onSelectStep(step.key) }}
+                                  style={{ flex: '0 0 auto', height: 22, padding: '0 2px', color: itemStyle.color }}
+                                >
+                                  日志
+                                </Button>
                               ) : (
-                                <span>{formatDuration(step.startedAt, step.finishedAt) || (displayStepStatus === 'canceled' ? itemStyle.label : '')}</span>
+                                <span style={{ flex: '0 0 auto' }}>{formatDuration(step.startedAt, step.finishedAt) || (displayStepStatus === 'canceled' ? itemStyle.label : '')}</span>
                               )}
                             </div>
                           </div>

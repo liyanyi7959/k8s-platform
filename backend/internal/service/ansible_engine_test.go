@@ -36,3 +36,46 @@ func TestFinishUnresolvedSubStepsUsesParentTerminalStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestActiveDeployStepKey(t *testing.T) {
+	tests := []struct {
+		name string
+		task *Task
+		want string
+	}{
+		{name: "nil task", task: nil, want: ""},
+		{
+			name: "uses running step",
+			task: &Task{Steps: []TaskStep{
+				{Key: "pre_check", Status: StepSuccess},
+				{Key: "bootstrap", Status: StepRunning},
+				{Key: "container_runtime", Status: StepPending},
+			}},
+			want: "bootstrap",
+		},
+		{
+			name: "falls back to first unresolved step before runner starts",
+			task: &Task{Steps: []TaskStep{
+				{Key: "pre_check", Status: StepSuccess},
+				{Key: "bootstrap", Status: StepPending},
+			}},
+			want: "bootstrap",
+		},
+		{
+			name: "returns empty after all steps succeed",
+			task: &Task{Steps: []TaskStep{
+				{Key: "pre_check", Status: StepSuccess},
+				{Key: "bootstrap", Status: StepSuccess},
+			}},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := activeDeployStepKey(tt.task); got != tt.want {
+				t.Fatalf("activeDeployStepKey() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

@@ -60,11 +60,21 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 	}
 	percent := 0
 	task.Percent = &percent
+	// Runner 准备、SSH 连接和依赖安装都属于首个待执行步骤。先将其标记为
+	// running，确保 Ansible 输出 PLAY 之前产生的日志和错误也能归属到步骤。
+	for i := range task.Steps {
+		if task.Steps[i].Status != StepSuccess {
+			task.Steps[i].Status = StepRunning
+			task.Steps[i].StartedAt = &now
+			break
+		}
+	}
 	_ = s.taskStore.Put(task)
 
 	// 获取部署计划和节点
 	plan, nodes, err := s.getPlanWithNodes(ctx, planID)
 	if err != nil {
+		task.AppendLog(fmt.Sprintf("[error] 获取部署计划失败: %v", err), activeDeployStepKey(task))
 		s.markTaskFailed(task, fmt.Sprintf("获取部署计划失败: %v", err))
 		s.updatePlanStatusDirect(ctx, planID, "failed")
 		return
@@ -77,17 +87,9 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 		return
 	}
 
-	task.AppendLog("[info] 正在准备 Master 临时 Runner", "")
-	task.AppendLog(fmt.Sprintf("[info] 集群: %s, K8s 版本: %s, CNI: %s", plan.ClusterName, plan.K8sVersion, plan.CNIType), "")
-	_ = s.taskStore.Put(task)
-
-	// 标记第一个待执行步骤为运行中（重试场景下会跳过已标记为 success 的步骤）
-	for i := range task.Steps {
-		if task.Steps[i].Status != StepSuccess {
-			task.Steps[i].Status = StepRunning
-			break
-		}
-	}
+	stepKey := activeDeployStepKey(task)
+	task.AppendLog("[info] 正在准备 Master 临时 Runner", stepKey)
+	task.AppendLog(fmt.Sprintf("[info] 集群: %s, K8s 版本: %s, CNI: %s", plan.ClusterName, plan.K8sVersion, plan.CNIType), stepKey)
 	_ = s.taskStore.Put(task)
 
 	kubeconfig, err := s.runAnsibleOnMaster(ctx, plan, nodes, task)
@@ -147,6 +149,26 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 	task.Message = &successMsg
 	_ = s.taskStore.Put(task)
 	s.updatePlanStatusDirect(ctx, planID, "success")
+}
+
+// activeDeployStepKey 返回当前部署日志应归属的步骤。
+// Ansible 在输出第一个 PLAY 之前可能已因 Runner/SSH/依赖问题退出，此时仍需
+// 将诊断日志记到用户看到的失败步骤，而不是不可见的空 step_key。
+func activeDeployStepKey(task *Task) string {
+	if task == nil {
+		return ""
+	}
+	for _, step := range task.Steps {
+		if step.Status == StepRunning {
+			return step.Key
+		}
+	}
+	for _, step := range task.Steps {
+		if step.Status != StepSuccess {
+			return step.Key
+		}
+	}
+	return ""
 }
 
 // registerClusterAfterDeploy 使用从 Master SSH 回收的 kubeconfig 注册集群。

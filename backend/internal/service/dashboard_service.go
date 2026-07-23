@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -65,6 +66,7 @@ type DashboardService struct {
 	certRiskMu         sync.Mutex
 	certRiskCache      map[uint64]cachedClusterCertRisks
 	certRiskRefreshing map[uint64]bool
+	overviewGroup      singleflight.Group
 	trendMu            sync.Mutex
 	trendCache         map[string][]resourceTrendSample
 }
@@ -111,7 +113,10 @@ func (s *DashboardService) recordResourceTrend(ctx context.Context, clusterID ui
 	samples := append([]resourceTrendSample(nil), s.trendCache[trendID]...)
 	cacheKey := fmt.Sprintf("dashboard:trend:v3:%d:%s", clusterID, scope)
 	if len(samples) == 0 && s.cache != nil && s.cache.Enabled() {
-		if value, ok, _ := s.cache.Get(ctx, cacheKey); ok {
+		readCtx, cancel := context.WithTimeout(ctx, 150*time.Millisecond)
+		value, ok, _ := s.cache.Get(readCtx, cacheKey)
+		cancel()
+		if ok {
 			var cached trendDataCache
 			if json.Unmarshal(value, &cached) == nil {
 				samples = cached.Samples
@@ -122,39 +127,71 @@ func (s *DashboardService) recordResourceTrend(ctx context.Context, clusterID ui
 	s.trendCache[trendID] = append([]resourceTrendSample(nil), samples...)
 	if s.cache != nil && s.cache.Enabled() {
 		if value, err := json.Marshal(trendDataCache{Samples: samples}); err == nil {
-			_ = s.cache.Set(ctx, cacheKey, value, 25*time.Hour)
+			writeCtx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+			_ = s.cache.Set(writeCtx, cacheKey, value, 25*time.Hour)
+			cancel()
 		}
 	}
 	return samples
 }
 
-func (s *DashboardService) getCachedClusterCertRisks(clusterID uint64) ([]map[string]any, bool) {
+func clusterCertRiskCacheKey(clusterID uint64) string {
+	return fmt.Sprintf("dashboard:certificate-risks:v1:cluster:%d", clusterID)
+}
+
+func (s *DashboardService) getCachedClusterCertRisks(ctx context.Context, clusterID uint64) ([]map[string]any, bool) {
 	if s == nil || clusterID == 0 {
 		return nil, false
 	}
 	s.certRiskMu.Lock()
-	defer s.certRiskMu.Unlock()
 	entry, ok := s.certRiskCache[clusterID]
-	if !ok {
-		return nil, false
-	}
-	if time.Now().After(entry.ExpiresAt) {
+	if ok && time.Now().After(entry.ExpiresAt) {
 		delete(s.certRiskCache, clusterID)
+		ok = false
+	}
+	s.certRiskMu.Unlock()
+	if ok {
+		return cloneAnyMapSlice(entry.Data), true
+	}
+
+	if s.cache == nil || !s.cache.Enabled() {
 		return nil, false
 	}
-	return cloneAnyMapSlice(entry.Data), true
+	readCtx, cancel := context.WithTimeout(ctx, 150*time.Millisecond)
+	value, found, err := s.cache.Get(readCtx, clusterCertRiskCacheKey(clusterID))
+	cancel()
+	if err != nil || !found || len(value) == 0 {
+		return nil, false
+	}
+	var persisted cachedClusterCertRisks
+	if json.Unmarshal(value, &persisted) != nil || time.Now().After(persisted.ExpiresAt) {
+		return nil, false
+	}
+	s.certRiskMu.Lock()
+	s.certRiskCache[clusterID] = persisted
+	s.certRiskMu.Unlock()
+	return cloneAnyMapSlice(persisted.Data), true
 }
 
-func (s *DashboardService) setCachedClusterCertRisks(clusterID uint64, data []map[string]any, ttl time.Duration) {
+func (s *DashboardService) setCachedClusterCertRisks(ctx context.Context, clusterID uint64, data []map[string]any, ttl time.Duration) {
 	if s == nil || clusterID == 0 {
 		return
 	}
-	s.certRiskMu.Lock()
-	s.certRiskCache[clusterID] = cachedClusterCertRisks{
+	entry := cachedClusterCertRisks{
 		Data:      cloneAnyMapSlice(data),
 		ExpiresAt: time.Now().Add(ttl),
 	}
+	s.certRiskMu.Lock()
+	s.certRiskCache[clusterID] = entry
 	s.certRiskMu.Unlock()
+
+	if s.cache != nil && s.cache.Enabled() {
+		if value, err := json.Marshal(entry); err == nil {
+			writeCtx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+			_ = s.cache.Set(writeCtx, clusterCertRiskCacheKey(clusterID), value, ttl)
+			cancel()
+		}
+	}
 }
 
 func (s *DashboardService) refreshClusterCertRisksAsync(clusterID uint64, apiOK bool) {
@@ -180,7 +217,7 @@ func (s *DashboardService) refreshClusterCertRisksAsync(clusterID uint64, apiOK 
 		defer cancel()
 		risks, cacheable := s.getClusterCertificateRisks(ctx, clusterID, apiOK)
 		if cacheable {
-			s.setCachedClusterCertRisks(clusterID, risks, 10*time.Minute)
+			s.setCachedClusterCertRisks(ctx, clusterID, risks, 10*time.Minute)
 		}
 	}()
 }
@@ -192,10 +229,33 @@ func (s *DashboardService) refreshClusterCertRisksAsync(clusterID uint64, apiOK 
 // - Pod 相位统计与按命名空间聚合
 // - 典型工作负载数量（deployments/statefulsets/daemonsets）
 // - CPU/内存使用率（基于 allocatable 与 metrics.k8s.io 的节点 usage）
+// GetClusterOverview merges concurrent cold requests for the same cluster so
+// the Kubernetes API is queried once while the overview cache is empty.
 func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uint64) (map[string]any, error) {
+	if clusterID == 0 {
+		return nil, ErrInvalidParams
+	}
+	key := fmt.Sprintf("cluster:%d", clusterID)
+	value, err, _ := s.overviewGroup.Do(key, func() (any, error) {
+		return s.getClusterOverview(ctx, clusterID)
+	})
+	if err != nil {
+		return nil, err
+	}
+	overview, ok := value.(map[string]any)
+	if !ok {
+		return nil, errors.New("invalid overview result")
+	}
+	return overview, nil
+}
+
+func (s *DashboardService) getClusterOverview(ctx context.Context, clusterID uint64) (map[string]any, error) {
 	cacheKey := fmt.Sprintf("dashboard:overview:cluster:%d", clusterID)
 	if s.cache != nil && s.cache.Enabled() {
-		if val, ok, _ := s.cache.Get(ctx, cacheKey); ok {
+		readCtx, cancel := context.WithTimeout(ctx, 150*time.Millisecond)
+		val, ok, _ := s.cache.Get(readCtx, cacheKey)
+		cancel()
+		if ok {
 			var co cachedOverview
 			if err := json.Unmarshal(val, &co); err == nil {
 				if time.Now().Before(co.ExpiresAt) {
@@ -249,17 +309,31 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 		if err != nil {
 			return
 		}
-		version, err := cs.Discovery().ServerVersion()
-		if err != nil {
-			return
-		}
-		nodes, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			mu.Lock()
-			apiOK = true
-			if version != nil {
-				k8sVersion = strings.TrimSpace(version.GitVersion)
+		var (
+			version    string
+			versionErr error
+			nodes      *corev1.NodeList
+			nodesErr   error
+			lookupWG   sync.WaitGroup
+		)
+		lookupWG.Add(2)
+		go func() {
+			defer lookupWG.Done()
+			info, lookupErr := cs.Discovery().ServerVersion()
+			versionErr = lookupErr
+			if info != nil {
+				version = strings.TrimSpace(info.GitVersion)
 			}
+		}()
+		go func() {
+			defer lookupWG.Done()
+			nodes, nodesErr = cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		}()
+		lookupWG.Wait()
+		if nodesErr != nil || nodes == nil {
+			mu.Lock()
+			apiOK = versionErr == nil
+			k8sVersion = version
 			total = 0
 			ready = 0
 			mu.Unlock()
@@ -273,9 +347,7 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 		}
 		mu.Lock()
 		apiOK = true
-		if version != nil {
-			k8sVersion = strings.TrimSpace(version.GitVersion)
-		}
+		k8sVersion = version
 		nodeItems = nodes.Items
 		total = len(nodes.Items)
 		ready = r
@@ -649,7 +721,7 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 	}
 
 	// 内联证书风险（不阻塞首屏，失败时忽略）
-	if certRisks, err := s.GetClusterCertificateRisks(ctx, clusterID); err == nil && len(certRisks) > 0 {
+	if certRisks, ok := s.getCachedClusterCertRisks(ctx, clusterID); ok && len(certRisks) > 0 {
 		out["risks"] = map[string]any{"certificates": certRisks}
 	}
 
@@ -659,7 +731,9 @@ func (s *DashboardService) GetClusterOverview(ctx context.Context, clusterID uin
 			ExpiresAt: time.Now().Add(120 * time.Second),
 		}
 		if b, err := json.Marshal(co); err == nil {
-			_ = s.cache.Set(ctx, cacheKey, b, 120*time.Second)
+			writeCtx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+			_ = s.cache.Set(writeCtx, cacheKey, b, 120*time.Second)
+			cancel()
 		}
 	}
 
@@ -795,7 +869,7 @@ func (s *DashboardService) GetClusterCertificateRisks(ctx context.Context, clust
 	if _, err := s.clusterReg.GetCluster(ctx, clusterID); err != nil {
 		return nil, err
 	}
-	if cached, ok := s.getCachedClusterCertRisks(clusterID); ok {
+	if cached, ok := s.getCachedClusterCertRisks(ctx, clusterID); ok {
 		return cached, nil
 	}
 
@@ -811,9 +885,9 @@ func (s *DashboardService) GetClusterCertificateRisks(ctx context.Context, clust
 	defer certCancel()
 	risks, cacheable := s.getClusterCertificateRisks(certCtx, clusterID, apiOK)
 	if cacheable {
-		s.setCachedClusterCertRisks(clusterID, risks, 10*time.Minute)
+		s.setCachedClusterCertRisks(ctx, clusterID, risks, 10*time.Minute)
 	} else if len(risks) > 0 {
-		s.setCachedClusterCertRisks(clusterID, risks, 45*time.Second)
+		s.setCachedClusterCertRisks(ctx, clusterID, risks, 45*time.Second)
 	}
 	return risks, nil
 }
