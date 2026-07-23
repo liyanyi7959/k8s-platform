@@ -1,0 +1,26 @@
+{% for mirror in yum_mirrors %}
+{% set target_os = mirror.target_os | default('') | lower %}
+{% set distribution = ansible_distribution | lower %}
+{% set os_family = ansible_os_family | lower %}
+{% set is_kylin = 'kylin' in distribution %}
+{#
+  Kylin is often reported as the RedHat family by Ansible, but its release
+  repositories are not compatible with CentOS/RHEL paths.  On Kylin, only a
+  repository explicitly marked target_os=kylin may be rendered.
+#}
+{% set compatible = (is_kylin and target_os != '' and target_os in distribution) or (not is_kylin and ((target_os != '' and (target_os in distribution or target_os == os_family)) or target_os == '')) %}
+{% if compatible %}
+[platform-mirror-{{ loop.index }}]
+name={{ mirror.name }}
+{% if is_kylin or '$' in mirror.url %}
+baseurl={{ mirror.url }}
+{% else %}
+baseurl={{ mirror.url }}/$releasever/os/$basearch/
+{% endif %}
+enabled=1
+gpgcheck=0
+sslverify=0
+priority={{ mirror.priority }}
+
+{% endif %}
+{% endfor %}

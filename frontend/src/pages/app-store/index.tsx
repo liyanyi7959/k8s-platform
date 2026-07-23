@@ -78,6 +78,19 @@ const CATEGORY_COLORS: Record<string, string> = {
   security: 'red',
 }
 
+const HELM_REPOSITORIES: Array<{ prefix: string; name: string; url: string }> = [
+  { prefix: 'bitnami/', name: 'bitnami', url: 'https://charts.bitnami.com/bitnami' },
+  {
+    prefix: 'prometheus-community/',
+    name: 'prometheus-community',
+    url: 'https://prometheus-community.github.io/helm-charts',
+  },
+]
+
+function getHelmRepository(chart?: string) {
+  return HELM_REPOSITORIES.find((repository) => chart?.startsWith(repository.prefix))
+}
+
 /** 解析变量 JSON */
 function parseVariables(variables: string): Array<{ name: string; default: string }> {
   try {
@@ -656,6 +669,8 @@ function HelmChartPanel() {
       installMutation.mutate({
         ...values,
         chart: selectedChart?.name || selectedChart?.template,
+        repo_url: values.repo_url || selectedChart?.repoUrl,
+        repo_name: selectedChart?.repoName,
         values_yaml: valuesYaml,
       })
     } catch {
@@ -665,7 +680,15 @@ function HelmChartPanel() {
 
   // 点击预置模板卡片 → 直接打开安装 Modal
   const handlePresetClick = (template: any) => {
-    setSelectedChart({ name: template.template, description: template.description, isPreset: true })
+    const repository = getHelmRepository(template.template)
+    setSelectedChart({
+      name: template.template,
+      description: template.description,
+      isPreset: true,
+      repoUrl: repository?.url,
+      repoName: repository?.name,
+    })
+    installForm.setFieldsValue({ repo_url: repository?.url })
     setInstallOpen(true)
   }
 

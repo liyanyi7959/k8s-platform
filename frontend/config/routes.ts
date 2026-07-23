@@ -43,6 +43,31 @@ const routes: any[] = [
     component: '@/pages/clusters',
   },
   {
+    name: '部署K8S集群',
+    path: '/clusters/provision',
+    component: '@/pages/deploy/index',
+  },
+  {
+    path: '/clusters/provision/create',
+    component: '@/pages/deploy/create',
+    hideInMenu: true,
+  },
+  {
+    path: '/clusters/provision/:id',
+    component: '@/pages/deploy/detail',
+    hideInMenu: true,
+  },
+  {
+    path: '/clusters/provision/:id/edit',
+    component: '@/pages/deploy/create',
+    hideInMenu: true,
+  },
+  {
+    name: '主机资源池',
+    path: '/clusters/hosts',
+    component: '@/pages/deploy/servers',
+  },
+  {
     name: '项目管理',
     path: '/projects',
     component: '@/pages/projects/index',
@@ -90,6 +115,7 @@ const routes: any[] = [
       { name: '用户管理', path: '/config/users', component: '@/pages/system/users' },
       { name: '角色管理', path: '/config/roles', component: '@/pages/system/roles' },
       { name: '审计日志', path: '/config/audit-logs', component: '@/pages/system/audit-logs' },
+      { name: '凭据库', path: '/config/credentials', component: '@/pages/deploy/credentials' },
       { name: '系统设置', path: '/config/settings', component: '@/pages/system/settings' },
     ],
   },
@@ -104,21 +130,25 @@ const routes: any[] = [
       { name: '模型配置', path: '/ai/settings', component: '@/pages/ai/settings' },
     ],
   },
-  // ---- 自动化运维 ----
+  // ---- 自动化运维：沉淀可复用的运行手册与执行资产，不承载集群创建入口 ----
   {
-    name: '自动化部署',
-    path: '/deploy',
+    name: '自动化中心',
+    path: '/automation',
     routes: [
-      { path: '/deploy', redirect: '/deploy/plans' },
-      { name: '部署计划', path: '/deploy/plans', component: '@/pages/deploy/index' },
-      { path: '/deploy/plans/create', component: '@/pages/deploy/create', hideInMenu: true },
-      { path: '/deploy/plans/:id', component: '@/pages/deploy/detail', hideInMenu: true },
-      { path: '/deploy/plans/:id/edit', component: '@/pages/deploy/create', hideInMenu: true },
-      { name: '服务器管理', path: '/deploy/servers', component: '@/pages/deploy/servers' },
-      { name: '凭据管理', path: '/deploy/credentials', component: '@/pages/deploy/credentials' },
-      { name: '部署配置', path: '/deploy/config', component: '@/pages/deploy/config' },
+      { path: '/automation', redirect: '/automation/overview' },
+      { name: '自动化总览', path: '/automation/overview', component: '@/pages/automation/index' },
+      { name: '运行手册资产', path: '/automation/assets', component: '@/pages/deploy/config' },
     ],
   },
+  // 兼容已收藏的旧链接；实际功能已按业务域重新归位。
+  { path: '/deploy', redirect: '/clusters/provision' },
+  { path: '/deploy/plans', redirect: '/clusters/provision' },
+  { path: '/deploy/plans/create', redirect: '/clusters/provision/create' },
+  { path: '/deploy/plans/:id/edit', redirect: '/clusters/provision/:id/edit' },
+  { path: '/deploy/plans/:id', redirect: '/clusters/provision/:id' },
+  { path: '/deploy/servers', redirect: '/clusters/hosts' },
+  { path: '/deploy/credentials', redirect: '/config/credentials' },
+  { path: '/deploy/config', redirect: '/automation/assets' },
   // ========== 集群钻取路由（currentCluster 有值） ==========
   {
     path: '/cluster',
@@ -325,6 +355,11 @@ const routes: any[] = [
       {
         path: '/k8s/:clusterId/dashboard',
         component: '@/pages/k8s/$clusterId',
+        hideInMenu: true,
+      },
+      {
+        path: '/k8s/:clusterId/advanced-resources',
+        component: '@/pages/k8s/$clusterId/advanced-resources',
         hideInMenu: true,
       },
       // ---- 运维工具 ----

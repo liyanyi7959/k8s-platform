@@ -114,10 +114,12 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 	}
 
 	// 标记所有步骤为成功
+	completedAt := time.Now().UTC()
 	for i := range task.Steps {
 		if task.Steps[i].Status != StepSuccess {
 			task.Steps[i].Status = StepSuccess
 		}
+		finishUnresolvedSubSteps(&task.Steps[i], completedAt)
 	}
 	_ = s.taskStore.Put(task)
 
@@ -187,8 +189,28 @@ func (s *DeployService) markTaskFailed(task *Task, msg string) {
 			m := msg
 			task.Steps[i].Message = &m
 		}
+		finishUnresolvedSubSteps(&task.Steps[i], now)
 	}
 	_ = s.taskStore.Put(task)
+}
+
+// finishUnresolvedSubSteps ensures that a parent step reaching a terminal state
+// cannot leave its final Ansible task displayed as running in the UI.
+func finishUnresolvedSubSteps(step *TaskStep, finishedAt time.Time) {
+	if step == nil {
+		return
+	}
+	for i := range step.SubSteps {
+		if step.SubSteps[i].Status != StepRunning {
+			continue
+		}
+		step.SubSteps[i].FinishedAt = &finishedAt
+		if step.Status == StepFailed {
+			step.SubSteps[i].Status = StepFailed
+		} else {
+			step.SubSteps[i].Status = StepSuccess
+		}
+	}
 }
 
 // markTaskCanceled 标记任务取消

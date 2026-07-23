@@ -1,0 +1,4 @@
+{% for mirror in apt_mirrors %}
+deb {{ mirror.url }} {{ ansible_distribution_release }} main
+deb {{ mirror.url }} {{ ansible_distribution_release }} universe
+{% endfor %}

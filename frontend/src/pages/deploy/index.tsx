@@ -12,10 +12,11 @@ import { history } from '@umijs/max'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
 import { AppPage } from '@/components'
-import { getDeployPlans, deleteDeployPlan, dryRunDeployPlan, executeDeployPlan, cancelDeployPlan, retryDeployPlan } from '@/services/deploy'
+import { getDeployPlans, deleteDeployPlan, dryRunDeployPlan, cancelDeployPlan, retryDeployPlan } from '@/services/deploy'
 import type { DeployPlan, DeployDryRunNodeFlow, DeployDryRunResult, DeployDryRunStep } from '@/types/deploy'
 
 const { Text } = Typography
+const provisionPath = '/clusters/provision'
 
 /** 状态颜色映射 */
 const statusMap: Record<string, { color: string; text: string; badge: string }> = {
@@ -23,6 +24,7 @@ const statusMap: Record<string, { color: string; text: string; badge: string }> 
   running: { color: 'processing', text: '执行中', badge: 'processing' },
   success: { color: 'success', text: '成功', badge: 'success' },
   failed: { color: 'error', text: '失败', badge: 'error' },
+  canceled: { color: 'warning', text: '已取消', badge: 'warning' },
   cancelled: { color: 'warning', text: '已取消', badge: 'warning' },
 }
 
@@ -70,15 +72,6 @@ export default function DeployPlansPage() {
     onError: () => message.error('删除失败'),
   })
 
-  const executeMutation = useMutation({
-    mutationFn: (id: number) => executeDeployPlan(id),
-    onSuccess: () => {
-      message.success('部署已启动')
-      queryClient.invalidateQueries({ queryKey: ['deploy-plans'] })
-    },
-    onError: () => message.error('执行失败'),
-  })
-
   const cancelMutation = useMutation({
     mutationFn: (id: number) => cancelDeployPlan(id),
     onSuccess: () => {
@@ -97,21 +90,16 @@ export default function DeployPlansPage() {
     onError: () => message.error('重试失败'),
   })
 
-  // 执行部署并跳转详情页
-  const handleExecute = async (id: number) => {
-    try {
-      await executeMutation.mutateAsync(id)
-      history.push(`/deploy/plans/${id}`)
-    } catch {
-      // onError 已提示
-    }
+  // 执行部署：直接跳转详情页，由详情页自动触发执行
+  const handleExecute = (id: number) => {
+    history.push(`${provisionPath}/${id}?execute=1`)
   }
 
   // 重试部署并跳转详情页
   const handleRetry = async (id: number) => {
     try {
       await retryMutation.mutateAsync(id)
-      history.push(`/deploy/plans/${id}`)
+      history.push(`${provisionPath}/${id}`)
     } catch {
       // onError 已提示
     }
@@ -189,14 +177,14 @@ export default function DeployPlansPage() {
       render: (_: unknown, record: DeployPlan) => (
         <Space size={8} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <Tooltip title="查看详情">
-            <a onClick={() => history.push(`/deploy/plans/${record.id}`)}><ProfileOutlined /></a>
+            <a onClick={() => history.push(`${provisionPath}/${record.id}`)}><ProfileOutlined /></a>
           </Tooltip>
           <Tooltip title="预览">
             <a onClick={() => handlePreview(record.id)}><EyeOutlined /></a>
           </Tooltip>
-          {['draft', 'failed', 'cancelled'].includes(record.status) && (
+          {['draft', 'failed', 'cancelled', 'canceled'].includes(record.status) && (
             <Tooltip title="编辑">
-              <a onClick={() => history.push(`/deploy/plans/${record.id}/edit`)}><EditOutlined /></a>
+              <a onClick={() => history.push(`${provisionPath}/${record.id}/edit`)}><EditOutlined /></a>
             </Tooltip>
           )}
           {record.status === 'draft' && (
@@ -213,9 +201,9 @@ export default function DeployPlansPage() {
               </Tooltip>
             </Popconfirm>
           )}
-          {record.status === 'failed' && (
-            <Popconfirm title="确认重试该部署方案？" onConfirm={() => handleRetry(record.id)}>
-              <Tooltip title="重试">
+          {['failed', 'cancelled', 'canceled'].includes(record.status) && (
+            <Popconfirm title="将重新检查部署条件，并从上次失败位置继续，确认重试？" onConfirm={() => handleRetry(record.id)}>
+              <Tooltip title="从失败处重试">
                 <a style={{ color: '#1677ff' }}><RedoOutlined /></a>
               </Tooltip>
             </Popconfirm>
@@ -241,13 +229,13 @@ export default function DeployPlansPage() {
         }
         extra={
           <Space>
-            <Button onClick={() => history.push('/deploy/servers')}>管理服务器</Button>
-            <Button onClick={() => history.push('/deploy/credentials')}>管理凭据</Button>
+            <Button onClick={() => history.push('/clusters/hosts')}>管理主机资源池</Button>
+            <Button onClick={() => history.push('/config/credentials')}>管理凭据库</Button>
             <Button icon={<ReloadOutlined />} onClick={() => queryClient.invalidateQueries({ queryKey: ['deploy-plans'] })}>
               刷新
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => history.push('/deploy/plans/create')}>
-              创建部署方案
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => history.push(`${provisionPath}/create`)}>
+              部署K8S集群
             </Button>
           </Space>
         }

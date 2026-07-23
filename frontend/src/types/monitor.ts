@@ -49,6 +49,36 @@ export interface AlertEvent {
   resolvedAt: string | null
 }
 
+export type IncidentStatus = 'open' | 'acknowledged' | 'diagnosing' | 'awaiting_approval' | 'executing' | 'verifying' | 'resolved'
+
+export interface MonitorIncident {
+  id: number
+  alertName: string
+  clusterId: number
+  clusterName: string
+  namespace: string
+  resourceKind: string
+  resourceName: string
+  severity: 'info' | 'warning' | 'critical'
+  status: IncidentStatus
+  summary: string
+  startedAt: string
+  resolvedAt?: string
+  aiConversationId?: number
+  aiProposalId?: number
+  assigneeName: string
+  verificationNote?: string
+}
+
+export interface IncidentTimelineItem {
+  id: number
+  type: string
+  title: string
+  detail: string
+  operator: string
+  createdAt: string
+}
+
 /** 监控指标 */
 export interface MetricDataPoint {
   timestamp: string

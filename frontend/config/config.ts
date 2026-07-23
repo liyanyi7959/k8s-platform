@@ -18,8 +18,14 @@ export default defineConfig({
   antd: {
     theme: {
       token: {
-        colorPrimary: '#1677ff',
-        borderRadius: 6,
+        // Keep Ant Design primitives aligned with the product design tokens.
+        colorPrimary: '#2563eb',
+        colorInfo: '#2563eb',
+        colorSuccess: '#047857',
+        colorWarning: '#b45309',
+        colorError: '#dc2626',
+        colorTextSecondary: '#64748b',
+        borderRadius: 12,
       },
     },
   },

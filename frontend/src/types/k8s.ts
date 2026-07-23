@@ -262,6 +262,7 @@ export type PersistentVolumeList = PageResult<PersistentVolume>
 export interface PersistentVolumeClaim {
   name: string
   namespace: string
+  labels?: Record<string, string>
   status: string         // Bound / Pending / Lost
   volumeName: string
   capacity: string

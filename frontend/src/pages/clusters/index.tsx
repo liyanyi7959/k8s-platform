@@ -23,6 +23,7 @@ import {
   HeartOutlined,
   ImportOutlined,
   ReloadOutlined,
+  RocketOutlined,
   SearchOutlined,
   ToolOutlined,
   WarningOutlined,
@@ -343,6 +344,12 @@ const ClusterListPage: React.FC = () => {
         <Space>
           <Button
             type="primary"
+            icon={<RocketOutlined />}
+            onClick={() => history.push('/clusters/provision')}
+          >
+            部署K8S集群
+          </Button>
+          <Button
             icon={<ImportOutlined />}
             onClick={() => history.push('/clusters/import')}
           >

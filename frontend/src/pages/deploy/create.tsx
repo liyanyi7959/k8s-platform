@@ -57,7 +57,7 @@ export default function CreateDeployPlanPage() {
     },
     onSuccess: () => {
       message.success(isEditMode ? '部署方案更新成功' : '部署方案创建成功')
-      history.push('/deploy/plans')
+      history.push('/clusters/provision')
     },
     onError: (err: any) => message.error(err?.message || (isEditMode ? '更新失败' : '创建失败')),
   })
@@ -221,7 +221,7 @@ export default function CreateDeployPlanPage() {
 
             {availableServers.length === 0 ? (
               <Empty description="暂无可用于部署的服务器">
-                <Button type="primary" onClick={() => history.push('/deploy/servers')}>前往服务器管理</Button>
+                <Button type="primary" onClick={() => history.push('/clusters/hosts')}>前往主机资源池</Button>
               </Empty>
             ) : (
               <Form.List name="nodes">
@@ -303,7 +303,7 @@ export default function CreateDeployPlanPage() {
 
       <div style={{ marginTop: 24, textAlign: 'right' }}>
         <Space>
-          <Button onClick={() => history.push('/deploy/plans')}>取消</Button>
+          <Button onClick={() => history.push('/clusters/provision')}>取消</Button>
           {step > 0 && <Button onClick={handlePrev}>上一步</Button>}
           {step < 1 && <Button type="primary" onClick={handleNext}>下一步</Button>}
           {step === 1 && (

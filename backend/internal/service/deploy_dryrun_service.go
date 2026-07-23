@@ -84,6 +84,8 @@ var ansibleDryRunSteps = []ansibleDryRunStepDef{
 			"停止并禁用 firewalld",
 			"设置 SELinux 为 permissive/disabled",
 			"安装基础包: device-mapper-persistent-data, lvm2, wget, curl, vim, chrony",
+			"配置国内 yum/apt 镜像源（来自仓库配置）",
+			"自动禁用 SSL 证书有问题的仓库",
 			"配置 Kubernetes yum/apt 仓库",
 		},
 	},
@@ -94,7 +96,7 @@ var ansibleDryRunSteps = []ansibleDryRunStepDef{
 		Phase:       "install",
 		AppliesTo:   "all",
 		Tasks: []string{
-			"安装 Docker CE 仓库（RedHat/Debian 双系兼容）",
+			"安装 Docker CE 仓库（使用国内镜像源）",
 			"安装 containerd.io",
 			"生成 containerd 默认配置",
 			"设置 SystemdCgroup=true",

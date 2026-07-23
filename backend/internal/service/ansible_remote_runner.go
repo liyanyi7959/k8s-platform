@@ -192,6 +192,7 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 	}
 	// 从仓库配置中提取启用的镜像源，注入 Ansible extra vars
 	if repos, repoErr := s.deployConfig.ListRepositories(ctx, ""); repoErr == nil {
+		var yumMirrors, aptMirrors []map[string]any
 		for _, repo := range repos {
 			if !repo.Enabled {
 				continue
@@ -204,6 +205,33 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 				imageRepo = strings.TrimSuffix(imageRepo, "/")
 				extraVarsMap["k8s_image_repository"] = imageRepo
 			}
+			// yum 镜像源列表，供 bootstrap role 配置基础源
+			if repo.RepoType == "yum" {
+				targetOS := ""
+				if repo.MirrorOf != nil {
+					targetOS = strings.ToLower(strings.TrimSpace(*repo.MirrorOf))
+				}
+				yumMirrors = append(yumMirrors, map[string]any{
+					"name":      repo.Name,
+					"url":       strings.TrimSuffix(repo.URL, "/"),
+					"priority":  repo.Priority,
+					"target_os": targetOS,
+				})
+			}
+			// apt 镜像源列表，供 bootstrap role 配置基础源
+			if repo.RepoType == "apt" {
+				aptMirrors = append(aptMirrors, map[string]any{
+					"name":     repo.Name,
+					"url":      strings.TrimSuffix(repo.URL, "/"),
+					"priority": repo.Priority,
+				})
+			}
+		}
+		if len(yumMirrors) > 0 {
+			extraVarsMap["yum_mirrors"] = yumMirrors
+		}
+		if len(aptMirrors) > 0 {
+			extraVarsMap["apt_mirrors"] = aptMirrors
 		}
 	}
 	if len(enabledSteps) > 0 {

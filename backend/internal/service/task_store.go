@@ -329,10 +329,16 @@ func (t *Task) AppendLog(line string, stepKey ...string) {
 	})
 }
 
-// Logs 分页获取日志，支持按 stepKey 过滤。
-func (t *Task) Logs(offset, limit int, stepKey ...string) []string {
+// TaskLogEntry 是保留写入时间的任务日志条目，供日志时间轴展示使用。
+type TaskLogEntry struct {
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// LogEntries 分页获取日志条目，支持按 stepKey 过滤。
+func (t *Task) LogEntries(offset, limit int, stepKey ...string) []TaskLogEntry {
 	if t.store == nil || t.store.db == nil {
-		return []string{}
+		return []TaskLogEntry{}
 	}
 	var logs []model.TaskLog
 	q := t.store.db.Where("task_id = ?", t.ID).Order("id asc")
@@ -344,9 +350,19 @@ func (t *Task) Logs(offset, limit int, stepKey ...string) []string {
 	}
 	q.Find(&logs)
 
-	out := make([]string, len(logs))
+	out := make([]TaskLogEntry, len(logs))
 	for i, l := range logs {
-		out[i] = l.Content
+		out[i] = TaskLogEntry{Content: l.Content, CreatedAt: l.CreatedAt}
+	}
+	return out
+}
+
+// Logs 分页获取纯文本日志，保留用于兼容既有调用方。
+func (t *Task) Logs(offset, limit int, stepKey ...string) []string {
+	entries := t.LogEntries(offset, limit, stepKey...)
+	out := make([]string, len(entries))
+	for i, entry := range entries {
+		out[i] = entry.Content
 	}
 	return out
 }

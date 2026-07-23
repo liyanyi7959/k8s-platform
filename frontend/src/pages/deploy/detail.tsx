@@ -3,9 +3,9 @@
  * 展示计划信息、节点拓扑、分阶段步骤树、SSE 实时日志
  */
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { Card, Descriptions, Tag, Badge, Button, Space, Typography, message, Popconfirm, Tooltip, Progress, Empty, Input, Collapse, Alert, Spin, Divider } from 'antd'
+import { Card, Descriptions, Tag, Badge, Button, Space, Typography, message, Popconfirm, Tooltip, Progress, Input, Spin, Modal } from 'antd'
 import { ArrowLeftOutlined, StopOutlined, RedoOutlined, DownloadOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, DesktopOutlined, SafetyCertificateOutlined, CheckCircleOutlined, CloseCircleOutlined, CaretRightOutlined, CodeOutlined } from '@ant-design/icons'
-import { history, useParams } from '@umijs/max'
+import { history, useParams, useSearchParams } from '@umijs/max'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AppPage, YamlEditor } from '@/components'
 import {
@@ -22,7 +22,7 @@ import {
   preflightDeployPlan,
   setDeployPreflightIgnore,
 } from '@/services/deploy'
-import type { DeployTask, DeployTaskStep, DeployTaskSubStep } from '@/types'
+import type { DeployPreflightResult, DeployTask, DeployTaskStep, DeployTaskSubStep } from '@/types'
 
 const { Text, Title } = Typography
 
@@ -31,6 +31,7 @@ const statusMap: Record<string, { badge: string; text: string }> = {
   running: { badge: 'processing', text: '执行中' },
   success: { badge: 'success', text: '成功' },
   failed: { badge: 'error', text: '失败' },
+  canceled: { badge: 'warning', text: '已取消' },
   cancelled: { badge: 'warning', text: '已取消' },
 }
 
@@ -40,6 +41,7 @@ const taskStatusMap: Record<string, { badge: string; text: string }> = {
   success: { badge: 'success', text: '成功' },
   failed: { badge: 'error', text: '失败' },
   canceled: { badge: 'warning', text: '已取消' },
+  cancelled: { badge: 'warning', text: '已取消' },
   timeout: { badge: 'error', text: '超时' },
 }
 
@@ -50,14 +52,14 @@ const roleColorMap: Record<string, string> = {
 
 // 步骤分组（stage -> steps）
 const stageGroups = [
-  { key: 'init', title: '初始化', steps: ['pre_check', 'bootstrap'] },
+  { key: 'init', title: '节点初始化', steps: ['pre_check', 'bootstrap'] },
   { key: 'install', title: '安装 k8s 集群', steps: ['container_runtime', 'kubeadm_init', 'join_workers', 'install_cni'] },
   { key: 'extend', title: '补充扩展', steps: ['install_addons', 'register'] },
 ]
 
 // 步骤标题映射
 const stepTitleMap: Record<string, string> = {
-  pre_check: '环境预检',
+  pre_check: '节点环境准备',
   bootstrap: '基础环境初始化',
   container_runtime: '容器运行时安装',
   kubeadm_init: 'Kubernetes Master 初始化',
@@ -67,17 +69,36 @@ const stepTitleMap: Record<string, string> = {
   register: '节点注册到管理平台',
 }
 
+const pendingDeployTask: DeployTask = {
+  id: 0,
+  type: 'deploy_cluster',
+  status: 'pending',
+  percent: 0,
+  steps: Object.entries(stepTitleMap).map(([key, title]) => ({ key, title, status: 'pending', subSteps: [] })),
+  createdAt: '',
+  createdBy: 0,
+}
+
 export default function DeployPlanDetailPage() {
   const params = useParams<{ id: string }>()
   const planId = Number(params.id)
+  const [searchParams] = useSearchParams()
+  const autoExecute = searchParams.get('execute') === '1'
   const queryClient = useQueryClient()
   const [selectedStepKey, setSelectedStepKey] = useState<string | null>(null)
   const [selectedSubStepKey, setSelectedSubStepKey] = useState<string | null>(null)
+  const [logViewerOpen, setLogViewerOpen] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
+  const [logTimestamps, setLogTimestamps] = useState<string[]>([])
   const [sseConnected, setSseConnected] = useState(false)
   const [logFilter, setLogFilter] = useState('')
+  const [showLogTimestamps, setShowLogTimestamps] = useState(false)
+  const [logTheme, setLogTheme] = useState<'light' | 'dark'>('light')
+  const [preflightCollapsed, setPreflightCollapsed] = useState(true)
+  const [ansibleConfigOpen, setAnsibleConfigOpen] = useState(false)
   const logOffsetRef = useRef(0)
   const logContainerRef = useRef<HTMLDivElement>(null)
+  const logViewerRef = useRef<HTMLElement>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -113,10 +134,17 @@ export default function DeployPlanDetailPage() {
   } = useQuery({
     queryKey: ['deploy-plan-preflight', planId],
     queryFn: () => preflightDeployPlan(planId),
-    enabled: !!plan && ['draft', 'failed', 'cancelled'].includes(plan.status),
+    enabled: !!plan && ['draft', 'failed', 'cancelled', 'canceled'].includes(plan.status),
     refetchOnWindowFocus: false,
     retry: false,
   })
+
+  const preflightReady = preflight?.ready
+  useEffect(() => {
+    if (preflightReady === false) {
+      setPreflightCollapsed(false)
+    }
+  }, [preflightReady])
 
   const taskId = plan?.taskId
 
@@ -152,9 +180,28 @@ export default function DeployPlanDetailPage() {
         serverIP: server?.ip || '-',
         serverOS: server?.os || '-',
         serverStatus: server?.status || '-',
+        serverSSHPort: server?.sshPort || 22,
       }
     })
   }, [plan?.nodes, serversData])
+
+  const ansibleYaml = useMemo(() => {
+    if (!ansibleConfig) return '# 暂无 Ansible 执行配置'
+    const inventory = (ansibleConfig.inventory || '# 暂无 inventory')
+      .split('\n')
+      .map((line) => `  ${line}`)
+      .join('\n')
+    const extraVars = Object.entries(ansibleConfig.extraVars || {})
+      .map(([key, value]) => `  ${key}: ${JSON.stringify(value)}`)
+      .join('\n')
+    return [
+      `playbook: ${JSON.stringify(ansibleConfig.playbookPath || '')}`,
+      'inventory: |',
+      inventory,
+      'extra_vars:',
+      extraVars || '  {}',
+    ].join('\n')
+  }, [ansibleConfig])
 
   // 执行部署
   const executeMutation = useMutation({
@@ -163,8 +210,22 @@ export default function DeployPlanDetailPage() {
       message.success('部署已启动')
       queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })
     },
-    onError: (err: any) => message.error(err?.message || '执行失败'),
+    onError: (err: any) => {
+      const errMsg = err?.message || '执行失败'
+      message.error({
+        content: errMsg,
+        duration: 8,
+      })
+    },
   })
+
+  // 自动执行：从列表页带 execute=1 跳转后，等 plan 和 preflight 加载完成自动触发
+  const autoExecuteTriggered = useRef(false)
+  useEffect(() => {
+    if (!autoExecute || autoExecuteTriggered.current || !plan || plan.status !== 'draft') return
+    autoExecuteTriggered.current = true
+    executeMutation.mutate()
+  }, [autoExecute, plan, executeMutation])
 
   // 取消部署
   const cancelMutation = useMutation({
@@ -177,16 +238,18 @@ export default function DeployPlanDetailPage() {
     onError: () => message.error('取消失败'),
   })
 
-  // 重试部署
-  const retryMutation = useMutation({
+  // 失败或取消后从上次失败位置恢复；后端会重新执行就绪检查。
+  const retryPlanMutation = useMutation({
     mutationFn: () => retryDeployPlan(planId),
     onSuccess: () => {
-      message.success('重试已启动')
+      message.success('部署重试已启动')
       queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })
+      queryClient.invalidateQueries({ queryKey: ['deploy-task'] })
     },
-    onError: () => message.error('重试失败'),
+    onError: (err: any) => message.error(err?.message || '部署重试失败'),
   })
 
+  // 从失败步骤重试部署
   // 重试步骤
   const retryStepMutation = useMutation({
     mutationFn: ({ stepKey }: { stepKey: string }) => retryDeployStep(planId, stepKey),
@@ -201,15 +264,18 @@ export default function DeployPlanDetailPage() {
   const effectiveStepKey = useMemo(() => {
     if (selectedSubStepKey) {
       // sub step key 格式为 {stepKey}-{index}，提取大 step key
-      return selectedSubStepKey.split('-')[0]
+      return task?.steps?.find((step: DeployTaskStep) =>
+        step.subSteps?.some((sub: DeployTaskSubStep) => sub.key === selectedSubStepKey),
+      )?.key || selectedStepKey
     }
     return selectedStepKey
-  }, [selectedStepKey, selectedSubStepKey])
+  }, [selectedStepKey, selectedSubStepKey, task?.steps])
 
   // 初始加载历史日志
   useEffect(() => {
     if (!taskId) {
       setLogs([])
+      setLogTimestamps([])
       logOffsetRef.current = 0
       return
     }
@@ -217,28 +283,20 @@ export default function DeployPlanDetailPage() {
     const steps = task?.steps || []
     if (!selectedStepKey && steps.length > 0) {
       const active = steps.find((s: DeployTaskStep) => s.status === 'running' || s.status === 'failed')
-      setSelectedStepKey(active?.key || steps[0].key)
+      setSelectedStepKey(active?.key || steps[0]?.key || null)
     }
 
     setLogs([])
+    setLogTimestamps([])
     logOffsetRef.current = 0
     getDeployTaskLogs(taskId, 0, 500, effectiveStepKey || undefined).then((res) => {
       const fetched = res.logs || []
-      // 当按步骤过滤后没有日志时（如部署准备阶段的日志 step_key 为空），回退到全部日志
-      if (effectiveStepKey && fetched.length === 0) {
-        getDeployTaskLogs(taskId, 0, 500).then((allRes) => {
-          setLogs(allRes.logs || [])
-          logOffsetRef.current = (allRes.logs || []).length
-        }).catch(() => {
-          setLogs([])
-          logOffsetRef.current = 0
-        })
-      } else {
-        setLogs(fetched)
-        logOffsetRef.current = fetched.length
-      }
+      setLogs(fetched)
+      setLogTimestamps((res.entries || []).map((entry) => entry.createdAt))
+      logOffsetRef.current = fetched.length
     }).catch(() => {
       setLogs([])
+      setLogTimestamps([])
       logOffsetRef.current = 0
     })
   }, [taskId, effectiveStepKey, task?.steps])
@@ -267,9 +325,11 @@ export default function DeployPlanDetailPage() {
         const data = JSON.parse(event.data)
         if (data.log) {
           setLogs((prev) => [...prev, data.log])
+          setLogTimestamps((prev) => [...prev, data.timestamp || ''])
         }
       } catch {
         setLogs((prev) => [...prev, event.data])
+        setLogTimestamps((prev) => [...prev, ''])
       }
     }
 
@@ -319,6 +379,17 @@ export default function DeployPlanDetailPage() {
     }
   }, [logs, logFilter])
 
+  useEffect(() => {
+    if (!logViewerOpen) return
+    const closeWhenClickedOutside = (event: MouseEvent) => {
+      if (!logViewerRef.current?.contains(event.target as Node)) {
+        setLogViewerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', closeWhenClickedOutside)
+    return () => document.removeEventListener('mousedown', closeWhenClickedOutside)
+  }, [logViewerOpen])
+
   // 下载日志
   const handleDownloadLogs = () => {
     const content = logs.join('\n')
@@ -334,29 +405,33 @@ export default function DeployPlanDetailPage() {
   const planStatus = plan?.status || 'draft'
   const isRunning = planStatus === 'running'
   const isDraft = planStatus === 'draft'
-  const canRetry = planStatus === 'failed' || planStatus === 'cancelled'
+  const canRetry = planStatus === 'failed' || planStatus === 'cancelled' || planStatus === 'canceled'
 
   const currentTaskStatus = task?.status
   const taskBadge = taskStatusMap[currentTaskStatus || ''] || { badge: 'default', text: currentTaskStatus || '-' }
 
   // 根据选中 sub step 进一步过滤日志（客户端过滤）
-  const filteredLogs = useMemo(() => {
-    let list = logFilter ? logs.filter((line) => line.toLowerCase().includes(logFilter.toLowerCase())) : logs
+  const filteredLogEntries = useMemo(() => {
+    let list = logs.map((content, index) => ({ content, timestamp: logTimestamps[index] || '' }))
+    if (logFilter) {
+      const keyword = logFilter.toLowerCase()
+      list = list.filter((entry) => entry.content.toLowerCase().includes(keyword))
+    }
     if (selectedSubStepKey && task) {
       const step = task.steps?.find((s: DeployTaskStep) => s.key === selectedStepKey)
       const sub = step?.subSteps?.find((s: DeployTaskSubStep) => s.key === selectedSubStepKey)
       if (sub) {
         // 高亮子步骤：只保留包含子步骤标题的 TASK 行及其后直到下一个 TASK 行
         const subTitle = sub.title
-        const result: string[] = []
+        const result: Array<{ content: string; timestamp: string }> = []
         let inSubStep = false
-        for (const line of list) {
-          const trimmed = line.trim()
+        for (const entry of list) {
+          const trimmed = entry.content.trim()
           if (trimmed.startsWith('TASK [')) {
             inSubStep = trimmed.includes(subTitle)
           }
           if (inSubStep || trimmed.includes(subTitle)) {
-            result.push(line)
+            result.push(entry)
           }
         }
         // 如果没有匹配到 TASK 行（可能日志格式不同），返回整个 step 日志
@@ -364,17 +439,24 @@ export default function DeployPlanDetailPage() {
       }
     }
     return list
-  }, [logs, logFilter, selectedSubStepKey, selectedStepKey, task])
+  }, [logs, logTimestamps, logFilter, selectedSubStepKey, selectedStepKey, task])
+
+  const filteredLogs = useMemo(() => filteredLogEntries.map((entry) => entry.content), [filteredLogEntries])
+  const logThemeTokens = logTheme === 'dark'
+    ? { panel: '#161616', header: '#202020', headerBorder: '#383838', text: '#f5f5f5', muted: '#a6a6a6', viewer: '#101010', viewerBorder: '#343434', empty: '#a6a6a6', button: '#262626', buttonBorder: '#454545' }
+    : { panel: '#ffffff', header: '#fafafa', headerBorder: '#e8e8e8', text: '#262626', muted: '#8c8c8c', viewer: '#fafafa', viewerBorder: '#d9d9d9', empty: '#8c8c8c', button: '#ffffff', buttonBorder: '#d9d9d9' }
 
   // 步骤选择处理
   const handleSelectStep = (stepKey: string) => {
     setSelectedStepKey(stepKey)
     setSelectedSubStepKey(null)
+    setLogViewerOpen(true)
   }
 
   const handleSelectSubStep = (stepKey: string, subKey: string) => {
     setSelectedStepKey(stepKey)
     setSelectedSubStepKey(subKey)
+    setLogViewerOpen(true)
   }
 
   return (
@@ -383,7 +465,7 @@ export default function DeployPlanDetailPage() {
         {/* 顶部操作栏 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <Space>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/deploy/plans')}>返回列表</Button>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/clusters/provision')}>返回集群部署列表</Button>
             <Title level={4} style={{ margin: 0 }}>{plan?.name || '部署详情'}</Title>
             <Badge status={statusMap[planStatus]?.badge as any} text={statusMap[planStatus]?.text || planStatus} />
           </Space>
@@ -399,8 +481,8 @@ export default function DeployPlanDetailPage() {
               </Popconfirm>
             )}
             {canRetry && (
-              <Popconfirm title="确认重试该部署方案？" onConfirm={() => retryMutation.mutate()}>
-                <Button type="primary" icon={<RedoOutlined />} disabled={!preflight?.ready} loading={retryMutation.isPending}>重试部署</Button>
+              <Popconfirm title="将重新执行就绪检查，并从上次失败位置继续，确认重试？" onConfirm={() => retryPlanMutation.mutate()}>
+                <Button type="primary" icon={<RedoOutlined />} loading={retryPlanMutation.isPending}>从失败处重试</Button>
               </Popconfirm>
             )}
             <Tooltip title="刷新">
@@ -427,137 +509,59 @@ export default function DeployPlanDetailPage() {
             {taskId ? <Badge status={taskBadge.badge as any} text={taskBadge.text} /> : <Text type="secondary">未执行</Text>}
           </Descriptions.Item>
           {plan?.addons && plan.addons.length > 0 && (
-            <Descriptions.Item label="附加组件" span={3}>
+            <Descriptions.Item label="附加组件" span={2}>
               <Space wrap>
                 {plan.addons.map((addon: string) => <Tag key={addon}>{addon}</Tag>)}
               </Space>
             </Descriptions.Item>
           )}
+          <Descriptions.Item label="Ansible 配置">
+            <Button
+              size="small"
+              type="link"
+              icon={<CodeOutlined />}
+              loading={ansibleConfigLoading}
+              onClick={() => setAnsibleConfigOpen(true)}
+            >
+              查看 YAML
+            </Button>
+          </Descriptions.Item>
         </Descriptions>
 
-        {(isDraft || canRetry) && (
-          <Card
-            size="small"
-            title={<Space><SafetyCertificateOutlined />部署就绪检查</Space>}
-            extra={<Button size="small" icon={<ReloadOutlined />} loading={preflightLoading} onClick={() => runPreflight()}>重新检查</Button>}
-            style={{ marginBottom: 16 }}
-          >
-            {preflightFailed ? (
-              <Alert type="error" showIcon message="无法完成部署预检" description="请确认后端服务可用且当前账号具有部署执行权限，然后重新检查。" />
-            ) : !preflight ? (
-              <Spin />
-            ) : (
-              <>
-                <Alert
-                  type={preflight.ready ? 'success' : 'error'}
-                  showIcon
-                  message={preflight.ready ? '预检通过，可以执行部署' : '预检未通过，执行已被阻止'}
-                  description={`检查时间：${new Date(preflight.checkedAt).toLocaleString()}`}
-                  style={{ marginBottom: 12 }}
-                />
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                  {preflight.checks.map((check: any) => (
-                    <div key={check.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      {check.status === 'passed'
-                        ? <CheckCircleOutlined style={{ color: '#52c41a', marginTop: 3 }} />
-                        : <CloseCircleOutlined style={{ color: check.status === 'warning' ? '#faad14' : '#ff4d4f', marginTop: 3 }} />}
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <Text strong>{check.serverName ? `${check.serverName} · ` : ''}{check.message}</Text>
-                        {check.remediation && <div><Text type="secondary">处理建议：{check.remediation}</Text></div>}
-                      </div>
-                      {check.ignorable && (
-                        <Popconfirm
-                          title={check.ignored ? '恢复该项强制检查？' : '确认已评估风险并忽略该项？'}
-                          onConfirm={() => preflightIgnoreMutation.mutate({ key: check.key, ignored: !check.ignored })}
-                        >
-                          <Button size="small" loading={preflightIgnoreMutation.isPending}>
-                            {check.ignored ? '恢复检查' : '忽略此项'}
-                          </Button>
-                        </Popconfirm>
-                      )}
-                    </div>
-                  ))}
-                </Space>
-              </>
-            )}
-          </Card>
-        )}
-
-        {/* 节点拓扑 */}
-        {nodeDetails.length > 0 && (
-          <Card size="small" title={<Space><DesktopOutlined />节点拓扑</Space>} style={{ marginBottom: 16 }}>
-            <Space wrap size={[16, 8]}>
-              {nodeDetails.map((node, i) => (
-                <Card
-                  key={i}
-                  size="small"
-                  style={{ width: 260, background: '#fafafa' }}
-                  title={
-                    <Space>
-                      <Tag color={roleColorMap[node.role] || 'default'}>{node.role?.toUpperCase()}</Tag>
-                      <Text strong>{node.serverName}</Text>
-                    </Space>
-                  }
-                >
-                  <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                    <Text type="secondary">IP: <Text code>{node.serverIP}</Text></Text>
-                    <Text type="secondary">OS: {node.serverOS}</Text>
-                    <Space>
-                      <Badge status={node.serverStatus === 'available' ? 'success' : 'default'} text={node.serverStatus} />
-                    </Space>
-                  </Space>
-                </Card>
-              ))}
-            </Space>
-          </Card>
-        )}
-
-        {/* Ansible 执行配置 */}
-        <Card size="small" title="Ansible 执行配置" style={{ marginBottom: 16 }} loading={ansibleConfigLoading}>
-          {!ansibleConfig ? (
-            <Alert type="warning" showIcon message="暂无执行配置" />
-          ) : (
-            <Collapse ghost>
-              <Collapse.Panel header={<Text strong>Playbook：{ansibleConfig.playbookPath}</Text>} key="playbook">
-                <Alert type="info" showIcon message="该 playbook 为项目内置，实际执行时会根据计划生成动态 inventory 和 extra vars。" style={{ marginBottom: 8 }} />
-                <YamlEditor readOnly value={`# 实际执行命令示例\nansible-playbook ${ansibleConfig.playbookPath} -i <动态 inventory> \\\n  -e k8s_version=${ansibleConfig.extraVars?.k8sVersion || ''} \\\n  -e pod_cidr=${ansibleConfig.extraVars?.podCidr || ''} \\\n  -e svc_cidr=${ansibleConfig.extraVars?.svcCidr || ''} \\\n  -e cni_type=${ansibleConfig.extraVars?.cniType || ''}\\n\\n# 完整 extra vars\\n${JSON.stringify(ansibleConfig.extraVars || {}, null, 2)}`} height={260} />
-              </Collapse.Panel>
-              <Collapse.Panel header={<Text strong>Inventory（密码已脱敏）</Text>} key="inventory">
-                <YamlEditor readOnly value={ansibleConfig.inventory || '# 暂无 inventory'} height={320} />
-              </Collapse.Panel>
-            </Collapse>
-          )}
-        </Card>
-
-        {/* 草稿状态提示 */}
-        {isDraft && !taskId && (
-          <Card style={{ marginBottom: 16 }}>
-            <Empty
-              description="该部署方案尚未执行"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            >
-              <Popconfirm title="确认执行该部署方案？" onConfirm={() => executeMutation.mutate()}>
-                <Button type="primary" icon={<PlayCircleOutlined />} disabled={!preflight?.ready} loading={executeMutation.isPending}>
-                  立即执行部署
-                </Button>
-              </Popconfirm>
-            </Empty>
+        {(!task || !task.steps || task.steps.length === 0) && (
+          <Card size="small" title={<DeployProgressTitle />} style={{ marginBottom: 12 }}>
+            <div style={{ height: 400, minHeight: 360, overflow: 'hidden' }}>
+              <StepTree
+                task={pendingDeployTask}
+                canRetry={false}
+                selectedStepKey={null}
+                selectedSubStepKey={null}
+                onSelectStep={() => undefined}
+                onSelectSubStep={() => undefined}
+                onRetryStep={() => undefined}
+                retrying={false}
+                readiness={{
+                  preflight,
+                  failed: preflightFailed,
+                  loading: preflightLoading,
+                  collapsed: preflightCollapsed,
+                  onToggle: () => setPreflightCollapsed((collapsed) => !collapsed),
+                  onRefresh: () => { void runPreflight() },
+                  refreshable: isDraft || canRetry,
+                  onToggleIgnore: (key, ignored) => preflightIgnoreMutation.mutate({ key, ignored }),
+                  ignoreLoading: preflightIgnoreMutation.isPending,
+                }}
+              />
+            </div>
           </Card>
         )}
 
         {/* 部署进度 + 日志 左右布局 */}
         {task && task.steps && task.steps.length > 0 && (
-          <Card size="small" title="部署进度" style={{ marginBottom: 16 }}>
-            {task?.percent != null && (
-              <Progress
-                percent={task.percent}
-                status={task.status === 'failed' ? 'exception' : task.status === 'success' ? 'success' : 'active'}
-                style={{ marginBottom: 16 }}
-              />
-            )}
-            <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 340px)', minHeight: 420 }}>
+          <Card size="small" title={<DeployProgressTitle task={task} />} style={{ marginBottom: 12 }}>
+            <div style={{ height: 460, minHeight: 390, position: 'relative', overflow: 'hidden' }}>
               {/* 左侧步骤树 */}
-              <div style={{ width: 360, flexShrink: 0, borderRight: '1px solid #f0f0f0', paddingRight: 12, overflowY: 'auto', overflowX: 'hidden' }}>
+              <div style={{ height: '100%', overflow: 'hidden' }}>
                 <StepTree
                   task={task}
                   canRetry={canRetry}
@@ -567,11 +571,149 @@ export default function DeployPlanDetailPage() {
                   onSelectSubStep={handleSelectSubStep}
                   onRetryStep={(stepKey) => retryStepMutation.mutate({ stepKey })}
                   retrying={retryStepMutation.isPending}
+                  readiness={{
+                    preflight,
+                    failed: preflightFailed,
+                    loading: preflightLoading,
+                    collapsed: preflightCollapsed,
+                    onToggle: () => setPreflightCollapsed((collapsed) => !collapsed),
+                    onRefresh: () => { void runPreflight() },
+                    refreshable: isDraft || canRetry,
+                    onToggleIgnore: (key, ignored) => preflightIgnoreMutation.mutate({ key, ignored }),
+                    ignoreLoading: preflightIgnoreMutation.isPending,
+                    assumedReady: !preflight && !preflightLoading && !preflightFailed && !canRetry,
+                  }}
                 />
               </div>
 
+              {logViewerOpen && (
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="步骤日志"
+                  onClick={() => setLogViewerOpen(false)}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 10,
+                    padding: 12,
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <section
+                    ref={logViewerRef}
+                    onClick={(event) => event.stopPropagation()}
+                    style={{
+                      height: '100%',
+                      width: '70%',
+                      minHeight: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                      borderRadius: 10,
+                      border: `1px solid ${logThemeTokens.viewerBorder}`,
+                      background: logThemeTokens.panel,
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.24)',
+                    }}
+                  >
+                    <header
+                      style={{
+                        flex: '0 0 auto',
+                        minHeight: 58,
+                        padding: '0 18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        borderBottom: `1px solid ${logThemeTokens.headerBorder}`,
+                        background: logThemeTokens.header,
+                        color: logThemeTokens.text,
+                      }}
+                    >
+                      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 16, fontWeight: 600 }}>
+                        {selectedSubStepKey
+                          ? task.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)?.subSteps?.find((sub: DeployTaskSubStep) => sub.key === selectedSubStepKey)?.title
+                          : selectedStepKey
+                            ? task.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)?.title || stepTitleMap[selectedStepKey] || selectedStepKey
+                            : '任务日志'}
+                      </span>
+                      <span style={{ flex: '0 0 auto', color: logThemeTokens.muted, fontSize: 12 }}>共 {task.steps.length} 个步骤</span>
+                      <Button
+                        aria-label="关闭日志"
+                        type="text"
+                        size="small"
+                        icon={<CloseCircleOutlined />}
+                        onClick={() => setLogViewerOpen(false)}
+                        style={{ flex: '0 0 auto', color: logThemeTokens.muted }}
+                      />
+                    </header>
+
+                    <div style={{ minHeight: 0, flex: 1, padding: 18, display: 'flex', flexDirection: 'column', background: logThemeTokens.panel }}>
+                      <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 12 }}>
+                        <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ color: logThemeTokens.text, fontSize: 15, fontWeight: 600 }}>日志输出</span>
+                          <span style={{ color: logThemeTokens.muted, fontSize: 12 }}>{filteredLogs.length} / {logs.length} 行</span>
+                        </div>
+                        <Space size={8} style={{ flex: '0 0 auto' }}>
+                          <Input
+                            size="small"
+                            placeholder="过滤日志..."
+                            prefix={<SearchOutlined />}
+                            value={logFilter}
+                            onChange={(event) => setLogFilter(event.target.value)}
+                            style={{ width: 220, background: logThemeTokens.viewer, borderColor: logThemeTokens.buttonBorder, color: logThemeTokens.text }}
+                            allowClear
+                          />
+                          <Tooltip title="下载当前日志">
+                            <Button size="small" icon={<DownloadOutlined />} onClick={handleDownloadLogs} disabled={logs.length === 0} style={{ background: logThemeTokens.button, borderColor: logThemeTokens.buttonBorder, color: logThemeTokens.text }} />
+                          </Tooltip>
+                          <Button size="small" onClick={() => setShowLogTimestamps((visible) => !visible)} style={{ background: logThemeTokens.button, borderColor: logThemeTokens.buttonBorder, color: logThemeTokens.text }}>
+                            {showLogTimestamps ? '隐藏时间' : '时间戳'}
+                          </Button>
+                          <Button size="small" onClick={() => setLogTheme((theme) => theme === 'light' ? 'dark' : 'light')} style={{ background: logThemeTokens.button, borderColor: logThemeTokens.buttonBorder, color: logThemeTokens.text }}>
+                            {logTheme === 'light' ? '深色' : '浅色'}
+                          </Button>
+                        </Space>
+                      </div>
+
+                      <div
+                        ref={logContainerRef}
+                        style={{
+                          flex: 1,
+                          minHeight: 0,
+                          overflow: 'auto',
+                          border: `1px solid ${logThemeTokens.viewerBorder}`,
+                          borderRadius: 8,
+                          padding: 18,
+                          background: logThemeTokens.viewer,
+                          color: logThemeTokens.text,
+                          fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                          fontSize: 13,
+                          lineHeight: 1.7,
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {logs.length === 0 ? (
+                          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: logThemeTokens.empty }}>该步骤暂未产生可展示的日志</div>
+                        ) : filteredLogs.length === 0 ? (
+                          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: logThemeTokens.empty }}>没有匹配的日志内容</div>
+                        ) : (
+                          filteredLogEntries.map((entry, index) => (
+                            <div key={index} style={{ display: 'flex', gap: 10, color: getLogColor(entry.content, logTheme) }}>
+                              {showLogTimestamps && <span style={{ flex: '0 0 auto', color: logThemeTokens.muted }}>{formatLogTimestamp(entry.timestamp)}</span>}
+                              <span style={{ minWidth: 0 }}>{entry.content || ' '}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              )}
+
               {/* 右侧日志面板 */}
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+              <div style={{ display: 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <Space>
                     <Text strong>
@@ -637,12 +779,363 @@ export default function DeployPlanDetailPage() {
             </div>
           </Card>
         )}
+
+        {/* 节点拓扑 */}
+        {nodeDetails.length > 0 && (
+          <Card size="small" title={<Space><DesktopOutlined />节点拓扑</Space>} style={{ marginBottom: 12 }}>
+            <DeployNodeTopology nodes={nodeDetails} />
+          </Card>
+        )}
+
+        <Modal
+          title={<Space><CodeOutlined />Ansible 执行配置</Space>}
+          open={ansibleConfigOpen}
+          onCancel={() => setAnsibleConfigOpen(false)}
+          footer={null}
+          width={860}
+          destroyOnClose
+        >
+          <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+            Inventory 已脱敏，配置由后端根据当前部署方案动态生成。
+          </Text>
+          <YamlEditor readOnly value={ansibleYaml} height={520} />
+        </Modal>
+
+        <Modal
+          open={false}
+          onCancel={() => setLogViewerOpen(false)}
+          footer={null}
+          width="62vw"
+          style={{ top: 140, marginLeft: 'auto', marginRight: '4vw', paddingBottom: 0 }}
+          title={
+            <div style={{ color: '#f5f5f5' }}>
+            <Space size={10}>
+              {selectedSubStepKey
+                ? task?.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)?.subSteps?.find((sub: DeployTaskSubStep) => sub.key === selectedSubStepKey)?.title
+                : selectedStepKey
+                  ? task?.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)?.title || stepTitleMap[selectedStepKey] || selectedStepKey
+                  : '任务日志'}
+              {task?.status === 'running' && <Badge status="processing" text="实时日志" />}
+              {task?.steps && <Text style={{ color: '#a6a6a6', fontSize: 12 }}>共 {task.steps.length} 个步骤</Text>}
+            </Space>
+            </div>
+          }
+          closeIcon={<CloseCircleOutlined style={{ color: '#d9d9d9' }} />}
+          styles={{ header: { background: '#202020', margin: 0, padding: '16px 24px', borderBottom: '1px solid #383838' }, body: { padding: 0 } }}
+        >
+          {task && (
+            <div style={{ height: 'calc(100vh - 340px)', minHeight: 540, display: 'flex', background: '#161616' }}>
+              <div style={{ display: 'none' }}>
+                {stageGroups.map((stage, stageIndex) => {
+                  const steps = stage.steps.map((key) => task.steps?.find((step: DeployTaskStep) => step.key === key)).filter(Boolean) as DeployTaskStep[]
+                  const completed = steps.filter((step) => step.status === 'success').length
+                  const failed = steps.filter((step) => step.status === 'failed').length
+                  return (
+                    <div key={stage.key} style={{ marginBottom: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f5f5f5', marginBottom: 8 }}>
+                        <span style={{ width: 24, height: 24, borderRadius: '50%', background: failed ? '#ff4d4f' : completed === steps.length && steps.length ? '#52c41a' : '#1677ff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 12 }}>{stageIndex + 1}</span>
+                        <span style={{ flex: 1, fontWeight: 600 }}>{stage.title}</span>
+                        <span style={{ color: '#a6a6a6', fontSize: 12 }}>{steps.length} 个任务</span>
+                      </div>
+                      <div style={{ paddingLeft: 10, borderLeft: '1px solid #454545' }}>
+                        {steps.map((step, index) => {
+                          const selected = selectedStepKey === step.key && !selectedSubStepKey
+                          const failedStep = step.status === 'failed'
+                          const runningStep = step.status === 'running'
+                          const color = failedStep ? '#ff7875' : step.status === 'success' ? '#73d13d' : runningStep ? '#69b1ff' : '#8c8c8c'
+                          return (
+                            <div key={step.key} style={{ marginBottom: 6 }}>
+                              <button
+                                type="button"
+                                onClick={() => { setSelectedStepKey(step.key); setSelectedSubStepKey(null) }}
+                                style={{ width: '100%', border: `1px solid ${selected ? color : '#454545'}`, background: selected ? (failedStep ? '#431a1a' : step.status === 'success' ? '#1f3a22' : '#1f2d3d') : '#262626', color: '#f0f0f0', cursor: 'pointer', borderRadius: 5, padding: '9px 10px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 7 }}
+                              >
+                                {failedStep ? <CloseCircleOutlined style={{ color }} /> : step.status === 'success' ? <CheckCircleOutlined style={{ color }} /> : <span style={{ color }}>○</span>}
+                                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stageIndex + 1}-{index + 1} {step.title}</span>
+                                <span style={{ color: '#a6a6a6', fontSize: 11 }}>{step.subSteps?.length || 0}</span>
+                              </button>
+                              {step.subSteps?.map((sub) => {
+                                const selectedSub = selectedSubStepKey === sub.key
+                                const subFailed = sub.status === 'failed'
+                                const subColor = subFailed ? '#ff7875' : sub.status === 'success' ? '#73d13d' : sub.status === 'running' ? '#69b1ff' : '#8c8c8c'
+                                return (
+                                  <button
+                                    type="button"
+                                    key={sub.key}
+                                    onClick={() => { setSelectedStepKey(step.key); setSelectedSubStepKey(sub.key) }}
+                                    style={{ width: 'calc(100% - 12px)', margin: '5px 0 0 12px', border: `1px solid ${selectedSub ? subColor : '#353535'}`, background: selectedSub ? '#303030' : 'transparent', color: '#c9c9c9', cursor: 'pointer', borderRadius: 4, padding: '7px 8px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 7 }}
+                                  >
+                                    {subFailed ? <CloseCircleOutlined style={{ color: subColor, fontSize: 13 }} /> : sub.status === 'success' ? <CheckCircleOutlined style={{ color: subColor, fontSize: 13 }} /> : <span style={{ color: subColor }}>○</span>}
+                                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.title}</span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0, padding: 28, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 14 }}>
+                  <Space>
+                    <Text strong style={{ color: '#f5f5f5' }}>日志输出</Text>
+                    {sseConnected && <Badge status="processing" text="实时连接" />}
+                    {!sseConnected && isRunning && <Badge status="warning" text="连接中" />}
+                    <Text style={{ color: '#8c8c8c', fontSize: 12 }}>{filteredLogs.length} / {logs.length} 行</Text>
+                  </Space>
+                  <Space>
+                    <Input
+                      size="small"
+                      placeholder="过滤日志..."
+                      prefix={<SearchOutlined />}
+                      value={logFilter}
+                      onChange={(event) => setLogFilter(event.target.value)}
+                      style={{ width: 220 }}
+                      allowClear
+                    />
+                    <Tooltip title="下载当前日志">
+                      <Button size="small" icon={<DownloadOutlined />} onClick={handleDownloadLogs} disabled={logs.length === 0} />
+                    </Tooltip>
+                  </Space>
+                </div>
+                <div
+                  ref={logContainerRef}
+                  style={{ flex: 1, minHeight: 0, overflowY: 'auto', border: '1px solid #343434', borderRadius: 8, padding: 20, background: '#101010', color: '#d4d4d4', fontFamily: 'Consolas, Monaco, "Courier New", monospace', fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                >
+                  {logs.length === 0 ? (
+                    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8c8c' }}>该任务暂未产生可展示的日志</div>
+                  ) : filteredLogs.length === 0 ? (
+                    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8c8c' }}>没有匹配的日志内容</div>
+                  ) : (
+                    filteredLogs.map((line, index) => <div key={index} style={{ color: getLogColor(line) }}>{line || ' '}</div>)
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </Modal>
       </Card>
     </AppPage>
   )
 }
 
 // 步骤树组件
+type DeployTopologyNode = {
+  role: string
+  serverName: string
+  serverIP: string
+  serverOS: string
+  serverStatus: string
+  serverSSHPort: number
+}
+
+type DeployReadinessProps = {
+  preflight?: DeployPreflightResult
+  failed: boolean
+  loading: boolean
+  collapsed: boolean
+  onToggle: () => void
+  onRefresh: () => void
+  refreshable: boolean
+  onToggleIgnore: (key: string, ignored: boolean) => void
+  ignoreLoading: boolean
+  assumedReady?: boolean
+}
+
+function DeployProgressTitle({ task }: { task?: DeployTask }) {
+  const status = task?.status
+  const percent = task?.percent ?? 0
+  const progressStatus = status === 'failed'
+    ? 'exception'
+    : status === 'success'
+      ? 'success'
+      : status === 'running'
+        ? 'active'
+        : 'normal'
+
+  return (
+    <div className="app-deploy-progress-title">
+      <span>部署进度</span>
+      <Progress
+        percent={percent}
+        status={progressStatus}
+        strokeColor={status === 'canceled' || status === 'cancelled' ? '#b45309' : undefined}
+        size="small"
+      />
+    </div>
+  )
+}
+
+function DeployReadinessStage({
+  preflight,
+  failed,
+  loading,
+  collapsed,
+  onToggle,
+  onRefresh,
+  refreshable,
+  onToggleIgnore,
+  ignoreLoading,
+  assumedReady = false,
+}: DeployReadinessProps) {
+  const ready = Boolean(preflight?.ready || assumedReady)
+  const state = failed || (preflight && !preflight.ready) ? 'failed' : ready ? 'success' : loading ? 'running' : 'pending'
+  const passedCount = preflight?.checks.filter((check) => check.status === 'passed').length || 0
+  const totalCount = preflight?.checks.length || 0
+  const stateLabel = state === 'success'
+    ? '检查通过'
+    : state === 'failed'
+      ? '存在阻断项'
+      : state === 'running'
+        ? '检查中'
+        : '等待检查'
+
+  const style = state === 'failed'
+    ? { color: '#dc2626', soft: '#fff7f7', border: '#fecaca' }
+    : state === 'success'
+      ? { color: '#047857', soft: '#f7fffb', border: '#a7e3c4' }
+      : state === 'running'
+        ? { color: '#2563eb', soft: '#f6f9ff', border: '#b9cff8' }
+        : { color: '#64748b', soft: '#f8fbff', border: '#dbe7f5' }
+
+  return (
+    <section style={{ height: '100%', minWidth: 0, flex: 1, border: `1px solid ${style.border}`, borderRadius: 8, background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 3px 12px rgba(0, 0, 0, 0.04)' }}>
+      <div style={{ position: 'relative', padding: '12px 44px', background: style.soft, borderBottom: `1px solid ${style.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ position: 'absolute', left: 14, top: '50%', width: 25, height: 25, marginTop: -12, borderRadius: '50%', background: style.color, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>1</span>
+        <span style={{ minWidth: 0, maxWidth: '100%', textAlign: 'center' }}>
+          <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, color: '#262626', fontWeight: 600 }}>
+            {state === 'success' ? <CheckCircleOutlined style={{ color: style.color }} /> : state === 'failed' ? <CloseCircleOutlined style={{ color: style.color }} /> : <SafetyCertificateOutlined style={{ color: style.color }} />}
+            部署就绪检查
+          </span>
+          <span style={{ display: 'block', color: '#8c8c8c', fontSize: 12, marginTop: 3 }}>
+            {stateLabel}{totalCount > 0 ? ` · ${passedCount}/${totalCount} 项通过` : ''}
+          </span>
+        </span>
+      </div>
+
+      <div style={{ padding: 10, overflowY: 'auto', background: '#fff', flex: 1 }}>
+        <div style={{ overflow: 'hidden', borderRadius: 6, border: `1px solid ${style.border}`, background: '#fff' }}>
+          <div style={{ width: '100%', minHeight: 46, padding: '9px 10px', borderBottom: `1px solid ${style.border}`, background: style.soft, display: 'flex', gap: 8, alignItems: 'center', color: style.color }}>
+            {state === 'success' ? <CheckCircleOutlined /> : state === 'failed' ? <CloseCircleOutlined /> : <SafetyCertificateOutlined />}
+            <span style={{ flex: 1, minWidth: 0, fontWeight: 600 }}>1-1 部署就绪检查</span>
+            {totalCount > 0 && (
+              <button
+                type="button"
+                aria-label={collapsed ? '展开就绪检查' : '收起就绪检查'}
+                onClick={onToggle}
+                style={{ flex: '0 0 auto', width: 26, height: 26, padding: 0, border: `1px solid ${style.border}`, borderRadius: 4, background: '#fff', color: style.color, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <CaretRightOutlined style={{ fontSize: 11, transform: collapsed ? 'rotate(0deg)' : 'rotate(90deg)', transition: 'transform .2s' }} />
+              </button>
+            )}
+          </div>
+          <div style={{ minHeight: 38, padding: '7px 10px', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', color: '#8c8c8c', fontSize: 12 }}>
+            <span>{preflight?.checkedAt ? new Date(preflight.checkedAt).toLocaleString('zh-CN') : stateLabel}</span>
+            {refreshable && (
+              <Tooltip title="重新检查">
+                <Button aria-label="重新检查" type="text" size="small" icon={<ReloadOutlined />} loading={loading} onClick={onRefresh} />
+              </Tooltip>
+            )}
+          </div>
+        </div>
+
+        {!collapsed && (
+          <div className="app-deploy-readiness__details" style={{ margin: '7px 7px 0', padding: '0 0 0 10px', borderTop: 0, borderLeft: `2px solid ${style.border}` }}>
+            {failed ? (
+              <div className="app-deploy-readiness__error">无法完成就绪检查，请确认后端服务与部署权限后重试。</div>
+            ) : loading && !preflight ? (
+              <Spin size="small" />
+            ) : preflight?.checks.length ? (
+              preflight.checks.map((check) => (
+                <div className="app-deploy-readiness__check" key={check.key}>
+                  {check.status === 'passed'
+                    ? <CheckCircleOutlined className="app-deploy-readiness__check-icon app-deploy-readiness__check-icon--success" />
+                  : <CloseCircleOutlined className={`app-deploy-readiness__check-icon app-deploy-readiness__check-icon--${check.status}`} />}
+                <div className="app-deploy-readiness__check-content">
+                    <Tooltip
+                      title={
+                        <div>
+                          <div>{check.serverName ? `${check.serverName} · ` : ''}{check.message}</div>
+                          {check.remediation && <div>处理建议：{check.remediation}</div>}
+                        </div>
+                      }
+                    >
+                      <span className="app-deploy-readiness__check-text">{check.serverName ? `${check.serverName} · ` : ''}{check.message}</span>
+                    </Tooltip>
+                  </div>
+                  {check.ignorable && (
+                    <Popconfirm title={check.ignored ? '恢复该项强制检查？' : '确认已评估风险并忽略该项？'} onConfirm={() => onToggleIgnore(check.key, !check.ignored)}>
+                      <Button type="link" size="small" loading={ignoreLoading}>{check.ignored ? '恢复' : '忽略'}</Button>
+                    </Popconfirm>
+                  )}
+                </div>
+              ))
+            ) : (
+              <Text type="secondary">任务启动前会重新执行完整检查。</Text>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function DeployNodeCard({ node }: { node: DeployTopologyNode }) {
+  const isMaster = node.role === 'master'
+  const ports = isMaster
+    ? [`${node.serverSSHPort}/SSH`, '6443/API Server', '2379-2380/etcd', '10250/Kubelet']
+    : [`${node.serverSSHPort}/SSH`, '10250/Kubelet', '30000-32767/NodePort']
+
+  return (
+    <article className={`app-deploy-topology__node app-deploy-topology__node--${isMaster ? 'master' : 'worker'}`}>
+      <header>
+        <Tag color={roleColorMap[node.role] || 'default'}>{node.role?.toUpperCase()}</Tag>
+        <strong>{node.serverName}</strong>
+        <Badge status={node.serverStatus === 'available' ? 'success' : 'default'} />
+      </header>
+      <div className="app-deploy-topology__node-address">{node.serverIP}</div>
+      <div className="app-deploy-topology__node-os">{node.serverOS}</div>
+      <div className="app-deploy-topology__ports-label">监听端口</div>
+      <div className="app-deploy-topology__ports">
+        {ports.map((port) => <span key={port}>{port}</span>)}
+      </div>
+    </article>
+  )
+}
+
+function DeployNodeTopology({ nodes }: { nodes: DeployTopologyNode[] }) {
+  const masters = nodes.filter((node) => node.role === 'master')
+  const workers = nodes.filter((node) => node.role !== 'master')
+  return (
+    <div className="app-deploy-topology">
+      <div className="app-deploy-topology__controller">
+        <CodeOutlined />
+        <div><strong>AIOPS 部署控制器</strong><span>Ansible · SSH 编排</span></div>
+      </div>
+      <span className="app-deploy-topology__connector" />
+      <div className="app-deploy-topology__masters">
+        {masters.map((node) => <DeployNodeCard key={`${node.role}-${node.serverIP}`} node={node} />)}
+      </div>
+      {workers.length > 0 && (
+        <>
+          <span className="app-deploy-topology__connector" />
+          <div className={`app-deploy-topology__workers${workers.length === 1 ? ' app-deploy-topology__workers--single' : ''}`}>
+            {workers.map((node) => (
+              <div className="app-deploy-topology__worker-branch" key={`${node.role}-${node.serverIP}`}>
+                <DeployNodeCard node={node} />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function StepTree({
   task,
   canRetry,
@@ -652,6 +1145,7 @@ function StepTree({
   onSelectSubStep,
   onRetryStep,
   retrying,
+  readiness,
 }: {
   task: DeployTask
   canRetry: boolean
@@ -661,6 +1155,7 @@ function StepTree({
   onSelectSubStep: (stepKey: string, subKey: string) => void
   onRetryStep: (key: string) => void
   retrying: boolean
+  readiness: DeployReadinessProps
 }) {
   const stepMap = useMemo(() => {
     const map = new Map<string, DeployTaskStep>()
@@ -683,6 +1178,187 @@ function StepTree({
   const toggleStage = (key: string) => {
     setCollapsedStages((prev) => ({ ...prev, [key]: !prev[key] }))
   }
+  const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({})
+  const toggleStep = (stepKey: string, defaultExpanded: boolean) => {
+    setExpandedSteps((prev) => ({ ...prev, [stepKey]: !(prev[stepKey] ?? defaultExpanded) }))
+  }
+
+  // 格式化步骤耗时
+  const formatDuration = (startedAt?: string, finishedAt?: string): string | null => {
+    if (!startedAt || !finishedAt) return null
+    const start = new Date(startedAt).getTime()
+    const end = new Date(finishedAt).getTime()
+    const diff = end - start
+    if (diff <= 0) return null
+    if (diff < 1000) return `${diff}ms`
+    if (diff < 60000) return `${(diff / 1000).toFixed(1)}s`
+    const min = Math.floor(diff / 60000)
+    const sec = Math.round((diff % 60000) / 1000)
+    return `${min}m${sec}s`
+  }
+
+  const statusStyle = (status: string) => {
+    if (status === 'failed') return { color: '#dc2626', soft: '#fff7f7', border: '#fecaca', label: '失败' }
+    if (status === 'canceled' || status === 'cancelled') return { color: '#b45309', soft: '#fffaf0', border: '#fed7aa', label: '已取消' }
+    if (status === 'success') return { color: '#047857', soft: '#f7fffb', border: '#a7e3c4', label: '成功' }
+    if (status === 'running') return { color: '#2563eb', soft: '#f6f9ff', border: '#b9cff8', label: '执行中' }
+    return { color: '#64748b', soft: '#f8fbff', border: '#dbe7f5', label: '等待中' }
+  }
+
+  const statusIcon = (status: string, size = 15) => {
+    const style = { color: statusStyle(status).color, fontSize: size }
+    if (status === 'success') return <CheckCircleOutlined style={style} />
+    if (status === 'failed') return <CloseCircleOutlined style={style} />
+    if (status === 'canceled' || status === 'cancelled') return <StopOutlined style={style} />
+    if (status === 'running') return <Badge status="processing" />
+    return <span style={{ ...style, fontWeight: 700 }}>○</span>
+  }
+
+  const taskCanceled = task.status === 'canceled' || task.status === 'cancelled'
+  const resolveStepStatus = (stepStatus: string) => {
+    if (taskCanceled && (stepStatus === 'pending' || stepStatus === 'running')) return 'canceled'
+    return stepStatus
+  }
+  const resolveSubStepStatus = (parentStatus: string, subStepStatus: string) => {
+    if (taskCanceled && (subStepStatus === 'pending' || subStepStatus === 'running')) return 'canceled'
+    if (subStepStatus === 'running' && (parentStatus === 'success' || parentStatus === 'failed')) {
+      return parentStatus
+    }
+    return subStepStatus
+  }
+
+  return (
+    <div style={{ height: '100%', overflowX: 'auto', overflowY: 'hidden', padding: '2px 2px 12px' }}>
+      <style>{`@keyframes deploy-step-pulse { 0% { box-shadow: 0 0 0 0 rgba(22, 119, 255, .45); } 70% { box-shadow: 0 0 0 7px rgba(22, 119, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(22, 119, 255, 0); } }`}</style>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, minWidth: 1220, height: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'stretch', minWidth: 300, flex: '1 1 0' }}>
+          <DeployReadinessStage {...readiness} />
+          <div aria-hidden="true" style={{ position: 'relative', flex: '0 0 46px', width: 46 }}>
+            <span style={{ position: 'absolute', top: '50%', left: 8, right: 13, height: 2, marginTop: -1, borderRadius: 2, background: '#aebfd1' }} />
+            <span style={{ position: 'absolute', top: '50%', right: 7, width: 9, height: 9, marginTop: -5, borderTop: '2px solid #7f96ad', borderRight: '2px solid #7f96ad', transform: 'rotate(45deg)' }} />
+          </div>
+        </div>
+        {stageGroups.map((stage, stageIdx) => {
+          const steps = stage.steps.map((key) => stepMap.get(key)).filter(Boolean) as DeployTaskStep[]
+          const completed = steps.filter((step) => step.status === 'success').length
+          const failed = steps.filter((step) => step.status === 'failed').length
+          const stepStatuses = steps.map((step) => resolveStepStatus(step.status))
+          const canceled = stepStatuses.filter((status) => status === 'canceled').length
+          const running = stepStatuses.filter((status) => status === 'running').length
+          const aggregateStatus = failed > 0 ? 'failed' : canceled > 0 ? 'canceled' : running > 0 ? 'running' : completed === steps.length && steps.length > 0 ? 'success' : 'pending'
+          const stageStyle = statusStyle(aggregateStatus)
+          return (
+            <div key={stage.key} style={{ display: 'flex', alignItems: 'stretch', minWidth: 300, flex: '1 1 0' }}>
+              <div style={{ height: '100%', minWidth: 0, flex: 1, border: `1px solid ${stageStyle.border}`, borderRadius: 8, background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 3px 12px rgba(0, 0, 0, 0.04)' }}>
+                <div
+                  style={{ position: 'relative', padding: '12px 44px', background: stageStyle.soft, borderBottom: `1px solid ${stageStyle.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <span style={{ position: 'absolute', left: 14, top: '50%', width: 25, height: 25, marginTop: -12, borderRadius: '50%', background: stageStyle.color, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>{stageIdx + 2}</span>
+                  <span style={{ minWidth: 0, maxWidth: '100%', textAlign: 'center' }}>
+                    <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, color: '#262626', fontWeight: 600 }}>{statusIcon(aggregateStatus)} {stage.title}</span>
+                    <span style={{ display: 'block', color: '#8c8c8c', fontSize: 12, marginTop: 3 }}>任务 {steps.length} · 成功 {completed}{failed ? ` · 失败 ${failed}` : ''}{canceled ? ` · 已取消 ${canceled}` : ''}</span>
+                  </span>
+                </div>
+
+                <div style={{ padding: 10, overflowY: 'auto', background: '#fff', flex: 1 }}>
+                    {steps.map((step, index) => {
+                      const isSelected = selectedStepKey === step.key && !selectedSubStepKey
+                      const displayStepStatus = resolveStepStatus(step.status)
+                      const itemStyle = statusStyle(displayStepStatus)
+                      const subSteps = step.subSteps || []
+                      const subCompleted = subSteps.filter((sub) => resolveSubStepStatus(displayStepStatus, sub.status) === 'success').length
+                      const defaultExpanded = displayStepStatus !== 'success' || isSelected || subSteps.some((sub) => sub.key === selectedSubStepKey)
+                      const expanded = subSteps.length > 0 && (expandedSteps[step.key] ?? defaultExpanded)
+                      return (
+                        <div key={step.key} style={{ marginBottom: 10 }}>
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => onSelectStep(step.key)}
+                            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelectStep(step.key) }}
+                            style={{ cursor: 'pointer', overflow: 'hidden', borderRadius: 6, border: `1px solid ${itemStyle.border}`, background: '#fff', boxShadow: isSelected ? `0 0 0 2px ${itemStyle.color}` : 'none' }}
+                          >
+                            <div style={{ background: itemStyle.soft, borderBottom: `1px solid ${itemStyle.border}`, padding: '9px 10px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                              {statusIcon(displayStepStatus)}
+                              <span style={{ flex: 1, minWidth: 0, color: itemStyle.color, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stageIdx + 2}-{index + 1} {stepTitleMap[step.key] || step.title}</span>
+                              {step.status === 'failed' && canRetry && (
+                                <Button
+                                  size="small"
+                                  type="primary"
+                                  danger
+                                  icon={<RedoOutlined />}
+                                  loading={retrying}
+                                  onClick={(event) => { event.stopPropagation(); onRetryStep(step.key) }}
+                                >
+                                  重试
+                                </Button>
+                              )}
+                              {subSteps.length > 0 && (
+                                <button
+                                  type="button"
+                                  aria-label={expanded ? '收起任务步骤' : '展开任务步骤'}
+                                  title={expanded ? '收起任务步骤' : '展开任务步骤'}
+                                  onClick={(event) => { event.stopPropagation(); toggleStep(step.key, defaultExpanded) }}
+                                  onKeyDown={(event) => event.stopPropagation()}
+                                  style={{ flex: '0 0 auto', width: 26, height: 26, padding: 0, border: `1px solid ${itemStyle.border}`, borderRadius: 4, background: '#fff', color: itemStyle.color, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  <CaretRightOutlined style={{ fontSize: 11, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .2s' }} />
+                                </button>
+                              )}
+                            </div>
+                            <div style={{ padding: '7px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#8c8c8c', fontSize: 12 }}>
+                              <span>{subSteps.length ? `任务 ${subSteps.length} · 已完成 ${subCompleted}` : itemStyle.label}</span>
+                              {displayStepStatus === 'running' ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#1677ff', fontWeight: 600 }}>
+                                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#1677ff', boxShadow: '0 0 0 0 rgba(22, 119, 255, .45)', animation: 'deploy-step-pulse 1.4s ease-out infinite' }} />
+                                  进行中
+                                </span>
+                              ) : (
+                                <span>{formatDuration(step.startedAt, step.finishedAt) || (displayStepStatus === 'canceled' ? itemStyle.label : '')}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {expanded && subSteps.length > 0 && (
+                            <div style={{ margin: '7px 7px 0', paddingLeft: 10, borderLeft: `2px solid ${itemStyle.border}` }}>
+                              {subSteps.map((sub) => {
+                                const subSelected = selectedSubStepKey === sub.key
+                                const subStatus = resolveSubStepStatus(displayStepStatus, sub.status)
+                                const subStyle = statusStyle(subStatus)
+                                return (
+                                  <div
+                                    key={sub.key}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => onSelectSubStep(step.key, sub.key)}
+                                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelectSubStep(step.key, sub.key) }}
+                                    style={{ cursor: 'pointer', marginTop: 6, padding: '7px 8px', borderRadius: 4, border: `1px solid ${subSelected ? subStyle.color : '#e8e8e8'}`, background: subSelected ? subStyle.soft : '#fff', display: 'flex', alignItems: 'center', gap: 6 }}
+                                  >
+                                    {statusIcon(subStatus, 13)}
+                                    <span style={{ color: '#595959', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.title}</span>
+                                    <span style={{ color: '#8c8c8c', fontSize: 11 }}>{formatDuration(sub.startedAt, sub.finishedAt) || ''}</span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+              {stageIdx < stageGroups.length - 1 && (
+                <div aria-hidden="true" style={{ position: 'relative', flex: '0 0 46px', width: 46 }}>
+                  <span style={{ position: 'absolute', top: '50%', left: 8, right: 13, height: 2, marginTop: -1, borderRadius: 2, background: '#aebfd1' }} />
+                  <span style={{ position: 'absolute', top: '50%', right: 7, width: 9, height: 9, marginTop: -5, borderTop: '2px solid #7f96ad', borderRight: '2px solid #7f96ad', transform: 'rotate(45deg)' }} />
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -707,7 +1383,7 @@ function StepTree({
               fontSize: 12,
               fontWeight: 'bold',
             }}>
-              {stageIdx + 1}
+              {stageIdx + 2}
             </div>
             <Text strong style={{ fontSize: 14 }}>{stage.title}</Text>
           </div>
@@ -738,9 +1414,14 @@ function StepTree({
                   >
                     <Space>
                       <span style={{ color: stepSuccess ? '#52c41a' : stepFailed ? '#ff4d4f' : stepRunning ? '#1677ff' : '#999', fontWeight: 500 }}>
-                        {stageIdx + 1}-{idx + 1} {step.title}
+                        {stageIdx + 2}-{idx + 1} {step.title}
                       </span>
                       {stepRunning && <Badge status="processing" />}
+                      {formatDuration(step.startedAt, step.finishedAt) && (
+                        <span style={{ fontSize: 11, color: '#8c8c8c' }}>
+                          {formatDuration(step.startedAt, step.finishedAt)}
+                        </span>
+                      )}
                     </Space>
                     <Space>
                       {stepSuccess && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
@@ -809,16 +1490,25 @@ function StepTree({
 }
 
 /** 根据 Ansible 输出格式着色 */
-function getLogColor(line: string): string {
+function getLogColor(line: string, theme: 'light' | 'dark' = 'dark'): string {
   const trimmed = line.trim()
-  if (trimmed.startsWith('PLAY [') || trimmed.startsWith('PLAY RECAP')) return '#569cd6'
-  if (trimmed.startsWith('TASK [')) return '#c586c0'
-  if (trimmed.includes('ok:') && !trimmed.includes('failed')) return '#4ec9b0'
-  if (trimmed.startsWith('changed:') || trimmed.includes('changed=1')) return '#cca700'
-  if (trimmed.includes('failed:') || trimmed.includes('FAILED') || trimmed.includes('fatal:')) return '#f44747'
-  if (trimmed.startsWith('skipping:') || trimmed.includes('skipped')) return '#808080'
-  if (line.includes('[error]') || line.includes('[ERROR]')) return '#f44747'
-  if (line.includes('[warn]') || line.includes('[WARN]')) return '#cca700'
-  if (line.includes('[info]') || line.includes('[INFO]')) return '#4ec9b0'
-  return '#d4d4d4'
+  const dark = theme === 'dark'
+  if (trimmed.startsWith('PLAY [') || trimmed.startsWith('PLAY RECAP')) return dark ? '#569cd6' : '#0958d9'
+  if (trimmed.startsWith('TASK [')) return dark ? '#c586c0' : '#722ed1'
+  if (trimmed.includes('ok:') && !trimmed.includes('failed')) return dark ? '#4ec9b0' : '#08979c'
+  if (trimmed.startsWith('changed:') || trimmed.includes('changed=1')) return dark ? '#cca700' : '#ad6800'
+  if (trimmed.includes('failed:') || trimmed.includes('FAILED') || trimmed.includes('fatal:')) return dark ? '#f44747' : '#cf1322'
+  if (trimmed.startsWith('skipping:') || trimmed.includes('skipped')) return dark ? '#808080' : '#8c8c8c'
+  if (line.includes('[error]') || line.includes('[ERROR]')) return dark ? '#f44747' : '#cf1322'
+  if (line.includes('[warn]') || line.includes('[WARN]')) return dark ? '#cca700' : '#ad6800'
+  if (line.includes('[info]') || line.includes('[INFO]')) return dark ? '#4ec9b0' : '#08979c'
+  return dark ? '#d4d4d4' : '#262626'
+}
+
+function formatLogTimestamp(timestamp?: string): string {
+  if (!timestamp) return '--:--:--'
+  const time = new Date(timestamp)
+  if (Number.isNaN(time.getTime())) return '--:--:--'
+  const pad = (value: number, length = 2) => String(value).padStart(length, '0')
+  return `${pad(time.getHours())}:${pad(time.getMinutes())}:${pad(time.getSeconds())}.${pad(time.getMilliseconds(), 3)}`
 }

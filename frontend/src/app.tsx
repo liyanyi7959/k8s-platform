@@ -186,7 +186,7 @@ const buildGlobalMenuItems = (): MenuItem[] => [
     name: '仪表盘',
     icon: <DashboardOutlined />,
   },
-  // ---- 集群管理（参照 frontend-old 的 K8S 管理分组，包含子菜单） ----
+  // ---- 集群管理（集群列表、集群导入、部署K8S集群） ----
   {
     key: '/clusters',
     path: '/clusters',
@@ -195,6 +195,17 @@ const buildGlobalMenuItems = (): MenuItem[] => [
     children: [
       { key: '/clusters', path: '/clusters', name: '集群列表', icon: <UnorderedListOutlined /> },
       { key: '/clusters/import', path: '/clusters/import', name: '集群导入', icon: <PlusOutlined /> },
+      { key: '/clusters/provision', path: '/clusters/provision', name: '部署K8S集群', icon: <RocketOutlined /> },
+    ],
+  },
+  // ---- 服务器管理（主机资源池等服务器相关功能） ----
+  {
+    key: '/servers',
+    path: '/clusters/hosts',
+    name: '服务器管理',
+    icon: <CloudServerOutlined />,
+    children: [
+      { key: '/clusters/hosts', path: '/clusters/hosts', name: '主机资源池', icon: <CloudServerOutlined /> },
     ],
   },
   // ---- 项目管理 ----
@@ -211,17 +222,15 @@ const buildGlobalMenuItems = (): MenuItem[] => [
     name: '应用商店',
     icon: <AppstoreOutlined />,
   },
-  // ---- 自动化部署 ----
+  // ---- 自动化中心：承载可复用运行手册与执行资产，而不是某个具体集群的创建入口 ----
   {
-    key: '/deploy',
-    path: '/deploy/plans',
-    name: '自动化部署',
+    key: '/automation',
+    path: '/automation/overview',
+    name: '自动化中心',
     icon: <RocketOutlined />,
     children: [
-      { key: '/deploy/plans', path: '/deploy/plans', name: '部署计划' },
-      { key: '/deploy/servers', path: '/deploy/servers', name: '服务器管理' },
-      { key: '/deploy/credentials', path: '/deploy/credentials', name: '凭据管理' },
-      { key: '/deploy/config', path: '/deploy/config', name: '部署配置' },
+      { key: '/automation/overview', path: '/automation/overview', name: '自动化总览' },
+      { key: '/automation/assets', path: '/automation/assets', name: '运行手册资产' },
     ],
   },
   // ---- 监控告警 ----
@@ -282,7 +291,10 @@ const buildAdminMenuItems = (): MenuItem[] => [
     path: '/config/settings',
     name: '平台配置',
     icon: <SettingOutlined />,
-    children: [{ key: '/config/settings', path: '/config/settings', name: '系统设置' }],
+    children: [
+      { key: '/config/settings', path: '/config/settings', name: '系统设置' },
+      { key: '/config/credentials', path: '/config/credentials', name: '凭据库' },
+    ],
   },
   {
     key: 'group-admin-audit',
@@ -314,181 +326,115 @@ const buildClusterMenuItems = (clusterId: string): MenuItem[] => [
   {
     key: 'group-dashboard',
     path: `/k8s/${clusterId}/dashboard`,
-    name: '仪表盘',
+    name: '应用健康',
     icon: <DashboardOutlined />,
     children: [
-      { key: `/k8s/${clusterId}/dashboard`, path: `/k8s/${clusterId}/dashboard`, name: '概览' },
+      { key: `/k8s/${clusterId}/dashboard`, path: `/k8s/${clusterId}/dashboard`, name: '健康总览' },
     ],
   },
-  // ---- 运维工具 ----
+  // ---- 事件处置 ----
   {
     key: 'group-operations',
-    path: `/k8s/${clusterId}/log-workbench`,
-    name: '运维工具',
-    icon: <CloudServerOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/log-workbench`, path: `/k8s/${clusterId}/log-workbench`, name: '日志工作台' },
-      { key: `/k8s/${clusterId}/manifest-apply`, path: `/k8s/${clusterId}/manifest-apply`, name: 'YAML 部署' },
-    ],
-  },
-  // ---- 工作负载 ----
-  {
-    key: 'group-workloads',
-    path: `/k8s/${clusterId}/pods`,
-    name: '工作负载',
-    icon: <ClusterOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/pods`, path: `/k8s/${clusterId}/pods`, name: 'Pods' },
-      { key: `/k8s/${clusterId}/podmetrics`, path: `/k8s/${clusterId}/podmetrics`, name: 'PodMetrics' },
-      { key: `/k8s/${clusterId}/deployments`, path: `/k8s/${clusterId}/deployments`, name: 'Deployments' },
-      { key: `/k8s/${clusterId}/statefulsets`, path: `/k8s/${clusterId}/statefulsets`, name: 'StatefulSets' },
-      { key: `/k8s/${clusterId}/daemonsets`, path: `/k8s/${clusterId}/daemonsets`, name: 'DaemonSets' },
-      { key: `/k8s/${clusterId}/replicasets`, path: `/k8s/${clusterId}/replicasets`, name: 'ReplicaSets' },
-      { key: `/k8s/${clusterId}/pdbs`, path: `/k8s/${clusterId}/pdbs`, name: 'PDBs' },
-      { key: `/k8s/${clusterId}/hpas`, path: `/k8s/${clusterId}/hpas`, name: 'HPAs' },
-    ],
-  },
-  // ---- 作业 ----
-  {
-    key: 'group-jobs',
-    path: `/k8s/${clusterId}/jobs`,
-    name: '作业',
-    icon: <RocketOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/jobs`, path: `/k8s/${clusterId}/jobs`, name: 'Jobs' },
-      { key: `/k8s/${clusterId}/cronjobs`, path: `/k8s/${clusterId}/cronjobs`, name: 'CronJobs' },
-    ],
-  },
-  // ---- 网络资源 ----
-  {
-    key: 'group-network',
-    path: `/k8s/${clusterId}/services`,
-    name: '网络资源',
-    icon: <NodeIndexOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/services`, path: `/k8s/${clusterId}/services`, name: 'Services' },
-      { key: `/k8s/${clusterId}/endpoints`, path: `/k8s/${clusterId}/endpoints`, name: 'Endpoints' },
-      { key: `/k8s/${clusterId}/endpointslices`, path: `/k8s/${clusterId}/endpointslices`, name: 'EndpointSlices' },
-      { key: `/k8s/${clusterId}/network-policies`, path: `/k8s/${clusterId}/network-policies`, name: 'NetworkPolicies' },
-      { key: `/k8s/${clusterId}/ingresses`, path: `/k8s/${clusterId}/ingresses`, name: 'Ingresses' },
-      { key: `/k8s/${clusterId}/ingress-classes`, path: `/k8s/${clusterId}/ingress-classes`, name: 'IngressClasses' },
-    ],
-  },
-  // ---- 数据存储 ----
-  {
-    key: 'group-storage',
-    path: `/k8s/${clusterId}/pvcs`,
-    name: '数据存储',
-    icon: <HddOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/pvcs`, path: `/k8s/${clusterId}/pvcs`, name: 'PVCs' },
-      { key: `/k8s/${clusterId}/pvs`, path: `/k8s/${clusterId}/pvs`, name: 'PVs' },
-      { key: `/k8s/${clusterId}/volume-snapshots`, path: `/k8s/${clusterId}/volume-snapshots`, name: 'VolumeSnapshots' },
-      { key: `/k8s/${clusterId}/volume-snapshot-classes`, path: `/k8s/${clusterId}/volume-snapshot-classes`, name: 'VolumeSnapshotClasses' },
-      { key: `/k8s/${clusterId}/volume-snapshot-contents`, path: `/k8s/${clusterId}/volume-snapshot-contents`, name: 'VolumeSnapshotContents' },
-      { key: `/k8s/${clusterId}/storage-classes`, path: `/k8s/${clusterId}/storage-classes`, name: 'StorageClasses' },
-      { key: `/k8s/${clusterId}/csi-drivers`, path: `/k8s/${clusterId}/csi-drivers`, name: 'CSIDrivers' },
-      { key: `/k8s/${clusterId}/csi-nodes`, path: `/k8s/${clusterId}/csi-nodes`, name: 'CSINodes' },
-      { key: `/k8s/${clusterId}/csi-storage-capacities`, path: `/k8s/${clusterId}/csi-storage-capacities`, name: 'CSIStorageCapacities' },
-      { key: `/k8s/${clusterId}/volume-attachments`, path: `/k8s/${clusterId}/volume-attachments`, name: 'VolumeAttachments' },
-      { key: `/k8s/${clusterId}/resource-quotas`, path: `/k8s/${clusterId}/resource-quotas`, name: 'ResourceQuotas' },
-      { key: `/k8s/${clusterId}/limit-ranges`, path: `/k8s/${clusterId}/limit-ranges`, name: 'LimitRanges' },
-    ],
-  },
-  // ---- 配置文件 ----
-  {
-    key: 'group-config',
-    path: `/k8s/${clusterId}/configmaps`,
-    name: '配置文件',
-    icon: <FileSearchOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/configmaps`, path: `/k8s/${clusterId}/configmaps`, name: 'ConfigMaps' },
-      { key: `/k8s/${clusterId}/secrets`, path: `/k8s/${clusterId}/secrets`, name: 'Secrets' },
-    ],
-  },
-  // ---- 访问控制 ----
-  {
-    key: 'group-auth',
-    path: `/k8s/${clusterId}/service-accounts`,
-    name: '访问控制',
-    icon: <AuditOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/service-accounts`, path: `/k8s/${clusterId}/service-accounts`, name: 'ServiceAccounts' },
-      { key: `/k8s/${clusterId}/roles`, path: `/k8s/${clusterId}/roles`, name: 'Roles' },
-      { key: `/k8s/${clusterId}/role-bindings`, path: `/k8s/${clusterId}/role-bindings`, name: 'RoleBindings' },
-      { key: `/k8s/${clusterId}/cluster-roles`, path: `/k8s/${clusterId}/cluster-roles`, name: 'ClusterRoles' },
-      { key: `/k8s/${clusterId}/cluster-role-bindings`, path: `/k8s/${clusterId}/cluster-role-bindings`, name: 'ClusterRoleBindings' },
-    ],
-  },
-  // ---- 集群资源 ----
-  {
-    key: 'group-cluster',
-    path: `/k8s/${clusterId}/namespaces`,
-    name: '集群资源',
-    icon: <ApartmentOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/namespaces`, path: `/k8s/${clusterId}/namespaces`, name: 'Namespaces' },
-      { key: `/k8s/${clusterId}/nodes`, path: `/k8s/${clusterId}/nodes`, name: 'Nodes' },
-      { key: `/k8s/${clusterId}/leases`, path: `/k8s/${clusterId}/leases`, name: 'Leases' },
-    ],
-  },
-  // ---- 事件 ----
-  {
-    key: 'group-events',
     path: `/k8s/${clusterId}/events`,
-    name: '事件',
+    name: '事件处置',
     icon: <AlertOutlined />,
     children: [
-      { key: `/k8s/${clusterId}/events`, path: `/k8s/${clusterId}/events`, name: 'Events' },
+      { key: `/k8s/${clusterId}/events`, path: `/k8s/${clusterId}/events`, name: '集群 Events' },
+      { key: `/k8s/${clusterId}/log-workbench`, path: `/k8s/${clusterId}/log-workbench`, name: '日志工作台' },
+      { key: `/k8s/${clusterId}/resource-metrics`, path: `/k8s/${clusterId}/resource-metrics`, name: '资源指标' },
     ],
   },
-  // ---- 扩展治理 ----
+  // ---- 交付与变更 ----
   {
-    key: 'group-extensions',
-    path: `/k8s/${clusterId}/crds`,
-    name: '扩展治理',
-    icon: <SettingOutlined />,
+    key: 'group-delivery',
+    path: `/k8s/${clusterId}/manifest-apply`,
+    name: '交付与变更',
+    icon: <RocketOutlined />,
     children: [
-      { key: `/k8s/${clusterId}/crds`, path: `/k8s/${clusterId}/crds`, name: 'CRDs' },
-      { key: `/k8s/${clusterId}/api-services`, path: `/k8s/${clusterId}/api-services`, name: 'APIServices' },
-      { key: `/k8s/${clusterId}/priority-classes`, path: `/k8s/${clusterId}/priority-classes`, name: 'PriorityClasses' },
-      { key: `/k8s/${clusterId}/runtime-classes`, path: `/k8s/${clusterId}/runtime-classes`, name: 'RuntimeClasses' },
-      { key: `/k8s/${clusterId}/validating-webhooks`, path: `/k8s/${clusterId}/validating-webhooks`, name: 'ValidatingWebhooks' },
-      { key: `/k8s/${clusterId}/mutating-webhooks`, path: `/k8s/${clusterId}/mutating-webhooks`, name: 'MutatingWebhooks' },
-      { key: `/k8s/${clusterId}/validating-admission-policies`, path: `/k8s/${clusterId}/validating-admission-policies`, name: 'ValidatingAdmissionPolicies' },
-      { key: `/k8s/${clusterId}/validating-admission-policy-bindings`, path: `/k8s/${clusterId}/validating-admission-policy-bindings`, name: 'ValidatingAdmissionPolicyBindings' },
-    ],
-  },
-  // ---- 治理分析 ----
-  {
-    key: 'group-audit',
-    path: `/k8s/${clusterId}/permission-audits`,
-    name: '治理分析',
-    icon: <ApartmentOutlined />,
-    children: [
+      { key: `/k8s/${clusterId}/manifest-apply`, path: `/k8s/${clusterId}/manifest-apply`, name: 'YAML 部署' },
+      { key: `/k8s/${clusterId}/helm-releases`, path: `/k8s/${clusterId}/helm-releases`, name: 'Helm 发布' },
+      { key: `/k8s/${clusterId}/helm-repos`, path: `/k8s/${clusterId}/helm-repos`, name: 'Helm 仓库' },
       { key: `/k8s/${clusterId}/permission-audits`, path: `/k8s/${clusterId}/permission-audits`, name: '权限分析' },
+    ],
+  },
+  // ---- 高级资源浏览器 ----
+  {
+    key: 'group-resource-browser',
+    path: `/k8s/${clusterId}/advanced-resources`,
+    name: '资源浏览器',
+    icon: <ClusterOutlined />,
+    children: [
+      { key: `/k8s/${clusterId}/advanced-resources`, path: `/k8s/${clusterId}/advanced-resources`, name: '资源目录' },
+      {
+        key: 'resource-workloads',
+        name: '应用与运行时',
+        children: [
+          { key: `/k8s/${clusterId}/pods`, path: `/k8s/${clusterId}/pods`, name: 'Pods' },
+          { key: `/k8s/${clusterId}/deployments`, path: `/k8s/${clusterId}/deployments`, name: 'Deployments' },
+          { key: `/k8s/${clusterId}/statefulsets`, path: `/k8s/${clusterId}/statefulsets`, name: 'StatefulSets' },
+          { key: `/k8s/${clusterId}/daemonsets`, path: `/k8s/${clusterId}/daemonsets`, name: 'DaemonSets' },
+          { key: `/k8s/${clusterId}/replicasets`, path: `/k8s/${clusterId}/replicasets`, name: 'ReplicaSets' },
+          { key: `/k8s/${clusterId}/jobs`, path: `/k8s/${clusterId}/jobs`, name: 'Jobs' },
+          { key: `/k8s/${clusterId}/cronjobs`, path: `/k8s/${clusterId}/cronjobs`, name: 'CronJobs' },
+          { key: `/k8s/${clusterId}/hpas`, path: `/k8s/${clusterId}/hpas`, name: 'HPAs' },
+          { key: `/k8s/${clusterId}/pdbs`, path: `/k8s/${clusterId}/pdbs`, name: 'PDBs' },
+        ],
+      },
+      {
+        key: 'resource-network',
+        name: '网络与入口',
+        children: [
+          { key: `/k8s/${clusterId}/services`, path: `/k8s/${clusterId}/services`, name: 'Services' },
+          { key: `/k8s/${clusterId}/endpoints`, path: `/k8s/${clusterId}/endpoints`, name: 'Endpoints' },
+          { key: `/k8s/${clusterId}/endpointslices`, path: `/k8s/${clusterId}/endpointslices`, name: 'EndpointSlices' },
+          { key: `/k8s/${clusterId}/ingresses`, path: `/k8s/${clusterId}/ingresses`, name: 'Ingresses' },
+          { key: `/k8s/${clusterId}/ingress-classes`, path: `/k8s/${clusterId}/ingress-classes`, name: 'IngressClasses' },
+          { key: `/k8s/${clusterId}/network-policies`, path: `/k8s/${clusterId}/network-policies`, name: 'NetworkPolicies' },
+        ],
+      },
+      {
+        key: 'resource-storage',
+        name: '存储与配额',
+        children: [
+          { key: `/k8s/${clusterId}/pvcs`, path: `/k8s/${clusterId}/pvcs`, name: 'PVCs' },
+          { key: `/k8s/${clusterId}/pvs`, path: `/k8s/${clusterId}/pvs`, name: 'PVs' },
+          { key: `/k8s/${clusterId}/storage-classes`, path: `/k8s/${clusterId}/storage-classes`, name: 'StorageClasses' },
+          { key: `/k8s/${clusterId}/volume-snapshots`, path: `/k8s/${clusterId}/volume-snapshots`, name: 'VolumeSnapshots' },
+          { key: `/k8s/${clusterId}/resource-quotas`, path: `/k8s/${clusterId}/resource-quotas`, name: 'ResourceQuotas' },
+          { key: `/k8s/${clusterId}/limit-ranges`, path: `/k8s/${clusterId}/limit-ranges`, name: 'LimitRanges' },
+          { key: `/k8s/${clusterId}/csi-drivers`, path: `/k8s/${clusterId}/csi-drivers`, name: 'CSIDrivers' },
+          { key: `/k8s/${clusterId}/volume-attachments`, path: `/k8s/${clusterId}/volume-attachments`, name: 'VolumeAttachments' },
+        ],
+      },
+      {
+        key: 'resource-access',
+        name: '配置与访问控制',
+        children: [
+          { key: `/k8s/${clusterId}/configmaps`, path: `/k8s/${clusterId}/configmaps`, name: 'ConfigMaps' },
+          { key: `/k8s/${clusterId}/secrets`, path: `/k8s/${clusterId}/secrets`, name: 'Secrets' },
+          { key: `/k8s/${clusterId}/service-accounts`, path: `/k8s/${clusterId}/service-accounts`, name: 'ServiceAccounts' },
+          { key: `/k8s/${clusterId}/roles`, path: `/k8s/${clusterId}/roles`, name: 'Roles' },
+          { key: `/k8s/${clusterId}/role-bindings`, path: `/k8s/${clusterId}/role-bindings`, name: 'RoleBindings' },
+          { key: `/k8s/${clusterId}/cluster-roles`, path: `/k8s/${clusterId}/cluster-roles`, name: 'ClusterRoles' },
+          { key: `/k8s/${clusterId}/cluster-role-bindings`, path: `/k8s/${clusterId}/cluster-role-bindings`, name: 'ClusterRoleBindings' },
+        ],
+      },
+      {
+        key: 'resource-cluster',
+        name: '集群与扩展治理',
+        children: [
+          { key: `/k8s/${clusterId}/namespaces`, path: `/k8s/${clusterId}/namespaces`, name: 'Namespaces' },
+          { key: `/k8s/${clusterId}/nodes`, path: `/k8s/${clusterId}/nodes`, name: 'Nodes' },
+          { key: `/k8s/${clusterId}/leases`, path: `/k8s/${clusterId}/leases`, name: 'Leases' },
+          { key: `/k8s/${clusterId}/crds`, path: `/k8s/${clusterId}/crds`, name: 'CRDs' },
+          { key: `/k8s/${clusterId}/api-services`, path: `/k8s/${clusterId}/api-services`, name: 'APIServices' },
+          { key: `/k8s/${clusterId}/priority-classes`, path: `/k8s/${clusterId}/priority-classes`, name: 'PriorityClasses' },
+          { key: `/k8s/${clusterId}/runtime-classes`, path: `/k8s/${clusterId}/runtime-classes`, name: 'RuntimeClasses' },
+          { key: `/k8s/${clusterId}/validating-webhooks`, path: `/k8s/${clusterId}/validating-webhooks`, name: 'ValidatingWebhooks' },
+          { key: `/k8s/${clusterId}/mutating-webhooks`, path: `/k8s/${clusterId}/mutating-webhooks`, name: 'MutatingWebhooks' },
+        ],
+      },
       { key: `/k8s/${clusterId}/topology`, path: `/k8s/${clusterId}/topology`, name: '资源关系图' },
-    ],
-  },
-  // ---- Helm 管理 ----
-  {
-    key: 'group-helm',
-    path: `/k8s/${clusterId}/helm-releases`,
-    name: 'Helm 管理',
-    icon: <CloudDownloadOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/helm-releases`, path: `/k8s/${clusterId}/helm-releases`, name: 'Helm Releases' },
-      { key: `/k8s/${clusterId}/helm-repos`, path: `/k8s/${clusterId}/helm-repos`, name: '仓库管理' },
-    ],
-  },
-  // ---- 资源监控 ----
-  {
-    key: 'group-monitor',
-    path: `/k8s/${clusterId}/resource-metrics`,
-    name: '资源监控',
-    icon: <DashboardOutlined />,
-    children: [
-      { key: `/k8s/${clusterId}/resource-metrics`, path: `/k8s/${clusterId}/resource-metrics`, name: '资源使用率' },
     ],
   },
 ]
@@ -502,8 +448,8 @@ const getGlobalOpenKeys = (pathname: string): string[] => {
   if (pathname.startsWith('/clusters')) {
     openKeys.push('/clusters')
   }
-  if (pathname.startsWith('/deploy')) {
-    openKeys.push('/deploy')
+  if (pathname.startsWith('/automation')) {
+    openKeys.push('/automation')
   }
   if (pathname.startsWith('/monitor')) {
     openKeys.push('/monitor')
@@ -521,6 +467,9 @@ const getAdminOpenKeys = (pathname: string): string[] => {
   if (pathname.startsWith('/config/audit-logs')) {
     return ['group-admin-audit']
   }
+  if (pathname.startsWith('/config/credentials')) {
+    return ['group-admin-platform']
+  }
   return ['group-admin-platform']
 }
 
@@ -528,34 +477,26 @@ const getClusterOpenKeys = (pathname: string): string[] => {
   const resource = pathname.match(/\/k8s\/[^/]+\/([^/?]+)/)?.[1] || ''
 
   const dashboard = ['dashboard']
-  const operations = ['log-workbench', 'manifest-apply']
-  const workloads = ['pods', 'podmetrics', 'deployments', 'statefulsets', 'daemonsets', 'replicasets', 'pdbs', 'hpas']
-  const jobs = ['jobs', 'cronjobs']
-  const network = ['services', 'endpoints', 'endpointslices', 'network-policies', 'ingresses', 'ingress-classes']
-  const storage = ['pvcs', 'pvs', 'volume-snapshots', 'volume-snapshot-classes', 'volume-snapshot-contents', 'storage-classes', 'csi-drivers', 'csi-nodes', 'csi-storage-capacities', 'volume-attachments', 'resource-quotas', 'limit-ranges']
-  const config = ['configmaps', 'secrets']
-  const auth = ['service-accounts', 'roles', 'role-bindings', 'cluster-roles', 'cluster-role-bindings']
-  const cluster = ['namespaces', 'nodes', 'leases']
-  const events = ['events']
-  const extensions = ['crds', 'api-services', 'priority-classes', 'runtime-classes', 'validating-webhooks', 'mutating-webhooks', 'validating-admission-policies', 'validating-admission-policy-bindings']
-  const audit = ['permission-audits', 'topology']
-  const helm = ['helm-releases', 'helm-repos']
-  const monitor = ['resource-metrics']
+  const operations = ['events', 'log-workbench', 'resource-metrics']
+  const delivery = ['manifest-apply', 'helm-releases', 'helm-repos', 'permission-audits']
+  const browser = ['advanced-resources', 'topology', 'pods', 'podmetrics', 'deployments', 'statefulsets', 'daemonsets', 'replicasets', 'pdbs', 'hpas', 'jobs', 'cronjobs', 'services', 'endpoints', 'endpointslices', 'network-policies', 'ingresses', 'ingress-classes', 'pvcs', 'pvs', 'volume-snapshots', 'volume-snapshot-classes', 'volume-snapshot-contents', 'storage-classes', 'csi-drivers', 'csi-nodes', 'csi-storage-capacities', 'volume-attachments', 'resource-quotas', 'limit-ranges', 'configmaps', 'secrets', 'service-accounts', 'roles', 'role-bindings', 'cluster-roles', 'cluster-role-bindings', 'namespaces', 'nodes', 'leases', 'crds', 'api-services', 'priority-classes', 'runtime-classes', 'validating-webhooks', 'mutating-webhooks', 'validating-admission-policies', 'validating-admission-policy-bindings']
 
   if (dashboard.includes(resource)) return ['group-dashboard']
   if (operations.includes(resource)) return ['group-operations']
-  if (workloads.includes(resource)) return ['group-workloads']
-  if (jobs.includes(resource)) return ['group-jobs']
-  if (network.includes(resource)) return ['group-network']
-  if (storage.includes(resource)) return ['group-storage']
-  if (config.includes(resource)) return ['group-config']
-  if (auth.includes(resource)) return ['group-auth']
-  if (cluster.includes(resource)) return ['group-cluster']
-  if (events.includes(resource)) return ['group-events']
-  if (extensions.includes(resource)) return ['group-extensions']
-  if (audit.includes(resource)) return ['group-audit']
-  if (helm.includes(resource)) return ['group-helm']
-  if (monitor.includes(resource)) return ['group-monitor']
+  if (delivery.includes(resource)) return ['group-delivery']
+  const resourceGroups: Record<string, string> = {
+    pods: 'resource-workloads', deployments: 'resource-workloads', statefulsets: 'resource-workloads', daemonsets: 'resource-workloads', replicasets: 'resource-workloads', jobs: 'resource-workloads', cronjobs: 'resource-workloads', hpas: 'resource-workloads', pdbs: 'resource-workloads',
+    services: 'resource-network', endpoints: 'resource-network', endpointslices: 'resource-network', 'network-policies': 'resource-network', ingresses: 'resource-network', 'ingress-classes': 'resource-network',
+    pvcs: 'resource-storage', pvs: 'resource-storage', 'volume-snapshots': 'resource-storage', 'storage-classes': 'resource-storage', 'csi-drivers': 'resource-storage', 'volume-attachments': 'resource-storage', 'resource-quotas': 'resource-storage', 'limit-ranges': 'resource-storage',
+    configmaps: 'resource-access', secrets: 'resource-access', 'service-accounts': 'resource-access', roles: 'resource-access', 'role-bindings': 'resource-access', 'cluster-roles': 'resource-access', 'cluster-role-bindings': 'resource-access',
+    namespaces: 'resource-cluster', nodes: 'resource-cluster', leases: 'resource-cluster', crds: 'resource-cluster', 'api-services': 'resource-cluster', 'priority-classes': 'resource-cluster', 'runtime-classes': 'resource-cluster', 'validating-webhooks': 'resource-cluster', 'mutating-webhooks': 'resource-cluster',
+  }
+
+  if (browser.includes(resource)) {
+    return resourceGroups[resource]
+      ? ['group-resource-browser', resourceGroups[resource]]
+      : ['group-resource-browser']
+  }
   return ['group-dashboard']
 }
 
@@ -802,12 +743,16 @@ export const layout = ({ initialState, setInitialState }: any) => {
         </div>
         <div className="app-layout-footer-frame">
           <footer className="app-layout-statusbar">
-            <div className="app-layout-statusbar__group">
-              <span className="app-layout-statusbar__dot" />
-              <span>All Agents Healthy</span>
-            </div>
-            <div className="app-layout-statusbar__group app-layout-statusbar__group--right">
-              <span>v3.2.1</span>
+            <div className="app-layout-footer-meta">
+              <span className="app-layout-footer-meta__brand">AIOPS 智能运维平台</span>
+              <span>© 2026 AIOPS</span>
+              <a
+                href="https://www.apache.org/licenses/LICENSE-2.0"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Apache License 2.0
+              </a>
             </div>
           </footer>
         </div>

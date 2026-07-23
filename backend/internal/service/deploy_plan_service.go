@@ -372,8 +372,8 @@ func (s *DeployService) DeletePlan(ctx context.Context, id uint64) error {
 			}
 			return err
 		}
-		if plan.Status == "running" || plan.Status == "success" {
-			return ErrWithMessage(ErrConflict, "当前状态不允许删除部署计划")
+		if plan.Status == "running" {
+			return ErrWithMessage(ErrConflict, "运行中的部署计划不允许删除")
 		}
 		return tx.Model(&model.DeployPlan{}).Where("id = ?", id).Update("deleted_at", &now).Error
 	})

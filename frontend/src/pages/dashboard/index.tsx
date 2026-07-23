@@ -106,9 +106,9 @@ const getRiskSeverity = (status?: string) => {
 }
 
 const severityColorMap: Record<string, string> = {
-  critical: '#ef4444',
-  warning: '#f59e0b',
-  info: '#3b82f6',
+  critical: '#dc2626',
+  warning: '#b45309',
+  info: '#2563eb',
 }
 
 const severityLabelMap: Record<string, string> = {
@@ -122,7 +122,7 @@ const getSeverityColor = (key: string): string => severityColorMap[key] ?? '#647
 
 /** 平台运行评分仪表盘（SVG 环形图） */
 const HealthScoreGauge: React.FC<{ score: number; status: string }> = ({ score, status }) => {
-  const color = score >= 90 ? '#10b981' : score >= 70 ? '#f59e0b' : '#ef4444'
+  const color = score >= 90 ? '#047857' : score >= 70 ? '#b45309' : '#dc2626'
   const radius = 52
   const stroke = 10
   const circumference = 2 * Math.PI * radius
@@ -247,7 +247,8 @@ const ClusterFleetCard: React.FC<{
                 showInfo={false}
                 size="small"
                 status={cpuUsage >= 90 ? 'exception' : cpuUsage >= 70 ? 'active' : undefined}
-                strokeColor={cpuUsage >= 80 ? '#ef4444' : undefined}
+                strokeColor={cpuUsage >= 80 ? '#dc2626' : undefined}
+                trailColor={cpuUsage >= 80 ? '#fee2e2' : '#e7efff'}
               />
             </div>
             <div>
@@ -263,7 +264,8 @@ const ClusterFleetCard: React.FC<{
                 showInfo={false}
                 size="small"
                 status={memoryUsage >= 90 ? 'exception' : memoryUsage >= 70 ? 'active' : undefined}
-                strokeColor={memoryUsage >= 80 ? '#ef4444' : undefined}
+                strokeColor={memoryUsage >= 80 ? '#dc2626' : undefined}
+                trailColor={memoryUsage >= 80 ? '#fee2e2' : '#e6f8ef'}
               />
             </div>
           </div>
@@ -316,9 +318,10 @@ const DashboardPage: React.FC = () => {
   }, [clusters])
 
   const severityWeight: Record<string, number> = { critical: 3, warning: 2, info: 1 }
+  const getSeverityWeight = (status?: string) => severityWeight[getRiskSeverity(status)] ?? 0
   const spotlightClusters = summary.riskClusters
     .slice()
-    .sort((a, b) => severityWeight[getRiskSeverity(b.status)] - severityWeight[getRiskSeverity(a.status)])
+    .sort((a, b) => getSeverityWeight(b.status) - getSeverityWeight(a.status))
     .slice(0, 3)
   const displayClusters = [...summary.riskClusters, ...summary.healthy]
     .filter((cluster, index, list) => list.findIndex((item) => item.id === cluster.id) === index)
@@ -381,21 +384,24 @@ const DashboardPage: React.FC = () => {
       label: '纳管集群',
       value: summary.totalClusters,
       icon: <ClusterOutlined />,
-      color: '#3b82f6',
+      color: '#2563eb',
+      surface: '#e8f0ff',
     },
     {
       key: 'healthy',
       label: '可进入管理',
       value: summary.healthy.length,
       icon: <CheckCircleOutlined />,
-      color: '#10b981',
+      color: '#047857',
+      surface: '#e6f8ef',
     },
     {
       key: 'risk',
       label: '待处理风险',
       value: summary.riskClusters.length,
       icon: <AlertOutlined />,
-      color: '#ef4444',
+      color: '#dc2626',
+      surface: '#feecec',
     },
     {
       key: 'nodes',
@@ -403,6 +409,7 @@ const DashboardPage: React.FC = () => {
       value: summary.totalNodes,
       icon: <NodeIndexOutlined />,
       color: '#8b5cf6',
+      surface: '#f1ebff',
     },
   ]
 
@@ -414,7 +421,7 @@ const DashboardPage: React.FC = () => {
     })
     return Object.entries(groups)
       .filter(([, value]) => value > 0)
-      .map(([type, value]) => ({ type: getSeverityLabel(type), value }))
+      .map(([key, value]) => ({ key, label: getSeverityLabel(key), value }))
   }, [summary.riskClusters])
 
   // 模拟最近告警 / 事件（基于已有集群状态，不新增 API）
@@ -564,7 +571,7 @@ const DashboardPage: React.FC = () => {
                 <div className="app-aiops-stat-card__inner">
                   <span
                     className="app-aiops-stat-card__icon"
-                    style={{ background: `${item.color}1a`, color: item.color }}
+                    style={{ background: item.surface, color: item.color }}
                   >
                     {item.icon}
                   </span>
@@ -590,7 +597,8 @@ const DashboardPage: React.FC = () => {
                   percent={Math.min(capacitySummary.totalPods, 100)}
                   showInfo={false}
                   size="small"
-                  strokeColor="#3b82f6"
+                  strokeColor="#2563eb"
+                  trailColor="#e7efff"
                 />
               </div>
             </Col>
@@ -605,7 +613,8 @@ const DashboardPage: React.FC = () => {
                   showInfo={false}
                   size="small"
                   status={capacitySummary.avgCpu >= 80 ? 'exception' : capacitySummary.avgCpu >= 70 ? 'active' : undefined}
-                  strokeColor={capacitySummary.avgCpu >= 80 ? '#ef4444' : '#3b82f6'}
+                  strokeColor={capacitySummary.avgCpu >= 80 ? '#dc2626' : '#2563eb'}
+                  trailColor={capacitySummary.avgCpu >= 80 ? '#fee2e2' : '#e7efff'}
                 />
               </div>
             </Col>
@@ -620,7 +629,8 @@ const DashboardPage: React.FC = () => {
                   showInfo={false}
                   size="small"
                   status={capacitySummary.avgMemory >= 80 ? 'exception' : capacitySummary.avgMemory >= 70 ? 'active' : undefined}
-                  strokeColor={capacitySummary.avgMemory >= 80 ? '#ef4444' : '#10b981'}
+                  strokeColor={capacitySummary.avgMemory >= 80 ? '#dc2626' : '#047857'}
+                  trailColor={capacitySummary.avgMemory >= 80 ? '#fee2e2' : '#e6f8ef'}
                 />
               </div>
             </Col>
@@ -686,12 +696,12 @@ const DashboardPage: React.FC = () => {
 
               <div className="app-aiops-risk-summary">
                 {riskDistribution.map((item) => (
-                  <div key={item.type} className="app-aiops-risk-summary__item">
+                  <div key={item.key} className="app-aiops-risk-summary__item">
                     <span
                       className="app-aiops-risk-summary__dot"
-                      style={{ background: getSeverityColor(item.type) }}
+                      style={{ background: getSeverityColor(item.key) }}
                     />
-                    <span className="app-aiops-risk-summary__label">{item.type}</span>
+                    <span className="app-aiops-risk-summary__label">{item.label}</span>
                     <strong className="app-aiops-risk-summary__value">{item.value}</strong>
                   </div>
                 ))}
@@ -719,7 +729,10 @@ const DashboardPage: React.FC = () => {
                           : '集群状态待确认'
 
                     return (
-                      <div key={cluster.id} className="app-aiops-risk-item">
+                      <div
+                        key={cluster.id}
+                        className={`app-aiops-risk-item severity-${severity}`}
+                      >
                         <div className="app-aiops-risk-item__head">
                           <div>
                             <div className="app-aiops-risk-item__name">
@@ -774,7 +787,10 @@ const DashboardPage: React.FC = () => {
               {recentAlerts.length ? (
                 <div className="app-aiops-alert-list">
                   {recentAlerts.map((alert) => (
-                    <div key={alert.id} className="app-aiops-alert-item">
+                    <div
+                      key={alert.id}
+                      className={`app-aiops-alert-item severity-${alert.severity}`}
+                    >
                       <Tag
                         color={alert.severity === 'critical' ? 'error' : alert.severity === 'warning' ? 'warning' : 'processing'}
                         style={{ margin: 0, fontSize: 11 }}

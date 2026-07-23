@@ -245,7 +245,7 @@ export interface DeployPreflightResult {
 export interface RepositoryConfig {
   id: number
   name: string
-  type: string // container_mirror / registry / yum / apt
+  repoType: string // container_mirror / registry / yum / apt
   url: string
   authType: string // none / basic / token
   username?: string
@@ -254,6 +254,9 @@ export interface RepositoryConfig {
   description?: string
   isDefault?: boolean
   priority?: number
+  enabled?: boolean
+  /** YUM 源适配的系统标识，例如 centos、rocky、almalinux、rhel、kylin。 */
+  mirrorOf?: string
   createdAt?: string
   updatedAt?: string
 }

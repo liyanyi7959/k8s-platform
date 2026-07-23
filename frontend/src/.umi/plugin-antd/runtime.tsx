@@ -18,7 +18,7 @@ const getAntdConfig = () => {
       key: 'antd',
       type: ApplyPluginsType.modify,
       initialValue: {
-        ...{"theme":{"token":{"colorPrimary":"#1677ff","borderRadius":6}}},
+        ...{"theme":{"token":{"colorPrimary":"#2563eb","colorInfo":"#2563eb","colorSuccess":"#047857","colorWarning":"#b45309","colorError":"#dc2626","colorTextSecondary":"#64748b","borderRadius":12}}},
       },
     });
     if (!cacheAntdConfig.theme) {

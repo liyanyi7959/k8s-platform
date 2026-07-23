@@ -407,6 +407,17 @@ spec:
 		Template:    "bitnami/mongodb",
 		Variables:   "[]",
 	},
+	{
+		Name:        "helm-prometheus",
+		DisplayName: "Prometheus (Helm)",
+		Description: "通过 Helm Chart 部署 Prometheus，用于采集、存储和查询 Kubernetes 集群监控指标。",
+		Category:    "monitoring",
+		Icon:        "📈",
+		IsBuiltin:   true,
+		DeployType:  "helm",
+		Template:    "prometheus-community/prometheus",
+		Variables:   "[]",
+	},
 }
 
 // SeedBuiltinAppTemplates 检查并初始化内置应用模板。

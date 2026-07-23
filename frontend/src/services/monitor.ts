@@ -15,6 +15,8 @@ import type {
   K8sEventItem,
   EventListParams,
   EventListResponse,
+  MonitorIncident,
+  IncidentTimelineItem,
 } from '@/types'
 
 const MOCK_ENABLED = false
@@ -269,6 +271,23 @@ export function listAlertEvents(clusterId?: number, signal?: AbortSignal): Promi
     })
   }
   return request('/api/v1/monitor/alert-events', { params: { clusterId }, signal })
+}
+
+const pageResult = <T>(raw: any) => {
+  const data = raw?.data || raw || {}
+  return { items: data.items || data.list || [], total: data.total || 0, page: data.page || 1, pageSize: data.pageSize || data.page_size || 20 } as { items: T[]; total: number; page: number; pageSize: number }
+}
+
+export function listIncidents(params?: { page?: number; pageSize?: number; status?: string }, signal?: AbortSignal) {
+  return request('/api/v1/monitor/incidents', { params, signal }).then(pageResult<MonitorIncident>)
+}
+
+export function getIncident(id: number): Promise<{ incident: MonitorIncident; timeline: IncidentTimelineItem[] }> {
+  return request(`/api/v1/monitor/incidents/${id}`)
+}
+
+export function transitionIncident(id: number, action: string, note = ''): Promise<void> {
+  return request(`/api/v1/monitor/incidents/${id}/transition`, { method: 'POST', data: { action, note } })
 }
 
 /** 查询监控指标 */

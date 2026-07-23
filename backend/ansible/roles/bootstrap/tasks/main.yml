@@ -1,4 +1,4 @@
-﻿---
+---
 # 基础环境初始化 role
 # 在所有节点上配置 Kubernetes 所需的基础环境
 
@@ -72,7 +72,52 @@
     replace: 'SELINUX=permissive'
   when: (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
 
-# 6. 安装基础依赖包
+# 6. 配置国内镜像源（由后端仓库配置注入 yum_mirrors / apt_mirrors）
+# 麒麟不能使用 CentOS 的 $releasever/os/$basearch 路径；先移除旧平台源，
+# 后续模板只会渲染 target_os=kylin 的显式适配源。
+- name: 移除麒麟上的不兼容平台 yum 镜像源
+  file:
+    path: /etc/yum.repos.d/platform-mirrors.repo
+    state: absent
+  when: "'kylin' in (ansible_distribution | lower)"
+  register: kylin_platform_mirror_removed
+
+- name: 配置与当前系统匹配的 yum 镜像源
+  template:
+    src: yum-mirrors.repo.j2
+    dest: /etc/yum.repos.d/platform-mirrors.repo
+    mode: '0644'
+  when:
+    - (ansible_os_family == "RedHat" or "Kylin" in ansible_distribution)
+    - yum_mirrors | length > 0
+  register: yum_mirror_update
+
+- name: 清理 yum 缓存 (RedHat)
+  command: yum clean all
+  when: (yum_mirror_update.changed | default(false)) or (kylin_platform_mirror_removed.changed | default(false))
+  changed_when: false
+
+- name: 检查麒麟原生 yum 仓库可用性
+  command: yum repolist --enabled
+  changed_when: false
+  when: "'kylin' in (ansible_distribution | lower)"
+
+- name: 配置国内 apt 镜像源 (Debian)
+  template:
+    src: apt-mirrors.sources.j2
+    dest: /etc/apt/sources.list.d/platform-mirrors.list
+    mode: '0644'
+  when:
+    - ansible_os_family == "Debian"
+    - apt_mirrors | length > 0
+  register: apt_mirror_update
+
+- name: 清理 apt 缓存 (Debian)
+  command: apt-get clean
+  when: apt_mirror_update.changed | default(false)
+  changed_when: false
+
+# 7. 安装基础依赖包
 - name: 安装基础依赖包 (RedHat)
   yum:
     name: "{{ base_packages_redhat }}"

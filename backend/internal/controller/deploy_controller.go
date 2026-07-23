@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -394,8 +395,12 @@ func (dc *DeployController) GetDeployTaskLogs(c *gin.Context) {
 	offset := parseInt(c.Query("offset"), 0)
 	limit := parseInt(c.Query("limit"), 200)
 	stepKey := c.Query("step_key")
-	logs := task.Logs(offset, limit, stepKey)
-	resp.OK(c, gin.H{"task_id": taskID, "logs": logs, "total": len(logs), "step_key": stepKey})
+	entries := task.LogEntries(offset, limit, stepKey)
+	logs := make([]string, len(entries))
+	for i, entry := range entries {
+		logs[i] = entry.Content
+	}
+	resp.OK(c, gin.H{"task_id": taskID, "logs": logs, "entries": entries, "total": len(logs), "step_key": stepKey})
 }
 
 // GetDeployTaskLogsSSE SSE 实时日志推送，支持 step_key 过滤。
@@ -466,16 +471,18 @@ func (dc *DeployController) sendLogs(c *gin.Context, taskID int64, stepKey strin
 		return
 	}
 
-	logs := task.Logs(*offset, 100, stepKey)
-	for _, log := range logs {
-		// 转义 JSON 特殊字符
-		escaped := strings.ReplaceAll(log, "\\", "\\\\")
-		escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
-		escaped = strings.ReplaceAll(escaped, "\n", "\\n")
-		escaped = strings.ReplaceAll(escaped, "\r", "\\r")
-		fmt.Fprintf(c.Writer, "data: {\"log\":\"%s\"}\n\n", escaped)
+	entries := task.LogEntries(*offset, 100, stepKey)
+	for _, entry := range entries {
+		payload, err := json.Marshal(gin.H{
+			"log":       entry.Content,
+			"timestamp": entry.CreatedAt.UTC().Format(time.RFC3339Nano),
+		})
+		if err != nil {
+			continue
+		}
+		fmt.Fprintf(c.Writer, "data: %s\n\n", payload)
 	}
-	*offset += len(logs)
+	*offset += len(entries)
 	c.Writer.Flush()
 }
 

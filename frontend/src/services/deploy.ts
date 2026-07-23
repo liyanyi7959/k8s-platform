@@ -325,10 +325,10 @@ export function getDeployTaskLogs(
   offset = 0,
   limit = 200,
   stepKey?: string
-): Promise<{ logs: string[]; total: number; stepKey: string }> {
+): Promise<{ logs: string[]; entries: Array<{ content: string; createdAt: string }>; total: number; stepKey: string }> {
   return request(`/api/v1/deploy/tasks/${taskId}/logs`, {
     params: { offset, limit, step_key: stepKey },
-  })
+  }).then((res) => camelizeKeys(res))
 }
 
 /** 构建 SSE 日志流 URL，可按 stepKey 过滤 */
@@ -504,13 +504,14 @@ export function createRepository(data: Partial<RepositoryConfig>): Promise<Repos
     method: 'POST',
     data: {
       name: data.name,
-      type: data.type,
+      repo_type: data.repoType,
       url: data.url,
       auth_type: data.authType,
-      username: data.username,
-      password: data.password,
-      token: data.token,
       description: data.description,
+      priority: data.priority,
+      enabled: data.enabled,
+      is_default: data.isDefault,
+      mirror_of: data.mirrorOf,
     },
   }).then((res) => camelizeKeys(res) as RepositoryConfig)
 }
@@ -521,13 +522,14 @@ export function updateRepository(id: number, data: Partial<RepositoryConfig>): P
     method: 'PUT',
     data: {
       name: data.name,
-      type: data.type,
+      repo_type: data.repoType,
       url: data.url,
       auth_type: data.authType,
-      username: data.username,
-      password: data.password,
-      token: data.token,
       description: data.description,
+      priority: data.priority,
+      enabled: data.enabled,
+      is_default: data.isDefault,
+      mirror_of: data.mirrorOf,
     },
   })
 }

@@ -34,6 +34,14 @@ var builtinPermissionCatalog = []PermissionCatalogItem{
 	{Code: "ai:audit_read", Description: "AI 审计记录查看", Category: "ai", CategoryLabel: "AI 助手", Builtin: true},
 	{Code: "user:read", Description: "用户、角色与审计查看", Category: "system", CategoryLabel: "系统管理", Builtin: true},
 	{Code: "user:write", Description: "用户与角色管理", Category: "system", CategoryLabel: "系统管理", Builtin: true},
+	{Code: "monitor:read", Description: "监控规则与事件查看", Category: "monitor", CategoryLabel: "监控与事件", Builtin: true},
+	{Code: "monitor:write", Description: "监控规则管理", Category: "monitor", CategoryLabel: "监控与事件", Builtin: true},
+	{Code: "incident:manage", Description: "事件认领、处置与验证", Category: "monitor", CategoryLabel: "监控与事件", Builtin: true},
+	{Code: "automation:read", Description: "自动化任务查看", Category: "automation", CategoryLabel: "自动化与变更", Builtin: true},
+	{Code: "automation:execute", Description: "自动化任务取消与执行", Category: "automation", CategoryLabel: "自动化与变更", Builtin: true},
+	{Code: "credential:read", Description: "凭据库查看", Category: "credential", CategoryLabel: "凭据与密钥", Builtin: true},
+	{Code: "credential:write", Description: "凭据库管理", Category: "credential", CategoryLabel: "凭据与密钥", Builtin: true},
+	{Code: "credential:delete", Description: "凭据库删除", Category: "credential", CategoryLabel: "凭据与密钥", Builtin: true},
 	{Code: "deploy:server_read", Description: "部署服务器查看", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
 	{Code: "deploy:server_write", Description: "部署服务器管理", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
 	{Code: "deploy:server_delete", Description: "部署服务器删除", Category: "deploy", CategoryLabel: "在线部署", Builtin: true},
@@ -92,6 +100,12 @@ func derivePermissionCategory(code string) (string, string) {
 		return "project", "项目管理"
 	case strings.HasPrefix(code, "namespace:"):
 		return "namespace", "命名空间"
+	case strings.HasPrefix(code, "credential:"):
+		return "credential", "凭据与密钥"
+	case strings.HasPrefix(code, "monitor:") || strings.HasPrefix(code, "incident:"):
+		return "monitor", "监控与事件"
+	case strings.HasPrefix(code, "automation:"):
+		return "automation", "自动化与变更"
 	case strings.HasPrefix(code, "deploy:"):
 		return "deploy", "在线部署"
 	case strings.HasPrefix(code, "appstore:"):
@@ -117,22 +131,28 @@ func permissionCategoryOrder(category string) int {
 		return 1
 	case "cluster":
 		return 2
-	case "project":
+	case "credential":
 		return 3
-	case "namespace":
+	case "monitor":
 		return 4
-	case "k8s":
+	case "automation":
 		return 5
-	case "rbac":
+	case "project":
 		return 6
-	case "ai":
+	case "namespace":
+		return 6
+	case "k8s":
 		return 7
-	case "deploy":
+	case "rbac":
 		return 8
-	case "appstore":
+	case "ai":
 		return 9
-	case "security":
+	case "deploy":
 		return 10
+	case "appstore":
+		return 11
+	case "security":
+		return 12
 	default:
 		return 99
 	}

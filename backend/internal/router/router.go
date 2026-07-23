@@ -12,12 +12,15 @@ package router
 import (
 	"context"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
 	"k8s-platform-backend/internal/controller"
 	"k8s-platform-backend/internal/middleware"
 	"k8s-platform-backend/internal/service"
+	"k8s-platform-backend/pkg/resp"
 )
 
 // New 组装路由。接收 Deps 依赖容器，消除长参数列表。
@@ -52,6 +55,8 @@ func New(d Deps) (*gin.Engine, error) {
 	var deployConfigCtl *controller.DeployConfigController
 	var projectCtl *controller.ProjectController
 	var appTemplateCtl *controller.AppTemplateController
+	var monitorIncidentCtl *controller.MonitorIncidentController
+	var automationTaskCtl *controller.AutomationTaskController
 
 	if d.DB != nil {
 		clusterReg := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
@@ -94,12 +99,14 @@ func New(d Deps) (*gin.Engine, error) {
 		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiFileSvc, aiToolSvc, aiActionSvc)
 		deploySvc := service.NewDeployService(d.DB, d.EncryptionKey, taskStore, clusterReg)
 		deployCtl = controller.NewDeployController(deploySvc)
+		automationTaskCtl = controller.NewAutomationTaskController(service.NewTaskService(taskStore))
 		deployConfigSvc := service.NewDeployConfigService(d.DB)
 		deployConfigCtl = controller.NewDeployConfigController(deployConfigSvc)
 		projectSvc := service.NewProjectService(d.DB)
 		projectCtl = controller.NewProjectController(projectSvc, k8sSvc)
 		appTemplateSvc := service.NewAppTemplateService(d.DB)
 		appTemplateCtl = controller.NewAppTemplateController(appTemplateSvc)
+		monitorIncidentCtl = controller.NewMonitorIncidentController(service.NewMonitorIncidentService(d.DB))
 		// 初始化内置应用模板（幂等）
 		_ = appTemplateSvc.SeedBuiltinAppTemplates(context.Background())
 	}
@@ -110,7 +117,7 @@ func New(d Deps) (*gin.Engine, error) {
 	})
 
 	// ── 路由注册 ──
-	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, systemSettingCtl, aiCtl, deployCtl, deployConfigCtl, projectCtl, appTemplateCtl)
+	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, systemSettingCtl, aiCtl, deployCtl, deployConfigCtl, projectCtl, appTemplateCtl, monitorIncidentCtl, automationTaskCtl)
 
 	return r, nil
 }
@@ -131,6 +138,8 @@ func registerRoutes(
 	deployConfigCtl *controller.DeployConfigController,
 	projectCtl *controller.ProjectController,
 	appTemplateCtl *controller.AppTemplateController,
+	monitorIncidentCtl *controller.MonitorIncidentController,
+	automationTaskCtl *controller.AutomationTaskController,
 ) {
 	api := r.Group("/api/v1")
 
@@ -141,6 +150,17 @@ func registerRoutes(
 	api.GET("/auth/captcha", d.AuthCtl.GetCaptcha)
 	api.POST("/auth/password-reset/request", d.AuthCtl.RequestPasswordReset)
 	api.POST("/auth/password-reset/confirm", d.AuthCtl.ConfirmPasswordReset)
+	// Alertmanager 使用单独的共享令牌接入，避免将告警入口暴露为匿名写接口。
+	if token := strings.TrimSpace(os.Getenv("AIOPS_ALERTMANAGER_WEBHOOK_TOKEN")); token != "" && monitorIncidentCtl != nil {
+		api.POST("/monitor/webhooks/alertmanager", func(c *gin.Context) {
+			if c.GetHeader("X-AIOPS-Webhook-Token") != token {
+				resp.Fail(c, 4010, "Webhook 认证失败")
+				c.Abort()
+				return
+			}
+			monitorIncidentCtl.IngestAlertmanager(c)
+		})
+	}
 
 	// ── 需认证接口 ──
 	authed := api.Group("")
@@ -165,6 +185,41 @@ func registerRoutes(
 	registerDeployRoutes(authed, deployCtl, deployConfigCtl)
 	registerProjectRoutes(authed, projectCtl)
 	registerAppTemplateRoutes(authed, appTemplateCtl)
+	registerMonitorIncidentRoutes(authed, monitorIncidentCtl)
+	registerAutomationTaskRoutes(authed, automationTaskCtl)
+}
+
+func registerAutomationTaskRoutes(authed *gin.RouterGroup, ctl *controller.AutomationTaskController) {
+	if ctl == nil {
+		return
+	}
+	read := middleware.RequirePerm("automation:read")
+	execute := middleware.RequirePerm("automation:execute")
+	tasks := authed.Group("/automation/tasks")
+	tasks.GET("", read, ctl.List)
+	tasks.GET("/:id", read, ctl.Get)
+	tasks.GET("/:id/logs", read, ctl.Logs)
+	tasks.POST("/:id/cancel", execute, ctl.Cancel)
+}
+
+func registerMonitorIncidentRoutes(authed *gin.RouterGroup, ctl *controller.MonitorIncidentController) {
+	if ctl == nil {
+		return
+	}
+	read := middleware.RequirePerm("monitor:read")
+	write := middleware.RequirePerm("monitor:write")
+	manage := middleware.RequirePerm("incident:manage")
+	monitor := authed.Group("/monitor")
+	monitor.GET("/alerts", read, ctl.ListAlertRules)
+	monitor.POST("/alerts", write, ctl.CreateAlertRule)
+	monitor.PUT("/alerts/:id", write, ctl.UpdateAlertRule)
+	monitor.PUT("/alerts/:id/toggle", write, ctl.ToggleAlertRule)
+	monitor.DELETE("/alerts/:id", write, ctl.DeleteAlertRule)
+	monitor.GET("/incidents", read, ctl.ListIncidents)
+	monitor.GET("/incidents/:id", read, ctl.GetIncident)
+	monitor.POST("/incidents/:id/transition", manage, ctl.TransitionIncident)
+	monitor.POST("/incidents/:id/ai-conversation", manage, ctl.LinkAIConversation)
+	monitor.POST("/incidents/:id/ai-proposal", manage, ctl.LinkAIProposal)
 }
 
 func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployController, configCtl *controller.DeployConfigController) {
@@ -176,6 +231,9 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	readServer := middleware.RequirePerm("deploy:server_read")
 	writeServer := middleware.RequirePerm("deploy:server_write")
 	deleteServer := middleware.RequirePerm("deploy:server_delete")
+	readCredential := middleware.RequirePerm("credential:read")
+	writeCredential := middleware.RequirePerm("credential:write")
+	deleteCredential := middleware.RequirePerm("credential:delete")
 	readPlan := middleware.RequirePerm("deploy:plan_read")
 	writePlan := middleware.RequirePerm("deploy:plan_write")
 	deletePlan := middleware.RequirePerm("deploy:plan_delete")
@@ -190,12 +248,12 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.DELETE("/servers/:id", deleteServer, ctl.DeleteServer)
 
 	// SSH 凭证
-	deploy.GET("/credentials", readServer, ctl.ListCredentials)
-	deploy.POST("/credentials", writeServer, ctl.CreateCredential)
-	deploy.GET("/credentials/:id", readServer, ctl.GetCredential)
-	deploy.PUT("/credentials/:id", writeServer, ctl.UpdateCredential)
-	deploy.DELETE("/credentials/:id", deleteServer, ctl.DeleteCredential)
-	deploy.POST("/credentials/batch-delete", deleteServer, ctl.BatchDeleteCredentials)
+	deploy.GET("/credentials", readCredential, ctl.ListCredentials)
+	deploy.POST("/credentials", writeCredential, ctl.CreateCredential)
+	deploy.GET("/credentials/:id", readCredential, ctl.GetCredential)
+	deploy.PUT("/credentials/:id", writeCredential, ctl.UpdateCredential)
+	deploy.DELETE("/credentials/:id", deleteCredential, ctl.DeleteCredential)
+	deploy.POST("/credentials/batch-delete", deleteCredential, ctl.BatchDeleteCredentials)
 
 	// 部署计划
 	deploy.GET("/plans", readPlan, ctl.ListPlans)

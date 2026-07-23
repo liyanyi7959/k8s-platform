@@ -485,6 +485,7 @@ export function mapPVC(raw: any): PersistentVolumeClaim {
   return {
     name: m.name || '',
     namespace: m.namespace || '',
+    labels: m.labels || {},
     status: st.phase || '',
     volumeName: s.volumeName || '',
     capacity: st.capacity?.storage || '',

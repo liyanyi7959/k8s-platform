@@ -581,6 +581,14 @@ const AUTH_TYPE_OPTIONS = [
   { value: 'token', label: 'Token' },
 ]
 
+const YUM_TARGET_OS_OPTIONS = [
+  { value: 'centos', label: 'CentOS' },
+  { value: 'rocky', label: 'Rocky Linux' },
+  { value: 'almalinux', label: 'AlmaLinux' },
+  { value: 'rhel', label: 'RHEL' },
+  { value: 'kylin', label: '麒麟 Linux' },
+]
+
 const RepoConfigPanel: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [editRecord, setEditRecord] = useState<RepositoryConfig | null>(null)
@@ -655,6 +663,14 @@ const RepoConfigPanel: React.FC = () => {
         const opt = REPO_TYPE_OPTIONS.find((o) => o.value === t)
         return <Tag>{opt?.label || t}</Tag>
       },
+    },
+    {
+      title: '适配系统',
+      dataIndex: 'mirrorOf',
+      key: 'mirrorOf',
+      width: 120,
+      render: (value: string | undefined, record: RepositoryConfig) =>
+        record.repoType === 'yum' ? (value ? <Tag color="geekblue">{value}</Tag> : <Text type="secondary">通用</Text>) : '-',
     },
     {
       title: '地址',
@@ -746,6 +762,20 @@ const RepoConfigPanel: React.FC = () => {
           </Form.Item>
           <Form.Item name="url" label="仓库地址" rules={[{ required: true, message: '请输入仓库地址' }]}>
             <Input placeholder="https://harbor.example.com" />
+          </Form.Item>
+          <Form.Item
+            noStyle
+            shouldUpdate={(previous, current) => previous.repoType !== current.repoType}
+          >
+            {({ getFieldValue }) => getFieldValue('repoType') === 'yum' && (
+              <Form.Item
+                name="mirrorOf"
+                label="适配系统"
+                extra="麒麟源请选择“麒麟 Linux”，并填写完整 baseurl（可包含 $basearch）；不会自动套用 CentOS 路径。"
+              >
+                <Select allowClear options={YUM_TARGET_OS_OPTIONS} placeholder="选择此 YUM 源适配的系统" />
+              </Form.Item>
+            )}
           </Form.Item>
           <Form.Item name="description" label="说明">
             <Input.TextArea rows={2} />
