@@ -151,6 +151,28 @@ func (s *K8sService) ValidateKubeconfig(ctx context.Context, kubeconfig string) 
 	return normalizeK8sErr(err)
 }
 
+// VerifyClusterAPI verifies that the saved cluster credential can reach the
+// Kubernetes API and returns the server version used by deployment preflight.
+// It intentionally performs a real discovery call instead of only validating
+// kubeconfig syntax.
+func (s *K8sService) VerifyClusterAPI(ctx context.Context, clusterID uint64) (string, error) {
+	if clusterID == 0 {
+		return "", ErrInvalidParams
+	}
+	client, err := s.discoveryClient(ctx, clusterID)
+	if err != nil {
+		return "", err
+	}
+	version, err := client.ServerVersion()
+	if err != nil {
+		return "", normalizeK8sErr(err)
+	}
+	if version == nil {
+		return "", ErrWithMessage(ErrK8sNetwork, "Kubernetes API 未返回版本信息")
+	}
+	return version.GitVersion, nil
+}
+
 // ValidateKubeconfigFormat 仅校验 kubeconfig 格式是否合法（能正确解析出 REST 配置），
 // 不会实际连接 K8s API Server。适用于编辑/更新场景——用户可能在离线环境中更新凭据。
 func (s *K8sService) ValidateKubeconfigFormat(_ context.Context, kubeconfig string) error {

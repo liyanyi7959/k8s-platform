@@ -171,7 +171,7 @@ const IngressesPage: React.FC = () => {
           </Tooltip>
           <Popconfirm title="确定删除该 Ingress？" onConfirm={() => deleteMutation.mutate(record)}>
             <Tooltip title="删除">
-              <a style={{ color: '#ff4d4f' }}><DeleteOutlined /></a>
+              <a style={{ color: '#dc2626' }}><DeleteOutlined /></a>
             </Tooltip>
           </Popconfirm>
         </Space>

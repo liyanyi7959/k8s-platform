@@ -133,8 +133,8 @@ const DashboardPage: React.FC = () => {
               </Space>
             </div>
             <div className="app-ops-briefing__metrics" aria-label="当前风险摘要">
-              <div><span>严重</span><strong className="is-critical">{criticalCount}</strong></div>
-              <div><span>警告</span><strong className="is-warning">{warningCount}</strong></div>
+              <div><span>严重</span><strong className={criticalCount > 0 ? 'is-critical' : undefined}>{criticalCount}</strong></div>
+              <div><span>警告</span><strong className={warningCount > 0 ? 'is-warning' : undefined}>{warningCount}</strong></div>
               <div><span>影响集群</span><strong>{affectedClusters}</strong></div>
               <div><span>未认领</span><strong>{unassignedCount}</strong></div>
             </div>
@@ -144,7 +144,7 @@ const DashboardPage: React.FC = () => {
         <Row gutter={[16, 16]}>
           <Col xs={24} xl={16}>
             <Card
-              className="app-ops-panel"
+              className="app-ops-panel app-ops-priority-panel"
               title="优先处置队列"
               extra={<Button type="link" onClick={() => history.push('/monitor/events')}>查看全部 <ArrowRightOutlined /></Button>}
             >
@@ -209,6 +209,13 @@ const DashboardPage: React.FC = () => {
             <Empty description="尚未接入集群"><Button type="primary" onClick={() => history.push('/clusters/import')}>导入集群</Button></Empty>
           ) : (
             <div className="app-ops-cluster-list">
+              <div className="app-ops-cluster-list__head" aria-hidden="true">
+                <span>集群</span>
+                <span>Ready 节点</span>
+                <span>CPU</span>
+                <span>内存</span>
+                <span>更新</span>
+              </div>
               {observedClusters.map((cluster) => {
                 const overview = overviewByCluster.get(cluster.id)
                 const metricsAvailable = overview?.meta?.metrics_available !== false && Boolean(overview)
@@ -221,9 +228,14 @@ const DashboardPage: React.FC = () => {
                   >
                     <div className="app-ops-cluster-row__identity">
                       <span className="app-ops-cluster-row__icon"><ClusterOutlined /></span>
-                      <div><strong>{cluster.name}</strong><span>{cluster.k8sVersion || '版本待确认'}</span></div>
+                      <div>
+                        <div className="app-ops-cluster-row__name">
+                          <strong>{cluster.name}</strong>
+                          <Tag color={getClusterStatusColor(cluster.status)}>{getClusterStatusText(cluster.status)}</Tag>
+                        </div>
+                        <span>{cluster.k8sVersion || '版本待确认'}</span>
+                      </div>
                     </div>
-                    <Tag color={getClusterStatusColor(cluster.status)}>{getClusterStatusText(cluster.status)}</Tag>
                     <div className="app-ops-cluster-row__nodes">
                       <span>Ready 节点</span>
                       <strong>{overview ? `${overview.stats.nodes.ready}/${overview.stats.nodes.total}` : `${cluster.nodeCount || '—'}`}</strong>

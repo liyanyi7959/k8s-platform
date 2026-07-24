@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import {
   Card, Table, Button, Space, Tag, Modal, Form, Input, Radio, Popconfirm,
-  message, Typography, Tooltip, Alert,
+  message, Typography, Tooltip,
 } from 'antd'
 import {
   PlusOutlined, DeleteOutlined, EditOutlined, ReloadOutlined,
@@ -14,6 +14,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
 import { AppPage } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import { getCredentials, createCredential, updateCredential, deleteCredential, batchDeleteCredentials } from '@/services/deploy'
 import type { Credential, CreateCredentialRequest } from '@/types/deploy'
 
@@ -271,7 +272,7 @@ export default function CredentialsPage() {
           </Form.Item>
 
           {editing && (
-            <Alert
+            <AppAlert
               type="info"
               showIcon
               message="编辑模式下，敏感字段（密码/私钥）留空则保持不变。"

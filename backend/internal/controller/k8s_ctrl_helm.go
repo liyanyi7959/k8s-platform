@@ -1,9 +1,12 @@
 package controller
 
 import (
+	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -18,6 +21,20 @@ import (
 
 	"k8s-platform-backend/pkg/resp"
 )
+
+const helmInstallTimeout = 10 * time.Minute
+
+var helmKubernetesName = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+
+type helmInstallRequest struct {
+	ReleaseName string `json:"release_name"`
+	Namespace   string `json:"namespace"`
+	Chart       string `json:"chart"`
+	Version     string `json:"version"`
+	RepoURL     string `json:"repo_url"`
+	RepoName    string `json:"repo_name"`
+	ValuesYAML  string `json:"values_yaml"`
+}
 
 // debugLog 用于抑制 Helm SDK 内部调试日志。
 func debugLog(format string, v ...interface{}) {}
@@ -146,6 +163,85 @@ func addHelmRepo(settings *cli.EnvSettings, name, url string) error {
 	return f.WriteFile(repoFile, 0644)
 }
 
+func validateHelmInstallRequest(req *helmInstallRequest) error {
+	req.ReleaseName = strings.TrimSpace(req.ReleaseName)
+	req.Namespace = strings.TrimSpace(req.Namespace)
+	req.Chart = strings.TrimSpace(req.Chart)
+	req.RepoURL = strings.TrimSpace(req.RepoURL)
+	req.RepoName = strings.TrimSpace(req.RepoName)
+	if req.Namespace == "" {
+		req.Namespace = "default"
+	}
+	if req.ReleaseName == "" || req.Chart == "" {
+		return fmt.Errorf("release_name 和 chart 不能为空")
+	}
+	if len(req.ReleaseName) > 53 || !helmKubernetesName.MatchString(req.ReleaseName) {
+		return fmt.Errorf("release_name 必须是 1-53 位小写 DNS 名称")
+	}
+	if len(req.Namespace) > 63 || !helmKubernetesName.MatchString(req.Namespace) {
+		return fmt.Errorf("namespace 必须是 1-63 位小写 DNS 名称")
+	}
+	if strings.Contains(req.Chart, "..") || strings.Contains(req.Chart, "://") || strings.HasPrefix(req.Chart, "/") {
+		return fmt.Errorf("chart 只能是已配置仓库中的 chart 名称")
+	}
+	if len(req.ValuesYAML) > 1024*1024 {
+		return fmt.Errorf("values.yaml 不能超过 1MB")
+	}
+	if req.RepoURL == "" && req.RepoName == "" {
+		return nil
+	}
+	if req.RepoURL == "" || req.RepoName == "" {
+		return fmt.Errorf("repo_url 和 repo_name 必须同时提供")
+	}
+	repoURL, err := url.ParseRequestURI(req.RepoURL)
+	if err != nil || repoURL.Scheme != "https" || repoURL.Host == "" {
+		return fmt.Errorf("Helm 仓库地址必须是有效的 HTTPS URL")
+	}
+	if len(req.RepoName) > 63 || !helmKubernetesName.MatchString(req.RepoName) {
+		return fmt.Errorf("repo_name 必须是 1-63 位小写 DNS 名称")
+	}
+	if !strings.HasPrefix(req.Chart, req.RepoName+"/") {
+		return fmt.Errorf("chart 必须以仓库名 %s/ 开头", req.RepoName)
+	}
+	return nil
+}
+
+func (kc *K8sController) helmPreflight(ctx context.Context, clusterID uint64) (string, any, error) {
+	if kc.svc == nil || kc.deploySvc == nil {
+		return "", nil, fmt.Errorf("Helm 部署前置服务未初始化")
+	}
+	apiOK, ready, total, version, err := kc.svc.CheckHealth(ctx, clusterID)
+	if err != nil {
+		return "", nil, err
+	}
+	if !apiOK || total == 0 || ready == 0 {
+		return "", nil, fmt.Errorf("集群当前不可用于 Helm 部署：Ready 节点 %d/%d", ready, total)
+	}
+	master, err := kc.deploySvc.EnsureClusterMasterHelm(ctx, clusterID)
+	if err != nil {
+		return "", nil, err
+	}
+	return version, master, nil
+}
+
+// HelmPreflight validates the selected Kubernetes API, confirms the managed
+// Master is reachable and installs Helm there when it is missing.
+func (kc *K8sController) HelmPreflight(c *gin.Context) {
+	clusterID, ok := parseClusterID(c)
+	if !ok {
+		resp.Fail(c, 4000, "无效集群 ID")
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Minute)
+	defer cancel()
+	version, master, err := kc.helmPreflight(ctx, clusterID)
+	if err != nil {
+		kc.writeServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"cluster_version": version, "master": master})
+}
+
 // ListHelmReleases 列出集群中所有 Helm Release（使用 Helm SDK）。
 func (kc *K8sController) ListHelmReleases(c *gin.Context) {
 	namespace := strings.TrimSpace(c.Query("namespace"))
@@ -226,24 +322,26 @@ func (kc *K8sController) GetHelmReleaseDetail(c *gin.Context) {
 // POST /clusters/:id/helm/install
 // body: { release_name, namespace, chart, repo_url, repo_name, values_yaml }
 func (kc *K8sController) HelmInstall(c *gin.Context) {
-	var req struct {
-		ReleaseName string `json:"release_name"`
-		Namespace   string `json:"namespace"`
-		Chart       string `json:"chart"`
-		RepoURL     string `json:"repo_url"`
-		RepoName    string `json:"repo_name"`
-		ValuesYAML  string `json:"values_yaml"`
+	clusterID, ok := parseClusterID(c)
+	if !ok {
+		resp.Fail(c, 4000, "无效集群 ID")
+		return
 	}
+	var req helmInstallRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "参数错误")
 		return
 	}
-	if req.ReleaseName == "" || req.Chart == "" {
-		resp.Fail(c, 4000, "release_name 和 chart 不能为空")
+	if err := validateHelmInstallRequest(&req); err != nil {
+		resp.Fail(c, 4000, err.Error())
 		return
 	}
-	if req.Namespace == "" {
-		req.Namespace = "default"
+	ctx, cancel := context.WithTimeout(c.Request.Context(), helmInstallTimeout+2*time.Minute)
+	defer cancel()
+	clusterVersion, master, err := kc.helmPreflight(ctx, clusterID)
+	if err != nil {
+		kc.writeServiceErr(c, err)
+		return
 	}
 
 	cfg, settings, cleanup, err := kc.newHelmConfig(c, req.Namespace)
@@ -264,6 +362,10 @@ func (kc *K8sController) HelmInstall(c *gin.Context) {
 	client.ReleaseName = req.ReleaseName
 	client.Namespace = req.Namespace
 	client.CreateNamespace = true
+	client.Wait = true
+	client.Atomic = true
+	client.Timeout = helmInstallTimeout
+	client.ChartPathOptions.Version = strings.TrimSpace(req.Version)
 
 	cp, err := client.ChartPathOptions.LocateChart(req.Chart, settings)
 	if err != nil {
@@ -290,7 +392,11 @@ func (kc *K8sController) HelmInstall(c *gin.Context) {
 		resp.Fail(c, 5001, "Helm 安装失败: "+err.Error())
 		return
 	}
-	resp.OK(c, gin.H{"output": fmt.Sprintf("Release %s/%s 已安装，revision %d", rel.Namespace, rel.Name, rel.Version)})
+	resp.OK(c, gin.H{
+		"output":          fmt.Sprintf("Release %s/%s 已安装并通过就绪校验，revision %d", rel.Namespace, rel.Name, rel.Version),
+		"cluster_version": clusterVersion,
+		"master":          master,
+	})
 }
 
 // HelmUninstall 卸载 Helm release。
@@ -472,7 +578,10 @@ func (kc *K8sController) HelmSearch(c *gin.Context) {
 				if strings.Contains(name, keyword) || strings.Contains(v.Description, keyword) ||
 					(v.Name != "" && strings.Contains(v.Name, keyword)) {
 					results = append(results, map[string]any{
-						"name":        name,
+						"name":        e.Name + "/" + name,
+						"chart_name":  name,
+						"repo_name":   e.Name,
+						"repo_url":    e.URL,
 						"version":     v.Version,
 						"description": v.Description,
 					})

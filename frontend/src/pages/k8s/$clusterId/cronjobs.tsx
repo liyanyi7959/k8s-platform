@@ -233,7 +233,7 @@ const CronJobsPage: React.FC = () => {
           </Tooltip>
           <Popconfirm title="立即手动触发一次该 CronJob？" onConfirm={() => triggerMutation.mutate(record)}>
             <Tooltip title="手动触发">
-              <a style={{ color: '#52c41a' }}>
+              <a style={{ color: '#047857' }}>
                 <ThunderboltOutlined />
               </a>
             </Tooltip>
@@ -243,14 +243,14 @@ const CronJobsPage: React.FC = () => {
             onConfirm={() => suspendMutation.mutate(record)}
           >
             <Tooltip title={record.suspend ? '恢复' : '暂停'}>
-              <a style={{ color: '#faad14' }}>
+              <a style={{ color: '#b45309' }}>
                 {record.suspend ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
               </a>
             </Tooltip>
           </Popconfirm>
           <Popconfirm title="确定删除该 CronJob？" onConfirm={() => deleteMutation.mutate(record)}>
             <Tooltip title="删除">
-              <a style={{ color: '#ff4d4f' }}>
+              <a style={{ color: '#dc2626' }}>
                 <DeleteOutlined />
               </a>
             </Tooltip>

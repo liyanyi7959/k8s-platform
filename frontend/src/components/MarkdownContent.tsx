@@ -254,7 +254,7 @@ function renderInline(text: string, tone: MarkdownTone, keyPrefix: string): Reac
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              color: tone === 'dark' ? '#dbeafe' : '#1677ff',
+              color: tone === 'dark' ? '#dbeafe' : '#2563eb',
               textDecoration: 'underline',
             }}
           >

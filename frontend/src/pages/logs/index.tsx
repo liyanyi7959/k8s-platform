@@ -8,7 +8,6 @@ import {
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Alert,
   Button,
   Card,
   Input,
@@ -21,6 +20,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { AppPage } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import { listClusters } from '@/services/clusters'
 import { getPodLogs, listPods } from '@/services/k8s'
 
@@ -216,7 +216,7 @@ const LogsPage: React.FC = () => {
             </Button>
             <Button icon={<ReloadOutlined />} disabled={searching} onClick={search}>刷新</Button>
           </Space>
-          <Alert
+          <AppAlert
             style={{ marginTop: 16 }}
             type="info"
             showIcon

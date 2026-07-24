@@ -85,6 +85,7 @@ func New(d Deps) (*gin.Engine, error) {
 		resourceExportPolicySvc := service.NewResourceExportPolicyService()
 		workloadActionSvc := service.NewWorkloadActionService(k8sSvc, manifestApplySvc)
 		aiActionSvc := service.NewAIActionService(d.DB, workloadActionSvc)
+		deploySvc := service.NewDeployService(d.DB, d.EncryptionKey, taskStore, clusterReg)
 		k8sCtl = controller.NewK8sController(
 			k8sSvc,
 			manifestApplySvc,
@@ -92,12 +93,12 @@ func New(d Deps) (*gin.Engine, error) {
 			logSessions,
 			namespaceDiagnosisSvc,
 			resourceInspectionSvc,
+			deploySvc,
 		)
 		aiToolRegistry := service.NewAIToolRegistry(d.DB, clusterReadModelSvc, namespaceDiagnosisSvc, resourceInspectionSvc, resourceQuerySvc, aiActionSvc, resourceExportPolicySvc)
 		aiToolSvc := service.NewAIToolService(d.DB, aiToolRegistry)
 		aiChatSvc := service.NewAIChatService(d.DB, aiGatewaySvc, aiToolSvc, aiActionSvc, aiFileSvc)
 		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiFileSvc, aiToolSvc, aiActionSvc)
-		deploySvc := service.NewDeployService(d.DB, d.EncryptionKey, taskStore, clusterReg)
 		deployCtl = controller.NewDeployController(deploySvc, execSessions)
 		automationTaskCtl = controller.NewAutomationTaskController(service.NewTaskService(taskStore))
 		deployConfigSvc := service.NewDeployConfigService(d.DB)
@@ -794,6 +795,7 @@ func registerHelmRoutes(a k8sRouteArgs) {
 	k8s, ctl, p := a.k8s, a.ctl, a.perm
 	k8s.GET("/clusters/:id/helm/releases", p.read, ctl.ListHelmReleases)
 	k8s.GET("/clusters/:id/helm/releases/detail", p.read, ctl.GetHelmReleaseDetail)
+	k8s.POST("/clusters/:id/helm/preflight", p.write, ctl.HelmPreflight)
 	k8s.POST("/clusters/:id/helm/install", p.write, ctl.HelmInstall)
 	k8s.POST("/clusters/:id/helm/releases/:ns/:name/upgrade", p.write, ctl.HelmUpgrade)
 	k8s.POST("/clusters/:id/helm/releases/:ns/:name/rollback", p.write, ctl.HelmRollback)

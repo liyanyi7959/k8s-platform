@@ -282,10 +282,31 @@ export function listPodMetricsUsage(clusterId: number, signal?: AbortSignal): Pr
 }
 
 /** Helm 安装 chart */
+export interface HelmPreflightResult {
+  cluster_version: string
+  master: {
+    cluster_id: number
+    master_name: string
+    master_ip: string
+    helm_version: string
+    installed_now: boolean
+    message: string
+  }
+}
+
+/**
+ * 严格准备 Helm 部署环境：验证 Kubernetes API 与 Ready 节点，校验
+ * Master SSH 资产；缺少 Helm 时在 Master 安装并进行版本确认。
+ */
+export function helmPreflight(clusterId: number): Promise<HelmPreflightResult> {
+  return request(`/api/v1/clusters/${clusterId}/helm/preflight`, { method: 'POST' })
+}
+
 export function helmInstall(clusterId: number, data: {
   release_name: string
   namespace: string
   chart: string
+  version?: string
   repo_url?: string
   repo_name?: string
   values_yaml?: string

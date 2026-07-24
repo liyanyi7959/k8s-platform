@@ -67,6 +67,7 @@ export interface DeployPlan {
   cniType: string
   cniConfig?: Record<string, any>
   addons?: string[]
+  helmInstall?: boolean
   stepOverrides?: Record<string, DeployPlanStepOverride>
   status: string // draft / running / success / failed / cancelled
   taskId?: number
@@ -150,6 +151,7 @@ export interface CreateDeployPlanRequest {
   cniType: string
   cniConfig?: Record<string, any>
   addons?: string[]
+  helmInstall?: boolean
   stepOverrides?: Record<string, DeployPlanStepOverride>
   nodes: CreateDeployPlanNodeRequest[]
 }

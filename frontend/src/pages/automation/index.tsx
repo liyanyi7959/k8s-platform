@@ -8,6 +8,7 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { AppPage } from '@/components'
+import { DESIGN_COLORS } from '@/theme/designTokens'
 
 const { Paragraph, Text, Title } = Typography
 
@@ -18,7 +19,7 @@ const capabilities = [
     icon: <CodeOutlined />,
     action: '管理资产',
     path: '/automation/assets',
-    color: '#1677ff',
+    color: DESIGN_COLORS.primary,
   },
   {
     title: 'Kubernetes 集群交付',
@@ -26,7 +27,7 @@ const capabilities = [
     icon: <ClusterOutlined />,
     action: '部署集群',
     path: '/clusters/provision',
-    color: '#13a8a8',
+    color: DESIGN_COLORS.primary,
   },
   {
     title: '凭据与访问控制',
@@ -34,7 +35,7 @@ const capabilities = [
     icon: <KeyOutlined />,
     action: '打开凭据库',
     path: '/config/credentials',
-    color: '#722ed1',
+    color: DESIGN_COLORS.primary,
   },
 ]
 
@@ -49,7 +50,7 @@ export default function AutomationOverviewPage() {
         }}
       >
         <Space align="start" size={16}>
-          <PlayCircleOutlined style={{ fontSize: 30, color: '#1677ff', marginTop: 4 }} />
+          <PlayCircleOutlined style={{ fontSize: 30, color: DESIGN_COLORS.primary, marginTop: 4 }} />
           <div>
             <Title level={3} style={{ margin: 0 }}>
               自动化中心
@@ -94,7 +95,7 @@ export default function AutomationOverviewPage() {
 
       <Card bordered={false} style={{ marginTop: 16 }}>
         <Space align="start" size={12}>
-          <SafetyCertificateOutlined style={{ color: '#52c41a', fontSize: 20, marginTop: 2 }} />
+          <SafetyCertificateOutlined style={{ color: DESIGN_COLORS.success, fontSize: 20, marginTop: 2 }} />
           <div>
             <Text strong>规划边界</Text>
             <Divider type="vertical" />

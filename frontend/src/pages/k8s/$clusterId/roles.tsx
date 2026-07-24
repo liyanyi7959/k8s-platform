@@ -118,7 +118,7 @@ const RolesPage: React.FC = () => {
           </Tooltip>
           <Popconfirm title="确定删除该 Role？" onConfirm={() => deleteRoleMutation.mutate(record)}>
             <Tooltip title="删除">
-              <a style={{ color: '#ff4d4f' }}>
+              <a style={{ color: '#dc2626' }}>
                 <DeleteOutlined />
               </a>
             </Tooltip>
@@ -180,7 +180,7 @@ const RolesPage: React.FC = () => {
             onConfirm={() => deleteClusterRoleMutation.mutate(record.name)}
           >
             <Tooltip title="删除">
-              <a style={{ color: '#ff4d4f' }}>
+              <a style={{ color: '#dc2626' }}>
                 <DeleteOutlined />
               </a>
             </Tooltip>

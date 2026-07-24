@@ -35,6 +35,7 @@ import { AppPage, EllipsisText } from '@/components'
 import { ResourceTrendChart } from '@/components/ResourceTrendChart'
 import { history } from '@umijs/max'
 import dayjs from 'dayjs'
+import { DESIGN_COLORS } from '@/theme/designTokens'
 
 const LazyLine: React.FC<{
   data: Array<{ time: string; sampledAt?: string; type: string; value: number | null }>
@@ -59,13 +60,13 @@ const LazyLine: React.FC<{
 const { Text } = Typography
 
 const COLOR = {
-  healthy: '#52c41a',
-  warning: '#faad14',
-  critical: '#ff4d4f',
-  idle: '#bfbfbf',
-  primary: '#1890ff',
-  purple: '#7c3aed',
-  cyan: '#0891b2',
+  healthy: DESIGN_COLORS.success,
+  warning: DESIGN_COLORS.warning,
+  critical: DESIGN_COLORS.danger,
+  idle: DESIGN_COLORS.neutral,
+  primary: DESIGN_COLORS.primary,
+  purple: DESIGN_COLORS.dataSecondary,
+  cyan: DESIGN_COLORS.dataPrimary,
 } as const
 
 const PodPhaseDonut: React.FC<{
@@ -97,10 +98,10 @@ const PodPhaseDonut: React.FC<{
           width: 78,
           height: 78,
           borderRadius: '50%',
-          background: '#fff',
+          background: 'var(--app-surface-strong)',
           display: 'grid',
           placeItems: 'center',
-          color: '#14213d',
+          color: 'var(--app-text)',
           fontSize: 24,
           fontWeight: 800,
         }}
@@ -123,13 +124,13 @@ const NamespacePodBars: React.FC<{
             <EllipsisText text={item.namespace} maxWidth="80%" />
             <Text strong>{item.pods}</Text>
           </Row>
-          <div style={{ height: 8, borderRadius: 999, background: '#f0ecff', overflow: 'hidden' }}>
+          <div style={{ height: 8, borderRadius: 999, background: 'var(--app-primary-soft)', overflow: 'hidden' }}>
             <div
               style={{
                 height: '100%',
                 width: `${Math.max(3, (item.pods / max) * 100)}%`,
                 borderRadius: 999,
-                background: COLOR.purple,
+                background: COLOR.primary,
               }}
             />
           </div>
@@ -160,7 +161,7 @@ function timeAgo(ts: string): string {
 }
 
 const HealthOverviewSkeleton: React.FC = () => (
-  <AppPage>
+  <AppPage className="app-k8s-health-page">
     <Card size="small" style={{ marginBottom: 12 }}>
       <Skeleton active title={{ width: 220 }} paragraph={false} />
       <Row gutter={12} style={{ marginTop: 18 }}>
@@ -285,7 +286,7 @@ const K8sDashboardPage: React.FC = () => {
 
   if (!overview) {
     return (
-      <AppPage>
+      <AppPage className="app-k8s-health-page">
         <Empty description="暂无集群概览数据">
           <Button type="primary" icon={<ReloadOutlined />} onClick={() => refetch()}>
             重新加载
@@ -334,9 +335,10 @@ const K8sDashboardPage: React.FC = () => {
       : 0
 
   return (
-    <AppPage>
+    <AppPage className="app-k8s-health-page">
       {/* ═══ Zone 1: 核心集群总览 ═══ */}
       <Card
+        className="app-k8s-overview-card"
         size="small"
         style={{ marginBottom: 12 }}
         title={
@@ -431,10 +433,10 @@ const K8sDashboardPage: React.FC = () => {
           ].map((kpi) => (
             <Col xs={12} sm={6} key={kpi.label}>
               <Card
+                className="app-k8s-kpi-card"
                 hoverable
                 size="small"
                 style={{
-                  borderLeft: `3px solid ${kpi.color}`,
                   cursor: kpi.path ? 'pointer' : 'default',
                 }}
                 onClick={() => kpi.path && history.push(kpi.path)}
@@ -452,11 +454,11 @@ const K8sDashboardPage: React.FC = () => {
                       width: 38,
                       height: 38,
                       borderRadius: 8,
-                      background: `${kpi.color}15`,
+                      background: 'var(--app-primary-soft)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: kpi.color,
+                      color: COLOR.primary,
                       fontSize: 18,
                     }}
                   >
@@ -541,7 +543,7 @@ const K8sDashboardPage: React.FC = () => {
           <Card
             title={
               <Space>
-                <AppstoreOutlined style={{ color: COLOR.purple }} /> Pod 状态分布
+                <AppstoreOutlined style={{ color: COLOR.primary }} /> Pod 状态分布
               </Space>
             }
             size="small"
@@ -753,7 +755,7 @@ const K8sDashboardPage: React.FC = () => {
           <Card
             title={
               <Space>
-                <DashboardOutlined style={{ color: COLOR.cyan }} />
+                <DashboardOutlined style={{ color: COLOR.primary }} />
                 CPU / 内存 24h 趋势
                 <Tag color="blue" style={{ fontSize: 10 }}>
                   {activeMetricNode ? `Node：${activeMetricNode}` : '全部节点聚合'}
@@ -1016,7 +1018,7 @@ const K8sDashboardPage: React.FC = () => {
           <Card
             title={
               <Space>
-                <AppstoreOutlined style={{ color: COLOR.purple }} /> Namespace Pod Top 10
+                <AppstoreOutlined style={{ color: COLOR.primary }} /> Namespace Pod Top 10
               </Space>
             }
             size="small"

@@ -10,6 +10,7 @@ import { listClusters } from '@/services/clusters'
 import { getClusterOverview } from '@/services/k8s'
 import { listIncidents } from '@/services/monitor'
 import { isClusterHealthy } from '@/utils'
+import { DESIGN_COLORS } from '@/theme/designTokens'
 
 const { Text } = Typography
 
@@ -91,7 +92,7 @@ const MonitorDashboardPage: React.FC = () => {
                         </div>
                         <div className="app-monitor-cluster-card__metric">
                           <div><span>内存</span><strong>{available ? `${overview!.stats.memory.used_percent}%` : '未采集'}</strong></div>
-                          <Progress percent={available ? overview!.stats.memory.used_percent : 0} showInfo={false} strokeColor="#0f766e" />
+                          <Progress percent={available ? overview!.stats.memory.used_percent : 0} showInfo={false} strokeColor={DESIGN_COLORS.dataSecondary} />
                         </div>
                         <div className="app-monitor-cluster-card__source">
                           {overview?.meta?.updated_at

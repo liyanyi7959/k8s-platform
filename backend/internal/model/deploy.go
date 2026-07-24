@@ -51,6 +51,7 @@ type DeployPlan struct {
 	CNIType          string          `gorm:"column:cni_type"`
 	CNIConfig        JSONMap         `gorm:"column:cni_config;type:json"`
 	Addons           JSONStringSlice `gorm:"column:addons;type:json"`
+	HelmInstall      bool            `gorm:"column:helm_install;default:false"`
 	StepOverrides    JSONMap         `gorm:"column:step_overrides;type:json"`
 	PreflightIgnores JSONStringSlice `gorm:"column:preflight_ignores;type:json"`
 	Status           string          `gorm:"column:status"`

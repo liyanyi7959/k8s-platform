@@ -1,0 +1,96 @@
+---
+- name: 检查 Master 已安装的 Helm 版本
+  command:
+    argv:
+      - helm
+      - version
+      - --template
+      - '{{ .Version }}'
+  register: helm_existing
+  changed_when: false
+  failed_when: false
+  when: helm_install | bool
+
+- name: 安装或升级到计划指定的 Helm 版本
+  when: >-
+    helm_install | bool and
+    (helm_existing.rc | default(1) != 0 or (helm_existing.stdout | default('') | trim) != helm_version)
+  block:
+    - name: 识别 Helm 安装架构
+      set_fact:
+        helm_arch: >-
+          {{ 'amd64' if ansible_architecture in ['x86_64', 'amd64']
+             else 'arm64' if ansible_architecture in ['aarch64', 'arm64']
+             else '' }}
+
+    - name: 校验 Helm 安装架构
+      assert:
+        that:
+          - helm_arch | length > 0
+        fail_msg: "不支持的 Helm CPU 架构：{{ ansible_architecture }}"
+
+    - name: 创建 Helm 临时目录
+      tempfile:
+        state: directory
+        suffix: helm-install
+      register: helm_tmpdir
+
+    - name: 下载 Helm 官方归档
+      get_url:
+        url: "https://get.helm.sh/helm-{{ helm_version }}-linux-{{ helm_arch }}.tar.gz"
+        dest: "{{ helm_tmpdir.path }}/helm.tar.gz"
+        mode: "0644"
+        force: true
+
+    - name: 下载 Helm 官方 SHA-256 校验值
+      get_url:
+        url: "https://get.helm.sh/helm-{{ helm_version }}-linux-{{ helm_arch }}.tar.gz.sha256sum"
+        dest: "{{ helm_tmpdir.path }}/helm.tar.gz.sha256sum"
+        mode: "0644"
+        force: true
+
+    - name: 验证 Helm 官方 SHA-256 校验值
+      shell: |
+        set -euo pipefail
+        expected_sha="$(awk '{print $1}' '{{ helm_tmpdir.path }}/helm.tar.gz.sha256sum')"
+        [[ "$expected_sha" =~ ^[[:xdigit:]]{64}$ ]]
+        printf '%s  %s\n' "$expected_sha" '{{ helm_tmpdir.path }}/helm.tar.gz' | sha256sum -c -
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: 解压 Helm 归档
+      unarchive:
+        src: "{{ helm_tmpdir.path }}/helm.tar.gz"
+        dest: "{{ helm_tmpdir.path }}"
+        remote_src: true
+
+    - name: 安装 Helm 二进制到 /usr/local/bin
+      copy:
+        src: "{{ helm_tmpdir.path }}/linux-{{ helm_arch }}/helm"
+        dest: /usr/local/bin/helm
+        mode: "0755"
+        remote_src: true
+
+  always:
+    - name: 清理 Helm 临时目录
+      file:
+        path: "{{ helm_tmpdir.path }}"
+        state: absent
+      when: helm_tmpdir is defined and helm_tmpdir.path is defined
+
+- name: 验证 Master Helm 版本
+  command:
+    argv:
+      - helm
+      - version
+      - --template
+      - '{{ .Version }}'
+  register: helm_verify
+  changed_when: false
+  when: helm_install | bool
+
+- name: 输出 Helm 版本
+  debug:
+    msg: "Master Helm 已就绪：{{ helm_verify.stdout }}（计划版本：{{ helm_version }}）"
+  when: helm_install | bool

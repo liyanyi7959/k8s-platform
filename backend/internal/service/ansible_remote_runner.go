@@ -188,7 +188,7 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 		"k8s_version": plan.K8sVersion, "k8s_package_version": strings.TrimPrefix(plan.K8sVersion, "v"),
 		"k8s_minor_version": extractMinorVersion(plan.K8sVersion), "pod_cidr": plan.PodCIDR,
 		"svc_cidr": plan.SvcCIDR, "cni_type": plan.CNIType, "cluster_name": plan.ClusterName,
-		"addons": []string(plan.Addons), "preflight_ignored_disk_hosts": ignoredDiskHosts,
+		"addons": []string(plan.Addons), "helm_install": plan.HelmInstall, "preflight_ignored_disk_hosts": ignoredDiskHosts,
 	}
 	// 从仓库配置中提取启用的镜像源，注入 Ansible extra vars
 	if repos, repoErr := s.deployConfig.ListRepositories(ctx, ""); repoErr == nil {

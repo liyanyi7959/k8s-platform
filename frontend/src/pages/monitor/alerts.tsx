@@ -9,11 +9,12 @@ import {
   ProTable,
   type ProColumns,
 } from '@ant-design/pro-components'
-import { Alert, Button, Input, message, Popconfirm, Select, Space, Switch, Tag, Typography } from 'antd'
+import { Button, Input, message, Popconfirm, Select, Space, Switch, Tag, Typography } from 'antd'
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { AppPage } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import { listClusters } from '@/services/clusters'
 import { createAlertRule, deleteAlertRule, listAlertRules, toggleAlertRule, updateAlertRule } from '@/services/monitor'
 import { formatDate } from '@/utils'
@@ -101,7 +102,7 @@ const RuleFields: React.FC<{ clusters: Array<{ label: string; value: number }> }
         const metric = metricMeta(values.metric)
         const operator = { '>': '大于', '>=': '大于等于', '<': '小于', '<=': '小于等于', '==': '等于' }[values.operator as string]
         return (
-          <Alert
+          <AppAlert
             type="info"
             showIcon
             message="规则影响预览"

@@ -2,11 +2,12 @@
  * 创建/编辑部署计划页
  */
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Card, Checkbox, Empty, Form, Input, Radio, Select, Space, Steps, Typography, message, Descriptions, Tag } from 'antd'
+import { Button, Card, Checkbox, Empty, Form, Input, Radio, Select, Space, Steps, Typography, message, Descriptions, Tag } from 'antd'
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import { history, useParams } from '@umijs/max'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { AppPage } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import { createDeployPlan, getDeployPlanById, getServers, updateDeployPlan } from '@/services/deploy'
 import type { CreateDeployPlanRequest } from '@/types/deploy'
 
@@ -72,6 +73,7 @@ export default function CreateDeployPlanPage() {
       svcCidr: planDetail.svcCidr,
       cniType: planDetail.cniType,
       addons: planDetail.addons || [],
+      helmInstall: planDetail.helmInstall || false,
       nodes: (planDetail.nodes || []).map((node) => ({
         serverId: node.serverId,
         role: node.role,
@@ -142,6 +144,7 @@ export default function CreateDeployPlanPage() {
         cniType: values.cniType,
         cniConfig: {},
         addons: values.addons || [],
+        helmInstall: !!values.helmInstall,
         nodes: (values.nodes || []).map((node: { serverId: number; role: 'master' | 'worker' }, index: number) => ({
           serverId: Number(node.serverId),
           role: node.role,
@@ -181,7 +184,7 @@ export default function CreateDeployPlanPage() {
       >
         {step === 0 && (
           <>
-            <Alert
+            <AppAlert
               type="info"
               showIcon
               style={{ marginBottom: 16 }}
@@ -211,7 +214,7 @@ export default function CreateDeployPlanPage() {
 
         {step === 1 && (
           <>
-            <Alert
+            <AppAlert
               type="warning"
               showIcon
               style={{ marginBottom: 16 }}
@@ -276,9 +279,16 @@ export default function CreateDeployPlanPage() {
               </Form.List>
             )}
 
-            <Form.Item name="addons" label="附加组件">
-              <Checkbox.Group options={addonOptions} />
-            </Form.Item>
+			<Form.Item label="附加组件">
+			  <Space wrap size={[20, 12]}>
+				<Form.Item name="addons" noStyle>
+				  <Checkbox.Group options={addonOptions} />
+				</Form.Item>
+				<Form.Item name="helmInstall" noStyle valuePropName="checked">
+				  <Checkbox>安装 Helm（仅 Master，部署前校验版本）</Checkbox>
+				</Form.Item>
+			  </Space>
+			</Form.Item>
 
             {/* 部署摘要 */}
             <Card size="small" title="部署摘要" style={{ marginTop: 16, background: '#fafafa' }}>

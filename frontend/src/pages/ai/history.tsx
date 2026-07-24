@@ -67,7 +67,7 @@ const AIHistoryPage: React.FC = () => {
                 ]}
               >
                 <List.Item.Meta
-                  avatar={<MessageOutlined style={{ fontSize: 20, color: '#1677ff' }} />}
+                  avatar={<MessageOutlined style={{ fontSize: 20, color: '#2563eb' }} />}
                   title={<a onClick={() => navigate(`/ai/chat?id=${item.id}`)}>{item.title}</a>}
                   description={
                     <Text type="secondary" ellipsis style={{ maxWidth: 500 }}>

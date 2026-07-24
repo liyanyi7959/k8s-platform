@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from '@umijs/max'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import {
-  Button,
+	Button,
   Card,
   Col,
   Drawer,
@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage, EmptyState, ManifestApplyDrawer, YamlEditor } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import {
   createAppTemplate,
   deleteAppTemplate,
@@ -44,7 +45,7 @@ import {
 } from '@/services/app-template'
 import { listClusters } from '@/services/clusters'
 import { listProjects, type Project } from '@/services/project'
-import { helmSearch, helmInstall } from '@/services/k8s'
+import { helmPreflight, helmSearch, helmInstall, type HelmPreflightResult } from '@/services/k8s'
 import { formatDate } from '@/utils'
 
 const { Text, Paragraph } = Typography
@@ -582,7 +583,9 @@ function HelmChartPanel() {
   const [searching, setSearching] = useState(false)
   const [installOpen, setInstallOpen] = useState(false)
   const [selectedChart, setSelectedChart] = useState<any>(null)
-  const [valuesYaml, setValuesYaml] = useState('')
+	const [valuesYaml, setValuesYaml] = useState('')
+	const [preparing, setPreparing] = useState(false)
+	const [preflightResult, setPreflightResult] = useState<HelmPreflightResult | null>(null)
   const [installForm] = Form.useForm()
 
   const { data: clustersData } = useQuery({
@@ -613,7 +616,7 @@ function HelmChartPanel() {
 
   const helmTemplates = (helmTemplatesData?.list || []).filter((t) => t.deploy_type === 'helm')
 
-  const clusterOptions = (clustersData?.items || []).map((c) => ({
+  const clusterOptions = (clustersData?.items || []).filter((c) => c.status === 'active').map((c) => ({
     label: c.name,
     value: c.id,
   }))
@@ -654,8 +657,9 @@ function HelmChartPanel() {
 
   const installMutation = useMutation({
     mutationFn: (data: any) => helmInstall(selectedCluster!, data),
-    onSuccess: () => {
-      message.success('安装成功')
+    onSuccess: (result: any) => {
+      const masterMessage = result?.master?.message ? `；${result.master.message}` : ''
+      message.success(`安装成功：已等待 Release 就绪${masterMessage}`)
       setInstallOpen(false)
       installForm.resetFields()
       setValuesYaml('')
@@ -663,19 +667,29 @@ function HelmChartPanel() {
     onError: (err: any) => message.error(err?.message || '安装失败'),
   })
 
-  const handleInstall = async () => {
-    try {
-      const values = await installForm.validateFields()
-      installMutation.mutate({
-        ...values,
-        chart: selectedChart?.name || selectedChart?.template,
-        repo_url: values.repo_url || selectedChart?.repoUrl,
+	const handleInstall = async () => {
+		try {
+			const values = await installForm.validateFields()
+			if (!selectedCluster) {
+				message.warning('请先选择可用集群')
+				return
+			}
+			setPreparing(true)
+			const result = await helmPreflight(selectedCluster)
+			setPreflightResult(result)
+			installMutation.mutate({
+				...values,
+				chart: selectedChart?.name || selectedChart?.template,
+				version: selectedChart?.version,
+				repo_url: values.repo_url || selectedChart?.repoUrl,
         repo_name: selectedChart?.repoName,
         values_yaml: valuesYaml,
       })
-    } catch {
-      // 校验失败
-    }
+		} catch (err: any) {
+			message.error(err?.message || '部署前置校验失败，已阻止安装')
+		} finally {
+			setPreparing(false)
+		}
   }
 
   // 点击预置模板卡片 → 直接打开安装 Modal
@@ -693,8 +707,12 @@ function HelmChartPanel() {
   }
 
   // 点击搜索结果 → 打开安装 Modal
-  const handleSearchResultClick = (chart: any) => {
-    setSelectedChart(chart)
+	const handleSearchResultClick = (chart: any) => {
+		setSelectedChart({
+			...chart,
+			repoName: chart.repo_name,
+			repoUrl: chart.repo_url,
+		})
     setInstallOpen(true)
   }
 
@@ -722,9 +740,10 @@ function HelmChartPanel() {
           style={{ width: 200 }}
           options={clusterOptions}
           value={selectedCluster}
-          onChange={(v) => {
-            setSelectedCluster(v)
-            setSelectedProject(undefined)
+			onChange={(v) => {
+				setSelectedCluster(v)
+				setSelectedProject(undefined)
+				setPreflightResult(null)
           }}
           showSearch
           optionFilterProp="label"
@@ -816,18 +835,36 @@ function HelmChartPanel() {
       <Modal
         title="Helm 安装"
         open={installOpen}
-        onCancel={() => {
+			onCancel={() => {
           setInstallOpen(false)
           installForm.resetFields()
           setValuesYaml('')
-          setSelectedChart(null)
+			setSelectedChart(null)
+			setPreflightResult(null)
         }}
         onOk={handleInstall}
-        confirmLoading={installMutation.isPending}
+			confirmLoading={preparing || installMutation.isPending}
         width={640}
         destroyOnClose
-      >
-        <Form form={installForm} layout="vertical" initialValues={{ namespace: 'default' }}>
+		>
+		{preflightResult ? (
+			<AppAlert
+				showIcon
+				type="success"
+				style={{ marginBottom: 16 }}
+				message={`部署环境已就绪 · Kubernetes ${preflightResult.cluster_version}`}
+				description={`${preflightResult.master.master_name} (${preflightResult.master.master_ip}) · ${preflightResult.master.message} · ${preflightResult.master.helm_version}`}
+			/>
+		) : (
+			<AppAlert
+				showIcon
+				type="info"
+				style={{ marginBottom: 16 }}
+				message="部署前会严格校验运行环境"
+				description="系统会验证 Kubernetes API 与 Ready 节点，连接关联 Master；如未安装 Helm，将从官方 HTTPS 源下载、校验 SHA-256 后安装。任一步失败均不会创建 Release。"
+			/>
+		)}
+		<Form form={installForm} layout="vertical" initialValues={{ namespace: 'default' }}>
           <Form.Item name="release_name" label="Release 名称" rules={[{ required: true, message: '请输入 Release 名称' }]}>
             <Input placeholder="例如：my-redis" />
           </Form.Item>

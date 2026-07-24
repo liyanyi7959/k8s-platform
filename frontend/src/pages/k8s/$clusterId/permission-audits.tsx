@@ -11,13 +11,13 @@ import {
   Tag,
   Space,
   Typography,
-  Alert,
   message,
   type ColumnsType,
 } from 'antd'
 import { DownloadOutlined, ThunderboltOutlined, SafetyOutlined } from '@ant-design/icons'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { AppPage, YamlEditor } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import { listNamespaces, defaultRBACMatrix, buildRBACFromMatrix } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
 import type { RBACMatrixRequest, RBACMatrixRow, Namespace } from '@/types'
@@ -288,7 +288,7 @@ const PermissionAuditsPage: React.FC = () => {
               {yamlContent ? (
                 <YamlEditor value={yamlContent} readOnly height={500} />
               ) : (
-                <Alert
+                <AppAlert
                   type="info"
                   showIcon
                   message="调整权限勾选后，点击「生成 RBAC YAML」生成标准 K8s RBAC 配置"

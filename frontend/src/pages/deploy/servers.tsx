@@ -1,7 +1,6 @@
 import { useMemo, useState, type Key } from 'react'
 import { history } from '@umijs/max'
 import {
-  Alert,
   Badge,
   Button,
   Card,
@@ -22,6 +21,7 @@ import {
   Typography,
   message,
 } from 'antd'
+import AppAlert from '@/components/AppAlert'
 import {
   ApiOutlined,
   CloudServerOutlined,
@@ -330,6 +330,7 @@ export default function ServersPage() {
     {
       title: '资源容量',
       width: 205,
+      align: 'center',
       render: (_, server) => (
         <Space size={4} wrap>
           <Tag>{server.cpuCores ? `${server.cpuCores}C` : 'CPU -'}</Tag>
@@ -341,6 +342,7 @@ export default function ServersPage() {
     {
       title: '资产标签',
       width: 180,
+      align: 'center',
       render: (_, server) => {
         const labels = Object.entries(server.labels || {})
         return labels.length ? (
@@ -355,6 +357,7 @@ export default function ServersPage() {
       title: '状态',
       dataIndex: 'status',
       width: 105,
+      align: 'center',
       render: (status: string) => <StatusBadge status={status} />,
     },
     {
@@ -366,10 +369,10 @@ export default function ServersPage() {
     {
       title: '操作',
       width: 160,
-      align: 'right',
+      align: 'center',
       fixed: 'right',
       render: (_, server) => (
-        <Space size={4}>
+        <Space className="app-server-actions" size={4}>
           <Tooltip title="打开终端">
             <Button
               type="primary"
@@ -528,7 +531,7 @@ export default function ServersPage() {
         ) : null}
 
         {serverQuery.isError ? (
-          <Alert type="error" showIcon message="服务器列表加载失败" description={(serverQuery.error as Error)?.message} style={{ marginBottom: 16 }} />
+          <AppAlert type="error" showIcon message="服务器列表加载失败" description={(serverQuery.error as Error)?.message} style={{ marginBottom: 16 }} />
         ) : null}
 
         <Table
@@ -564,7 +567,7 @@ export default function ServersPage() {
         okText={editing ? '保存修改' : '添加并纳管'}
         confirmLoading={createMutation.isPending || updateMutation.isPending}
       >
-        <Alert
+        <AppAlert
           type="info"
           showIcon
           message="平台使用已保存的凭据进行连通巡检、信息采集和 Web Shell 登录。"

@@ -145,7 +145,7 @@ const NamespacesPage: React.FC = () => {
                 okButtonProps={{ danger: true }}
               >
                 <Tooltip title="删除">
-                  <a style={{ color: '#ff4d4f' }}>
+                  <a style={{ color: '#dc2626' }}>
                     <DeleteOutlined />
                   </a>
                 </Tooltip>

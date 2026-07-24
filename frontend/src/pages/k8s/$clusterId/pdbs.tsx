@@ -151,7 +151,7 @@ const PDBsPage: React.FC = () => {
           </Tooltip>
           <Popconfirm title="确定删除该 PDB？" onConfirm={() => deleteMutation.mutate(record)}>
             <Tooltip title="删除">
-              <a style={{ color: '#ff4d4f' }}>
+              <a style={{ color: '#dc2626' }}>
                 <DeleteOutlined />
               </a>
             </Tooltip>

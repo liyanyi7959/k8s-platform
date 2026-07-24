@@ -17,12 +17,12 @@ import {
   Row,
   Col,
   Card,
-  Alert,
   Tooltip,
   Input,
   Select,
   Table,
 } from 'antd'
+import AppAlert from '@/components/AppAlert'
 import {
   ReloadOutlined,
   ProfileOutlined,
@@ -303,7 +303,7 @@ export default function NodesPage() {
               onConfirm={() => uncordonMutation.mutate(record.name)}
             >
               <Tooltip title="恢复调度">
-                <a style={{ color: '#52c41a' }}>
+                <a style={{ color: '#047857' }}>
                   <PlayCircleOutlined />
                 </a>
               </Tooltip>
@@ -314,7 +314,7 @@ export default function NodesPage() {
               onConfirm={() => cordonMutation.mutate(record.name)}
             >
               <Tooltip title="停止调度">
-                <a style={{ color: '#faad14' }}>
+                <a style={{ color: '#b45309' }}>
                   <StopOutlined />
                 </a>
               </Tooltip>
@@ -328,14 +328,14 @@ export default function NodesPage() {
             }
           >
             <Tooltip title="驱逐">
-              <a style={{ color: '#ff4d4f' }}>
+              <a style={{ color: '#dc2626' }}>
                 <ExclamationCircleOutlined />
               </a>
             </Tooltip>
           </Popconfirm>
           <Popconfirm title="确定删除该节点？" onConfirm={() => deleteMutation.mutate(record.name)}>
             <Tooltip title="删除">
-              <a style={{ color: '#ff4d4f' }}>
+              <a style={{ color: '#dc2626' }}>
                 <DeleteOutlined />
               </a>
             </Tooltip>
@@ -645,7 +645,7 @@ export default function NodesPage() {
         okText="确认驱逐"
         okButtonProps={{ danger: true }}
       >
-        <Alert
+        <AppAlert
           type="warning"
           showIcon
           message="驱逐将清除节点上所有非 DaemonSet Pod，请确认操作。"

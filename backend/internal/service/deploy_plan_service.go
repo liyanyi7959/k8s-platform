@@ -67,6 +67,7 @@ type DeployPlanItem struct {
 	CNIType       string                                  `json:"cni_type"`
 	CNIConfig     map[string]any                          `json:"cni_config,omitempty"`
 	Addons        []string                                `json:"addons,omitempty"`
+	HelmInstall   bool                                    `json:"helm_install"`
 	StepOverrides map[string]model.DeployPlanStepOverride `json:"step_overrides,omitempty"`
 	Status        string                                  `json:"status"`
 	TaskID        *uint64                                 `json:"task_id,omitempty"`
@@ -93,6 +94,7 @@ type CreateDeployPlanRequest struct {
 	CNIType       string                                  `json:"cni_type"`
 	CNIConfig     map[string]any                          `json:"cni_config"`
 	Addons        []string                                `json:"addons"`
+	HelmInstall   bool                                    `json:"helm_install"`
 	StepOverrides map[string]model.DeployPlanStepOverride `json:"step_overrides"`
 	Nodes         []DeployPlanNodeReq                     `json:"nodes"`
 }
@@ -106,6 +108,7 @@ type UpdateDeployPlanRequest struct {
 	CNIType       string                                  `json:"cni_type"`
 	CNIConfig     map[string]any                          `json:"cni_config"`
 	Addons        []string                                `json:"addons"`
+	HelmInstall   bool                                    `json:"helm_install"`
 	StepOverrides map[string]model.DeployPlanStepOverride `json:"step_overrides"`
 	Nodes         []DeployPlanNodeReq                     `json:"nodes"`
 }
@@ -333,6 +336,7 @@ func (s *DeployService) UpdatePlan(ctx context.Context, id uint64, req UpdateDep
 			"cni_type":       plan.CNIType,
 			"cni_config":     plan.CNIConfig,
 			"addons":         plan.Addons,
+			"helm_install":   plan.HelmInstall,
 			"step_overrides": plan.StepOverrides,
 			"status":         "draft",
 			"task_id":        nil,
@@ -615,7 +619,7 @@ func normalizeDeployPlan(req CreateDeployPlanRequest, createdBy uint64) (model.D
 			seenAddons[addon] = true
 		}
 	}
-	plan := model.DeployPlan{Name: name, ClusterName: clusterName, K8sVersion: k8sVersion, PodCIDR: podCIDR, SvcCIDR: svcCIDR, CNIType: cniType, CNIConfig: model.JSONMap(req.CNIConfig), Addons: model.JSONStringSlice(addons), StepOverrides: model.JSONMap(overrides), Status: "draft", CreatedBy: createdBy}
+	plan := model.DeployPlan{Name: name, ClusterName: clusterName, K8sVersion: k8sVersion, PodCIDR: podCIDR, SvcCIDR: svcCIDR, CNIType: cniType, CNIConfig: model.JSONMap(req.CNIConfig), Addons: model.JSONStringSlice(addons), HelmInstall: req.HelmInstall, StepOverrides: model.JSONMap(overrides), Status: "draft", CreatedBy: createdBy}
 	return plan, nodes, nil
 }
 
@@ -715,7 +719,7 @@ func ensureClusterNameUnique(tx *gorm.DB, name string, excludeID uint64) error {
 }
 
 func deployPlanToItem(row model.DeployPlan, nodes []model.DeployPlanNode) DeployPlanItem {
-	item := DeployPlanItem{ID: row.ID, Name: row.Name, ClusterName: row.ClusterName, K8sVersion: row.K8sVersion, PodCIDR: row.PodCIDR, SvcCIDR: row.SvcCIDR, CNIType: row.CNIType, CNIConfig: map[string]any(row.CNIConfig), Addons: []string(row.Addons), StepOverrides: decodePlanStepOverrides(row.StepOverrides), Status: row.Status, TaskID: row.TaskID, ClusterID: row.ClusterID, CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339)}
+	item := DeployPlanItem{ID: row.ID, Name: row.Name, ClusterName: row.ClusterName, K8sVersion: row.K8sVersion, PodCIDR: row.PodCIDR, SvcCIDR: row.SvcCIDR, CNIType: row.CNIType, CNIConfig: map[string]any(row.CNIConfig), Addons: []string(row.Addons), HelmInstall: row.HelmInstall, StepOverrides: decodePlanStepOverrides(row.StepOverrides), Status: row.Status, TaskID: row.TaskID, ClusterID: row.ClusterID, CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339)}
 	if nodes != nil {
 		item.Nodes = make([]DeployPlanNodeItem, 0, len(nodes))
 		for _, n := range nodes {

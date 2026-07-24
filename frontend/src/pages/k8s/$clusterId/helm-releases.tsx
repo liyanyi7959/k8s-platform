@@ -1,9 +1,10 @@
 import React, { useDeferredValue, useMemo, useState } from 'react'
-import { Alert, Button, Col, Descriptions, Drawer, Dropdown, Form, Input, Modal, Row, Select, Space, Tabs, Tag, Tooltip, message } from 'antd'
+import { Button, Col, Descriptions, Drawer, Dropdown, Form, Input, Modal, Row, Select, Space, Tabs, Tag, Tooltip, message } from 'antd'
 import { DeleteOutlined, EyeOutlined, HistoryOutlined, MoreOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage, NamespaceSelector, YamlEditor } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import { getHelmReleaseDetail, helmInstall, helmRollback, helmUninstall, helmUpgrade, listHelmReleases } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -87,7 +88,7 @@ const HelmReleasesPage: React.FC = () => {
 
   return <AppPage>
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
-      {releasesQuery.data?.source === 'kubernetes-secrets' && <Alert type="warning" showIcon message="Helm CLI 数据源暂不可用，当前使用 Kubernetes Secret 降级数据；Chart 与应用版本字段可能不完整。" />}
+      {releasesQuery.data?.source === 'kubernetes-secrets' && <AppAlert type="warning" showIcon message="Helm CLI 数据源暂不可用，当前使用 Kubernetes Secret 降级数据；Chart 与应用版本字段可能不完整。" />}
       <ProTable<any>
         headerTitle="Helm Releases"
         rowKey={(record) => `${record.namespace}/${record.name}`}
@@ -132,10 +133,10 @@ const HelmReleasesPage: React.FC = () => {
       <Form form={installForm} layout="vertical" initialValues={{ namespace: 'default' }}><Row gutter={12}><Col span={12}><Form.Item name="release_name" label="Release 名称" rules={[{ required: true }]}><Input placeholder="my-redis" /></Form.Item></Col><Col span={12}><Form.Item name="namespace" label="命名空间" rules={[{ required: true }]}><Input placeholder="default" /></Form.Item></Col></Row><Form.Item name="chart" label="Chart" rules={[{ required: true }]}><Input placeholder="bitnami/redis" /></Form.Item><Row gutter={12}><Col span={12}><Form.Item name="repo_name" label="仓库名称（首次添加时填写）"><Input placeholder="bitnami" /></Form.Item></Col><Col span={12}><Form.Item name="repo_url" label="仓库地址"><Input placeholder="https://charts.bitnami.com/bitnami" /></Form.Item></Col></Row><Form.Item label="values.yaml"><YamlEditor value={valuesYaml} onChange={setValuesYaml} height={280} /></Form.Item></Form>
     </Modal>
     <Modal title={`升级 ${upgradeTarget?.namespace}/${upgradeTarget?.name}`} width={760} open={!!upgradeTarget} onCancel={closeForms} onOk={submitUpgrade} confirmLoading={operationMutation.isPending} okText="执行升级">
-      <Alert type="info" showIcon message="建议启用 Atomic：升级失败时 Helm 会自动回滚。" style={{ marginBottom: 16 }} />
+      <AppAlert type="info" showIcon message="建议启用 Atomic：升级失败时 Helm 会自动回滚。" style={{ marginBottom: 16 }} />
       <Form form={upgradeForm} layout="vertical"><Row gutter={12}><Col span={16}><Form.Item name="chart" label="Chart" rules={[{ required: true }]}><Input /></Form.Item></Col><Col span={8}><Form.Item name="version" label="Chart 版本"><Input placeholder="留空使用最新版本" /></Form.Item></Col></Row><Row gutter={12}><Col span={8}><Form.Item name="atomic" label="失败自动回滚"><Select options={[{ label: '启用', value: true }, { label: '关闭', value: false }]} /></Form.Item></Col><Col span={8}><Form.Item name="wait" label="等待资源就绪"><Select options={[{ label: '启用', value: true }, { label: '关闭', value: false }]} /></Form.Item></Col><Col span={8}><Form.Item name="timeout" label="超时"><Input placeholder="5m" /></Form.Item></Col></Row><Form.Item label="values.yaml"><YamlEditor value={valuesYaml} onChange={setValuesYaml} height={280} /></Form.Item></Form>
     </Modal>
-    <Modal title={`回滚 ${rollbackTarget?.namespace}/${rollbackTarget?.name}`} open={!!rollbackTarget} onCancel={() => setRollbackTarget(undefined)} onOk={submitRollback} confirmLoading={operationMutation.isPending} okButtonProps={{ danger: true }} okText="确认回滚"><Alert type="warning" showIcon message="回滚会重新应用目标 revision 的 Chart 与 values。" style={{ marginBottom: 16 }} /><Form form={rollbackForm} layout="vertical"><Form.Item name="revision" label="目标 Revision" rules={[{ required: true }]}><Input type="number" min={1} placeholder="例如 3" /></Form.Item></Form></Modal>
+    <Modal title={`回滚 ${rollbackTarget?.namespace}/${rollbackTarget?.name}`} open={!!rollbackTarget} onCancel={() => setRollbackTarget(undefined)} onOk={submitRollback} confirmLoading={operationMutation.isPending} okButtonProps={{ danger: true }} okText="确认回滚"><AppAlert type="warning" showIcon message="回滚会重新应用目标 revision 的 Chart 与 values。" style={{ marginBottom: 16 }} /><Form form={rollbackForm} layout="vertical"><Form.Item name="revision" label="目标 Revision" rules={[{ required: true }]}><Input type="number" min={1} placeholder="例如 3" /></Form.Item></Form></Modal>
   </AppPage>
 }
 

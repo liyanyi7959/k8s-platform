@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react'
-import { Alert, Badge, Button, Card, Col, Descriptions, Empty, Input, List, Modal, Row, Select, Space, Table, Tag, Typography, message } from 'antd'
+import { Badge, Button, Card, Col, Descriptions, Empty, Input, List, Modal, Row, Select, Space, Table, Tag, Typography, message } from 'antd'
 import { CheckCircleOutlined, CloudUploadOutlined, CodeOutlined, FileSearchOutlined, SearchOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage, NamespaceSelector, YamlEditor } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import { applyYaml, listManifestRecords, type ManifestApplyResult } from '@/services/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
@@ -87,8 +88,8 @@ const ManifestApplyPage: React.FC = () => {
 
         <Row gutter={12}>
           <Col xs={24} lg={6} xl={5}>
-            <Card size="small" title="资源片段" extra={<Badge count={filteredTemplates.length} showZero color="#1677ff" />} styles={{ body: { padding: 12 } }}>
-              <Alert type="info" showIcon message="快捷生成" description={<span>在编辑器空行输入 <Text keyboard>pod</Text>、<Text keyboard>deploy</Text>、<Text keyboard>svc</Text> 后按 Tab。</span>} style={{ marginBottom: 12 }} />
+            <Card size="small" title="资源片段" extra={<Badge count={filteredTemplates.length} showZero color="#2563eb" />} styles={{ body: { padding: 12 } }}>
+              <AppAlert type="info" showIcon message="快捷生成" description={<span>在编辑器空行输入 <Text keyboard>pod</Text>、<Text keyboard>deploy</Text>、<Text keyboard>svc</Text> 后按 Tab。</span>} style={{ marginBottom: 12 }} />
               <Input allowClear prefix={<SearchOutlined />} placeholder="搜索资源模板" value={search} onChange={(event) => setSearch(event.target.value)} style={{ marginBottom: 8 }} />
               <Select value={category} onChange={setCategory} options={categories.map((value) => ({ label: value === '全部' ? '全部资源类型' : value, value }))} style={{ width: '100%', marginBottom: 8 }} />
               <List
@@ -97,7 +98,7 @@ const ManifestApplyPage: React.FC = () => {
                 locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="未找到模板" /> }}
                 style={{ maxHeight: 480, overflow: 'auto' }}
                 renderItem={(item) => (
-                  <List.Item onClick={() => selectTemplate(item.key)} style={{ cursor: 'pointer', padding: '10px 8px', borderRadius: 8, background: selectedTemplate === item.key ? '#eaf2ff' : undefined, borderInlineStart: selectedTemplate === item.key ? '3px solid #1677ff' : '3px solid transparent' }}>
+                  <List.Item onClick={() => selectTemplate(item.key)} style={{ cursor: 'pointer', padding: '10px 8px', borderRadius: 8, background: selectedTemplate === item.key ? '#eff6ff' : undefined, borderInlineStart: selectedTemplate === item.key ? '3px solid #2563eb' : '3px solid transparent' }}>
                     <div style={{ width: '100%', minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
                         <Text strong ellipsis style={{ minWidth: 0 }}>{item.title}</Text>
@@ -112,7 +113,7 @@ const ManifestApplyPage: React.FC = () => {
           </Col>
           <Col xs={24} lg={18} xl={19}>
             <Card size="small" title={<Space>manifest.yaml {diagnostics.errors > 0 ? <Tag color="error">{diagnostics.errors} 个错误</Tag> : <Tag color="success">语法正常</Tag>} {diagnostics.warnings > 0 && <Tag color="warning">{diagnostics.warnings} 个警告</Tag>}</Space>} extra={<Text type="secondary">Ctrl+Space 联想 · Tab 展开片段 · 支持多文档</Text>}>
-              {result && <Alert closable showIcon type="success" message={result.summary || (result.dry_run ? 'DryRun 校验通过' : '应用成功')} onClose={() => setResult(null)} style={{ marginBottom: 12 }} />}
+              {result && <AppAlert closable showIcon type="success" message={result.summary || (result.dry_run ? 'DryRun 校验通过' : '应用成功')} onClose={() => setResult(null)} style={{ marginBottom: 12 }} />}
               <YamlEditor value={yaml} onChange={setYaml} height={590} kubernetes onDiagnosticsChange={setDiagnostics} />
               <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 8, marginTop: 8 }}>
                 <Space size={16}>
@@ -138,7 +139,7 @@ const ManifestApplyPage: React.FC = () => {
       </Space>
 
       <Modal title="确认应用 Manifest" open={confirmOpen} onCancel={() => setConfirmOpen(false)} onOk={() => applyMutation.mutate(false)} confirmLoading={applyMutation.isPending} okText="确认应用" okButtonProps={{ danger: true }}>
-        <Alert type="warning" showIcon message="该操作会直接创建或更新集群资源" description="建议先执行 DryRun。请再次确认目标集群、命名空间和清单内容。" style={{ marginBottom: 16 }} />
+        <AppAlert type="warning" showIcon message="该操作会直接创建或更新集群资源" description="建议先执行 DryRun。请再次确认目标集群、命名空间和清单内容。" style={{ marginBottom: 16 }} />
         <Descriptions size="small" column={1} bordered>
           <Descriptions.Item label="目标命名空间">{namespace}</Descriptions.Item>
           <Descriptions.Item label="模板">{manifestTemplates.find((item) => item.key === selectedTemplate)?.title || '自定义 YAML'}</Descriptions.Item>

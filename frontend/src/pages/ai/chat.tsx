@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Alert,
   Button,
   Card,
   Checkbox,
@@ -18,6 +17,7 @@ import {
   message as antdMessage,
   type UploadFile,
 } from 'antd'
+import AppAlert from '@/components/AppAlert'
 import {
   ClearOutlined,
   ClusterOutlined,
@@ -809,7 +809,7 @@ const AIChatPage: React.FC = () => {
           </Collapse>
 
           {clusterLocked ? (
-            <Alert
+            <AppAlert
               type="info"
               showIcon
               message="当前历史会话已绑定集群和模式。如需切换集群，请新建会话。"
@@ -817,12 +817,12 @@ const AIChatPage: React.FC = () => {
           ) : null}
 
           {modelCapabilityWarning ? (
-            <Alert type="warning" showIcon message={modelCapabilityWarning} />
+            <AppAlert type="warning" showIcon message={modelCapabilityWarning} />
           ) : null}
 
           <div ref={messageViewportRef} style={{ flex: 1, minHeight: 320, overflow: 'auto', paddingRight: 4 }}>
             {isResponding && progress ? (
-              <Alert type="info" showIcon message={progress} style={{ marginBottom: 8 }} />
+              <AppAlert type="info" showIcon message={progress} style={{ marginBottom: 8 }} />
             ) : null}
             {messages.length === 0 ? (
               <Empty
@@ -845,7 +845,7 @@ const AIChatPage: React.FC = () => {
                       <div
                         style={{
                           maxWidth: '84%',
-                          background: item.role === 'user' ? '#1677ff' : '#fafafa',
+                          background: item.role === 'user' ? '#2563eb' : '#fafafa',
                           color: item.role === 'user' ? '#fff' : '#141414',
                           borderRadius: 14,
                           padding: '12px 14px',
@@ -991,7 +991,7 @@ const AIChatPage: React.FC = () => {
                               目标资源：{item.targetKind} / {item.targetNamespace} / {item.targetName}
                             </div>
                             {item.riskLevel === 'high' && (
-                              <Alert
+                              <AppAlert
                                 type="error"
                                 showIcon
                                 banner
@@ -1017,7 +1017,7 @@ const AIChatPage: React.FC = () => {
                                       我已了解此操作的风险
                                     </Checkbox>
                                     {item.riskLevel === 'high' && item.confirmLevel === 'double' && (
-                                      <div style={{ fontSize: 12, color: '#ff4d4f', marginTop: 4 }}>
+                                      <div style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>
                                         ⚠ 此操作需要双重确认：您确认后，还需另一位管理员进行二次确认。
                                       </div>
                                     )}
@@ -1058,17 +1058,17 @@ const AIChatPage: React.FC = () => {
                               </div>
                             ) : null}
                             {item.status === 'approved' ? (
-                              <div style={{ marginTop: 4, color: '#1677ff', fontSize: 12 }}>
+                              <div style={{ marginTop: 4, color: '#2563eb', fontSize: 12 }}>
                                 等待二次确认
                               </div>
                             ) : null}
                             {item.status === 'succeeded' ? (
-                              <div style={{ marginTop: 4, color: '#52c41a', fontSize: 12 }}>
+                              <div style={{ marginTop: 4, color: '#047857', fontSize: 12 }}>
                                 执行成功
                               </div>
                             ) : null}
                             {item.status === 'failed' ? (
-                              <div style={{ marginTop: 4, color: '#ff4d4f', fontSize: 12 }}>
+                              <div style={{ marginTop: 4, color: '#dc2626', fontSize: 12 }}>
                                 执行失败：{item.latestExecution?.errorMessage || '未知错误'}
                               </div>
                             ) : null}

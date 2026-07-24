@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { history, useModel } from '@umijs/max'
 import { Button, Checkbox, Form, Input, Modal, Space, Tooltip, Typography, message } from 'antd'
-import { ArrowRightOutlined, LockOutlined, UserOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import {
+  ArrowRightOutlined,
+  ClusterOutlined,
+  InfoCircleOutlined,
+  LockOutlined,
+  SafetyCertificateOutlined,
+  ThunderboltOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
 import {
   getCaptcha,
   getCurrentUser,
@@ -149,27 +157,63 @@ const LoginPage: React.FC = () => {
 
   const [targetX, setTargetX] = useState(0)
   const [trackWidth, setTrackWidth] = useState(TRACK_WIDTH)
+  const [trackPixelWidth, setTrackPixelWidth] = useState(TRACK_WIDTH)
   const [sliderX, setSliderX] = useState(0)
   const [dragging, setDragging] = useState(false)
   const [verified, setVerified] = useState(false)
   const [captchaEnabled, setCaptchaEnabled] = useState(false)
   const [captchaToken, setCaptchaToken] = useState('')
   const trackRef = useRef<HTMLDivElement>(null)
+  const sliderXRef = useRef(0)
+  const dragStateRef = useRef<{ pointerId: number; startClientX: number; startSliderX: number } | null>(null)
 
   const [resetModalOpen, setResetModalOpen] = useState(false)
   const [resetStep, setResetStep] = useState<'request' | 'confirm'>('request')
   const [resetToken, setResetToken] = useState('')
   const [resetForm] = Form.useForm()
 
+  const sourceSliderRange = Math.max(1, trackWidth - SLIDER_WIDTH)
+  const maxSliderX = Math.max(0, trackPixelWidth - SLIDER_WIDTH)
+  const targetSliderX = Math.max(0, Math.min(maxSliderX, (targetX / sourceSliderRange) * maxSliderX))
+  const tolerancePixels = Math.max(4, (TOLERANCE / sourceSliderRange) * maxSliderX)
+  const captchaSubmissionX = maxSliderX > 0
+    ? Math.round((sliderX / maxSliderX) * sourceSliderRange)
+    : 0
+
+  const setSliderPosition = useCallback((position: number) => {
+    const next = Math.max(0, Math.min(position, maxSliderX))
+    sliderXRef.current = next
+    setSliderX(next)
+  }, [maxSliderX])
+
+  const resetSliderPosition = useCallback(() => {
+    sliderXRef.current = 0
+    setSliderX(0)
+  }, [])
+
+  useEffect(() => {
+    const updateTrackWidth = () => {
+      const width = trackRef.current?.getBoundingClientRect().width
+      if (width) setTrackPixelWidth(width)
+    }
+    updateTrackWidth()
+    const observer = typeof ResizeObserver === 'undefined' || !trackRef.current
+      ? undefined
+      : new ResizeObserver(updateTrackWidth)
+    if (observer && trackRef.current) observer.observe(trackRef.current)
+    return () => observer?.disconnect()
+  }, [])
+
   const generateLocalCaptcha = useCallback(() => {
-    const max = TRACK_WIDTH - SLIDER_WIDTH - 20
+    const minTarget = 24
+    const maxTarget = TRACK_WIDTH - SLIDER_WIDTH - 24
     setCaptchaEnabled(false)
     setCaptchaToken('')
     setTrackWidth(TRACK_WIDTH)
-    setTargetX(20 + Math.floor(Math.random() * max))
-    setSliderX(0)
+    setTargetX(minTarget + Math.floor(Math.random() * (maxTarget - minTarget + 1)))
+    resetSliderPosition()
     setVerified(false)
-  }, [])
+  }, [resetSliderPosition])
 
   const refreshCaptcha = useCallback(async () => {
     try {
@@ -179,7 +223,7 @@ const LoginPage: React.FC = () => {
         setCaptchaToken(challenge.token)
         setTrackWidth(challenge.track_width || TRACK_WIDTH)
         setTargetX(challenge.target_x)
-        setSliderX(0)
+        resetSliderPosition()
         setVerified(false)
         return
       }
@@ -187,7 +231,7 @@ const LoginPage: React.FC = () => {
       // fallback to local-only captcha when backend challenge is unavailable
     }
     generateLocalCaptcha()
-  }, [generateLocalCaptcha])
+  }, [generateLocalCaptcha, resetSliderPosition])
 
   useEffect(() => {
     try {
@@ -224,49 +268,75 @@ const LoginPage: React.FC = () => {
     return () => window.clearInterval(timer)
   }, [loginFeedback?.reason, loginFeedback?.lockRemainingSeconds])
 
-  const handleMouseDown = (event: React.MouseEvent) => {
+  const completeCaptcha = useCallback(() => {
+    const diff = Math.abs(sliderXRef.current - targetSliderX)
+    if (diff <= tolerancePixels) {
+      setVerified(true)
+      setCaptchaError('')
+      setLoginFeedback((current) => current?.reason === 'captcha_invalid' ? undefined : current)
+      return
+    }
+    setCaptchaError('验证失败，请将滑块拖到虚线目标框内')
+    window.setTimeout(() => {
+      void refreshCaptcha()
+    }, 300)
+  }, [refreshCaptcha, targetSliderX, tolerancePixels])
+
+  const handleSliderPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (verified) return
-    setDragging(true)
     event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startSliderX: sliderXRef.current,
+    }
+    setDragging(true)
   }
 
-  useEffect(() => {
-    if (!dragging) return
+  const handleSliderPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const dragState = dragStateRef.current
+    if (!dragState || dragState.pointerId !== event.pointerId) return
+    setSliderPosition(dragState.startSliderX + event.clientX - dragState.startClientX)
+  }
 
-    const handleMouseMove = (event: MouseEvent) => {
-      if (!trackRef.current) return
-      const rect = trackRef.current.getBoundingClientRect()
-      const x = Math.max(0, Math.min(event.clientX - rect.left, trackWidth - SLIDER_WIDTH))
-      setSliderX(x)
+  const handleSliderPointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const dragState = dragStateRef.current
+    if (!dragState || dragState.pointerId !== event.pointerId) return
+    dragStateRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
     }
+    setDragging(false)
+    completeCaptcha()
+  }
 
-    const handleMouseUp = () => {
-      setDragging(false)
-      const diff = Math.abs(sliderX - targetX)
-      if (diff <= TOLERANCE) {
-        setVerified(true)
-        setCaptchaError('')
-        setLoginFeedback((current) => {
-          if (!current || current.reason !== 'captcha_invalid') {
-            return current
-          }
-          return undefined
-        })
-      } else {
-        setCaptchaError('验证失败，请将滑块拖动到虚线框位置')
-        window.setTimeout(() => {
-          void refreshCaptcha()
-        }, 300)
-      }
-    }
+  const handleSliderPointerCancel = () => {
+    dragStateRef.current = null
+    setDragging(false)
+    resetSliderPosition()
+  }
 
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
+  const handleSliderKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (verified) return
+    const step = event.shiftKey ? 24 : 8
+    if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      setSliderPosition(sliderXRef.current + step)
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      setSliderPosition(sliderXRef.current - step)
+    } else if (event.key === 'Home') {
+      event.preventDefault()
+      setSliderPosition(0)
+    } else if (event.key === 'End') {
+      event.preventDefault()
+      setSliderPosition(maxSliderX)
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      completeCaptcha()
     }
-  }, [dragging, refreshCaptcha, sliderX, targetX, trackWidth])
+  }
 
   const handleSubmit = async (values: { username: string; password: string }) => {
     if (!verified) {
@@ -285,7 +355,7 @@ const LoginPage: React.FC = () => {
       const loginResult = await login({
         ...values,
         captchaToken: captchaEnabled ? captchaToken : undefined,
-        captchaX: captchaEnabled ? Math.round(sliderX) : undefined,
+        captchaX: captchaEnabled ? captchaSubmissionX : undefined,
       })
       const currentUser = loginResult.user || (await getCurrentUser())
       setInitialState({ currentUser })
@@ -362,6 +432,60 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="app-login-shell">
+      <aside className="app-login-console" aria-label="AIOPS 平台概览">
+        <div className="app-login-console__topline">
+          <div className="app-login-console__identity">
+            <img src={BRAND_LOGO_SRC} alt="" draggable={false} />
+            <span>AIOPS</span>
+          </div>
+          <span className="app-login-console__environment">CONTROL PLANE</span>
+        </div>
+
+        <div className="app-login-console__hero">
+          <span className="app-login-console__eyebrow">INTELLIGENT OPERATIONS</span>
+          <h1>把复杂运维，
+            <em>变成清晰决策。</em>
+          </h1>
+          <p>统一掌控集群健康、告警事件与自动化执行，让每一次响应都有据可循。</p>
+        </div>
+
+        <div className="app-login-console__telemetry" aria-hidden="true">
+          <div className="app-login-console__telemetry-head">
+            <span>PLATFORM TELEMETRY</span>
+            <i />
+            <b>LIVE</b>
+          </div>
+          <div className="app-login-console__signal">
+            <span className="app-login-console__signal-node app-login-console__signal-node--core" />
+            <span className="app-login-console__signal-node app-login-console__signal-node--one" />
+            <span className="app-login-console__signal-node app-login-console__signal-node--two" />
+            <span className="app-login-console__signal-node app-login-console__signal-node--three" />
+            <span className="app-login-console__signal-line app-login-console__signal-line--one" />
+            <span className="app-login-console__signal-line app-login-console__signal-line--two" />
+            <span className="app-login-console__signal-line app-login-console__signal-line--three" />
+          </div>
+        </div>
+
+        <div className="app-login-console__facts">
+          <div>
+            <ClusterOutlined />
+            <span>资源统一接入</span>
+            <strong>集群与工作负载</strong>
+          </div>
+          <div>
+            <ThunderboltOutlined />
+            <span>自动化闭环</span>
+            <strong>检测 · 研判 · 执行</strong>
+          </div>
+          <div>
+            <SafetyCertificateOutlined />
+            <span>安全访问控制</span>
+            <strong>身份与权限审计</strong>
+          </div>
+        </div>
+
+        <div className="app-login-console__foot">AIOPS / OPERATIONS INTELLIGENCE</div>
+      </aside>
       <div className="app-login-panel">
         <section className="app-login-form">
           <div className="app-login-form__brand">
@@ -431,90 +555,40 @@ const LoginPage: React.FC = () => {
               />
             </Form.Item>
 
-            <div style={{ marginBottom: 16 }}>
+            <div className="app-login-captcha">
               <div
                 ref={trackRef}
-                style={{
-                  position: 'relative',
-                  height: 44,
-                  width: '100%',
-                  background: verified ? '#f6ffed' : '#f5f5f5',
-                  borderRadius: 8,
-                  overflow: 'hidden',
-                  border: verified ? '1px solid #52c41a' : '1px solid #d9d9d9',
-                }}
+                className={`app-login-captcha__track${dragging ? ' app-login-captcha__track--dragging' : ''}${verified ? ' app-login-captcha__track--success' : ''}${captchaError ? ' app-login-captcha__track--error' : ''}`}
               >
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    height: '100%',
-                    width: verified ? '100%' : `${(sliderX / trackWidth) * 100}%`,
-                    background: verified
-                      ? 'linear-gradient(90deg, #52c41a22, #52c41a44)'
-                      : 'linear-gradient(90deg, #1890ff22, #1890ff44)',
-                    transition: dragging ? 'none' : 'width 0.2s',
-                  }}
-                />
                 {!verified && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: targetX,
-                      top: 0,
-                      height: '100%',
-                      width: SLIDER_WIDTH,
-                      border: '2px dashed #1890ff66',
-                      borderRadius: 6,
-                      pointerEvents: 'none',
-                    }}
+                  <span
+                    className="app-login-captcha__target"
+                    style={{ transform: `translateX(${targetSliderX}px)` }}
+                    aria-hidden="true"
                   />
                 )}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: verified ? 'calc(100% - 40px)' : sliderX,
-                    top: 0,
-                    height: '100%',
-                    width: SLIDER_WIDTH,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: verified ? 'default' : dragging ? 'grabbing' : 'grab',
-                    background: verified ? '#52c41a' : '#fff',
-                    color: verified ? '#fff' : '#999',
-                    border: verified ? 'none' : '1px solid #d9d9d9',
-                    borderRadius: 8,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    userSelect: 'none',
-                    transition: dragging ? 'none' : 'left 0.2s, background 0.2s',
-                    zIndex: 2,
-                  }}
-                  onMouseDown={handleMouseDown}
+                <span className="app-login-captcha__label" aria-live="polite">
+                  {verified ? '安全验证通过' : '拖动滑块至目标位置'}
+                </span>
+                <button
+                  type="button"
+                  className={`app-login-captcha__handle${dragging ? ' app-login-captcha__handle--dragging' : ''}${verified ? ' app-login-captcha__handle--success' : ''}`}
+                  style={{ transform: `translateX(${verified ? maxSliderX : sliderX}px)` }}
+                  onPointerDown={handleSliderPointerDown}
+                  onPointerMove={handleSliderPointerMove}
+                  onPointerUp={handleSliderPointerUp}
+                  onPointerCancel={handleSliderPointerCancel}
+                  onKeyDown={handleSliderKeyDown}
+                  aria-label={verified ? '安全验证已通过' : '拖动滑块完成安全验证'}
+                  aria-valuemin={0}
+                  aria-valuemax={Math.round(maxSliderX)}
+                  aria-valuenow={Math.round(verified ? maxSliderX : sliderX)}
+                  aria-valuetext={verified ? '安全验证已通过' : '使用左右方向键移动，按回车确认'}
+                  role="slider"
+                  disabled={verified}
                 >
-                  {verified ? '✓' : '→'}
-                </div>
-                {/* 文字居中 + 对号在最右侧 */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    right: verified ? SLIDER_WIDTH + 4 : 0,
-                    top: 0,
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: verified ? '#389e0c' : '#999',
-                    fontSize: 13,
-                    fontWeight: verified ? 600 : 400,
-                    pointerEvents: 'none',
-                    zIndex: 1,
-                  }}
-                >
-                  {verified ? '验证成功' : '拖动滑块到虚线框内'}
-                </div>
+                  <span aria-hidden="true">{verified ? '✓' : '→'}</span>
+                </button>
               </div>
               <div className={`app-login-captcha__hint app-login-captcha__hint--${captchaHintTone}`}>
                 {captchaHint}

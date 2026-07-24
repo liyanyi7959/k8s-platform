@@ -190,27 +190,27 @@ export default function DeployPlansPage() {
           {record.status === 'draft' && (
             <Popconfirm title="确认执行该部署方案？" onConfirm={() => handleExecute(record.id)}>
               <Tooltip title="执行">
-                <a style={{ color: '#52c41a' }}><PlayCircleOutlined /></a>
+                <a style={{ color: '#047857' }}><PlayCircleOutlined /></a>
               </Tooltip>
             </Popconfirm>
           )}
           {record.status === 'running' && (
             <Popconfirm title="确认取消该部署任务？" onConfirm={() => cancelMutation.mutate(record.id)}>
               <Tooltip title="取消">
-                <a style={{ color: '#faad14' }}><StopOutlined /></a>
+                <a style={{ color: '#b45309' }}><StopOutlined /></a>
               </Tooltip>
             </Popconfirm>
           )}
           {['failed', 'cancelled', 'canceled'].includes(record.status) && (
             <Popconfirm title="将重新检查部署条件，并从上次失败位置继续，确认重试？" onConfirm={() => handleRetry(record.id)}>
               <Tooltip title="从失败处重试">
-                <a style={{ color: '#1677ff' }}><RedoOutlined /></a>
+                <a style={{ color: '#2563eb' }}><RedoOutlined /></a>
               </Tooltip>
             </Popconfirm>
           )}
           <Popconfirm title="确认删除该部署方案？" onConfirm={() => deleteMutation.mutate(record.id)}>
             <Tooltip title="删除">
-              <a style={{ color: '#ff4d4f' }}><DeleteOutlined /></a>
+              <a style={{ color: '#dc2626' }}><DeleteOutlined /></a>
             </Tooltip>
           </Popconfirm>
         </Space>

@@ -17,6 +17,8 @@ const devWatchIgnore = new RegExp(
 
 export default defineConfig({
   plugins: ['./plugins/aiops-loading.ts'],
+  // 在首屏脚本加载前写入浏览器标签图标，避免依赖运行时 useEffect。
+  favicons: ['/brand/aiops-mark.svg?v=2'],
   routes,
   conventionLayout: false,
   // 禁用 Module Federation（避免 mf-va_remoteEntry.js 加载失败）
@@ -35,7 +37,15 @@ export default defineConfig({
         colorSuccess: '#047857',
         colorWarning: '#b45309',
         colorError: '#dc2626',
+        colorText: '#17283f',
         colorTextSecondary: '#64748b',
+        colorTextTertiary: '#94a3b8',
+        colorBorder: '#e2e8f0',
+        colorBorderSecondary: '#edf1f6',
+        colorBgLayout: '#f3f6fa',
+        fontFamily: "Inter, 'SF Pro Text', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+        fontSize: 14,
+        controlHeight: 38,
         borderRadius: 12,
       },
     },

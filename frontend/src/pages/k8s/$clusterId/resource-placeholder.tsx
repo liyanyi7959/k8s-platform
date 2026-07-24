@@ -2,9 +2,10 @@ import React, { useMemo, useState } from 'react'
 import { history, useLocation } from '@umijs/max'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, Button, Popconfirm, Space, Tag, Tooltip, message } from 'antd'
+import { Button, Popconfirm, Space, Tag, Tooltip, message } from 'antd'
 import { ProfileOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
 import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { deleteGenericResource, listGenericResources, listPermissionAudits } from '@/services/k8s'
@@ -167,7 +168,7 @@ const K8sResourcePlaceholder: React.FC = () => {
           </Tooltip>
           {canDelete ? (
             <Popconfirm title="确定删除该资源？" onConfirm={() => deleteMutation.mutate(record)}>
-              <a style={{ color: '#ff4d4f' }}>
+              <a style={{ color: '#dc2626' }}>
                 <DeleteOutlined />
               </a>
             </Popconfirm>
@@ -259,7 +260,7 @@ const K8sResourcePlaceholder: React.FC = () => {
         ].filter(Boolean)}
       />
 
-      <Alert
+      <AppAlert
         style={{ marginTop: 16 }}
         type={isPermissionAudit ? 'info' : 'warning'}
         showIcon

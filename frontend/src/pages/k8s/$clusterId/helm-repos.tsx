@@ -54,7 +54,7 @@ const HelmReposPage: React.FC = () => {
             disabled
             onConfirm={() => message.info('删除仓库功能待后端 API 就绪后实现')}
           >
-            <a style={{ color: '#ff4d4f', opacity: 0.5 }}>
+            <a style={{ color: '#dc2626', opacity: 0.5 }}>
               <DeleteOutlined />
             </a>
           </Popconfirm>

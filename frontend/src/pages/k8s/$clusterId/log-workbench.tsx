@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Alert, Badge, Button, Card, Checkbox, Col, Empty, Input, Row, Select, Space, Statistic, Switch, Tag, Tooltip, Typography, message } from 'antd'
+import { Badge, Button, Card, Checkbox, Col, Empty, Input, Row, Select, Space, Statistic, Switch, Tag, Tooltip, Typography, message } from 'antd'
 import { ClearOutlined, DownloadOutlined, PauseCircleOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { AppPage, NamespaceSelector } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import { useClusterId } from '@/hooks/useClusterId'
 import { getPodLogs, listPods } from '@/services/k8s'
 import type { Pod } from '@/types'
@@ -138,7 +139,7 @@ const LogWorkbenchPage: React.FC = () => {
             <div style={{ background: '#0b1220', color: '#d1d5db', minHeight: 480, maxHeight: '64vh', overflow: 'auto', padding: 16, fontFamily: 'Consolas, Monaco, monospace', fontSize: 12, lineHeight: 1.65 }}>
               {filteredResults.map((result) => <section key={result.key} style={{ marginBottom: 20 }}>
                 <div style={{ position: 'sticky', top: -16, zIndex: 1, margin: '0 -16px 8px', padding: '7px 16px', background: '#162033', color: '#93c5fd', fontWeight: 700 }}>{result.key} <Tag color={result.error ? 'error' : 'success'}>{result.error ? '失败' : `${result.lines.length} 行`}</Tag></div>
-                {result.error ? <Alert type="error" message={result.error} /> : result.lines.length ? result.lines.map((line, index) => <div key={index} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: keyword ? '#fde68a' : undefined }}><span style={{ display: 'inline-block', width: 54, color: '#475569', userSelect: 'none' }}>{index + 1}</span>{line}</div>) : <Text style={{ color: '#64748b' }}>无匹配日志</Text>}
+                {result.error ? <AppAlert type="error" message={result.error} /> : result.lines.length ? result.lines.map((line, index) => <div key={index} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: keyword ? '#fde68a' : undefined }}><span style={{ display: 'inline-block', width: 54, color: '#475569', userSelect: 'none' }}>{index + 1}</span>{line}</div>) : <Text style={{ color: '#64748b' }}>无匹配日志</Text>}
               </section>)}
             </div>
           )}

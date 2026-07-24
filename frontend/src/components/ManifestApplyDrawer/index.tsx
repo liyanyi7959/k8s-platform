@@ -4,11 +4,12 @@
  * 支持粘贴 YAML 并应用到集群
  */
 import React, { useState } from 'react'
-import { Drawer, Button, Space, message, Alert } from 'antd'
+import { Drawer, Button, Space, message } from 'antd'
 import { SendOutlined, ClearOutlined } from '@ant-design/icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { applyYaml } from '@/services/k8s'
 import { YamlEditor } from '@/components/YamlEditor'
+import AppAlert from '@/components/AppAlert'
 
 interface ManifestApplyDrawerProps {
   open: boolean
@@ -84,7 +85,7 @@ export const ManifestApplyDrawer: React.FC<ManifestApplyDrawerProps> = ({
       }
     >
       {result && (
-        <Alert
+        <AppAlert
           type={result.success ? 'success' : 'error'}
           message={result.success ? '应用成功' : '应用失败'}
           description={result.message}

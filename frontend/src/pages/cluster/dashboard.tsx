@@ -2,7 +2,7 @@ import React from 'react'
 import { Area } from '@ant-design/charts'
 import { useModel } from '@umijs/max'
 import { useQuery } from '@tanstack/react-query'
-import { Alert, Card, Col, Empty, List, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
+import { Card, Col, Empty, List, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
 import {
   AlertOutlined,
   CheckCircleOutlined,
@@ -12,12 +12,13 @@ import {
   WarningOutlined,
 } from '@ant-design/icons'
 import { getClusterOverview } from '@/services/k8s'
+import AppAlert from '@/components/AppAlert'
 
 const { Text, Title } = Typography
 
 const toneColorMap = {
-  success: '#059669',
-  warning: '#d97706',
+  success: '#047857',
+  warning: '#b45309',
   danger: '#dc2626',
   info: '#2563eb',
 } as const
@@ -68,7 +69,7 @@ const ClusterDashboardPage: React.FC = () => {
     colorField: 'type',
     smooth: true,
     height: 300,
-    color: ['#2563eb', '#059669'],
+    color: ['#2563eb', '#047857'],
     areaStyle: () => ({ fillOpacity: 0.15 }),
     axis: {
       y: { labelFormatter: (value: number) => `${value}%` },
@@ -130,7 +131,7 @@ const ClusterDashboardPage: React.FC = () => {
                 title="Pending Pods"
                 value={stats.pods.pending}
                 prefix={<DashboardOutlined />}
-                valueStyle={{ color: stats.pods.pending > 0 ? '#d97706' : '#059669', fontSize: 28 }}
+                valueStyle={{ color: stats.pods.pending > 0 ? '#b45309' : '#047857', fontSize: 28 }}
               />
             </Card>
           </Col>
@@ -140,7 +141,7 @@ const ClusterDashboardPage: React.FC = () => {
                 title="告警数"
                 value={certAlerts.length}
                 prefix={<AlertOutlined />}
-                valueStyle={{ color: certAlerts.length > 0 ? '#dc2626' : '#059669', fontSize: 28 }}
+                valueStyle={{ color: certAlerts.length > 0 ? '#dc2626' : '#047857', fontSize: 28 }}
               />
             </Card>
           </Col>
@@ -244,7 +245,7 @@ const ClusterDashboardPage: React.FC = () => {
                   )}
                 />
               ) : (
-                <Alert type="success" showIcon message="当前无异常 Pod" style={{ marginTop: 16 }} />
+                <AppAlert type="success" showIcon message="当前无异常 Pod" style={{ marginTop: 16 }} />
               )}
             </Card>
           </Col>

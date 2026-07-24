@@ -53,6 +53,14 @@
     - role: install_cni
       when: retry_enabled_steps is not defined or 'install_cni' in retry_enabled_steps
 
+- name: 安装 Helm
+  hosts: master
+  become: yes
+  any_errors_fatal: true
+  roles:
+    - role: install_helm
+      when: retry_enabled_steps is not defined or 'install_helm' in retry_enabled_steps
+
 - name: 安装 Kubernetes 扩展组件
   hosts: master
   become: yes

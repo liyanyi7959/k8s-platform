@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Tabs, Progress, Select, Button, Typography, Alert } from 'antd'
+import { Tabs, Progress, Select, Button, Typography } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { listNodeMetrics, listPodMetricsUsage } from '@/services/k8s'
 import { AppPage } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import { useClusterId } from '@/hooks/useClusterId'
 
 const { Text } = Typography
@@ -46,9 +47,9 @@ function formatMemory(bytes: number): string {
 
 /** 使用率进度条颜色：>80% 红色，>60% 橙色，其他绿色 */
 function progressColor(percent: number): string {
-  if (percent >= 80) return '#ff4d4f'
-  if (percent >= 60) return '#faad14'
-  return '#52c41a'
+  if (percent >= 80) return '#dc2626'
+  if (percent >= 60) return '#b45309'
+  return '#047857'
 }
 
 const REFRESH_OPTIONS = [
@@ -173,7 +174,7 @@ const ResourceMetricsPage: React.FC = () => {
     if (!error) return null
     const msg = error instanceof Error ? error.message : '获取指标数据失败'
     return (
-      <Alert
+      <AppAlert
         type="warning"
         showIcon
         message="指标数据获取失败"

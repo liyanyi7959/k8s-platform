@@ -97,6 +97,7 @@ export default function DeployPlanDetailPage() {
   const [logTheme, setLogTheme] = useState<'light' | 'dark'>('light')
   const [preflightCollapsed, setPreflightCollapsed] = useState(true)
   const [ansibleConfigOpen, setAnsibleConfigOpen] = useState(false)
+  const [topologyOpen, setTopologyOpen] = useState(false)
   const logOffsetRef = useRef(0)
   const logContainerRef = useRef<HTMLDivElement>(null)
   const logViewerRef = useRef<HTMLElement>(null)
@@ -535,7 +536,21 @@ export default function DeployPlanDetailPage() {
               </Space>
             </Descriptions.Item>
           )}
-          <Descriptions.Item label="Ansible 配置">
+          <Descriptions.Item label="Helm 安装">
+            {plan?.helmInstall ? <Tag color="blue">已启用</Tag> : <Text type="secondary">未启用</Text>}
+          </Descriptions.Item>
+          <Descriptions.Item label="节点拓扑">
+            <Button
+              size="small"
+              type="link"
+              icon={<DesktopOutlined />}
+              disabled={nodeDetails.length === 0}
+              onClick={() => setTopologyOpen(true)}
+            >
+              查看拓扑
+            </Button>
+          </Descriptions.Item>
+          <Descriptions.Item label="Ansible 配置" span={2}>
             <Button
               size="small"
               type="link"
@@ -807,12 +822,18 @@ export default function DeployPlanDetailPage() {
           </Card>
         )}
 
-        {/* 节点拓扑 */}
-        {nodeDetails.length > 0 && (
-          <Card size="small" title={<Space><DesktopOutlined />节点拓扑</Space>} style={{ marginBottom: 12 }}>
-            <DeployNodeTopology nodes={nodeDetails} />
-          </Card>
-        )}
+        <Modal
+          title={<Space><DesktopOutlined />节点拓扑</Space>}
+          open={topologyOpen}
+          onCancel={() => setTopologyOpen(false)}
+          footer={null}
+          width="min(1120px, calc(100vw - 48px))"
+          style={{ top: 48 }}
+          destroyOnClose
+          styles={{ body: { padding: '16px 20px 22px' } }}
+        >
+          <DeployNodeTopology nodes={nodeDetails} />
+        </Modal>
 
         <Modal
           title={<Space><CodeOutlined />Ansible 执行配置</Space>}
@@ -860,7 +881,7 @@ export default function DeployPlanDetailPage() {
                   return (
                     <div key={stage.key} style={{ marginBottom: 16 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f5f5f5', marginBottom: 8 }}>
-                        <span style={{ width: 24, height: 24, borderRadius: '50%', background: failed ? '#ff4d4f' : completed === steps.length && steps.length ? '#52c41a' : '#1677ff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 12 }}>{stageIndex + 1}</span>
+                        <span style={{ width: 24, height: 24, borderRadius: '50%', background: failed ? '#dc2626' : completed === steps.length && steps.length ? '#047857' : '#2563eb', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 12 }}>{stageIndex + 1}</span>
                         <span style={{ flex: 1, fontWeight: 600 }}>{stage.title}</span>
                         <span style={{ color: '#a6a6a6', fontSize: 12 }}>{steps.length} 个任务</span>
                       </div>
@@ -869,7 +890,7 @@ export default function DeployPlanDetailPage() {
                           const selected = selectedStepKey === step.key && !selectedSubStepKey
                           const failedStep = step.status === 'failed'
                           const runningStep = step.status === 'running'
-                          const color = failedStep ? '#ff7875' : step.status === 'success' ? '#73d13d' : runningStep ? '#69b1ff' : '#8c8c8c'
+                          const color = failedStep ? '#dc2626' : step.status === 'success' ? '#047857' : runningStep ? '#2563eb' : '#8c8c8c'
                           return (
                             <div key={step.key} style={{ marginBottom: 6 }}>
                               <button
@@ -884,7 +905,7 @@ export default function DeployPlanDetailPage() {
                               {step.subSteps?.map((sub) => {
                                 const selectedSub = selectedSubStepKey === sub.key
                                 const subFailed = sub.status === 'failed'
-                                const subColor = subFailed ? '#ff7875' : sub.status === 'success' ? '#73d13d' : sub.status === 'running' ? '#69b1ff' : '#8c8c8c'
+                                const subColor = subFailed ? '#dc2626' : sub.status === 'success' ? '#047857' : sub.status === 'running' ? '#2563eb' : '#8c8c8c'
                                 return (
                                   <button
                                     type="button"
@@ -1349,8 +1370,8 @@ function StepTree({
                                 </span>
                               </Tooltip>
                               {displayStepStatus === 'running' ? (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#1677ff', fontWeight: 600 }}>
-                                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#1677ff', boxShadow: '0 0 0 0 rgba(22, 119, 255, .45)', animation: 'deploy-step-pulse 1.4s ease-out infinite' }} />
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#2563eb', fontWeight: 600 }}>
+                                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#2563eb', boxShadow: '0 0 0 0 rgba(22, 119, 255, .45)', animation: 'deploy-step-pulse 1.4s ease-out infinite' }} />
                                   进行中
                                 </span>
                               ) : displayStepStatus === 'failed' ? (
@@ -1425,7 +1446,7 @@ function StepTree({
               width: 24,
               height: 24,
               borderRadius: '50%',
-              background: '#1677ff',
+              background: '#2563eb',
               color: '#fff',
               display: 'flex',
               alignItems: 'center',
@@ -1456,14 +1477,14 @@ function StepTree({
                       justifyContent: 'space-between',
                       padding: '8px 12px',
                       borderRadius: 6,
-                      background: isSelected ? '#e6f4ff' : stepSuccess ? '#f6ffed' : '#fafafa',
+                      background: isSelected ? '#eff6ff' : stepSuccess ? '#ecfdf5' : '#fafafa',
                       border: `1px solid ${isSelected ? '#91caff' : stepSuccess ? '#b7eb8f' : '#f0f0f0'}`,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                     }}
                   >
                     <Space>
-                      <span style={{ color: stepSuccess ? '#52c41a' : stepFailed ? '#ff4d4f' : stepRunning ? '#1677ff' : '#999', fontWeight: 500 }}>
+                      <span style={{ color: stepSuccess ? '#047857' : stepFailed ? '#dc2626' : stepRunning ? '#2563eb' : '#999', fontWeight: 500 }}>
                         {stageIdx + 2}-{idx + 1} {step.title}
                       </span>
                       {stepRunning && <Badge status="processing" />}
@@ -1474,8 +1495,8 @@ function StepTree({
                       )}
                     </Space>
                     <Space>
-                      {stepSuccess && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
-                      {stepFailed && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
+                      {stepSuccess && <CheckCircleOutlined style={{ color: '#047857' }} />}
+                      {stepFailed && <CloseCircleOutlined style={{ color: '#dc2626' }} />}
                       {stepFailed && canRetry && (
                         <Button
                           size="small"
@@ -1511,16 +1532,16 @@ function StepTree({
                               padding: '6px 10px',
                               marginBottom: 4,
                               borderRadius: 4,
-                              background: subSelected ? '#e6f4ff' : '#fff',
+                              background: subSelected ? '#eff6ff' : '#fff',
                               cursor: 'pointer',
                             }}
                           >
                             <CodeOutlined style={{ color: '#8c8c8c', fontSize: 12 }} />
-                            <Text style={{ fontSize: 13, flex: 1, color: subSuccess ? '#52c41a' : subFailed ? '#ff4d4f' : subRunning ? '#1677ff' : '#595959' }}>
+                            <Text style={{ fontSize: 13, flex: 1, color: subSuccess ? '#047857' : subFailed ? '#dc2626' : subRunning ? '#2563eb' : '#595959' }}>
                               {sub.title}
                             </Text>
-                            {subSuccess && <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 12 }} />}
-                            {subFailed && <CloseCircleOutlined style={{ color: '#ff4d4f', fontSize: 12 }} />}
+                            {subSuccess && <CheckCircleOutlined style={{ color: '#047857', fontSize: 12 }} />}
+                            {subFailed && <CloseCircleOutlined style={{ color: '#dc2626', fontSize: 12 }} />}
                             {subRunning && <Badge status="processing" />}
                           </div>
                         )
@@ -1544,14 +1565,14 @@ function getLogColor(line: string, theme: 'light' | 'dark' = 'dark'): string {
   const trimmed = line.trim()
   const dark = theme === 'dark'
   if (trimmed.startsWith('PLAY [') || trimmed.startsWith('PLAY RECAP')) return dark ? '#569cd6' : '#0958d9'
-  if (trimmed.startsWith('TASK [')) return dark ? '#c586c0' : '#722ed1'
-  if (trimmed.includes('ok:') && !trimmed.includes('failed')) return dark ? '#4ec9b0' : '#08979c'
-  if (trimmed.startsWith('changed:') || trimmed.includes('changed=1')) return dark ? '#cca700' : '#ad6800'
-  if (trimmed.includes('failed:') || trimmed.includes('FAILED') || trimmed.includes('fatal:')) return dark ? '#f44747' : '#cf1322'
+  if (trimmed.startsWith('TASK [')) return dark ? '#c586c0' : '#6d5bd0'
+  if (trimmed.includes('ok:') && !trimmed.includes('failed')) return dark ? '#4ec9b0' : '#2563eb'
+  if (trimmed.startsWith('changed:') || trimmed.includes('changed=1')) return dark ? '#cca700' : '#b45309'
+  if (trimmed.includes('failed:') || trimmed.includes('FAILED') || trimmed.includes('fatal:')) return dark ? '#f44747' : '#dc2626'
   if (trimmed.startsWith('skipping:') || trimmed.includes('skipped')) return dark ? '#808080' : '#8c8c8c'
-  if (line.includes('[error]') || line.includes('[ERROR]')) return dark ? '#f44747' : '#cf1322'
-  if (line.includes('[warn]') || line.includes('[WARN]')) return dark ? '#cca700' : '#ad6800'
-  if (line.includes('[info]') || line.includes('[INFO]')) return dark ? '#4ec9b0' : '#08979c'
+  if (line.includes('[error]') || line.includes('[ERROR]')) return dark ? '#f44747' : '#dc2626'
+  if (line.includes('[warn]') || line.includes('[WARN]')) return dark ? '#cca700' : '#b45309'
+  if (line.includes('[info]') || line.includes('[INFO]')) return dark ? '#4ec9b0' : '#2563eb'
   return dark ? '#d4d4d4' : '#262626'
 }
 

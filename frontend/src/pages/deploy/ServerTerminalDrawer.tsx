@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Button, Drawer, Space, Tag, Typography } from 'antd'
+import { Button, Drawer, Space, Tag, Typography } from 'antd'
 import { DisconnectOutlined, ReloadOutlined } from '@ant-design/icons'
 import { createServerTerminalSession } from '@/services/deploy'
 import type { DeployServer } from '@/types/deploy'
+import AppAlert from '@/components/AppAlert'
 
 const { Text } = Typography
 
@@ -217,7 +218,7 @@ export default function ServerTerminalDrawer({ open, server, onClose }: ServerTe
       }
     >
       {errorMessage ? (
-        <Alert
+        <AppAlert
           type="error"
           showIcon
           message="终端连接异常"

@@ -19,11 +19,11 @@ import {
   Typography,
   Modal,
   Switch,
-  Alert,
   Input,
   Select,
   Table,
 } from 'antd'
+import AppAlert from '@/components/AppAlert'
 import type { TableProps } from 'antd'
 import {
   DeleteOutlined,
@@ -158,7 +158,7 @@ const getLogLevel = (line: string): 'error' | 'warn' | 'debug' | 'info' | 'defau
 }
 
 const LOG_LEVEL_COLORS: Record<ReturnType<typeof getLogLevel>, string> = {
-  error: '#ff7875',
+  error: '#dc2626',
   warn: '#ffc53d',
   debug: '#69c0ff',
   info: '#d6e4ff',
@@ -536,7 +536,7 @@ const LogPane: React.FC<LogPaneProps> = ({
         </Space>
       </div>
       {liveError && (
-        <Alert
+        <AppAlert
           type="error"
           showIcon
           message="实时日志连接异常"
@@ -1083,7 +1083,7 @@ const PodsPage: React.FC = () => {
       sorter: (a, b) => a.restarts - b.restarts,
       render: (t) => {
         const v = (t as number) || 0
-        return <span style={{ color: v > 5 ? '#ff4d4f' : v > 0 ? '#faad14' : '#52c41a' }}>{v}</span>
+        return <span style={{ color: v > 5 ? '#dc2626' : v > 0 ? '#b45309' : '#047857' }}>{v}</span>
       },
     },
     {
@@ -1154,7 +1154,7 @@ const PodsPage: React.FC = () => {
             onCancel={() => setSingleForce(false)}
           >
             <Tooltip title="删除">
-              <a style={{ color: '#ff4d4f' }}>
+              <a style={{ color: '#dc2626' }}>
                 <DeleteOutlined />
               </a>
             </Tooltip>
@@ -1615,7 +1615,7 @@ const PodsPage: React.FC = () => {
         okText="确认删除"
         okButtonProps={{ danger: true }}
       >
-        <Alert
+        <AppAlert
           type="warning"
           showIcon
           message={`确定删除选中的 ${selectedKeys.length} 个 Pod？`}

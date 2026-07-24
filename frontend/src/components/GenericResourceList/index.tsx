@@ -6,11 +6,12 @@
  */
 import React, { useMemo, useState } from 'react'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Typography, Button, Empty, Input, Alert } from 'antd'
+import { Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Typography, Button, Empty, Input } from 'antd'
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listGenericResources, deleteGenericResource, type GenericResourceItem } from '@/services/k8s'
 import { AppPage, NamespaceSelector, ManifestApplyDrawer } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import EllipsisText from '@/components/EllipsisText'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
@@ -183,7 +184,7 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
           {deletable && (
             <Popconfirm title={`确定删除该 ${title}？`} onConfirm={() => deleteMutation.mutate(record)}>
               <Tooltip title="删除">
-                <a style={{ color: '#ff4d4f' }}>
+                <a style={{ color: '#dc2626' }}>
                   <DeleteOutlined />
                 </a>
               </Tooltip>
@@ -200,7 +201,7 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
   return (
     <AppPage>
       {isError && (
-        <Alert
+        <AppAlert
           type="error"
           showIcon
           message="数据加载失败"

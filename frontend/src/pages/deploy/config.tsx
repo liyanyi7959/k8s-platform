@@ -3,10 +3,11 @@
  * 基于 Ansible Playbook 的 K8s 部署流程说明
  */
 import React, { useEffect, useState } from 'react'
-import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Typography, Alert, Spin, Tree } from 'antd'
+import { Card, Tabs, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Switch, Select, Popconfirm, message, Badge, Typography, Spin, Tree } from 'antd'
 import type { DataNode } from 'antd/lib/tree'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AppPage, YamlEditor } from '@/components'
+import AppAlert from '@/components/AppAlert'
 import {
   listRepositories,
   createRepository,
@@ -51,11 +52,11 @@ const phaseConfig: Record<
   { color: string; label: string; borderColor: string; bgColor: string }
 > = {
   preflight: { color: 'default', label: '环境预检', borderColor: '#d9d9d9', bgColor: '#f5f5f5' },
-  install: { color: 'blue', label: '软件安装', borderColor: '#1677ff', bgColor: '#e6f4ff' },
-  init: { color: 'gold', label: '集群初始化', borderColor: '#faad14', bgColor: '#fffbe6' },
-  join: { color: 'cyan', label: '节点加入', borderColor: '#13c2c2', bgColor: '#e6fffb' },
-  addon: { color: 'green', label: '集群组件', borderColor: '#52c41a', bgColor: '#f6ffed' },
-  finalize: { color: 'purple', label: '平台注册', borderColor: '#722ed1', bgColor: '#f9f0ff' },
+  install: { color: 'blue', label: '软件安装', borderColor: '#2563eb', bgColor: '#eff6ff' },
+  init: { color: 'gold', label: '集群初始化', borderColor: '#b45309', bgColor: '#fffbeb' },
+  join: { color: 'cyan', label: '节点加入', borderColor: '#2563eb', bgColor: '#eff6ff' },
+  addon: { color: 'green', label: '集群组件', borderColor: '#047857', bgColor: '#ecfdf5' },
+  finalize: { color: 'purple', label: '平台注册', borderColor: '#6d5bd0', bgColor: '#f9f0ff' },
 }
 
 const ansibleSteps: AnsibleStep[] = [
@@ -308,7 +309,7 @@ const AnsiblePipelinePanel: React.FC = () => {
 
                 {/* 任务数量 */}
                 <div style={{ fontSize: 12, color: '#8c8c8c', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Badge count={step.tasks.length} style={{ backgroundColor: '#1677ff' }} />
+                  <Badge count={step.tasks.length} style={{ backgroundColor: '#2563eb' }} />
                   <span>个 Ansible 任务</span>
                 </div>
               </div>
@@ -471,7 +472,7 @@ const AnsiblePlaybookPanel: React.FC = () => {
           <Card size="small" style={{ flex: 1, minWidth: 0 }}>
             {selectedNode?.type === 'file' ? (
               <>
-                <Alert
+                <AppAlert
                   type="info"
                   showIcon
                   message={`文件路径：ansible/${selectedNode.path}`}
@@ -480,16 +481,16 @@ const AnsiblePlaybookPanel: React.FC = () => {
                 {selectedNode.content !== undefined ? (
                   <YamlEditor readOnly value={selectedNode.content} height={560} />
                 ) : (
-                  <Alert type="warning" showIcon message="该文件非文本文件，暂不支持预览" />
+                  <AppAlert type="warning" showIcon message="该文件非文本文件，暂不支持预览" />
                 )}
               </>
             ) : (
-              <Alert type="info" showIcon message="请在左侧选择文件查看源码" />
+              <AppAlert type="info" showIcon message="请在左侧选择文件查看源码" />
             )}
           </Card>
         </div>
       ) : (
-        <Alert type="warning" showIcon message="未找到 Ansible 目录，请确认后端 ansible/ 是否存在" />
+        <AppAlert type="warning" showIcon message="未找到 Ansible 目录，请确认后端 ansible/ 是否存在" />
       )}
     </Spin>
   )
@@ -507,7 +508,7 @@ const AnsibleInventoryPanel: React.FC = () => {
     <Spin spinning={isLoading}>
       {data?.content ? (
         <>
-          <Alert
+          <AppAlert
             type="info"
             showIcon
             message={`Inventory 模板路径：${data.path || 'ansible/inventory.ini'}`}
@@ -516,7 +517,7 @@ const AnsibleInventoryPanel: React.FC = () => {
           <YamlEditor readOnly value={data.content} height={640} />
         </>
       ) : (
-        <Alert type="warning" showIcon message="未找到 Inventory 模板文件" />
+        <AppAlert type="warning" showIcon message="未找到 Inventory 模板文件" />
       )}
     </Spin>
   )
@@ -533,14 +534,14 @@ const AnsibleEnvPanel: React.FC = () => {
   return (
     <Spin spinning={isLoading}>
       {data?.installed ? (
-        <Alert
+        <AppAlert
           type="success"
           showIcon
           message="Ansible 已安装"
           description={data.version}
         />
       ) : (
-        <Alert
+        <AppAlert
           type="error"
           showIcon
           message="Ansible 未安装"
@@ -712,7 +713,7 @@ const RepoConfigPanel: React.FC = () => {
         <Space>
           <a onClick={() => handleEdit(record)}>编辑</a>
           <Popconfirm title="确认删除该仓库配置？" onConfirm={() => deleteMutation.mutate(record.id)}>
-            <a style={{ color: '#ff4d4f' }}>删除</a>
+            <a style={{ color: '#dc2626' }}>删除</a>
           </Popconfirm>
         </Space>
       ),

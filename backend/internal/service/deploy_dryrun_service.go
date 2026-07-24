@@ -150,6 +150,19 @@ var ansibleDryRunSteps = []ansibleDryRunStepDef{
 		DependsOn: []string{"kubeadm_init"},
 	},
 	{
+		Key:         "install_helm",
+		Title:       "安装 Helm",
+		Description: "按部署计划在 Master 安装 Helm；下载官方 HTTPS 归档并校验 SHA-256，随后验证 helm version",
+		Phase:       "addon",
+		AppliesTo:   "master",
+		Tasks: []string{
+			"检查 Master 是否已有可用 Helm",
+			"缺失时下载固定版本 Helm 并校验 SHA-256",
+			"安装至 /usr/local/bin/helm 并验证版本",
+		},
+		DependsOn: []string{"install_cni"},
+	},
+	{
 		Key:         "install_addons",
 		Title:       "安装 Kubernetes 扩展组件",
 		Description: "按部署计划安装 metrics-server、ingress-nginx 和本地存储插件，并等待工作负载就绪",
@@ -159,7 +172,7 @@ var ansibleDryRunSteps = []ansibleDryRunStepDef{
 			"应用计划选择的扩展组件清单",
 			"等待 Deployment rollout 完成",
 		},
-		DependsOn: []string{"install_cni"},
+		DependsOn: []string{"install_helm"},
 	},
 	{
 		Key:         "register",

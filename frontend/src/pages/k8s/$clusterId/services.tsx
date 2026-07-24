@@ -198,7 +198,7 @@ const ServicesPage: React.FC = () => {
             <Tag color="green">{ip}</Tag>
             <Tooltip title="复制">
               <CopyOutlined
-                style={{ cursor: 'pointer', color: '#1677ff' }}
+                style={{ cursor: 'pointer', color: '#2563eb' }}
                 onClick={() => copyExternalIP(ip)}
               />
             </Tooltip>
@@ -316,7 +316,7 @@ const ServicesPage: React.FC = () => {
             }
           >
             <Tooltip title="删除">
-              <a style={{ color: '#ff4d4f' }}>
+              <a style={{ color: '#dc2626' }}>
                 <DeleteOutlined />
               </a>
             </Tooltip>

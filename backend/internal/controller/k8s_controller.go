@@ -31,6 +31,7 @@ type K8sController struct {
 	logSessions           *service.PodLogSessionStore
 	namespaceDiagnosisSvc *service.NamespaceDiagnosisService
 	resourceInspectSvc    *service.ResourceInspectionService
+	deploySvc             *service.DeployService
 }
 
 type K8sEditRequest struct {
@@ -51,7 +52,12 @@ func NewK8sController(
 	logSessions *service.PodLogSessionStore,
 	namespaceDiagnosisSvc *service.NamespaceDiagnosisService,
 	resourceInspectSvc *service.ResourceInspectionService,
+	deployServices ...*service.DeployService,
 ) *K8sController {
+	var deploySvc *service.DeployService
+	if len(deployServices) > 0 {
+		deploySvc = deployServices[0]
+	}
 	return &K8sController{
 		svc:                   svc,
 		manifestSvc:           manifestSvc,
@@ -59,6 +65,7 @@ func NewK8sController(
 		logSessions:           logSessions,
 		namespaceDiagnosisSvc: namespaceDiagnosisSvc,
 		resourceInspectSvc:    resourceInspectSvc,
+		deploySvc:             deploySvc,
 	}
 }
 

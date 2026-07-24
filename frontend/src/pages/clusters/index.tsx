@@ -41,6 +41,7 @@ import {
   normalizeClusterStatus,
 } from '@/utils'
 import type { Cluster } from '@/types'
+import { DESIGN_COLORS } from '@/theme/designTokens'
 
 const { Text } = Typography
 
@@ -222,6 +223,7 @@ const ClusterListPage: React.FC = () => {
       title: '运行状态',
       dataIndex: 'status',
       width: 180,
+      align: 'center',
       render: (_, record) => <StatusTag status={record.status} />,
     },
     {
@@ -312,9 +314,9 @@ const ClusterListPage: React.FC = () => {
           <span
             className={[
               'app-console-toolbar__metric',
-              summary.healthPercent >= 90
+              summary.healthPercent === 100
                 ? 'is-high'
-                : summary.healthPercent >= 70
+                : summary.healthPercent >= 60
                   ? 'is-medium'
                   : 'is-low',
             ].join(' ')}
@@ -326,11 +328,11 @@ const ClusterListPage: React.FC = () => {
             percent={summary.healthPercent}
             showInfo={false}
             strokeColor={
-              summary.healthPercent >= 90
-                ? '#059669'
-                : summary.healthPercent >= 70
-                  ? '#d97706'
-                  : '#dc2626'
+              summary.healthPercent === 100
+                ? DESIGN_COLORS.success
+                : summary.healthPercent >= 60
+                  ? DESIGN_COLORS.warning
+                  : DESIGN_COLORS.danger
             }
             trailColor="rgba(148, 163, 184, 0.16)"
             size="small"
@@ -481,9 +483,6 @@ const ClusterListPage: React.FC = () => {
               </Descriptions>
             ),
           }}
-          rowClassName={(record) =>
-            needsAttention(record.status) ? 'app-table-row--attention' : ''
-          }
           pagination={{
             pageSize: 10,
             showSizeChanger: true,

@@ -68,7 +68,7 @@ const RESOURCE_CONFIGS: ResourceConfig[] = [
     key: 'namespace',
     label: '命名空间',
     icon: <AppstoreOutlined />,
-    color: '#7c3aed',
+    color: '#6d5bd0',
     bg: '#f5f3ff',
   },
   {
@@ -78,12 +78,12 @@ const RESOURCE_CONFIGS: ResourceConfig[] = [
     color: '#2563eb',
     bg: '#eff6ff',
   },
-  { key: 'pod', label: 'Pod', icon: <HddOutlined />, color: '#059669', bg: '#ecfdf5' },
+  { key: 'pod', label: 'Pod', icon: <HddOutlined />, color: '#047857', bg: '#ecfdf5' },
   {
     key: 'service',
     label: 'Service',
     icon: <NodeIndexOutlined />,
-    color: '#d97706',
+    color: '#b45309',
     bg: '#fffbeb',
   },
   {
@@ -97,7 +97,7 @@ const RESOURCE_CONFIGS: ResourceConfig[] = [
   { key: 'daemonset', label: 'DaemonSet', icon: <CloudServerOutlined />, color: '#65a30d', bg: '#f7fee7' },
   { key: 'secret', label: 'Secret', icon: <BlockOutlined />, color: '#be185d', bg: '#fdf2f8' },
   { key: 'pvc', label: 'PVC', icon: <HddOutlined />, color: '#0369a1', bg: '#f0f9ff' },
-  { key: 'ingress', label: 'Ingress', icon: <ApartmentOutlined />, color: '#c2410c', bg: '#fff7ed' },
+  { key: 'ingress', label: 'Ingress', icon: <ApartmentOutlined />, color: '#b45309', bg: '#fff7ed' },
 ]
 
 function getConfig(type: string): ResourceConfig {
@@ -130,7 +130,7 @@ interface TopoEdge {
 const edgeStyleMap: Record<string, { stroke: string; dasharray?: string; width: number }> = {
   owns: { stroke: '#2563eb', dasharray: undefined, width: 2 },
   contains: { stroke: '#cbd5e1', dasharray: '6,4', width: 1.5 },
-  routes: { stroke: '#c2410c', dasharray: '8,3', width: 2 },
+  routes: { stroke: '#b45309', dasharray: '8,3', width: 2 },
   default: { stroke: '#94a3b8', dasharray: '6,4', width: 1.5 },
 }
 
@@ -240,8 +240,8 @@ const NodeCard: React.FC<NodeCardProps> = React.memo(
     const statusColor = useMemo(() => {
       if (!node.status) return cfg.color
       const s = node.status.toLowerCase()
-      if (s === 'ready' || s === 'running' || s === 'active') return '#059669'
-      if (s === 'pending' || s === 'terminating') return '#d97706'
+      if (s === 'ready' || s === 'running' || s === 'active') return '#047857'
+      if (s === 'pending' || s === 'terminating') return '#b45309'
       if (s === 'failed' || s === 'error' || s === 'notready') return '#dc2626'
       return cfg.color
     }, [node.status, cfg.color])
@@ -998,11 +998,11 @@ const K8sTopologyPage: React.FC = () => {
           ))}
           <Divider type="vertical" />
           <Space size={4}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#059669' }} />
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#047857' }} />
             <Text style={{ fontSize: 11 }}>Ready/Running</Text>
           </Space>
           <Space size={4}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#d97706' }} />
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#b45309' }} />
             <Text style={{ fontSize: 11 }}>Pending</Text>
           </Space>
           <Space size={4}>

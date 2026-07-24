@@ -90,6 +90,7 @@ const AppGlobalCursor = () => {
 
     const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)')
     let pointerPressed = false
+    type CursorKind = 'default' | 'pointer' | 'text'
     type ScrollbarAxis = 'horizontal' | 'vertical'
     type ScrollbarHit = {
       element: HTMLElement
@@ -112,12 +113,73 @@ const AppGlobalCursor = () => {
     let currentScrollbar: ScrollbarHit | null = null
     let scrollbarDrag: ScrollbarDrag | null = null
 
+    const textCursorSelector = [
+      'textarea',
+      '[contenteditable]:not([contenteditable="false"])',
+      'input:not([type])',
+      'input[type="text"]',
+      'input[type="search"]',
+      'input[type="email"]',
+      'input[type="password"]',
+      'input[type="tel"]',
+      'input[type="url"]',
+      'input[type="number"]',
+      '.monaco-editor .view-lines',
+    ].join(',')
+    const pointerCursorSelector = [
+      'a[href]',
+      'button',
+      'summary',
+      'select',
+      'label[for]',
+      '[role="button"]',
+      '[role="link"]',
+      '[role="menuitem"]',
+      '[role="option"]',
+      '[role="tab"]',
+      '[role="checkbox"]',
+      '[role="radio"]',
+      '[role="switch"]',
+      '[role="combobox"]',
+      '[aria-haspopup]',
+      '[tabindex]:not([tabindex="-1"])',
+      'input[type="button"]',
+      'input[type="submit"]',
+      'input[type="reset"]',
+      'input[type="checkbox"]',
+      'input[type="radio"]',
+      'input[type="range"]',
+      'input[type="file"]',
+      '.ant-btn',
+      '.ant-select-selector',
+      '.ant-dropdown-menu-item',
+      '.ant-pagination-item',
+    ].join(',')
+
     const hideCursor = () => {
       cursor.style.opacity = '0'
     }
-    const positionCursor = (clientX: number, clientY: number) => {
-      const x = Math.round(clientX - 3)
-      const y = Math.round(clientY - 2)
+    const resolveCursorKind = (clientX: number, clientY: number): CursorKind => {
+      const target = document.elementFromPoint(clientX, clientY)
+      if (!(target instanceof Element) || target === scrollbarShield) return 'default'
+
+      const textTarget = target.closest(textCursorSelector)
+      if (textTarget && !textTarget.matches(':disabled, [aria-disabled="true"]')) return 'text'
+
+      const pointerTarget = target.closest(pointerCursorSelector)
+      if (pointerTarget && !pointerTarget.matches(':disabled, [aria-disabled="true"]')) return 'pointer'
+      return 'default'
+    }
+    const positionCursor = (clientX: number, clientY: number, kind: CursorKind = 'default') => {
+      const offsets: Record<CursorKind, { x: number; y: number }> = {
+        default: { x: 2, y: 1 },
+        pointer: { x: 10, y: 10 },
+        text: { x: 5, y: 10 },
+      }
+      const offset = offsets[kind]
+      const x = Math.round(clientX - offset.x)
+      const y = Math.round(clientY - offset.y)
+      cursor.dataset.kind = kind
       cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`
       cursor.style.opacity = '1'
     }
@@ -246,25 +308,35 @@ const AppGlobalCursor = () => {
         return
       }
 
-      positionCursor(event.clientX, event.clientY)
       if (scrollbarDrag) {
+        positionCursor(event.clientX, event.clientY)
         updateScrollbarDrag(event.clientX, event.clientY)
         return
       }
       const hit = findScrollbarAtPoint(event.clientX, event.clientY)
-      if (hit) showScrollbarShield(hit)
-      else hideScrollbarShield()
+      if (hit) {
+        showScrollbarShield(hit)
+        positionCursor(event.clientX, event.clientY)
+      } else {
+        hideScrollbarShield()
+        positionCursor(event.clientX, event.clientY, resolveCursorKind(event.clientX, event.clientY))
+      }
     }
     // Native scrollbar dragging can suppress pointer events on some Chromium/
     // Windows combinations. Mouse events provide a fallback while pressed.
     const handleMouseMove = (event: MouseEvent) => {
       if (!finePointer.matches || event.buttons === 0) return
       pointerPressed = true
-      positionCursor(event.clientX, event.clientY)
+      positionCursor(
+        event.clientX,
+        event.clientY,
+        scrollbarDrag ? 'default' : resolveCursorKind(event.clientX, event.clientY),
+      )
       updateScrollbarDrag(event.clientX, event.clientY)
     }
     const handlePointerDown = (event: PointerEvent) => {
       pointerPressed = true
+      cursor.classList.add('is-pressed')
       handlePointerMove(event)
       const hit = currentScrollbar || findScrollbarAtPoint(event.clientX, event.clientY)
       if (!hit) return
@@ -289,6 +361,7 @@ const AppGlobalCursor = () => {
     }
     const handlePointerUp = (event: PointerEvent | MouseEvent) => {
       pointerPressed = false
+      cursor.classList.remove('is-pressed')
       if (scrollbarDrag && 'pointerId' in event && scrollbarShield.hasPointerCapture(scrollbarDrag.pointerId)) {
         scrollbarShield.releasePointerCapture(scrollbarDrag.pointerId)
       }
@@ -316,6 +389,7 @@ const AppGlobalCursor = () => {
     }
     const handleWindowBlur = () => {
       pointerPressed = false
+      cursor.classList.remove('is-pressed')
       scrollbarDrag = null
       hideScrollbarShield()
       hideCursor()
@@ -349,8 +423,10 @@ const AppGlobalCursor = () => {
   return (
     <>
       <span ref={scrollbarShieldRef} className="app-scrollbar-pointer-shield" aria-hidden="true" />
-      <span ref={cursorRef} className="app-global-cursor" aria-hidden="true">
-        <img src="/brand/aiops-cursor.svg?v=5" alt="" width="24" height="27" draggable={false} />
+      <span ref={cursorRef} className="app-global-cursor" data-kind="default" aria-hidden="true">
+        <img className="app-global-cursor__asset app-global-cursor__default" src="/brand/aiops-cursor.svg?v=5" alt="" draggable={false} />
+        <img className="app-global-cursor__asset app-global-cursor__pointer" src="/brand/aiops-cursor-pointer.svg?v=2" alt="" draggable={false} />
+        <img className="app-global-cursor__asset app-global-cursor__text" src="/brand/aiops-cursor-text.svg?v=2" alt="" draggable={false} />
       </span>
     </>
   )
@@ -972,7 +1048,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
                 count={activeNavIncidents.length}
                 overflowCount={99}
                 size="small"
-                color={criticalNavIncidents > 0 ? '#dc2626' : '#d97706'}
+                color={criticalNavIncidents > 0 ? '#dc2626' : '#b45309'}
                 title={`${activeNavIncidents.length} 个未恢复事件，其中 ${criticalNavIncidents} 个严重事件`}
               />
             ) : null}
@@ -999,7 +1075,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
               label: (
                 <Space>
                   <span>{cluster.name}</span>
-                  <span style={{ color: '#999', fontSize: 12 }}>{cluster.k8sVersion}</span>
+                  <span className="app-cluster-option__version">{cluster.k8sVersion}</span>
                   <Tag color={getClusterStatusColor(cluster.status)}>
                     {getClusterStatusText(cluster.status)}
                   </Tag>

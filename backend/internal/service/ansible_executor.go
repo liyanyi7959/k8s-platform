@@ -30,6 +30,7 @@ var ansibleSteps = []ansibleStepDef{
 	{Key: "kubeadm_init", Title: "Kubernetes Master 初始化", PlayName: "Kubernetes Master 初始化"},
 	{Key: "join_workers", Title: "Worker 节点加入集群", PlayName: "Worker 节点加入集群"},
 	{Key: "install_cni", Title: "安装 CNI 网络插件", PlayName: "安装 CNI 网络插件"},
+	{Key: "install_helm", Title: "安装 Helm", PlayName: "安装 Helm"},
 	{Key: "install_addons", Title: "安装 Kubernetes 扩展组件", PlayName: "安装 Kubernetes 扩展组件"},
 	{Key: "register", Title: "节点注册到管理平台", PlayName: "节点注册到管理平台"},
 }

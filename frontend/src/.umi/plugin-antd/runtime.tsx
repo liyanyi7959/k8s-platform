@@ -18,7 +18,7 @@ const getAntdConfig = () => {
       key: 'antd',
       type: ApplyPluginsType.modify,
       initialValue: {
-        ...{"theme":{"token":{"colorPrimary":"#2563eb","colorInfo":"#2563eb","colorSuccess":"#047857","colorWarning":"#b45309","colorError":"#dc2626","colorTextSecondary":"#64748b","borderRadius":12}}},
+        ...{"theme":{"token":{"colorPrimary":"#2563eb","colorInfo":"#2563eb","colorSuccess":"#047857","colorWarning":"#b45309","colorError":"#dc2626","colorText":"#17283f","colorTextSecondary":"#64748b","colorTextTertiary":"#94a3b8","colorBorder":"#e2e8f0","colorBorderSecondary":"#edf1f6","colorBgLayout":"#f3f6fa","fontFamily":"Inter, 'SF Pro Text', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif","fontSize":14,"controlHeight":38,"borderRadius":12}}},
       },
     });
     if (!cacheAntdConfig.theme) {

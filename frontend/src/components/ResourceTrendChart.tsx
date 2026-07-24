@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { DESIGN_COLORS } from '@/theme/designTokens'
 
 export interface ResourceTrendPoint {
   time: string
@@ -18,7 +19,7 @@ const left = 54
 const right = 18
 const top = 18
 const bottom = 42
-const colors = { cpu: '#0891b2', memory: '#7c3aed' }
+const colors = { cpu: DESIGN_COLORS.dataPrimary, memory: DESIGN_COLORS.dataSecondary }
 
 const valueOf = (value: number | null) =>
   typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null
@@ -108,22 +109,22 @@ export const ResourceTrendChart: React.FC<ResourceTrendChartProps> = ({
                 x2={width - right}
                 y1={y}
                 y2={y}
-                stroke="#e5e7eb"
+                stroke={DESIGN_COLORS.grid}
                 strokeDasharray="4 4"
               />
-              <text x={left - 10} y={y + 4} textAnchor="end" fill="#9ca3af" fontSize="11">
+              <text x={left - 10} y={y + 4} textAnchor="end" fill={DESIGN_COLORS.textMuted} fontSize="11">
                 {tick}%
               </text>
             </g>
           )
         })}
-        <line x1={left} x2={left} y1={top} y2={top + plotHeight} stroke="#d1d5db" />
+        <line x1={left} x2={left} y1={top} y2={top + plotHeight} stroke={DESIGN_COLORS.border} />
         <line
           x1={left}
           x2={width - right}
           y1={top + plotHeight}
           y2={top + plotHeight}
-          stroke="#d1d5db"
+          stroke={DESIGN_COLORS.border}
         />
         {labels.map((point, index) =>
           index % Math.max(1, Math.ceil(labels.length / 8)) === 0 || index === labels.length - 1 ? (
@@ -132,7 +133,7 @@ export const ResourceTrendChart: React.FC<ResourceTrendChartProps> = ({
               x={left + (index / Math.max(1, labels.length - 1)) * plotWidth}
               y={height - 14}
               textAnchor="middle"
-              fill="#9ca3af"
+              fill={DESIGN_COLORS.textMuted}
               fontSize="11"
             >
               {point.time}
@@ -188,7 +189,7 @@ export const ResourceTrendChart: React.FC<ResourceTrendChartProps> = ({
             x2={hoveredX}
             y1={top}
             y2={top + plotHeight}
-            stroke="#94a3b8"
+            stroke={DESIGN_COLORS.textMuted}
             strokeWidth="1"
             strokeDasharray="3 3"
           />
@@ -202,7 +203,7 @@ export const ResourceTrendChart: React.FC<ResourceTrendChartProps> = ({
           display: 'flex',
           gap: 16,
           fontSize: 12,
-          color: '#6b7280',
+          color: DESIGN_COLORS.textSecondary,
         }}
       >
         <span>
@@ -248,7 +249,7 @@ export const ResourceTrendChart: React.FC<ResourceTrendChartProps> = ({
             padding: '8px 10px',
             borderRadius: 6,
             background: 'rgba(255,255,255,0.96)',
-            border: '1px solid #e5e7eb',
+            border: `1px solid ${DESIGN_COLORS.border}`,
             boxShadow: '0 4px 14px rgba(15,23,42,0.14)',
             pointerEvents: 'none',
             zIndex: 2,
@@ -271,7 +272,7 @@ export const ResourceTrendChart: React.FC<ResourceTrendChartProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#9ca3af',
+            color: DESIGN_COLORS.textMuted,
             fontSize: 13,
           }}
         >

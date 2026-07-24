@@ -283,6 +283,7 @@ export function createDeployPlan(data: CreateDeployPlanRequest): Promise<DeployP
       cni_type: data.cniType,
       cni_config: data.cniConfig,
       addons: data.addons,
+      helm_install: data.helmInstall,
       step_overrides: serializeStepOverrides(data.stepOverrides),
       nodes: (data.nodes || []).map((n) => ({
         server_id: n.serverId,
@@ -305,6 +306,7 @@ export function updateDeployPlan(id: number, data: Partial<CreateDeployPlanReque
       cni_type: data.cniType,
       cni_config: data.cniConfig,
       addons: data.addons,
+      helm_install: data.helmInstall,
       step_overrides: serializeStepOverrides(data.stepOverrides),
       nodes: (data.nodes || []).map((n) => ({
         server_id: n.serverId,

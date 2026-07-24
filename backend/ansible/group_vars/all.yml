@@ -28,6 +28,10 @@ kubeadm_init_extra_args: ""
 # 可选扩展组件
 addons: []
 
+# Helm（仅安装在 Master；由部署计划 helm_install 控制）
+helm_install: false
+helm_version: "v3.16.4"
+
 # 由后端为每次任务注入唯一的临时输出路径
 preflight_ignored_disk_hosts: []
 
