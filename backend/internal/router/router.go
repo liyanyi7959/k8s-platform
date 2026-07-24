@@ -98,7 +98,7 @@ func New(d Deps) (*gin.Engine, error) {
 		aiChatSvc := service.NewAIChatService(d.DB, aiGatewaySvc, aiToolSvc, aiActionSvc, aiFileSvc)
 		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiFileSvc, aiToolSvc, aiActionSvc)
 		deploySvc := service.NewDeployService(d.DB, d.EncryptionKey, taskStore, clusterReg)
-		deployCtl = controller.NewDeployController(deploySvc)
+		deployCtl = controller.NewDeployController(deploySvc, execSessions)
 		automationTaskCtl = controller.NewAutomationTaskController(service.NewTaskService(taskStore))
 		deployConfigSvc := service.NewDeployConfigService(d.DB)
 		deployConfigCtl = controller.NewDeployConfigController(deployConfigSvc)
@@ -241,10 +241,13 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 
 	// 服务器管理
 	deploy.GET("/servers", readServer, ctl.ListServers)
+	deploy.GET("/servers/summary", readServer, ctl.GetServerSummary)
 	deploy.POST("/servers", writeServer, ctl.CreateServer)
 	deploy.GET("/servers/:id", readServer, ctl.GetServer)
 	deploy.PUT("/servers/:id", writeServer, ctl.UpdateServer)
 	deploy.POST("/servers/:id/test-ssh", readServer, ctl.TestSSH)
+	deploy.POST("/servers/:id/terminal-session", writeServer, ctl.CreateServerTerminalSession)
+	deploy.GET("/servers/terminal/ws", writeServer, ctl.ServerTerminalWS)
 	deploy.DELETE("/servers/:id", deleteServer, ctl.DeleteServer)
 
 	// SSH 凭证

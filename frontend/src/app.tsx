@@ -6,7 +6,6 @@ import {
   Badge,
   ConfigProvider,
   Dropdown,
-  Radio,
   Select,
   Space,
   Tag,
@@ -15,20 +14,16 @@ import {
 } from 'antd'
 import {
   AlertOutlined,
-  ApartmentOutlined,
   AppstoreOutlined,
   ArrowLeftOutlined,
   AuditOutlined,
-  CloudDownloadOutlined,
   CloudServerOutlined,
   ClusterOutlined,
   DashboardOutlined,
   DownOutlined,
   FileSearchOutlined,
-  HddOutlined,
   LockOutlined,
   LogoutOutlined,
-  NodeIndexOutlined,
   PlusOutlined,
   RobotOutlined,
   RocketOutlined,
@@ -39,6 +34,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { getCurrentUser, logout as requestLogout } from '@/services/auth'
 import { listClusters } from '@/services/clusters'
+import { listIncidents } from '@/services/monitor'
 import { ChangePasswordModal } from '@/components'
 import type { User } from '@/types'
 import type { Cluster as ModelCluster } from '@/models/cluster'
@@ -85,50 +81,278 @@ const ensureStaticHolder = () => {
 
 const AppGlobalCursor = () => {
   const cursorRef = useRef<HTMLSpanElement>(null)
+  const scrollbarShieldRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     const cursor = cursorRef.current
-    if (!cursor || typeof window === 'undefined') return
+    const scrollbarShield = scrollbarShieldRef.current
+    if (!cursor || !scrollbarShield || typeof window === 'undefined') return
 
     const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)')
+    let pointerPressed = false
+    type ScrollbarAxis = 'horizontal' | 'vertical'
+    type ScrollbarHit = {
+      element: HTMLElement
+      axis: ScrollbarAxis
+      left: number
+      top: number
+      width: number
+      height: number
+      trackLength: number
+      thumbLength: number
+      thumbOffset: number
+      maxScroll: number
+    }
+    type ScrollbarDrag = {
+      element: HTMLElement
+      axis: ScrollbarAxis
+      grabOffset: number
+      pointerId: number
+    }
+    let currentScrollbar: ScrollbarHit | null = null
+    let scrollbarDrag: ScrollbarDrag | null = null
+
     const hideCursor = () => {
       cursor.style.opacity = '0'
     }
+    const positionCursor = (clientX: number, clientY: number) => {
+      const x = Math.round(clientX - 3)
+      const y = Math.round(clientY - 2)
+      cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`
+      cursor.style.opacity = '1'
+    }
+    const hideScrollbarShield = () => {
+      currentScrollbar = null
+      scrollbarShield.style.display = 'none'
+    }
+    const measureScrollbar = (element: HTMLElement, axis: ScrollbarAxis): ScrollbarHit | null => {
+      const rect = element.getBoundingClientRect()
+      const style = window.getComputedStyle(element)
+      const borderLeft = Number.parseFloat(style.borderLeftWidth) || 0
+      const borderRight = Number.parseFloat(style.borderRightWidth) || 0
+      const borderTop = Number.parseFloat(style.borderTopWidth) || 0
+      const borderBottom = Number.parseFloat(style.borderBottomWidth) || 0
+      const verticalWidth = Math.max(0, element.offsetWidth - element.clientWidth - borderLeft - borderRight)
+      const horizontalHeight = Math.max(0, element.offsetHeight - element.clientHeight - borderTop - borderBottom)
+
+      if (axis === 'horizontal') {
+        const maxScroll = element.scrollWidth - element.clientWidth
+        const trackLength = element.clientWidth
+        if (!['auto', 'scroll'].includes(style.overflowX) || maxScroll <= 1 || horizontalHeight <= 0 || trackLength <= 0) {
+          return null
+        }
+        const thumbLength = Math.min(trackLength, Math.max(24, trackLength * (element.clientWidth / element.scrollWidth)))
+        const thumbTravel = Math.max(0, trackLength - thumbLength)
+        return {
+          element,
+          axis,
+          left: rect.left + borderLeft,
+          top: rect.bottom - borderBottom - horizontalHeight,
+          width: trackLength,
+          height: horizontalHeight,
+          trackLength,
+          thumbLength,
+          thumbOffset: maxScroll > 0 ? (element.scrollLeft / maxScroll) * thumbTravel : 0,
+          maxScroll,
+        }
+      }
+
+      const maxScroll = element.scrollHeight - element.clientHeight
+      const trackLength = element.clientHeight
+      if (!['auto', 'scroll'].includes(style.overflowY) || maxScroll <= 1 || verticalWidth <= 0 || trackLength <= 0) {
+        return null
+      }
+      const thumbLength = Math.min(trackLength, Math.max(24, trackLength * (element.clientHeight / element.scrollHeight)))
+      const thumbTravel = Math.max(0, trackLength - thumbLength)
+      return {
+        element,
+        axis,
+        left: rect.right - borderRight - verticalWidth,
+        top: rect.top + borderTop,
+        width: verticalWidth,
+        height: trackLength,
+        trackLength,
+        thumbLength,
+        thumbOffset: maxScroll > 0 ? (element.scrollTop / maxScroll) * thumbTravel : 0,
+        maxScroll,
+      }
+    }
+    const findScrollbarAtPoint = (clientX: number, clientY: number): ScrollbarHit | null => {
+      const previousPointerEvents = scrollbarShield.style.pointerEvents
+      scrollbarShield.style.pointerEvents = 'none'
+      const elements = document.elementsFromPoint(clientX, clientY)
+      scrollbarShield.style.pointerEvents = previousPointerEvents
+
+      const candidates = new Set<HTMLElement>()
+      elements.forEach((start) => {
+        let element: Element | null = start
+        while (element) {
+          if (element instanceof HTMLElement && element !== scrollbarShield) candidates.add(element)
+          element = element.parentElement
+        }
+      })
+
+      for (const element of candidates) {
+        const horizontal = measureScrollbar(element, 'horizontal')
+        if (
+          horizontal &&
+          clientX >= horizontal.left &&
+          clientX <= horizontal.left + horizontal.width &&
+          clientY >= horizontal.top &&
+          clientY <= horizontal.top + horizontal.height
+        ) {
+          return horizontal
+        }
+        const vertical = measureScrollbar(element, 'vertical')
+        if (
+          vertical &&
+          clientX >= vertical.left &&
+          clientX <= vertical.left + vertical.width &&
+          clientY >= vertical.top &&
+          clientY <= vertical.top + vertical.height
+        ) {
+          return vertical
+        }
+      }
+      return null
+    }
+    const showScrollbarShield = (hit: ScrollbarHit) => {
+      currentScrollbar = hit
+      scrollbarShield.style.display = 'block'
+      scrollbarShield.style.left = `${Math.round(hit.left)}px`
+      scrollbarShield.style.top = `${Math.round(hit.top)}px`
+      scrollbarShield.style.width = `${Math.ceil(hit.width)}px`
+      scrollbarShield.style.height = `${Math.ceil(hit.height)}px`
+    }
+    const updateScrollbarDrag = (clientX: number, clientY: number) => {
+      if (!scrollbarDrag) return
+      const hit = measureScrollbar(scrollbarDrag.element, scrollbarDrag.axis)
+      if (!hit) return
+      const pointerPosition = scrollbarDrag.axis === 'horizontal' ? clientX - hit.left : clientY - hit.top
+      const thumbTravel = Math.max(0, hit.trackLength - hit.thumbLength)
+      const nextThumbOffset = Math.min(thumbTravel, Math.max(0, pointerPosition - scrollbarDrag.grabOffset))
+      const nextScroll = thumbTravel > 0 ? (nextThumbOffset / thumbTravel) * hit.maxScroll : 0
+      if (scrollbarDrag.axis === 'horizontal') {
+        scrollbarDrag.element.scrollLeft = nextScroll
+      } else {
+        scrollbarDrag.element.scrollTop = nextScroll
+      }
+      showScrollbarShield(measureScrollbar(scrollbarDrag.element, scrollbarDrag.axis) || hit)
+    }
+
     const handlePointerMove = (event: PointerEvent) => {
       if (!finePointer.matches || event.pointerType === 'touch') {
         hideCursor()
         return
       }
 
-      const x = Math.round(event.clientX - 3)
-      const y = Math.round(event.clientY - 2)
-      cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`
-      cursor.style.opacity = '1'
+      positionCursor(event.clientX, event.clientY)
+      if (scrollbarDrag) {
+        updateScrollbarDrag(event.clientX, event.clientY)
+        return
+      }
+      const hit = findScrollbarAtPoint(event.clientX, event.clientY)
+      if (hit) showScrollbarShield(hit)
+      else hideScrollbarShield()
+    }
+    // Native scrollbar dragging can suppress pointer events on some Chromium/
+    // Windows combinations. Mouse events provide a fallback while pressed.
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!finePointer.matches || event.buttons === 0) return
+      pointerPressed = true
+      positionCursor(event.clientX, event.clientY)
+      updateScrollbarDrag(event.clientX, event.clientY)
+    }
+    const handlePointerDown = (event: PointerEvent) => {
+      pointerPressed = true
+      handlePointerMove(event)
+      const hit = currentScrollbar || findScrollbarAtPoint(event.clientX, event.clientY)
+      if (!hit) return
+
+      event.preventDefault()
+      event.stopPropagation()
+      showScrollbarShield(hit)
+      const pointerPosition = hit.axis === 'horizontal' ? event.clientX - hit.left : event.clientY - hit.top
+      const onThumb = pointerPosition >= hit.thumbOffset && pointerPosition <= hit.thumbOffset + hit.thumbLength
+      scrollbarDrag = {
+        element: hit.element,
+        axis: hit.axis,
+        grabOffset: onThumb ? pointerPosition - hit.thumbOffset : hit.thumbLength / 2,
+        pointerId: event.pointerId,
+      }
+      try {
+        scrollbarShield.setPointerCapture(event.pointerId)
+      } catch {
+        // The window-level listeners still keep manual dragging functional.
+      }
+      updateScrollbarDrag(event.clientX, event.clientY)
+    }
+    const handlePointerUp = (event: PointerEvent | MouseEvent) => {
+      pointerPressed = false
+      if (scrollbarDrag && 'pointerId' in event && scrollbarShield.hasPointerCapture(scrollbarDrag.pointerId)) {
+        scrollbarShield.releasePointerCapture(scrollbarDrag.pointerId)
+      }
+      scrollbarDrag = null
     }
     const handlePointerOut = (event: PointerEvent) => {
-      if (event.relatedTarget === null) hideCursor()
+      if (event.relatedTarget === null && !pointerPressed) hideCursor()
     }
     const handlePointerCapabilityChange = () => {
       if (!finePointer.matches) hideCursor()
     }
+    const handleScrollbarWheel = (event: WheelEvent) => {
+      if (!currentScrollbar) return
+      event.preventDefault()
+      const delta = currentScrollbar.axis === 'horizontal'
+        ? (event.deltaX || event.deltaY)
+        : (event.deltaY || event.deltaX)
+      if (currentScrollbar.axis === 'horizontal') {
+        currentScrollbar.element.scrollLeft += delta
+      } else {
+        currentScrollbar.element.scrollTop += delta
+      }
+      const nextHit = measureScrollbar(currentScrollbar.element, currentScrollbar.axis)
+      if (nextHit) showScrollbarShield(nextHit)
+    }
+    const handleWindowBlur = () => {
+      pointerPressed = false
+      scrollbarDrag = null
+      hideScrollbarShield()
+      hideCursor()
+    }
 
     window.addEventListener('pointermove', handlePointerMove, { passive: true })
+    window.addEventListener('mousemove', handleMouseMove, { capture: true, passive: true })
+    window.addEventListener('pointerdown', handlePointerDown, true)
+    window.addEventListener('pointerup', handlePointerUp, true)
+    window.addEventListener('mouseup', handlePointerUp, true)
+    window.addEventListener('pointercancel', handlePointerUp, true)
     window.addEventListener('pointerout', handlePointerOut)
-    window.addEventListener('blur', hideCursor)
+    window.addEventListener('blur', handleWindowBlur)
+    scrollbarShield.addEventListener('wheel', handleScrollbarWheel, { passive: false })
     finePointer.addEventListener('change', handlePointerCapabilityChange)
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('mousemove', handleMouseMove, true)
+      window.removeEventListener('pointerdown', handlePointerDown, true)
+      window.removeEventListener('pointerup', handlePointerUp, true)
+      window.removeEventListener('mouseup', handlePointerUp, true)
+      window.removeEventListener('pointercancel', handlePointerUp, true)
       window.removeEventListener('pointerout', handlePointerOut)
-      window.removeEventListener('blur', hideCursor)
+      window.removeEventListener('blur', handleWindowBlur)
+      scrollbarShield.removeEventListener('wheel', handleScrollbarWheel)
       finePointer.removeEventListener('change', handlePointerCapabilityChange)
     }
   }, [])
 
   return (
-    <span ref={cursorRef} className="app-global-cursor" aria-hidden="true">
-      <img src="/brand/aiops-cursor.svg?v=5" alt="" width="24" height="27" draggable={false} />
-    </span>
+    <>
+      <span ref={scrollbarShieldRef} className="app-scrollbar-pointer-shield" aria-hidden="true" />
+      <span ref={cursorRef} className="app-global-cursor" aria-hidden="true">
+        <img src="/brand/aiops-cursor.svg?v=5" alt="" width="24" height="27" draggable={false} />
+      </span>
+    </>
   )
 }
 
@@ -498,6 +722,9 @@ const buildClusterMenuItems = (clusterId: string): MenuItem[] => [
 // 用于全局模式（"集群管理"）和集群模式（K8s 资源组）
 // ============================================================
 const getGlobalOpenKeys = (pathname: string): string[] => {
+  if (pathname === '/clusters/hosts' || pathname.startsWith('/clusters/hosts/')) {
+    return ['/servers']
+  }
   const openKeys: string[] = []
   if (pathname.startsWith('/clusters')) {
     openKeys.push('/clusters')
@@ -596,6 +823,14 @@ export const layout = ({ initialState, setInitialState }: any) => {
   const currentUserName = getUserDisplayName(initialState?.currentUser)
   const currentUsername = initialState?.currentUser?.username || 'admin'
 
+  const { data: navIncidents } = useQuery({
+    queryKey: ['monitor-nav-incidents'],
+    queryFn: ({ signal }) => listIncidents({ page: 1, pageSize: 100 }, signal),
+    refetchInterval: 30_000,
+  })
+  const activeNavIncidents = (navIncidents?.items || []).filter((item) => item.status !== 'resolved')
+  const criticalNavIncidents = activeNavIncidents.filter((item) => item.severity === 'critical').length
+
   // 集群列表（用于 Select 下拉）
   const clusters = clusterListRes?.items || []
 
@@ -612,6 +847,26 @@ export const layout = ({ initialState, setInitialState }: any) => {
     : isClusterMode
       ? getClusterOpenKeys(pathname)
       : getGlobalOpenKeys(pathname)
+  const [menuOpenKeys, setMenuOpenKeys] = useState<string[]>(defaultOpenKeys)
+
+  useEffect(() => {
+    setMenuOpenKeys(defaultOpenKeys)
+  }, [pathname, isAdminMode, isClusterMode, currentClusterId])
+
+  const handleMenuOpenChange = (keys: string[]) => {
+    if (isAdminMode || isClusterMode) {
+      setMenuOpenKeys(keys)
+      return
+    }
+
+    const globalParentKeys = new Set(['/clusters', '/servers', '/automation', '/monitor', '/ai'])
+    const latestOpenedKey = keys.find((key) => !menuOpenKeys.includes(key))
+    if (latestOpenedKey && globalParentKeys.has(latestOpenedKey)) {
+      setMenuOpenKeys([latestOpenedKey])
+      return
+    }
+    setMenuOpenKeys(keys.filter((key) => globalParentKeys.has(key)).slice(-1))
+  }
 
   // ---- 退出登录 ----
   const handleLogout = async () => {
@@ -662,7 +917,8 @@ export const layout = ({ initialState, setInitialState }: any) => {
     // ========== 菜单选中与展开控制 ==========
     menuProps: {
       selectedKeys: [pathname],
-      defaultOpenKeys,
+      openKeys: menuOpenKeys,
+      onOpenChange: handleMenuOpenChange,
     },
 
     // ========== 菜单项渲染（处理点击跳转） ==========
@@ -711,7 +967,15 @@ export const layout = ({ initialState, setInitialState }: any) => {
         return (
           <span className="app-menu-label-with-badge">
             {dom}
-            <Badge color="#ef4444" />
+            {activeNavIncidents.length > 0 ? (
+              <Badge
+                count={activeNavIncidents.length}
+                overflowCount={99}
+                size="small"
+                color={criticalNavIncidents > 0 ? '#dc2626' : '#d97706'}
+                title={`${activeNavIncidents.length} 个未恢复事件，其中 ${criticalNavIncidents} 个严重事件`}
+              />
+            ) : null}
           </span>
         )
       }
@@ -721,7 +985,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
     avatarProps: false,
     onMenuHeaderClick: () => history.push('/dashboard'),
 
-    // ========== 右侧内容区：集群选择器 + 时间范围 + 用户头像 ==========
+    // ========== 右侧内容区：集群选择器 + 用户头像 ==========
     rightContentRender: () => (
       <Space size={12} className="app-layout-header-actions">
         {!isAdminMode ? (
@@ -755,20 +1019,6 @@ export const layout = ({ initialState, setInitialState }: any) => {
             }}
           />
         ) : null}
-        <Radio.Group
-          size="small"
-          defaultValue={localStorage.getItem('aiops-time-range') || '24h'}
-          optionType="button"
-          buttonStyle="solid"
-          onChange={(event) => {
-            localStorage.setItem('aiops-time-range', event.target.value)
-          }}
-          options={[
-            { label: '近1h', value: '1h' },
-            { label: '近24h', value: '24h' },
-            { label: '近7d', value: '7d' },
-          ]}
-        />
         <Dropdown
           overlayClassName="app-sider-account-dropdown"
           menu={{ items: userMenuItems, onClick: handleUserMenuClick }}

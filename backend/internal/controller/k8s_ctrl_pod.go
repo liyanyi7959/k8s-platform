@@ -408,6 +408,8 @@ func (kc *K8sController) CreatePodExecSession(c *gin.Context) {
 	sessionID := kc.execSessions.NewSessionID()
 	wsURL := "/api/v1/ws/pod-exec?session_id=" + url.QueryEscape(sessionID)
 	kc.execSessions.Put(sessionID, service.ExecSession{
+		Kind:      "pod",
+		UserID:    currentUserID(c),
 		ClusterID: id,
 		Namespace: decodePathParam(c.Param("ns")),
 		Pod:       decodePathParam(c.Param("pod")),

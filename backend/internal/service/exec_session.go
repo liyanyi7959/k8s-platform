@@ -1,4 +1,4 @@
-// exec_session.go 管理 Pod Exec 会话的临时存储。
+// exec_session.go 管理交互式终端会话的临时存储。
 //
 // 设计要点：
 // - ExecSessionStore 为结构体（而非全局变量），支持依赖注入与单元测试；
@@ -14,10 +14,13 @@ import (
 	"time"
 )
 
-// ExecSession 描述一次 Pod Exec 的目标信息。
+// ExecSession 描述一次 Pod Exec 或服务器终端的目标信息。
 // 在前端发起 WebSocket 连接前，先由 REST 接口创建会话并返回 session_id；
 // 建链时携带 session_id，服务端据此找到对应的 exec 目标。
 type ExecSession struct {
+	Kind      string
+	UserID    uint64
+	ServerID  uint64
 	ClusterID uint64
 	Namespace string
 	Pod       string

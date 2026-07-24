@@ -1,268 +1,135 @@
-import React from 'react'
-import { Card, Row, Col, Statistic, Progress, List, Tag, Typography, Space, Tooltip } from 'antd'
-import {
-  AlertOutlined,
-  CloudServerOutlined,
-  DashboardOutlined,
-  WarningOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-} from '@ant-design/icons'
-import { useQuery } from '@tanstack/react-query'
+import React, { useMemo } from 'react'
+import { history } from '@umijs/max'
+import { useQueries, useQuery } from '@tanstack/react-query'
+import { AlertOutlined, CheckCircleOutlined, ClockCircleOutlined, ClusterOutlined, DashboardOutlined, WarningOutlined } from '@ant-design/icons'
+import { Badge, Button, Card, Col, Empty, Progress, Row, Spin, Tag, Typography } from 'antd'
+import dayjs from 'dayjs'
+
 import { AppPage } from '@/components'
-import { getMetricsOverview, listAlertEvents } from '@/services/monitor'
-import { formatDate } from '@/utils'
-import type { ClusterMetric, AlertEvent } from '@/types'
+import { listClusters } from '@/services/clusters'
+import { getClusterOverview } from '@/services/k8s'
+import { listIncidents } from '@/services/monitor'
+import { isClusterHealthy } from '@/utils'
 
 const { Text } = Typography
 
-/** 集群指标可视化卡片 */
-const ClusterMetricCard: React.FC<{ cluster: ClusterMetric }> = ({ cluster }) => {
-  const cpuPercent = Math.round(cluster.cpuUsage * 100)
-  const memPercent = Math.round(cluster.memoryUsage * 100)
-  const diskPercent = Math.round(cluster.diskUsage * 100)
+const severityLabel = { critical: '严重', warning: '警告', info: '提示' }
 
-  const getProgressColor = (percent: number) => {
-    if (percent >= 90) return '#ff4d4f'
-    if (percent >= 70) return '#faad14'
-    return '#52c41a'
-  }
-
-  return (
-    <Card size="small" title={cluster.clusterName} style={{ marginBottom: 16 }}>
-      <Row gutter={[16, 12]}>
-        <Col span={8}>
-          <div style={{ textAlign: 'center' }}>
-            <Progress
-              type="dashboard"
-              percent={cpuPercent}
-              size={80}
-              strokeColor={getProgressColor(cpuPercent)}
-              format={(p) => `${p}%`}
-            />
-            <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>CPU</div>
-          </div>
-        </Col>
-        <Col span={8}>
-          <div style={{ textAlign: 'center' }}>
-            <Progress
-              type="dashboard"
-              percent={memPercent}
-              size={80}
-              strokeColor={getProgressColor(memPercent)}
-              format={(p) => `${p}%`}
-            />
-            <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>内存</div>
-          </div>
-        </Col>
-        <Col span={8}>
-          <div style={{ textAlign: 'center' }}>
-            <Progress
-              type="dashboard"
-              percent={diskPercent}
-              size={80}
-              strokeColor={getProgressColor(diskPercent)}
-              format={(p) => `${p}%`}
-            />
-            <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>磁盘</div>
-          </div>
-        </Col>
-      </Row>
-      <Row gutter={16} style={{ marginTop: 12 }}>
-        <Col span={8}>
-          <Statistic title="Pod" value={cluster.podCount} suffix={`/ ${cluster.podCapacity}`} />
-        </Col>
-        <Col span={8}>
-          <Statistic title="节点" value={cluster.nodeCount} />
-        </Col>
-        <Col span={8}>
-          <Statistic title="告警" value={cluster.alertCount} valueStyle={{ color: cluster.alertCount > 0 ? '#ff4d4f' : '#52c41a' }} />
-        </Col>
-      </Row>
-    </Card>
-  )
-}
-
-/** 资源使用条形图（纯 CSS 实现） */
-const ResourceBar: React.FC<{ label: string; used: number; total: number; unit?: string }> = ({
-  label,
-  used,
-  total,
-  unit = '',
-}) => {
-  const percent = total > 0 ? Math.round((used / total) * 100) : 0
-  const getBarColor = (p: number) => {
-    if (p >= 90) return '#ff4d4f'
-    if (p >= 70) return '#faad14'
-    return '#1677ff'
-  }
-
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <Text>{label}</Text>
-        <Text type="secondary">
-          {used}
-          {unit} / {total}
-          {unit} ({percent}%)
-        </Text>
-      </div>
-      <Progress
-        percent={percent}
-        strokeColor={getBarColor(percent)}
-        showInfo={false}
-        size="small"
-      />
-    </div>
-  )
-}
-
-/** 监控仪表盘页 */
 const MonitorDashboardPage: React.FC = () => {
-  const { data: metricsOverview, isLoading: metricsLoading } = useQuery({
-    queryKey: ['monitor-metrics'],
-    queryFn: () => getMetricsOverview(),
+  const clustersQuery = useQuery({
+    queryKey: ['monitor-clusters'],
+    queryFn: ({ signal }) => listClusters({ page: 1, pageSize: 100 }, signal),
+  })
+  const incidentsQuery = useQuery({
+    queryKey: ['monitor-incidents-overview'],
+    queryFn: ({ signal }) => listIncidents({ page: 1, pageSize: 100 }, signal),
+    refetchInterval: 30_000,
+  })
+  const clusters = clustersQuery.data?.items || []
+  const monitoredClusters = clusters.slice(0, 12)
+  const overviewQueries = useQueries({
+    queries: monitoredClusters.map((cluster) => ({
+      queryKey: ['monitor-cluster-overview', cluster.id],
+      queryFn: ({ signal }: { signal?: AbortSignal }) => getClusterOverview(cluster.id, signal),
+      enabled: isClusterHealthy(cluster.status),
+      staleTime: 60_000,
+    })),
   })
 
-  const { data: recentAlerts, isLoading: alertsLoading } = useQuery({
-    queryKey: ['recent-alerts'],
-    queryFn: () => listAlertEvents(),
-    select: (data) => data.slice(0, 5),
-  })
-
-  const clusters = metricsOverview?.clusterMetrics || []
-  const totalNodes = clusters.reduce((sum, c) => sum + c.nodeCount, 0)
-  const totalPods = clusters.reduce((sum, c) => sum + c.podCount, 0)
-  const totalAlerts = clusters.reduce((sum, c) => sum + c.alertCount, 0)
-
-  // 全局资源汇总
-  const totalCPUCapacity = clusters.reduce((sum, c) => sum + c.nodeCount * 4, 0)
-  const totalCPUUsed = clusters.reduce((sum, c) => sum + c.cpuUsage * c.nodeCount * 4, 0)
-  const totalMemCapacity = clusters.reduce((sum, c) => sum + c.nodeCount * 16, 0)
-  const totalMemUsed = clusters.reduce((sum, c) => sum + c.memoryUsage * c.nodeCount * 16, 0)
-  const totalDiskCapacity = clusters.reduce((sum, c) => sum + c.nodeCount * 100, 0)
-  const totalDiskUsed = clusters.reduce((sum, c) => sum + c.diskUsage * c.nodeCount * 100, 0)
+  const activeIncidents = useMemo(
+    () => (incidentsQuery.data?.items || []).filter((item) => item.status !== 'resolved'),
+    [incidentsQuery.data],
+  )
+  const criticalCount = activeIncidents.filter((item) => item.severity === 'critical').length
+  const healthyCount = clusters.filter((cluster) => isClusterHealthy(cluster.status)).length
+  const totalNodes = clusters.reduce((sum, cluster) => sum + (cluster.nodeCount || 0), 0)
+  const metricsCoverage = overviewQueries.filter(
+    (query) => query.data && query.data.meta?.metrics_available !== false,
+  ).length
+  const lastUpdated = Math.max(clustersQuery.dataUpdatedAt || 0, incidentsQuery.dataUpdatedAt || 0)
 
   return (
-    <AppPage>
-      {/* 核心指标卡片 */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="集群总数"
-              value={clusters.length}
-              prefix={<CloudServerOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="总节点数"
-              value={totalNodes}
-              prefix={<DashboardOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="总 Pod 数"
-              value={totalPods}
-              prefix={<AlertOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="触发中告警"
-              value={totalAlerts}
-              prefix={<WarningOutlined />}
-              valueStyle={{ color: totalAlerts > 0 ? '#ff4d4f' : '#52c41a' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+    <AppPage keepHeaderTitle title="监控概览">
+      <div className="app-page-shell app-monitor-overview">
+        <div className="app-data-provenance">
+          <span><Badge status={criticalCount ? 'error' : 'success'} />实时监控状态</span>
+          <span>事件来源：Alertmanager</span>
+          <span>资源来源：Kubernetes API / metrics.k8s.io</span>
+          <span><ClockCircleOutlined /> {lastUpdated ? `更新于 ${dayjs(lastUpdated).format('HH:mm:ss')}` : '正在同步'}</span>
+        </div>
 
-      {/* 全局资源概览 */}
-      {clusters.length > 0 && (
-        <Card title="全局资源概览" style={{ marginBottom: 16 }}>
-          <Row gutter={24}>
-            <Col span={8}>
-              <ResourceBar label="CPU 使用率" used={Math.round(totalCPUUsed * 10) / 10} total={totalCPUCapacity} unit=" 核" />
-            </Col>
-            <Col span={8}>
-              <ResourceBar label="内存使用率" used={Math.round(totalMemUsed * 10) / 10} total={totalMemCapacity} unit=" GB" />
-            </Col>
-            <Col span={8}>
-              <ResourceBar label="磁盘使用率" used={Math.round(totalDiskUsed)} total={totalDiskCapacity} unit=" GB" />
-            </Col>
-          </Row>
-        </Card>
-      )}
+        <Row gutter={[12, 12]}>
+          <Col xs={12} md={6}><div className="app-monitor-fact"><ClusterOutlined /><span>纳管集群</span><strong>{clusters.length}</strong></div></Col>
+          <Col xs={12} md={6}><div className="app-monitor-fact"><CheckCircleOutlined /><span>健康集群</span><strong>{healthyCount}</strong></div></Col>
+          <Col xs={12} md={6}><div className="app-monitor-fact"><DashboardOutlined /><span>指标覆盖</span><strong>{metricsCoverage}/{monitoredClusters.length}</strong></div></Col>
+          <Col xs={12} md={6}><div className={`app-monitor-fact ${criticalCount ? 'is-critical' : ''}`}><AlertOutlined /><span>未恢复事件</span><strong>{activeIncidents.length}</strong></div></Col>
+        </Row>
 
-      {/* 各集群指标 */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={16}>
-          <Card title="集群资源使用">
-            {metricsLoading ? (
-              <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>
-            ) : (
-              <Row gutter={16}>
-                {clusters.map((cluster) => (
-                  <Col span={12} key={cluster.clusterId}>
-                    <ClusterMetricCard cluster={cluster} />
-                  </Col>
-                ))}
-              </Row>
-            )}
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card title="最近告警">
-            <List
-              loading={alertsLoading}
-              dataSource={recentAlerts || []}
-              locale={{ emptyText: '暂无告警' }}
-              renderItem={(item: AlertEvent) => (
-                <List.Item>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Space>
-                      {item.status === 'firing' ? (
-                        <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
-                      ) : (
-                        <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                      )}
-                      <Text strong>{item.ruleName}</Text>
-                      <Tag
-                        color={
-                          item.severity === 'critical'
-                            ? 'red'
-                            : item.severity === 'warning'
-                              ? 'orange'
-                              : 'blue'
-                        }
-                      >
-                        {item.severity}
-                      </Tag>
-                    </Space>
-                    <Tooltip title={item.message}>
-                      <Text type="secondary" ellipsis style={{ fontSize: 12 }}>
-                        {item.message}
-                      </Text>
-                    </Tooltip>
-                    <Text type="secondary" style={{ fontSize: 11 }}>
-                      {formatDate(item.startedAt)} · {item.clusterName}
-                    </Text>
-                  </Space>
-                </List.Item>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} xl={16}>
+            <Card className="app-ops-panel" title="集群实时指标" extra={<Text type="secondary">{totalNodes} 个节点 · 未采集不估算</Text>}>
+              {clustersQuery.isLoading ? <div className="app-ops-loading"><Spin /></div> : (
+                <div className="app-monitor-cluster-grid">
+                  {monitoredClusters.map((cluster, index) => {
+                    const overview = overviewQueries[index]?.data
+                    const available = Boolean(overview) && overview?.meta?.metrics_available !== false
+                    return (
+                      <article key={cluster.id} className="app-monitor-cluster-card">
+                        <div className="app-monitor-cluster-card__head">
+                          <div><strong>{cluster.name}</strong><span>{cluster.k8sVersion || '版本待确认'}</span></div>
+                          <Badge status={isClusterHealthy(cluster.status) ? 'success' : 'error'} text={isClusterHealthy(cluster.status) ? '连接正常' : '连接异常'} />
+                        </div>
+                        <div className="app-monitor-cluster-card__nodes">
+                          <span>Ready 节点</span>
+                          <strong>{overview ? `${overview.stats.nodes.ready}/${overview.stats.nodes.total}` : cluster.nodeCount || '—'}</strong>
+                          <span>Pod</span>
+                          <strong>{overview?.stats.pods.total ?? '—'}</strong>
+                        </div>
+                        <div className="app-monitor-cluster-card__metric">
+                          <div><span>CPU</span><strong>{available ? `${overview!.stats.cpu.used_percent}%` : '未采集'}</strong></div>
+                          <Progress percent={available ? overview!.stats.cpu.used_percent : 0} showInfo={false} status={available ? undefined : 'normal'} />
+                        </div>
+                        <div className="app-monitor-cluster-card__metric">
+                          <div><span>内存</span><strong>{available ? `${overview!.stats.memory.used_percent}%` : '未采集'}</strong></div>
+                          <Progress percent={available ? overview!.stats.memory.used_percent : 0} showInfo={false} strokeColor="#0f766e" />
+                        </div>
+                        <div className="app-monitor-cluster-card__source">
+                          {overview?.meta?.updated_at
+                            ? `${overview.meta.metrics_source || overview.meta.source} · ${dayjs(overview.meta.updated_at).format('HH:mm:ss')}`
+                            : '尚未取得真实指标'}
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
               )}
-            />
-          </Card>
-        </Col>
-      </Row>
+            </Card>
+          </Col>
+          <Col xs={24} xl={8}>
+            <Card
+              className="app-ops-panel"
+              title="未恢复事件"
+              extra={<Button type="link" onClick={() => history.push('/monitor/events')}>进入处置</Button>}
+            >
+              {incidentsQuery.isLoading ? <div className="app-ops-loading"><Spin /></div> : activeIncidents.length ? (
+                <div className="app-monitor-event-list">
+                  {activeIncidents.slice(0, 6).map((incident) => (
+                    <button type="button" key={incident.id} onClick={() => history.push(`/monitor/events?incident=${incident.id}`)}>
+                      <Tag color={incident.severity === 'critical' ? 'error' : incident.severity === 'warning' ? 'warning' : 'processing'}>
+                        {severityLabel[incident.severity]}
+                      </Tag>
+                      <div><strong>{incident.alertName}</strong><span>{incident.clusterName || `集群 ${incident.clusterId}`} · {dayjs(incident.startedAt).format('MM-DD HH:mm')}</span></div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无未恢复事件" />
+              )}
+              {criticalCount > 0 ? <div className="app-inline-alert"><WarningOutlined /><span>{criticalCount} 个严重事件需要优先处理</span></div> : null}
+            </Card>
+          </Col>
+        </Row>
+      </div>
     </AppPage>
   )
 }

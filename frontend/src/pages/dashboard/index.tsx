@@ -2,850 +2,250 @@ import React, { useMemo } from 'react'
 import { history, useModel } from '@umijs/max'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import {
-  AlertOutlined,
-  AppstoreOutlined,
   ArrowRightOutlined,
-  CheckCircleOutlined,
-  CloudDownloadOutlined,
+  ClockCircleOutlined,
   ClusterOutlined,
   DashboardOutlined,
-  ExclamationCircleOutlined,
-  FileSearchOutlined,
-  FundOutlined,
   NodeIndexOutlined,
-  RadarChartOutlined,
-  RobotOutlined,
-  RocketOutlined,
   SafetyCertificateOutlined,
-  ThunderboltOutlined,
 } from '@ant-design/icons'
+import { Badge, Button, Card, Col, Empty, Progress, Row, Space, Spin, Tag, Tooltip, Typography } from 'antd'
+import dayjs from 'dayjs'
 
-import {
-  Badge,
-  Button,
-  Card,
-  Col,
-  Empty,
-  Progress,
-  Row,
-  Space,
-  Spin,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd'
 import { AppPage } from '@/components'
 import { listClusters } from '@/services/clusters'
 import { getClusterOverview } from '@/services/k8s'
-import {
-  enterClusterWorkspace,
-  getClusterStatusColor,
-  getClusterStatusText,
-  isClusterHealthy,
-  needsClusterAttention,
-} from '@/utils'
-import type { Cluster } from '@/types'
+import { listIncidents } from '@/services/monitor'
+import { enterClusterWorkspace, getClusterStatusColor, getClusterStatusText, isClusterHealthy } from '@/utils'
+import type { IncidentStatus, MonitorIncident } from '@/types'
 
-const { Paragraph, Text, Title } = Typography
+const { Text, Title } = Typography
 
-const QUICK_ENTRIES = [
-  {
-    key: 'clusters',
-    title: '集群列表',
-    desc: '查看接入与状态',
-    path: '/clusters',
-    icon: <ClusterOutlined />,
-    tone: 'blue',
-  },
-  {
-    key: 'projects',
-    title: '项目空间',
-    desc: '管理业务边界',
-    path: '/projects',
-    icon: <RocketOutlined />,
-    tone: 'green',
-  },
-  {
-    key: 'app-store',
-    title: '应用商店',
-    desc: '快速交付应用',
-    path: '/app-store',
-    icon: <AppstoreOutlined />,
-    tone: 'orange',
-  },
-  {
-    key: 'helm',
-    title: 'Helm 管理',
-    desc: '进入发布管理',
-    path: '/clusters',
-    icon: <CloudDownloadOutlined />,
-    tone: 'slate',
-  },
-  {
-    key: 'ai',
-    title: 'AI 运维',
-    desc: '模型与诊断入口',
-    path: '/ai/settings',
-    icon: <RobotOutlined />,
-    tone: 'purple',
-  },
-] as const
-
-const formatPercent = (value: number) => Math.max(0, Math.min(100, Number(value || 0)))
-
-/** 从集群状态派生风险等级 */
-const getRiskSeverity = (status?: string) => {
-  const normalized = String(status || 'unknown').trim().toLowerCase()
-  if (['error', 'failed', 'disconnected', 'unhealthy', 'offline'].includes(normalized)) {
-    return 'critical'
-  }
-  if (['warning', 'degraded'].includes(normalized)) {
-    return 'warning'
-  }
-  return 'info'
+const severityMeta = {
+  critical: { label: '严重', color: 'error' as const, weight: 3 },
+  warning: { label: '警告', color: 'warning' as const, weight: 2 },
+  info: { label: '提示', color: 'processing' as const, weight: 1 },
 }
 
-const severityColorMap: Record<string, string> = {
-  critical: '#dc2626',
-  warning: '#b45309',
-  info: '#2563eb',
+const actionByStatus: Record<IncidentStatus, string> = {
+  open: '先认领事件并确认影响范围',
+  acknowledged: '启动诊断，收集事件与日志证据',
+  diagnosing: '查看诊断证据并确认处置方案',
+  awaiting_approval: '审核变更范围与回滚方案',
+  executing: '跟踪执行日志，避免扩大影响',
+  verifying: '验证指标、事件和业务恢复情况',
+  resolved: '复盘事件并沉淀运行手册',
 }
 
-const severityLabelMap: Record<string, string> = {
-  critical: '严重',
-  warning: '警告',
-  info: '提示',
-}
-
-const getSeverityLabel = (key: string): string => severityLabelMap[key] ?? key
-const getSeverityColor = (key: string): string => severityColorMap[key] ?? '#64748b'
-
-/** 平台运行评分仪表盘（SVG 环形图） */
-const HealthScoreGauge: React.FC<{ score: number; status: string }> = ({ score, status }) => {
-  const color = score >= 90 ? '#047857' : score >= 70 ? '#b45309' : '#dc2626'
-  const radius = 52
-  const stroke = 10
-  const circumference = 2 * Math.PI * radius
-  const clamped = Math.max(0, Math.min(100, score))
-  const dashoffset = circumference * (1 - clamped / 100)
-
-  return (
-    <div className="app-aiops-gauge">
-      <svg width="140" height="132" viewBox="0 0 140 132">
-        <circle
-          cx="70"
-          cy="70"
-          r={radius}
-          fill="none"
-          stroke="#e2e8f0"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx="70"
-          cy="70"
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={dashoffset}
-          transform="rotate(-90 70 70)"
-        />
-        <text x="70" y="68" textAnchor="middle" fill="var(--app-text)" fontSize="28" fontWeight="800">
-          {score}
-        </text>
-        <text x="70" y="88" textAnchor="middle" fill="var(--app-text-secondary)" fontSize="12">
-          /100
-        </text>
-      </svg>
-      <div className="app-aiops-gauge__label">
-        <Badge color={color} text={status} />
-      </div>
-    </div>
-  )
-}
-
-/** 集群状态脉冲灯 */
-const StatusPulse: React.FC<{ healthy: boolean }> = ({ healthy }) => {
-  return (
-    <span className={['app-aiops-pulse', healthy ? 'is-healthy' : 'is-at-risk'].join(' ')} />
-  )
-}
-
-const ClusterFleetCard: React.FC<{
-  cluster: Cluster
-  overview?: Awaited<ReturnType<typeof getClusterOverview>>
-  overviewLoading?: boolean
-  onEnterCluster: (cluster: Cluster) => void
-}> = ({ cluster, overview, overviewLoading, onEnterCluster }) => {
-  const healthy = isClusterHealthy(cluster.status)
-  const nodesReady = overview?.stats.nodes.ready ?? cluster.nodeCount ?? 0
-  const nodesTotal = overview?.stats.nodes.total ?? cluster.nodeCount ?? 0
-  const podTotal = overview?.stats.pods.total ?? 0
-  const cpuUsage = formatPercent(overview?.stats.cpu.used_percent ?? 0)
-  const memoryUsage = formatPercent(overview?.stats.memory.used_percent ?? 0)
-  const isLoading = overviewLoading
-
-  return (
-    <Card
-      hoverable
-      className={['app-aiops-cluster-card', healthy ? '' : 'is-blocked'].filter(Boolean).join(' ')}
-      onClick={() => onEnterCluster(cluster)}
-    >
-      <div className="app-aiops-cluster-card__top">
-        <div className="app-aiops-cluster-card__identity">
-          <span className="app-aiops-cluster-card__icon">
-            <ClusterOutlined />
-          </span>
-          <div>
-            <div className="app-aiops-cluster-card__name">
-              {cluster.name}
-              <StatusPulse healthy={healthy} />
-            </div>
-            <div className="app-aiops-cluster-card__meta">
-              <span>{cluster.type || 'Kubernetes'}</span>
-              <span>{cluster.k8sVersion || '版本待确认'}</span>
-            </div>
-          </div>
-        </div>
-        <Tag color={getClusterStatusColor(cluster.status)}>
-          {getClusterStatusText(cluster.status)}
-        </Tag>
-      </div>
-
-      {isLoading ? (
-        <div className="app-aiops-cluster-card__loading">
-          <Spin size="small" />
-        </div>
-      ) : (
-        <>
-          <div className="app-aiops-cluster-card__stats">
-            <div className="app-aiops-cluster-card__stat">
-              <span className="app-aiops-cluster-card__label">节点 Ready</span>
-              <strong>
-                {nodesReady} / {nodesTotal}
-              </strong>
-            </div>
-            <div className="app-aiops-cluster-card__stat">
-              <span className="app-aiops-cluster-card__label">Pod 总量</span>
-              <strong>{podTotal}</strong>
-            </div>
-          </div>
-
-          <div className="app-aiops-cluster-card__progress">
-            <div>
-              <div className="app-aiops-cluster-card__progress-head">
-                <Space size={6}>
-                  <DashboardOutlined />
-                  <span>CPU</span>
-                </Space>
-                <strong className={cpuUsage >= 80 ? 'is-high' : ''}>{cpuUsage.toFixed(1)}%</strong>
-              </div>
-              <Progress
-                percent={cpuUsage}
-                showInfo={false}
-                size="small"
-                status={cpuUsage >= 90 ? 'exception' : cpuUsage >= 70 ? 'active' : undefined}
-                strokeColor={cpuUsage >= 80 ? '#dc2626' : undefined}
-                trailColor={cpuUsage >= 80 ? '#fee2e2' : '#e7efff'}
-              />
-            </div>
-            <div>
-              <div className="app-aiops-cluster-card__progress-head">
-                <Space size={6}>
-                  <FundOutlined />
-                  <span>内存</span>
-                </Space>
-                <strong className={memoryUsage >= 80 ? 'is-high' : ''}>{memoryUsage.toFixed(1)}%</strong>
-              </div>
-              <Progress
-                percent={memoryUsage}
-                showInfo={false}
-                size="small"
-                status={memoryUsage >= 90 ? 'exception' : memoryUsage >= 70 ? 'active' : undefined}
-                strokeColor={memoryUsage >= 80 ? '#dc2626' : undefined}
-                trailColor={memoryUsage >= 80 ? '#fee2e2' : '#e6f8ef'}
-              />
-            </div>
-          </div>
-        </>
-      )}
-
-      <div className="app-aiops-cluster-card__footer">
-        <Text type={healthy ? 'secondary' : 'warning'}>
-          {healthy ? '可进入管理台' : '需先恢复健康状态'}
-        </Text>
-        <Button
-          type={healthy ? 'primary' : 'default'}
-          size="small"
-          onClick={(event) => {
-            event.stopPropagation()
-            onEnterCluster(cluster)
-          }}
-        >
-          {healthy ? '进入管理台' : '查看状态'}
-        </Button>
-      </div>
-    </Card>
-  )
-}
+const incidentImpact = (incident: MonitorIncident) =>
+  [
+    incident.clusterName || `集群 ${incident.clusterId}`,
+    incident.namespace,
+    incident.resourceName ? `${incident.resourceKind || '资源'} / ${incident.resourceName}` : '',
+  ].filter(Boolean)
 
 const DashboardPage: React.FC = () => {
   const { setCurrentCluster } = useModel('cluster')
-  const { data, isLoading } = useQuery({
-    queryKey: ['clusters-dashboard-overview'],
-    queryFn: () => listClusters({ pageSize: 100 }),
+  const clustersQuery = useQuery({
+    queryKey: ['dashboard-clusters'],
+    queryFn: ({ signal }) => listClusters({ page: 1, pageSize: 100 }, signal),
+  })
+  const incidentsQuery = useQuery({
+    queryKey: ['dashboard-incidents'],
+    queryFn: ({ signal }) => listIncidents({ page: 1, pageSize: 100 }, signal),
+    refetchInterval: 30_000,
   })
 
-  const clusters = data?.items || []
-
-  const summary = useMemo(() => {
-    const healthy = clusters.filter((cluster) => isClusterHealthy(cluster.status))
-    const attention = clusters.filter((cluster) => needsClusterAttention(cluster.status))
-    const totalNodes = clusters.reduce((sum, cluster) => sum + (cluster.nodeCount || 0), 0)
-    const healthPercent = clusters.length
-      ? Math.round((healthy.length / clusters.length) * 100)
-      : 0
-
-    return {
-      healthy,
-      totalNodes,
-      healthPercent,
-      totalClusters: clusters.length,
-      riskClusters: attention.filter((cluster) => !isClusterHealthy(cluster.status)),
-    }
-  }, [clusters])
-
-  const severityWeight: Record<string, number> = { critical: 3, warning: 2, info: 1 }
-  const getSeverityWeight = (status?: string) => severityWeight[getRiskSeverity(status)] ?? 0
-  const spotlightClusters = summary.riskClusters
-    .slice()
-    .sort((a, b) => getSeverityWeight(b.status) - getSeverityWeight(a.status))
-    .slice(0, 3)
-  const displayClusters = [...summary.riskClusters, ...summary.healthy]
-    .filter((cluster, index, list) => list.findIndex((item) => item.id === cluster.id) === index)
-    .slice(0, 6)
-
-  // 为控制性能，只给仪表盘需要展示的集群（舰队卡片 + Top 风险）拉取概览数据
-  const overviewNeededClusters = displayClusters
-    .concat(spotlightClusters)
-    .filter((cluster, index, list) => list.findIndex((item) => item.id === cluster.id) === index)
-
-  const clusterOverviewQueries = useQueries({
-    queries: overviewNeededClusters.map((cluster) => ({
+  const clusters = clustersQuery.data?.items || []
+  const observedClusters = clusters.slice(0, 12)
+  const overviewQueries = useQueries({
+    queries: observedClusters.map((cluster) => ({
       queryKey: ['dashboard-cluster-overview', cluster.id],
       queryFn: ({ signal }: { signal?: AbortSignal }) => getClusterOverview(cluster.id, signal),
-      enabled: !!cluster.id,
+      enabled: Boolean(cluster.id) && isClusterHealthy(cluster.status),
       staleTime: 60_000,
     })),
-    combine: (results) => ({
-      data: new Map(
-        results
-          .map((result, index) => [overviewNeededClusters[index]?.id, result.data] as const)
-          .filter(([, data]) => !!data),
-      ),
-      isLoading: results.some((result) => result.isLoading),
-    }),
   })
 
-  const getClusterOverviewData = (clusterId: number) =>
-    clusterOverviewQueries.data.get(clusterId) as
-      | Awaited<ReturnType<typeof getClusterOverview>>
-      | undefined
-
-  // 聚合已加载集群的资源容量数据
-  const capacitySummary = useMemo(() => {
-    let totalPods = 0
-    let totalCpu = 0
-    let totalMemory = 0
-    let loadedClusters = 0
-
-    clusters.forEach((cluster) => {
-      const overview = getClusterOverviewData(cluster.id)
-      if (overview) {
-        totalPods += overview.stats.pods.total || 0
-        totalCpu += overview.stats.cpu.used_percent || 0
-        totalMemory += overview.stats.memory.used_percent || 0
-        loadedClusters++
-      }
+  const overviewByCluster = useMemo(() => {
+    const result = new Map<number, Awaited<ReturnType<typeof getClusterOverview>>>()
+    overviewQueries.forEach((query, index) => {
+      const cluster = observedClusters[index]
+      if (cluster && query.data) result.set(cluster.id, query.data)
     })
+    return result
+  }, [observedClusters, overviewQueries])
 
-    return {
-      totalPods,
-      avgCpu: loadedClusters ? Math.round(totalCpu / loadedClusters) : 0,
-      avgMemory: loadedClusters ? Math.round(totalMemory / loadedClusters) : 0,
-    }
-  }, [clusters, clusterOverviewQueries.data])
+  const activeIncidents = useMemo(
+    () =>
+      (incidentsQuery.data?.items || [])
+        .filter((item) => item.status !== 'resolved')
+        .sort((a, b) => {
+          const severityDiff = severityMeta[b.severity].weight - severityMeta[a.severity].weight
+          return severityDiff || new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime()
+        }),
+    [incidentsQuery.data],
+  )
 
-  const heroMetrics = [
-    {
-      key: 'clusters',
-      label: '纳管集群',
-      value: summary.totalClusters,
-      icon: <ClusterOutlined />,
-      color: '#2563eb',
-      surface: '#e8f0ff',
-    },
-    {
-      key: 'healthy',
-      label: '可进入管理',
-      value: summary.healthy.length,
-      icon: <CheckCircleOutlined />,
-      color: '#047857',
-      surface: '#e6f8ef',
-    },
-    {
-      key: 'risk',
-      label: '待处理风险',
-      value: summary.riskClusters.length,
-      icon: <AlertOutlined />,
-      color: '#dc2626',
-      surface: '#feecec',
-    },
-    {
-      key: 'nodes',
-      label: '纳管节点',
-      value: summary.totalNodes,
-      icon: <NodeIndexOutlined />,
-      color: '#8b5cf6',
-      surface: '#f1ebff',
-    },
-  ]
+  const criticalCount = activeIncidents.filter((item) => item.severity === 'critical').length
+  const warningCount = activeIncidents.filter((item) => item.severity === 'warning').length
+  const unassignedCount = activeIncidents.filter((item) => !item.assigneeName).length
+  const affectedClusters = new Set(activeIncidents.map((item) => item.clusterId)).size
+  const healthyClusters = clusters.filter((cluster) => isClusterHealthy(cluster.status)).length
+  const totalNodes = clusters.reduce((sum, cluster) => sum + (cluster.nodeCount || 0), 0)
+  const metricsCoverage = observedClusters.filter(
+    (cluster) => overviewByCluster.get(cluster.id)?.meta?.metrics_available !== false && overviewByCluster.has(cluster.id),
+  ).length
+  const updatedAt = incidentsQuery.dataUpdatedAt || clustersQuery.dataUpdatedAt
+  const isLoading = clustersQuery.isLoading || incidentsQuery.isLoading
 
-  const riskDistribution = useMemo(() => {
-    const groups: Record<string, number> = { critical: 0, warning: 0, info: 0 }
-    summary.riskClusters.forEach((cluster) => {
-      const severity = getRiskSeverity(cluster.status)
-      groups[severity] = (groups[severity] || 0) + 1
-    })
-    return Object.entries(groups)
-      .filter(([, value]) => value > 0)
-      .map(([key, value]) => ({ key, label: getSeverityLabel(key), value }))
-  }, [summary.riskClusters])
-
-  // 模拟最近告警 / 事件（基于已有集群状态，不新增 API）
-  const recentAlerts = useMemo(() => {
-    const alerts: Array<{
-      id: string
-      name: string
-      message: string
-      severity: string
-      time: string
-    }> = []
-    summary.riskClusters.slice(0, 4).forEach((cluster, index) => {
-      const severity = getRiskSeverity(cluster.status)
-      alerts.push({
-        id: `alert-${cluster.id}`,
-        name: cluster.name,
-        message:
-          severity === 'critical'
-            ? '集群连接异常，需立即检查'
-            : severity === 'warning'
-              ? '集群状态降级，建议巡检'
-              : '集群状态待确认',
-        severity,
-        time: `${(index + 1) * 5}分钟前`,
-      })
-    })
-    return alerts
-  }, [summary.riskClusters])
-
-  // AI 洞察（基于真实聚合数据生成具体建议）
-  const aiInsights = useMemo(() => {
-    const insights: Array<{ id: string; icon: React.ReactNode; text: string }> = []
-
-    // 整体健康态势
-    insights.push({
-      id: 'insight-1',
-      icon: <ThunderboltOutlined />,
-      text:
-        summary.riskClusters.length > 0
-          ? `当前 ${summary.totalClusters} 个集群中健康率 ${summary.healthPercent}%，${summary.riskClusters.length} 个集群异常，建议优先处理 ${spotlightClusters[0]?.name || ''}。`
-          : `当前 ${summary.totalClusters} 个集群健康率 ${summary.healthPercent}%，整体运行平稳。`,
-    })
-
-    // 容量建议
-    if (capacitySummary.avgCpu >= 80 || capacitySummary.avgMemory >= 80) {
-      insights.push({
-        id: 'insight-2',
-        icon: <FileSearchOutlined />,
-        text: `重点集群资源压力较高：平均 CPU ${capacitySummary.avgCpu}%，平均内存 ${capacitySummary.avgMemory}%，建议评估集群扩容或工作负载调度。`,
-      })
-    } else if (summary.totalNodes > 0) {
-      insights.push({
-        id: 'insight-2',
-        icon: <FileSearchOutlined />,
-        text: `共纳管 ${summary.totalNodes} 个节点、${capacitySummary.totalPods} 个 Pod，资源利用率处于健康区间。`,
-      })
-    }
-
-    // 针对前 2 个风险集群的具体建议
-    spotlightClusters.slice(0, 2).forEach((cluster, index) => {
-      const overview = getClusterOverviewData(cluster.id)
-      const severity = getRiskSeverity(cluster.status)
-      let text = ''
-      if (overview) {
-        if (overview.stats.nodes.ready === 0) {
-          text = `【${cluster.name}】所有节点未就绪，请检查网络连通性与 kubelet 服务。`
-        } else if (overview.stats.pods.failed > 0) {
-          text = `【${cluster.name}】存在 ${overview.stats.pods.failed} 个失败 Pod，建议查看事件日志定位原因。`
-        } else if (overview.stats.cpu.used_percent > 80) {
-          text = `【${cluster.name}】CPU 使用率 ${overview.stats.cpu.used_percent.toFixed(1)}%，建议排查高负载应用。`
-        } else if (overview.stats.memory.used_percent > 80) {
-          text = `【${cluster.name}】内存使用率 ${overview.stats.memory.used_percent.toFixed(1)}%，建议关注容量风险。`
-        } else {
-          text = `【${cluster.name}】状态异常，建议执行健康检查。`
-        }
-      } else {
-        text =
-          severity === 'critical'
-            ? `【${cluster.name}】连接异常，需立即检查。`
-            : `【${cluster.name}】状态降级，建议巡检。`
-      }
-      insights.push({
-        id: `insight-risk-${index}`,
-        icon: <ExclamationCircleOutlined />,
-        text,
-      })
-    })
-
-    return insights
-  }, [summary, capacitySummary, spotlightClusters, clusterOverviewQueries.data])
-
-  const handleEnterCluster = (cluster: Cluster, targetPath?: string) => {
-    enterClusterWorkspace(cluster, {
-      setCurrentCluster,
-      targetPath,
-    })
-  }
-
-  const scoreStatus = summary.riskClusters.length > 0 ? '存在待处理项' : '运行稳定'
+  const headline = criticalCount
+    ? `${criticalCount} 个严重事件需要立即处理`
+    : activeIncidents.length
+      ? `${activeIncidents.length} 个事件正在处置`
+      : '当前没有未恢复事件'
 
   return (
-    <AppPage breadcrumbRender={false}>
-      <div className="app-page-shell app-aiops-overview">
-        <section className="app-aiops-hero">
-          <div className="app-aiops-hero__content">
-            <span className="app-aiops-hero__eyebrow">
-              <RadarChartOutlined />
-              AIOPS GLOBAL OVERVIEW
-            </span>
-            <Title level={2} className="app-aiops-hero__title">
-              AIOPS 全局态势
-            </Title>
-            <Paragraph className="app-aiops-hero__desc">
-              统一纳管集群状态、容量与风险，AI 实时洞察并自动化处置异常。
-            </Paragraph>
-            <div className="app-aiops-hero__chips">
-              <span>{summary.totalClusters} 个集群</span>
-              <span>{summary.totalNodes} 个节点</span>
-              <span>{summary.riskClusters.length} 个待处理</span>
-            </div>
-            <Space wrap className="app-aiops-hero__actions">
-              <Button type="primary" size="large" onClick={() => history.push('/clusters')}>
-                查看集群
-              </Button>
-              <Button size="large" onClick={() => history.push('/ai/settings')}>
-                模型配置
-              </Button>
-            </Space>
+    <AppPage keepHeaderTitle title="全局运维态势" breadcrumbRender={false}>
+      <div className="app-page-shell app-ops-dashboard">
+        <section className={`app-ops-briefing ${criticalCount ? 'is-critical' : activeIncidents.length ? 'is-warning' : 'is-stable'}`}>
+          <div className="app-ops-briefing__source">
+            <Badge status={activeIncidents.length ? 'processing' : 'success'} />
+            <span>Alertmanager + Kubernetes API</span>
+            <span className="app-ops-briefing__divider" />
+            <ClockCircleOutlined />
+            <span>{updatedAt ? `更新于 ${dayjs(updatedAt).format('HH:mm:ss')}` : '正在确认数据时间'}</span>
           </div>
-
-          <div className="app-aiops-hero__panel">
-            <div className="app-aiops-hero__panel-header">
-              <Text className="app-aiops-hero__panel-label">平台运行评分</Text>
-              <HealthScoreGauge score={summary.healthPercent} status={scoreStatus} />
+          <div className="app-ops-briefing__body">
+            <div className="app-ops-briefing__message">
+              <span className="app-ops-kicker">当前风险</span>
+              <Title level={2}>{headline}</Title>
+              <Text>
+                {activeIncidents.length
+                  ? `影响 ${affectedClusters} 个集群，其中 ${unassignedCount} 个事件尚未认领。先处理严重且持续时间最长的事件。`
+                  : '所有接入事件均已恢复。继续关注集群指标采集覆盖与健康状态。'}
+              </Text>
+              <Space wrap>
+                <Button type="primary" danger={criticalCount > 0} onClick={() => history.push('/monitor/events')}>
+                  {activeIncidents.length ? '进入事件处置' : '查看事件记录'}
+                </Button>
+                <Button onClick={() => history.push('/clusters')}>查看集群运行面</Button>
+              </Space>
+            </div>
+            <div className="app-ops-briefing__metrics" aria-label="当前风险摘要">
+              <div><span>严重</span><strong className="is-critical">{criticalCount}</strong></div>
+              <div><span>警告</span><strong className="is-warning">{warningCount}</strong></div>
+              <div><span>影响集群</span><strong>{affectedClusters}</strong></div>
+              <div><span>未认领</span><strong>{unassignedCount}</strong></div>
             </div>
           </div>
         </section>
 
         <Row gutter={[16, 16]}>
-          {heroMetrics.map((item) => (
-            <Col key={item.key} xs={12} lg={6}>
-              <Card
-                className="app-aiops-stat-card"
-                style={{ borderTopColor: item.color }}
-                hoverable
-              >
-                <div className="app-aiops-stat-card__inner">
-                  <span
-                    className="app-aiops-stat-card__icon"
-                    style={{ background: item.surface, color: item.color }}
-                  >
-                    {item.icon}
-                  </span>
-                  <div className="app-aiops-stat-card__body">
-                    <span className="app-aiops-stat-card__value">{item.value}</span>
-                    <span className="app-aiops-stat-card__label">{item.label}</span>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-
-        <Card className="app-aiops-panel" title="重点集群资源" size="small">
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={8}>
-              <div className="app-aiops-capacity-card">
-                <div className="app-aiops-capacity-card__header">
-                  <span className="app-aiops-capacity-card__label">Pod 总量</span>
-                  <strong className="app-aiops-capacity-card__value">{capacitySummary.totalPods}</strong>
-                </div>
-                <Progress
-                  percent={Math.min(capacitySummary.totalPods, 100)}
-                  showInfo={false}
-                  size="small"
-                  strokeColor="#2563eb"
-                  trailColor="#e7efff"
-                />
-              </div>
-            </Col>
-            <Col xs={24} sm={8}>
-              <div className="app-aiops-capacity-card">
-                <div className="app-aiops-capacity-card__header">
-                  <span className="app-aiops-capacity-card__label">平均 CPU</span>
-                  <strong className="app-aiops-capacity-card__value">{capacitySummary.avgCpu}%</strong>
-                </div>
-                <Progress
-                  percent={capacitySummary.avgCpu}
-                  showInfo={false}
-                  size="small"
-                  status={capacitySummary.avgCpu >= 80 ? 'exception' : capacitySummary.avgCpu >= 70 ? 'active' : undefined}
-                  strokeColor={capacitySummary.avgCpu >= 80 ? '#dc2626' : '#2563eb'}
-                  trailColor={capacitySummary.avgCpu >= 80 ? '#fee2e2' : '#e7efff'}
-                />
-              </div>
-            </Col>
-            <Col xs={24} sm={8}>
-              <div className="app-aiops-capacity-card">
-                <div className="app-aiops-capacity-card__header">
-                  <span className="app-aiops-capacity-card__label">平均内存</span>
-                  <strong className="app-aiops-capacity-card__value">{capacitySummary.avgMemory}%</strong>
-                </div>
-                <Progress
-                  percent={capacitySummary.avgMemory}
-                  showInfo={false}
-                  size="small"
-                  status={capacitySummary.avgMemory >= 80 ? 'exception' : capacitySummary.avgMemory >= 70 ? 'active' : undefined}
-                  strokeColor={capacitySummary.avgMemory >= 80 ? '#dc2626' : '#047857'}
-                  trailColor={capacitySummary.avgMemory >= 80 ? '#fee2e2' : '#e6f8ef'}
-                />
-              </div>
-            </Col>
-          </Row>
-        </Card>
-
-        <Row gutter={[16, 16]}>
           <Col xs={24} xl={16}>
             <Card
-              className="app-aiops-panel"
-              title="集群舰队"
-              extra={
-                <Button type="link" onClick={() => history.push('/clusters')}>
-                  查看全部 <ArrowRightOutlined />
-                </Button>
-              }
+              className="app-ops-panel"
+              title="优先处置队列"
+              extra={<Button type="link" onClick={() => history.push('/monitor/events')}>查看全部 <ArrowRightOutlined /></Button>}
             >
-              <div className="app-aiops-panel__meta">
-                <span>
-                  健康集群 <strong>{summary.healthy.length}</strong>
-                </span>
-                <span>
-                  风险集群 <strong>{summary.riskClusters.length}</strong>
-                </span>
-              </div>
-
-              {isLoading ? (
-                <div className="app-aiops-panel__loading">
-                  <Spin size="large" />
-                </div>
-              ) : displayClusters.length === 0 ? (
-                <Empty
-                  description="当前还没有接入任何集群"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                >
-                  <Button type="primary" onClick={() => history.push('/clusters/import')}>
-                    导入集群
-                  </Button>
-                </Empty>
-              ) : (
-                <div className="app-aiops-cluster-grid">
-                  {displayClusters.map((cluster) => (
-                    <ClusterFleetCard
-                      key={cluster.id}
-                      cluster={cluster}
-                      overview={getClusterOverviewData(cluster.id)}
-                      overviewLoading={clusterOverviewQueries.isLoading}
-                      onEnterCluster={handleEnterCluster}
-                    />
+              {incidentsQuery.isLoading ? (
+                <div className="app-ops-loading"><Spin /></div>
+              ) : activeIncidents.length ? (
+                <div className="app-ops-incident-list">
+                  {activeIncidents.slice(0, 5).map((incident) => (
+                    <article key={incident.id} className={`app-ops-incident severity-${incident.severity}`}>
+                      <div className="app-ops-incident__severity">
+                        <Tag color={severityMeta[incident.severity].color}>{severityMeta[incident.severity].label}</Tag>
+                      </div>
+                      <div className="app-ops-incident__body">
+                        <div className="app-ops-incident__title">{incident.alertName}</div>
+                        <div className="app-ops-incident__summary">{incident.summary || 'Alertmanager 未提供事件摘要'}</div>
+                        <Space size={[6, 6]} wrap className="app-ops-incident__scope">
+                          {incidentImpact(incident).map((item) => <span key={item}>{item}</span>)}
+                          <span>{incident.assigneeName ? `负责人 ${incident.assigneeName}` : '尚未认领'}</span>
+                        </Space>
+                      </div>
+                      <div className="app-ops-incident__action">
+                        <Text>{actionByStatus[incident.status]}</Text>
+                        <Button size="small" type="primary" onClick={() => history.push(`/monitor/events?incident=${incident.id}`)}>
+                          处置
+                        </Button>
+                      </div>
+                    </article>
                   ))}
                 </div>
+              ) : (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无未恢复事件">
+                  <Button onClick={() => history.push('/monitor/events')}>查看历史事件</Button>
+                </Empty>
               )}
             </Card>
           </Col>
 
           <Col xs={24} xl={8}>
-            <Card className="app-aiops-panel" title="风险处置">
-              <div className="app-aiops-panel__meta">
-                <span>
-                  <strong>{summary.riskClusters.length}</strong> 个集群待处理
-                </span>
+            <Card className="app-ops-panel" title="运行面摘要">
+              <div className="app-ops-facts">
+                <div><ClusterOutlined /><span>纳管集群</span><strong>{clusters.length}</strong></div>
+                <div><SafetyCertificateOutlined /><span>健康集群</span><strong>{healthyClusters}</strong></div>
+                <div><NodeIndexOutlined /><span>节点总数</span><strong>{totalNodes}</strong></div>
+                <div><DashboardOutlined /><span>指标覆盖</span><strong>{metricsCoverage}/{observedClusters.length}</strong></div>
               </div>
-
-              <div className="app-aiops-risk-summary">
-                {riskDistribution.map((item) => (
-                  <div key={item.key} className="app-aiops-risk-summary__item">
-                    <span
-                      className="app-aiops-risk-summary__dot"
-                      style={{ background: getSeverityColor(item.key) }}
-                    />
-                    <span className="app-aiops-risk-summary__label">{item.label}</span>
-                    <strong className="app-aiops-risk-summary__value">{item.value}</strong>
-                  </div>
-                ))}
+              <div className="app-ops-data-note">
+                <DashboardOutlined />
+                <span>容量数据只展示 Kubernetes API 与 metrics.k8s.io 的真实采样；未采集时显示“未采集”，不再估算。</span>
               </div>
-
-              {spotlightClusters.length ? (
-                <div className="app-aiops-risk-list">
-                  {spotlightClusters.map((cluster) => {
-                    const overview = getClusterOverviewData(cluster.id)
-                    const severity = getRiskSeverity(cluster.status)
-                    const recommendation = overview
-                      ? overview.stats.nodes.ready === 0
-                        ? '所有节点未就绪，建议立即检查节点连接与 kubelet 状态'
-                        : overview.stats.pods.failed > 0
-                          ? `检测到 ${overview.stats.pods.failed} 个异常 Pod，建议排查失败原因`
-                          : overview.stats.cpu.used_percent > 80
-                            ? 'CPU 使用率过高，建议评估扩容或调度优化'
-                            : overview.stats.memory.used_percent > 80
-                              ? '内存使用率过高，建议关注容量风险'
-                              : '集群状态异常，建议执行健康检查'
-                      : severity === 'critical'
-                        ? '集群连接异常，需立即检查'
-                        : severity === 'warning'
-                          ? '集群状态降级，建议巡检'
-                          : '集群状态待确认'
-
-                    return (
-                      <div
-                        key={cluster.id}
-                        className={`app-aiops-risk-item severity-${severity}`}
-                      >
-                        <div className="app-aiops-risk-item__head">
-                          <div>
-                            <div className="app-aiops-risk-item__name">
-                              <StatusPulse healthy={false} />
-                              {cluster.name}
-                            </div>
-                            <div className="app-aiops-risk-item__sub">
-                              {cluster.type || 'Kubernetes'} · {cluster.k8sVersion || '版本待确认'}
-                            </div>
-                          </div>
-                          <Tag color={getClusterStatusColor(cluster.status)}>
-                            {getClusterStatusText(cluster.status)}
-                          </Tag>
-                        </div>
-                        <div className="app-aiops-risk-item__foot">
-                          <Text type="secondary">{recommendation}</Text>
-                          <Space size={8}>
-                            <Button
-                              type="primary"
-                              size="small"
-                              onClick={() => history.push(`/clusters/${cluster.id}`)}
-                            >
-                              立即处理
-                            </Button>
-                            <Tooltip title="当前状态未恢复前不可进入集群管理">
-                              <Button size="small" onClick={() => handleEnterCluster(cluster)}>
-                                尝试进入
-                              </Button>
-                            </Tooltip>
-                          </Space>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="app-aiops-empty-state">
-                  <SafetyCertificateOutlined />
-                  <div>
-                    <strong>当前无风险集群</strong>
-                    <span>可直接进入健康集群管理台。</span>
-                  </div>
-                </div>
-              )}
             </Card>
           </Col>
         </Row>
 
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={12}>
-            <Card className="app-aiops-panel" title="最近告警 / 事件">
-              {recentAlerts.length ? (
-                <div className="app-aiops-alert-list">
-                  {recentAlerts.map((alert) => (
-                    <div
-                      key={alert.id}
-                      className={`app-aiops-alert-item severity-${alert.severity}`}
-                    >
-                      <Tag
-                        color={alert.severity === 'critical' ? 'error' : alert.severity === 'warning' ? 'warning' : 'processing'}
-                        style={{ margin: 0, fontSize: 11 }}
-                      >
-                        {getSeverityLabel(alert.severity)}
-                      </Tag>
-                      <div className="app-aiops-alert-item__body">
-                        <div className="app-aiops-alert-item__title">{alert.name}</div>
-                        <div className="app-aiops-alert-item__message">{alert.message}</div>
-                      </div>
-                      <span className="app-aiops-alert-item__time">{alert.time}</span>
+        <Card
+          className="app-ops-panel"
+          title="集群运行面"
+          extra={<Text type="secondary">最多展示 12 个集群 · 指标按各集群实际更新时间</Text>}
+        >
+          {isLoading ? (
+            <div className="app-ops-loading"><Spin /></div>
+          ) : clusters.length === 0 ? (
+            <Empty description="尚未接入集群"><Button type="primary" onClick={() => history.push('/clusters/import')}>导入集群</Button></Empty>
+          ) : (
+            <div className="app-ops-cluster-list">
+              {observedClusters.map((cluster) => {
+                const overview = overviewByCluster.get(cluster.id)
+                const metricsAvailable = overview?.meta?.metrics_available !== false && Boolean(overview)
+                return (
+                  <button
+                    type="button"
+                    key={cluster.id}
+                    className="app-ops-cluster-row"
+                    onClick={() => enterClusterWorkspace(cluster, { setCurrentCluster })}
+                  >
+                    <div className="app-ops-cluster-row__identity">
+                      <span className="app-ops-cluster-row__icon"><ClusterOutlined /></span>
+                      <div><strong>{cluster.name}</strong><span>{cluster.k8sVersion || '版本待确认'}</span></div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="app-aiops-empty-state">
-                  <CheckCircleOutlined />
-                  <div>
-                    <strong>暂无活跃告警</strong>
-                    <span>平台运行平稳，未检测到需要处理的事件。</span>
-                  </div>
-                </div>
-              )}
-            </Card>
-          </Col>
-
-          <Col xs={24} lg={12}>
-            <Card className="app-aiops-panel" title="AI 智能洞察">
-              <div className="app-aiops-insight-list">
-                {aiInsights.map((insight) => (
-                  <div key={insight.id} className="app-aiops-insight-item">
-                    <span className="app-aiops-insight-item__icon">{insight.icon}</span>
-                    <span className="app-aiops-insight-item__text">{insight.text}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </Col>
-        </Row>
-
-        <Card className="app-aiops-panel" title="平台入口">
-          <div className="app-aiops-entry-bar">
-            {QUICK_ENTRIES.map((entry) => (
-              <Tooltip key={entry.key} title={entry.desc}>
-                <button
-                  type="button"
-                  className={`app-aiops-entry-bar__item tone-${entry.tone}`}
-                  onClick={() => history.push(entry.path)}
-                >
-                  <span className="app-aiops-entry-bar__icon">{entry.icon}</span>
-                  <span className="app-aiops-entry-bar__title">{entry.title}</span>
-                </button>
-              </Tooltip>
-            ))}
-          </div>
+                    <Tag color={getClusterStatusColor(cluster.status)}>{getClusterStatusText(cluster.status)}</Tag>
+                    <div className="app-ops-cluster-row__nodes">
+                      <span>Ready 节点</span>
+                      <strong>{overview ? `${overview.stats.nodes.ready}/${overview.stats.nodes.total}` : `${cluster.nodeCount || '—'}`}</strong>
+                    </div>
+                    <div className="app-ops-cluster-row__metric">
+                      <span>CPU</span>
+                      {metricsAvailable ? <Progress percent={overview!.stats.cpu.used_percent} size="small" /> : <Text type="secondary">未采集</Text>}
+                    </div>
+                    <div className="app-ops-cluster-row__metric">
+                      <span>内存</span>
+                      {metricsAvailable ? <Progress percent={overview!.stats.memory.used_percent} size="small" /> : <Text type="secondary">未采集</Text>}
+                    </div>
+                    <Tooltip title={overview?.meta ? `来源 ${overview.meta.metrics_source || overview.meta.source}；更新 ${dayjs(overview.meta.updated_at).format('YYYY-MM-DD HH:mm:ss')}` : '尚未取得集群概览'}>
+                      <span className="app-ops-cluster-row__freshness">
+                        {overview?.meta?.updated_at ? dayjs(overview.meta.updated_at).format('HH:mm:ss') : '待更新'}
+                      </span>
+                    </Tooltip>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </Card>
       </div>
     </AppPage>

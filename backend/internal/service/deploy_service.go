@@ -57,6 +57,16 @@ type ListDeployServersRequest struct {
 	Status   string
 }
 
+type DeployServerSummary struct {
+	Total       int64 `json:"total"`
+	Available   int64 `json:"available"`
+	Registered  int64 `json:"registered"`
+	Unavailable int64 `json:"unavailable"`
+	CPUCores    int64 `json:"cpu_cores"`
+	MemoryMB    int64 `json:"memory_mb"`
+	DiskGB      int64 `json:"disk_gb"`
+}
+
 type CreateDeployServerRequest struct {
 	Name         string         `json:"name"`
 	IP           string         `json:"ip"`
@@ -103,6 +113,21 @@ func (s *DeployService) ListServers(ctx context.Context, req ListDeployServersRe
 		items = append(items, deployServerToItem(row))
 	}
 	return PageResult[DeployServerItem]{List: items, Total: int(total), Page: page, PageSize: pageSize}, nil
+}
+
+func (s *DeployService) GetServerSummary(ctx context.Context) (DeployServerSummary, error) {
+	var summary DeployServerSummary
+	err := s.db.WithContext(ctx).Model(&model.DeployServer{}).
+		Where("deleted_at IS NULL").
+		Select(`COUNT(*) AS total,
+			COALESCE(SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END), 0) AS available,
+			COALESCE(SUM(CASE WHEN status = 'registered' THEN 1 ELSE 0 END), 0) AS registered,
+			COALESCE(SUM(CASE WHEN status = 'unavailable' THEN 1 ELSE 0 END), 0) AS unavailable,
+			COALESCE(SUM(cpu_cores), 0) AS cpu_cores,
+			COALESCE(SUM(memory_mb), 0) AS memory_mb,
+			COALESCE(SUM(disk_gb), 0) AS disk_gb`).
+		Scan(&summary).Error
+	return summary, err
 }
 
 func (s *DeployService) CreateServer(ctx context.Context, req CreateDeployServerRequest) (uint64, error) {

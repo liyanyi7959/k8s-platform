@@ -110,10 +110,12 @@ function serializeStepOverrides(stepOverrides?: Record<string, any>) {
 export function getServers(params?: {
   page?: number
   pageSize?: number
+  keyword?: string
+  status?: string
 }): Promise<{ items: DeployServer[]; total: number; page: number; pageSize: number }> {
-  const { page, pageSize } = params || {}
+  const { page, pageSize, keyword, status } = params || {}
   return request('/api/v1/deploy/servers', {
-    params: { page, page_size: pageSize },
+    params: { page, page_size: pageSize, keyword, status },
   }).then((res) => extractPageData<DeployServer>(res))
 }
 
@@ -132,6 +134,18 @@ export function createServer(data: CreateServerRequest): Promise<DeployServer> {
       remark: data.remark,
     },
   }).then(mapServer)
+}
+
+export function getServerSummary(): Promise<{
+  total: number
+  available: number
+  registered: number
+  unavailable: number
+  cpuCores: number
+  memoryMb: number
+  diskGb: number
+}> {
+  return request('/api/v1/deploy/servers/summary').then(camelizeKeys)
 }
 
 export function updateServer(id: number, data: Partial<CreateServerRequest>): Promise<void> {
@@ -155,8 +169,29 @@ export function deleteServer(id: number): Promise<void> {
   return request(`/api/v1/deploy/servers/${id}`, { method: 'DELETE' })
 }
 
-export function testServerSSH(id: number): Promise<{ success: boolean; message: string }> {
-  return request(`/api/v1/deploy/servers/${id}/test-ssh`, { method: 'POST' })
+export function testServerSSH(id: number): Promise<{
+  status: string
+  message: string
+  os?: string
+  osVersion?: string
+  kernel?: string
+  cpuCores?: number
+  memoryMb?: number
+  diskGb?: number
+}> {
+  return request(`/api/v1/deploy/servers/${id}/test-ssh`, { method: 'POST' }).then(camelizeKeys)
+}
+
+export interface ServerTerminalSession {
+  sessionId: string
+  wsUrl: string
+  server: DeployServer
+}
+
+export function createServerTerminalSession(id: number): Promise<ServerTerminalSession> {
+  return request(`/api/v1/deploy/servers/${id}/terminal-session`, { method: 'POST' }).then(
+    (response) => camelizeKeys(response) as ServerTerminalSession,
+  )
 }
 
 // ═══════════════════════════════════════════════════════════

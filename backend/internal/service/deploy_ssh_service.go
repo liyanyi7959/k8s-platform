@@ -31,32 +31,11 @@ func (s *DeployService) ProbeServerSSH(ctx context.Context, id uint64) (SSHProbe
 	if id == 0 {
 		return SSHProbeResult{}, ErrInvalidParams
 	}
-	var row model.DeployServer
-	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return SSHProbeResult{}, ErrNotFound
-		}
-		return SSHProbeResult{}, err
-	}
-	// 如果服务器关联了凭据，从凭据表获取凭证
-	credentialEnc := row.CredentialEnc
-	authType := row.AuthType
-	if row.CredentialID != nil && *row.CredentialID > 0 {
-		var cred model.SSHCredential
-		if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", *row.CredentialID).First(&cred).Error; err != nil {
-			_ = s.updateServerStatus(ctx, id, "unavailable")
-			return SSHProbeResult{}, ErrWithMessage(ErrNotFound, "关联的凭据不存在")
-		}
-		credentialEnc = cred.CredentialEnc
-		authType = cred.AuthType
-	}
-	credential, err := decryptText(s.encryptionKey, credentialEnc)
+	row, credential, err := s.resolveServerSSHConfig(ctx, id)
 	if err != nil {
 		_ = s.updateServerStatus(ctx, id, "unavailable")
-		return SSHProbeResult{}, ErrWithMessage(ErrCrypto, "服务器凭证解密失败")
+		return SSHProbeResult{}, err
 	}
-	// 临时覆盖 authType 用于 SSH 连接
-	row.AuthType = authType
 	result, err := probeSSH(ctx, row, credential)
 	status := "available"
 	if err != nil {
@@ -89,6 +68,55 @@ func (s *DeployService) ProbeServerSSH(ctx context.Context, id uint64) (SSHProbe
 		return result, ErrWithMessage(ErrInvalidParams, result.Message)
 	}
 	return result, nil
+}
+
+// OpenServerSSH 为交互式终端建立 SSH 客户端连接。
+// 返回值不包含任何凭证明文，调用方负责关闭 client。
+func (s *DeployService) OpenServerSSH(ctx context.Context, id uint64) (*ssh.Client, DeployServerItem, error) {
+	if id == 0 {
+		return nil, DeployServerItem{}, ErrInvalidParams
+	}
+	row, credential, err := s.resolveServerSSHConfig(ctx, id)
+	if err != nil {
+		_ = s.updateServerStatus(ctx, id, "unavailable")
+		return nil, DeployServerItem{}, err
+	}
+	client, err := dialDeploySSH(ctx, row, credential)
+	if err != nil {
+		_ = s.updateServerStatus(ctx, id, "unavailable")
+		return nil, DeployServerItem{}, ErrWithMessage(ErrInvalidParams, err.Error())
+	}
+	_ = s.updateServerStatus(ctx, id, "available")
+	return client, deployServerToItem(row), nil
+}
+
+func (s *DeployService) resolveServerSSHConfig(ctx context.Context, id uint64) (model.DeployServer, string, error) {
+	var row model.DeployServer
+	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.DeployServer{}, "", ErrNotFound
+		}
+		return model.DeployServer{}, "", err
+	}
+
+	credentialEnc := row.CredentialEnc
+	if row.CredentialID != nil && *row.CredentialID > 0 {
+		var credential model.SSHCredential
+		if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", *row.CredentialID).First(&credential).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return model.DeployServer{}, "", ErrWithMessage(ErrNotFound, "关联的凭据不存在")
+			}
+			return model.DeployServer{}, "", err
+		}
+		credentialEnc = credential.CredentialEnc
+		row.AuthType = credential.AuthType
+	}
+
+	credential, err := decryptText(s.encryptionKey, credentialEnc)
+	if err != nil {
+		return model.DeployServer{}, "", ErrWithMessage(ErrCrypto, "服务器凭证解密失败")
+	}
+	return row, credential, nil
 }
 
 func probeSSH(ctx context.Context, row model.DeployServer, credential string) (SSHProbeResult, error) {

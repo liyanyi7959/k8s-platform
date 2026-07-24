@@ -15,15 +15,29 @@ import (
 )
 
 type DeployController struct {
-	svc *service.DeployService
+	svc              *service.DeployService
+	terminalSessions *service.ExecSessionStore
 }
 
-func NewDeployController(svc *service.DeployService) *DeployController {
-	return &DeployController{svc: svc}
+func NewDeployController(svc *service.DeployService, terminalSessions ...*service.ExecSessionStore) *DeployController {
+	var sessions *service.ExecSessionStore
+	if len(terminalSessions) > 0 {
+		sessions = terminalSessions[0]
+	}
+	return &DeployController{svc: svc, terminalSessions: sessions}
 }
 
 func (dc *DeployController) ListServers(c *gin.Context) {
 	data, err := dc.svc.ListServers(c.Request.Context(), service.ListDeployServersRequest{Page: parseInt(c.Query("page"), 1), PageSize: parseInt(c.Query("page_size"), 20), Keyword: c.Query("keyword"), Status: c.Query("status")})
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, data)
+}
+
+func (dc *DeployController) GetServerSummary(c *gin.Context) {
+	data, err := dc.svc.GetServerSummary(c.Request.Context())
 	if err != nil {
 		WriteServiceErr(c, err)
 		return

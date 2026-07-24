@@ -21,6 +21,24 @@ import type {
 
 const MOCK_ENABLED = false
 
+const toCamelCase = (value: string) => value.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
+
+const camelize = <T>(input: unknown): T => {
+  if (Array.isArray(input)) {
+    return input.map((item) => camelize(item)) as T
+  }
+  if (input && typeof input === 'object') {
+    return Object.entries(input as Record<string, unknown>).reduce<Record<string, unknown>>(
+      (result, [key, value]) => {
+        result[toCamelCase(key)] = camelize(value)
+        return result
+      },
+      {},
+    ) as T
+  }
+  return input as T
+}
+
 /** 模拟告警规则数据 */
 const MOCK_ALERT_RULES: AlertRule[] = [
   {
@@ -180,7 +198,10 @@ export function listAlertRules(
       }, 200)
     })
   }
-  return request('/api/v1/monitor/alerts', { params, signal })
+  return request('/api/v1/monitor/alerts', {
+    params: { page: params?.page, page_size: params?.pageSize },
+    signal,
+  }).then(pageResult<AlertRule>)
 }
 
 /** 创建告警规则 */
@@ -275,15 +296,24 @@ export function listAlertEvents(clusterId?: number, signal?: AbortSignal): Promi
 
 const pageResult = <T>(raw: any) => {
   const data = raw?.data || raw || {}
-  return { items: data.items || data.list || [], total: data.total || 0, page: data.page || 1, pageSize: data.pageSize || data.page_size || 20 } as { items: T[]; total: number; page: number; pageSize: number }
+  const list = Array.isArray(data.items) ? data.items : Array.isArray(data.list) ? data.list : []
+  return {
+    items: camelize<T[]>(list),
+    total: data.total || 0,
+    page: data.page || 1,
+    pageSize: data.pageSize || data.page_size || 20,
+  } as { items: T[]; total: number; page: number; pageSize: number }
 }
 
 export function listIncidents(params?: { page?: number; pageSize?: number; status?: string }, signal?: AbortSignal) {
-  return request('/api/v1/monitor/incidents', { params, signal }).then(pageResult<MonitorIncident>)
+  return request('/api/v1/monitor/incidents', {
+    params: { page: params?.page, page_size: params?.pageSize, status: params?.status },
+    signal,
+  }).then(pageResult<MonitorIncident>)
 }
 
 export function getIncident(id: number): Promise<{ incident: MonitorIncident; timeline: IncidentTimelineItem[] }> {
-  return request(`/api/v1/monitor/incidents/${id}`)
+  return request(`/api/v1/monitor/incidents/${id}`).then((raw) => camelize(raw))
 }
 
 export function transitionIncident(id: number, action: string, note = ''): Promise<void> {

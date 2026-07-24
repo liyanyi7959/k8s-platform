@@ -75,8 +75,13 @@ func (kc *K8sController) PodExecWS(c *gin.Context) {
 		resp.Fail(c, 4000, "invalid params")
 		return
 	}
-	if _, ok := kc.execSessions.Get(sid); !ok {
+	pendingSession, ok := kc.execSessions.Get(sid)
+	if !ok || (pendingSession.Kind != "" && pendingSession.Kind != "pod") {
 		resp.Fail(c, 4040, "not found")
+		return
+	}
+	if pendingSession.UserID != 0 && pendingSession.UserID != currentUserID(c) {
+		resp.Fail(c, 1003, "permission denied")
 		return
 	}
 
@@ -115,7 +120,7 @@ func (kc *K8sController) PodExecWS(c *gin.Context) {
 	defer func() { _ = conn.Close() }()
 
 	sess, ok := kc.execSessions.Take(sid)
-	if !ok {
+	if !ok || (sess.Kind != "" && sess.Kind != "pod") || (sess.UserID != 0 && sess.UserID != currentUserID(c)) {
 		zap.L().Warn("pod_exec_ws: session not found or already consumed", zap.String("session_id", sid))
 		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "session not found"), time.Now().Add(3*time.Second))
 		return
