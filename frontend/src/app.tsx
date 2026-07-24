@@ -31,7 +31,7 @@ import {
   UnorderedListOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { useQuery } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { getCurrentUser, logout as requestLogout } from '@/services/auth'
 import { listClusters } from '@/services/clusters'
 import { listIncidents } from '@/services/monitor'
@@ -48,22 +48,23 @@ import defaultSettings from '../config/defaultSettings'
 // ============================================================
 // React Query 全局配置
 // ============================================================
-export const reactQuery = {
-  queryClient: {
-    defaultOptions: {
-      queries: {
-        retry: 1,
-        refetchOnWindowFocus: false,
-        staleTime: 30_000,
-        gcTime: 5 * 60_000,
-        refetchInterval: false,
-      },
-      mutations: {
-        retry: 0,
-      },
+// Keep the client in this module instead of Umi's generated runtime. The
+// generated runtime imports app.tsx before @umijs/max has finished exporting,
+// which otherwise creates a circular dependency during startup.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchInterval: false,
+    },
+    mutations: {
+      retry: 0,
     },
   },
-}
+})
 
 // ============================================================
 // Antd Static Holder (用于 message/notification 等静态方法)
@@ -464,9 +465,11 @@ const AppRuntimeBranding = ({ children }: { children: React.ReactNode }) => {
 export const rootContainer = (container: React.ReactNode) => {
   ensureStaticHolder()
   return (
-    <AntdApp>
-      <AppRuntimeBranding>{container}</AppRuntimeBranding>
-    </AntdApp>
+    <QueryClientProvider client={queryClient}>
+      <AntdApp>
+        <AppRuntimeBranding>{container}</AppRuntimeBranding>
+      </AntdApp>
+    </QueryClientProvider>
   )
 }
 

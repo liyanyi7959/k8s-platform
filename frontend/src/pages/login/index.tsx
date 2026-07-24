@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { history, useModel } from '@umijs/max'
 import { Button, Checkbox, Form, Input, Modal, Space, Tooltip, Typography, message } from 'antd'
 import {
   ArrowRightOutlined,
@@ -12,7 +11,6 @@ import {
 } from '@ant-design/icons'
 import {
   getCaptcha,
-  getCurrentUser,
   login,
   requestPasswordReset,
   confirmPasswordReset,
@@ -152,7 +150,6 @@ const LoginPage: React.FC = () => {
   const [remember, setRemember] = useState(false)
   const [loginFeedback, setLoginFeedback] = useState<LoginFeedback>()
   const [captchaError, setCaptchaError] = useState<string>('')
-  const { setInitialState } = useModel('@@initialState')
   const [form] = Form.useForm()
 
   const [targetX, setTargetX] = useState(0)
@@ -352,13 +349,11 @@ const LoginPage: React.FC = () => {
 
     setLoading(true)
     try {
-      const loginResult = await login({
+      await login({
         ...values,
         captchaToken: captchaEnabled ? captchaToken : undefined,
         captchaX: captchaEnabled ? captchaSubmissionX : undefined,
       })
-      const currentUser = loginResult.user || (await getCurrentUser())
-      setInitialState({ currentUser })
       if (remember && values.username) {
         localStorage.setItem(REMEMBER_USER_KEY, btoa(values.username))
       } else {
@@ -367,7 +362,8 @@ const LoginPage: React.FC = () => {
       setLoginFeedback(undefined)
       setCaptchaError('')
       message.success('登录成功')
-      history.replace('/')
+      // 登录页运行在初始状态 Provider 外；完整跳转能让首页重新拉取用户信息，避免读取空 model Context。
+      window.location.replace('/')
     } catch (error) {
       setLoginFeedback(buildLoginFeedback(error))
       void refreshCaptcha()
@@ -442,11 +438,21 @@ const LoginPage: React.FC = () => {
         </div>
 
         <div className="app-login-console__hero">
-          <span className="app-login-console__eyebrow">INTELLIGENT OPERATIONS</span>
-          <h1>把复杂运维，
-            <em>变成清晰决策。</em>
-          </h1>
-          <p>统一掌控集群健康、告警事件与自动化执行，让每一次响应都有据可循。</p>
+          <span className="app-login-console__eyebrow">AIOPS / CONTROL PLANE</span>
+          <h1>智能运维控制平台</h1>
+          <p>集中管理集群、告警与自动化任务，让运维工作保持清晰、可靠和可追溯。</p>
+        </div>
+
+        <div className="app-login-console__activity">
+          <span className="app-login-console__activity-mark" aria-hidden="true">
+            <i />
+            <b />
+            <em />
+          </span>
+          <span>
+            <strong>实时态势感知</strong>
+            <small>持续汇聚运行信号与关键事件</small>
+          </span>
         </div>
 
         <div className="app-login-console__telemetry" aria-hidden="true">
@@ -488,6 +494,7 @@ const LoginPage: React.FC = () => {
       </aside>
       <div className="app-login-panel">
         <section className="app-login-form">
+          <div className="app-login-form__surface">
           <div className="app-login-form__brand">
             <div className="app-login-form__brand-top">
               <img
@@ -634,6 +641,7 @@ const LoginPage: React.FC = () => {
               </div>
             )}
           </Form>
+          </div>
 
           <div className="app-login-footer">
             <span className="app-login-footer__copyright">

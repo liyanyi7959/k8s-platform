@@ -12,12 +12,26 @@ export type Cluster = {
   status: string
 }
 
+const getRuntimeLocation = () => {
+  const routeLocation = history?.location
+  if (routeLocation) return routeLocation
+
+  if (typeof window !== 'undefined') {
+    return {
+      pathname: window.location.pathname,
+      search: window.location.search,
+    }
+  }
+
+  return { pathname: '/', search: '' }
+}
+
 /**
  * 从 URL 中提取集群 ID
  * 优先级：path /k8s/xxx > query ?cluster=xxx > path /cluster/xxx
  */
 const getClusterIdFromUrl = (): string | null => {
-  const { search, pathname } = history.location
+  const { search, pathname } = getRuntimeLocation()
 
   // K8s 资源页路由：/k8s/:clusterId/...
   const k8sMatch = pathname.match(/^\/k8s\/([^/]+)/)
@@ -37,7 +51,7 @@ const getClusterIdFromUrl = (): string | null => {
  * 注意：/k8s/:clusterId 路径已在 path 中携带集群 ID，无需追加 query
  */
 const syncClusterQuery = (clusterId: string | null) => {
-  const { pathname, search } = history.location
+  const { pathname, search } = getRuntimeLocation()
 
   // K8s 资源页路由自身携带 clusterId，跳过 query 同步避免冗余与循环
   if (pathname.startsWith('/k8s/')) return
@@ -53,7 +67,7 @@ const syncClusterQuery = (clusterId: string | null) => {
   const nextSearch = params.toString()
   const nextUrl = nextSearch ? `${pathname}?${nextSearch}` : pathname
   if (`${pathname}${search ? `?${search}` : ''}` !== nextUrl) {
-    history.replace(nextUrl)
+    history?.replace?.(nextUrl)
   }
 }
 
@@ -71,10 +85,11 @@ export default function useClusterModel() {
   const [clusterList, setClusterListState] = useState<Cluster[]>([])
   const [initialized, setInitialized] = useState(false)
   // 跟踪当前路径名，路由变化时触发集群状态恢复
-  const [pathname, setPathname] = useState<string>(history.location.pathname)
+  const [pathname, setPathname] = useState<string>(() => getRuntimeLocation().pathname)
 
   // 订阅路由变化，同步 pathname
   useEffect(() => {
+    if (!history?.listen) return undefined
     const unlisten = history.listen(({ location }) => {
       setPathname(location.pathname)
     })

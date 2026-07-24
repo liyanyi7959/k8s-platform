@@ -457,10 +457,11 @@ const AnsiblePlaybookPanel: React.FC = () => {
   return (
     <Spin spinning={isLoading}>
       {data ? (
-        <div style={{ display: 'flex', gap: 16, minHeight: 640 }}>
-          <Card size="small" style={{ width: 280, flexShrink: 0, overflow: 'auto' }}>
+        <div className="app-ansible-playbook-panel">
+          <Card size="small" className="app-ansible-playbook-tree-card">
             <Tree
-			  showIcon
+              className="app-ansible-playbook-tree"
+              showIcon
               treeData={treeData}
               defaultExpandAll
               selectedKeys={selectedPath ? [selectedPath] : []}
@@ -469,7 +470,7 @@ const AnsiblePlaybookPanel: React.FC = () => {
               }}
             />
           </Card>
-          <Card size="small" style={{ flex: 1, minWidth: 0 }}>
+          <Card size="small" className="app-ansible-playbook-editor-card">
             {selectedNode?.type === 'file' ? (
               <>
                 <AppAlert

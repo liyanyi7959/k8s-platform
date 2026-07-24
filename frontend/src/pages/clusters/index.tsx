@@ -310,57 +310,57 @@ const ClusterListPage: React.FC = () => {
     <AppPage
       breadcrumbRender={false}
       content={
-        <div className="app-cluster-page-header">
-          <span
-            className={[
-              'app-console-toolbar__metric',
-              summary.healthPercent === 100
-                ? 'is-high'
-                : summary.healthPercent >= 60
-                  ? 'is-medium'
-                  : 'is-low',
-            ].join(' ')}
-          >
-            <span>健康率</span>
-            <strong>{summary.healthPercent}%</strong>
-          </span>
-          <Progress
-            percent={summary.healthPercent}
-            showInfo={false}
-            strokeColor={
-              summary.healthPercent === 100
-                ? DESIGN_COLORS.success
-                : summary.healthPercent >= 60
-                  ? DESIGN_COLORS.warning
-                  : DESIGN_COLORS.danger
-            }
-            trailColor="rgba(148, 163, 184, 0.16)"
-            size="small"
-          />
-          <span className="app-console-toolbar__hint">
-            {formatNumber(summary.healthy)} / {formatNumber(summary.total)} 集群稳定
-          </span>
+        <div className="app-cluster-page-header-row">
+          <div className="app-cluster-page-header">
+            <span
+              className={[
+                'app-console-toolbar__metric',
+                summary.healthPercent === 100
+                  ? 'is-high'
+                  : summary.healthPercent >= 60
+                    ? 'is-medium'
+                    : 'is-low',
+              ].join(' ')}
+            >
+              <span>健康率</span>
+              <strong>{summary.healthPercent}%</strong>
+            </span>
+            <Progress
+              percent={summary.healthPercent}
+              showInfo={false}
+              strokeColor={
+                summary.healthPercent === 100
+                  ? DESIGN_COLORS.success
+                  : summary.healthPercent >= 60
+                    ? DESIGN_COLORS.warning
+                    : DESIGN_COLORS.danger
+              }
+              trailColor="rgba(148, 163, 184, 0.16)"
+              size="small"
+            />
+            <span className="app-console-toolbar__hint">
+              {formatNumber(summary.healthy)} / {formatNumber(summary.total)} 集群稳定
+            </span>
+          </div>
+          <Space className="app-cluster-page-header-actions">
+            <Button
+              type="primary"
+              icon={<RocketOutlined />}
+              onClick={() => history.push('/clusters/provision')}
+            >
+              部署K8S集群
+            </Button>
+            <Button
+              icon={<ImportOutlined />}
+              onClick={() => history.push('/clusters/import')}
+            >
+              导入新集群
+            </Button>
+            <Button icon={<ReloadOutlined />} loading={isRefetching} onClick={() => refetch()}>
+              刷新
+            </Button>
+          </Space>
         </div>
-      }
-      extra={
-        <Space>
-          <Button
-            type="primary"
-            icon={<RocketOutlined />}
-            onClick={() => history.push('/clusters/provision')}
-          >
-            部署K8S集群
-          </Button>
-          <Button
-            icon={<ImportOutlined />}
-            onClick={() => history.push('/clusters/import')}
-          >
-            导入新集群
-          </Button>
-          <Button icon={<ReloadOutlined />} loading={isRefetching} onClick={() => refetch()}>
-            刷新
-          </Button>
-        </Space>
       }
     >
       <div className="app-page-shell app-clusters-page">

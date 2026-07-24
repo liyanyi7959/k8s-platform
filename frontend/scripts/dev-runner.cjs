@@ -1,4 +1,5 @@
 const path = require('node:path')
+const fs = require('node:fs')
 const readline = require('node:readline')
 const { spawn } = require('node:child_process')
 
@@ -8,6 +9,47 @@ const maxBin = process.platform === 'win32'
 
 const childCommand = maxBin
 const childArgs = ['dev', ...process.argv.slice(2)]
+const lockPath = path.resolve(__dirname, '../.aiops-dev.lock')
+
+const isProcessRunning = (pid) => {
+  if (!Number.isInteger(pid) || pid <= 0) return false
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const acquireDevLock = () => {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const descriptor = fs.openSync(lockPath, 'wx')
+      fs.writeFileSync(descriptor, `${process.pid}\n`)
+      fs.closeSync(descriptor)
+      return
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error
+      const ownerPid = Number.parseInt(fs.readFileSync(lockPath, 'utf8'), 10)
+      if (isProcessRunning(ownerPid)) {
+        throw new Error(`已有前端开发服务正在运行（PID ${ownerPid}）。同一工作区一次只能运行一个 npm run dev；如需并行开发，请使用独立工作区。`)
+      }
+      fs.rmSync(lockPath, { force: true })
+    }
+  }
+  throw new Error('无法获取前端开发服务锁')
+}
+
+const releaseDevLock = () => fs.rmSync(lockPath, { force: true })
+
+try {
+  acquireDevLock()
+} catch (error) {
+  process.stderr.write(`${error.message}\n`)
+  process.exit(1)
+}
+
+process.once('exit', releaseDevLock)
 
 const ignoredWatchpackNoise = [
   /Watchpack Error \(initial scan\): Error: EINVAL: invalid argument, lstat 'D:\\DumpStack\.log(?:\.tmp)?'/i,
@@ -34,7 +76,11 @@ const child = spawn(childCommand, childArgs, {
   cwd: path.resolve(__dirname, '..'),
   stdio: ['inherit', 'pipe', 'pipe'],
   shell: process.platform === 'win32',
-  env: process.env,
+  env: {
+    ...process.env,
+    // Disable Umi's startup promotional tips at the source.
+    DID_YOU_KNOW: process.env.DID_YOU_KNOW || 'none',
+  },
 })
 
 const stdout = readline.createInterface({ input: child.stdout })

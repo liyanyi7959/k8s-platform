@@ -54,7 +54,8 @@ export default defineConfig({
   model: {},
   initialState: {},
   request: {},
-  reactQuery: {},
+  // 由 src/app.tsx 根容器提供 QueryClient，避免 Umi 运行时代码反向导入 app.tsx 造成循环依赖。
+  reactQuery: { queryClient: false, devtool: false },
   layout: {
     title: 'AIOPS 智能运维平台',
     locale: false,
