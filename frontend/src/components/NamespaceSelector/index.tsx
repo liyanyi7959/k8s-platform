@@ -17,8 +17,6 @@ interface NamespaceSelectorProps {
   showAll?: boolean
 }
 
-const DEFAULT_NAMESPACES = ['default', 'kube-system', 'kube-public', 'monitoring', 'production']
-
 export const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
   clusterId,
   value,
@@ -40,9 +38,6 @@ export const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
     value: ns.name,
   }))
 
-  const fallbackOptions = DEFAULT_NAMESPACES.map((ns) => ({ label: ns, value: ns }))
-  const finalOptions = options.length > 0 ? options : fallbackOptions
-
   return (
     <Select
       placeholder={placeholder}
@@ -50,7 +45,7 @@ export const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
       onChange={onChange}
       allowClear={allowClear}
       style={style}
-      options={showAll ? [{ label: '全部命名空间', value: '' }, ...finalOptions] : finalOptions}
+      options={showAll ? [{ label: '全部命名空间', value: '' }, ...options] : options}
       showSearch
       filterOption={(input, option) => (option?.label as string)?.toLowerCase().includes(input.toLowerCase())}
     />

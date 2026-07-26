@@ -10,7 +10,7 @@ import { Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Typography, 
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listGenericResources, deleteGenericResource, type GenericResourceItem } from '@/services/k8s'
-import { AppPage, NamespaceSelector, ManifestApplyDrawer } from '@/components'
+import { AppPage, ListWorkspace, NamespaceSelector, ManifestApplyDrawer } from '@/components'
 import AppAlert from '@/components/AppAlert'
 import EllipsisText from '@/components/EllipsisText'
 import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
@@ -200,18 +200,47 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
 
   return (
     <AppPage>
-      {isError && (
-        <AppAlert
-          type="error"
-          showIcon
-          message="数据加载失败"
-          description={`无法获取 ${title} 列表，请检查集群连接状态或稍后重试。`}
-          action={<Button size="small" onClick={() => refetch()}>重试</Button>}
-          style={{ marginBottom: 16 }}
-        />
-      )}
-
-      <ProTable<GenericResourceItem>
+      <ListWorkspace
+        summary={<>当前共 {filteredItems.length} 个 {title}</>}
+        actions={(
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>
+            {creatable ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>创建</Button>
+            ) : null}
+          </Space>
+        )}
+        filters={(
+          <Space wrap>
+            <Input
+              allowClear
+              placeholder="搜索名称..."
+              prefix={<SearchOutlined />}
+              style={{ width: 180 }}
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+            {namespaced ? (
+              <NamespaceSelector
+                clusterId={clusterId}
+                value={namespace}
+                onChange={setNamespace}
+                style={{ width: 180 }}
+              />
+            ) : null}
+          </Space>
+        )}
+      >
+        {isError ? (
+          <AppAlert
+            type="error"
+            showIcon
+            message="数据加载失败"
+            description={`无法获取 ${title} 列表，请检查集群连接状态或稍后重试。`}
+            action={<Button size="small" onClick={() => refetch()}>重试</Button>}
+          />
+        ) : null}
+        <ProTable<GenericResourceItem>
         columns={columns}
         dataSource={filteredItems}
         loading={isLoading}
@@ -227,55 +256,10 @@ const GenericResourceList: React.FC<GenericResourceListProps> = ({
         locale={{
           emptyText: <Empty description={`暂无 ${title} 数据`} />,
         }}
-        toolBarRender={() => {
-          const tools: React.ReactNode[] = []
-          tools.push(
-            <Input
-              key="search"
-              allowClear
-              placeholder="搜索名称..."
-              prefix={<SearchOutlined />}
-              style={{ width: 180 }}
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-            />,
-          )
-          if (namespaced) {
-            tools.push(
-              <NamespaceSelector
-                key="ns"
-                clusterId={clusterId}
-                value={namespace}
-                onChange={setNamespace}
-                style={{ width: 180 }}
-              />,
-            )
-          }
-          tools.push(
-            <Button
-              key="refresh"
-              icon={<ReloadOutlined />}
-              onClick={() => refetch()}
-            >
-              刷新
-            </Button>,
-          )
-          if (creatable) {
-            tools.push(
-              <Button
-                key="create"
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setCreateOpen(true)}
-              >
-                创建
-              </Button>,
-            )
-          }
-          return tools
-        }}
-        headerTitle={<Text strong>{title}</Text>}
-      />
+          toolBarRender={false}
+          headerTitle={false}
+        />
+      </ListWorkspace>
 
       {creatable && (
         <ManifestApplyDrawer

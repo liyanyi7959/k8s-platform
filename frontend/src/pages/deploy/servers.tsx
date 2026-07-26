@@ -42,7 +42,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
-import { AppPage } from '@/components'
+import { AppPage, MetricGrid, WorkspaceHeader } from '@/components'
 import {
   createServer,
   deleteServer,
@@ -55,7 +55,7 @@ import {
 import type { CreateServerRequest, DeployServer } from '@/types/deploy'
 import ServerTerminalDrawer from './ServerTerminalDrawer'
 
-const { Paragraph, Text, Title } = Typography
+const { Text, Title } = Typography
 
 type ServerFormValues = CreateServerRequest & { labelsText?: string }
 
@@ -437,45 +437,27 @@ export default function ServersPage() {
 
   return (
     <AppPage className="app-server-pool-page">
-      <section className="app-server-pool-hero">
-        <div>
-          <Space size={10} align="center">
-            <span className="app-server-pool-hero__mark"><HddOutlined /></span>
-            <div>
-              <Title level={3}>主机资源池</Title>
-              <Paragraph>统一维护 SSH 资产、连通状态与硬件画像，并从浏览器直接进入受控终端。</Paragraph>
-            </div>
-          </Space>
-        </div>
-        <Space wrap>
+      <WorkspaceHeader
+        title="主机资源池"
+        description="维护 SSH 资产、连通状态与硬件画像。"
+        icon={<HddOutlined />}
+        actions={(
+          <Space wrap>
           <Button icon={<KeyOutlined />} onClick={() => history.push('/config/credentials')}>凭据库</Button>
           <Button icon={<DownloadOutlined />} onClick={exportInventory}>导出清单</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>添加服务器</Button>
-        </Space>
-      </section>
+          </Space>
+        )}
+      />
 
-      <div className="app-server-pool-summary">
-        <div className="app-server-pool-stat">
-          <span>纳管主机</span>
-          <strong>{summary?.total ?? '-'}</strong>
-          <small>统一资产台账</small>
-        </div>
-        <div className="app-server-pool-stat app-server-pool-stat--healthy">
-          <span>在线可用</span>
-          <strong>{summary?.available ?? '-'}</strong>
-          <small>在线率 {onlineRate}%</small>
-        </div>
-        <div className="app-server-pool-stat app-server-pool-stat--warning">
-          <span>待处理</span>
-          <strong>{(summary?.registered || 0) + (summary?.unavailable || 0)}</strong>
-          <small>{summary?.registered || 0} 待巡检 · {summary?.unavailable || 0} 不可达</small>
-        </div>
-        <div className="app-server-pool-stat app-server-pool-stat--capacity">
-          <span>资源总容量</span>
-          <strong>{summary?.cpuCores || 0}C</strong>
-          <small>{formatMemory(summary?.memoryMb)} 内存 · {summary?.diskGb || 0} GiB 磁盘</small>
-        </div>
-      </div>
+      <MetricGrid
+        items={[
+          { key: 'managed', label: '纳管主机', value: summary?.total ?? '-', detail: '统一资产台账', icon: <CloudServerOutlined /> },
+          { key: 'available', label: '在线可用', value: summary?.available ?? '-', detail: `在线率 ${onlineRate}%`, icon: <ApiOutlined />, tone: 'success' },
+          { key: 'pending', label: '待处理', value: (summary?.registered || 0) + (summary?.unavailable || 0), detail: `${summary?.registered || 0} 待巡检 · ${summary?.unavailable || 0} 不可达`, icon: <SafetyCertificateOutlined />, tone: 'warning' },
+          { key: 'capacity', label: '资源总容量', value: `${summary?.cpuCores || 0}C`, detail: `${formatMemory(summary?.memoryMb)} 内存 · ${summary?.diskGb || 0} GiB 磁盘`, icon: <HddOutlined /> },
+        ]}
+      />
 
       <Card className="app-server-pool-card" bordered={false}>
         <div className="app-server-pool-toolbar">

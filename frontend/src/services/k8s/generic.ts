@@ -284,6 +284,7 @@ export function listPodMetricsUsage(clusterId: number, signal?: AbortSignal): Pr
 /** Helm 安装 chart */
 export interface HelmPreflightResult {
   cluster_version: string
+  execution_target?: 'master'
   master: {
     cluster_id: number
     master_name: string
@@ -310,7 +311,13 @@ export function helmInstall(clusterId: number, data: {
   repo_url?: string
   repo_name?: string
   values_yaml?: string
-}) {
+}): Promise<{
+  output: string
+  command_output?: string
+  cluster_version?: string
+  execution_target?: 'master'
+  master?: HelmPreflightResult['master']
+}> {
   return request(`/api/v1/clusters/${clusterId}/helm/install`, { method: 'POST', data })
 }
 
@@ -336,11 +343,26 @@ export function helmRollback(clusterId: number, namespace: string, name: string,
   })
 }
 
-/** Helm 仓库列表 */
-export function listHelmRepos(clusterId: number, signal?: AbortSignal): Promise<any[]> {
+export interface HelmRepository {
+  name: string
+  url: string
+}
+
+/** 读取目标集群 Master 上实际可用的 Helm 仓库。 */
+export function listHelmRepos(clusterId: number, signal?: AbortSignal): Promise<HelmRepository[]> {
   return request(`/api/v1/clusters/${clusterId}/helm/repos`, { signal }).then((res: any) =>
     Array.isArray(res) ? res : (Array.isArray(res?.list) ? res.list : []),
   )
+}
+
+/** 在目标集群 Master 上添加或同步一个 Helm 仓库。 */
+export function addHelmRepo(clusterId: number, data: HelmRepository): Promise<HelmRepository> {
+  return request(`/api/v1/clusters/${clusterId}/helm/repos`, { method: 'POST', data })
+}
+
+/** 从目标集群 Master 的 Helm 仓库注册表中移除一个仓库。 */
+export function deleteHelmRepo(clusterId: number, name: string): Promise<void> {
+  return request(`/api/v1/clusters/${clusterId}/helm/repos/${encodeURIComponent(name)}`, { method: 'DELETE' })
 }
 
 /** Helm 搜索 chart */

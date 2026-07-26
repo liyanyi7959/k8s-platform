@@ -1,5 +1,5 @@
 import { history, useModel, type RequestConfig } from '@umijs/max'
-import { useEffect, useRef, useState } from 'react'
+import { isValidElement, useEffect, useRef, useState, type ReactElement } from 'react'
 import {
   App as AntdApp,
   Avatar,
@@ -20,6 +20,8 @@ import {
   CloudServerOutlined,
   ClusterOutlined,
   DashboardOutlined,
+  DoubleLeftOutlined,
+  DoubleRightOutlined,
   DownOutlined,
   FileSearchOutlined,
   LockOutlined,
@@ -578,6 +580,10 @@ const buildGlobalMenuItems = (): MenuItem[] => [
     path: '/app-store',
     name: '应用商店',
     icon: <AppstoreOutlined />,
+    children: [
+      { key: '/app-store/yaml', path: '/app-store/yaml', name: 'YAML 模板' },
+      { key: '/app-store/helm', path: '/app-store/helm', name: 'Helm Chart' },
+    ],
   },
   // ---- 自动化中心：承载可复用运行手册与执行资产，而不是某个具体集群的创建入口 ----
   {
@@ -811,6 +817,9 @@ const getGlobalOpenKeys = (pathname: string): string[] => {
   if (pathname.startsWith('/automation')) {
     openKeys.push('/automation')
   }
+  if (pathname.startsWith('/app-store')) {
+    openKeys.push('/app-store')
+  }
   if (pathname.startsWith('/monitor')) {
     openKeys.push('/monitor')
   }
@@ -938,7 +947,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
       return
     }
 
-    const globalParentKeys = new Set(['/clusters', '/servers', '/automation', '/monitor', '/ai'])
+    const globalParentKeys = new Set(['/clusters', '/servers', '/app-store', '/automation', '/monitor', '/ai'])
     const latestOpenedKey = keys.find((key) => !menuOpenKeys.includes(key))
     if (latestOpenedKey && globalParentKeys.has(latestOpenedKey)) {
       setMenuOpenKeys([latestOpenedKey])
@@ -1063,6 +1072,24 @@ export const layout = ({ initialState, setInitialState }: any) => {
 
     avatarProps: false,
     onMenuHeaderClick: () => history.push('/dashboard'),
+    // 仍由 ProLayout 维护收缩状态和过渡；这里只替换官方触发器的内容。
+    collapsedButtonRender: (collapsed: boolean | undefined, defaultDom: React.ReactNode) => {
+      const collapseAction = isValidElement(defaultDom)
+        ? (defaultDom as ReactElement<{ onClick?: React.MouseEventHandler<HTMLButtonElement> }>).props.onClick
+        : undefined
+
+      return (
+        <button
+          type="button"
+          className={`ant-pro-sider-collapsed-button app-sider-collapse-control${collapsed ? ' app-sider-collapse-control--collapsed' : ''}`}
+          aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
+          onClick={collapseAction}
+        >
+          {collapsed ? <DoubleRightOutlined /> : <DoubleLeftOutlined />}
+          {!collapsed && <span>收起</span>}
+        </button>
+      )
+    },
 
     // ========== 右侧内容区：集群选择器 + 用户头像 ==========
     rightContentRender: () => (

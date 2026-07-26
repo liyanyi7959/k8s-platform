@@ -338,6 +338,26 @@ export function retryDeployStep(id: number, stepKey: string): Promise<{ taskId: 
   return request(`/api/v1/deploy/plans/${id}/steps/${stepKey}/retry`, { method: 'POST' })
 }
 
+/** 为已成功的集群补充安装可选组件，不会重跑集群初始化。 */
+export function installDeployPlanAddons(id: number, addons: string[]): Promise<{ taskId: number }> {
+  return request(`/api/v1/deploy/plans/${id}/addons/install`, {
+    method: 'POST',
+    data: { addons },
+  }).then((res: any) => ({ taskId: Number(res?.task_id ?? res?.taskId) }))
+}
+
+/** 获取该集群最近一次补充组件任务，用于在部署流水线中持续展示状态。 */
+export function getDeployPlanAddonTask(id: number): Promise<import('@/types').DeployTask | undefined> {
+  return request(`/api/v1/deploy/plans/${id}/addons/task`).then((res: any) => {
+    const task = res?.task
+    return task ? camelizeKeys(task) : undefined
+  })
+}
+
+export function retryDeployPlanAddons(id: number): Promise<{ taskId: number }> {
+  return request(`/api/v1/deploy/plans/${id}/addons/retry`, { method: 'POST' })
+}
+
 /** 执行部署前的控制端、拓扑和目标主机就绪检查 */
 export function preflightDeployPlan(id: number): Promise<import('@/types').DeployPreflightResult> {
   return request(`/api/v1/deploy/plans/${id}/preflight`, { method: 'POST' }).then(camelizeKeys)

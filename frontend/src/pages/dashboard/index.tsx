@@ -106,7 +106,7 @@ const DashboardPage: React.FC = () => {
       : '当前没有未恢复事件'
 
   return (
-    <AppPage keepHeaderTitle title="全局运维态势" breadcrumbRender={false}>
+    <AppPage keepHeaderTitle title="全局运维态势">
       <div className="app-page-shell app-ops-dashboard">
         <section className={`app-ops-briefing ${criticalCount ? 'is-critical' : activeIncidents.length ? 'is-warning' : 'is-stable'}`}>
           <div className="app-ops-briefing__source">

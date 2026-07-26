@@ -19,6 +19,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
 
+	"k8s-platform-backend/internal/service"
 	"k8s-platform-backend/pkg/resp"
 )
 
@@ -206,6 +207,24 @@ func validateHelmInstallRequest(req *helmInstallRequest) error {
 	return nil
 }
 
+type helmRepoRequest struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+func validateHelmRepoRequest(req *helmRepoRequest) error {
+	req.Name = strings.TrimSpace(req.Name)
+	req.URL = strings.TrimSpace(req.URL)
+	if len(req.Name) == 0 || len(req.Name) > 63 || !helmKubernetesName.MatchString(req.Name) {
+		return fmt.Errorf("仓库名称必须是 1-63 位小写 DNS 名称")
+	}
+	parsedURL, err := url.ParseRequestURI(req.URL)
+	if err != nil || parsedURL.Scheme != "https" || parsedURL.Host == "" {
+		return fmt.Errorf("Helm 仓库地址必须是有效的 HTTPS URL")
+	}
+	return nil
+}
+
 func (kc *K8sController) helmPreflight(ctx context.Context, clusterID uint64) (string, any, error) {
 	if kc.svc == nil || kc.deploySvc == nil {
 		return "", nil, fmt.Errorf("Helm 部署前置服务未初始化")
@@ -239,7 +258,7 @@ func (kc *K8sController) HelmPreflight(c *gin.Context) {
 		kc.writeServiceErr(c, err)
 		return
 	}
-	resp.OK(c, gin.H{"cluster_version": version, "master": master})
+	resp.OK(c, gin.H{"cluster_version": version, "master": master, "execution_target": "master"})
 }
 
 // ListHelmReleases 列出集群中所有 Helm Release（使用 Helm SDK）。
@@ -336,6 +355,13 @@ func (kc *K8sController) HelmInstall(c *gin.Context) {
 		resp.Fail(c, 4000, err.Error())
 		return
 	}
+	if strings.TrimSpace(req.ValuesYAML) != "" {
+		values := map[string]any{}
+		if err := yaml.Unmarshal([]byte(req.ValuesYAML), &values); err != nil {
+			resp.Fail(c, 4000, "解析 values.yaml 失败: "+err.Error())
+			return
+		}
+	}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), helmInstallTimeout+2*time.Minute)
 	defer cancel()
 	clusterVersion, master, err := kc.helmPreflight(ctx, clusterID)
@@ -344,58 +370,25 @@ func (kc *K8sController) HelmInstall(c *gin.Context) {
 		return
 	}
 
-	cfg, settings, cleanup, err := kc.newHelmConfig(c, req.Namespace)
+	result, err := kc.deploySvc.InstallClusterMasterHelm(ctx, clusterID, service.HelmMasterInstallRequest{
+		ReleaseName: req.ReleaseName,
+		Namespace:   req.Namespace,
+		Chart:       req.Chart,
+		Version:     req.Version,
+		RepoName:    req.RepoName,
+		RepoURL:     req.RepoURL,
+		ValuesYAML:  req.ValuesYAML,
+	})
 	if err != nil {
 		kc.writeServiceErr(c, err)
 		return
 	}
-	defer cleanup()
-
-	if req.RepoURL != "" && req.RepoName != "" {
-		if err := addHelmRepo(settings, req.RepoName, req.RepoURL); err != nil {
-			resp.Fail(c, 5001, "添加 Helm 仓库失败: "+err.Error())
-			return
-		}
-	}
-
-	client := action.NewInstall(cfg)
-	client.ReleaseName = req.ReleaseName
-	client.Namespace = req.Namespace
-	client.CreateNamespace = true
-	client.Wait = true
-	client.Atomic = true
-	client.Timeout = helmInstallTimeout
-	client.ChartPathOptions.Version = strings.TrimSpace(req.Version)
-
-	cp, err := client.ChartPathOptions.LocateChart(req.Chart, settings)
-	if err != nil {
-		resp.Fail(c, 5001, "定位 Chart 失败: "+err.Error())
-		return
-	}
-
-	chart, err := loader.Load(cp)
-	if err != nil {
-		resp.Fail(c, 5001, "加载 Chart 失败: "+err.Error())
-		return
-	}
-
-	values := map[string]any{}
-	if strings.TrimSpace(req.ValuesYAML) != "" {
-		if err := yaml.Unmarshal([]byte(req.ValuesYAML), &values); err != nil {
-			resp.Fail(c, 4000, "解析 values.yaml 失败: "+err.Error())
-			return
-		}
-	}
-
-	rel, err := client.Run(chart, values)
-	if err != nil {
-		resp.Fail(c, 5001, "Helm 安装失败: "+err.Error())
-		return
-	}
 	resp.OK(c, gin.H{
-		"output":          fmt.Sprintf("Release %s/%s 已安装并通过就绪校验，revision %d", rel.Namespace, rel.Name, rel.Version),
-		"cluster_version": clusterVersion,
-		"master":          master,
+		"output":           fmt.Sprintf("Release %s/%s 已由 Master Helm 安装并通过就绪校验", req.Namespace, req.ReleaseName),
+		"command_output":   result.Output,
+		"cluster_version":  clusterVersion,
+		"master":           master,
+		"execution_target": "master",
 	})
 }
 
@@ -511,32 +504,76 @@ func (kc *K8sController) HelmRollback(c *gin.Context) {
 	resp.OK(c, gin.H{"output": fmt.Sprintf("Release %s/%s 已回滚到 revision %d", ns, name, req.Revision)})
 }
 
-// HelmRepoList 列出当前集群已添加的 Helm 仓库。
+// HelmRepoList lists the repository inventory on the target cluster Master.
+// It intentionally does not read the platform host's transient Helm cache.
 // GET /clusters/:id/helm/repos
 func (kc *K8sController) HelmRepoList(c *gin.Context) {
-	repoDir, err := kc.helmRepoDir(c)
-	if err != nil {
-		resp.Fail(c, 5000, err.Error())
+	clusterID, ok := parseClusterID(c)
+	if !ok {
+		resp.Fail(c, 4000, "无效集群 ID")
 		return
 	}
-	settings := cli.New()
-	settings.RepositoryConfig = filepath.Join(repoDir, "repositories.yaml")
-	settings.RepositoryCache = filepath.Join(repoDir, "cache")
-	repoFile := settings.RepositoryConfig
-	f, err := repo.LoadFile(repoFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			resp.OK(c, gin.H{"list": []any{}})
-			return
-		}
-		resp.Fail(c, 5000, "读取 Helm 仓库配置失败: "+err.Error())
+	if kc.deploySvc == nil {
+		resp.Fail(c, 5000, "Helm 部署服务未初始化")
 		return
 	}
-	list := make([]any, 0, len(f.Repositories))
-	for _, e := range f.Repositories {
-		list = append(list, map[string]any{"name": e.Name, "url": e.URL})
+	list, err := kc.deploySvc.ListClusterMasterHelmRepos(c.Request.Context(), clusterID)
+	if err != nil {
+		kc.writeServiceErr(c, err)
+		return
 	}
 	resp.OK(c, gin.H{"list": list})
+}
+
+// HelmRepoAdd synchronizes a repository on the Master.  Helm itself is
+// prepared on demand here, matching the chart installation path.
+func (kc *K8sController) HelmRepoAdd(c *gin.Context) {
+	clusterID, ok := parseClusterID(c)
+	if !ok {
+		resp.Fail(c, 4000, "无效集群 ID")
+		return
+	}
+	var req helmRepoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.Fail(c, 4000, err.Error())
+		return
+	}
+	if err := validateHelmRepoRequest(&req); err != nil {
+		resp.Fail(c, 4000, err.Error())
+		return
+	}
+	if kc.deploySvc == nil {
+		resp.Fail(c, 5000, "Helm 部署服务未初始化")
+		return
+	}
+	if err := kc.deploySvc.AddClusterMasterHelmRepo(c.Request.Context(), clusterID, req.Name, req.URL); err != nil {
+		kc.writeServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"name": req.Name, "url": req.URL})
+}
+
+// HelmRepoDelete removes a repository registry entry from the selected Master.
+func (kc *K8sController) HelmRepoDelete(c *gin.Context) {
+	clusterID, ok := parseClusterID(c)
+	if !ok {
+		resp.Fail(c, 4000, "无效集群 ID")
+		return
+	}
+	name := strings.TrimSpace(c.Param("name"))
+	if len(name) == 0 || len(name) > 63 || !helmKubernetesName.MatchString(name) {
+		resp.Fail(c, 4000, "仓库名称必须是 1-63 位小写 DNS 名称")
+		return
+	}
+	if kc.deploySvc == nil {
+		resp.Fail(c, 5000, "Helm 部署服务未初始化")
+		return
+	}
+	if err := kc.deploySvc.DeleteClusterMasterHelmRepo(c.Request.Context(), clusterID, name); err != nil {
+		kc.writeServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"name": name})
 }
 
 // HelmSearch 搜索当前集群 Helm 仓库中的 chart。
@@ -547,47 +584,19 @@ func (kc *K8sController) HelmSearch(c *gin.Context) {
 		resp.Fail(c, 4000, "keyword 不能为空")
 		return
 	}
-	repoDir, err := kc.helmRepoDir(c)
-	if err != nil {
-		resp.Fail(c, 5000, err.Error())
+	clusterID, ok := parseClusterID(c)
+	if !ok {
+		resp.Fail(c, 4000, "无效集群 ID")
 		return
 	}
-	settings := cli.New()
-	settings.RepositoryConfig = filepath.Join(repoDir, "repositories.yaml")
-	settings.RepositoryCache = filepath.Join(repoDir, "cache")
-	repoFile := settings.RepositoryConfig
-	f, err := repo.LoadFile(repoFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			resp.OK(c, gin.H{"list": []any{}})
-			return
-		}
-		resp.Fail(c, 5000, "读取 Helm 仓库配置失败: "+err.Error())
+	if kc.deploySvc == nil {
+		resp.Fail(c, 5000, "Helm 部署服务未初始化")
 		return
 	}
-
-	results := make([]any, 0)
-	for _, e := range f.Repositories {
-		idxFile := filepath.Join(filepath.Dir(repoFile), e.Name+"-index.yaml")
-		idx, err := repo.LoadIndexFile(idxFile)
-		if err != nil {
-			continue
-		}
-		for name, versions := range idx.Entries {
-			for _, v := range versions {
-				if strings.Contains(name, keyword) || strings.Contains(v.Description, keyword) ||
-					(v.Name != "" && strings.Contains(v.Name, keyword)) {
-					results = append(results, map[string]any{
-						"name":        e.Name + "/" + name,
-						"chart_name":  name,
-						"repo_name":   e.Name,
-						"repo_url":    e.URL,
-						"version":     v.Version,
-						"description": v.Description,
-					})
-				}
-			}
-		}
+	results, err := kc.deploySvc.SearchClusterMasterHelmCharts(c.Request.Context(), clusterID, keyword)
+	if err != nil {
+		kc.writeServiceErr(c, err)
+		return
 	}
 	resp.OK(c, gin.H{"list": results})
 }

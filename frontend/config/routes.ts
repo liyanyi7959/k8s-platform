@@ -75,7 +75,11 @@ const routes: any[] = [
   {
     name: '应用商店',
     path: '/app-store',
-    component: '@/pages/app-store/index',
+    routes: [
+      { path: '/app-store', redirect: '/app-store/yaml' },
+      { name: 'YAML 模板', path: '/app-store/yaml', component: '@/pages/app-store/index' },
+      { name: 'Helm Chart', path: '/app-store/helm', component: '@/pages/app-store/index' },
+    ],
   },
   {
     name: '集群详情',

@@ -5,10 +5,10 @@ import {
   ProFormSwitch,
   ProFormText,
 } from '@ant-design/pro-components'
-import { Button, Card, Form, message, Space } from 'antd'
+import { Button, Form, message, Space, Spin } from 'antd'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ReloadOutlined, RotateLeftOutlined, SaveOutlined } from '@ant-design/icons'
-import { AppPage } from '@/components'
+import { AppPage, FormWorkspace } from '@/components'
 import { getSystemSettings, updateSystemSettings } from '@/services/system'
 import { systemSettingsSchema } from '@/schemas/system'
 import type { SystemSettingsInput } from '@/schemas/system'
@@ -54,8 +54,41 @@ const SettingsPage: React.FC = () => {
 
   return (
     <AppPage>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Card bordered={false} loading={isLoading} style={{ maxWidth: 720 }}>
+      <FormWorkspace
+        title="系统设置"
+        actions={(
+          <Space>
+            <Button
+              loading={isRefetching}
+              icon={<ReloadOutlined />}
+              onClick={() => refetch()}
+            >
+              重新加载
+            </Button>
+            <Button
+              icon={<RotateLeftOutlined />}
+              onClick={() => {
+                if (settings) {
+                  form.setFieldsValue(settings)
+                } else {
+                  form.resetFields()
+                }
+              }}
+            >
+              重置
+            </Button>
+            <Button
+              type="primary"
+              icon={<SaveOutlined />}
+              loading={updateMutation.isPending}
+              onClick={() => form.submit()}
+            >
+              保存设置
+            </Button>
+          </Space>
+        )}
+      >
+        <Spin spinning={isLoading}>
           <ProForm<SystemSettingsInput>
             form={form}
             onFinish={handleSubmit}
@@ -95,38 +128,8 @@ const SettingsPage: React.FC = () => {
             <ProFormSwitch name="enableAuditLog" label="启用审计日志" />
             <ProFormSwitch name="enableTwoFactorAuth" label="启用双因素认证" />
           </ProForm>
-        </Card>
-
-        <Space>
-          <Button
-            loading={isRefetching}
-            icon={<ReloadOutlined />}
-            onClick={() => refetch()}
-          >
-            重新加载
-          </Button>
-          <Button
-            icon={<RotateLeftOutlined />}
-            onClick={() => {
-              if (settings) {
-                form.setFieldsValue(settings)
-              } else {
-                form.resetFields()
-              }
-            }}
-          >
-            重置
-          </Button>
-          <Button
-            type="primary"
-            icon={<SaveOutlined />}
-            loading={updateMutation.isPending}
-            onClick={() => form.submit()}
-          >
-            提交
-          </Button>
-        </Space>
-      </div>
+        </Spin>
+      </FormWorkspace>
     </AppPage>
   )
 }

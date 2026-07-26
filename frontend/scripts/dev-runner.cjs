@@ -1,7 +1,7 @@
 const path = require('node:path')
 const fs = require('node:fs')
 const readline = require('node:readline')
-const { spawn } = require('node:child_process')
+const { spawn, execFileSync } = require('node:child_process')
 
 const maxBin = process.platform === 'win32'
   ? path.resolve(__dirname, '../node_modules/.bin/max.cmd')
@@ -10,6 +10,7 @@ const maxBin = process.platform === 'win32'
 const childCommand = maxBin
 const childArgs = ['dev', ...process.argv.slice(2)]
 const lockPath = path.resolve(__dirname, '../.aiops-dev.lock')
+const workspacePath = path.resolve(__dirname, '..')
 
 const isProcessRunning = (pid) => {
   if (!Number.isInteger(pid) || pid <= 0) return false
@@ -21,18 +22,92 @@ const isProcessRunning = (pid) => {
   }
 }
 
+const readLockOwner = () => {
+  let content
+  try {
+    content = fs.readFileSync(lockPath, 'utf8').trim()
+  } catch {
+    return null
+  }
+
+  if (!content) return null
+
+  try {
+    const parsed = JSON.parse(content)
+    if (parsed && typeof parsed === 'object' && Number.isInteger(parsed.pid)) return parsed
+  } catch {}
+
+  const legacyPid = Number.parseInt(content, 10)
+  return Number.isInteger(legacyPid) ? { pid: legacyPid, legacy: true } : null
+}
+
+const getProcessMetadata = (pid) => {
+  try {
+    if (process.platform === 'win32') {
+      // process.kill(pid, 0) alone is not sufficient on Windows: a reused or
+      // unrelated PID could otherwise block this workspace indefinitely.
+      const output = execFileSync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          `$candidate = Get-Process -Id ${pid} -ErrorAction Stop; [PSCustomObject]@{ path = $candidate.Path; startedAt = $candidate.StartTime.ToUniversalTime().ToString('o') } | ConvertTo-Json -Compress`,
+        ],
+        { encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] },
+      ).trim()
+      return JSON.parse(output)
+    }
+
+    const command = execFileSync('ps', ['-p', String(pid), '-o', 'command='], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+    return { command }
+  } catch {
+    return null
+  }
+}
+
+const isThisWorkspaceDevRunner = (owner) => {
+  if (!owner || !isProcessRunning(owner.pid)) return false
+
+  // Structured locks are produced by this script. A legacy numeric lock has
+  // no service identity, so it is treated as stale instead of blocking a
+  // developer on a PID that may have been recycled by Windows.
+  if (owner.legacy || owner.workspace !== workspacePath) return false
+
+  const metadata = getProcessMetadata(owner.pid)
+  if (!metadata) return false
+
+  if (process.platform === 'win32') {
+    const lockCreatedAt = Date.parse(owner.createdAt)
+    const processStartedAt = Date.parse(metadata.startedAt)
+    return Number.isFinite(lockCreatedAt)
+      && Number.isFinite(processStartedAt)
+      && processStartedAt <= lockCreatedAt
+      && /node(?:\.exe)?$/i.test(metadata.path || '')
+  }
+
+  return String(metadata.command || '').includes('dev-runner.cjs')
+}
+
 const acquireDevLock = () => {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const descriptor = fs.openSync(lockPath, 'wx')
-      fs.writeFileSync(descriptor, `${process.pid}\n`)
+      fs.writeFileSync(descriptor, `${JSON.stringify({
+        pid: process.pid,
+        workspace: workspacePath,
+        createdAt: new Date().toISOString(),
+      })}\n`)
       fs.closeSync(descriptor)
       return
     } catch (error) {
       if (error.code !== 'EEXIST') throw error
-      const ownerPid = Number.parseInt(fs.readFileSync(lockPath, 'utf8'), 10)
-      if (isProcessRunning(ownerPid)) {
-        throw new Error(`已有前端开发服务正在运行（PID ${ownerPid}）。同一工作区一次只能运行一个 npm run dev；如需并行开发，请使用独立工作区。`)
+      const owner = readLockOwner()
+      if (isThisWorkspaceDevRunner(owner)) {
+        throw new Error(`已有前端开发服务正在运行（PID ${owner.pid}）。同一工作区一次只能运行一个 npm run dev；如需并行开发，请使用独立工作区。`)
       }
       fs.rmSync(lockPath, { force: true })
     }

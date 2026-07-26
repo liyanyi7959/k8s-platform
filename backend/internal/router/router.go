@@ -272,6 +272,9 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.POST("/plans/:id/cancel", execDeploy, ctl.CancelPlan)
 	deploy.POST("/plans/:id/retry", execDeploy, ctl.RetryPlan)
 	deploy.POST("/plans/:id/steps/:stepKey/retry", execDeploy, ctl.RetryDeployStep)
+	deploy.GET("/plans/:id/addons/task", readPlan, ctl.GetPlanAddonTask)
+	deploy.POST("/plans/:id/addons/install", execDeploy, ctl.InstallPlanAddons)
+	deploy.POST("/plans/:id/addons/retry", execDeploy, ctl.RetryPlanAddons)
 	deploy.DELETE("/plans/:id", deletePlan, ctl.DeletePlan)
 
 	// 部署任务日志
@@ -801,6 +804,8 @@ func registerHelmRoutes(a k8sRouteArgs) {
 	k8s.POST("/clusters/:id/helm/releases/:ns/:name/rollback", p.write, ctl.HelmRollback)
 	k8s.DELETE("/clusters/:id/helm/releases/:ns/:name", p.write, ctl.HelmUninstall)
 	k8s.GET("/clusters/:id/helm/repos", p.read, ctl.HelmRepoList)
+	k8s.POST("/clusters/:id/helm/repos", p.write, ctl.HelmRepoAdd)
+	k8s.DELETE("/clusters/:id/helm/repos/:name", p.write, ctl.HelmRepoDelete)
 	k8s.GET("/clusters/:id/helm/search", p.read, ctl.HelmSearch)
 }
 

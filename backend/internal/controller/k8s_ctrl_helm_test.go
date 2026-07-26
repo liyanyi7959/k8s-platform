@@ -31,3 +31,20 @@ func TestValidateHelmInstallRequestRejectsUnsafeSource(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateHelmRepoRequest(t *testing.T) {
+	valid := helmRepoRequest{Name: "bitnami", URL: "https://charts.bitnami.com/bitnami"}
+	if err := validateHelmRepoRequest(&valid); err != nil {
+		t.Fatalf("valid Helm repository rejected: %v", err)
+	}
+
+	for _, req := range []helmRepoRequest{
+		{Name: "Bitnami", URL: "https://charts.bitnami.com/bitnami"},
+		{Name: "bitnami", URL: "http://charts.bitnami.com/bitnami"},
+		{Name: "bitnami", URL: ""},
+	} {
+		if err := validateHelmRepoRequest(&req); err == nil {
+			t.Fatalf("unsafe Helm repository accepted: %+v", req)
+		}
+	}
+}

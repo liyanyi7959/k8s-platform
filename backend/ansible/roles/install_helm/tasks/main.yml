@@ -5,7 +5,7 @@
       - helm
       - version
       - --template
-      - '{{ .Version }}'
+      - '{{ "{{" }} .Version {{ "}}" }}'
   register: helm_existing
   changed_when: false
   failed_when: false
@@ -41,6 +41,10 @@
         dest: "{{ helm_tmpdir.path }}/helm.tar.gz"
         mode: "0644"
         force: true
+      register: helm_archive_download
+      retries: 3
+      delay: 2
+      until: helm_archive_download is succeeded
 
     - name: 下载 Helm 官方 SHA-256 校验值
       get_url:
@@ -48,6 +52,10 @@
         dest: "{{ helm_tmpdir.path }}/helm.tar.gz.sha256sum"
         mode: "0644"
         force: true
+      register: helm_checksum_download
+      retries: 3
+      delay: 2
+      until: helm_checksum_download is succeeded
 
     - name: 验证 Helm 官方 SHA-256 校验值
       shell: |
@@ -85,7 +93,7 @@
       - helm
       - version
       - --template
-      - '{{ .Version }}'
+      - '{{ "{{" }} .Version {{ "}}" }}'
   register: helm_verify
   changed_when: false
   when: helm_install | bool

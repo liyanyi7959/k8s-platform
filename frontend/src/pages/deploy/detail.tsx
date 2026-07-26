@@ -3,7 +3,7 @@
  * 展示计划信息、节点拓扑、分阶段步骤树、SSE 实时日志
  */
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { Card, Descriptions, Tag, Badge, Button, Space, Typography, message, Popconfirm, Tooltip, Progress, Input, Spin, Modal } from 'antd'
+import { Card, Descriptions, Tag, Badge, Button, Space, Typography, message, Popconfirm, Tooltip, Progress, Input, Spin, Modal, Checkbox } from 'antd'
 import { ArrowLeftOutlined, StopOutlined, RedoOutlined, DownloadOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, DesktopOutlined, SafetyCertificateOutlined, CheckCircleOutlined, CloseCircleOutlined, CaretRightOutlined, CodeOutlined } from '@ant-design/icons'
 import { history, useParams, useSearchParams } from '@umijs/max'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -11,11 +11,14 @@ import { AppPage, YamlEditor } from '@/components'
 import {
   getDeployPlanById,
   getDeployTask,
+  getDeployPlanAddonTask,
   getDeployTaskLogs,
   getDeployTaskLogSSEUrl,
   cancelDeployPlan,
   retryDeployPlan,
   retryDeployStep,
+  installDeployPlanAddons,
+  retryDeployPlanAddons,
   executeDeployPlan,
   getServers,
   getPlanAnsibleConfig,
@@ -50,11 +53,19 @@ const roleColorMap: Record<string, string> = {
   worker: 'blue',
 }
 
+const addonOptions = [
+  { value: 'metrics-server', label: 'metrics-server' },
+  { value: 'ingress-nginx', label: 'ingress-nginx' },
+  { value: 'local-storage', label: 'local-storage' },
+  { value: 'helm', label: '安装 Helm' },
+]
+
 // 步骤分组（stage -> steps）
 const stageGroups = [
   { key: 'init', title: '节点初始化', steps: ['pre_check', 'bootstrap'] },
   { key: 'install', title: '安装 k8s 集群', steps: ['container_runtime', 'kubeadm_init', 'join_workers', 'install_cni'] },
-  { key: 'extend', title: '补充扩展', steps: ['install_addons', 'register'] },
+  { key: 'extend', title: '集群扩展', steps: ['install_addons', 'register'] },
+  { key: 'supplement', title: '后续补装', steps: [] },
 ]
 const deploymentStepKeys = stageGroups.flatMap((stage) => stage.steps)
 
@@ -89,6 +100,7 @@ export default function DeployPlanDetailPage() {
   const [selectedStepKey, setSelectedStepKey] = useState<string | null>(null)
   const [selectedSubStepKey, setSelectedSubStepKey] = useState<string | null>(null)
   const [logViewerOpen, setLogViewerOpen] = useState(false)
+  const [logTaskSource, setLogTaskSource] = useState<'deployment' | 'addon'>('deployment')
   const [logs, setLogs] = useState<string[]>([])
   const [logTimestamps, setLogTimestamps] = useState<string[]>([])
   const [sseConnected, setSseConnected] = useState(false)
@@ -98,6 +110,8 @@ export default function DeployPlanDetailPage() {
   const [preflightCollapsed, setPreflightCollapsed] = useState(true)
   const [ansibleConfigOpen, setAnsibleConfigOpen] = useState(false)
   const [topologyOpen, setTopologyOpen] = useState(false)
+  const [addonModalOpen, setAddonModalOpen] = useState(false)
+  const [selectedAddons, setSelectedAddons] = useState<string[]>([])
   const logOffsetRef = useRef(0)
   const logContainerRef = useRef<HTMLDivElement>(null)
   const logViewerRef = useRef<HTMLElement>(null)
@@ -149,6 +163,17 @@ export default function DeployPlanDetailPage() {
   }, [preflightReady])
 
   const taskId = plan?.taskId
+  const installedAddons = useMemo(() => {
+    const installed = new Set(plan?.addons || [])
+    if (plan?.helmInstall) installed.add('helm')
+    return installed
+  }, [plan?.addons, plan?.helmInstall])
+  const selectableAddonCount = addonOptions.filter((option) => !installedAddons.has(option.value)).length
+
+  const openAddonModal = () => {
+    setSelectedAddons([])
+    setAddonModalOpen(true)
+  }
 
   const preflightIgnoreMutation = useMutation({
     mutationFn: ({ key, ignored }: { key: string; ignored: boolean }) => setDeployPreflightIgnore(planId, key, ignored),
@@ -169,6 +194,19 @@ export default function DeployPlanDetailPage() {
       return status === 'running' || status === 'pending' ? 2000 : false
     },
   })
+
+  const { data: addonTask } = useQuery({
+    queryKey: ['deploy-addon-task', planId],
+    queryFn: () => getDeployPlanAddonTask(planId),
+    enabled: Number.isFinite(planId) && planId > 0,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === 'running' || status === 'pending' ? 2000 : false
+    },
+  })
+
+  const activeLogTask = logTaskSource === 'addon' ? addonTask : task
+  const activeLogTaskId = activeLogTask?.id
 
   // 构建节点信息
   const nodeDetails = useMemo(() => {
@@ -262,28 +300,54 @@ export default function DeployPlanDetailPage() {
     onError: () => message.error('步骤重试失败'),
   })
 
+  const addonInstallMutation = useMutation({
+    mutationFn: (addons: string[]) => installDeployPlanAddons(planId, addons),
+    onSuccess: () => {
+      setSelectedAddons([])
+      setAddonModalOpen(false)
+      message.success('附加组件安装任务已启动')
+      queryClient.invalidateQueries({ queryKey: ['deploy-addon-task', planId] })
+    },
+    onError: (err: any) => message.error(err?.message || '附加组件安装任务启动失败'),
+  })
+
+  const addonRetryMutation = useMutation({
+    mutationFn: () => retryDeployPlanAddons(planId),
+    onSuccess: () => {
+      message.success('附加组件安装重试已启动')
+      queryClient.invalidateQueries({ queryKey: ['deploy-addon-task', planId] })
+      queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })
+    },
+    onError: (err: any) => message.error(err?.message || '附加组件安装重试失败'),
+  })
+
+  useEffect(() => {
+    if (!addonTask || (addonTask.status !== 'success' && addonTask.status !== 'failed' && addonTask.status !== 'canceled')) return
+    queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })
+  }, [addonTask?.id, addonTask?.status, planId, queryClient])
+
   // 当前选中的 step key（用于日志过滤）
   const effectiveStepKey = useMemo(() => {
     if (selectedSubStepKey) {
       // sub step key 格式为 {stepKey}-{index}，提取大 step key
-      return task?.steps?.find((step: DeployTaskStep) =>
+      return activeLogTask?.steps?.find((step: DeployTaskStep) =>
         step.subSteps?.some((sub: DeployTaskSubStep) => sub.key === selectedSubStepKey),
       )?.key || selectedStepKey
     }
     return selectedStepKey
-  }, [selectedStepKey, selectedSubStepKey, task?.steps])
+  }, [selectedStepKey, selectedSubStepKey, activeLogTask?.steps])
 
   // 初始加载历史日志。旧任务在 Ansible PLAY 开始前产生的 Runner/SSH 错误没有
   // step_key；步骤日志为空时回退到完整任务日志，保证历史失败也可诊断。
   useEffect(() => {
-    if (!taskId) {
+    if (!activeLogTaskId) {
       setLogs([])
       setLogTimestamps([])
       logOffsetRef.current = 0
       return
     }
     // 默认选中第一个非成功的步骤，或第一个步骤
-    const steps = task?.steps || []
+    const steps = activeLogTask?.steps || []
     if (!selectedStepKey && steps.length > 0) {
       const active = steps.find((s: DeployTaskStep) => s.status === 'running' || s.status === 'failed')
       setSelectedStepKey(active?.key || steps[0]?.key || null)
@@ -295,10 +359,10 @@ export default function DeployPlanDetailPage() {
     logOffsetRef.current = 0
     const loadLogs = async () => {
       try {
-        let res = await getDeployTaskLogs(taskId, 0, 500, effectiveStepKey || undefined)
+        let res = await getDeployTaskLogs(activeLogTaskId, 0, 500, effectiveStepKey || undefined)
         const selectedStepFailed = steps.find((step: DeployTaskStep) => step.key === effectiveStepKey)?.status === 'failed'
         if (effectiveStepKey && selectedStepFailed && (res.logs || []).length === 0) {
-          res = await getDeployTaskLogs(taskId, 0, 500)
+          res = await getDeployTaskLogs(activeLogTaskId, 0, 500)
         }
         if (!active) return
         const fetched = res.logs || []
@@ -314,11 +378,11 @@ export default function DeployPlanDetailPage() {
     }
     void loadLogs()
     return () => { active = false }
-  }, [taskId, effectiveStepKey, task?.steps])
+  }, [activeLogTaskId, effectiveStepKey, activeLogTask?.steps])
 
   // SSE 实时日志连接
   const connectSSE = useCallback(() => {
-    if (!taskId) return
+    if (!activeLogTaskId) return
     eventSourceRef.current?.close()
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current)
@@ -326,7 +390,7 @@ export default function DeployPlanDetailPage() {
     }
 
     const token = localStorage.getItem('token') || ''
-    const url = getDeployTaskLogSSEUrl(taskId, effectiveStepKey || undefined)
+    const url = getDeployTaskLogSSEUrl(activeLogTaskId, effectiveStepKey || undefined)
     const sep = url.includes('?') ? '&' : '?'
     const fullUrl = `${url}${sep}token=${encodeURIComponent(token)}`
 
@@ -355,8 +419,12 @@ export default function DeployPlanDetailPage() {
       } catch { /* ignore */ }
       es.close()
       setSseConnected(false)
-      if (taskId) {
-        queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })
+      if (activeLogTaskId) {
+        if (logTaskSource === 'addon') {
+          queryClient.invalidateQueries({ queryKey: ['deploy-addon-task', planId] })
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['deploy-task', activeLogTaskId] })
+        }
         queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })
       }
     })
@@ -364,16 +432,16 @@ export default function DeployPlanDetailPage() {
     es.onerror = () => {
       setSseConnected(false)
       es.close()
-      const currentStatus = task?.status
+      const currentStatus = activeLogTask?.status
       if (currentStatus === 'running' || currentStatus === 'pending') {
         reconnectTimerRef.current = setTimeout(() => connectSSE(), 3000)
       }
     }
-  }, [taskId, planId, queryClient, task?.status, effectiveStepKey])
+  }, [activeLogTaskId, planId, queryClient, activeLogTask?.status, effectiveStepKey, logTaskSource])
 
   useEffect(() => {
-    if (!taskId) return
-    const taskStatus = task?.status
+    if (!activeLogTaskId) return
+    const taskStatus = activeLogTask?.status
     if (taskStatus === 'running' || taskStatus === 'pending' || taskStatus === undefined) {
       connectSSE()
     }
@@ -385,7 +453,7 @@ export default function DeployPlanDetailPage() {
         reconnectTimerRef.current = null
       }
     }
-  }, [taskId, task?.status, connectSSE])
+  }, [activeLogTaskId, activeLogTask?.status, connectSSE])
 
   // 自动滚动到底部
   useEffect(() => {
@@ -432,8 +500,8 @@ export default function DeployPlanDetailPage() {
       const keyword = logFilter.toLowerCase()
       list = list.filter((entry) => entry.content.toLowerCase().includes(keyword))
     }
-    if (selectedSubStepKey && task) {
-      const step = task.steps?.find((s: DeployTaskStep) => s.key === selectedStepKey)
+    if (selectedSubStepKey && activeLogTask) {
+      const step = activeLogTask.steps?.find((s: DeployTaskStep) => s.key === selectedStepKey)
       const sub = step?.subSteps?.find((s: DeployTaskSubStep) => s.key === selectedSubStepKey)
       if (sub) {
         // 高亮子步骤：只保留包含子步骤标题的 TASK 行及其后直到下一个 TASK 行
@@ -454,29 +522,39 @@ export default function DeployPlanDetailPage() {
       }
     }
     return list
-  }, [logs, logTimestamps, logFilter, selectedSubStepKey, selectedStepKey, task])
+  }, [logs, logTimestamps, logFilter, selectedSubStepKey, selectedStepKey, activeLogTask])
 
   const filteredLogs = useMemo(() => filteredLogEntries.map((entry) => entry.content), [filteredLogEntries])
   const selectedFailureMessage = useMemo(() => {
-    const selectedStep = task?.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)
+    const selectedStep = activeLogTask?.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)
     if (selectedStep?.status === 'failed' && selectedStep.message) return selectedStep.message
-    if (task?.status === 'failed') return task.message || '部署任务失败，请查看后端服务日志。'
+    if (activeLogTask?.status === 'failed') return activeLogTask.message || '任务失败，请查看执行日志。'
     return ''
-  }, [selectedStepKey, task])
+  }, [selectedStepKey, activeLogTask])
   const logThemeTokens = logTheme === 'dark'
     ? { panel: '#161616', header: '#202020', headerBorder: '#383838', text: '#f5f5f5', muted: '#a6a6a6', viewer: '#101010', viewerBorder: '#343434', empty: '#a6a6a6', button: '#262626', buttonBorder: '#454545' }
     : { panel: '#ffffff', header: '#fafafa', headerBorder: '#e8e8e8', text: '#262626', muted: '#8c8c8c', viewer: '#fafafa', viewerBorder: '#d9d9d9', empty: '#8c8c8c', button: '#ffffff', buttonBorder: '#d9d9d9' }
 
   // 步骤选择处理
   const handleSelectStep = (stepKey: string) => {
+    setLogTaskSource('deployment')
     setSelectedStepKey(stepKey)
     setSelectedSubStepKey(null)
     setLogViewerOpen(true)
   }
 
   const handleSelectSubStep = (stepKey: string, subKey: string) => {
+    setLogTaskSource('deployment')
     setSelectedStepKey(stepKey)
     setSelectedSubStepKey(subKey)
+    setLogViewerOpen(true)
+  }
+
+  const handleSelectAddonTask = (subStepKey?: string) => {
+    if (!addonTask) return
+    setLogTaskSource('addon')
+    setSelectedStepKey(addonTask.steps?.[0]?.key || (addonTask.meta?.addons?.length === 1 && addonTask.meta.addons[0] === 'helm' ? 'install_helm' : 'install_addons'))
+    setSelectedSubStepKey(subStepKey || null)
     setLogViewerOpen(true)
   }
 
@@ -510,6 +588,7 @@ export default function DeployPlanDetailPage() {
               <Button icon={<ReloadOutlined />} onClick={() => {
                 queryClient.invalidateQueries({ queryKey: ['deploy-plan-detail', planId] })
                 if (taskId) queryClient.invalidateQueries({ queryKey: ['deploy-task', taskId] })
+                queryClient.invalidateQueries({ queryKey: ['deploy-addon-task', planId] })
               }} />
             </Tooltip>
           </Space>
@@ -529,13 +608,20 @@ export default function DeployPlanDetailPage() {
           <Descriptions.Item label="任务状态">
             {taskId ? <Badge status={taskBadge.badge as any} text={taskBadge.text} /> : <Text type="secondary">未执行</Text>}
           </Descriptions.Item>
-          {plan?.addons && plan.addons.length > 0 && (
-            <Descriptions.Item label="附加组件" span={2}>
-              <Space wrap>
-                {plan.addons.map((addon: string) => <Tag key={addon}>{addon}</Tag>)}
-              </Space>
-            </Descriptions.Item>
-          )}
+          <Descriptions.Item label="附加组件" span={2}>
+            <Space wrap>
+              {plan?.addons?.length ? plan.addons.map((addon: string) => <Tag key={addon}>{addon}</Tag>) : <Text type="secondary">未安装</Text>}
+              {planStatus === 'success' && !!plan?.clusterId && (
+                <Button
+                  size="small"
+                  type="link"
+                  onClick={openAddonModal}
+                >
+                  补充组件
+                </Button>
+              )}
+            </Space>
+          </Descriptions.Item>
           <Descriptions.Item label="Helm 安装">
             {plan?.helmInstall ? <Tag color="blue">已启用</Tag> : <Text type="secondary">未启用</Text>}
           </Descriptions.Item>
@@ -566,13 +652,19 @@ export default function DeployPlanDetailPage() {
         {(!task || !task.steps || task.steps.length === 0) && (
           <Card size="small" title={<DeployProgressTitle />} style={{ marginBottom: 12 }}>
             <div style={{ height: 400, minHeight: 360, overflow: 'hidden' }}>
-              <StepTree
+                <StepTree
                 task={pendingDeployTask}
+                supplementTask={addonTask}
+                supplementSelected={false}
+                canRetrySupplement={false}
                 canRetry={false}
                 selectedStepKey={null}
                 selectedSubStepKey={null}
                 onSelectStep={() => undefined}
                 onSelectSubStep={() => undefined}
+                onSelectSupplementTask={() => undefined}
+                onRetrySupplement={() => undefined}
+                supplementRetrying={false}
                 onRetryStep={() => undefined}
                 retrying={false}
                 readiness={{
@@ -599,11 +691,17 @@ export default function DeployPlanDetailPage() {
               <div style={{ height: '100%', overflow: 'hidden' }}>
                 <StepTree
                   task={task}
+                  supplementTask={addonTask}
+                  supplementSelected={logViewerOpen && logTaskSource === 'addon'}
+                  canRetrySupplement={addonTask?.status === 'failed' || addonTask?.status === 'canceled'}
                   canRetry={canRetry}
                   selectedStepKey={selectedStepKey}
                   selectedSubStepKey={selectedSubStepKey}
                   onSelectStep={handleSelectStep}
                   onSelectSubStep={handleSelectSubStep}
+                  onSelectSupplementTask={handleSelectAddonTask}
+                  onRetrySupplement={() => addonRetryMutation.mutate()}
+                  supplementRetrying={addonRetryMutation.isPending}
                   onRetryStep={(stepKey) => retryStepMutation.mutate({ stepKey })}
                   retrying={retryStepMutation.isPending}
                   readiness={{
@@ -667,12 +765,12 @@ export default function DeployPlanDetailPage() {
                     >
                       <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 16, fontWeight: 600 }}>
                         {selectedSubStepKey
-                          ? task.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)?.subSteps?.find((sub: DeployTaskSubStep) => sub.key === selectedSubStepKey)?.title
+                          ? activeLogTask?.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)?.subSteps?.find((sub: DeployTaskSubStep) => sub.key === selectedSubStepKey)?.title
                           : selectedStepKey
-                            ? task.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)?.title || stepTitleMap[selectedStepKey] || selectedStepKey
+                            ? activeLogTask?.steps?.find((step: DeployTaskStep) => step.key === selectedStepKey)?.title || stepTitleMap[selectedStepKey] || selectedStepKey
                             : '任务日志'}
                       </span>
-                      <span style={{ flex: '0 0 auto', color: logThemeTokens.muted, fontSize: 12 }}>共 {task.steps.length} 个步骤</span>
+                      <span style={{ flex: '0 0 auto', color: logThemeTokens.muted, fontSize: 12 }}>共 {activeLogTask?.steps?.length || 0} 个步骤</span>
                       <Button
                         aria-label="关闭日志"
                         type="text"
@@ -821,6 +919,52 @@ export default function DeployPlanDetailPage() {
             </div>
           </Card>
         )}
+
+        <Modal
+          title="补充安装附加组件"
+          open={addonModalOpen}
+          okText="开始安装"
+          cancelText="关闭"
+          width={520}
+          confirmLoading={addonInstallMutation.isPending}
+          okButtonProps={{ disabled: selectedAddons.length === 0 || addonTask?.status === 'running' || addonTask?.status === 'pending' }}
+          onOk={() => addonInstallMutation.mutate(selectedAddons)}
+          onCancel={() => setAddonModalOpen(false)}
+          destroyOnClose
+          styles={{ body: { paddingTop: 12, paddingBottom: 16 } }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text type="secondary" style={{ fontSize: 13 }}>选择需要补装的组件</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>已安装组件不可重复选择</Text>
+          </div>
+          <Checkbox.Group value={selectedAddons} onChange={(values) => setSelectedAddons(values as string[])} style={{ width: '100%' }}>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              {addonOptions.map((option) => {
+                const installed = installedAddons.has(option.value)
+                return (
+                  <div
+                    key={option.value}
+                    style={{
+                      minHeight: 42,
+                      padding: '0 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      border: `1px solid ${installed ? '#f0f0f0' : '#e6edf8'}`,
+                      borderRadius: 6,
+                      background: installed ? '#fafafa' : '#fff',
+                    }}
+                  >
+                    <Checkbox value={option.value} disabled={installed} style={{ flex: 1 }}>
+                      <Text strong={!installed} type={installed ? 'secondary' : undefined}>{option.label}</Text>
+                    </Checkbox>
+                    {installed && <Tag style={{ margin: 0, color: '#8c8c8c', borderColor: '#d9d9d9', background: '#f5f5f5' }}>已安装</Tag>}
+                  </div>
+                )
+              })}
+            </Space>
+          </Checkbox.Group>
+          {selectableAddonCount === 0 && <Text type="secondary" style={{ display: 'block', marginTop: 12, textAlign: 'center' }}>当前集群的附加组件已全部安装</Text>}
+        </Modal>
 
         <Modal
           title={<Space><DesktopOutlined />节点拓扑</Space>}
@@ -1186,21 +1330,33 @@ function DeployNodeTopology({ nodes }: { nodes: DeployTopologyNode[] }) {
 
 function StepTree({
   task,
+  supplementTask,
+  supplementSelected,
+  canRetrySupplement,
   canRetry,
   selectedStepKey,
   selectedSubStepKey,
   onSelectStep,
   onSelectSubStep,
+  onSelectSupplementTask,
+  onRetrySupplement,
+  supplementRetrying,
   onRetryStep,
   retrying,
   readiness,
 }: {
   task: DeployTask
+  supplementTask?: DeployTask
+  supplementSelected: boolean
+  canRetrySupplement: boolean
   canRetry: boolean
   selectedStepKey: string | null
   selectedSubStepKey: string | null
   onSelectStep: (key: string) => void
   onSelectSubStep: (stepKey: string, subKey: string) => void
+  onSelectSupplementTask: (subStepKey?: string) => void
+  onRetrySupplement: () => void
+  supplementRetrying: boolean
   onRetryStep: (key: string) => void
   retrying: boolean
   readiness: DeployReadinessProps
@@ -1227,8 +1383,12 @@ function StepTree({
     setCollapsedStages((prev) => ({ ...prev, [key]: !prev[key] }))
   }
   const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({})
+  const [expandedSupplementTasks, setExpandedSupplementTasks] = useState<Record<number, boolean>>({})
   const toggleStep = (stepKey: string, defaultExpanded: boolean) => {
     setExpandedSteps((prev) => ({ ...prev, [stepKey]: !(prev[stepKey] ?? defaultExpanded) }))
+  }
+  const toggleSupplementTask = (taskID: number, defaultExpanded: boolean) => {
+    setExpandedSupplementTasks((prev) => ({ ...prev, [taskID]: !(prev[taskID] ?? defaultExpanded) }))
   }
 
   // 格式化步骤耗时
@@ -1292,15 +1452,19 @@ function StepTree({
             <span style={{ position: 'absolute', top: '50%', right: 7, width: 9, height: 9, marginTop: -5, borderTop: '2px solid #7f96ad', borderRight: '2px solid #7f96ad', transform: 'rotate(45deg)' }} />
           </div>
         </div>
-        {stageGroups.map((stage, stageIdx) => {
+        {stageGroups.filter((stage) => stage.key !== 'supplement' || !!supplementTask).map((stage, stageIdx, visibleStages) => {
           const steps = stage.steps.map((key) => stepMap.get(key)).filter(Boolean) as DeployTaskStep[]
+          const supplementaryTask = stage.key === 'supplement' ? supplementTask : undefined
+          const supplementaryStatus = supplementaryTask?.status || 'pending'
           const completed = steps.filter((step) => step.status === 'success').length
-          const failed = steps.filter((step) => step.status === 'failed').length
+          const completedCount = completed + (supplementaryStatus === 'success' ? 1 : 0)
+          const failed = steps.filter((step) => step.status === 'failed').length + (supplementaryStatus === 'failed' ? 1 : 0)
           const stepStatuses = steps.map((step) => resolveStepStatus(step.key, step.status))
-          const canceled = stepStatuses.filter((status) => status === 'canceled').length
+          const canceled = stepStatuses.filter((status) => status === 'canceled').length + (supplementaryStatus === 'canceled' ? 1 : 0)
           const blocked = stepStatuses.filter((status) => status === 'blocked').length
-          const running = stepStatuses.filter((status) => status === 'running').length
-          const aggregateStatus = failed > 0 ? 'failed' : canceled > 0 ? 'canceled' : running > 0 ? 'running' : blocked > 0 ? 'blocked' : completed === steps.length && steps.length > 0 ? 'success' : 'pending'
+          const running = stepStatuses.filter((status) => status === 'running').length + (supplementaryStatus === 'running' ? 1 : 0)
+          const stageTaskCount = steps.length + (supplementaryTask ? 1 : 0)
+          const aggregateStatus = failed > 0 ? 'failed' : canceled > 0 ? 'canceled' : running > 0 ? 'running' : blocked > 0 ? 'blocked' : completedCount === stageTaskCount && stageTaskCount > 0 ? 'success' : 'pending'
           const stageStyle = statusStyle(aggregateStatus)
           return (
             <div key={stage.key} style={{ display: 'flex', alignItems: 'stretch', minWidth: 300, flex: '1 1 0' }}>
@@ -1311,7 +1475,7 @@ function StepTree({
                   <span style={{ position: 'absolute', left: 14, top: '50%', width: 25, height: 25, marginTop: -12, borderRadius: '50%', background: stageStyle.color, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>{stageIdx + 2}</span>
                   <span style={{ minWidth: 0, maxWidth: '100%', textAlign: 'center' }}>
                     <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, color: '#262626', fontWeight: 600 }}>{statusIcon(aggregateStatus)} {stage.title}</span>
-                    <span style={{ display: 'block', color: '#8c8c8c', fontSize: 12, marginTop: 3 }}>任务 {steps.length} · 成功 {completed}{failed ? ` · 失败 ${failed}` : ''}{canceled ? ` · 已取消 ${canceled}` : ''}{blocked ? ` · 已阻断 ${blocked}` : ''}</span>
+                    <span style={{ display: 'block', color: '#8c8c8c', fontSize: 12, marginTop: 3 }}>任务 {stageTaskCount} · 成功 {completedCount}{failed ? ` · 失败 ${failed}` : ''}{canceled ? ` · 已取消 ${canceled}` : ''}{blocked ? ` · 已阻断 ${blocked}` : ''}</span>
                   </span>
                 </div>
 
@@ -1416,9 +1580,111 @@ function StepTree({
                         </div>
                       )
                     })}
+                    {supplementaryTask && (() => {
+                      const itemStyle = statusStyle(supplementaryStatus)
+                      const addonNames = Array.isArray(supplementaryTask.meta?.addons) ? supplementaryTask.meta.addons.join('、') : ''
+                      const selectedAddonKeys = Array.isArray(supplementaryTask.meta?.addons) ? supplementaryTask.meta.addons : []
+                      const helmOnly = selectedAddonKeys.length === 1 && selectedAddonKeys[0] === 'helm'
+                      const supplementTitle = helmOnly ? '补充安装 Helm' : '补充安装组件'
+                      const supplementStep = supplementaryTask.steps?.find((step) => step.key === 'install_addons') || supplementaryTask.steps?.[0]
+                      const persistedSupplementSubSteps = supplementStep?.subSteps || []
+                      // 旧版本解析器会把 pre_check 等未选 PLAY 的子任务挂到补装
+                      // 步骤下；这类历史数据不能继续被展示为“补装成功”。
+                      const hasForeignLegacySubSteps = persistedSupplementSubSteps.some((sub) => /^(pre_check|bootstrap|container_runtime|kubeadm_init|join_workers|install_cni|register)\s*:/.test(sub.title))
+                      const actualSupplementSubSteps = hasForeignLegacySubSteps
+                        ? []
+                        : helmOnly
+                          ? persistedSupplementSubSteps.filter((sub) => sub.title === 'Gathering Facts' || sub.title.startsWith('install_helm :'))
+                          : persistedSupplementSubSteps
+                      // 兼容早期补装任务：它们没有持久化 Ansible 子步骤，也必须保持标准步骤卡的展开结构。
+                      const supplementSubSteps = actualSupplementSubSteps.length > 0
+                        ? actualSupplementSubSteps
+                        : [{ key: `addon-task-${supplementaryTask.id}`, title: helmOnly ? '执行 Helm 安装' : '执行附加组件安装', status: supplementaryStatus }]
+                      const supplementCompleted = supplementSubSteps.filter((sub) => sub.status === 'success').length
+                      const supplementDefaultExpanded = supplementaryStatus !== 'success' || supplementSelected || supplementSubSteps.some((sub) => sub.key === selectedSubStepKey)
+                      const supplementExpanded = supplementSubSteps.length > 0 && (expandedSupplementTasks[supplementaryTask.id] ?? supplementDefaultExpanded)
+                      const supplementMessage = supplementStep?.message || supplementaryTask.message
+                      return (
+                        <div style={{ marginBottom: 10 }}>
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => onSelectSupplementTask()}
+                            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelectSupplementTask() }}
+                            style={{ cursor: 'pointer', overflow: 'hidden', borderRadius: 6, border: `1px solid ${itemStyle.border}`, background: '#fff', boxShadow: supplementSelected ? `0 0 0 2px ${itemStyle.color}` : 'none' }}
+                          >
+                            <div style={{ background: itemStyle.soft, borderBottom: `1px solid ${itemStyle.border}`, padding: '9px 10px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                              {statusIcon(supplementaryStatus)}
+                              <span style={{ flex: 1, minWidth: 0, color: itemStyle.color, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stageIdx + 2}-{steps.length + 1} {supplementTitle}</span>
+                              {supplementaryStatus === 'failed' && canRetrySupplement && (
+                                <Button
+                                  size="small"
+                                  type="primary"
+                                  danger
+                                  icon={<RedoOutlined />}
+                                  loading={supplementRetrying}
+                                  onClick={(event) => { event.stopPropagation(); onRetrySupplement() }}
+                                >
+                                  重试
+                                </Button>
+                              )}
+                              <button
+                                type="button"
+                                aria-label={supplementExpanded ? '收起任务步骤' : '展开任务步骤'}
+                                title={supplementExpanded ? '收起任务步骤' : '展开任务步骤'}
+                                onClick={(event) => { event.stopPropagation(); toggleSupplementTask(supplementaryTask.id, supplementDefaultExpanded) }}
+                                onKeyDown={(event) => event.stopPropagation()}
+                                style={{ flex: '0 0 auto', width: 26, height: 26, padding: 0, border: `1px solid ${itemStyle.border}`, borderRadius: 4, background: '#fff', color: itemStyle.color, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                              >
+                                <CaretRightOutlined style={{ fontSize: 11, transform: supplementExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .2s' }} />
+                              </button>
+                            </div>
+                            <div style={{ padding: '7px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#8c8c8c', fontSize: 12, gap: 8 }}>
+                              <Tooltip title={supplementaryStatus === 'failed' ? supplementMessage : undefined}>
+                                <span style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: supplementaryStatus === 'failed' ? itemStyle.color : undefined }}>
+                                  {supplementaryStatus === 'failed' && supplementMessage
+                                    ? supplementMessage
+                                    : supplementSubSteps.length ? `任务 ${supplementSubSteps.length} · 已完成 ${supplementCompleted}` : `任务 #${supplementaryTask.id}${addonNames ? ` · ${addonNames}` : ''}`}
+                                </span>
+                              </Tooltip>
+                              {supplementaryStatus === 'running' ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#2563eb', fontWeight: 600 }}>
+                                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#2563eb', boxShadow: '0 0 0 0 rgba(22, 119, 255, .45)', animation: 'deploy-step-pulse 1.4s ease-out infinite' }} />
+                                  进行中
+                                </span>
+                              ) : (
+                                <span style={{ flex: '0 0 auto' }}>{itemStyle.label}</span>
+                              )}
+                            </div>
+                          </div>
+                          {supplementExpanded && (
+                            <div style={{ margin: '7px 7px 0', paddingLeft: 10, borderLeft: `2px solid ${itemStyle.border}` }}>
+                              {supplementSubSteps.map((sub) => {
+                                const subSelected = selectedSubStepKey === sub.key
+                                const subStyle = statusStyle(sub.status)
+                                return (
+                                  <div
+                                    key={sub.key}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => onSelectSupplementTask(actualSupplementSubSteps.some((actual) => actual.key === sub.key) ? sub.key : undefined)}
+                                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelectSupplementTask(actualSupplementSubSteps.some((actual) => actual.key === sub.key) ? sub.key : undefined) }}
+                                    style={{ cursor: 'pointer', marginTop: 6, padding: '7px 8px', borderRadius: 4, border: `1px solid ${subSelected ? subStyle.color : '#e8e8e8'}`, background: subSelected ? subStyle.soft : '#fff', display: 'flex', alignItems: 'center', gap: 6 }}
+                                  >
+                                    {statusIcon(sub.status, 13)}
+                                    <span style={{ color: '#595959', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.title}</span>
+                                    <span style={{ color: '#8c8c8c', fontSize: 11 }}>{formatDuration(sub.startedAt, sub.finishedAt) || ''}</span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                 </div>
               </div>
-              {stageIdx < stageGroups.length - 1 && (
+              {stageIdx < visibleStages.length - 1 && (
                 <div aria-hidden="true" style={{ position: 'relative', flex: '0 0 46px', width: 46 }}>
                   <span style={{ position: 'absolute', top: '50%', left: 8, right: 13, height: 2, marginTop: -1, borderRadius: 2, background: '#aebfd1' }} />
                   <span style={{ position: 'absolute', top: '50%', right: 7, width: 9, height: 9, marginTop: -5, borderTop: '2px solid #7f96ad', borderRight: '2px solid #7f96ad', transform: 'rotate(45deg)' }} />

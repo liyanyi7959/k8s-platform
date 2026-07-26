@@ -33,10 +33,17 @@
   --app-radius-lg: 16px;
   --app-radius-md: 12px;
   --app-radius-sm: 8px;
+  --app-workspace-radius: 16px;
+  --app-table-radius: 16px;
+  --app-workspace-bg: #ffffff;
+  --app-workspace-header-bg: #ffffff;
+  --app-table-header-bg: #f6f8fc;
+  --app-table-row-hover-bg: #f9fbff;
   --app-header-height: 56px;
   --app-shell-gap: 40px;
   --app-footer-height: 48px;
   --app-layout-sider-width: 220px;
+  --app-layout-sider-collapsed-width: 64px;
   --app-shell-chrome-bg: #fff;
   --app-sidebar-bg: rgba(250, 252, 254, 0.96);
   --app-sidebar-line: rgba(148, 163, 184, 0.14);
@@ -612,14 +619,27 @@ a {
 }
 
 .ant-pro-layout .ant-layout-sider {
+  position: relative;
   background: var(--app-shell-chrome-bg) !important;
   border-inline-end: 1px solid rgba(148, 163, 184, 0.16) !important;
   box-shadow: none !important;
 }
 
-// 底部状态栏需要始终与侧栏收起按钮对齐。侧栏收起后同步收窄主内容区底栏的起点。
+.ant-pro-layout .ant-layout-sider::after {
+  position: absolute;
+  right: 0;
+  bottom: var(--app-footer-height);
+  left: 0;
+  z-index: 2;
+  height: 1px;
+  pointer-events: none;
+  content: '';
+  background: rgba(148, 163, 184, 0.16);
+}
+
+// 底部状态栏始终与侧栏抽屉对齐；收起后保留一级菜单图标轨道。
 .ant-pro-layout:has(.ant-layout-sider-collapsed) {
-  --app-layout-sider-width: 48px;
+  --app-layout-sider-width: var(--app-layout-sider-collapsed-width);
 }
 
 .ant-pro-layout .ant-layout-sider .ant-layout-sider-children {
@@ -631,6 +651,26 @@ a {
   border-radius: 0;
   background: var(--app-shell-chrome-bg);
   box-shadow: none;
+}
+
+// 只校准官方菜单的视觉轨道，不接管 ProLayout 的收缩与子菜单机制。
+.ant-pro-layout .ant-layout-sider:not(.ant-layout-sider-collapsed) .ant-layout-sider-children {
+  padding-inline: 6px !important;
+}
+
+.ant-pro-layout .ant-layout-sider .ant-pro-base-menu-inline-item-icon,
+.ant-pro-layout .ant-layout-sider .ant-pro-base-menu-vertical-item-icon,
+.ant-pro-layout .ant-layout-sider .ant-pro-base-menu-inline-item-icon svg,
+.ant-pro-layout .ant-layout-sider .ant-pro-base-menu-vertical-item-icon svg {
+  width: 16px !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  font-size: 16px !important;
+}
+
+.ant-pro-layout .ant-layout-sider-collapsed .ant-menu-root > .ant-menu-item,
+.ant-pro-layout .ant-layout-sider-collapsed .ant-menu-root > .ant-menu-submenu > .ant-menu-submenu-title {
+  width: 40px !important;
 }
 
 .ant-pro-layout .ant-layout-sider .ant-menu {
@@ -645,7 +685,7 @@ a {
 .ant-pro-layout .ant-layout-sider .ant-menu-item {
   height: 40px;
   margin-inline: 2px;
-  margin-block: 3px;
+  margin-block: 4px !important;
   border-radius: 10px;
   line-height: 40px !important;
 }
@@ -662,7 +702,7 @@ a {
   background: transparent !important;
 }
 
-.ant-pro-layout .ant-layout-sider .ant-menu-title-content {
+.ant-pro-layout .ant-layout-sider:not(.ant-layout-sider-collapsed) .ant-menu-title-content {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -700,76 +740,58 @@ a {
   min-width: 0;
 }
 
-.ant-pro-layout .ant-layout-sider .ant-pro-base-menu-inline-item-icon {
-  font-size: 15px;
-}
-
-// ============================================================
-// 侧边栏折叠按钮：从"突出在右边框上的浮动圆钮"改为"底部内嵌扁平条"
-// 关键：position 改为 static 回到文档流，作为 sider-children 最后一个
-// flex 子元素自然排在底部；清除所有 inset 属性以消除默认的 right:-13px 偏移
-// ============================================================
-.ant-pro-layout .ant-pro-sider-collapsed-button,
-.ant-pro-layout .ant-layout-sider-trigger {
-  position: static !important;
-  inset-block-start: auto !important;
-  inset-inline-end: auto !important;
-  inset-block-end: auto !important;
-  inset-inline-start: auto !important;
-  top: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  left: auto !important;
-  z-index: 10;
-  flex: 0 0 auto;
-  align-self: stretch;
-  display: flex !important;
+// 使用 ProLayout 的 collapsedButtonRender：状态和收合动画由官方组件维护，
+// 这里只把入口固定到侧栏底部，展开时提供明确的“收起”文字。
+.ant-pro-layout .ant-layout-sider .app-sider-collapse-control.ant-pro-sider-collapsed-button {
+  position: absolute !important;
+  right: 8px !important;
+  bottom: 4px !important;
+  left: 8px !important;
+  z-index: 3;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: calc(100% + 20px) !important;
-  height: 48px !important;
-  margin: 0 -10px -10px !important;
-  border: none !important;
-  border-top: 1px solid rgba(148, 163, 184, 0.14) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  color: var(--app-text-secondary) !important;
-  box-shadow: none !important;
-  font-size: 14px;
-  cursor: pointer;
-  transition:
-    background-color 0.16s ease,
-    color 0.16s ease;
-}
-
-.ant-pro-layout .ant-pro-sider-collapsed-button:hover,
-.ant-pro-layout .ant-layout-sider-trigger:hover {
-  background: rgba(37, 99, 235, 0.06) !important;
-  color: var(--app-blue) !important;
-  box-shadow: none !important;
-}
-
-.ant-pro-global-header-collapsed-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  margin-inline-end: 10px !important;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.7);
-  transition:
-    background-color 0.16s ease,
-    box-shadow 0.16s ease;
-}
-
-.ant-pro-global-header-collapsed-button:hover {
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
-}
-
-.ant-pro-global-header-collapsed-button svg {
+  justify-content: flex-start;
+  width: auto !important;
+  height: 40px !important;
+  gap: 14px;
+  margin: 0 !important;
+  padding: 0 28px !important;
+  overflow: hidden;
   color: #526175;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 10px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: background-color 0.16s ease;
+}
+
+.ant-pro-layout .ant-layout-sider .app-sider-collapse-control:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: #eff6ff !important;
+  color: var(--app-blue);
+}
+
+.ant-pro-layout .ant-layout-sider .app-sider-collapse-control:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.3);
+  outline-offset: 1px;
+}
+
+.ant-pro-layout .ant-layout-sider .app-sider-collapse-control > .anticon {
+  flex: 0 0 20px;
+  font-size: 20px;
+}
+
+.ant-pro-layout .ant-layout-sider .app-sider-collapse-control.app-sider-collapse-control--collapsed {
+  right: 12px !important;
+  left: 12px !important;
+  justify-content: center;
+  padding: 0 !important;
 }
 
 .ant-card {
@@ -968,7 +990,7 @@ a {
 }
 
 .ant-table-wrapper .ant-table-tbody > tr:hover > td {
-  background: rgba(37, 99, 235, 0.025) !important;
+  background: var(--app-table-row-hover-bg) !important;
 }
 
 .ant-form-item .ant-form-item-label > label {
@@ -1144,6 +1166,321 @@ a {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* Page primitives: task context, operational facts and list workspaces share one rhythm. */
+.app-workspace-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+}
+
+.app-workspace-header__identity {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.app-workspace-header__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-radius: 10px;
+  background: rgba(239, 246, 255, 0.88);
+  color: var(--app-blue);
+  font-size: 19px;
+}
+
+.app-workspace-header .ant-typography {
+  margin: 0;
+}
+
+.app-workspace-header .ant-typography.ant-typography-h3 {
+  color: var(--app-text);
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.app-workspace-header .ant-typography.ant-typography-secondary,
+.app-workspace-header p.ant-typography {
+  max-width: 760px;
+  margin-top: 4px;
+  color: var(--app-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.app-workspace-header__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.app-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface-strong);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.app-metric-grid__item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 112px;
+  padding: 18px 20px;
+  border-inline-end: 1px solid var(--app-border);
+}
+
+.app-metric-grid__item:last-child {
+  border-inline-end: 0;
+}
+
+.app-metric-grid__label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--app-text-secondary);
+  font-size: 13px;
+}
+
+.app-metric-grid__icon {
+  display: inline-flex;
+  color: var(--app-blue);
+  font-size: 17px;
+}
+
+.app-metric-grid__value {
+  display: block;
+  margin-top: 10px;
+  color: var(--app-text);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.app-metric-grid__detail {
+  display: block;
+  margin-top: 10px;
+  overflow: hidden;
+  color: var(--app-text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-metric-grid__item.is-success .app-metric-grid__value,
+.app-metric-grid__item.is-success .app-metric-grid__icon { color: var(--app-success); }
+.app-metric-grid__item.is-warning .app-metric-grid__value,
+.app-metric-grid__item.is-warning .app-metric-grid__icon { color: var(--app-orange); }
+.app-metric-grid__item.is-danger .app-metric-grid__value,
+.app-metric-grid__item.is-danger .app-metric-grid__icon { color: var(--app-danger); }
+
+.app-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--app-text-secondary);
+  font-size: 13px;
+}
+
+.app-status-strip.is-warning { border-color: rgba(217, 119, 6, 0.22); background: rgba(255, 251, 235, 0.82); }
+.app-status-strip.is-danger { border-color: rgba(220, 38, 38, 0.2); background: rgba(254, 242, 242, 0.82); }
+
+.app-context-notice {
+  margin: 0;
+}
+
+.app-list-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-list-workspace__surface {
+  --app-list-header-inline: 24px;
+  --app-list-content-inline: 32px;
+  --app-list-content-block-start: 32px;
+  --app-list-content-block-end: 28px;
+
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.app-list-workspace__surface > .app-workspace-header {
+  min-height: 70px;
+  padding: 16px var(--app-list-header-inline);
+  border-bottom: 1px solid var(--app-border);
+}
+
+.app-list-workspace__summary-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 68px;
+  padding: 12px 20px 12px 24px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.app-list-workspace__summary {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  color: var(--app-text-secondary);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.app-list-workspace__summary::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--app-blue);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+  content: '';
+}
+
+.app-list-workspace__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.app-list-workspace__summary-row--actions-only {
+  padding-block: 10px;
+}
+
+.app-list-workspace__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--app-border);
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.app-list-workspace__content > .ant-pro-card,
+.app-list-workspace__content > .ant-card {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.app-list-workspace__content {
+  padding: var(--app-list-content-block-start) var(--app-list-content-inline) var(--app-list-content-block-end);
+}
+
+.app-list-workspace__content .ant-pro-card-body {
+  padding: 0;
+}
+
+.app-list-workspace__content .ant-table-wrapper {
+  border-radius: 0;
+}
+
+.app-form-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-form-workspace__panel {
+  width: min(100%, 960px);
+  padding: 24px 32px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.app-form-workspace__panel .ant-form-item:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 1100px) {
+  .app-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-metric-grid__item:nth-child(2n) {
+    border-inline-end: 0;
+  }
+
+  .app-metric-grid__item:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--app-border);
+  }
+}
+
+@media (max-width: 640px) {
+  .app-workspace-header,
+  .app-list-workspace__toolbar,
+  .app-list-workspace__summary-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .app-workspace-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .app-list-workspace__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .app-list-workspace__surface {
+    --app-list-header-inline: 16px;
+    --app-list-content-inline: 16px;
+    --app-list-content-block-start: 18px;
+    --app-list-content-block-end: 16px;
+  }
+
+  .app-form-workspace__panel {
+    padding: 20px 16px;
+  }
+
+  .app-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-metric-grid__item,
+  .app-metric-grid__item:nth-child(2n) {
+    border-right: 0;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .app-metric-grid__item:last-child {
+    border-bottom: 0;
+  }
 }
 
 .app-layout-main {
@@ -1873,16 +2210,19 @@ a {
   white-space: nowrap;
 }
 
-.app-console-table .ant-card {
+.app-console-table .ant-card,
+.app-list-workspace__content > .ant-pro-card {
   overflow: hidden;
   border-radius: var(--app-radius-lg);
 }
 
-.app-console-table .ant-table {
+.app-console-table .ant-table,
+.app-list-workspace__content .ant-table {
   font-size: 14px;
 }
 
-.app-console-table .ant-table-thead > tr > th {
+.app-console-table .ant-table-thead > tr > th,
+.app-list-workspace__content .ant-table-thead > tr > th {
   padding-top: 12px;
   padding-bottom: 12px;
   color: var(--app-text);
@@ -1891,14 +2231,16 @@ a {
   background: #fbfcfe;
 }
 
-.app-console-table .ant-table-tbody > tr > td {
+.app-console-table .ant-table-tbody > tr > td,
+.app-list-workspace__content .ant-table-tbody > tr > td {
   padding-top: 14px;
   padding-bottom: 14px;
   vertical-align: middle;
 }
 
-.app-console-table .ant-table-tbody > tr:hover > td {
-  background: rgba(37, 99, 235, 0.025) !important;
+.app-console-table .ant-table-tbody > tr:hover > td,
+.app-list-workspace__content .ant-table-tbody > tr:hover > td {
+  background: var(--app-table-row-hover-bg) !important;
 }
 
 .app-cluster-namecell {
@@ -2639,6 +2981,10 @@ a {
   padding: 14px 16px;
 }
 
+.app-data-console__filters--actions-only {
+  justify-content: flex-end;
+}
+
 .app-data-console__filters-left,
 .app-data-console__filters-right {
   display: flex;
@@ -2647,39 +2993,6 @@ a {
   align-items: center;
 }
 
-.app-data-console__statgrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.app-data-console__stat {
-  padding: 16px 18px;
-  border: 1px solid var(--app-border);
-  border-radius: 14px;
-  background: var(--app-surface-muted);
-}
-
-.app-data-console__stat-label {
-  color: var(--app-text-secondary);
-  font-size: 12px;
-}
-
-.app-data-console__stat-value {
-  display: block;
-  margin-top: 10px;
-  color: var(--app-text);
-  font-size: 28px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.app-data-console__stat-hint {
-  display: block;
-  margin-top: 8px;
-  color: var(--app-text-secondary);
-  font-size: 12px;
-}
 
 .app-data-console__protable {
   overflow: hidden;
@@ -5704,4 +6017,53 @@ a {
     padding: 30px 26px 26px;
     border-radius: 14px;
   }
+}
+
+/*
+ * Logged-in workspace foundation.
+ * Cards, their title rows and every data-table header intentionally share a
+ * single neutral surface. Page-specific styles may add information, but not
+ * a competing base radius or background language.
+ */
+.app-layout-main .ant-card,
+.app-layout-main .ant-pro-card,
+.app-list-workspace__surface,
+.app-form-workspace__panel {
+  border-radius: var(--app-workspace-radius) !important;
+  background: var(--app-workspace-bg);
+}
+
+.app-layout-main .ant-card .ant-card-head,
+.app-list-workspace__summary-row,
+.app-list-workspace__surface > .app-workspace-header {
+  background: var(--app-workspace-header-bg) !important;
+}
+
+.app-layout-main .ant-table-wrapper,
+.app-layout-main .ant-table-wrapper .ant-table-container {
+  border-radius: var(--app-table-radius);
+}
+
+.app-layout-main .ant-table-wrapper .ant-table-container {
+  overflow: hidden;
+}
+
+.app-layout-main .ant-table-wrapper .ant-table-thead > tr > th,
+.app-layout-main .ant-table-wrapper .ant-table-thead > tr > td,
+.app-layout-main .ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell-fix-right,
+.app-layout-main .ant-table-wrapper .ant-table-thead > tr > td.ant-table-cell-fix-right {
+  background: var(--app-table-header-bg) !important;
+}
+
+/* 固定列会脱离普通表格流；必须拥有自己的不透明底色，
+ * 否则水平滚动或悬浮行时，操作图标会与后面的数据列重叠。 */
+.app-layout-main .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell-fix-left,
+.app-layout-main .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell-fix-right {
+  background: var(--app-workspace-bg) !important;
+}
+
+.app-layout-main .ant-table-wrapper .ant-table-tbody > tr:hover > td.ant-table-cell-fix-left,
+.app-layout-main .ant-table-wrapper .ant-table-tbody > tr:hover > td.ant-table-cell-fix-right {
+  /* 固定列不能使用透明色：横向滚动时必须完全遮挡下面的表格内容。 */
+  background: var(--app-table-row-hover-bg) !important;
 }

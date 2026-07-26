@@ -308,7 +308,6 @@ const ClusterListPage: React.FC = () => {
 
   return (
     <AppPage
-      breadcrumbRender={false}
       content={
         <div className="app-cluster-page-header-row">
           <div className="app-cluster-page-header">

@@ -60,7 +60,7 @@ type ansibleLogWriter struct {
 	store     *TaskStore
 	mu        sync.Mutex
 	buf       []byte
-	stepIndex int // 当前执行的步骤索引
+	stepIndex int // 当前执行的 task.Steps 索引
 	// failedStepIndex 锁定首个失败步骤。失败一旦发生，后续 PLAY 不得再推进状态。
 	failedStepIndex int
 }
@@ -114,11 +114,11 @@ func (w *ansibleLogWriter) flush() {
 
 // currentStepKey 返回当前执行步骤的 key。
 func (w *ansibleLogWriter) currentStepKey() string {
-	if w.failedStepIndex >= 0 && w.failedStepIndex < len(ansibleSteps) {
-		return ansibleSteps[w.failedStepIndex].Key
+	if w.failedStepIndex >= 0 && w.failedStepIndex < len(w.task.Steps) {
+		return w.task.Steps[w.failedStepIndex].Key
 	}
-	if w.stepIndex >= 0 && w.stepIndex < len(ansibleSteps) {
-		return ansibleSteps[w.stepIndex].Key
+	if w.stepIndex >= 0 && w.stepIndex < len(w.task.Steps) {
+		return w.task.Steps[w.stepIndex].Key
 	}
 	// ansible-playbook 在第一个 PLAY 之前也会输出解析/配置错误，仍应归属到
 	// 当前运行步骤，避免按步骤查看时出现“失败但无日志”。
@@ -139,10 +139,17 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 			return
 		}
 		playName := extractPlayName(trimmed)
-		for i, step := range ansibleSteps {
+		for _, step := range ansibleSteps {
 			if strings.Contains(playName, step.PlayName) {
+				taskStepIndex := findTaskStepIndex(w.task, step.Key)
+				// 补装任务只包含 install_addons（或 install_helm）等子集。未选中的
+				// PLAY 仍会输出 Gathering Facts，不能把这些日志错误归属到补装步骤。
+				if taskStepIndex < 0 {
+					w.stepIndex = -1
+					break
+				}
 				// 标记前序步骤为完成
-				for j := 0; j < i && j < len(w.task.Steps); j++ {
+				for j := 0; j < taskStepIndex; j++ {
 					if w.task.Steps[j].Status == StepRunning {
 						w.task.Steps[j].Status = StepSuccess
 						w.task.Steps[j].FinishedAt = &now
@@ -150,15 +157,18 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 					}
 				}
 				// 标记当前步骤为执行中（重试场景下已被标记为 success 的步骤不覆盖，避免把跳过的步骤重新置为 running）
-				if i < len(w.task.Steps) && w.task.Steps[i].Status != StepSuccess {
-					w.task.Steps[i].Status = StepRunning
-					if w.task.Steps[i].StartedAt == nil {
-						w.task.Steps[i].StartedAt = &now
+				if w.task.Steps[taskStepIndex].Status != StepSuccess {
+					w.task.Steps[taskStepIndex].Status = StepRunning
+					if w.task.Steps[taskStepIndex].StartedAt == nil {
+						w.task.Steps[taskStepIndex].StartedAt = &now
 					}
 				}
-				percent := i * 100 / len(ansibleSteps)
+				percent := 0
+				if len(w.task.Steps) > 0 {
+					percent = taskStepIndex * 100 / len(w.task.Steps)
+				}
 				w.task.Percent = &percent
-				w.stepIndex = i
+				w.stepIndex = taskStepIndex
 				break
 			}
 		}
@@ -219,6 +229,28 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 	if hasAnsibleRecapFailure(trimmed) {
 		w.markCurrentStepFailed(now)
 	}
+}
+
+func findTaskStepIndex(task *Task, stepKey string) int {
+	if task == nil {
+		return -1
+	}
+	for index, step := range task.Steps {
+		if step.Key == stepKey {
+			return index
+		}
+	}
+	// 补装任务在界面上统一呈现为 install_addons 一个步骤，但底层可能只
+	// 执行 install_helm，或同时执行 Helm 与扩展组件。将这些被选中的 PLAY
+	// 归并到同一个父步骤，避免预检/初始化的日志污染补装进度。
+	if task.Type == "install_cluster_addons" && len(task.Steps) == 1 && task.Steps[0].Key == "install_addons" {
+		for _, enabledStep := range taskMetaStringSlice(task.Meta, "enabled_steps") {
+			if enabledStep == stepKey {
+				return 0
+			}
+		}
+	}
+	return -1
 }
 
 func (w *ansibleLogWriter) markCurrentStepFailed(now time.Time) {

@@ -4,7 +4,7 @@ import { Button, DatePicker, Descriptions, Drawer, Input, Select, Space, Tag, To
 import { DownloadOutlined, EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { AppPage } from '@/components'
+import { AppPage, ListWorkspace } from '@/components'
 import { listAuditLogs } from '@/services/system'
 import { formatDate } from '@/utils'
 import type { AuditLog, AuditLogListParams } from '@/types'
@@ -256,16 +256,14 @@ const AuditLogsPage: React.FC = () => {
 
   return (
     <AppPage>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <section
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 12,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+      <ListWorkspace
+        summary={<>当前共 {data?.total || 0} 条审计记录</>}
+        actions={(
+          <Button icon={<DownloadOutlined />} onClick={() => exportCsv(data?.items || [])}>
+            导出
+          </Button>
+        )}
+        filters={(
           <Space size={12} wrap>
             <Input
               placeholder="搜索用户、资源、IP 或详情"
@@ -337,11 +335,8 @@ const AuditLogsPage: React.FC = () => {
             </Button>
             {hasFilters ? <Button onClick={resetFilters}>重置</Button> : null}
           </Space>
-          <Button icon={<DownloadOutlined />} onClick={() => exportCsv(data?.items || [])}>
-            导出
-          </Button>
-        </section>
-
+        )}
+      >
         <ProTable<AuditLog>
           columns={columns}
           dataSource={data?.items || []}
@@ -349,7 +344,7 @@ const AuditLogsPage: React.FC = () => {
           rowKey="id"
           search={false}
           options={false}
-          cardBordered
+          cardBordered={false}
           tableAlertRender={false}
           pagination={{
             current: pagination.page,
@@ -365,7 +360,7 @@ const AuditLogsPage: React.FC = () => {
           toolBarRender={false}
           scroll={{ x: 900 }}
         />
-      </div>
+      </ListWorkspace>
 
       <Drawer title="审计日志详情" width={560} open={!!detailLog} onClose={() => setDetailLog(null)}>
         {detailLog && (

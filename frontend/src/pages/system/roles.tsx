@@ -16,7 +16,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AppPage } from '@/components'
+import { AppPage, ListWorkspace } from '@/components'
 import { createRole, deleteRole, listPermissions, listRoles, updateRole } from '@/services/system'
 import { roleCreateSchema, roleEditSchema } from '@/schemas/system'
 import { formatDate } from '@/utils'
@@ -176,16 +176,14 @@ const RolesPage: React.FC = () => {
 
   return (
     <AppPage>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <section
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 12,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+      <ListWorkspace
+        summary={<>当前共 {roles.length} 个角色</>}
+        actions={(
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
+            创建角色
+          </Button>
+        )}
+        filters={(
           <Space size={12} wrap>
             <Input
               placeholder="搜索角色名称、编码或描述"
@@ -200,11 +198,8 @@ const RolesPage: React.FC = () => {
             </Button>
             {searchText ? <Button onClick={() => setSearchText('')}>重置</Button> : null}
           </Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
-            创建角色
-          </Button>
-        </section>
-
+        )}
+      >
         <ProTable<Role>
           columns={columns}
           dataSource={roles}
@@ -212,7 +207,7 @@ const RolesPage: React.FC = () => {
           rowKey="id"
           search={false}
           options={false}
-          cardBordered
+          cardBordered={false}
           tableAlertRender={false}
           pagination={{
             pageSize: 10,
@@ -223,7 +218,7 @@ const RolesPage: React.FC = () => {
           toolBarRender={false}
           scroll={{ x: 700 }}
         />
-      </div>
+      </ListWorkspace>
 
       <ModalForm
         title="创建角色"

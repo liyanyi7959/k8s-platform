@@ -14,17 +14,15 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   Typography,
   message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { AppPage } from '@/components'
-import AppAlert from '@/components/AppAlert'
+import { AppPage, ContextNotice, WorkspaceHeader } from '@/components'
 import { listClusters } from '@/services/clusters'
 import { getPodLogs, listPods } from '@/services/k8s'
 
-const { Text, Title } = Typography
+const { Text } = Typography
 
 type LogRow = {
   key: string
@@ -167,20 +165,13 @@ const LogsPage: React.FC = () => {
   }
 
   return (
-    <AppPage breadcrumbRender={false}>
+    <AppPage>
       <div className="app-page-shell">
-        <Card className="app-aiops-panel" style={{ marginBottom: 16 }}>
-          <Space direction="vertical" size={6} style={{ width: '100%' }}>
-            <Space align="center">
-              <FileSearchOutlined style={{ color: '#2563eb', fontSize: 20 }} />
-              <Title level={3} style={{ margin: 0 }}>全局日志分析</Title>
-              <Tag color="blue">联邦实时检索</Tag>
-            </Space>
-            <Text type="secondary">
-              面向已接入集群按范围读取 Pod 实时日志，优先采集异常 Pod。该能力不替代集中日志索引；日志长期留存与跨日志关联需接入 Loki / OpenSearch。
-            </Text>
-          </Space>
-        </Card>
+        <WorkspaceHeader
+          title="全局日志分析"
+          description="按范围读取已接入集群的 Pod 实时日志。"
+          icon={<FileSearchOutlined />}
+        />
 
         <Card className="app-aiops-panel" title="检索条件">
           <Space wrap size={[12, 12]}>
@@ -216,7 +207,7 @@ const LogsPage: React.FC = () => {
             </Button>
             <Button icon={<ReloadOutlined />} disabled={searching} onClick={search}>刷新</Button>
           </Space>
-          <AppAlert
+          <ContextNotice
             style={{ marginTop: 16 }}
             type="info"
             showIcon

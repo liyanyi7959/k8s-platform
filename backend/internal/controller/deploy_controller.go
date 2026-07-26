@@ -379,6 +379,56 @@ func (dc *DeployController) RetryDeployStep(c *gin.Context) {
 	resp.OK(c, gin.H{"task_id": taskID})
 }
 
+type installPlanAddonsRequest struct {
+	Addons []string `json:"addons" binding:"required"`
+}
+
+// InstallPlanAddons installs selected optional Kubernetes components on a
+// successfully deployed cluster without replaying its cluster bootstrap.
+func (dc *DeployController) InstallPlanAddons(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	var req installPlanAddonsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.Fail(c, 4000, "参数错误")
+		return
+	}
+	taskID, err := dc.svc.InstallPlanAddons(c.Request.Context(), id, req.Addons, currentUserID(c))
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"task_id": taskID})
+}
+
+func (dc *DeployController) GetPlanAddonTask(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	task, err := dc.svc.GetLatestPlanAddonTask(c.Request.Context(), id)
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"task": task})
+}
+
+func (dc *DeployController) RetryPlanAddons(c *gin.Context) {
+	id, ok := parseUintParam(c, "id")
+	if !ok {
+		return
+	}
+	taskID, err := dc.svc.RetryPlanAddons(c.Request.Context(), id, currentUserID(c))
+	if err != nil {
+		WriteServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"task_id": taskID})
+}
+
 // GetDeployTask 获取部署任务详情
 func (dc *DeployController) GetDeployTask(c *gin.Context) {
 	taskID, err := strconv.ParseInt(c.Param("taskId"), 10, 64)

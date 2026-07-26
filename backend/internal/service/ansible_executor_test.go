@@ -45,3 +45,29 @@ func TestHasAnsibleRecapFailure(t *testing.T) {
 		}
 	}
 }
+
+func TestAnsibleLogWriterKeepsAddonTaskSubstepsInSelectedPlay(t *testing.T) {
+	task := &Task{
+		Type:  "install_cluster_addons",
+		Meta:  map[string]any{"enabled_steps": []string{"install_addons"}},
+		Steps: []TaskStep{{Key: "install_addons", Title: "补充安装集群组件", Status: StepRunning}},
+	}
+	writer := newAnsibleLogWriter(task, nil)
+
+	writer.parseStepProgress("PLAY [环境预检 - 所有节点]")
+	writer.parseStepProgress("TASK [pre_check : 检查主机连通性]")
+	if len(task.Steps[0].SubSteps) != 0 {
+		t.Fatalf("unselected play should not create add-on substeps: %#v", task.Steps[0].SubSteps)
+	}
+
+	writer.parseStepProgress("PLAY [安装 Kubernetes 扩展组件]")
+	writer.parseStepProgress("TASK [install_addons : 安装 metrics-server]")
+	writer.parseStepProgress("fatal: [master-1]: FAILED! => {\"msg\": \"install failed\"}")
+
+	if got := task.Steps[0].Status; got != StepFailed {
+		t.Fatalf("add-on step status = %q, want %q", got, StepFailed)
+	}
+	if len(task.Steps[0].SubSteps) != 1 || task.Steps[0].SubSteps[0].Status != StepFailed {
+		t.Fatalf("add-on substeps = %#v, want one failed install task", task.Steps[0].SubSteps)
+	}
+}

@@ -97,7 +97,7 @@ const ClusterProjectsTab: React.FC<{
           <Button type="primary" onClick={() => history.push('/projects')}>
             创建项目
           </Button>
-          <Button onClick={() => history.push('/app-store')}>应用商店</Button>
+          <Button onClick={() => history.push('/app-store/yaml')}>应用商店</Button>
           <Button onClick={() => onEnterCluster(`/k8s/${clusterId}/helm-releases`)}>
             Helm 管理
           </Button>

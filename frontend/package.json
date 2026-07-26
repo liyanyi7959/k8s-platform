@@ -12,6 +12,7 @@
     "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint \"src/**/*.{ts,tsx}\"",
     "lint:fix": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint \"src/**/*.{ts,tsx}\" --fix",
     "lint:css": "stylelint \"src/**/*.{css,less}\"",
+    "check:page-patterns": "node ./scripts/check-page-patterns.cjs",
     "prettier": "prettier --write \"src/**/*.{ts,tsx,css,less}\"",
     "tsc": "tsc --noEmit",
     "test": "vitest run",

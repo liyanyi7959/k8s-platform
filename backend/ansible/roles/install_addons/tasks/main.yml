@@ -61,6 +61,10 @@
     url: "https://raw.githubusercontent.com/kubernetes/ingress-nginx/{{ ingress_nginx_version }}/deploy/static/provider/cloud/deploy.yaml"
     dest: /tmp/ingress-nginx.yaml
     mode: "0644"
+  register: ingress_nginx_download
+  retries: 3
+  delay: 2
+  until: ingress_nginx_download is succeeded
   when: "'ingress-nginx' in addons"
 
 - name: 替换 ingress-nginx 镜像源
@@ -86,6 +90,10 @@
     url: "https://raw.githubusercontent.com/rancher/local-path-provisioner/{{ local_path_provisioner_version }}/deploy/local-path-storage.yaml"
     dest: /tmp/local-path-provisioner.yaml
     mode: "0644"
+  register: local_path_download
+  retries: 3
+  delay: 2
+  until: local_path_download is succeeded
   when: "'local-storage' in addons"
 
 - name: 替换 local-path-provisioner 镜像源

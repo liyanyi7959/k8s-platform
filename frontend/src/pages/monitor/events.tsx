@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { history } from '@umijs/max'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
-import { Badge, Button, DatePicker, Descriptions, Drawer, Empty, Input, message, Select, Space, Steps, Tag, Typography } from 'antd'
+import { Button, DatePicker, Descriptions, Drawer, Empty, Input, message, Select, Space, Steps, Tag, Typography } from 'antd'
 import { CheckCircleOutlined, ClockCircleOutlined, FilterOutlined, RobotOutlined, SearchOutlined, UserOutlined, WarningOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 
-import { AppPage } from '@/components'
+import { AppPage, MetricGrid, StatusStrip } from '@/components'
 import { getIncident, listIncidents, transitionIncident } from '@/services/monitor'
 import { formatDate, formatRelativeTime } from '@/utils'
 import type { IncidentStatus, MonitorIncident } from '@/types'
@@ -136,18 +136,20 @@ const EventsPage: React.FC = () => {
   return (
     <AppPage keepHeaderTitle title="事件处置中心">
       <div className="app-page-shell app-incident-inbox">
-        <div className="app-data-provenance">
-          <span><Badge status={activeIncidents.length ? 'processing' : 'success'} />数据来源：Alertmanager 事件库</span>
+        <StatusStrip tone={activeIncidents.length ? 'warning' : 'success'}>
+          <span>数据来源：Alertmanager 事件库</span>
           <span>范围：最近 100 条事件</span>
           <span><ClockCircleOutlined /> {incidentsQuery.dataUpdatedAt ? `更新于 ${dayjs(incidentsQuery.dataUpdatedAt).format('HH:mm:ss')}` : '正在同步'}</span>
-        </div>
+        </StatusStrip>
 
-        <div className="app-incident-summary">
-          <div className="is-critical"><WarningOutlined /><span>严重未恢复</span><strong>{activeIncidents.filter((item) => item.severity === 'critical').length}</strong></div>
-          <div><AlertIcon /><span>全部未恢复</span><strong>{activeIncidents.length}</strong></div>
-          <div><UserOutlined /><span>尚未认领</span><strong>{activeIncidents.filter((item) => !item.assigneeName).length}</strong></div>
-          <div className="is-success"><CheckCircleOutlined /><span>已恢复</span><strong>{allIncidents.filter((item) => item.status === 'resolved').length}</strong></div>
-        </div>
+        <MetricGrid
+          items={[
+            { key: 'critical', label: '严重未恢复', value: activeIncidents.filter((item) => item.severity === 'critical').length, icon: <WarningOutlined />, tone: 'danger' },
+            { key: 'active', label: '全部未恢复', value: activeIncidents.length, icon: <AlertIcon />, tone: activeIncidents.length ? 'warning' : 'success' },
+            { key: 'unassigned', label: '尚未认领', value: activeIncidents.filter((item) => !item.assigneeName).length, icon: <UserOutlined />, tone: activeIncidents.some((item) => !item.assigneeName) ? 'warning' : 'success' },
+            { key: 'resolved', label: '已恢复', value: allIncidents.filter((item) => item.status === 'resolved').length, icon: <CheckCircleOutlined />, tone: 'success' },
+          ]}
+        />
 
         <section className="app-incident-filters" aria-label="事件筛选">
           <div className="app-incident-filters__title"><FilterOutlined />筛选事件</div>

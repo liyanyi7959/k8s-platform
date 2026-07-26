@@ -158,7 +158,7 @@ const PermissionAuditsPage: React.FC = () => {
   }))
 
   return (
-    <AppPage breadcrumbRender={false}>
+    <AppPage>
       <div className="app-permission-audit">
         {/* ===== 配置区 ===== */}
         <Card bordered={false} className="app-permission-audit__config">

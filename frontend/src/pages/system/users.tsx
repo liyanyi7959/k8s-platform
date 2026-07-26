@@ -27,7 +27,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AppPage } from '@/components'
+import { AppPage, ListWorkspace } from '@/components'
 import {
   createUser,
   deleteUser,
@@ -266,16 +266,14 @@ const UsersPage: React.FC = () => {
 
   return (
     <AppPage>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <section
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 12,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+      <ListWorkspace
+        summary={<>当前共 {data?.total || 0} 个用户</>}
+        actions={(
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
+            创建用户
+          </Button>
+        )}
+        filters={(
           <Space size={12} wrap>
             <Input
               placeholder="搜索用户名、昵称或邮箱"
@@ -329,11 +327,8 @@ const UsersPage: React.FC = () => {
               </Button>
             ) : null}
           </Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
-            创建用户
-          </Button>
-        </section>
-
+        )}
+      >
         <ProTable<User>
           columns={columns}
           dataSource={data?.items || []}
@@ -341,7 +336,7 @@ const UsersPage: React.FC = () => {
           rowKey="id"
           search={false}
           options={false}
-          cardBordered
+          cardBordered={false}
           tableAlertRender={false}
           pagination={{
             current: pagination.page,
@@ -357,7 +352,7 @@ const UsersPage: React.FC = () => {
           toolBarRender={false}
           scroll={{ x: 800 }}
         />
-      </div>
+      </ListWorkspace>
 
       <ModalForm
         title="创建用户"

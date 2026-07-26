@@ -30,7 +30,7 @@ import {
   RocketOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AppPage } from '@/components'
+import { AppPage, ListWorkspace } from '@/components'
 import { listClusters } from '@/services/clusters'
 import { listHelmReleases } from '@/services/k8s'
 import {
@@ -220,23 +220,23 @@ const ProjectListPage: React.FC = () => {
       dataIndex: 'description',
       width: 200,
       ellipsis: true,
-      render: (desc: string) => desc || <Text type="secondary">-</Text>,
+      render: (_, record) => record.description || <Text type="secondary">-</Text>,
     },
     {
       title: '关联集群',
       dataIndex: 'cluster_id',
       width: 140,
-      render: (clusterId: number) =>
-        clusterNameMap.get(clusterId) || (
-          <Text type="secondary">{clusterId ? `#${clusterId}` : '-'}</Text>
+      render: (_, record) =>
+        clusterNameMap.get(record.cluster_id) || (
+          <Text type="secondary">{record.cluster_id ? `#${record.cluster_id}` : '-'}</Text>
         ),
     },
     {
       title: '命名空间',
       dataIndex: 'namespaces',
       width: 220,
-      render: (ns: string) => {
-        const list = splitNamespaces(ns)
+      render: (_, record) => {
+        const list = splitNamespaces(record.namespaces)
         if (list.length === 0) return <Text type="secondary">-</Text>
         return (
           <Space size={[4, 4]} wrap>
@@ -253,26 +253,28 @@ const ProjectListPage: React.FC = () => {
       title: 'CPU 配额',
       dataIndex: 'quota_cpu',
       width: 100,
-      render: (v: string) => v || <Text type="secondary">-</Text>,
+      render: (_, record) => record.quota_cpu || <Text type="secondary">-</Text>,
     },
     {
       title: '内存配额',
       dataIndex: 'quota_memory',
       width: 110,
-      render: (v: string) => v || <Text type="secondary">-</Text>,
+      render: (_, record) => record.quota_memory || <Text type="secondary">-</Text>,
     },
     {
       title: 'Pod 配额',
       dataIndex: 'quota_pods',
       width: 100,
-      render: (v: string) => v || <Text type="secondary">-</Text>,
+      render: (_, record) => record.quota_pods || <Text type="secondary">-</Text>,
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       width: 170,
-      render: (v: string) =>
-        v ? formatDate(v, 'YYYY-MM-DD HH:mm') : <Text type="secondary">-</Text>,
+      render: (_, record) =>
+        record.created_at
+          ? formatDate(record.created_at, 'YYYY-MM-DD HH:mm')
+          : <Text type="secondary">-</Text>,
     },
     {
       title: '操作',
@@ -304,35 +306,42 @@ const ProjectListPage: React.FC = () => {
 
   return (
     <AppPage>
-      <ProTable<Project>
-        headerTitle="项目列表"
-        columns={columns}
-        dataSource={data?.list || []}
-        loading={isLoading || isFetching}
-        rowKey="id"
-        search={false}
-        options={false}
-        cardBordered={false}
-        tableAlertRender={false}
-        scroll={{ x: 1200 }}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (t) => `共 ${t} 条`,
-        }}
-        toolBarRender={() => [
-          <Button
-            key="refresh"
-            icon={<ReloadOutlined />}
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['projects'] })}
-          >
-            刷新
-          </Button>,
-          <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            新建项目
-          </Button>,
-        ]}
-      />
+      <ListWorkspace
+        summary={<>当前共 {data?.list?.length || 0} 个项目</>}
+        actions={(
+          <Space>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['projects'] })}
+            >
+              刷新
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              新建项目
+            </Button>
+          </Space>
+        )}
+      >
+        <ProTable<Project>
+          className="app-console-table"
+          headerTitle={false}
+          columns={columns}
+          dataSource={data?.list || []}
+          loading={isLoading || isFetching}
+          rowKey="id"
+          search={false}
+          options={false}
+          cardBordered={false}
+          tableAlertRender={false}
+          scroll={{ x: 1200 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (t) => `共 ${t} 条`,
+          }}
+          toolBarRender={false}
+        />
+      </ListWorkspace>
 
       <Modal
         title={editing ? '编辑项目' : '新建项目'}
@@ -486,7 +495,7 @@ function ProjectDetail({
   // 获取该集群的 Helm release 列表
   const { data: helmData, isLoading: helmLoading } = useQuery({
     queryKey: ['project-helm-releases', project.cluster_id],
-    queryFn: ({ signal }) => listHelmReleases(Number(project.cluster_id), signal),
+    queryFn: ({ signal }) => listHelmReleases(Number(project.cluster_id), undefined, signal),
     enabled: !!project.cluster_id,
   })
 
@@ -542,7 +551,7 @@ function ProjectDetail({
           icon={<RocketOutlined />}
           onClick={() =>
             history.push(
-              `/app-store?cluster_id=${project.cluster_id}&namespaces=${project.namespaces}`,
+              `/app-store/yaml?cluster_id=${project.cluster_id}&namespaces=${project.namespaces}`,
             )
           }
         >

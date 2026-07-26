@@ -112,6 +112,32 @@ func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.Deplo
 	return normalizeMasterKubeconfig(kubeconfig, master.IP)
 }
 
+func taskMetaStringSlice(meta map[string]any, key string) []string {
+	if meta == nil {
+		return nil
+	}
+	var values []string
+	switch raw := meta[key].(type) {
+	case []string:
+		values = raw
+	case []any:
+		for _, value := range raw {
+			if text, ok := value.(string); ok {
+				values = append(values, text)
+			}
+		}
+	default:
+		return nil
+	}
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			result = append(result, value)
+		}
+	}
+	return result
+}
+
 func runnerBootstrapScript(needSSHPass bool) string {
 	sshpass := ""
 	if needSSHPass {
@@ -180,6 +206,9 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 	// 计算重试时需要执行的步骤列表；为空表示全部执行（不传 retry_enabled_steps）
 	retryFromStep, _ := task.Meta["retry_from_step"].(string)
 	enabledSteps := computeEnabledSteps(retryFromStep)
+	if requestedSteps := taskMetaStringSlice(task.Meta, "enabled_steps"); len(requestedSteps) > 0 {
+		enabledSteps = requestedSteps
+	}
 	if retryFromStep != "" {
 		task.AppendLog(fmt.Sprintf("[info] 从步骤 %s 开始重试，将跳过已成功的步骤", retryFromStep), activeDeployStepKey(task))
 		_ = s.taskStore.Put(task)

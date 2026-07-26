@@ -13,7 +13,7 @@ import { Button, Input, message, Popconfirm, Select, Space, Switch, Tag, Typogra
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { AppPage } from '@/components'
+import { AppPage, StatusStrip } from '@/components'
 import AppAlert from '@/components/AppAlert'
 import { listClusters } from '@/services/clusters'
 import { createAlertRule, deleteAlertRule, listAlertRules, toggleAlertRule, updateAlertRule } from '@/services/monitor'
@@ -209,11 +209,11 @@ const AlertRulesPage: React.FC = () => {
   return (
     <AppPage keepHeaderTitle title="告警规则">
       <div className="app-page-shell">
-        <div className="app-data-provenance">
+        <StatusStrip>
           <span><BellOutlined />规则数据来自平台告警规则库</span>
           <span>当前 {rulesQuery.data?.total || 0} 条</span>
           <span>创建规则前可预览指标、阈值和持续时间</span>
-        </div>
+        </StatusStrip>
         <section className="app-console-filters">
           <div className="app-console-filters__left">
             <Input allowClear prefix={<SearchOutlined />} placeholder="搜索规则或集群" value={keyword} onChange={(event) => setKeyword(event.target.value)} className="app-console-filters__search" />

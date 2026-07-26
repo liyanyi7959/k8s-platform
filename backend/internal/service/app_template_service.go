@@ -364,59 +364,74 @@ spec:
 	},
 	// ---- Helm 类型模板 ----
 	{
-		Name:        "helm-redis",
-		DisplayName: "Redis (Helm)",
-		Description: "通过 Helm Chart 部署 Bitnami Redis，适用于生产环境的高可用缓存集群。",
-		Category:    "database",
-		Icon:        "🔴",
-		IsBuiltin:   true,
-		DeployType:  "helm",
-		Template:    "bitnami/redis",
-		Variables:   "[]",
+		Name:           "helm-redis",
+		DisplayName:    "Redis (Helm)",
+		Description:    "通过 Helm Chart 部署 Bitnami Redis，适用于生产环境的高可用缓存集群。",
+		Category:       "database",
+		Icon:           "🔴",
+		IsBuiltin:      true,
+		DeployType:     "helm",
+		Template:       "bitnami/redis",
+		Variables:      "[]",
+		HelmRepoName:   "bitnami",
+		HelmRepoURL:    "https://charts.bitnami.com/bitnami",
+		HelmValuesYAML: "architecture: standalone\nauth:\n  enabled: false\n",
 	},
 	{
-		Name:        "helm-nginx",
-		DisplayName: "Nginx (Helm)",
-		Description: "通过 Helm Chart 部署 Bitnami Nginx，提供高性能 HTTP 服务器与反向代理。",
-		Category:    "networking",
-		Icon:        "🌐",
-		IsBuiltin:   true,
-		DeployType:  "helm",
-		Template:    "bitnami/nginx",
-		Variables:   "[]",
+		Name:           "helm-nginx",
+		DisplayName:    "Nginx (Helm)",
+		Description:    "通过 Helm Chart 部署 Bitnami Nginx，提供高性能 HTTP 服务器与反向代理。",
+		Category:       "networking",
+		Icon:           "🌐",
+		IsBuiltin:      true,
+		DeployType:     "helm",
+		Template:       "bitnami/nginx",
+		Variables:      "[]",
+		HelmRepoName:   "bitnami",
+		HelmRepoURL:    "https://charts.bitnami.com/bitnami",
+		HelmValuesYAML: "service:\n  type: ClusterIP\n",
 	},
 	{
-		Name:        "helm-mysql",
-		DisplayName: "MySQL (Helm)",
-		Description: "通过 Helm Chart 部署 Bitnami MySQL，适用于关系型数据库持久化场景。",
-		Category:    "database",
-		Icon:        "🗄️",
-		IsBuiltin:   true,
-		DeployType:  "helm",
-		Template:    "bitnami/mysql",
-		Variables:   "[]",
+		Name:           "helm-mysql",
+		DisplayName:    "MySQL (Helm)",
+		Description:    "通过 Helm Chart 部署 Bitnami MySQL，适用于关系型数据库持久化场景。",
+		Category:       "database",
+		Icon:           "🗄️",
+		IsBuiltin:      true,
+		DeployType:     "helm",
+		Template:       "bitnami/mysql",
+		Variables:      "[]",
+		HelmRepoName:   "bitnami",
+		HelmRepoURL:    "https://charts.bitnami.com/bitnami",
+		HelmValuesYAML: "auth:\n  rootPassword: change-me\nprimary:\n  persistence:\n    enabled: true\n",
 	},
 	{
-		Name:        "helm-mongodb",
-		DisplayName: "MongoDB (Helm)",
-		Description: "通过 Helm Chart 部署 Bitnami MongoDB，适用于文档型数据库与大数据场景。",
-		Category:    "database",
-		Icon:        "🍃",
-		IsBuiltin:   true,
-		DeployType:  "helm",
-		Template:    "bitnami/mongodb",
-		Variables:   "[]",
+		Name:           "helm-mongodb",
+		DisplayName:    "MongoDB (Helm)",
+		Description:    "通过 Helm Chart 部署 Bitnami MongoDB，适用于文档型数据库与大数据场景。",
+		Category:       "database",
+		Icon:           "🍃",
+		IsBuiltin:      true,
+		DeployType:     "helm",
+		Template:       "bitnami/mongodb",
+		Variables:      "[]",
+		HelmRepoName:   "bitnami",
+		HelmRepoURL:    "https://charts.bitnami.com/bitnami",
+		HelmValuesYAML: "architecture: standalone\nauth:\n  enabled: false\n",
 	},
 	{
-		Name:        "helm-prometheus",
-		DisplayName: "Prometheus (Helm)",
-		Description: "通过 Helm Chart 部署 Prometheus，用于采集、存储和查询 Kubernetes 集群监控指标。",
-		Category:    "monitoring",
-		Icon:        "📈",
-		IsBuiltin:   true,
-		DeployType:  "helm",
-		Template:    "prometheus-community/prometheus",
-		Variables:   "[]",
+		Name:           "helm-prometheus",
+		DisplayName:    "Prometheus (Helm)",
+		Description:    "通过 Helm Chart 部署 Prometheus，用于采集、存储和查询 Kubernetes 集群监控指标。",
+		Category:       "monitoring",
+		Icon:           "📈",
+		IsBuiltin:      true,
+		DeployType:     "helm",
+		Template:       "prometheus-community/prometheus",
+		Variables:      "[]",
+		HelmRepoName:   "prometheus-community",
+		HelmRepoURL:    "https://prometheus-community.github.io/helm-charts",
+		HelmValuesYAML: "server:\n  persistentVolume:\n    enabled: false\n",
 	},
 }
 
@@ -431,7 +446,25 @@ func (s *AppTemplateService) SeedBuiltinAppTemplates(ctx context.Context) error 
 			var existing model.AppTemplate
 			err := tx.Where("deleted_at IS NULL AND name = ?", t.Name).First(&existing).Error
 			if err == nil {
-				// 已存在则跳过
+				// 已存在的内置 Helm 模板补齐后续版本新增的默认来源与 values，
+				// 仅填充空字段，不覆盖运维人员已在应用目录中维护的配置。
+				if t.DeployType == "helm" {
+					updates := map[string]any{}
+					if existing.HelmRepoName == "" {
+						updates["helm_repo_name"] = t.HelmRepoName
+					}
+					if existing.HelmRepoURL == "" {
+						updates["helm_repo_url"] = t.HelmRepoURL
+					}
+					if existing.HelmValuesYAML == "" {
+						updates["helm_values_yaml"] = t.HelmValuesYAML
+					}
+					if len(updates) > 0 {
+						if err := tx.Model(&model.AppTemplate{}).Where("id = ?", existing.ID).Updates(updates).Error; err != nil {
+							return err
+						}
+					}
+				}
 				continue
 			}
 			if !errors.Is(err, gorm.ErrRecordNotFound) {

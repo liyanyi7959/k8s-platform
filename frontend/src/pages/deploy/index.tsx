@@ -11,7 +11,7 @@ import {
 import { history } from '@umijs/max'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
-import { AppPage } from '@/components'
+import { AppPage, ListWorkspace } from '@/components'
 import { getDeployPlans, deleteDeployPlan, dryRunDeployPlan, cancelDeployPlan, retryDeployPlan } from '@/services/deploy'
 import type { DeployPlan, DeployDryRunNodeFlow, DeployDryRunResult, DeployDryRunStep } from '@/types/deploy'
 
@@ -220,14 +220,9 @@ export default function DeployPlansPage() {
 
   return (
     <AppPage>
-      <Card
-        title={
-          <Space>
-            <Badge status="processing" />
-            <Text type="secondary">当前共 {data?.total || 0} 个部署方案</Text>
-          </Space>
-        }
-        extra={
+      <ListWorkspace
+        summary={<>当前共 {data?.total || 0} 个部署方案</>}
+        actions={
           <Space>
             <Button onClick={() => history.push('/clusters/hosts')}>管理主机资源池</Button>
             <Button onClick={() => history.push('/config/credentials')}>管理凭据库</Button>
@@ -256,7 +251,7 @@ export default function DeployPlansPage() {
           }}
           locale={{ emptyText: <Empty description="暂无部署方案，点击「创建部署方案」开始" /> }}
         />
-      </Card>
+      </ListWorkspace>
 
       {/* 预览弹窗 - 展示每台机器要执行的命令 */}
       <Modal

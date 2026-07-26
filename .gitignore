@@ -58,7 +58,7 @@ pnpm-debug.log*
 backend/config.yaml
 backend/config.local.yaml
 !backend/config.example.yaml
-
+.tmp-go-cache
 # Local runtime data / sqlite / logs
 *.db
 *.sqlite

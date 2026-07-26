@@ -25,6 +25,15 @@ type AppTemplate struct {
 	IsBuiltin bool `json:"is_builtin" gorm:"column:is_builtin;default:false"`
 	// DeployType 为部署类型：yaml 或 helm。helm 类型时 Template 字段存储 chart 仓库+chart名（如 bitnami/redis）。
 	DeployType string `json:"deploy_type" gorm:"column:deploy_type;type:varchar(20);default:'yaml'"`
+	// HelmRepoName/HelmRepoURL 是 Helm Chart 的默认来源。它们属于应用目录，而不是某个集群的仓库状态；
+	// 安装时会同步到目标集群 Master，集群内已同步的仓库仍以 Master 实际数据为准。
+	HelmRepoName string `json:"helm_repo_name" gorm:"column:helm_repo_name;type:varchar(100);default:''"`
+	HelmRepoURL  string `json:"helm_repo_url" gorm:"column:helm_repo_url;type:varchar(500);default:''"`
+	// HelmChartVersion 为空时由 Helm 解析仓库最新可用 Chart 版本。
+	HelmChartVersion string `json:"helm_chart_version" gorm:"column:helm_chart_version;type:varchar(100);default:''"`
+	// HelmValuesYAML 是应用目录维护的默认 values.yaml。每次安装可在目标集群页面继续编辑，
+	// 编辑结果只用于本次 Release，不会反写目录默认值。
+	HelmValuesYAML string `json:"helm_values_yaml" gorm:"column:helm_values_yaml;type:longtext"`
 	// CreatedAt/UpdatedAt/DeletedAt 为通用审计字段。
 	CreatedAt time.Time  `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time  `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`

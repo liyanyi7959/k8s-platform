@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   DeleteOutlined,
   EditOutlined,
@@ -95,15 +95,6 @@ const ProviderPanel: React.FC = () => {
     queryKey: ['ai-providers'],
     queryFn: ({ signal }) => listAIProviders(signal),
   })
-
-  const summary = useMemo(
-    () => ({
-      total: providers.length,
-      enabled: providers.filter((item) => item.enabled).length,
-      configured: providers.filter((item) => item.hasApiKey).length,
-    }),
-    [providers],
-  )
 
   const createMutation = useMutation({
     mutationFn: createAIProvider,
@@ -239,28 +230,7 @@ const ProviderPanel: React.FC = () => {
 
   return (
     <div className="app-data-console">
-      <section className="app-data-console__statgrid">
-        <div className="app-data-console__stat">
-          <span className="app-data-console__stat-label">提供商总数</span>
-          <strong className="app-data-console__stat-value">{summary.total}</strong>
-          <span className="app-data-console__stat-hint">统一管理外部和本地大模型网关</span>
-        </div>
-        <div className="app-data-console__stat">
-          <span className="app-data-console__stat-label">启用中</span>
-          <strong className="app-data-console__stat-value">{summary.enabled}</strong>
-          <span className="app-data-console__stat-hint">可参与 AI 路由与模型选择</span>
-        </div>
-        <div className="app-data-console__stat">
-          <span className="app-data-console__stat-label">已配置密钥</span>
-          <strong className="app-data-console__stat-value">{summary.configured}</strong>
-          <span className="app-data-console__stat-hint">敏感信息由后端加密存储</span>
-        </div>
-      </section>
-
-      <section className="app-data-console__filters">
-        <div className="app-data-console__filters-left">
-          <Text type="secondary">当前页面已对齐真实后端接口：查询 / 新增 / 编辑 / 删除。</Text>
-        </div>
+      <section className="app-data-console__filters app-data-console__filters--actions-only">
         <div className="app-data-console__filters-right">
           <Button icon={<ReloadOutlined />} loading={isRefetching} onClick={() => refetch()}>
             刷新
@@ -357,16 +327,6 @@ const ModelPanel: React.FC = () => {
     queryKey: ['ai-providers'],
     queryFn: ({ signal }) => listAIProviders(signal),
   })
-
-  const summary = useMemo(
-    () => ({
-      total: models.length,
-      enabled: models.filter((item) => item.enabled).length,
-      tools: models.filter((item) => item.supportsTools).length,
-      fileInput: models.filter((item) => item.supportsFileInput).length,
-    }),
-    [models],
-  )
 
   const createMutation = useMutation({
     mutationFn: createAIModel,
@@ -507,33 +467,7 @@ const ModelPanel: React.FC = () => {
 
   return (
     <div className="app-data-console">
-      <section className="app-data-console__statgrid">
-        <div className="app-data-console__stat">
-          <span className="app-data-console__stat-label">模型总数</span>
-          <strong className="app-data-console__stat-value">{summary.total}</strong>
-          <span className="app-data-console__stat-hint">统一维护当前平台可用的大模型目录</span>
-        </div>
-        <div className="app-data-console__stat">
-          <span className="app-data-console__stat-label">启用中</span>
-          <strong className="app-data-console__stat-value">{summary.enabled}</strong>
-          <span className="app-data-console__stat-hint">参与 AI 对话、路由和运维辅助能力</span>
-        </div>
-        <div className="app-data-console__stat">
-          <span className="app-data-console__stat-label">支持工具调用</span>
-          <strong className="app-data-console__stat-value">{summary.tools}</strong>
-          <span className="app-data-console__stat-hint">可用于诊断、分析与自动化执行链路</span>
-        </div>
-        <div className="app-data-console__stat">
-          <span className="app-data-console__stat-label">支持文件输入</span>
-          <strong className="app-data-console__stat-value">{summary.fileInput}</strong>
-          <span className="app-data-console__stat-hint">可接收文本附件、日志和清单文件</span>
-        </div>
-      </section>
-
-      <section className="app-data-console__filters">
-        <div className="app-data-console__filters-left">
-          <Text type="secondary">接口已校准为真实 CRUD，字段映射与后端 `snake_case` 保持一致。</Text>
-        </div>
+      <section className="app-data-console__filters app-data-console__filters--actions-only">
         <div className="app-data-console__filters-right">
           <Button icon={<ReloadOutlined />} loading={isRefetching} onClick={() => refetch()}>
             刷新
@@ -688,25 +622,7 @@ const RouteSettingsPanel: React.FC = () => {
 
   return (
     <div className="app-data-console">
-      <section className="app-data-console__statgrid">
-        <div className="app-data-console__stat">
-          <span className="app-data-console__stat-label">当前策略</span>
-          <strong className="app-data-console__stat-value">
-            {ROUTING_STRATEGY_OPTIONS.find((item) => item.value === routeSettings?.routingStrategy)?.label || '优先级优先'}
-          </strong>
-          <span className="app-data-console__stat-hint">控制自动选模时如何优先命中默认模型和能力模型</span>
-        </div>
-        <div className="app-data-console__stat">
-          <span className="app-data-console__stat-label">兜底开关</span>
-          <strong className="app-data-console__stat-value">{routeSettings?.allowFallback ? '开启' : '关闭'}</strong>
-          <span className="app-data-console__stat-hint">当首选模型不可用时，是否允许自动切换到其他提供商</span>
-        </div>
-      </section>
-
-      <section className="app-data-console__filters">
-        <div className="app-data-console__filters-left">
-          <Text type="secondary">这里定义对话、诊断、视觉与图像生成的默认模型，以及兜底提供商策略。</Text>
-        </div>
+      <section className="app-data-console__filters app-data-console__filters--actions-only">
         <div className="app-data-console__filters-right">
           <Button icon={<ReloadOutlined />} loading={isRefetching} onClick={() => refetch()}>
             刷新

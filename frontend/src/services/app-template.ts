@@ -14,6 +14,10 @@ export interface AppTemplate {
   variables: string
   is_builtin: boolean
   deploy_type?: string
+  helm_repo_name?: string
+  helm_repo_url?: string
+  helm_chart_version?: string
+  helm_values_yaml?: string
   created_at: string
   updated_at: string
 }

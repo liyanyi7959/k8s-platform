@@ -5,7 +5,7 @@ import { AlertOutlined, CheckCircleOutlined, ClockCircleOutlined, ClusterOutline
 import { Badge, Button, Card, Col, Empty, Progress, Row, Spin, Tag, Typography } from 'antd'
 import dayjs from 'dayjs'
 
-import { AppPage } from '@/components'
+import { AppPage, MetricGrid, StatusStrip } from '@/components'
 import { listClusters } from '@/services/clusters'
 import { getClusterOverview } from '@/services/k8s'
 import { listIncidents } from '@/services/monitor'
@@ -52,19 +52,21 @@ const MonitorDashboardPage: React.FC = () => {
   return (
     <AppPage keepHeaderTitle title="监控概览">
       <div className="app-page-shell app-monitor-overview">
-        <div className="app-data-provenance">
+        <StatusStrip tone={criticalCount ? 'danger' : 'success'}>
           <span><Badge status={criticalCount ? 'error' : 'success'} />实时监控状态</span>
           <span>事件来源：Alertmanager</span>
           <span>资源来源：Kubernetes API / metrics.k8s.io</span>
           <span><ClockCircleOutlined /> {lastUpdated ? `更新于 ${dayjs(lastUpdated).format('HH:mm:ss')}` : '正在同步'}</span>
-        </div>
+        </StatusStrip>
 
-        <Row gutter={[12, 12]}>
-          <Col xs={12} md={6}><div className="app-monitor-fact"><ClusterOutlined /><span>纳管集群</span><strong>{clusters.length}</strong></div></Col>
-          <Col xs={12} md={6}><div className="app-monitor-fact"><CheckCircleOutlined /><span>健康集群</span><strong>{healthyCount}</strong></div></Col>
-          <Col xs={12} md={6}><div className="app-monitor-fact"><DashboardOutlined /><span>指标覆盖</span><strong>{metricsCoverage}/{monitoredClusters.length}</strong></div></Col>
-          <Col xs={12} md={6}><div className={`app-monitor-fact ${criticalCount ? 'is-critical' : ''}`}><AlertOutlined /><span>未恢复事件</span><strong>{activeIncidents.length}</strong></div></Col>
-        </Row>
+        <MetricGrid
+          items={[
+            { key: 'clusters', label: '纳管集群', value: clusters.length, icon: <ClusterOutlined /> },
+            { key: 'healthy', label: '健康集群', value: `${healthyCount}/${clusters.length}`, detail: clusters.length ? `健康率 ${Math.round((healthyCount / clusters.length) * 100)}%` : '暂无集群', icon: <CheckCircleOutlined />, tone: healthyCount === clusters.length && clusters.length ? 'success' : 'warning' },
+            { key: 'coverage', label: '指标覆盖', value: `${metricsCoverage}/${monitoredClusters.length}`, detail: '未采集集群不估算', icon: <DashboardOutlined />, tone: metricsCoverage === monitoredClusters.length && monitoredClusters.length ? 'success' : 'warning' },
+            { key: 'incidents', label: '未恢复事件', value: activeIncidents.length, detail: criticalCount ? `${criticalCount} 个严重事件待处理` : '当前无严重事件', icon: <AlertOutlined />, tone: criticalCount ? 'danger' : 'success' },
+          ]}
+        />
 
         <Row gutter={[16, 16]}>
           <Col xs={24} xl={16}>
