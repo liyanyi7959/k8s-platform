@@ -14,24 +14,36 @@ import {
 } from 'antd'
 import {
   AlertOutlined,
+  ApartmentOutlined,
   AppstoreOutlined,
   ArrowLeftOutlined,
   AuditOutlined,
+  BranchesOutlined,
   CloudServerOutlined,
+  CloudUploadOutlined,
   ClusterOutlined,
   DashboardOutlined,
+  DatabaseOutlined,
+  DesktopOutlined,
   DoubleLeftOutlined,
   DoubleRightOutlined,
   DownOutlined,
   FileSearchOutlined,
+  FundOutlined,
+  GlobalOutlined,
+  HistoryOutlined,
   LockOutlined,
   LogoutOutlined,
   PlusOutlined,
+  ProjectOutlined,
   RobotOutlined,
   RocketOutlined,
   SettingOutlined,
+  ThunderboltOutlined,
+  ToolOutlined,
   UnorderedListOutlined,
   UserOutlined,
+  WarningOutlined,
 } from '@ant-design/icons'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { getCurrentUser, logout as requestLogout } from '@/services/auth'
@@ -564,7 +576,7 @@ const buildGlobalMenuItems = (): MenuItem[] => [
     name: '服务器管理',
     icon: <CloudServerOutlined />,
     children: [
-      { key: '/clusters/hosts', path: '/clusters/hosts', name: '主机资源池', icon: <CloudServerOutlined /> },
+      { key: '/clusters/hosts', path: '/clusters/hosts', name: '主机资源池', icon: <DesktopOutlined /> },
     ],
   },
   // ---- 项目管理 ----
@@ -572,7 +584,7 @@ const buildGlobalMenuItems = (): MenuItem[] => [
     key: '/projects',
     path: '/projects',
     name: '项目管理',
-    icon: <AppstoreOutlined />,
+    icon: <ProjectOutlined />,
   },
   // ---- 应用商店 ----
   {
@@ -587,13 +599,16 @@ const buildGlobalMenuItems = (): MenuItem[] => [
   },
   // ---- 自动化中心：承载可复用运行手册与执行资产，而不是某个具体集群的创建入口 ----
   {
-    key: '/automation',
-    path: '/automation/overview',
-    name: '自动化中心',
-    icon: <RocketOutlined />,
+    key: '/cicd',
+    path: '/cicd/overview',
+    name: 'CI/CD',
+    icon: <ThunderboltOutlined />,
     children: [
-      { key: '/automation/overview', path: '/automation/overview', name: '自动化总览' },
-      { key: '/automation/assets', path: '/automation/assets', name: '运行手册资产' },
+      { key: '/cicd/overview', path: '/cicd/overview', name: '总览', icon: <FundOutlined /> },
+      { key: '/cicd/pipelines', path: '/cicd/pipelines', name: '流水线', icon: <BranchesOutlined /> },
+      { key: '/cicd/runs', path: '/cicd/runs', name: '执行记录', icon: <HistoryOutlined /> },
+      { key: '/cicd/artifacts', path: '/cicd/artifacts', name: '制品仓库', icon: <DatabaseOutlined /> },
+      { key: '/cicd/environments', path: '/cicd/environments', name: '环境管理', icon: <GlobalOutlined /> },
     ],
   },
   // ---- 监控告警 ----
@@ -660,6 +675,15 @@ const buildAdminMenuItems = (): MenuItem[] => [
     ],
   },
   {
+    key: 'group-admin-deploy',
+    path: '/config/deploy-assets',
+    name: '部署配置',
+    icon: <ToolOutlined />,
+    children: [
+      { key: '/config/deploy-assets', path: '/config/deploy-assets', name: '部署手册' },
+    ],
+  },
+  {
     key: 'group-admin-audit',
     path: '/config/audit-logs',
     name: '审计与追踪',
@@ -700,7 +724,7 @@ const buildClusterMenuItems = (clusterId: string): MenuItem[] => [
     key: 'group-operations',
     path: `/k8s/${clusterId}/events`,
     name: '事件处置',
-    icon: <AlertOutlined />,
+    icon: <WarningOutlined />,
     children: [
       { key: `/k8s/${clusterId}/events`, path: `/k8s/${clusterId}/events`, name: '集群 Events' },
       { key: `/k8s/${clusterId}/log-workbench`, path: `/k8s/${clusterId}/log-workbench`, name: '日志工作台' },
@@ -712,7 +736,7 @@ const buildClusterMenuItems = (clusterId: string): MenuItem[] => [
     key: 'group-delivery',
     path: `/k8s/${clusterId}/manifest-apply`,
     name: '交付与变更',
-    icon: <RocketOutlined />,
+    icon: <CloudUploadOutlined />,
     children: [
       { key: `/k8s/${clusterId}/manifest-apply`, path: `/k8s/${clusterId}/manifest-apply`, name: 'YAML 部署' },
       { key: `/k8s/${clusterId}/helm-releases`, path: `/k8s/${clusterId}/helm-releases`, name: 'Helm 发布' },
@@ -725,7 +749,7 @@ const buildClusterMenuItems = (clusterId: string): MenuItem[] => [
     key: 'group-resource-browser',
     path: `/k8s/${clusterId}/advanced-resources`,
     name: '资源浏览器',
-    icon: <ClusterOutlined />,
+    icon: <ApartmentOutlined />,
     children: [
       { key: `/k8s/${clusterId}/advanced-resources`, path: `/k8s/${clusterId}/advanced-resources`, name: '资源目录' },
       {
@@ -814,8 +838,8 @@ const getGlobalOpenKeys = (pathname: string): string[] => {
   if (pathname.startsWith('/clusters')) {
     openKeys.push('/clusters')
   }
-  if (pathname.startsWith('/automation')) {
-    openKeys.push('/automation')
+  if (pathname.startsWith('/cicd')) {
+    openKeys.push('/cicd')
   }
   if (pathname.startsWith('/app-store')) {
     openKeys.push('/app-store')
@@ -838,6 +862,9 @@ const getAdminOpenKeys = (pathname: string): string[] => {
   }
   if (pathname.startsWith('/config/credentials')) {
     return ['group-admin-platform']
+  }
+  if (pathname.startsWith('/config/deploy-assets')) {
+    return ['group-admin-deploy']
   }
   return ['group-admin-platform']
 }
@@ -947,7 +974,7 @@ export const layout = ({ initialState, setInitialState }: any) => {
       return
     }
 
-    const globalParentKeys = new Set(['/clusters', '/servers', '/app-store', '/automation', '/monitor', '/ai'])
+    const globalParentKeys = new Set(['/clusters', '/servers', '/app-store', '/cicd', '/monitor', '/ai'])
     const latestOpenedKey = keys.find((key) => !menuOpenKeys.includes(key))
     if (latestOpenedKey && globalParentKeys.has(latestOpenedKey)) {
       setMenuOpenKeys([latestOpenedKey])

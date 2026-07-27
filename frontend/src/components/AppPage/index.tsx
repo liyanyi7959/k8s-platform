@@ -35,11 +35,19 @@ const getAutomaticBreadcrumb = (pathname: string): BreadcrumbProps | undefined =
     return { items: [clusterRoot, { title: '集群详情' }] }
   }
 
+  // CI/CD 详情页面包屑
+  const cicdRoot = { title: 'CI/CD', href: '/cicd/overview' }
+  if (/^\/cicd\/pipelines\/[^/]+$/.test(pathname)) return { items: [cicdRoot, { title: '流水线', href: '/cicd/pipelines' }, { title: '详情' }] }
+  if (/^\/cicd\/runs\/[^/]+$/.test(pathname)) return { items: [cicdRoot, { title: '执行记录', href: '/cicd/runs' }, { title: '详情' }] }
+  if (/^\/cicd\/artifacts\/[^/]+$/.test(pathname)) return { items: [cicdRoot, { title: '制品仓库', href: '/cicd/artifacts' }, { title: '详情' }] }
+  if (/^\/cicd\/environments\/[^/]+$/.test(pathname)) return { items: [cicdRoot, { title: '环境管理', href: '/cicd/environments' }, { title: '详情' }] }
+
   const configNames: Record<string, string> = {
     '/config/users': '用户管理',
     '/config/roles': '角色管理',
     '/config/audit-logs': '审计日志',
     '/config/credentials': '凭据库',
+    '/config/deploy-assets': '部署手册',
     '/config/settings': '系统设置',
   }
 

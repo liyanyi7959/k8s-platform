@@ -120,6 +120,7 @@ const routes: any[] = [
       { name: '角色管理', path: '/config/roles', component: '@/pages/system/roles' },
       { name: '审计日志', path: '/config/audit-logs', component: '@/pages/system/audit-logs' },
       { name: '凭据库', path: '/config/credentials', component: '@/pages/deploy/credentials' },
+      { name: '部署手册', path: '/config/deploy-assets', component: '@/pages/deploy/config' },
       { name: '系统设置', path: '/config/settings', component: '@/pages/system/settings' },
     ],
   },
@@ -134,14 +135,21 @@ const routes: any[] = [
       { name: '模型配置', path: '/ai/settings', component: '@/pages/ai/settings' },
     ],
   },
-  // ---- 自动化运维：沉淀可复用的运行手册与执行资产，不承载集群创建入口 ----
+  // ---- CI/CD 持续交付 ----
   {
-    name: '自动化中心',
-    path: '/automation',
+    name: 'CI/CD',
+    path: '/cicd',
     routes: [
-      { path: '/automation', redirect: '/automation/overview' },
-      { name: '自动化总览', path: '/automation/overview', component: '@/pages/automation/index' },
-      { name: '运行手册资产', path: '/automation/assets', component: '@/pages/deploy/config' },
+      { path: '/cicd', redirect: '/cicd/overview' },
+      { name: '总览', path: '/cicd/overview', component: '@/pages/cicd/overview' },
+      { name: '流水线', path: '/cicd/pipelines', component: '@/pages/cicd/pipelines' },
+      { path: '/cicd/pipelines/:id', component: '@/pages/cicd/pipeline-detail', hideInMenu: true },
+      { name: '执行记录', path: '/cicd/runs', component: '@/pages/cicd/runs' },
+      { path: '/cicd/runs/:id', component: '@/pages/cicd/run-detail', hideInMenu: true },
+      { name: '制品仓库', path: '/cicd/artifacts', component: '@/pages/cicd/artifacts' },
+      { path: '/cicd/artifacts/:id', component: '@/pages/cicd/artifact-detail', hideInMenu: true },
+      { name: '环境管理', path: '/cicd/environments', component: '@/pages/cicd/environments' },
+      { path: '/cicd/environments/:id', component: '@/pages/cicd/environment-detail', hideInMenu: true },
     ],
   },
   // 兼容已收藏的旧链接；实际功能已按业务域重新归位。
@@ -152,7 +160,10 @@ const routes: any[] = [
   { path: '/deploy/plans/:id', redirect: '/clusters/provision/:id' },
   { path: '/deploy/servers', redirect: '/clusters/hosts' },
   { path: '/deploy/credentials', redirect: '/config/credentials' },
-  { path: '/deploy/config', redirect: '/automation/assets' },
+  { path: '/deploy/config', redirect: '/config/deploy-assets' },
+  { path: '/automation/assets', redirect: '/config/deploy-assets' },
+  { path: '/automation', redirect: '/cicd/overview' },
+  { path: '/automation/overview', redirect: '/cicd/overview' },
   // ========== 集群钻取路由（currentCluster 有值） ==========
   {
     path: '/cluster',
