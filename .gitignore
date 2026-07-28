@@ -85,3 +85,7 @@ plan.md
 allplan.md
 *.md
 !docs/automated-k8s-deployment-design.md
+!docs/architecture-refactor-plan.md
+!docs/architecture-refactor-plan-v2.md
+!backend/internal/README.md
+!frontend/src/features/README.md

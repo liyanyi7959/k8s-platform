@@ -1,0 +1,202 @@
+package architecture
+
+import (
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"sort"
+	"strconv"
+	"strings"
+	"testing"
+)
+
+const modulePrefix = "k8s-platform-backend/internal/"
+
+var migratedContexts = []string{"change", "incident"}
+
+func TestDomainPackagesStayFrameworkIndependent(t *testing.T) {
+	root := backendRoot(t)
+	for _, contextName := range migratedContexts {
+		domainDir := filepath.Join(root, "internal", contextName, "domain")
+		walkGoFiles(t, domainDir, func(path string, file *ast.File) {
+			for _, spec := range file.Imports {
+				importPath := unquoteImport(t, spec.Path.Value)
+				if strings.HasPrefix(importPath, "k8s-platform-backend/") || isThirdPartyImport(importPath) {
+					t.Errorf("%s: domain imports non-standard package %q", path, importPath)
+				}
+			}
+		})
+	}
+}
+
+func TestApplicationPackagesDoNotDependOnAdaptersOrLegacyLayers(t *testing.T) {
+	root := backendRoot(t)
+	for _, contextName := range migratedContexts {
+		applicationDir := filepath.Join(root, "internal", contextName, "application")
+		if _, err := os.Stat(applicationDir); os.IsNotExist(err) {
+			continue
+		}
+		walkGoFiles(t, applicationDir, func(path string, file *ast.File) {
+			for _, spec := range file.Imports {
+				importPath := unquoteImport(t, spec.Path.Value)
+				for _, forbidden := range []string{"/adapters/", "/legacy/", "/router"} {
+					if strings.Contains(importPath, forbidden) {
+						t.Errorf("%s: application imports forbidden layer %q", path, importPath)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestMigratedContextsDoNotDependOnLegacyBusinessLayers(t *testing.T) {
+	root := backendRoot(t)
+	for _, contextName := range migratedContexts {
+		contextDir := filepath.Join(root, "internal", contextName)
+		walkGoFiles(t, contextDir, func(path string, file *ast.File) {
+			for _, spec := range file.Imports {
+				importPath := unquoteImport(t, spec.Path.Value)
+				for _, forbidden := range []string{
+					modulePrefix + "legacy/controller",
+					modulePrefix + "legacy/model",
+					modulePrefix + "legacy/service",
+					modulePrefix + "router",
+				} {
+					if importPath == forbidden || strings.HasPrefix(importPath, forbidden+"/") {
+						t.Errorf("%s: migrated context imports legacy business layer %q", path, importPath)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestContextsDoNotImportOtherContextInternals(t *testing.T) {
+	root := backendRoot(t)
+	contexts := []string{"ai", "audit", "change", "fleet", "iam", "incident", "kops", "platform", "provisioning", "workspace"}
+	for _, owner := range contexts {
+		contextDir := filepath.Join(root, "internal", owner)
+		if _, err := os.Stat(contextDir); os.IsNotExist(err) {
+			continue
+		}
+		walkGoFiles(t, contextDir, func(path string, file *ast.File) {
+			for _, spec := range file.Imports {
+				importPath := unquoteImport(t, spec.Path.Value)
+				for _, other := range contexts {
+					if other != owner && strings.HasPrefix(importPath, modulePrefix+other+"/") {
+						t.Errorf("%s: context %s imports internal package from %s: %q", path, owner, other, importPath)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestCompositionRootCatalogsEveryCurrentModule(t *testing.T) {
+	type moduleCatalog struct {
+		audit        struct{}
+		iam          struct{}
+		platform     struct{}
+		workspace    struct{}
+		fleet        struct{}
+		kops         struct{}
+		ai           struct{}
+		change       struct{}
+		provisioning struct{}
+		incident     struct{}
+	}
+	expected := fieldNames(reflect.TypeOf(moduleCatalog{}))
+	actual := applicationModuleFields(t, filepath.Join(backendRoot(t), "internal", "router", "modules.go"))
+	if strings.Join(actual, ",") != strings.Join(expected, ",") {
+		t.Fatalf("applicationModules fields = %v, want %v", actual, expected)
+	}
+}
+
+func applicationModuleFields(t *testing.T, path string) []string {
+	t.Helper()
+	parsed, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
+	if err != nil {
+		t.Fatalf("parse %s: %v", path, err)
+	}
+	var fields []string
+	for _, declaration := range parsed.Decls {
+		general, ok := declaration.(*ast.GenDecl)
+		if !ok {
+			continue
+		}
+		for _, spec := range general.Specs {
+			typeSpec, ok := spec.(*ast.TypeSpec)
+			if !ok || typeSpec.Name.Name != "applicationModules" {
+				continue
+			}
+			structure, ok := typeSpec.Type.(*ast.StructType)
+			if !ok {
+				t.Fatal("applicationModules must be a struct")
+			}
+			for _, field := range structure.Fields.List {
+				for _, name := range field.Names {
+					fields = append(fields, name.Name)
+				}
+			}
+		}
+	}
+	sort.Strings(fields)
+	return fields
+}
+
+func fieldNames(value reflect.Type) []string {
+	fields := make([]string, 0, value.NumField())
+	for index := 0; index < value.NumField(); index++ {
+		fields = append(fields, value.Field(index).Name)
+	}
+	sort.Strings(fields)
+	return fields
+}
+
+func walkGoFiles(t *testing.T, root string, visit func(string, *ast.File)) {
+	t.Helper()
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			return nil
+		}
+		parsed, parseErr := parser.ParseFile(token.NewFileSet(), path, nil, parser.ImportsOnly)
+		if parseErr != nil {
+			return parseErr
+		}
+		visit(path, parsed)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk %s: %v", root, err)
+	}
+}
+
+func backendRoot(t *testing.T) string {
+	t.Helper()
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve current test file")
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", ".."))
+}
+
+func unquoteImport(t *testing.T, value string) string {
+	t.Helper()
+	importPath, err := strconv.Unquote(value)
+	if err != nil {
+		t.Fatalf("unquote import %s: %v", value, err)
+	}
+	return importPath
+}
+
+func isThirdPartyImport(importPath string) bool {
+	first, _, _ := strings.Cut(importPath, "/")
+	return strings.Contains(first, ".")
+}

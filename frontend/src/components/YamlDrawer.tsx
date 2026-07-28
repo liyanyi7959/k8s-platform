@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Drawer, Button, Space, message } from 'antd'
 import { EditOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons'
-import { getResourceYaml, applyYaml } from '@/services/k8s'
+import { getResourceYaml, applyYaml } from '@/features/kops/api/k8s'
 import { YamlEditor } from '@/components/YamlEditor'
 
 interface YamlDrawerProps {

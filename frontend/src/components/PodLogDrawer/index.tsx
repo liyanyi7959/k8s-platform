@@ -7,7 +7,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Drawer, Spin, Switch, Space, Button, message } from 'antd'
 import { ReloadOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { getPodLogs } from '@/services/k8s'
+import { getPodLogs } from '@/features/kops/api/k8s'
 
 interface PodLogDrawerProps {
   open: boolean

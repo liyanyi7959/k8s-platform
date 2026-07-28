@@ -18,12 +18,12 @@
 const routes: any[] = [
   {
     path: '/login',
-    component: '@/pages/login',
+    component: '@/features/iam/pages/login',
     layout: false,
   },
   {
     path: '/k8s/terminal',
-    component: '@/pages/k8s/terminal',
+    component: '@/features/kops/pages/k8s/terminal',
     layout: false,
   },
   {
@@ -34,64 +34,64 @@ const routes: any[] = [
   {
     name: '仪表盘',
     path: '/dashboard',
-    component: '@/pages/dashboard',
+    component: '@/features/fleet/pages/dashboard',
   },
   // ---- 集群管理（父级菜单：集群列表、集群导入、资源拓扑） ----
   {
     name: '集群管理',
     path: '/clusters',
-    component: '@/pages/clusters',
+    component: '@/features/fleet/pages/clusters',
   },
   {
     name: '部署K8S集群',
     path: '/clusters/provision',
-    component: '@/pages/deploy/index',
+    component: '@/features/provisioning/pages/deploy/index',
   },
   {
     path: '/clusters/provision/create',
-    component: '@/pages/deploy/create',
+    component: '@/features/provisioning/pages/deploy/create',
     hideInMenu: true,
   },
   {
     path: '/clusters/provision/:id',
-    component: '@/pages/deploy/detail',
+    component: '@/features/provisioning/pages/deploy/detail',
     hideInMenu: true,
   },
   {
     path: '/clusters/provision/:id/edit',
-    component: '@/pages/deploy/create',
+    component: '@/features/provisioning/pages/deploy/create',
     hideInMenu: true,
   },
   {
     name: '主机资源池',
     path: '/clusters/hosts',
-    component: '@/pages/deploy/servers',
+    component: '@/features/provisioning/pages/deploy/servers',
   },
   {
     name: '项目管理',
     path: '/projects',
-    component: '@/pages/projects/index',
+    component: '@/features/workspace/pages/projects/index',
   },
   {
     name: '应用商店',
     path: '/app-store',
     routes: [
       { path: '/app-store', redirect: '/app-store/yaml' },
-      { name: 'YAML 模板', path: '/app-store/yaml', component: '@/pages/app-store/index' },
-      { name: 'Helm Chart', path: '/app-store/helm', component: '@/pages/app-store/index' },
+      { name: 'YAML 模板', path: '/app-store/yaml', component: '@/features/provisioning/pages/app-store/index' },
+      { name: 'Helm Chart', path: '/app-store/helm', component: '@/features/provisioning/pages/app-store/index' },
     ],
   },
   {
     name: '集群详情',
     path: '/clusters/:id',
     hideInMenu: true,
-    component: '@/pages/clusters/detail',
+    component: '@/features/fleet/pages/clusters/detail',
   },
   {
     name: '集群导入',
     path: '/clusters/import',
     hideInMenu: true,
-    component: '@/pages/clusters/import',
+    component: '@/features/fleet/pages/clusters/import',
   },
   // ---- 全局告警中心 ----
   {
@@ -99,16 +99,16 @@ const routes: any[] = [
     path: '/monitor',
     routes: [
       { path: '/monitor', redirect: '/monitor/dashboard' },
-      { name: '监控仪表盘', path: '/monitor/dashboard', component: '@/pages/monitor/dashboard' },
-      { name: '告警规则', path: '/monitor/alerts', component: '@/pages/monitor/alerts' },
-      { name: '事件流', path: '/monitor/events', component: '@/pages/monitor/events' },
+      { name: '监控仪表盘', path: '/monitor/dashboard', component: '@/features/incident/pages/monitor/dashboard' },
+      { name: '告警规则', path: '/monitor/alerts', component: '@/features/incident/pages/monitor/alerts' },
+      { name: '事件流', path: '/monitor/events', component: '@/features/incident/pages/monitor/events' },
     ],
   },
   // ---- 全局日志分析 ----
   {
     name: '日志分析',
     path: '/logs',
-    component: '@/pages/logs',
+    component: '@/features/kops/pages/logs',
   },
   // ---- 系统配置 ----
   {
@@ -116,12 +116,12 @@ const routes: any[] = [
     path: '/config',
     routes: [
       { path: '/config', redirect: '/config/settings' },
-      { name: '用户管理', path: '/config/users', component: '@/pages/system/users' },
-      { name: '角色管理', path: '/config/roles', component: '@/pages/system/roles' },
-      { name: '审计日志', path: '/config/audit-logs', component: '@/pages/system/audit-logs' },
-      { name: '凭据库', path: '/config/credentials', component: '@/pages/deploy/credentials' },
-      { name: '部署手册', path: '/config/deploy-assets', component: '@/pages/deploy/config' },
-      { name: '系统设置', path: '/config/settings', component: '@/pages/system/settings' },
+      { name: '用户管理', path: '/config/users', component: '@/features/platform/pages/system/users' },
+      { name: '角色管理', path: '/config/roles', component: '@/features/platform/pages/system/roles' },
+      { name: '审计日志', path: '/config/audit-logs', component: '@/features/platform/pages/system/audit-logs' },
+      { name: '凭据库', path: '/config/credentials', component: '@/features/provisioning/pages/deploy/credentials' },
+      { name: '部署手册', path: '/config/deploy-assets', component: '@/features/provisioning/pages/deploy/config' },
+      { name: '系统设置', path: '/config/settings', component: '@/features/platform/pages/system/settings' },
     ],
   },
   // ---- 智能根因定位 ----
@@ -130,9 +130,9 @@ const routes: any[] = [
     path: '/ai',
     routes: [
       { path: '/ai', redirect: '/ai/chat' },
-      { name: '对话式运维', path: '/ai/chat', component: '@/pages/ai/chat' },
-      { name: '历史记录', path: '/ai/history', component: '@/pages/ai/history' },
-      { name: '模型配置', path: '/ai/settings', component: '@/pages/ai/settings' },
+      { name: '对话式运维', path: '/ai/chat', component: '@/features/ai/pages/chat' },
+      { name: '历史记录', path: '/ai/history', component: '@/features/ai/pages/history' },
+      { name: '模型配置', path: '/ai/settings', component: '@/features/ai/pages/settings' },
     ],
   },
   // ---- CI/CD 持续交付 ----
@@ -141,15 +141,15 @@ const routes: any[] = [
     path: '/cicd',
     routes: [
       { path: '/cicd', redirect: '/cicd/overview' },
-      { name: '总览', path: '/cicd/overview', component: '@/pages/cicd/overview' },
-      { name: '流水线', path: '/cicd/pipelines', component: '@/pages/cicd/pipelines' },
-      { path: '/cicd/pipelines/:id', component: '@/pages/cicd/pipeline-detail', hideInMenu: true },
-      { name: '执行记录', path: '/cicd/runs', component: '@/pages/cicd/runs' },
-      { path: '/cicd/runs/:id', component: '@/pages/cicd/run-detail', hideInMenu: true },
-      { name: '制品仓库', path: '/cicd/artifacts', component: '@/pages/cicd/artifacts' },
-      { path: '/cicd/artifacts/:id', component: '@/pages/cicd/artifact-detail', hideInMenu: true },
-      { name: '环境管理', path: '/cicd/environments', component: '@/pages/cicd/environments' },
-      { path: '/cicd/environments/:id', component: '@/pages/cicd/environment-detail', hideInMenu: true },
+      { name: '总览', path: '/cicd/overview', component: '@/features/provisioning/pages/cicd/overview' },
+      { name: '流水线', path: '/cicd/pipelines', component: '@/features/provisioning/pages/cicd/pipelines' },
+      { path: '/cicd/pipelines/:id', component: '@/features/provisioning/pages/cicd/pipeline-detail', hideInMenu: true },
+      { name: '执行记录', path: '/cicd/runs', component: '@/features/provisioning/pages/cicd/runs' },
+      { path: '/cicd/runs/:id', component: '@/features/provisioning/pages/cicd/run-detail', hideInMenu: true },
+      { name: '制品仓库', path: '/cicd/artifacts', component: '@/features/provisioning/pages/cicd/artifacts' },
+      { path: '/cicd/artifacts/:id', component: '@/features/provisioning/pages/cicd/artifact-detail', hideInMenu: true },
+      { name: '环境管理', path: '/cicd/environments', component: '@/features/provisioning/pages/cicd/environments' },
+      { path: '/cicd/environments/:id', component: '@/features/provisioning/pages/cicd/environment-detail', hideInMenu: true },
     ],
   },
   // 兼容已收藏的旧链接；实际功能已按业务域重新归位。
@@ -172,191 +172,191 @@ const routes: any[] = [
     routes: [
       {
         path: '/cluster/dashboard',
-        component: '@/pages/cluster/dashboard',
+        component: '@/features/kops/pages/cluster/dashboard',
       },
       {
         path: '/cluster/pods',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/podmetrics',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/deployments',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/statefulsets',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/daemonsets',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/replicasets',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/pdbs',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/hpas',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/jobs',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/cronjobs',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/services',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/endpoints',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/endpointslices',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/network-policies',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/ingresses',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/ingress-classes',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/pvcs',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/pvs',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/volume-snapshots',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/volume-snapshot-classes',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/volume-snapshot-contents',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/storage-classes',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/csi-drivers',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/csi-nodes',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/csi-storage-capacities',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/volume-attachments',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/resource-quotas',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/limit-ranges',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/configmaps',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/secrets',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/service-accounts',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/roles',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/role-bindings',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/cluster-roles',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/cluster-role-bindings',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/nodes',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/leases',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/events',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/crds',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/api-services',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/priority-classes',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/runtime-classes',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/validating-webhooks',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/mutating-webhooks',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/validating-admission-policies',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
       {
         path: '/cluster/validating-admission-policy-bindings',
-        component: '@/pages/cluster/redirect',
+        component: '@/features/kops/pages/cluster/redirect',
       },
     ],
   },
@@ -369,298 +369,298 @@ const routes: any[] = [
       // ---- 仪表盘 ----
       {
         path: '/k8s/:clusterId/dashboard',
-        component: '@/pages/k8s/$clusterId',
+        component: '@/features/kops/pages/k8s/$clusterId',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/advanced-resources',
-        component: '@/pages/k8s/$clusterId/advanced-resources',
+        component: '@/features/kops/pages/k8s/$clusterId/advanced-resources',
         hideInMenu: true,
       },
       // ---- 运维工具 ----
       {
         path: '/k8s/:clusterId/log-workbench',
-        component: '@/pages/k8s/$clusterId/log-workbench',
+        component: '@/features/kops/pages/k8s/$clusterId/log-workbench',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/manifest-apply',
-        component: '@/pages/k8s/$clusterId/manifest-apply',
+        component: '@/features/kops/pages/k8s/$clusterId/manifest-apply',
         hideInMenu: true,
       },
       // ---- 工作负载 ----
       {
         path: '/k8s/:clusterId/pods',
-        component: '@/pages/k8s/$clusterId/pods',
+        component: '@/features/kops/pages/k8s/$clusterId/pods',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/podmetrics',
-        component: '@/pages/k8s/$clusterId/podmetrics',
+        component: '@/features/kops/pages/k8s/$clusterId/podmetrics',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/workloads',
-        component: '@/pages/k8s/$clusterId/workloads',
+        component: '@/features/kops/pages/k8s/$clusterId/workloads',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/deployments',
-        component: '@/pages/k8s/$clusterId/deployments',
+        component: '@/features/kops/pages/k8s/$clusterId/deployments',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/statefulsets',
-        component: '@/pages/k8s/$clusterId/statefulsets',
+        component: '@/features/kops/pages/k8s/$clusterId/statefulsets',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/daemonsets',
-        component: '@/pages/k8s/$clusterId/daemonsets',
+        component: '@/features/kops/pages/k8s/$clusterId/daemonsets',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/replicasets',
-        component: '@/pages/k8s/$clusterId/replicasets',
+        component: '@/features/kops/pages/k8s/$clusterId/replicasets',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/pdbs',
-        component: '@/pages/k8s/$clusterId/pdbs',
+        component: '@/features/kops/pages/k8s/$clusterId/pdbs',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/hpas',
-        component: '@/pages/k8s/$clusterId/hpas',
+        component: '@/features/kops/pages/k8s/$clusterId/hpas',
         hideInMenu: true,
       },
       // ---- 作业 ----
       {
         path: '/k8s/:clusterId/jobs',
-        component: '@/pages/k8s/$clusterId/jobs',
+        component: '@/features/kops/pages/k8s/$clusterId/jobs',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/cronjobs',
-        component: '@/pages/k8s/$clusterId/cronjobs',
+        component: '@/features/kops/pages/k8s/$clusterId/cronjobs',
         hideInMenu: true,
       },
       // ---- 网络资源 ----
       {
         path: '/k8s/:clusterId/services',
-        component: '@/pages/k8s/$clusterId/services',
+        component: '@/features/kops/pages/k8s/$clusterId/services',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/endpoints',
-        component: '@/pages/k8s/$clusterId/endpoints',
+        component: '@/features/kops/pages/k8s/$clusterId/endpoints',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/endpointslices',
-        component: '@/pages/k8s/$clusterId/endpointslices',
+        component: '@/features/kops/pages/k8s/$clusterId/endpointslices',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/network-policies',
-        component: '@/pages/k8s/$clusterId/network-policies',
+        component: '@/features/kops/pages/k8s/$clusterId/network-policies',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/ingresses',
-        component: '@/pages/k8s/$clusterId/ingresses',
+        component: '@/features/kops/pages/k8s/$clusterId/ingresses',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/ingress-classes',
-        component: '@/pages/k8s/$clusterId/ingressclasses',
+        component: '@/features/kops/pages/k8s/$clusterId/ingressclasses',
         hideInMenu: true,
       },
       // ---- 数据存储 ----
       {
         path: '/k8s/:clusterId/pvcs',
-        component: '@/pages/k8s/$clusterId/pvc',
+        component: '@/features/kops/pages/k8s/$clusterId/pvc',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/pvs',
-        component: '@/pages/k8s/$clusterId/pv',
+        component: '@/features/kops/pages/k8s/$clusterId/pv',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/volume-snapshots',
-        component: '@/pages/k8s/$clusterId/volumesnapshots',
+        component: '@/features/kops/pages/k8s/$clusterId/volumesnapshots',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/volume-snapshot-classes',
-        component: '@/pages/k8s/$clusterId/volumesnapshotclasses',
+        component: '@/features/kops/pages/k8s/$clusterId/volumesnapshotclasses',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/volume-snapshot-contents',
-        component: '@/pages/k8s/$clusterId/volumesnapshotcontents',
+        component: '@/features/kops/pages/k8s/$clusterId/volumesnapshotcontents',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/storage-classes',
-        component: '@/pages/k8s/$clusterId/storage-classes',
+        component: '@/features/kops/pages/k8s/$clusterId/storage-classes',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/csi-drivers',
-        component: '@/pages/k8s/$clusterId/csidrivers',
+        component: '@/features/kops/pages/k8s/$clusterId/csidrivers',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/csi-nodes',
-        component: '@/pages/k8s/$clusterId/csinodes',
+        component: '@/features/kops/pages/k8s/$clusterId/csinodes',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/csi-storage-capacities',
-        component: '@/pages/k8s/$clusterId/csistoragecapacities',
+        component: '@/features/kops/pages/k8s/$clusterId/csistoragecapacities',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/volume-attachments',
-        component: '@/pages/k8s/$clusterId/volumeattachments',
+        component: '@/features/kops/pages/k8s/$clusterId/volumeattachments',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/resource-quotas',
-        component: '@/pages/k8s/$clusterId/resource-quotas',
+        component: '@/features/kops/pages/k8s/$clusterId/resource-quotas',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/limit-ranges',
-        component: '@/pages/k8s/$clusterId/limitranges',
+        component: '@/features/kops/pages/k8s/$clusterId/limitranges',
         hideInMenu: true,
       },
       // ---- 配置文件 ----
       {
         path: '/k8s/:clusterId/configmaps',
-        component: '@/pages/k8s/$clusterId/configmaps',
+        component: '@/features/kops/pages/k8s/$clusterId/configmaps',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/secrets',
-        component: '@/pages/k8s/$clusterId/secrets',
+        component: '@/features/kops/pages/k8s/$clusterId/secrets',
         hideInMenu: true,
       },
       // ---- 访问控制 ----
       {
         path: '/k8s/:clusterId/service-accounts',
-        component: '@/pages/k8s/$clusterId/service-accounts',
+        component: '@/features/kops/pages/k8s/$clusterId/service-accounts',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/roles',
-        component: '@/pages/k8s/$clusterId/roles',
+        component: '@/features/kops/pages/k8s/$clusterId/roles',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/role-bindings',
-        component: '@/pages/k8s/$clusterId/role-bindings',
+        component: '@/features/kops/pages/k8s/$clusterId/role-bindings',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/cluster-roles',
-        component: '@/pages/k8s/$clusterId/clusterroles',
+        component: '@/features/kops/pages/k8s/$clusterId/clusterroles',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/cluster-role-bindings',
-        component: '@/pages/k8s/$clusterId/clusterrolebindings',
+        component: '@/features/kops/pages/k8s/$clusterId/clusterrolebindings',
         hideInMenu: true,
       },
       // ---- 集群资源 ----
       {
         path: '/k8s/:clusterId/namespaces',
-        component: '@/pages/k8s/$clusterId/namespaces',
+        component: '@/features/kops/pages/k8s/$clusterId/namespaces',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/nodes',
-        component: '@/pages/k8s/$clusterId/nodes',
+        component: '@/features/kops/pages/k8s/$clusterId/nodes',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/leases',
-        component: '@/pages/k8s/$clusterId/leases',
+        component: '@/features/kops/pages/k8s/$clusterId/leases',
         hideInMenu: true,
       },
       // ---- 事件 ----
       {
         path: '/k8s/:clusterId/events',
-        component: '@/pages/k8s/$clusterId/events',
+        component: '@/features/kops/pages/k8s/$clusterId/events',
         hideInMenu: true,
       },
       // ---- 扩展治理 ----
       {
         path: '/k8s/:clusterId/crds',
-        component: '@/pages/k8s/$clusterId/crds',
+        component: '@/features/kops/pages/k8s/$clusterId/crds',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/api-services',
-        component: '@/pages/k8s/$clusterId/apiservices',
+        component: '@/features/kops/pages/k8s/$clusterId/apiservices',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/priority-classes',
-        component: '@/pages/k8s/$clusterId/priorityclasses',
+        component: '@/features/kops/pages/k8s/$clusterId/priorityclasses',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/runtime-classes',
-        component: '@/pages/k8s/$clusterId/runtimeclasses',
+        component: '@/features/kops/pages/k8s/$clusterId/runtimeclasses',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/validating-webhooks',
-        component: '@/pages/k8s/$clusterId/validatingwebhooks',
+        component: '@/features/kops/pages/k8s/$clusterId/validatingwebhooks',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/mutating-webhooks',
-        component: '@/pages/k8s/$clusterId/mutatingwebhooks',
+        component: '@/features/kops/pages/k8s/$clusterId/mutatingwebhooks',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/validating-admission-policies',
-        component: '@/pages/k8s/$clusterId/validatingadmissionpolicies',
+        component: '@/features/kops/pages/k8s/$clusterId/validatingadmissionpolicies',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/validating-admission-policy-bindings',
-        component: '@/pages/k8s/$clusterId/validatingadmissionpolicybindings',
+        component: '@/features/kops/pages/k8s/$clusterId/validatingadmissionpolicybindings',
         hideInMenu: true,
       },
       // ---- 治理分析 ----
       {
         path: '/k8s/:clusterId/permission-audits',
-        component: '@/pages/k8s/$clusterId/permission-audits',
+        component: '@/features/kops/pages/k8s/$clusterId/permission-audits',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/topology',
-        component: '@/pages/k8s/$clusterId/topology',
+        component: '@/features/kops/pages/k8s/$clusterId/topology',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/helm-releases',
-        component: '@/pages/k8s/$clusterId/helm-releases',
+        component: '@/features/kops/pages/k8s/$clusterId/helm-releases',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/helm-repos',
-        component: '@/pages/k8s/$clusterId/helm-repos',
+        component: '@/features/kops/pages/k8s/$clusterId/helm-repos',
         hideInMenu: true,
       },
       {
         path: '/k8s/:clusterId/resource-metrics',
-        component: '@/pages/k8s/$clusterId/resource-metrics',
+        component: '@/features/kops/pages/k8s/$clusterId/resource-metrics',
         hideInMenu: true,
       },
     ],

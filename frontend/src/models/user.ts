@@ -4,8 +4,8 @@
  */
 import { useState, useCallback } from 'react'
 import { history } from '@umijs/max'
-import { getCurrentUser, logout as logoutApi } from '@/services/auth'
-import type { User } from '@/types'
+import { getCurrentUser, logout as logoutApi } from '@/features/iam/api'
+import type { User } from '@/shared/types'
 
 export default function useUserModel() {
   const [user, setUser] = useState<User | null>(null)

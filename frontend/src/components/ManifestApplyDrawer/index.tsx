@@ -7,7 +7,7 @@ import React, { useState } from 'react'
 import { Drawer, Button, Space, message } from 'antd'
 import { SendOutlined, ClearOutlined } from '@ant-design/icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { applyYaml } from '@/services/k8s'
+import { applyYaml } from '@/features/kops/api/k8s'
 import { YamlEditor } from '@/components/YamlEditor'
 import AppAlert from '@/components/AppAlert'
 

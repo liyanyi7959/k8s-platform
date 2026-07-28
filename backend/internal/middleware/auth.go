@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"k8s-platform-backend/internal/auth"
-	"k8s-platform-backend/internal/service"
+	"k8s-platform-backend/internal/legacy/service"
 	"k8s-platform-backend/pkg/resp"
 )
 

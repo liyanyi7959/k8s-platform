@@ -12,8 +12,8 @@ import (
 	"gorm.io/gorm"
 
 	"k8s-platform-backend/internal/auth"
-	"k8s-platform-backend/internal/controller"
-	"k8s-platform-backend/internal/service"
+	"k8s-platform-backend/internal/legacy/controller"
+	"k8s-platform-backend/internal/legacy/service"
 )
 
 // Deps 聚合路由层构建所需的全部外部依赖。

@@ -1,7 +1,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 
-const pagesRoot = path.resolve(__dirname, '../src/pages')
+const pagesRoot = path.resolve(__dirname, '../src/features')
 const legacyPatterns = [
   'app-server-pool-hero',
   'app-server-pool-summary',
@@ -12,11 +12,11 @@ const legacyPatterns = [
 ]
 
 const standardListPages = [
-  'deploy/index.tsx',
-  'projects/index.tsx',
-  'system/users.tsx',
-  'system/roles.tsx',
-  'system/audit-logs.tsx',
+  'provisioning/pages/deploy/index.tsx',
+  'workspace/pages/projects/index.tsx',
+  'platform/pages/system/users.tsx',
+  'platform/pages/system/roles.tsx',
+  'platform/pages/system/audit-logs.tsx',
 ]
 
 const standardListComponents = [

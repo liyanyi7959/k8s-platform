@@ -5,7 +5,7 @@
 import React from 'react'
 import { Select } from 'antd'
 import { useQuery } from '@tanstack/react-query'
-import { listNamespaces } from '@/services/k8s'
+import { listNamespaces } from '@/features/kops/api/k8s'
 
 interface NamespaceSelectorProps {
   clusterId: number

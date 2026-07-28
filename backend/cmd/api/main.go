@@ -7,7 +7,7 @@
 // - 启动 HTTP Server，并处理优雅退出
 //
 // 说明：
-// - 业务逻辑尽量放在 internal/service 与 internal/controller 中，这里只做“胶水层”。
+// - 业务逻辑放在 internal/<context>；未迁移实现统一位于 internal/legacy。
 //
 // @title 星枢K8S管理平台 API
 // @version 1.0
@@ -33,10 +33,10 @@ import (
 
 	"k8s-platform-backend/internal/auth"
 	"k8s-platform-backend/internal/config"
-	"k8s-platform-backend/internal/controller"
+	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/db"
 	"k8s-platform-backend/internal/router"
-	"k8s-platform-backend/internal/service"
+	"k8s-platform-backend/internal/legacy/service"
 )
 
 func main() {

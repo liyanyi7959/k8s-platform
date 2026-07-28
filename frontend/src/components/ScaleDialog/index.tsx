@@ -6,7 +6,7 @@
 import React, { useEffect } from 'react'
 import { Modal, Form, InputNumber, message } from 'antd'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { scaleDeployment } from '@/services/k8s'
+import { scaleWorkload } from '@/features/kops/api/k8s'
 
 interface ScaleDialogProps {
   open: boolean
@@ -37,7 +37,7 @@ export const ScaleDialog: React.FC<ScaleDialogProps> = ({
   }, [open, currentReplicas, form])
 
   const scaleMutation = useMutation({
-    mutationFn: (replicas: number) => scaleDeployment(clusterId, namespace, name, replicas),
+    mutationFn: (replicas: number) => scaleWorkload(clusterId, namespace, name, replicas),
     onSuccess: () => {
       message.success(`${resourceType} "${name}" 扩缩容成功`)
       queryClient.invalidateQueries({ queryKey: ['k8s-deployments', clusterId] })

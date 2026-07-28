@@ -1,8 +1,8 @@
 // router 负责注册 HTTP 路由，并把 controller 绑定到 gin.Engine。
 //
 // 路由组织约定：
-// - 所有 API 以 `/api/v1` 为前缀
-// - 统一响应结构由 pkg/resp 负责封装（无论成功/失败通常都返回 HTTP 200，错误由 code/message 表达）
+// - 存量 API 使用 `/api/v1`；逐领域迁移后的 API 使用 `/api/v2`
+// - v1 保留历史响应信封，v2 使用 HTTP 语义与 Problem Details
 // - 认证/鉴权通过中间件完成：
 //   - RequestID：为每个请求注入 request id，便于排障追踪
 //   - AuthRequiredWithRBAC：解析 JWT，并加载/校验权限点
@@ -10,16 +10,16 @@
 package router
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 
-	"k8s-platform-backend/internal/controller"
+	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
+	"k8s-platform-backend/internal/legacy/controller"
+	"k8s-platform-backend/internal/legacy/service"
 	"k8s-platform-backend/internal/middleware"
-	"k8s-platform-backend/internal/service"
 	"k8s-platform-backend/pkg/resp"
 )
 
@@ -32,115 +32,39 @@ func New(d Deps) (*gin.Engine, error) {
 	r.Use(middleware.AccessLogger())
 	r.Use(middleware.RecoveryWithZap())
 	r.Use(middleware.CORS())
+	r.Use(middleware.APIDeprecation())
 
-	// ── 基础依赖（供当前仍在使用的 K8S 能力复用） ──
-	taskStore := service.NewTaskStore(d.DB)
-
-	// ── 审计服务 ──
-	var auditSvc *service.AuditService
-	if d.DB != nil {
-		auditSvc = service.NewAuditService(d.DB)
-	}
-
-	// ── DB 依赖模块 ──
-	var clusterManageCtl *controller.ClusterManageController
-	var k8sCtl *controller.K8sController
-	var dashboardCtl *controller.DashboardController
-	var permissionAuditCtl *controller.K8sPermissionAuditController
-	var auditCtl *controller.AuditController
-	var userCtl *controller.UserController
-	var systemSettingCtl *controller.SystemSettingController
-	var aiCtl *controller.AIController
-	var deployCtl *controller.DeployController
-	var deployConfigCtl *controller.DeployConfigController
-	var projectCtl *controller.ProjectController
-	var appTemplateCtl *controller.AppTemplateController
-	var monitorIncidentCtl *controller.MonitorIncidentController
-	var automationTaskCtl *controller.AutomationTaskController
-
-	if d.DB != nil {
-		clusterReg := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
-		k8sSvc := service.NewK8sService(clusterReg, d.CacheStore, d.CacheTTL, d.K8sInsecureTLS)
-		manifestApplySvc := service.NewManifestApplyRecordService(d.DB, k8sSvc)
-		clusterManageCtl = controller.NewClusterManageController(clusterReg, k8sSvc)
-		execSessions := service.NewExecSessionStore(0)
-		logSessions := service.NewPodLogSessionStore(0)
-		dashboardSvc := service.NewDashboardService(d.DB, clusterReg, k8sSvc, d.CacheStore)
-		dashboardCtl = controller.NewDashboardController(dashboardSvc)
-		permissionAuditSvc := service.NewK8sPermissionAuditService(d.DB, taskStore, clusterReg, k8sSvc, d.CacheStore, d.EncryptionKey)
-		permissionAuditCtl = controller.NewK8sPermissionAuditController(permissionAuditSvc)
-		auditCtl = controller.NewAuditController(auditSvc)
-		userCtl = controller.NewUserController(d.RbacSvc)
-		systemSettingsSvc := service.NewSystemSettingsService(d.DB)
-		systemSettingCtl = controller.NewSystemSettingController(systemSettingsSvc)
-		aiProviderSvc := service.NewAIProviderService(d.DB, d.EncryptionKey)
-		aiRouteSettingsSvc := service.NewAIRouteSettingsService(d.DB)
-		aiGatewaySvc := service.NewAIGatewayService(d.DB, d.EncryptionKey)
-		aiConversationSvc := service.NewAIConversationService(d.DB)
-		aiFileSvc := service.NewAIFileService(d.DB, d.AIUploadDir)
-		clusterReadModelSvc := service.NewClusterReadModelService(dashboardSvc)
-		namespaceDiagnosisSvc := service.NewNamespaceDiagnosisService(k8sSvc)
-		resourceInspectionSvc := service.NewResourceInspectionService(k8sSvc)
-		resourceQuerySvc := service.NewResourceQueryService(k8sSvc)
-		resourceExportPolicySvc := service.NewResourceExportPolicyService()
-		workloadActionSvc := service.NewWorkloadActionService(k8sSvc, manifestApplySvc)
-		aiActionSvc := service.NewAIActionService(d.DB, workloadActionSvc)
-		deploySvc := service.NewDeployService(d.DB, d.EncryptionKey, taskStore, clusterReg)
-		k8sCtl = controller.NewK8sController(
-			k8sSvc,
-			manifestApplySvc,
-			execSessions,
-			logSessions,
-			namespaceDiagnosisSvc,
-			resourceInspectionSvc,
-			deploySvc,
-		)
-		aiToolRegistry := service.NewAIToolRegistry(d.DB, clusterReadModelSvc, namespaceDiagnosisSvc, resourceInspectionSvc, resourceQuerySvc, aiActionSvc, resourceExportPolicySvc)
-		aiToolSvc := service.NewAIToolService(d.DB, aiToolRegistry)
-		aiChatSvc := service.NewAIChatService(d.DB, aiGatewaySvc, aiToolSvc, aiActionSvc, aiFileSvc)
-		aiCtl = controller.NewAIController(aiProviderSvc, aiRouteSettingsSvc, aiConversationSvc, aiChatSvc, aiFileSvc, aiToolSvc, aiActionSvc)
-		deployCtl = controller.NewDeployController(deploySvc, execSessions)
-		automationTaskCtl = controller.NewAutomationTaskController(service.NewTaskService(taskStore))
-		deployConfigSvc := service.NewDeployConfigService(d.DB)
-		deployConfigCtl = controller.NewDeployConfigController(deployConfigSvc)
-		projectSvc := service.NewProjectService(d.DB)
-		projectCtl = controller.NewProjectController(projectSvc, k8sSvc)
-		appTemplateSvc := service.NewAppTemplateService(d.DB)
-		appTemplateCtl = controller.NewAppTemplateController(appTemplateSvc)
-		monitorIncidentCtl = controller.NewMonitorIncidentController(service.NewMonitorIncidentService(d.DB))
-		// 初始化内置应用模板（幂等）
-		_ = appTemplateSvc.SeedBuiltinAppTemplates(context.Background())
-	}
+	modules := buildApplicationModules(d)
 
 	// ── 健康检查 ──
-	r.GET("/healthz", func(c *gin.Context) {
+	r.GET("/livez", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
+	r.GET("/readyz", func(c *gin.Context) {
+		if d.DB == nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "not_ready", "reason": "database is not configured"})
+			return
+		}
+		sqlDB, err := d.DB.DB()
+		if err != nil || sqlDB.PingContext(c.Request.Context()) != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "not_ready", "reason": "database is unavailable"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ready"})
 	})
 
 	// ── 路由注册 ──
-	registerRoutes(r, d, auditSvc, clusterManageCtl, k8sCtl, dashboardCtl, permissionAuditCtl, auditCtl, userCtl, systemSettingCtl, aiCtl, deployCtl, deployConfigCtl, projectCtl, appTemplateCtl, monitorIncidentCtl, automationTaskCtl)
+	registerRoutes(r, d, modules)
 
 	return r, nil
 }
 
 //nolint:funlen // 路由注册表天然是长函数，按业务域分段组织
 func registerRoutes(
-	r *gin.Engine, d Deps,
-	auditSvc *service.AuditService,
-	clusterManageCtl *controller.ClusterManageController,
-	k8sCtl *controller.K8sController,
-	dashboardCtl *controller.DashboardController,
-	permissionAuditCtl *controller.K8sPermissionAuditController,
-	auditCtl *controller.AuditController,
-	userCtl *controller.UserController,
-	systemSettingCtl *controller.SystemSettingController,
-	aiCtl *controller.AIController,
-	deployCtl *controller.DeployController,
-	deployConfigCtl *controller.DeployConfigController,
-	projectCtl *controller.ProjectController,
-	appTemplateCtl *controller.AppTemplateController,
-	monitorIncidentCtl *controller.MonitorIncidentController,
-	automationTaskCtl *controller.AutomationTaskController,
+	r *gin.Engine,
+	d Deps,
+	modules applicationModules,
 ) {
 	api := r.Group("/api/v1")
 
@@ -152,14 +76,14 @@ func registerRoutes(
 	api.POST("/auth/password-reset/request", d.AuthCtl.RequestPasswordReset)
 	api.POST("/auth/password-reset/confirm", d.AuthCtl.ConfirmPasswordReset)
 	// Alertmanager 使用单独的共享令牌接入，避免将告警入口暴露为匿名写接口。
-	if token := strings.TrimSpace(os.Getenv("AIOPS_ALERTMANAGER_WEBHOOK_TOKEN")); token != "" && monitorIncidentCtl != nil {
+	if token := strings.TrimSpace(os.Getenv("AIOPS_ALERTMANAGER_WEBHOOK_TOKEN")); token != "" && modules.incident.legacy != nil {
 		api.POST("/monitor/webhooks/alertmanager", func(c *gin.Context) {
 			if c.GetHeader("X-AIOPS-Webhook-Token") != token {
 				resp.Fail(c, 4010, "Webhook 认证失败")
 				c.Abort()
 				return
 			}
-			monitorIncidentCtl.IngestAlertmanager(c)
+			modules.incident.legacy.IngestAlertmanager(c)
 		})
 	}
 
@@ -168,26 +92,49 @@ func registerRoutes(
 	authed.Use(middleware.AuthRequiredWithRBAC(d.JWTMgr, d.RbacSvc))
 
 	// ── 审计中间件（仅对写操作生效） ──
-	if auditSvc != nil {
-		authed.Use(middleware.AuditLogger(auditSvc))
+	if modules.audit.service != nil {
+		authed.Use(middleware.AuditLogger(modules.audit.service))
 	}
 
 	authed.POST("/auth/change-password", d.AuthCtl.ChangePassword)
 
-	registerClusterRoutes(authed, d, clusterManageCtl)
-	registerDashboardRoutes(authed, d, dashboardCtl)
-	registerPermissionAuditRoutes(authed, permissionAuditCtl)
-	registerK8sRoutes(authed, d, k8sCtl)
-	registerWebSocketRoutes(authed, k8sCtl)
-	registerAuditRoutes(authed, auditCtl)
-	registerUserRoutes(authed, userCtl)
-	registerSystemRoutes(authed, systemSettingCtl)
-	registerAIRoutes(authed, aiCtl)
-	registerDeployRoutes(authed, deployCtl, deployConfigCtl)
-	registerProjectRoutes(authed, projectCtl)
-	registerAppTemplateRoutes(authed, appTemplateCtl)
-	registerMonitorIncidentRoutes(authed, monitorIncidentCtl)
-	registerAutomationTaskRoutes(authed, automationTaskCtl)
+	registerClusterRoutes(authed, d, modules.fleet.clusters)
+	registerDashboardRoutes(authed, d, modules.fleet.dashboard)
+	registerPermissionAuditRoutes(authed, modules.kops.permissionAudit)
+	registerK8sRoutes(authed, d, modules.kops.resources)
+	registerWebSocketRoutes(authed, modules.kops.resources)
+	registerAuditRoutes(authed, modules.audit.controller)
+	registerUserRoutes(authed, modules.iam.users)
+	registerSystemRoutes(authed, modules.platform.settings)
+	registerAIRoutes(authed, modules.ai.controller)
+	registerDeployRoutes(authed, modules.provisioning.deploy, modules.provisioning.config)
+	registerProjectRoutes(authed, modules.workspace.projects)
+	registerAppTemplateRoutes(authed, modules.provisioning.appTemplate)
+	registerMonitorIncidentRoutes(authed, modules.incident.legacy)
+	registerAutomationTaskRoutes(authed, modules.provisioning.automation)
+	registerIncidentV2Routes(r, d, modules.audit.service, modules.incident.v2)
+}
+
+func registerIncidentV2Routes(r *gin.Engine, d Deps, auditSvc *service.AuditService, ctl *incidenthttp.Controller) {
+	if ctl == nil {
+		return
+	}
+	v2 := r.Group("/api/v2")
+	v2.Use(middleware.AuthRequiredV2(d.JWTMgr, d.RbacSvc))
+	if auditSvc != nil {
+		v2.Use(middleware.AuditLogger(auditSvc))
+	}
+	read := middleware.RequirePermV2("monitor:read")
+	manage := middleware.RequirePermV2("incident:manage")
+	incidents := v2.Group("/incidents")
+	incidents.GET("", read, ctl.List)
+	incidents.GET("/:id", read, ctl.Get)
+	incidents.POST("/:id/acknowledgements", manage, ctl.Acknowledge)
+	incidents.POST("/:id/diagnosis-runs", manage, ctl.Diagnose)
+	incidents.POST("/:id/approval-requests", manage, ctl.RequestApproval)
+	incidents.POST("/:id/execution-starts", manage, ctl.StartExecution)
+	incidents.POST("/:id/verification-runs", manage, ctl.StartVerification)
+	incidents.POST("/:id/resolution-attempts", manage, ctl.Resolve)
 }
 
 func registerAutomationTaskRoutes(authed *gin.RouterGroup, ctl *controller.AutomationTaskController) {
@@ -201,6 +148,7 @@ func registerAutomationTaskRoutes(authed *gin.RouterGroup, ctl *controller.Autom
 	tasks.GET("/:id", read, ctl.Get)
 	tasks.GET("/:id/logs", read, ctl.Logs)
 	tasks.POST("/:id/cancel", execute, ctl.Cancel)
+	tasks.POST("/:id/cancellation-requests", execute, ctl.Cancel)
 }
 
 func registerMonitorIncidentRoutes(authed *gin.RouterGroup, ctl *controller.MonitorIncidentController) {
@@ -215,6 +163,7 @@ func registerMonitorIncidentRoutes(authed *gin.RouterGroup, ctl *controller.Moni
 	monitor.POST("/alerts", write, ctl.CreateAlertRule)
 	monitor.PUT("/alerts/:id", write, ctl.UpdateAlertRule)
 	monitor.PUT("/alerts/:id/toggle", write, ctl.ToggleAlertRule)
+	monitor.PATCH("/alerts/:id", write, ctl.ToggleAlertRule)
 	monitor.DELETE("/alerts/:id", write, ctl.DeleteAlertRule)
 	monitor.GET("/incidents", read, ctl.ListIncidents)
 	monitor.GET("/incidents/:id", read, ctl.GetIncident)
@@ -247,7 +196,9 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.GET("/servers/:id", readServer, ctl.GetServer)
 	deploy.PUT("/servers/:id", writeServer, ctl.UpdateServer)
 	deploy.POST("/servers/:id/test-ssh", readServer, ctl.TestSSH)
+	deploy.POST("/servers/:id/connection-checks", writeServer, ctl.TestSSH)
 	deploy.POST("/servers/:id/terminal-session", writeServer, ctl.CreateServerTerminalSession)
+	deploy.POST("/servers/:id/terminal-sessions", writeServer, ctl.CreateServerTerminalSession)
 	deploy.GET("/servers/terminal/ws", writeServer, ctl.ServerTerminalWS)
 	deploy.DELETE("/servers/:id", deleteServer, ctl.DeleteServer)
 
@@ -258,6 +209,7 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.PUT("/credentials/:id", writeCredential, ctl.UpdateCredential)
 	deploy.DELETE("/credentials/:id", deleteCredential, ctl.DeleteCredential)
 	deploy.POST("/credentials/batch-delete", deleteCredential, ctl.BatchDeleteCredentials)
+	deploy.POST("/credential-deletion-requests", deleteCredential, ctl.BatchDeleteCredentials)
 
 	// 部署计划
 	deploy.GET("/plans", readPlan, ctl.ListPlans)
@@ -267,14 +219,23 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.GET("/plans/:id/dry-run", readPlan, ctl.DryRunPlan)
 	deploy.POST("/plans/:id/preflight", execDeploy, ctl.PreflightPlan)
 	deploy.POST("/plans/:id/preflight/ignore", execDeploy, ctl.SetPreflightIgnore)
+	deploy.GET("/plans/:id/simulations", readPlan, ctl.DryRunPlan)
+	deploy.POST("/plans/:id/preflight-checks", execDeploy, ctl.PreflightPlan)
+	deploy.POST("/plans/:id/preflight-checks/overrides", execDeploy, ctl.SetPreflightIgnore)
 	deploy.GET("/plans/:id/ansible-config", readPlan, ctl.GetPlanAnsibleConfig)
 	deploy.POST("/plans/:id/execute", execDeploy, ctl.ExecutePlan)
 	deploy.POST("/plans/:id/cancel", execDeploy, ctl.CancelPlan)
 	deploy.POST("/plans/:id/retry", execDeploy, ctl.RetryPlan)
 	deploy.POST("/plans/:id/steps/:stepKey/retry", execDeploy, ctl.RetryDeployStep)
+	deploy.POST("/plans/:id/executions", execDeploy, ctl.ExecutePlan)
+	deploy.POST("/plans/:id/cancellation-requests", execDeploy, ctl.CancelPlan)
+	deploy.POST("/plans/:id/retry-attempts", execDeploy, ctl.RetryPlan)
+	deploy.POST("/plans/:id/steps/:stepKey/retry-attempts", execDeploy, ctl.RetryDeployStep)
 	deploy.GET("/plans/:id/addons/task", readPlan, ctl.GetPlanAddonTask)
 	deploy.POST("/plans/:id/addons/install", execDeploy, ctl.InstallPlanAddons)
 	deploy.POST("/plans/:id/addons/retry", execDeploy, ctl.RetryPlanAddons)
+	deploy.POST("/plans/:id/addon-installations", execDeploy, ctl.InstallPlanAddons)
+	deploy.POST("/plans/:id/addon-retry-attempts", execDeploy, ctl.RetryPlanAddons)
 	deploy.DELETE("/plans/:id", deletePlan, ctl.DeletePlan)
 
 	// 部署任务日志
@@ -359,6 +320,8 @@ func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sP
 	audits.GET("/:id/findings", auditPerm, ctl.ListFindings)
 	audits.POST("/:id/cancel", auditPerm, ctl.Cancel)
 	audits.POST("/adhoc", auditPerm, ctl.CreateAdhoc)
+	audits.POST("/:id/cancellation-requests", auditPerm, ctl.Cancel)
+	audits.POST("/ad-hoc-audits", auditPerm, ctl.CreateAdhoc)
 }
 
 // ── 集群管理 ──
@@ -372,6 +335,7 @@ func registerClusterRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.Clus
 	clusters.GET("", ctl.List)
 	clusters.GET("/:id", ctl.Get)
 	clusters.POST("/:id/check-health", ctl.CheckHealth)
+	clusters.POST("/:id/health-checks", ctl.CheckHealth)
 	clusters.PATCH("/:id", middleware.RequirePerm("cluster:create"), ctl.Patch)
 	clusters.DELETE("/:id", middleware.RequirePerm("cluster:create"), ctl.Delete)
 
@@ -443,6 +407,54 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	registerRBACRoutes(args)
 	registerBatchRoutes(args)
 	registerHelmRoutes(args)
+	registerCanonicalResourceUpdateRoutes(args)
+}
+
+func registerCanonicalResourceUpdateRoutes(a k8sRouteArgs) {
+	k8s, ctl, p := a.k8s, a.ctl, a.perm
+	namespaced := []struct {
+		resource string
+		handler  gin.HandlerFunc
+	}{
+		{"hpas", ctl.EditHPA}, {"pdbs", ctl.EditPDB}, {"leases", ctl.EditLease},
+		{"resourcequotas", ctl.EditResourceQuota}, {"limitranges", ctl.EditLimitRange},
+		{"replicasets", ctl.EditReplicaSet}, {"services", ctl.EditService}, {"ingresses", ctl.EditIngress},
+		{"networkpolicies", ctl.EditNetworkPolicy}, {"endpoints", ctl.EditEndpoints}, {"endpointslices", ctl.EditEndpointSlice},
+		{"configmaps", ctl.EditConfigMap}, {"secrets", ctl.EditSecret}, {"serviceaccounts", ctl.EditServiceAccount},
+		{"csistoragecapacities", ctl.EditCSIStorageCapacity}, {"volumesnapshots", ctl.EditVolumeSnapshot},
+		{"jobs", ctl.EditJob}, {"cronjobs", ctl.EditCronJob},
+	}
+	for _, route := range namespaced {
+		k8s.PATCH("/clusters/:id/"+route.resource+"/:ns/:name", p.write, route.handler)
+	}
+	clusterScoped := []struct {
+		resource string
+		handler  gin.HandlerFunc
+	}{
+		{"customresourcedefinitions", ctl.EditCustomResourceDefinition}, {"apiservices", ctl.EditAPIService},
+		{"priorityclasses", ctl.EditPriorityClass}, {"runtimeclasses", ctl.EditRuntimeClass},
+		{"validatingwebhookconfigurations", ctl.EditValidatingWebhookConfiguration},
+		{"mutatingwebhookconfigurations", ctl.EditMutatingWebhookConfiguration},
+		{"validatingadmissionpolicies", ctl.EditValidatingAdmissionPolicy},
+		{"validatingadmissionpolicybindings", ctl.EditValidatingAdmissionPolicyBinding},
+		{"ingressclasses", ctl.EditIngressClass}, {"storageclasses", ctl.EditStorageClass},
+		{"csidrivers", ctl.EditCSIDriver}, {"csinodes", ctl.EditCSINode},
+		{"volumeattachments", ctl.EditVolumeAttachment}, {"volumesnapshotclasses", ctl.EditVolumeSnapshotClass},
+		{"volumesnapshotcontents", ctl.EditVolumeSnapshotContent},
+	}
+	for _, route := range clusterScoped {
+		k8s.PATCH("/clusters/:id/"+route.resource+"/:name", p.write, route.handler)
+	}
+	k8s.PATCH("/clusters/:id/roles/:ns/:name", p.rbacWrite, ctl.EditRole)
+	k8s.PATCH("/clusters/:id/clusterroles/:name", p.rbacWrite, ctl.EditClusterRole)
+	k8s.PATCH("/clusters/:id/rolebindings/:ns/:name", p.rbacWrite, ctl.EditRoleBinding)
+	k8s.PATCH("/clusters/:id/clusterrolebindings/:name", p.rbacWrite, ctl.EditClusterRoleBinding)
+	k8s.PATCH("/clusters/:id/workloads/deployments/:ns/:name", p.write, ctl.EditDeployment)
+	k8s.PATCH("/clusters/:id/workloads/statefulsets/:ns/:name", p.write, ctl.EditStatefulSet)
+	k8s.PATCH("/clusters/:id/workloads/daemonsets/:ns/:name", p.write, ctl.EditDaemonSet)
+	k8s.PATCH("/clusters/:id/workloads/:kind/:ns/:name/yaml", p.write, ctl.EditWorkloadYAML)
+	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/scale-operations", p.write, ctl.ScaleWorkload)
+	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/restart-operations", p.write, ctl.RestartWorkload)
 }
 
 // ── 集群级资源：Namespace / Node / HPA / PDB / Event / CRD / APIService / PriorityClass / RuntimeClass / Webhook / Lease ──
@@ -468,6 +480,9 @@ func registerClusterResourceRoutes(a k8sRouteArgs) {
 	k8s.POST("/clusters/:id/nodes/:name/cordon", p.write, ctl.CordonNode)
 	k8s.POST("/clusters/:id/nodes/:name/uncordon", p.write, ctl.UncordonNode)
 	k8s.POST("/clusters/:id/nodes/:name/drain", p.write, ctl.DrainNode)
+	k8s.POST("/clusters/:id/nodes/:name/cordon-requests", p.write, ctl.CordonNode)
+	k8s.POST("/clusters/:id/nodes/:name/uncordon-requests", p.write, ctl.UncordonNode)
+	k8s.POST("/clusters/:id/nodes/:name/drain-requests", p.write, ctl.DrainNode)
 	k8s.DELETE("/clusters/:id/nodes/:name", p.write, ctl.DeleteNode)
 
 	// HPA
@@ -562,6 +577,9 @@ func registerClusterResourceRoutes(a k8sRouteArgs) {
 	k8s.POST("/clusters/:id/metrics/switch", p.write, ctl.SwitchMetricsSource)
 	k8s.GET("/clusters/:id/metrics/trend", p.read, ctl.GetMetricsTrend)
 	k8s.POST("/clusters/:id/metrics/health-check", p.read, ctl.HealthCheckMetricsSource)
+	k8s.POST("/clusters/:id/metrics/source-detection-runs", p.write, ctl.DetectMetricsSource)
+	k8s.POST("/clusters/:id/metrics/source-change-requests", p.write, ctl.SwitchMetricsSource)
+	k8s.POST("/clusters/:id/metrics/health-checks", p.read, ctl.HealthCheckMetricsSource)
 }
 
 // ── 工作负载：Pod / Deployment / StatefulSet / DaemonSet / ReplicaSet / Manifest ──
@@ -578,22 +596,28 @@ func registerWorkloadRoutes(a k8sRouteArgs) {
 	k8s.GET("/clusters/:id/pods/:ns/:pod/yaml", p.read, ctl.GetPodYAML)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/logs", p.read, ctl.GetPodLogs)
 	k8s.POST("/clusters/:id/pods/:ns/:pod/logs/session", p.read, ctl.CreatePodLogSession)
+	k8s.POST("/clusters/:id/pods/:ns/:pod/log-sessions", p.read, ctl.CreatePodLogSession)
 	k8s.DELETE("/clusters/:id/pods/:ns/:pod", p.write, ctl.DeletePod)
 	k8s.POST("/clusters/:id/pods/:ns/:pod/exec", p.exec, ctl.CreatePodExecSession)
+	k8s.POST("/clusters/:id/pods/:ns/:pod/exec-sessions", p.exec, ctl.CreatePodExecSession)
 
 	// Manifest
 	k8s.GET("/clusters/:id/manifests/records", p.write, ctl.ListManifestRecords)
 	k8s.GET("/clusters/:id/manifests/records/:recordId", p.write, ctl.GetManifestRecord)
 	k8s.POST("/clusters/:id/manifests/apply", p.write, ctl.ApplyManifest)
+	k8s.POST("/clusters/:id/manifest-applications", p.write, ctl.ApplyManifest)
 
 	// Workload (Deployment/StatefulSet/DaemonSet)
 	k8s.GET("/clusters/:id/workloads", p.read, ctl.ListWorkloads)
 	k8s.GET("/clusters/:id/workloads/deployments/:ns/:name/rollout-history", p.read, ctl.GetRolloutHistory)
 	k8s.POST("/clusters/:id/workloads/deployments/:ns/:name/rollout-undo", p.write, ctl.RolloutUndo)
+	k8s.POST("/clusters/:id/workloads/deployments/:ns/:name/rollback-attempts", p.write, ctl.RolloutUndo)
 	k8s.PATCH("/clusters/:id/workloads/scale", p.write, ctl.ScaleWorkload)
 	k8s.PATCH("/clusters/:id/workloads/restart", p.write, ctl.RestartWorkload)
 	k8s.PATCH("/clusters/:id/workloads/image", p.write, ctl.UpdateImage)
 	k8s.PATCH("/clusters/:id/workloads/rollout-pause", p.write, ctl.UpdateWorkloadPaused)
+	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/image-updates", p.write, ctl.UpdateImage)
+	k8s.PATCH("/clusters/:id/workloads/:kind/:ns/:name/pause-state", p.write, ctl.UpdateWorkloadPaused)
 	k8s.POST("/clusters/:id/workloads/deployments", p.write, ctl.CreateDeployment)
 	k8s.POST("/clusters/:id/workloads/statefulsets", p.write, ctl.CreateStatefulSet)
 	k8s.POST("/clusters/:id/workloads/daemonsets", p.write, ctl.CreateDaemonSet)
@@ -672,6 +696,7 @@ func registerConfigStorageRoutes(a k8sRouteArgs) {
 	k8s.PATCH("/clusters/:id/secrets/edit", p.write, ctl.EditSecret)
 	k8s.DELETE("/clusters/:id/secrets/:ns/:name", p.write, ctl.DeleteSecret)
 	k8s.GET("/clusters/:id/secrets/:ns/:name/reveal", p.secretReveal, ctl.GetSecretReveal)
+	k8s.GET("/clusters/:id/secrets/:ns/:name/decoded-data", p.secretReveal, ctl.GetSecretReveal)
 	k8s.GET("/clusters/:id/secrets/:ns/:name/yaml", p.read, ctl.GetSecretYAML)
 	k8s.GET("/clusters/:id/secrets/:ns/:name/related", p.read, ctl.GetSecretRelated)
 
@@ -788,6 +813,8 @@ func registerBatchRoutes(a k8sRouteArgs) {
 	k8s.PATCH("/clusters/:id/cronjobs/edit", p.write, ctl.EditCronJob)
 	k8s.POST("/clusters/:id/cronjobs/:ns/:name/trigger", p.write, ctl.TriggerCronJob)
 	k8s.PATCH("/clusters/:id/cronjobs/:ns/:name/suspend", p.write, ctl.SuspendCronJob)
+	k8s.POST("/clusters/:id/cronjobs/:ns/:name/execution-requests", p.write, ctl.TriggerCronJob)
+	k8s.PATCH("/clusters/:id/cronjobs/:ns/:name/suspension-state", p.write, ctl.SuspendCronJob)
 	k8s.DELETE("/clusters/:id/cronjobs/:ns/:name", p.write, ctl.DeleteCronJob)
 	k8s.GET("/clusters/:id/cronjobs/:ns/:name/yaml", p.read, ctl.GetCronJobYAML)
 }
@@ -798,10 +825,15 @@ func registerHelmRoutes(a k8sRouteArgs) {
 	k8s, ctl, p := a.k8s, a.ctl, a.perm
 	k8s.GET("/clusters/:id/helm/releases", p.read, ctl.ListHelmReleases)
 	k8s.GET("/clusters/:id/helm/releases/detail", p.read, ctl.GetHelmReleaseDetail)
+	k8s.GET("/clusters/:id/helm/releases/:ns/:name", p.read, ctl.GetHelmReleaseDetail)
 	k8s.POST("/clusters/:id/helm/preflight", p.write, ctl.HelmPreflight)
 	k8s.POST("/clusters/:id/helm/install", p.write, ctl.HelmInstall)
 	k8s.POST("/clusters/:id/helm/releases/:ns/:name/upgrade", p.write, ctl.HelmUpgrade)
 	k8s.POST("/clusters/:id/helm/releases/:ns/:name/rollback", p.write, ctl.HelmRollback)
+	k8s.POST("/clusters/:id/helm/preflight-checks", p.write, ctl.HelmPreflight)
+	k8s.POST("/clusters/:id/helm/releases", p.write, ctl.HelmInstall)
+	k8s.POST("/clusters/:id/helm/releases/:ns/:name/upgrade-attempts", p.write, ctl.HelmUpgrade)
+	k8s.POST("/clusters/:id/helm/releases/:ns/:name/rollback-attempts", p.write, ctl.HelmRollback)
 	k8s.DELETE("/clusters/:id/helm/releases/:ns/:name", p.write, ctl.HelmUninstall)
 	k8s.GET("/clusters/:id/helm/repos", p.read, ctl.HelmRepoList)
 	k8s.POST("/clusters/:id/helm/repos", p.write, ctl.HelmRepoAdd)
@@ -839,6 +871,7 @@ func registerUserRoutes(authed *gin.RouterGroup, ctl *controller.UserController)
 	authed.PUT("/users/:id", write, ctl.UpdateUser)
 	authed.DELETE("/users/:id", write, ctl.DeleteUser)
 	authed.POST("/users/:id/reset-password", write, ctl.ResetPassword)
+	authed.POST("/users/:id/password-reset-requests", write, ctl.ResetPassword)
 
 	// 角色管理
 	authed.GET("/roles", read, ctl.ListRoles)

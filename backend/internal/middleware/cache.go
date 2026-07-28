@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"k8s-platform-backend/internal/service"
+	"k8s-platform-backend/internal/legacy/service"
 )
 
 type cacheBodyWriter struct {

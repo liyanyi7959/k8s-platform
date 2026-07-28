@@ -46,11 +46,11 @@ import {
   WarningOutlined,
 } from '@ant-design/icons'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
-import { getCurrentUser, logout as requestLogout } from '@/services/auth'
-import { listClusters } from '@/services/clusters'
-import { listIncidents } from '@/services/monitor'
+import { getCurrentUser, logout as requestLogout } from '@/features/iam/api'
+import { listClusters } from '@/features/fleet/api/clusters'
+import { listIncidents } from '@/features/incident/api'
 import { ChangePasswordModal } from '@/components'
-import type { User } from '@/types'
+import type { User } from '@/shared/types'
 import type { Cluster as ModelCluster } from '@/models/cluster'
 import {
   enterClusterWorkspace,
@@ -1228,6 +1228,11 @@ export const request: RequestConfig = {
         }
         message.error('登录已过期，请重新登录')
         throw createRequestError('登录已过期，请重新登录', 401)
+      }
+
+      const isProblemDetails = payload && typeof payload === 'object' && typeof payload.status === 'number' && typeof payload.title === 'string' && typeof payload.type === 'string'
+      if (isProblemDetails) {
+        throw createRequestError(payload.detail || payload.title, payload.status, payload)
       }
 
       const isApiEnvelope = payload && typeof payload === 'object' && 'code' in payload && 'message' in payload && 'data' in payload

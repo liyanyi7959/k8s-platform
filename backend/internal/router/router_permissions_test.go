@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"k8s-platform-backend/internal/auth"
-	"k8s-platform-backend/internal/controller"
+	"k8s-platform-backend/internal/legacy/controller"
 )
 
 type permissionResponse struct {
@@ -190,6 +190,128 @@ func TestRegisterWebSocketRoutes_PodExecRequiresExecPerm(t *testing.T) {
 	})
 
 	assertPermissionCode(t, resp, 1003)
+}
+
+func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	tests := []struct {
+		name     string
+		method   string
+		path     string
+		register func(*gin.RouterGroup)
+	}{
+		{
+			name:   "cluster health check",
+			method: http.MethodPost,
+			path:   "/api/v1/clusters/1/health-checks",
+			register: func(group *gin.RouterGroup) {
+				registerClusterRoutes(group, Deps{}, &controller.ClusterManageController{})
+			},
+		},
+		{
+			name:   "server connection check",
+			method: http.MethodPost,
+			path:   "/api/v1/deploy/servers/1/connection-checks",
+			register: func(group *gin.RouterGroup) {
+				registerDeployRoutes(group, &controller.DeployController{}, nil)
+			},
+		},
+		{
+			name:   "alert state patch",
+			method: http.MethodPatch,
+			path:   "/api/v1/monitor/alerts/1",
+			register: func(group *gin.RouterGroup) {
+				registerMonitorIncidentRoutes(group, &controller.MonitorIncidentController{})
+			},
+		},
+		{
+			name:   "canonical configmap update",
+			method: http.MethodPatch,
+			path:   "/api/v1/clusters/1/configmaps/default/demo",
+			register: func(group *gin.RouterGroup) {
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{})
+			},
+		},
+		{
+			name:   "canonical helm detail",
+			method: http.MethodGet,
+			path:   "/api/v1/clusters/1/helm/releases/default/demo",
+			register: func(group *gin.RouterGroup) {
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{})
+			},
+		},
+		{
+			name:   "automation cancellation request",
+			method: http.MethodPost,
+			path:   "/api/v1/automation/tasks/1/cancellation-requests",
+			register: func(group *gin.RouterGroup) {
+				registerAutomationTaskRoutes(group, &controller.AutomationTaskController{})
+			},
+		},
+		{
+			name:   "deployment preflight check",
+			method: http.MethodPost,
+			path:   "/api/v1/deploy/plans/1/preflight-checks",
+			register: func(group *gin.RouterGroup) {
+				registerDeployRoutes(group, &controller.DeployController{}, nil)
+			},
+		},
+		{
+			name:   "permission audit cancellation request",
+			method: http.MethodPost,
+			path:   "/api/v1/permission-audits/1/cancellation-requests",
+			register: func(group *gin.RouterGroup) {
+				registerPermissionAuditRoutes(group, &controller.K8sPermissionAuditController{})
+			},
+		},
+		{
+			name:   "node drain request",
+			method: http.MethodPost,
+			path:   "/api/v1/clusters/1/nodes/node-a/drain-requests",
+			register: func(group *gin.RouterGroup) {
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{})
+			},
+		},
+		{
+			name:   "manifest application",
+			method: http.MethodPost,
+			path:   "/api/v1/clusters/1/manifest-applications",
+			register: func(group *gin.RouterGroup) {
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{})
+			},
+		},
+		{
+			name:   "pod exec session",
+			method: http.MethodPost,
+			path:   "/api/v1/clusters/1/pods/default/demo/exec-sessions",
+			register: func(group *gin.RouterGroup) {
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{})
+			},
+		},
+		{
+			name:   "helm rollback attempt",
+			method: http.MethodPost,
+			path:   "/api/v1/clusters/1/helm/releases/default/demo/rollback-attempts",
+			register: func(group *gin.RouterGroup) {
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{})
+			},
+		},
+		{
+			name:   "user password reset request",
+			method: http.MethodPost,
+			path:   "/api/v1/users/1/password-reset-requests",
+			register: func(group *gin.RouterGroup) {
+				registerUserRoutes(group, &controller.UserController{})
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := performPermissionRequest(t, test.method, test.path, nil, test.register)
+			assertPermissionCode(t, response, 1003)
+		})
+	}
 }
 
 func performPermissionRequest(t *testing.T, method string, path string, perms []string, register func(group *gin.RouterGroup)) *httptest.ResponseRecorder {

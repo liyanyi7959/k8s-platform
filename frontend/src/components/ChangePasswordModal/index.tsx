@@ -5,7 +5,7 @@
 import React from 'react'
 import { Modal, Form, Input, message } from 'antd'
 import { useMutation } from '@tanstack/react-query'
-import { changePassword } from '@/services/auth'
+import { changePassword } from '@/features/iam/api'
 
 export interface ChangePasswordModalProps {
   open: boolean

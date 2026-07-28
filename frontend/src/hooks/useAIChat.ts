@@ -3,7 +3,7 @@ import {
   buildAIChatFetchRequest,
   getAIChatStreamUrl,
   sendAIChatMessage,
-} from '@/services/ai'
+} from '@/features/ai/api'
 import type {
   AIActionProposal,
   AIChatRequest,
@@ -12,7 +12,7 @@ import type {
   AIMessageAttachment,
   AIStreamDoneData,
   AIToolCall,
-} from '@/types'
+} from '@/shared/types'
 
 export interface UIChatMessage extends AIMessage {
   localId: string
