@@ -6,7 +6,7 @@ import type {
   K8sServiceList,
   IngressList,
   NetworkPolicyList,
-} from '@/shared/types'
+} from '@/features/kops/types'
 import { mapService, mapIngress, mapNetworkPolicy, extractMappedList } from './shared'
 
 /** 解析可能为 JSON 字符串的 selector */

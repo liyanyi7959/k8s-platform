@@ -7,7 +7,7 @@ import type {
   CronJobList,
   HPAList,
   PDBList,
-} from '@/shared/types'
+} from '@/features/kops/types'
 import { mapJob, mapCronJob, mapHPA, mapPDB, extractMappedList } from './shared'
 import { applyYaml } from './generic'
 

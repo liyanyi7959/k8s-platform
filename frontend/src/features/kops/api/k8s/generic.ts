@@ -4,7 +4,7 @@
  */
 import { request } from '@umijs/max'
 import { extractMappedList } from './shared'
-import type { RBACMatrixRequest } from '@/shared/types'
+import type { RBACMatrixRequest } from '@/features/kops/types'
 
 export type ManifestApplyResult = {
   record_id?: number

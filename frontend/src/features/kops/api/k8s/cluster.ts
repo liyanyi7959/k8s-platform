@@ -2,7 +2,7 @@
  * 集群级资源 API：Namespace / Node / Event / Dashboard / Topology
  */
 import { request } from '@umijs/max'
-import type { Namespace, Node, NodeDetail, K8sEvent } from '@/shared/types'
+import type { Namespace, Node, NodeDetail, K8sEvent } from '@/features/kops/types'
 import { mapNode, mapPod, mapService, mapEvent, extractMappedSimpleList } from './shared'
 
 // ==================== Namespace ====================

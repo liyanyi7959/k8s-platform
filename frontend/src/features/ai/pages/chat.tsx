@@ -40,10 +40,10 @@ import {
 import { history, useSearchParams } from '@umijs/max'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage, MarkdownContent } from '@/components'
-import { useAIChat } from '@/hooks'
+import { useAIChat } from '@/features/ai/hooks/useAIChat'
 import { confirmActionProposal, createConversation, getConversation, listAIModels, listConversations, updateConversation } from '@/features/ai/api'
-import { listClusters } from '@/features/fleet/api/clusters'
-import { listNamespaces, listGenericResources } from '@/features/kops/api/k8s'
+import { listClusters } from '@/features/fleet'
+import { listNamespaces, listGenericResources } from '@/features/kops'
 import type {
   AIActionProposal,
   AIConversationItem,
@@ -51,7 +51,7 @@ import type {
   AIMessageAttachment,
   AIAssistantMode,
   AIModel,
-} from '@/shared/types'
+} from '@/features/ai/types'
 import { formatDate } from '@/utils'
 
 const { Paragraph, Text } = Typography

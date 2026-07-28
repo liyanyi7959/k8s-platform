@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clusterImportSchema } from './cluster'
+import { clusterImportSchema } from './index'
 
 const validInput = {
   name: 'devops7.2',

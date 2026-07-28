@@ -19,7 +19,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { AppPage, ContextNotice, WorkspaceHeader } from '@/components'
-import { listClusters } from '@/features/fleet/api/clusters'
+import { listClusters } from '@/features/fleet'
 import { getPodLogs, listPods } from '@/features/kops/api/k8s'
 
 const { Text } = Typography

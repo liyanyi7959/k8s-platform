@@ -6,10 +6,10 @@ import { InboxOutlined } from '@ant-design/icons'
 import type { UploadChangeParam } from 'antd/es/upload'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClusterById, updateCluster } from '@/features/fleet/api/clusters'
-import { listProjects, type Project } from '@/features/workspace/api'
+import { listProjects, type Project } from '@/features/workspace'
 import { AppPage, StatusTag } from '@/components'
 import { enterClusterWorkspace, formatDate } from '@/utils'
-import type { Cluster } from '@/shared/types'
+import type { Cluster } from '@/features/fleet/types'
 
 const { Text } = Typography
 

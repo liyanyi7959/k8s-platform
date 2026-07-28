@@ -17,7 +17,7 @@ import type {
   EventListResponse,
   MonitorIncident,
   IncidentTimelineItem,
-} from '@/shared/types'
+} from '@/features/incident/types'
 
 const MOCK_ENABLED = false
 

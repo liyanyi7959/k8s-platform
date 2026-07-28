@@ -47,7 +47,7 @@ import {
   deleteNode,
 } from '@/features/kops/api/k8s'
 import { AppPage } from '@/components'
-import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
+import YamlDrawer, { useYamlDrawer } from '@/features/kops/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 

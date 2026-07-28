@@ -4,5 +4,4 @@
 export { useWebSocket } from './useWebSocket'
 export { useTerminal } from './useTerminal'
 export { useLogStream } from './useLogStream'
-export { useAIChat } from './useAIChat'
 export { useClusterId } from './useClusterId'

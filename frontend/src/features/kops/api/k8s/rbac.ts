@@ -7,7 +7,7 @@ import type {
   RBACRoleList,
   RBACRoleBindingList,
   ResourceQuotaList,
-} from '@/shared/types'
+} from '@/features/kops/types'
 import { mapServiceAccount, mapRBACRole, mapRBACRoleBinding, mapResourceQuota, extractMappedList } from './shared'
 
 // ==================== ServiceAccount ====================

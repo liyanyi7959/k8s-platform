@@ -17,7 +17,7 @@ import type {
   CreateAIModelRequest,
   CreateAIProviderRequest,
   UpdateAIRouteSettingsRequest,
-} from '@/shared/types'
+} from '@/features/ai/types'
 
 type AnyRecord = Record<string, unknown>
 const AI_CHAT_REQUEST_TIMEOUT = 180_000

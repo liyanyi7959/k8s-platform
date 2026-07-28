@@ -5,7 +5,7 @@
 import { useState, useCallback } from 'react'
 import { history } from '@umijs/max'
 import { getCurrentUser, logout as logoutApi } from '@/features/iam/api'
-import type { User } from '@/shared/types'
+import type { User } from '@/features/iam/types'
 
 export default function useUserModel() {
   const [user, setUser] = useState<User | null>(null)
@@ -18,7 +18,7 @@ export default function useUserModel() {
     try {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
-      setPermissions(currentUser.roles.flatMap((r) => r.permissions.map((p) => p.code)))
+      setPermissions(currentUser.roles.flatMap((role) => role.permissions))
       return currentUser
     } catch {
       setUser(null)

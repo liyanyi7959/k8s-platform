@@ -6,8 +6,8 @@ import { Badge, Button, Card, Col, Empty, Progress, Row, Spin, Tag, Typography }
 import dayjs from 'dayjs'
 
 import { AppPage, MetricGrid, StatusStrip } from '@/components'
-import { listClusters } from '@/features/fleet/api/clusters'
-import { getClusterOverview } from '@/features/kops/api/k8s'
+import { listClusters } from '@/features/fleet'
+import { getClusterOverview } from '@/features/kops'
 import { listIncidents } from '@/features/incident/api'
 import { isClusterHealthy } from '@/utils'
 import { DESIGN_COLORS } from '@/theme/designTokens'

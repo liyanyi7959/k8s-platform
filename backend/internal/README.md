@@ -15,8 +15,10 @@ one of the context directories below and uses a vertical slice:
     kubernetes/    Kubernetes integration implementations
 ```
 
-Only directories containing migrated code are created. Empty context skeletons
-are intentionally avoided because they obscure migration progress.
+Every bounded context has a catalog package so ownership is discoverable from
+the directory tree. A context containing only `doc.go` is explicitly legacy;
+only contexts with `domain`, `application`, `ports` or `adapters` contain
+migrated behavior.
 
 ## Bounded contexts
 
@@ -72,4 +74,6 @@ router/composition -> adapters -> application -> domain
 All pre-DDD horizontal packages live below `internal/legacy`; there are no
 top-level `controller`, `service`, or `model` packages. Existing behavior stays
 available while each context replaces its legacy implementation vertically.
+Architecture tests freeze the legacy file-count baseline so this area can only
+shrink during migration.
 Architecture tests prevent completed slices from importing the legacy area.

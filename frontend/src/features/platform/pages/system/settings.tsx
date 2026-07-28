@@ -10,8 +10,8 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { ReloadOutlined, RotateLeftOutlined, SaveOutlined } from '@ant-design/icons'
 import { AppPage, FormWorkspace } from '@/components'
 import { getSystemSettings, updateSystemSettings } from '@/features/platform/api'
-import { systemSettingsSchema } from '@/schemas/system'
-import type { SystemSettingsInput } from '@/schemas/system'
+import { systemSettingsSchema } from '@/features/platform/schemas'
+import type { SystemSettingsInput } from '@/features/platform/schemas'
 
 /** 系统设置页 */
 const SettingsPage: React.FC = () => {

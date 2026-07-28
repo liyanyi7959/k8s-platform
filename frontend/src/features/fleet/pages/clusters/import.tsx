@@ -7,8 +7,8 @@ import type { UploadChangeParam } from 'antd/es/upload'
 import { useMutation } from '@tanstack/react-query'
 import { AppPage } from '@/components'
 import { importCluster } from '@/features/fleet/api/clusters'
-import { clusterImportSchema } from '@/schemas/cluster'
-import type { ClusterImportInput } from '@/schemas/cluster'
+import { clusterImportSchema } from '@/features/fleet/schemas'
+import type { ClusterImportInput } from '@/features/fleet/schemas'
 import type { ProFormInstance } from '@ant-design/pro-components'
 
 const { Dragger } = Upload

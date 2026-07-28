@@ -9,7 +9,7 @@ import type {
   CreateClusterRequest,
   UpdateClusterRequest,
   ClusterHealth,
-} from '@/shared/types'
+} from '@/features/fleet/types'
 
 /** 后端 ClusterItem → 前端 Cluster 字段映射 */
 function mapCluster(raw: any): Cluster {

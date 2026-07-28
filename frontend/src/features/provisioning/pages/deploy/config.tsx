@@ -18,7 +18,7 @@ import {
   getAnsibleTree,
   type AnsibleTreeNode,
 } from '@/features/provisioning/api/deploy'
-import type { RepositoryConfig } from '@/shared/types'
+import type { RepositoryConfig } from '@/features/provisioning/types'
 import {
   PlusOutlined,
   DesktopOutlined,

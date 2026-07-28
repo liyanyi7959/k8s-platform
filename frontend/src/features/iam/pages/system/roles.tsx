@@ -17,11 +17,11 @@ import {
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage, ListWorkspace } from '@/components'
-import { createRole, deleteRole, listPermissions, listRoles, updateRole } from '@/features/platform/api'
-import { roleCreateSchema, roleEditSchema } from '@/schemas/system'
+import { createRole, deleteRole, listPermissions, listRoles, updateRole } from '@/features/iam/api'
+import { roleCreateSchema, roleEditSchema } from '@/features/iam/schemas'
 import { formatDate } from '@/utils'
-import type { Permission, Role } from '@/shared/types'
-import type { RoleCreateInput, RoleEditInput } from '@/schemas/system'
+import type { Permission, Role } from '@/features/iam/types'
+import type { RoleCreateInput, RoleEditInput } from '@/features/iam/schemas'
 
 /** 角色管理页 */
 const RolesPage: React.FC = () => {

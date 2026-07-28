@@ -14,10 +14,10 @@ import dayjs from 'dayjs'
 
 import { AppPage } from '@/components'
 import { listClusters } from '@/features/fleet/api/clusters'
-import { getClusterOverview } from '@/features/kops/api/k8s'
-import { listIncidents } from '@/features/incident/api'
+import { getClusterOverview } from '@/features/kops'
+import { listIncidents } from '@/features/incident'
 import { enterClusterWorkspace, getClusterStatusColor, getClusterStatusText, isClusterHealthy } from '@/utils'
-import type { IncidentStatus, MonitorIncident } from '@/shared/types'
+import type { IncidentStatus, MonitorIncident } from '@/features/incident'
 
 const { Text, Title } = Typography
 

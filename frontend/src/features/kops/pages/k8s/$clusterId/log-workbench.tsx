@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Badge, Button, Card, Checkbox, Col, Empty, Input, Row, Select, Space, Statistic, Switch, Tag, Tooltip, Typography, message } from 'antd'
 import { ClearOutlined, DownloadOutlined, PauseCircleOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { AppPage, NamespaceSelector } from '@/components'
+import { AppPage } from '@/components'
+import { NamespaceSelector } from '@/features/kops/components'
 import AppAlert from '@/components/AppAlert'
 import { useClusterId } from '@/hooks/useClusterId'
 import { getPodLogs, listPods } from '@/features/kops/api/k8s'
-import type { Pod } from '@/shared/types'
+import type { Pod } from '@/features/kops/types'
 
 const { Text, Title } = Typography
 const MAX_SELECTED_PODS = 10

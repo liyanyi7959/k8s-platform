@@ -40,7 +40,7 @@ import {
   needsClusterAttention as needsAttention,
   normalizeClusterStatus,
 } from '@/utils'
-import type { Cluster } from '@/shared/types'
+import type { Cluster } from '@/features/fleet/types'
 import { DESIGN_COLORS } from '@/theme/designTokens'
 
 const { Text } = Typography

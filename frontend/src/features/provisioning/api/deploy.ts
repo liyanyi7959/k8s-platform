@@ -350,7 +350,7 @@ export function installDeployPlanAddons(id: number, addons: string[]): Promise<{
 }
 
 /** 获取该集群最近一次补充组件任务，用于在部署流水线中持续展示状态。 */
-export function getDeployPlanAddonTask(id: number): Promise<import('@/shared/types').DeployTask | undefined> {
+export function getDeployPlanAddonTask(id: number): Promise<import('@/features/provisioning/types').DeployTask | undefined> {
   return request(`/api/v1/deploy/plans/${id}/addons/task`).then((res: any) => {
     const task = res?.task
     return task ? camelizeKeys(task) : undefined
@@ -362,7 +362,7 @@ export function retryDeployPlanAddons(id: number): Promise<{ taskId: number }> {
 }
 
 /** 执行部署前的控制端、拓扑和目标主机就绪检查 */
-export function preflightDeployPlan(id: number): Promise<import('@/shared/types').DeployPreflightResult> {
+export function preflightDeployPlan(id: number): Promise<import('@/features/provisioning/types').DeployPreflightResult> {
   return request(`/api/v1/deploy/plans/${id}/preflight-checks`, { method: 'POST' }).then(camelizeKeys)
 }
 

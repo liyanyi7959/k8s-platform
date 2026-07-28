@@ -35,15 +35,15 @@ import {
   listUsers,
   resetPassword,
   updateUser,
-} from '@/features/platform/api'
+} from '@/features/iam/api'
 import {
   resetPasswordSchema,
   userCreateSchema,
   userEditSchema,
-} from '@/schemas/system'
+} from '@/features/iam/schemas'
 import { formatDate } from '@/utils'
-import type { Role, User } from '@/shared/types'
-import type { UserCreateInput, UserEditInput } from '@/schemas/system'
+import type { Role, User } from '@/features/iam/types'
+import type { UserCreateInput, UserEditInput } from '@/features/iam/schemas'
 
 type StatusFilter = 'active' | 'disabled' | undefined
 

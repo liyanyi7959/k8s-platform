@@ -60,11 +60,12 @@ import {
   listPodMetrics,
   applyYaml,
 } from '@/features/kops/api/k8s'
-import { AppPage, PodStatusTag, NamespaceSelector, YamlEditor } from '@/components'
+import { AppPage, PodStatusTag, YamlEditor } from '@/components'
+import { NamespaceSelector } from '@/features/kops/components'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 import { withCenterStyleBatch } from '@/utils/fieldStyle'
-import type { Pod, PodContainer, PodVolume } from '@/shared/types'
+import type { Pod, PodContainer, PodVolume } from '@/features/kops/types'
 
 const { Text } = Typography
 

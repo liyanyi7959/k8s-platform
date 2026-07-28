@@ -14,13 +14,13 @@ const legacyPatterns = [
 const standardListPages = [
   'provisioning/pages/deploy/index.tsx',
   'workspace/pages/projects/index.tsx',
-  'platform/pages/system/users.tsx',
-  'platform/pages/system/roles.tsx',
+  'iam/pages/system/users.tsx',
+  'iam/pages/system/roles.tsx',
   'platform/pages/system/audit-logs.tsx',
 ]
 
 const standardListComponents = [
-  path.resolve(__dirname, '../src/components/GenericResourceList/index.tsx'),
+  path.resolve(__dirname, '../src/features/kops/components/GenericResourceList/index.tsx'),
 ]
 const listWorkspacePath = path.resolve(__dirname, '../src/components/ListWorkspace/index.tsx')
 const formWorkspacePath = path.resolve(__dirname, '../src/components/FormWorkspace/index.tsx')

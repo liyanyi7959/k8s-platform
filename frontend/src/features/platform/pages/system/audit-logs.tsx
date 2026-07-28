@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import { AppPage, ListWorkspace } from '@/components'
 import { listAuditLogs } from '@/features/platform/api'
 import { formatDate } from '@/utils'
-import type { AuditLog, AuditLogListParams } from '@/shared/types'
+import type { AuditLog, AuditLogListParams } from '@/features/platform/types'
 
 const { RangePicker } = DatePicker
 

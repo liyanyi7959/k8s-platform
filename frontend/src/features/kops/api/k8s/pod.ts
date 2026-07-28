@@ -2,7 +2,7 @@
  * Pod 资源 API
  */
 import { request } from '@umijs/max'
-import type { Pod, PodList, PodListParams } from '@/shared/types'
+import type { Pod, PodList, PodListParams } from '@/features/kops/types'
 import { mapPod, extractMappedList } from './shared'
 
 /** 获取 Pod 列表 */

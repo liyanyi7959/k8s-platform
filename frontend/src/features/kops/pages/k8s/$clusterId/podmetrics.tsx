@@ -1,4 +1,4 @@
-import GenericResourceList, { rawField } from '@/components/GenericResourceList'
+import GenericResourceList, { rawField } from '@/features/kops/components/GenericResourceList'
 import { Tag, Table, Descriptions, Button, Space } from 'antd'
 import { LinkOutlined } from '@ant-design/icons'
 import { history } from '@umijs/max'

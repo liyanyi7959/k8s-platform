@@ -4,11 +4,12 @@ import { Badge, Space, Tooltip, Popconfirm, message, Button, Typography, Input, 
 import { ProfileOutlined, DeleteOutlined, ReloadOutlined, SearchOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listNamespaces, deleteNamespace, listResourceQuotas, listPods, listGenericResources, getPodEvents } from '@/features/kops/api/k8s'
-import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
-import { AppPage, ManifestApplyDrawer } from '@/components'
+import YamlDrawer, { useYamlDrawer } from '@/features/kops/components/YamlDrawer'
+import { AppPage } from '@/components'
+import { ManifestApplyDrawer } from '@/features/kops/components'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
-import type { Namespace } from '@/shared/types'
+import type { Namespace } from '@/features/kops/types'
 
 const { Text } = Typography
 

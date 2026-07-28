@@ -20,7 +20,7 @@ import { AppPage, YamlEditor } from '@/components'
 import AppAlert from '@/components/AppAlert'
 import { listNamespaces, defaultRBACMatrix, buildRBACFromMatrix } from '@/features/kops/api/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
-import type { RBACMatrixRequest, RBACMatrixRow, Namespace } from '@/shared/types'
+import type { RBACMatrixRequest, RBACMatrixRow, Namespace } from '@/features/kops/types'
 
 const { Text } = Typography
 

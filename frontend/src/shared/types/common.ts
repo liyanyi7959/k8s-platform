@@ -5,12 +5,3 @@ export interface PageResult<T> {
   page: number
   pageSize: number
 }
-
-/** AI 对话会话 */
-export interface Conversation {
-  id: string
-  title: string
-  messageCount: number
-  createdAt: string
-  updatedAt: string
-}

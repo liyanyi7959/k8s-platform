@@ -4,11 +4,12 @@ import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button,
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listPDBs, deletePDB, listPods } from '@/features/kops/api/k8s'
-import { AppPage, NamespaceSelector, EllipsisText, ManifestApplyDrawer } from '@/components'
-import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
+import { AppPage, EllipsisText } from '@/components'
+import { NamespaceSelector, ManifestApplyDrawer } from '@/features/kops/components'
+import YamlDrawer, { useYamlDrawer } from '@/features/kops/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
-import type { PDB } from '@/shared/types'
+import type { PDB } from '@/features/kops/types'
 
 const { Text } = Typography
 

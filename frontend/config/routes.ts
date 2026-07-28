@@ -116,8 +116,8 @@ const routes: any[] = [
     path: '/config',
     routes: [
       { path: '/config', redirect: '/config/settings' },
-      { name: '用户管理', path: '/config/users', component: '@/features/platform/pages/system/users' },
-      { name: '角色管理', path: '/config/roles', component: '@/features/platform/pages/system/roles' },
+      { name: '用户管理', path: '/config/users', component: '@/features/iam/pages/system/users' },
+      { name: '角色管理', path: '/config/roles', component: '@/features/iam/pages/system/roles' },
       { name: '审计日志', path: '/config/audit-logs', component: '@/features/platform/pages/system/audit-logs' },
       { name: '凭据库', path: '/config/credentials', component: '@/features/provisioning/pages/deploy/credentials' },
       { name: '部署手册', path: '/config/deploy-assets', component: '@/features/provisioning/pages/deploy/config' },

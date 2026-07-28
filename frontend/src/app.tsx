@@ -49,8 +49,8 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import { getCurrentUser, logout as requestLogout } from '@/features/iam/api'
 import { listClusters } from '@/features/fleet/api/clusters'
 import { listIncidents } from '@/features/incident/api'
-import { ChangePasswordModal } from '@/components'
-import type { User } from '@/shared/types'
+import ChangePasswordModal from '@/features/iam/components/ChangePasswordModal'
+import type { User } from '@/features/iam/types'
 import type { Cluster as ModelCluster } from '@/models/cluster'
 import {
   enterClusterWorkspace,

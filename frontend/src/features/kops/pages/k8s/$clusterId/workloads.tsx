@@ -66,7 +66,8 @@ import {
   getPodEvents,
 } from '@/features/kops/api/k8s'
 import { useClusterId } from '@/hooks/useClusterId'
-import { AppPage, NamespaceSelector, EllipsisText, YamlEditor } from '@/components'
+import { AppPage, EllipsisText, YamlEditor } from '@/components'
+import { NamespaceSelector } from '@/features/kops/components'
 import { formatDate } from '@/utils'
 import { history } from '@umijs/max'
 

@@ -4,11 +4,11 @@ import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Typogra
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listStorageClasses, deleteStorageClass } from '@/features/kops/api/k8s'
-import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
+import YamlDrawer, { useYamlDrawer } from '@/features/kops/components/YamlDrawer'
 import { AppPage } from '@/components'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
-import type { StorageClass } from '@/shared/types'
+import type { StorageClass } from '@/features/kops/types'
 
 const { Text } = Typography
 

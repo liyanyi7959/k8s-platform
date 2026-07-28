@@ -116,6 +116,73 @@ func TestCompositionRootCatalogsEveryCurrentModule(t *testing.T) {
 	}
 }
 
+func TestRouterCompositionRootOnlyComposesRoutes(t *testing.T) {
+	path := filepath.Join(backendRoot(t), "internal", "router", "router.go")
+	parsed, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
+	if err != nil {
+		t.Fatalf("parse %s: %v", path, err)
+	}
+	var functions []string
+	for _, declaration := range parsed.Decls {
+		if function, ok := declaration.(*ast.FuncDecl); ok {
+			functions = append(functions, function.Name.Name)
+		}
+	}
+	sort.Strings(functions)
+	want := []string{"New", "registerRoutes"}
+	if strings.Join(functions, ",") != strings.Join(want, ",") {
+		t.Fatalf("router.go functions = %v, want composition functions %v", functions, want)
+	}
+}
+
+func TestLegacyBusinessLayerDoesNotGrow(t *testing.T) {
+	legacyRoot := filepath.Join(backendRoot(t), "internal", "legacy")
+	count := 0
+	err := filepath.WalkDir(legacyRoot, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
+			count++
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk legacy business layer: %v", err)
+	}
+	const migrationBaseline = 168
+	if count > migrationBaseline {
+		t.Fatalf("legacy Go files = %d, baseline = %d; new behavior must live in a bounded context", count, migrationBaseline)
+	}
+}
+
+func TestMigrationNumbersDoNotIntroduceNewDuplicates(t *testing.T) {
+	migrationRoot := filepath.Join(backendRoot(t), "internal", "db", "migrations")
+	entries, err := os.ReadDir(migrationRoot)
+	if err != nil {
+		t.Fatalf("read migrations: %v", err)
+	}
+	knownLegacyDuplicates := map[string]bool{"006": true, "016": true, "026": true}
+	counts := map[string]int{}
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".sql") {
+			continue
+		}
+		prefix, _, found := strings.Cut(name, "_")
+		if !found {
+			t.Errorf("migration has no numeric prefix: %s", name)
+			continue
+		}
+		counts[prefix]++
+	}
+	for prefix, count := range counts {
+		if count > 1 && !knownLegacyDuplicates[prefix] {
+			t.Errorf("migration number %s is used by %d files", prefix, count)
+		}
+	}
+}
+
 func applicationModuleFields(t *testing.T, path string) []string {
 	t.Helper()
 	parsed, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)

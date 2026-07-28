@@ -2,7 +2,7 @@
  * 配置资源 API：ConfigMap / Secret
  */
 import { request } from '@umijs/max'
-import type { ConfigMapList, SecretList } from '@/shared/types'
+import type { ConfigMapList, SecretList } from '@/features/kops/types'
 import { mapConfigMap, mapSecret, extractMappedList } from './shared'
 import { applyYaml } from './generic'
 

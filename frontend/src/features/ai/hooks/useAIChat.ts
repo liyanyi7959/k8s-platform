@@ -12,7 +12,7 @@ import type {
   AIMessageAttachment,
   AIStreamDoneData,
   AIToolCall,
-} from '@/shared/types'
+} from '@/features/ai/types'
 
 export interface UIChatMessage extends AIMessage {
   localId: string

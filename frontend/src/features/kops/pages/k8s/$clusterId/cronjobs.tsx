@@ -4,11 +4,12 @@ import { Tag, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, Button,
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, ThunderboltOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listCronJobs, deleteCronJob, triggerCronJob, suspendCronJob, listJobs, getPodEvents } from '@/features/kops/api/k8s'
-import { AppPage, NamespaceSelector, EllipsisText, ManifestApplyDrawer } from '@/components'
-import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
+import { AppPage, EllipsisText } from '@/components'
+import { NamespaceSelector, ManifestApplyDrawer } from '@/features/kops/components'
+import YamlDrawer, { useYamlDrawer } from '@/features/kops/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
-import type { CronJob } from '@/shared/types'
+import type { CronJob } from '@/features/kops/types'
 
 const { Text } = Typography
 

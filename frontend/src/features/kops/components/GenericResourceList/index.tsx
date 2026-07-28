@@ -10,10 +10,11 @@ import { Popconfirm, message, Drawer, Descriptions, Space, Tooltip, Typography, 
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listGenericResources, deleteGenericResource, type GenericResourceItem } from '@/features/kops/api/k8s'
-import { AppPage, ListWorkspace, NamespaceSelector, ManifestApplyDrawer } from '@/components'
+import { AppPage, ListWorkspace } from '@/components'
+import { NamespaceSelector, ManifestApplyDrawer } from '@/features/kops/components'
 import AppAlert from '@/components/AppAlert'
 import EllipsisText from '@/components/EllipsisText'
-import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
+import YamlDrawer, { useYamlDrawer } from '@/features/kops/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 

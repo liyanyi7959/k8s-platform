@@ -15,10 +15,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { AppPage, StatusStrip } from '@/components'
 import AppAlert from '@/components/AppAlert'
-import { listClusters } from '@/features/fleet/api/clusters'
+import { listClusters } from '@/features/fleet'
 import { createAlertRule, deleteAlertRule, listAlertRules, toggleAlertRule, updateAlertRule } from '@/features/incident/api'
 import { formatDate } from '@/utils'
-import type { AlertRule, CreateAlertRuleRequest } from '@/shared/types'
+import type { AlertRule, CreateAlertRuleRequest } from '@/features/incident/types'
 
 const { Text } = Typography
 

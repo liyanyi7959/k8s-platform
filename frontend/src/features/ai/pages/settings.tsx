@@ -38,7 +38,7 @@ import {
   updateAIModel,
   updateAIProvider,
 } from '@/features/ai/api'
-import type { AIModel, AIProvider } from '@/shared/types'
+import type { AIModel, AIProvider } from '@/features/ai/types'
 
 const { Text } = Typography
 

@@ -31,8 +31,8 @@ import {
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage, ListWorkspace } from '@/components'
-import { listClusters } from '@/features/fleet/api/clusters'
-import { listHelmReleases } from '@/features/kops/api/k8s'
+import { listClusters } from '@/features/fleet'
+import { listHelmReleases } from '@/features/kops'
 import {
   assignNamespaces,
   createProject,
@@ -44,7 +44,7 @@ import {
   type Project,
 } from '@/features/workspace/api'
 import { enterClusterWorkspace, formatDate } from '@/utils'
-import type { Cluster as ManagedCluster } from '@/shared/types'
+import type { Cluster as ManagedCluster } from '@/features/fleet'
 
 const { Text } = Typography
 

@@ -25,7 +25,7 @@ import type {
   RBACRoleBinding,
   NetworkPolicy,
   ResourceQuota,
-} from '@/shared/types'
+} from '@/features/kops/types'
 
 /** 从后端响应中提取列表数据（后端返回 { list: [...] } 格式） */
 export function extractList<T>(res: { list?: T[] } | T[] | undefined | null): T[] {

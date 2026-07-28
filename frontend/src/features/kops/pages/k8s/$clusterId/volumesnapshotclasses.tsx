@@ -1,5 +1,5 @@
 import React from 'react'
-import GenericResourceList, { rawColumn, rawField } from '@/components/GenericResourceList'
+import GenericResourceList, { rawColumn, rawField } from '@/features/kops/components/GenericResourceList'
 import type { GenericResourceItem } from '@/features/kops/api/k8s'
 import { Descriptions, Table, Tag, Space } from 'antd'
 

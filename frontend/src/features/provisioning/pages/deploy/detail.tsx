@@ -25,7 +25,7 @@ import {
   preflightDeployPlan,
   setDeployPreflightIgnore,
 } from '@/features/provisioning/api/deploy'
-import type { DeployPreflightResult, DeployTask, DeployTaskStep, DeployTaskSubStep } from '@/shared/types'
+import type { DeployPreflightResult, DeployTask, DeployTaskStep, DeployTaskSubStep } from '@/features/provisioning/types'
 
 const { Text, Title } = Typography
 

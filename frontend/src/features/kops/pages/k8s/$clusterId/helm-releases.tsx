@@ -30,7 +30,8 @@ import {
 } from '@ant-design/icons'
 import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AppPage, NamespaceSelector, YamlEditor } from '@/components'
+import { AppPage, YamlEditor } from '@/components'
+import { NamespaceSelector } from '@/features/kops/components'
 import AppAlert from '@/components/AppAlert'
 import {
   getHelmReleaseDetail,
@@ -42,8 +43,8 @@ import {
   listHelmRepos,
   listNamespaces,
 } from '@/features/kops/api/k8s'
-import { getClusterById } from '@/features/fleet/api/clusters'
-import { listAppTemplates, type AppTemplate } from '@/features/provisioning/api/app-template'
+import { getClusterById } from '@/features/fleet'
+import { listAppTemplates, type AppTemplate } from '@/features/provisioning'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
 

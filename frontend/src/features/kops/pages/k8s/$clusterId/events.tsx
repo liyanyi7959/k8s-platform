@@ -3,12 +3,13 @@ import { ProTable, type ProColumns } from '@ant-design/pro-components'
 import { Button, Select, Space, Tag, Typography, Input } from 'antd'
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
+import { AppPage, EllipsisText } from '@/components'
+import { NamespaceSelector } from '@/features/kops/components'
 import AppAlert from '@/components/AppAlert'
 import { useClusterId } from '@/hooks/useClusterId'
 import { listEvents } from '@/features/kops/api/k8s'
 import { formatDate } from '@/utils'
-import type { K8sEvent } from '@/shared/types'
+import type { K8sEvent } from '@/features/kops/types'
 
 const { Text } = Typography
 

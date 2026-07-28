@@ -25,11 +25,12 @@ import {
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listServices, deleteService, createService, updateService, listPods, getPodEvents, listGenericResources } from '@/features/kops/api/k8s'
-import { AppPage, NamespaceSelector, EllipsisText } from '@/components'
-import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
+import { AppPage, EllipsisText } from '@/components'
+import { NamespaceSelector } from '@/features/kops/components'
+import YamlDrawer, { useYamlDrawer } from '@/features/kops/components/YamlDrawer'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
-import type { Service } from '@/shared/types'
+import type { Service } from '@/features/kops/types'
 
 const { Text } = Typography
 

@@ -6,7 +6,7 @@ import type {
   PersistentVolumeList,
   PersistentVolumeClaimList,
   StorageClassList,
-} from '@/shared/types'
+} from '@/features/kops/types'
 import { mapPV, mapPVC, mapStorageClass, extractMappedList } from './shared'
 
 // ==================== PersistentVolume ====================

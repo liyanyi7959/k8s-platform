@@ -1,5 +1,19 @@
 import { request } from '@umijs/max'
-import type { User, LoginResponse } from '@/shared/types'
+import type {
+  CreateRoleRequest,
+  CreateUserRequest,
+  LoginResponse,
+  Permission,
+  ResetPasswordRequest,
+  Role,
+  RoleListParams,
+  RoleListResponse,
+  UpdateRoleRequest,
+  UpdateUserRequest,
+  User,
+  UserListParams,
+  UserListResponse,
+} from '@/features/iam/types'
 
 const MOCK_ENABLED = false
 const TOKEN_KEY = 'token'
@@ -144,4 +158,62 @@ export async function confirmPasswordReset(
     method: 'POST',
     data: { token, new_password: newPassword },
   })
+}
+
+export function listUsers(params?: UserListParams): Promise<UserListResponse> {
+  const payload: Record<string, unknown> = {}
+  if (params?.page) payload.page = params.page
+  if (params?.pageSize) payload.page_size = params.pageSize
+  if (params?.keyword) payload.keyword = params.keyword
+  if (params?.status) payload.status = params.status
+  if (params?.roleId) payload.role_id = params.roleId
+  return request('/api/v1/users', { params: payload })
+}
+
+export function getUserById(id: number): Promise<User> {
+  return request(`/api/v1/users/${id}`)
+}
+
+export function createUser(data: CreateUserRequest): Promise<User> {
+  return request('/api/v1/users', { method: 'POST', data })
+}
+
+export function updateUser(id: number, data: UpdateUserRequest): Promise<User> {
+  return request(`/api/v1/users/${id}`, { method: 'PUT', data })
+}
+
+export function deleteUser(id: number): Promise<void> {
+  return request(`/api/v1/users/${id}`, { method: 'DELETE' })
+}
+
+export function resetPassword(id: number, data: ResetPasswordRequest): Promise<void> {
+  return request(`/api/v1/users/${id}/password-reset-requests`, { method: 'POST', data })
+}
+
+export function listRoles(params?: RoleListParams): Promise<RoleListResponse> {
+  const payload: Record<string, unknown> = {}
+  if (params?.page) payload.page = params.page
+  if (params?.pageSize) payload.page_size = params.pageSize
+  return request('/api/v1/roles', { params: payload })
+}
+
+export async function listAllRoles(): Promise<Role[]> {
+  const response = await request<RoleListResponse>('/api/v1/roles')
+  return response?.items || []
+}
+
+export function listPermissions(): Promise<Permission[]> {
+  return request('/api/v1/permissions')
+}
+
+export function createRole(data: CreateRoleRequest): Promise<Role> {
+  return request('/api/v1/roles', { method: 'POST', data })
+}
+
+export function updateRole(id: number, data: UpdateRoleRequest): Promise<Role> {
+  return request(`/api/v1/roles/${id}`, { method: 'PUT', data })
+}
+
+export function deleteRole(id: number): Promise<void> {
+  return request(`/api/v1/roles/${id}`, { method: 'DELETE' })
 }

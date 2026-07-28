@@ -7,7 +7,7 @@ import type {
   DeploymentList,
   DeploymentListParams,
   ReplicaSetList,
-} from '@/shared/types'
+} from '@/features/kops/types'
 import { mapDeployment, mapReplicaSet, extractMappedList } from './shared'
 
 type WorkloadKind = 'Deployment' | 'StatefulSet' | 'DaemonSet'

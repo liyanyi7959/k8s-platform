@@ -4,11 +4,11 @@ import { Tag, Badge, Popconfirm, message, Space, Tooltip, Drawer, Descriptions, 
 import { DeleteOutlined, ProfileOutlined, EyeOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listPersistentVolumes, deletePersistentVolume, getPodEvents } from '@/features/kops/api/k8s'
-import YamlDrawer, { useYamlDrawer } from '@/components/YamlDrawer'
+import YamlDrawer, { useYamlDrawer } from '@/features/kops/components/YamlDrawer'
 import { AppPage } from '@/components'
 import { useClusterId } from '@/hooks/useClusterId'
 import { formatDate } from '@/utils'
-import type { PersistentVolume } from '@/shared/types'
+import type { PersistentVolume } from '@/features/kops/types'
 
 const { Text } = Typography
 

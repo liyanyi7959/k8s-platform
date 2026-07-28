@@ -23,7 +23,8 @@ import {
 } from 'antd'
 import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, ReloadOutlined, RocketOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AppPage, ManifestApplyDrawer, YamlEditor } from '@/components'
+import { AppPage, YamlEditor } from '@/components'
+import { ManifestApplyDrawer } from '@/features/kops'
 import {
   createAppTemplate,
   deleteAppTemplate,
@@ -31,8 +32,8 @@ import {
   updateAppTemplate,
   type AppTemplate,
 } from '@/features/provisioning/api/app-template'
-import { listClusters } from '@/features/fleet/api/clusters'
-import { listProjects } from '@/features/workspace/api'
+import { listClusters } from '@/features/fleet'
+import { listProjects } from '@/features/workspace'
 import { formatDate } from '@/utils'
 
 const { Text, Paragraph } = Typography

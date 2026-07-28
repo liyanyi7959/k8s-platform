@@ -19,7 +19,7 @@ import {
   type IncidentAction,
 } from '@/features/incident/api'
 import { formatDate, formatRelativeTime } from '@/utils'
-import type { IncidentStatus, MonitorIncident } from '@/shared/types'
+import type { IncidentStatus, MonitorIncident } from '@/features/incident/types'
 
 const { Text, Paragraph, Title } = Typography
 const { RangePicker } = DatePicker
