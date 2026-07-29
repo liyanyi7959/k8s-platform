@@ -154,11 +154,12 @@ func workloadGVR(kind kopsapp.WorkloadKind) (schema.GroupVersionResource, error)
 // API translation; risk policy and operation orchestration live in Kops.
 type ActionProposalRuntime struct {
 	k8s       *service.K8sService
+	batch     *BatchRuntime
 	manifests kopsapp.ManifestRuntime
 }
 
 func NewActionProposalRuntime(k8s *service.K8sService, manifests kopsapp.ManifestRuntime) *ActionProposalRuntime {
-	return &ActionProposalRuntime{k8s: k8s, manifests: manifests}
+	return &ActionProposalRuntime{k8s: k8s, batch: NewBatchRuntime(k8s), manifests: manifests}
 }
 
 func (r *ActionProposalRuntime) Inspect(ctx context.Context, clusterID uint64, actionType string, target kopsapp.ActionProposalTarget) (map[string]any, error) {
@@ -268,29 +269,28 @@ func (r *ActionProposalRuntime) DrainNode(ctx context.Context, clusterID uint64,
 }
 
 func (r *ActionProposalRuntime) TriggerCronJob(ctx context.Context, clusterID uint64, target kopsapp.ActionProposalTarget) (string, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.batch == nil {
 		return "", kopsapp.ErrConflict
 	}
-	result, err := r.k8s.TriggerCronJob(ctx, clusterID, target.Namespace, target.Name)
+	result, err := r.batch.TriggerCronJob(ctx, kopsapp.BatchReference{ClusterID: clusterID, Namespace: target.Namespace, Name: target.Name})
 	if err != nil {
-		return "", translateKopsRuntimeError(err)
+		return "", err
 	}
 	return result.JobName, nil
 }
 
 func (r *ActionProposalRuntime) SuspendCronJob(ctx context.Context, clusterID uint64, target kopsapp.ActionProposalTarget, suspend bool) error {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.batch == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.k8s.SuspendCronJob(ctx, clusterID, target.Namespace, target.Name, suspend))
+	return r.batch.SuspendCronJob(ctx, kopsapp.BatchReference{ClusterID: clusterID, Namespace: target.Namespace, Name: target.Name}, suspend)
 }
 
 func (r *ActionProposalRuntime) DeleteCompletedJobs(ctx context.Context, clusterID uint64, namespace string, olderThanHours int) (int, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.batch == nil {
 		return 0, kopsapp.ErrConflict
 	}
-	count, err := r.k8s.DeleteCompletedJobs(ctx, clusterID, namespace, olderThanHours)
-	return count, translateKopsRuntimeError(err)
+	return r.batch.DeleteCompletedJobs(ctx, clusterID, namespace, olderThanHours)
 }
 
 func (r *ActionProposalRuntime) ApplyManifest(ctx context.Context, input kopsapp.ActionProposalManifestRequest) (kopsapp.ActionProposalManifestResult, error) {

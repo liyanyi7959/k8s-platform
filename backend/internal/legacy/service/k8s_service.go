@@ -163,6 +163,13 @@ func (s *K8sService) typedClient(ctx context.Context, clusterID uint64) (*kubern
 	return s.clientFactory().TypedClient(cfg)
 }
 
+// TypedClient exposes the typed Kubernetes client to bounded-context runtime
+// adapters. Business operations must stay outside this retained transport
+// service so they can be owned by their respective application services.
+func (s *K8sService) TypedClient(ctx context.Context, clusterID uint64) (*kubernetes.Clientset, error) {
+	return s.typedClient(ctx, clusterID)
+}
+
 func (s *K8sService) typedClientForInformer(ctx context.Context, clusterID uint64) (*kubernetes.Clientset, error) {
 	cfg, err := s.restConfig(ctx, clusterID)
 	if err != nil {
@@ -245,6 +252,12 @@ func normalizeK8sErr(err error) error {
 		}
 		return ErrK8s
 	}
+}
+
+// NormalizeKubernetesError translates raw Kubernetes client errors into the
+// retained transport error vocabulary for context adapters.
+func NormalizeKubernetesError(err error) error {
+	return normalizeK8sErr(err)
 }
 
 // ---------------------------------------------------------------------------

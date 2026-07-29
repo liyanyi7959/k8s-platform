@@ -61,7 +61,7 @@ func NormalizeDeployPlan(input DeployPlanInput, createdBy uint64) (provisiondoma
 	if err != nil {
 		return provisiondomain.DeployPlan{}, nil, err
 	}
-	if cidrsOverlap(podCIDR, svcCIDR) {
+	if CIDRsOverlap(podCIDR, svcCIDR) {
 		return provisiondomain.DeployPlan{}, nil, ErrWithMessage(ErrInvalidParams, "Pod 网段与 Service 网段不能重叠")
 	}
 	cniType := strings.TrimSpace(input.CNIType)
@@ -161,11 +161,14 @@ func normalizedCIDR(value, fallback, label string) (string, error) {
 	return value, nil
 }
 
-func cidrsOverlap(left, right string) bool {
+// CIDRsOverlap treats malformed CIDRs as conflicting. Plan normalization
+// validates CIDRs before calling it, while preflight needs malformed persisted
+// values to remain a blocking readiness error.
+func CIDRsOverlap(left, right string) bool {
 	leftIP, leftNet, leftErr := net.ParseCIDR(left)
 	rightIP, rightNet, rightErr := net.ParseCIDR(right)
 	if leftErr != nil || rightErr != nil || leftNet == nil || rightNet == nil {
-		return false
+		return true
 	}
 	return leftNet.Contains(rightIP) || rightNet.Contains(leftIP)
 }
