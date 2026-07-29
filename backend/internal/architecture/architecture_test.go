@@ -135,8 +135,11 @@ func TestRouterCompositionRootOnlyComposesRoutes(t *testing.T) {
 	}
 }
 
-func TestLegacyBusinessLayerDoesNotGrow(t *testing.T) {
+func TestLegacyCompatibilityTreeIsEmpty(t *testing.T) {
 	legacyRoot := filepath.Join(backendRoot(t), "internal", "legacy")
+	if _, err := os.Stat(legacyRoot); os.IsNotExist(err) {
+		return
+	}
 	count := 0
 	err := filepath.WalkDir(legacyRoot, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
@@ -150,9 +153,8 @@ func TestLegacyBusinessLayerDoesNotGrow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("walk legacy business layer: %v", err)
 	}
-	const migrationBaseline = 76
-	if count > migrationBaseline {
-		t.Fatalf("legacy Go files = %d, baseline = %d; new behavior must live in a bounded context", count, migrationBaseline)
+	if count != 0 {
+		t.Fatalf("legacy Go files = %d; compatibility tree must remain empty", count)
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"gorm.io/gorm"
 
-	"k8s-platform-backend/internal/kops/adapters/legacycompat"
+	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 	secretcrypto "k8s-platform-backend/internal/transport/secretcrypto"

@@ -9,8 +9,8 @@ import (
 
 	aiapp "k8s-platform-backend/internal/ai/application"
 	aidomain "k8s-platform-backend/internal/ai/domain"
+	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // NodeEventReader keeps node-event selection in the Kops infrastructure

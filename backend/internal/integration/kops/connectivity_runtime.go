@@ -3,8 +3,8 @@ package kops
 import (
 	"context"
 	"fmt"
+	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 

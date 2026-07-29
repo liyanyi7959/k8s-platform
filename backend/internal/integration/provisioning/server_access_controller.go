@@ -18,8 +18,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 
+	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 	"k8s-platform-backend/internal/middleware"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	"k8s-platform-backend/pkg/resp"

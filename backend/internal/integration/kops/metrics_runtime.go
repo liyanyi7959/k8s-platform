@@ -4,8 +4,8 @@ import (
 	"context"
 
 	fleetapp "k8s-platform-backend/internal/fleet/application"
+	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // MetricsRuntime formats Kops metrics responses while provider discovery and

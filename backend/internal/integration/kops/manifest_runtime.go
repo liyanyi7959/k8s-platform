@@ -11,10 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	kopsdomain "k8s-platform-backend/internal/kops/domain"
-	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // ManifestRuntime persists manifest operation records and delegates the

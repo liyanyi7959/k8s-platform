@@ -6,9 +6,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // InspectionRuntime is the infrastructure adapter for Kops inspection reads.

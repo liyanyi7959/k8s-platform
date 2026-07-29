@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -42,7 +43,7 @@ func TestCIDRsOverlap(t *testing.T) {
 }
 
 func TestAnsibleYAMLFilesParse(t *testing.T) {
-	root := filepath.Join("..", "..", "..", "..", "ansible")
+	root := integrationAnsibleRoot(t)
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -70,6 +71,15 @@ func TestAnsibleYAMLFilesParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func integrationAnsibleRoot(t *testing.T) string {
+	t.Helper()
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve integration provisioning test directory")
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", "..", "..", "ansible"))
 }
 
 func TestMarshalInventoryMasksSecretsAndKeepsWorkerEmpty(t *testing.T) {

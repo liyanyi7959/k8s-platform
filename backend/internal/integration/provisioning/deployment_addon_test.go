@@ -67,7 +67,7 @@ func TestNewAddonInstallTaskStepUsesHelmStepForHelmOnlySelection(t *testing.T) {
 }
 
 func TestInstallHelmPlaybookEscapesHelmGoTemplate(t *testing.T) {
-	playbookPath := filepath.Join("..", "..", "..", "..", "ansible", "roles", "install_helm", "tasks", "main.yml")
+	playbookPath := filepath.Join(integrationAnsibleRoot(t), "roles", "install_helm", "tasks", "main.yml")
 	content, err := os.ReadFile(playbookPath)
 	if err != nil {
 		t.Fatalf("read Helm playbook: %v", err)
