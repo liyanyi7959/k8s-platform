@@ -18,7 +18,7 @@ func truncateForModel(input string, limit int) string {
 	return string([]rune(raw)[:limit]) + "..."
 }
 
-func aiObjectMetaString(item any, key string) string {
+func AIObjectMetaString(item any, key string) string {
 	obj, ok := item.(map[string]any)
 	if !ok {
 		return ""

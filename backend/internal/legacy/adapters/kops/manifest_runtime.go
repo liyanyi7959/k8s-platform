@@ -25,11 +25,12 @@ type ManifestRuntime struct {
 }
 
 type NamespaceRuntime struct {
-	k8s *service.K8sService
+	k8s     *service.K8sService
+	summary kopsapp.NamespaceResourceSummaryReader
 }
 
-func NewNamespaceRuntime(k8s *service.K8sService) *NamespaceRuntime {
-	return &NamespaceRuntime{k8s: k8s}
+func NewNamespaceRuntime(k8s *service.K8sService, summary kopsapp.NamespaceResourceSummaryReader) *NamespaceRuntime {
+	return &NamespaceRuntime{k8s: k8s, summary: summary}
 }
 func (r *NamespaceRuntime) List(ctx context.Context, clusterID uint64, sortBy, order string) (any, error) {
 	if r == nil || r.k8s == nil {
@@ -64,18 +65,18 @@ func (r *NamespaceRuntime) YAML(ctx context.Context, clusterID uint64, namespace
 	return map[string]string{"text": value}, nil
 }
 func (r *NamespaceRuntime) Summary(ctx context.Context, clusterID uint64, namespace string) (any, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.summary == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	items, total, err := r.k8s.GetNamespaceResourcesSummary(ctx, clusterID, namespace)
+	summary, err := r.summary.Summary(ctx, clusterID, namespace)
 	if err != nil {
 		return nil, translateKopsRuntimeError(err)
 	}
-	out := make([]map[string]any, 0, len(items))
-	for _, item := range items {
+	out := make([]map[string]any, 0, len(summary.Items))
+	for _, item := range summary.Items {
 		out = append(out, map[string]any{"key": item.Key, "label": item.Label, "count": item.Count})
 	}
-	return map[string]any{"namespace": namespace, "total": total, "items": out}, nil
+	return map[string]any{"namespace": namespace, "total": summary.Total, "items": out}, nil
 }
 func (r *NamespaceRuntime) Events(ctx context.Context, query kopsapp.EventListQuery) (any, error) {
 	if r == nil || r.k8s == nil {

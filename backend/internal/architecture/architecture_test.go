@@ -150,7 +150,7 @@ func TestLegacyBusinessLayerDoesNotGrow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("walk legacy business layer: %v", err)
 	}
-	const migrationBaseline = 83
+	const migrationBaseline = 82
 	if count > migrationBaseline {
 		t.Fatalf("legacy Go files = %d, baseline = %d; new behavior must live in a bounded context", count, migrationBaseline)
 	}

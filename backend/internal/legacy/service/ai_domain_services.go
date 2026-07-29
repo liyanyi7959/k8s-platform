@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -11,8 +10,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	aiapp "k8s-platform-backend/internal/ai/application"
 	model "k8s-platform-backend/internal/ai/domain"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
 func aiIntValue(value any) int {
@@ -51,11 +50,16 @@ func aiIntValue(value any) int {
 }
 
 type NamespaceDiagnosisService struct {
-	k8sSvc *K8sService
+	k8sSvc  *K8sService
+	summary kopsapp.NamespaceResourceSummaryReader
 }
 
-func NewNamespaceDiagnosisService(k8sSvc *K8sService) *NamespaceDiagnosisService {
-	return &NamespaceDiagnosisService{k8sSvc: k8sSvc}
+func NewNamespaceDiagnosisService(k8sSvc *K8sService, summary ...kopsapp.NamespaceResourceSummaryReader) *NamespaceDiagnosisService {
+	service := &NamespaceDiagnosisService{k8sSvc: k8sSvc}
+	if len(summary) > 0 {
+		service.summary = summary[0]
+	}
+	return service
 }
 
 func (s *NamespaceDiagnosisService) GetNamespaceHealth(ctx context.Context, clusterID uint64, namespace string) (AIToolResult, error) {
@@ -93,20 +97,20 @@ func (s *NamespaceDiagnosisService) GetNamespaceHealth(ctx context.Context, clus
 }
 
 func (s *NamespaceDiagnosisService) GetNamespaceResourceSummary(ctx context.Context, clusterID uint64, namespace string) (AIToolResult, error) {
-	if s == nil || s.k8sSvc == nil {
+	if s == nil || s.summary == nil {
 		return AIToolResult{}, ErrK8s
 	}
 	ns := strings.TrimSpace(namespace)
 	if ns == "" {
 		return AIToolResult{}, ErrInvalidParams
 	}
-	items, total, err := s.k8sSvc.GetNamespaceResourcesSummary(ctx, clusterID, ns)
+	resourceSummary, err := s.summary.Summary(ctx, clusterID, ns)
 	if err != nil {
 		return AIToolResult{}, err
 	}
-	summary := fmt.Sprintf("Namespace %s has %d resource kinds", ns, total)
-	evidenceItems := make([]model.JSONMap, 0, len(items))
-	for _, item := range items {
+	summary := fmt.Sprintf("Namespace %s has %d resource kinds", ns, resourceSummary.Total)
+	evidenceItems := make([]model.JSONMap, 0, len(resourceSummary.Items))
+	for _, item := range resourceSummary.Items {
 		evidenceItems = append(evidenceItems, model.JSONMap{
 			"key":   item.Key,
 			"label": item.Label,
@@ -117,7 +121,7 @@ func (s *NamespaceDiagnosisService) GetNamespaceResourceSummary(ctx context.Cont
 		Summary: summary,
 		Evidence: model.JSONMap{
 			"namespace": ns,
-			"total":     total,
+			"total":     resourceSummary.Total,
 			"items":     evidenceItems,
 		},
 		RawRef: model.JSONMap{
@@ -189,356 +193,6 @@ func (s *NamespaceDiagnosisService) GetNamespaceInspection(ctx context.Context, 
 	}, nil
 }
 
-type ResourceInspectionService struct {
-	k8sSvc *K8sService
-}
-
-func NewResourceInspectionService(k8sSvc *K8sService) *ResourceInspectionService {
-	return &ResourceInspectionService{k8sSvc: k8sSvc}
-}
-
-func (s *ResourceInspectionService) InspectPod(ctx context.Context, clusterID uint64, namespace, name string) (AIToolResult, error) {
-	if s == nil || s.k8sSvc == nil {
-		return AIToolResult{}, ErrK8s
-	}
-	ns := strings.TrimSpace(namespace)
-	podName := strings.TrimSpace(name)
-	if ns == "" || podName == "" {
-		return AIToolResult{}, ErrInvalidParams
-	}
-	obj, err := s.k8sSvc.GetObject(ctx, clusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}, ns, podName)
-	if err != nil {
-		return AIToolResult{}, err
-	}
-
-	podEvidence := buildAIPodOverview(obj)
-	relationshipEvidence := s.inspectPodRelationships(ctx, clusterID, ns, obj)
-	containerEvidence, aggregateResources := buildAIPodContainerResources(obj)
-	conditionEvidence := collectAIResourceConditions(obj)
-	metricsEvidence, metricsSummary := s.inspectSinglePodMetrics(ctx, clusterID, ns, podName)
-	logsEvidence, logsSummary := s.inspectPodLogEvidence(ctx, clusterID, ns, podName)
-
-	summaryParts := []string{
-		fmt.Sprintf("Pod %s/%s", ns, podName),
-	}
-	if phase := strings.TrimSpace(fmt.Sprint(podEvidence["phase"])); phase != "" {
-		summaryParts = append(summaryParts, "phase "+phase)
-	}
-	if controller := aiRelationshipControllerSummary(relationshipEvidence); controller != "" {
-		summaryParts = append(summaryParts, "owner "+controller)
-	}
-	if ready := strings.TrimSpace(fmt.Sprint(podEvidence["ready"])); ready != "" {
-		summaryParts = append(summaryParts, "ready "+ready)
-	}
-	if strings.TrimSpace(metricsSummary) != "" {
-		summaryParts = append(summaryParts, metricsSummary)
-	}
-	if strings.TrimSpace(logsSummary) != "" {
-		summaryParts = append(summaryParts, logsSummary)
-	}
-
-	evidence := model.JSONMap{
-		"pod":           podEvidence,
-		"conditions":    conditionEvidence,
-		"containers":    containerEvidence,
-		"resources":     aggregateResources,
-		"relationships": relationshipEvidence,
-		"metrics":       metricsEvidence,
-	}
-	for key, value := range logsEvidence {
-		evidence[key] = value
-	}
-
-	return AIToolResult{
-		Summary:  strings.Join(summaryParts, ", "),
-		Evidence: evidence,
-		RawRef: model.JSONMap{
-			"cluster_id": clusterID,
-			"namespace":  ns,
-			"name":       podName,
-			"source":     "pod.inspect",
-		},
-	}, nil
-}
-
-func (s *ResourceInspectionService) InspectNode(ctx context.Context, clusterID uint64, name string) (AIToolResult, error) {
-	if s == nil || s.k8sSvc == nil {
-		return AIToolResult{}, ErrK8s
-	}
-	nodeName := strings.TrimSpace(name)
-	if nodeName == "" {
-		return AIToolResult{}, ErrInvalidParams
-	}
-	obj, err := s.k8sSvc.GetObject(ctx, clusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}, "", nodeName)
-	if err != nil {
-		return AIToolResult{}, err
-	}
-	events, evErr := s.k8sSvc.ListNodeEvents(ctx, clusterID, nodeName)
-	evidence := model.JSONMap{
-		"object": obj,
-	}
-	summary := fmt.Sprintf("Read node %s object information", nodeName)
-	if evErr == nil {
-		evidence["events"] = events
-		summary = fmt.Sprintf("Read node %s object information and related events", nodeName)
-	} else {
-		evidence["events_error"] = evErr.Error()
-	}
-	return AIToolResult{
-		Summary:  summary,
-		Evidence: evidence,
-		RawRef: model.JSONMap{
-			"cluster_id": clusterID,
-			"name":       nodeName,
-			"source":     "node.inspect",
-		},
-	}, nil
-}
-
-func (s *ResourceInspectionService) InspectDeployment(ctx context.Context, clusterID uint64, namespace, name string) (AIToolResult, error) {
-	if s == nil || s.k8sSvc == nil {
-		return AIToolResult{}, ErrK8s
-	}
-	ns := strings.TrimSpace(namespace)
-	deploymentName := strings.TrimSpace(name)
-	if ns == "" || deploymentName == "" {
-		return AIToolResult{}, ErrInvalidParams
-	}
-	obj, err := s.k8sSvc.GetObject(ctx, clusterID, schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}, ns, deploymentName)
-	if err != nil {
-		return AIToolResult{}, err
-	}
-	workloadSummary := buildAIWorkloadSummaryFromObject("Deployment", obj)
-	conditions := collectAIResourceConditions(obj)
-	history, historyErr := s.k8sSvc.RolloutHistory(ctx, clusterID, ns, deploymentName, "Deployment")
-	evidence := model.JSONMap{
-		"deployment": workloadSummary,
-		"conditions": conditions,
-		"object":     obj,
-	}
-	summary := buildAIDeploymentInspectSummary(ns, deploymentName, workloadSummary, conditions)
-	if historyErr == nil {
-		evidence["rollout_history"] = history
-		if len(history) > 0 {
-			evidence["rollout_revision_count"] = len(history)
-			summary = summary + fmt.Sprintf(", rollout revisions %d", len(history))
-		} else {
-			summary = summary + ", rollout history included"
-		}
-	} else {
-		evidence["rollout_history_error"] = historyErr.Error()
-	}
-	return AIToolResult{
-		Summary:  summary,
-		Evidence: evidence,
-		RawRef: model.JSONMap{
-			"cluster_id": clusterID,
-			"namespace":  ns,
-			"name":       deploymentName,
-			"source":     "deployment.inspect",
-		},
-	}, nil
-}
-
-func buildAIDeploymentInspectSummary(namespace, name string, workload model.JSONMap, conditions []model.JSONMap) string {
-	parts := []string{
-		fmt.Sprintf("Deployment %s/%s", strings.TrimSpace(namespace), strings.TrimSpace(name)),
-	}
-
-	desired := aiIntValue(workload["desired_replicas"])
-	ready := aiIntValue(workload["ready_replicas"])
-	available := aiIntValue(workload["available_replicas"])
-	updated := aiIntValue(workload["updated_replicas"])
-	parts = append(parts, fmt.Sprintf("replicas ready %d/%d", ready, desired))
-	parts = append(parts, fmt.Sprintf("available %d", available))
-	parts = append(parts, fmt.Sprintf("updated %d", updated))
-
-	if containers, ok := workload["containers"].([]model.JSONMap); ok && len(containers) > 0 {
-		imageParts := make([]string, 0, len(containers))
-		for _, container := range containers {
-			containerName := strings.TrimSpace(fmt.Sprint(container["name"]))
-			image := strings.TrimSpace(fmt.Sprint(container["image"]))
-			if containerName == "" && image == "" {
-				continue
-			}
-			if containerName == "" {
-				imageParts = append(imageParts, image)
-				continue
-			}
-			imageParts = append(imageParts, containerName+"="+image)
-		}
-		if len(imageParts) > 0 {
-			parts = append(parts, "images "+strings.Join(imageParts, ", "))
-		}
-	}
-
-	if len(conditions) > 0 {
-		condition := conditions[0]
-		condType := strings.TrimSpace(fmt.Sprint(condition["type"]))
-		condStatus := strings.TrimSpace(fmt.Sprint(condition["status"]))
-		if condType != "" {
-			parts = append(parts, fmt.Sprintf("condition %s=%s", condType, condStatus))
-		}
-	}
-
-	return strings.Join(parts, ", ")
-}
-
-func (s *ResourceInspectionService) InspectResource(
-	ctx context.Context,
-	clusterID uint64,
-	kind,
-	namespace,
-	name string,
-	policy *aiapp.ResourceExportPolicyService,
-) (AIToolResult, error) {
-	if s == nil || s.k8sSvc == nil {
-		return AIToolResult{}, ErrK8s
-	}
-	resKind := strings.TrimSpace(kind)
-	resName := strings.TrimSpace(name)
-	ns := strings.TrimSpace(namespace)
-	if resKind == "" || resName == "" {
-		return AIToolResult{}, ErrInvalidParams
-	}
-	gvr, namespaced, ok := aiSupportedResourceGVR(resKind)
-	if !ok {
-		return AIToolResult{}, ErrWithMessage(ErrInvalidParams, "unsupported resource kind for AI inspection")
-	}
-	if namespaced && ns == "" {
-		return AIToolResult{}, ErrWithMessage(ErrInvalidParams, "namespace is required for the selected resource kind")
-	}
-	if !namespaced {
-		ns = ""
-	}
-	if policy == nil {
-		policy = aiapp.NewResourceExportPolicyService()
-	}
-
-	obj, err := s.k8sSvc.GetObject(ctx, clusterID, gvr, ns, resName)
-	if err != nil {
-		return AIToolResult{}, err
-	}
-	safeObj, maskedObject := policy.SanitizeObject(resKind, obj)
-
-	evidence := model.JSONMap{
-		"overview":   buildAIResourceOverview(resKind, ns, resName, safeObj),
-		"conditions": collectAIResourceConditions(safeObj),
-		"object":     safeObj,
-	}
-	yamlText, yamlErr := s.k8sSvc.GetYAML(ctx, clusterID, gvr, ns, resName)
-	if yamlErr == nil {
-		exportedYAML, maskedYAML := policy.MaskYAML(resKind, yamlText)
-		evidence["yaml"] = truncateForModel(exportedYAML, 6000)
-		if maskedObject || maskedYAML {
-			evidence["masked"] = true
-		}
-	} else {
-		evidence["yaml_error"] = firstUserFacingError(yamlErr)
-	}
-
-	return AIToolResult{
-		Summary:  buildAIResourceInspectSummary(resKind, ns, resName, safeObj, maskedObject),
-		Evidence: evidence,
-		RawRef: model.JSONMap{
-			"cluster_id": clusterID,
-			"namespace":  ns,
-			"name":       resName,
-			"kind":       resKind,
-			"source":     "resource.inspect",
-		},
-	}, nil
-}
-
-func (s *ResourceInspectionService) ExportResourceYAML(ctx context.Context, clusterID uint64, kind, namespace, name string, policy *aiapp.ResourceExportPolicyService) (AIToolResult, error) {
-	return s.exportResourceYAML(ctx, clusterID, kind, namespace, name, policy, false)
-}
-
-func (s *ResourceInspectionService) ExportMaskedResourceYAML(ctx context.Context, clusterID uint64, kind, namespace, name string, policy *aiapp.ResourceExportPolicyService) (AIToolResult, error) {
-	return s.exportResourceYAML(ctx, clusterID, kind, namespace, name, policy, true)
-}
-
-func (s *ResourceInspectionService) exportResourceYAML(
-	ctx context.Context,
-	clusterID uint64,
-	kind,
-	namespace,
-	name string,
-	policy *aiapp.ResourceExportPolicyService,
-	forceMasked bool,
-) (AIToolResult, error) {
-	if s == nil || s.k8sSvc == nil {
-		return AIToolResult{}, ErrK8s
-	}
-	ns := strings.TrimSpace(namespace)
-	resKind := strings.TrimSpace(kind)
-	resName := strings.TrimSpace(name)
-	if resKind == "" || resName == "" {
-		return AIToolResult{}, ErrInvalidParams
-	}
-	gvr, namespaced, ok := aiSupportedResourceGVR(resKind)
-	if !ok {
-		return AIToolResult{}, ErrWithMessage(ErrInvalidParams, "unsupported resource kind for AI export")
-	}
-	if namespaced && ns == "" {
-		return AIToolResult{}, ErrWithMessage(ErrInvalidParams, "namespace is required for the selected resource kind")
-	}
-	if !namespaced {
-		ns = ""
-	}
-	yamlText, err := s.k8sSvc.GetYAML(ctx, clusterID, gvr, ns, resName)
-	if err != nil {
-		return AIToolResult{}, err
-	}
-	if policy == nil {
-		policy = aiapp.NewResourceExportPolicyService()
-	}
-	var (
-		exportedYAML string
-		masked       bool
-	)
-	if forceMasked {
-		exportedYAML, masked, err = policy.ExportMaskedYAML(resKind, yamlText)
-	} else {
-		exportedYAML, masked, err = policy.ExportYAML(resKind, yamlText)
-	}
-	if errors.Is(err, model.ErrSensitiveResourceExport) {
-		return AIToolResult{}, ErrWithMessage(ErrK8sForbidden, err.Error())
-	}
-	if err != nil {
-		return AIToolResult{}, err
-	}
-	evidence := model.JSONMap{
-		"kind":      resKind,
-		"namespace": ns,
-		"name":      resName,
-		"yaml":      truncateForModel(exportedYAML, 6000),
-		"masked":    masked,
-	}
-	if masked {
-		evidence["redaction_policy"] = "sensitive_fields_masked"
-	}
-	summary := fmt.Sprintf("Exported %s %s/%s YAML", resKind, ns, resName)
-	if masked || forceMasked {
-		summary = fmt.Sprintf("Exported %s %s/%s YAML with masking", resKind, ns, resName)
-	}
-	source := "resource.yaml"
-	if forceMasked {
-		source = "resource.masked_yaml"
-	}
-	return AIToolResult{
-		Summary:  summary,
-		Evidence: evidence,
-		RawRef: model.JSONMap{
-			"cluster_id": clusterID,
-			"namespace":  ns,
-			"name":       resName,
-			"kind":       resKind,
-			"source":     source,
-		},
-	}, nil
-}
-
 func (s *NamespaceDiagnosisService) namespacePodMetricsEvidence(ctx context.Context, clusterID uint64, namespace string) (model.JSONMap, string, error) {
 	metricsGVR := schema.GroupVersionResource{Group: "metrics.k8s.io", Version: "v1beta1", Resource: "pods"}
 	supported, err := s.k8sSvc.SupportsCompatibleGVR(ctx, clusterID, metricsGVR)
@@ -577,8 +231,8 @@ func (s *NamespaceDiagnosisService) namespacePodMetricsEvidence(ctx context.Cont
 		}
 		cpuMilli, memBytes := aiMetricUsageTotals(obj)
 		summaries = append(summaries, podMetricSummary{
-			Name:      aiObjectMetaString(obj, "name"),
-			Namespace: aiObjectMetaString(obj, "namespace"),
+			Name:      AIObjectMetaString(obj, "name"),
+			Namespace: AIObjectMetaString(obj, "namespace"),
 			CPUText:   formatAIMillicores(cpuMilli),
 			MemText:   formatAIMemoryBytes(memBytes),
 			CPUMilli:  cpuMilli,
@@ -694,7 +348,7 @@ func formatAIMemoryBytes(value int64) string {
 	}
 }
 
-func buildAIResourceOverview(kind, namespace, name string, obj map[string]any) model.JSONMap {
+func BuildAIResourceOverview(kind, namespace, name string, obj map[string]any) model.JSONMap {
 	overview := model.JSONMap{
 		"kind":      strings.TrimSpace(kind),
 		"namespace": strings.TrimSpace(namespace),

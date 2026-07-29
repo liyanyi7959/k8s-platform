@@ -11,7 +11,6 @@ import (
 type InspectionRuntime interface {
 	Namespace(context.Context, uint64, string) (any, error)
 	NamespaceWorkloadInventory(context.Context, uint64, string) (any, error)
-	Pod(context.Context, uint64, string, string) (any, error)
 }
 
 type InspectionService struct{ runtime InspectionRuntime }
@@ -38,14 +37,4 @@ func (s *InspectionService) NamespaceWorkloadInventory(ctx context.Context, clus
 		return nil, ErrConflict
 	}
 	return s.runtime.NamespaceWorkloadInventory(ctx, clusterID, strings.TrimSpace(namespace))
-}
-
-func (s *InspectionService) Pod(ctx context.Context, clusterID uint64, namespace, name string) (any, error) {
-	if err := validateNamespace(clusterID, namespace); err != nil || strings.TrimSpace(name) == "" {
-		return nil, ErrInvalidParams
-	}
-	if s == nil || s.runtime == nil {
-		return nil, ErrConflict
-	}
-	return s.runtime.Pod(ctx, clusterID, strings.TrimSpace(namespace), strings.TrimSpace(name))
 }

@@ -185,7 +185,7 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 			alias = nodeAlias("worker", workerIdx, server.IP)
 		}
 		host := inventoryHost{Alias: alias, IP: server.IP, SSHPort: server.SSHPort, User: server.User, AuthType: authType}
-		if containsString(plan.PreflightIgnores, fmt.Sprintf("node.%d.disk", node.ServerID)) {
+		if provisionapp.IsPreflightIgnore(plan.PreflightIgnores, fmt.Sprintf("node.%d.disk", node.ServerID)) {
 			ignoredDiskHosts = append(ignoredDiskHosts, host.Alias)
 		}
 		if authType == "key" {

@@ -7,6 +7,7 @@ import (
 
 	aiapp "k8s-platform-backend/internal/ai/application"
 	aidomain "k8s-platform-backend/internal/ai/domain"
+	"k8s-platform-backend/internal/fleet/ports"
 	"k8s-platform-backend/internal/legacy/service"
 )
 
@@ -17,11 +18,11 @@ type Runtime struct {
 	actions       *service.AIActionService
 }
 
-// ClusterReadPort adapts the legacy dashboard read model to the AI
-// application port without letting the AI context depend on legacy services.
-type ClusterReadPort struct{ dashboard *service.DashboardService }
+// ClusterReadPort adapts the Fleet dashboard read model to the AI application
+// port without coupling the AI context to a concrete Fleet implementation.
+type ClusterReadPort struct{ dashboard ports.DashboardReader }
 
-func NewClusterReadPort(dashboard *service.DashboardService) *ClusterReadPort {
+func NewClusterReadPort(dashboard ports.DashboardReader) *ClusterReadPort {
 	return &ClusterReadPort{dashboard: dashboard}
 }
 

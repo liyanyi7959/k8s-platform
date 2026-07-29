@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	aiapp "k8s-platform-backend/internal/ai/application"
 	model "k8s-platform-backend/internal/ai/domain"
 	fleetmysql "k8s-platform-backend/internal/fleet/adapters/mysql"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
 )
 
@@ -49,12 +51,121 @@ type AIToolRegistry struct {
 	order []string
 }
 
+func aiInspectionToolResult(value *kopsapp.InspectionResult) AIToolResult {
+	if value == nil {
+		return AIToolResult{}
+	}
+	return AIToolResult{
+		Summary:  value.Summary,
+		Evidence: model.JSONMap(value.Evidence),
+		RawRef:   model.JSONMap(value.RawRef),
+	}
+}
+
+// aiResourceInspectionToolResult is a composition-only bridge: Kops owns the
+// Kubernetes read and presentation model, while the AI policy owns the sole
+// decision to redact sensitive data before it reaches a model.
+func aiResourceInspectionToolResult(value *kopsapp.InspectionResourceRead, policy *aiapp.ResourceExportPolicyService) AIToolResult {
+	if value == nil {
+		return AIToolResult{}
+	}
+	if policy == nil {
+		policy = aiapp.NewResourceExportPolicyService()
+	}
+	ref := value.Reference
+	safeObject, maskedObject := policy.SanitizeObject(ref.Kind, value.Object)
+	evidence := model.JSONMap{
+		"overview":   kopsapp.BuildInspectionResourceOverview(ref.Kind, ref.Namespace, ref.Name, safeObject),
+		"conditions": kopsapp.InspectionResourceConditions(safeObject),
+		"object":     safeObject,
+	}
+	if value.YAMLError != "" {
+		evidence["yaml_error"] = value.YAMLError
+	} else {
+		exportedYAML, maskedYAML := policy.MaskYAML(ref.Kind, value.YAML)
+		evidence["yaml"] = truncateForModel(exportedYAML, 6000)
+		if maskedObject || maskedYAML {
+			evidence["masked"] = true
+		}
+	}
+	return AIToolResult{
+		Summary:  kopsapp.BuildInspectionResourceSummary(ref.Kind, ref.Namespace, ref.Name, safeObject, maskedObject),
+		Evidence: evidence,
+		RawRef: model.JSONMap{
+			"cluster_id": ref.ClusterID,
+			"namespace":  ref.Namespace,
+			"name":       ref.Name,
+			"kind":       ref.Kind,
+			"source":     "resource.inspect",
+		},
+	}
+}
+
+func aiResourceYAMLToolResult(value *kopsapp.InspectionResourceRead, policy *aiapp.ResourceExportPolicyService, forceMasked bool) (AIToolResult, error) {
+	if value == nil {
+		return AIToolResult{}, ErrConflict
+	}
+	if policy == nil {
+		policy = aiapp.NewResourceExportPolicyService()
+	}
+	ref := value.Reference
+	var (
+		exportedYAML string
+		masked       bool
+		err          error
+	)
+	if forceMasked {
+		exportedYAML, masked, err = policy.ExportMaskedYAML(ref.Kind, value.YAML)
+	} else {
+		exportedYAML, masked, err = policy.ExportYAML(ref.Kind, value.YAML)
+	}
+	if errors.Is(err, model.ErrSensitiveResourceExport) {
+		return AIToolResult{}, ErrWithMessage(ErrK8sForbidden, err.Error())
+	}
+	if err != nil {
+		return AIToolResult{}, err
+	}
+	evidence := model.JSONMap{"kind": ref.Kind, "namespace": ref.Namespace, "name": ref.Name, "yaml": truncateForModel(exportedYAML, 6000), "masked": masked}
+	if masked {
+		evidence["redaction_policy"] = "sensitive_fields_masked"
+	}
+	summary := fmt.Sprintf("Exported %s %s/%s YAML", ref.Kind, ref.Namespace, ref.Name)
+	if masked || forceMasked {
+		summary = fmt.Sprintf("Exported %s %s/%s YAML with masking", ref.Kind, ref.Namespace, ref.Name)
+	}
+	source := "resource.yaml"
+	if forceMasked {
+		source = "resource.masked_yaml"
+	}
+	return AIToolResult{Summary: summary, Evidence: evidence, RawRef: model.JSONMap{"cluster_id": ref.ClusterID, "namespace": ref.Namespace, "name": ref.Name, "kind": ref.Kind, "source": source}}, nil
+}
+
+func mapKopsInspectionError(err error) error {
+	if err == nil {
+		return nil
+	}
+	for _, candidate := range []struct{ application, legacy error }{
+		{kopsapp.ErrInvalidParams, ErrInvalidParams}, {kopsapp.ErrNotFound, ErrNotFound}, {kopsapp.ErrConflict, ErrConflict},
+		{kopsapp.ErrRuntimeNetwork, ErrK8sNetwork}, {kopsapp.ErrRuntimeTimeout, ErrK8sTimeout}, {kopsapp.ErrRuntimeUnauthorized, ErrK8sUnauthorized},
+		{kopsapp.ErrRuntimeForbidden, ErrK8sForbidden}, {kopsapp.ErrRuntimeTLS, ErrK8sTLS}, {kopsapp.ErrRuntime, ErrK8s},
+	} {
+		if errors.Is(err, candidate.application) {
+			var withMessage interface{ UserMessage() string }
+			if errors.As(err, &withMessage) && withMessage != nil && strings.TrimSpace(withMessage.UserMessage()) != "" {
+				return ErrWithMessage(candidate.legacy, withMessage.UserMessage())
+			}
+			return candidate.legacy
+		}
+	}
+	return err
+}
+
 func NewAIToolRegistry(
 	db *gorm.DB,
 	clusterSvc clusterReadModel,
 	namespaceSvc *NamespaceDiagnosisService,
-	inspectionSvc *ResourceInspectionService,
-	resourceQuerySvc *ResourceQueryService,
+	inspectionSvc *kopsapp.InspectionService,
+	resourceQuerySvc aiapp.ResourceQueryPort,
 	actionSvc *AIActionService,
 	exportPolicySvc *aiapp.ResourceExportPolicyService,
 ) *AIToolRegistry {
@@ -230,7 +341,8 @@ func NewAIToolRegistry(
 		InputSchema:         aiScopedResourceInputSchema("Pod"),
 		OutputSchema:        aiToolOutputSchema("pod.inspect"),
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
-			return inspectionSvc.InspectPod(ctx, req.ClusterID, req.Namespace, req.ResourceName)
+			value, err := inspectionSvc.Pod(ctx, req.ClusterID, req.Namespace, req.ResourceName)
+			return aiInspectionToolResult(value), mapKopsInspectionError(err)
 		},
 	})
 
@@ -245,7 +357,8 @@ func NewAIToolRegistry(
 		InputSchema:         aiClusterScopedNameInputSchema("Node"),
 		OutputSchema:        aiToolOutputSchema("node.inspect"),
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
-			return inspectionSvc.InspectNode(ctx, req.ClusterID, req.ResourceName)
+			value, err := inspectionSvc.Node(ctx, req.ClusterID, req.ResourceName)
+			return aiInspectionToolResult(value), mapKopsInspectionError(err)
 		},
 	})
 
@@ -260,7 +373,8 @@ func NewAIToolRegistry(
 		InputSchema:         aiScopedResourceInputSchema("Deployment"),
 		OutputSchema:        aiToolOutputSchema("deployment.inspect"),
 		Handler: func(ctx context.Context, req AIToolContextRequest, _ map[string]any) (AIToolResult, error) {
-			return inspectionSvc.InspectDeployment(ctx, req.ClusterID, req.Namespace, req.ResourceName)
+			value, err := inspectionSvc.Deployment(ctx, req.ClusterID, req.Namespace, req.ResourceName)
+			return aiInspectionToolResult(value), mapKopsInspectionError(err)
 		},
 	})
 
@@ -341,7 +455,11 @@ func NewAIToolRegistry(
 			kind := strings.TrimSpace(fmt.Sprint(input["kind"]))
 			namespace := strings.TrimSpace(fmt.Sprint(input["namespace"]))
 			name := strings.TrimSpace(fmt.Sprint(input["name"]))
-			return inspectionSvc.InspectResource(ctx, req.ClusterID, kind, namespace, name, exportPolicySvc)
+			value, err := inspectionSvc.Resource(ctx, req.ClusterID, kind, namespace, name)
+			if err != nil {
+				return AIToolResult{}, mapKopsInspectionError(err)
+			}
+			return aiResourceInspectionToolResult(value, exportPolicySvc), nil
 		},
 	})
 
@@ -802,7 +920,11 @@ func NewAIToolRegistry(
 			kind := strings.TrimSpace(fmt.Sprint(input["kind"]))
 			namespace := strings.TrimSpace(fmt.Sprint(input["namespace"]))
 			name := strings.TrimSpace(fmt.Sprint(input["name"]))
-			return inspectionSvc.ExportResourceYAML(ctx, req.ClusterID, kind, namespace, name, exportPolicySvc)
+			value, err := inspectionSvc.ResourceYAML(ctx, req.ClusterID, kind, namespace, name)
+			if err != nil {
+				return AIToolResult{}, mapKopsInspectionError(err)
+			}
+			return aiResourceYAMLToolResult(value, exportPolicySvc, false)
 		},
 	})
 
@@ -821,7 +943,11 @@ func NewAIToolRegistry(
 			kind := strings.TrimSpace(fmt.Sprint(input["kind"]))
 			namespace := strings.TrimSpace(fmt.Sprint(input["namespace"]))
 			name := strings.TrimSpace(fmt.Sprint(input["name"]))
-			return inspectionSvc.ExportMaskedResourceYAML(ctx, req.ClusterID, kind, namespace, name, exportPolicySvc)
+			value, err := inspectionSvc.ResourceYAML(ctx, req.ClusterID, kind, namespace, name)
+			if err != nil {
+				return AIToolResult{}, mapKopsInspectionError(err)
+			}
+			return aiResourceYAMLToolResult(value, exportPolicySvc, true)
 		},
 	})
 

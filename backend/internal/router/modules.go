@@ -27,6 +27,7 @@ import (
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	legacyai "k8s-platform-backend/internal/legacy/adapters/ai"
+	legacyfleet "k8s-platform-backend/internal/legacy/adapters/fleet"
 	legacykops "k8s-platform-backend/internal/legacy/adapters/kops"
 	legacyprovision "k8s-platform-backend/internal/legacy/adapters/provisioning"
 	"k8s-platform-backend/internal/legacy/service"
@@ -127,14 +128,15 @@ type incidentModule struct {
 }
 
 type moduleRuntime struct {
-	taskStore       *platformapp.TaskStore
-	clusterRegistry *fleetapp.Registry
-	k8s             *service.K8sService
-	manifestApply   *legacykops.ManifestRuntime
-	execSessions    *kopsapp.ExecSessionStore
-	logSessions     *kopsapp.PodLogSessionStore
-	dashboard       *service.DashboardService
-	deploy          *service.DeployService
+	taskStore        *platformapp.TaskStore
+	clusterRegistry  *fleetapp.Registry
+	k8s              *service.K8sService
+	manifestApply    *legacykops.ManifestRuntime
+	namespaceSummary *kopsapp.NamespaceSummaryService
+	execSessions     *kopsapp.ExecSessionStore
+	logSessions      *kopsapp.PodLogSessionStore
+	dashboard        *fleetapp.DashboardService
+	deploy           *service.DeployService
 }
 
 // automationTaskRuntime bridges the platform-wide task centre into the
@@ -221,22 +223,24 @@ func buildIAMModule(d Deps) iamModule {
 	return iamModule{users: iamhttp.NewController(users, roles)}
 }
 
-type namespaceResourceReader struct{ k8s *service.K8sService }
+type namespaceResourceReader struct {
+	summary kopsapp.NamespaceResourceSummaryReader
+}
 
 func (reader namespaceResourceReader) Summary(ctx context.Context, clusterID uint64, namespace string) ([]workspaceports.ResourceCount, int, error) {
-	items, total, err := reader.k8s.GetNamespaceResourcesSummary(ctx, clusterID, namespace)
+	summary, err := reader.summary.Summary(ctx, clusterID, namespace)
 	if err != nil {
 		return nil, 0, err
 	}
-	result := make([]workspaceports.ResourceCount, 0, len(items))
-	for _, item := range items {
+	result := make([]workspaceports.ResourceCount, 0, len(summary.Items))
+	for _, item := range summary.Items {
 		result = append(result, workspaceports.ResourceCount{Key: item.Key, Count: item.Count})
 	}
-	return result, total, nil
+	return result, summary.Total, nil
 }
 
 func buildWorkspaceModule(d Deps, runtime moduleRuntime) workspaceModule {
-	applicationService := workspaceapp.NewService(workspacemysql.NewRepository(d.DB), namespaceResourceReader{k8s: runtime.k8s})
+	applicationService := workspaceapp.NewService(workspacemysql.NewRepository(d.DB), namespaceResourceReader{summary: runtime.namespaceSummary})
 	return workspaceModule{projects: workspacehttp.NewController(applicationService)}
 }
 
@@ -245,15 +249,17 @@ func buildModuleRuntime(d Deps) moduleRuntime {
 	clusterRegistry := fleetapp.NewRegistry(fleetmysql.NewRegistry(d.DB, d.EncryptionKey))
 	k8sService := service.NewK8sService(clusterRegistry, d.CacheStore, d.CacheTTL, d.K8sInsecureTLS)
 	manifestApply := legacykops.NewManifestRuntime(d.DB, k8sService)
+	namespaceSummary := kopsapp.NewNamespaceSummaryService(legacykops.NewNamespaceSummaryRuntime(k8sService))
 	return moduleRuntime{
-		taskStore:       taskStore,
-		clusterRegistry: clusterRegistry,
-		k8s:             k8sService,
-		manifestApply:   manifestApply,
-		execSessions:    kopsapp.NewExecSessionStore(0),
-		logSessions:     kopsapp.NewPodLogSessionStore(0),
-		dashboard:       service.NewDashboardService(d.DB, clusterRegistry, k8sService, d.CacheStore),
-		deploy:          service.NewDeployService(d.DB, d.EncryptionKey, taskStore, clusterRegistry),
+		taskStore:        taskStore,
+		clusterRegistry:  clusterRegistry,
+		k8s:              k8sService,
+		manifestApply:    manifestApply,
+		namespaceSummary: namespaceSummary,
+		execSessions:     kopsapp.NewExecSessionStore(0),
+		logSessions:      kopsapp.NewPodLogSessionStore(0),
+		dashboard:        fleetapp.NewDashboardService(clusterRegistry, legacyfleet.NewDashboardRuntime(k8sService), legacyfleet.NewDashboardCache(d.CacheStore)),
+		deploy:           service.NewDeployService(d.DB, d.EncryptionKey, taskStore, clusterRegistry),
 	}
 }
 
@@ -321,8 +327,8 @@ func buildFleetModule(d Deps, runtime moduleRuntime) fleetModule {
 }
 
 func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
-	namespaceDiagnosis := service.NewNamespaceDiagnosisService(runtime.k8s)
-	resourceInspection := service.NewResourceInspectionService(runtime.k8s)
+	namespaceDiagnosis := service.NewNamespaceDiagnosisService(runtime.k8s, runtime.namespaceSummary)
+	inspection := kopsapp.NewInspectionService(legacykops.NewInspectionRuntime(runtime.k8s, namespaceDiagnosis))
 	permissionAuditService := service.NewK8sPermissionAuditService(
 		d.DB,
 		runtime.taskStore,
@@ -333,7 +339,7 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 	)
 	return kopsModule{
 		manifests:       kopshttp.NewManifestController(kopsapp.NewManifestService(runtime.manifestApply)),
-		namespaces:      kopshttp.NewNamespaceController(kopsapp.NewNamespaceService(legacykops.NewNamespaceRuntime(runtime.k8s))),
+		namespaces:      kopshttp.NewNamespaceController(kopsapp.NewNamespaceService(legacykops.NewNamespaceRuntime(runtime.k8s, runtime.namespaceSummary))),
 		metrics:         kopshttp.NewMetricsController(kopsapp.NewMetricsService(legacykops.NewMetricsRuntime(runtime.k8s))),
 		connectivity:    kopshttp.NewConnectivityController(kopsapp.NewConnectivityService(legacykops.NewConnectivityRuntime(runtime.k8s))),
 		nodes:           kopshttp.NewNodeController(kopsapp.NewNodeService(legacykops.NewNodeRuntime(runtime.k8s))),
@@ -348,7 +354,7 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 		podExecStream:   kopshttp.NewPodExecStreamController(legacykops.NewPodExecStreamRuntime(runtime.k8s), runtime.execSessions),
 		helm:            kopshttp.NewHelmController(kopsapp.NewHelmService(legacykops.NewHelmRuntime(runtime.k8s, runtime.deploy))),
 		pods:            kopshttp.NewPodController(kopsapp.NewPodService(legacykops.NewPodRuntime(runtime.k8s), runtime.logSessions, runtime.execSessions)),
-		inspection:      kopshttp.NewInspectionController(kopsapp.NewInspectionService(legacykops.NewInspectionRuntime(namespaceDiagnosis, resourceInspection))),
+		inspection:      kopshttp.NewInspectionController(inspection),
 		creator:         kopshttp.NewResourceCreatorController(kopsapp.NewResourceCreatorService(legacykops.NewResourceCreatorRuntime(runtime.k8s))),
 		permissionAudit: kopshttp.NewPermissionAuditController(kopsapp.NewPermissionAuditService(legacykops.NewPermissionAuditRuntime(permissionAuditService))),
 		rbac:            kopshttp.NewRBACController(),
@@ -365,9 +371,12 @@ func buildChangeModule(d Deps, runtime moduleRuntime) changeModule {
 }
 
 func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule {
-	namespaceDiagnosis := service.NewNamespaceDiagnosisService(runtime.k8s)
-	resourceInspection := service.NewResourceInspectionService(runtime.k8s)
-	resourceQuery := service.NewResourceQueryService(runtime.k8s)
+	namespaceDiagnosis := service.NewNamespaceDiagnosisService(runtime.k8s, runtime.namespaceSummary)
+	resourceInspection := kopsapp.NewInspectionService(legacykops.NewInspectionRuntime(runtime.k8s, namespaceDiagnosis))
+	resourceQuery := aiapp.NewResourceQueryService(
+		legacyai.NewResourceQueryRuntime(runtime.k8s),
+		legacyai.NewResourceQueryPresenter(),
+	)
 	fileService := aiapp.NewAIFileService(d.DB, d.AIUploadDir)
 	toolRegistry := service.NewAIToolRegistry(
 		d.DB,

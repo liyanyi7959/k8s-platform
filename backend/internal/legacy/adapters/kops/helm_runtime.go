@@ -15,6 +15,7 @@ import (
 
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
 )
 
 type HelmRuntime struct {
@@ -46,7 +47,7 @@ func (r *HelmRuntime) Install(ctx context.Context, input kopsapp.HelmInstallInpu
 	if r == nil || r.deploy == nil {
 		return "", kopsapp.ErrConflict
 	}
-	value, err := r.deploy.InstallClusterMasterHelm(ctx, input.ClusterID, service.HelmMasterInstallRequest{ReleaseName: input.ReleaseName, Namespace: input.Namespace, Chart: input.Chart, Version: input.Version, RepoName: input.RepoName, RepoURL: input.RepoURL, ValuesYAML: input.ValuesYAML})
+	value, err := r.deploy.InstallClusterMasterHelm(ctx, input.ClusterID, provisionapp.HelmMasterInstallRequest{ReleaseName: input.ReleaseName, Namespace: input.Namespace, Chart: input.Chart, Version: input.Version, RepoName: input.RepoName, RepoURL: input.RepoURL, ValuesYAML: input.ValuesYAML})
 	if err != nil {
 		return "", translateKopsRuntimeError(err)
 	}

@@ -145,7 +145,7 @@ func PlanPreflightChecks(podCIDR, serviceCIDR string, nodeRoles []string) []Pref
 	if masterCount != 1 {
 		checks = append(checks, PreflightCheck{
 			Key: "plan.topology", Category: "plan", Status: PreflightError,
-			Message: fmt.Sprintf("当前方案包含 %d 个 Master，本期仅支持且必须配置 1 个 Master", masterCount),
+			Message:     fmt.Sprintf("当前方案包含 %d 个 Master，本期仅支持且必须配置 1 个 Master", masterCount),
 			Remediation: "保留一个 Master；高可用控制平面需要配置 VIP/LB 后使用专用 HA 流程",
 		})
 	} else {
@@ -199,6 +199,10 @@ type PreflightNodeProbe struct {
 
 func NodeSSHFailureCheck(serverID uint64, serverName, message string) PreflightCheck {
 	return nodeCheck(serverID, serverName, "ssh", PreflightError, message, "检查服务器关联的 SSH 凭据")
+}
+
+func NodeSSHConnectionFailureCheck(serverID uint64, serverName, message string) PreflightCheck {
+	return nodeCheck(serverID, serverName, "ssh", PreflightError, message, "检查主机网络、SSH 服务、用户名和凭据")
 }
 
 func NodeSSHReachableCheck(serverID uint64, serverName, osName, osVersion string) PreflightCheck {

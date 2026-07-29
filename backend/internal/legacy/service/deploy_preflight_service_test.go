@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -22,8 +24,8 @@ func TestCIDRsOverlap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := cidrsOverlap(tt.left, tt.right); got != tt.want {
-				t.Fatalf("cidrsOverlap(%q, %q) = %v, want %v", tt.left, tt.right, got, tt.want)
+			if got := provisionapp.CIDRsOverlap(tt.left, tt.right); got != tt.want {
+				t.Fatalf("CIDRsOverlap(%q, %q) = %v, want %v", tt.left, tt.right, got, tt.want)
 			}
 		})
 	}
@@ -80,11 +82,11 @@ func TestMarshalInventoryMasksSecretsAndKeepsWorkerEmpty(t *testing.T) {
 
 func TestSupportedLinux(t *testing.T) {
 	for _, name := range []string{"Ubuntu", "Debian GNU/Linux", "Rocky Linux", "AlmaLinux", "CentOS Linux", "Red Hat Enterprise Linux", "Kylin Linux Advanced Server", "银河麒麟高级服务器操作系统"} {
-		if !supportedLinux(name) {
+		if !provisionapp.SupportedLinux(name) {
 			t.Errorf("expected %q to be supported", name)
 		}
 	}
-	if supportedLinux("Windows Server") {
+	if provisionapp.SupportedLinux("Windows Server") {
 		t.Error("Windows must not be accepted as a deployment target")
 	}
 }

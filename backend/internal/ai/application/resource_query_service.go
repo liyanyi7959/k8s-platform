@@ -348,11 +348,13 @@ func (s *ResourceQueryService) namedResourceConsumers(ctx context.Context, clust
 func eventResult(clusterID uint64, kind, namespace, name string, events []map[string]any) ToolResult {
 	items := eventEvidenceItems(events)
 	summary := fmt.Sprintf("Collected %d events for %s %s/%s", len(items), kind, namespace, name)
+	rawRef := domain.JSONMap{"cluster_id": clusterID, "namespace": namespace, "name": name, "kind": kind, "source": "resource.events"}
 	if strings.EqualFold(kind, "Node") {
 		summary = fmt.Sprintf("Collected %d node events for %s", len(items), name)
+		rawRef = domain.JSONMap{"cluster_id": clusterID, "name": name, "kind": kind, "source": "resource.events"}
 	}
 	evidence := domain.JSONMap{"kind": kind, "name": name, "events": items}
-	return ToolResult{Summary: summary, Evidence: evidence, RawRef: domain.JSONMap{"cluster_id": clusterID, "namespace": namespace, "name": name, "kind": kind, "source": "resource.events"}}
+	return ToolResult{Summary: summary, Evidence: evidence, RawRef: rawRef}
 }
 
 func relatedResult(clusterID uint64, namespace, kind, name string, pods, controllers []domain.JSONMap) ToolResult {
@@ -362,7 +364,10 @@ func relatedResult(clusterID uint64, namespace, kind, name string, pods, control
 }
 
 func supportedResource(kind string) (ResourceReference, bool, bool) {
-	type definition struct{ group, version, resource string; namespaced bool }
+	type definition struct {
+		group, version, resource string
+		namespaced               bool
+	}
 	resources := map[string]definition{
 		"namespace": {"", "v1", "namespaces", false}, "node": {"", "v1", "nodes", false}, "pod": {"", "v1", "pods", true},
 		"deployment": {"apps", "v1", "deployments", true}, "statefulset": {"apps", "v1", "statefulsets", true}, "daemonset": {"apps", "v1", "daemonsets", true}, "replicaset": {"apps", "v1", "replicasets", true},
@@ -430,7 +435,7 @@ func eventEvidenceItems(items []map[string]any) []domain.JSONMap {
 		evidence = append(evidence, domain.JSONMap{
 			"type": strings.TrimSpace(fmt.Sprint(item["type"])), "reason": strings.TrimSpace(fmt.Sprint(item["reason"])), "message": strings.TrimSpace(fmt.Sprint(item["message"])),
 			"namespace": objectMetaString(item, "namespace"), "name": objectMetaString(item, "name"),
-			"event_time": firstNonEmpty(strings.TrimSpace(fmt.Sprint(item["eventTime"])), strings.TrimSpace(fmt.Sprint(item["lastTimestamp"])), strings.TrimSpace(fmt.Sprint(mapValue(item, "metadata")["creationTimestamp"]))),
+			"event_time":    firstNonEmpty(strings.TrimSpace(fmt.Sprint(item["eventTime"])), strings.TrimSpace(fmt.Sprint(item["lastTimestamp"])), strings.TrimSpace(fmt.Sprint(mapValue(item, "metadata")["creationTimestamp"]))),
 			"involved_kind": strings.TrimSpace(fmt.Sprint(involved["kind"])), "involved_name": strings.TrimSpace(fmt.Sprint(involved["name"])), "involved_uid": strings.TrimSpace(fmt.Sprint(involved["uid"])), "count": intValue(item["count"]),
 		})
 		if len(evidence) >= 20 {

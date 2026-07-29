@@ -170,6 +170,13 @@ func (s *K8sService) TypedClient(ctx context.Context, clusterID uint64) (*kubern
 	return s.typedClient(ctx, clusterID)
 }
 
+// DiscoveryClient exposes Kubernetes discovery to bounded-context runtime
+// adapters. Resource selection and business aggregation must remain outside
+// this retained transport service.
+func (s *K8sService) DiscoveryClient(ctx context.Context, clusterID uint64) (*discovery.DiscoveryClient, error) {
+	return s.discoveryClient(ctx, clusterID)
+}
+
 func (s *K8sService) typedClientForInformer(ctx context.Context, clusterID uint64) (*kubernetes.Clientset, error) {
 	cfg, err := s.restConfig(ctx, clusterID)
 	if err != nil {
