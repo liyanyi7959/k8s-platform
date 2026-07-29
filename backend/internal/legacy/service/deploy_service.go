@@ -9,6 +9,8 @@ import (
 
 	"gorm.io/gorm"
 
+	fleetapp "k8s-platform-backend/internal/fleet/application"
+	platformapp "k8s-platform-backend/internal/platform/application"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 )
@@ -16,17 +18,17 @@ import (
 type DeployService struct {
 	db              *gorm.DB
 	encryptionKey   string
-	taskStore       *TaskStore
-	clusterRegistry *ClusterRegistryService
+	taskStore       *platformapp.TaskStore
+	clusterRegistry *fleetapp.Registry
 	deployConfig    *provisionapp.DeployConfigService
 	ansibleDir      string // Ansible playbook 目录路径，空则使用默认 "ansible"
 }
 
-func NewDeployService(db *gorm.DB, encryptionKey string, taskStore *TaskStore, clusterRegistry *ClusterRegistryService) *DeployService {
+func NewDeployService(db *gorm.DB, encryptionKey string, taskStore *platformapp.TaskStore, clusterRegistry *fleetapp.Registry) *DeployService {
 	return &DeployService{db: db, encryptionKey: encryptionKey, taskStore: taskStore, clusterRegistry: clusterRegistry, deployConfig: provisionapp.NewDeployConfigService(db)}
 }
 
-func (s *DeployService) GetTaskStore() *TaskStore {
+func (s *DeployService) GetTaskStore() *platformapp.TaskStore {
 	return s.taskStore
 }
 

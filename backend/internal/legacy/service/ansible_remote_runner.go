@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	platformapp "k8s-platform-backend/internal/platform/application"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 
@@ -22,7 +23,7 @@ import (
 
 // runAnsibleOnMaster uses the plan's only Master as an ephemeral Linux runner.
 // Only the runner workspace is cleaned; target state is intentionally preserved for idempotent retry.
-func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, task *Task) (string, error) {
+func (s *DeployService) runAnsibleOnMaster(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, task *platformapp.Task) (string, error) {
 	// logErr 记录错误到 task 日志并返回包装后的 error
 	logErr := func(msg string, err error) error {
 		task.AppendLog(fmt.Sprintf("[error] %s: %v", msg, err), activeDeployStepKey(task))
@@ -165,7 +166,7 @@ command -v tar >/dev/null 2>&1
 ansible-playbook --version | head -n 1`
 }
 
-func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, workspace string, task *Task) ([]byte, error) {
+func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.DeployPlan, nodes []model.DeployPlanNode, workspace string, task *platformapp.Task) ([]byte, error) {
 	var masters, workers []inventoryHost
 	keys := map[string]string{}
 	ignoredDiskHosts := make([]string, 0)

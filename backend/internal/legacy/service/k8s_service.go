@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	fleetapp "k8s-platform-backend/internal/fleet/application"
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 )
 
@@ -38,7 +39,7 @@ import (
 // - 统一将 K8s 常见错误（NotFound/AlreadyExists/BadRequest 等）归一化为业务错误；
 // - 为 controller 层提供面向"资源 + 动作"的方法（List/GetYAML/Delete/Patch/Exec 等）。
 type K8sService struct {
-	clusterReg *ClusterRegistryService
+	clusterReg *fleetapp.Registry
 	podCache   *podCacheManager
 	objCache   *objCacheManager
 	cache      CacheStore
@@ -53,7 +54,7 @@ const k8sRequestTimeout = 60 * time.Second
 const k8sListPageLimit int64 = 500
 
 // NewK8sService 创建 K8sService。
-func NewK8sService(clusterReg *ClusterRegistryService, cacheStore CacheStore, podCacheTTL time.Duration, insecureSkipTLS ...bool) *K8sService {
+func NewK8sService(clusterReg *fleetapp.Registry, cacheStore CacheStore, podCacheTTL time.Duration, insecureSkipTLS ...bool) *K8sService {
 	if podCacheTTL <= 0 {
 		podCacheTTL = 60 * time.Second
 	}
@@ -73,9 +74,9 @@ func (s *K8sService) restConfig(ctx context.Context, clusterID uint64) (*rest.Co
 	if s.clusterReg == nil {
 		return nil, errors.New("cluster registry is required")
 	}
-	kc, err := s.clusterReg.GetKubeconfig(ctx, clusterID)
+	kc, err := s.clusterReg.Kubeconfig(ctx, clusterID)
 	if err != nil {
-		return nil, err
+		return nil, legacyClusterError(err)
 	}
 	cfg, err := s.clientFactory().RESTConfig(kc)
 	if err != nil {
@@ -89,7 +90,8 @@ func (s *K8sService) GetKubeconfig(ctx context.Context, clusterID uint64) (strin
 	if s.clusterReg == nil {
 		return "", errors.New("cluster registry is required")
 	}
-	return s.clusterReg.GetKubeconfig(ctx, clusterID)
+	value, err := s.clusterReg.Kubeconfig(ctx, clusterID)
+	return value, legacyClusterError(err)
 }
 
 func (s *K8sService) ValidateKubeconfig(ctx context.Context, kubeconfig string) error {

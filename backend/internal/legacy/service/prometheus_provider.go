@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
 // prometheusProvider 通过 PromQL 从 Prometheus 获取指标。
@@ -19,7 +21,7 @@ func newPrometheusProvider(svc *K8sService) *prometheusProvider {
 	return &prometheusProvider{svc: svc}
 }
 
-func (p *prometheusProvider) Name() string { return string(MonitorSourcePrometheus) }
+func (p *prometheusProvider) Name() string { return string(kopsapp.MonitorSourcePrometheus) }
 
 func (p *prometheusProvider) client(ctx context.Context, clusterID uint64) (*prometheusClient, error) {
 	info, err := p.svc.GetPrometheusInfo(ctx, clusterID)
@@ -32,7 +34,7 @@ func (p *prometheusProvider) client(ctx context.Context, clusterID uint64) (*pro
 	return newPrometheusClient(info.URL), nil
 }
 
-func (p *prometheusProvider) GetNodeMetrics(ctx context.Context, clusterID uint64) ([]NodeMetrics, error) {
+func (p *prometheusProvider) GetNodeMetrics(ctx context.Context, clusterID uint64) ([]kopsapp.NodeMetrics, error) {
 	pc, err := p.client(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -70,14 +72,14 @@ func (p *prometheusProvider) GetNodeMetrics(ctx context.Context, clusterID uint6
 		return nil, res.err
 	}
 
-	metricsMap := map[string]*NodeMetrics{}
+	metricsMap := map[string]*kopsapp.NodeMetrics{}
 	for _, r := range res.cpuUsage.Result {
 		node := r.Metric["node"]
 		if node == "" {
 			continue
 		}
 		if metricsMap[node] == nil {
-			metricsMap[node] = &NodeMetrics{Name: node}
+			metricsMap[node] = &kopsapp.NodeMetrics{Name: node}
 		}
 		metricsMap[node].CPUUsage = parsePrometheusValue(r.Value[1])
 	}
@@ -87,7 +89,7 @@ func (p *prometheusProvider) GetNodeMetrics(ctx context.Context, clusterID uint6
 			continue
 		}
 		if metricsMap[node] == nil {
-			metricsMap[node] = &NodeMetrics{Name: node}
+			metricsMap[node] = &kopsapp.NodeMetrics{Name: node}
 		}
 		metricsMap[node].MemoryUsage = parsePrometheusValue(r.Value[1])
 	}
@@ -97,7 +99,7 @@ func (p *prometheusProvider) GetNodeMetrics(ctx context.Context, clusterID uint6
 			continue
 		}
 		if metricsMap[node] == nil {
-			metricsMap[node] = &NodeMetrics{Name: node}
+			metricsMap[node] = &kopsapp.NodeMetrics{Name: node}
 		}
 		metricsMap[node].CPUCapacity = int64(parsePrometheusValue(r.Value[1]) * 1e9)
 	}
@@ -107,12 +109,12 @@ func (p *prometheusProvider) GetNodeMetrics(ctx context.Context, clusterID uint6
 			continue
 		}
 		if metricsMap[node] == nil {
-			metricsMap[node] = &NodeMetrics{Name: node}
+			metricsMap[node] = &kopsapp.NodeMetrics{Name: node}
 		}
 		metricsMap[node].MemoryCapacity = int64(parsePrometheusValue(r.Value[1]))
 	}
 
-	result := make([]NodeMetrics, 0, len(metricsMap))
+	result := make([]kopsapp.NodeMetrics, 0, len(metricsMap))
 	for _, m := range metricsMap {
 		if m.CPUCapacity > 0 {
 			m.CPUUsed = int64(float64(m.CPUCapacity) * m.CPUUsage / 100)
@@ -125,7 +127,7 @@ func (p *prometheusProvider) GetNodeMetrics(ctx context.Context, clusterID uint6
 	return result, nil
 }
 
-func (p *prometheusProvider) GetPodMetrics(ctx context.Context, clusterID uint64, namespace string) ([]PodMetrics, error) {
+func (p *prometheusProvider) GetPodMetrics(ctx context.Context, clusterID uint64, namespace string) ([]kopsapp.PodMetrics, error) {
 	pc, err := p.client(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -155,7 +157,7 @@ func (p *prometheusProvider) GetPodMetrics(ctx context.Context, clusterID uint64
 	}()
 	wg.Wait()
 
-	metricsMap := map[string]*PodMetrics{}
+	metricsMap := map[string]*kopsapp.PodMetrics{}
 	for _, r := range res.cpu.Result {
 		pod := r.Metric["pod"]
 		ns := r.Metric["namespace"]
@@ -164,7 +166,7 @@ func (p *prometheusProvider) GetPodMetrics(ctx context.Context, clusterID uint64
 		}
 		key := ns + "/" + pod
 		if metricsMap[key] == nil {
-			metricsMap[key] = &PodMetrics{Name: pod, Namespace: ns}
+			metricsMap[key] = &kopsapp.PodMetrics{Name: pod, Namespace: ns}
 		}
 		metricsMap[key].CPU = int64(parsePrometheusValue(r.Value[1]) * 1e9)
 	}
@@ -176,19 +178,19 @@ func (p *prometheusProvider) GetPodMetrics(ctx context.Context, clusterID uint64
 		}
 		key := ns + "/" + pod
 		if metricsMap[key] == nil {
-			metricsMap[key] = &PodMetrics{Name: pod, Namespace: ns}
+			metricsMap[key] = &kopsapp.PodMetrics{Name: pod, Namespace: ns}
 		}
 		metricsMap[key].Memory = int64(parsePrometheusValue(r.Value[1]))
 	}
 
-	result := make([]PodMetrics, 0, len(metricsMap))
+	result := make([]kopsapp.PodMetrics, 0, len(metricsMap))
 	for _, m := range metricsMap {
 		result = append(result, *m)
 	}
 	return result, nil
 }
 
-func (p *prometheusProvider) GetNodeMetricTrend(ctx context.Context, clusterID uint64, nodeName, metric string, start, end time.Time, step time.Duration) ([]MetricPoint, error) {
+func (p *prometheusProvider) GetNodeMetricTrend(ctx context.Context, clusterID uint64, nodeName, metric string, start, end time.Time, step time.Duration) ([]kopsapp.MetricPoint, error) {
 	pc, err := p.client(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -204,7 +206,7 @@ func (p *prometheusProvider) GetNodeMetricTrend(ctx context.Context, clusterID u
 	return p.rangeResultToPoints(res), nil
 }
 
-func (p *prometheusProvider) GetPodMetricTrend(ctx context.Context, clusterID uint64, namespace, podName, metric string, start, end time.Time, step time.Duration) ([]MetricPoint, error) {
+func (p *prometheusProvider) GetPodMetricTrend(ctx context.Context, clusterID uint64, namespace, podName, metric string, start, end time.Time, step time.Duration) ([]kopsapp.MetricPoint, error) {
 	pc, err := p.client(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -250,15 +252,15 @@ func (p *prometheusProvider) podTrendExpr(namespace, podName, metric string) (st
 	}
 }
 
-func (p *prometheusProvider) rangeResultToPoints(res prometheusQueryRangeResult) []MetricPoint {
-	points := make([]MetricPoint, 0)
+func (p *prometheusProvider) rangeResultToPoints(res prometheusQueryRangeResult) []kopsapp.MetricPoint {
+	points := make([]kopsapp.MetricPoint, 0)
 	for _, r := range res.Result {
 		for _, v := range r.Values {
 			if len(v) < 2 {
 				continue
 			}
 			ts, _ := v[0].(float64)
-			points = append(points, MetricPoint{
+			points = append(points, kopsapp.MetricPoint{
 				Timestamp: int64(ts * 1000),
 				Value:     parsePrometheusValue(v[1]),
 			})

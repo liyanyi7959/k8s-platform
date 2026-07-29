@@ -12,6 +12,8 @@ import (
 
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
+
+	fleetapp "k8s-platform-backend/internal/fleet/application"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -60,7 +62,7 @@ func cloneAnyMapSlice(items []map[string]any) []map[string]any {
 
 type DashboardService struct {
 	db                 *gorm.DB
-	clusterReg         *ClusterRegistryService
+	clusterReg         *fleetapp.Registry
 	k8sSvc             *K8sService
 	cache              CacheStore
 	certRiskMu         sync.Mutex
@@ -73,7 +75,7 @@ type DashboardService struct {
 
 // NewDashboardService 创建 DashboardService。
 // DashboardService 负责聚合数据库与 Kubernetes 的统计数据，为前端仪表盘提供“概览”接口。
-func NewDashboardService(db *gorm.DB, clusterReg *ClusterRegistryService, k8sSvc *K8sService, cache CacheStore) *DashboardService {
+func NewDashboardService(db *gorm.DB, clusterReg *fleetapp.Registry, k8sSvc *K8sService, cache CacheStore) *DashboardService {
 	return &DashboardService{
 		db:                 db,
 		clusterReg:         clusterReg,
@@ -272,9 +274,9 @@ func (s *DashboardService) getClusterOverview(ctx context.Context, clusterID uin
 		return nil, ErrInvalidParams
 	}
 
-	cluster, err := s.clusterReg.GetCluster(ctx, clusterID)
+	cluster, err := s.clusterReg.Get(ctx, clusterID)
 	if err != nil {
-		return nil, err
+		return nil, legacyClusterError(err)
 	}
 
 	ready, total := 0, 0
@@ -866,8 +868,8 @@ func (s *DashboardService) GetClusterCertificateRisks(ctx context.Context, clust
 	if clusterID == 0 {
 		return nil, ErrInvalidParams
 	}
-	if _, err := s.clusterReg.GetCluster(ctx, clusterID); err != nil {
-		return nil, err
+	if _, err := s.clusterReg.Get(ctx, clusterID); err != nil {
+		return nil, legacyClusterError(err)
 	}
 	if cached, ok := s.getCachedClusterCertRisks(ctx, clusterID); ok {
 		return cached, nil

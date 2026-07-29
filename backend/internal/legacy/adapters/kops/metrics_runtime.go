@@ -70,14 +70,14 @@ func (r *MetricsRuntime) Switch(ctx context.Context, clusterID uint64, source st
 	if r == nil || r.service == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.service.SwitchProvider(ctx, clusterID, service.MonitorSource(source)))
+	return translateKopsRuntimeError(r.service.SwitchProvider(ctx, clusterID, kopsapp.MonitorSource(source)))
 }
 func (r *MetricsRuntime) Trend(ctx context.Context, query kopsapp.MetricsTrendQuery) (any, error) {
 	provider, err := r.provider(ctx, query.ClusterID)
 	if err != nil {
 		return nil, err
 	}
-	var values []service.MetricPoint
+	var values []kopsapp.MetricPoint
 	if query.Target == "node" {
 		values, err = provider.GetNodeMetricTrend(ctx, query.ClusterID, query.Name, query.Metric, query.Start, query.End, query.Step)
 	} else {
@@ -98,7 +98,7 @@ func (r *MetricsRuntime) HealthCheck(ctx context.Context, clusterID uint64) (any
 	}
 	return map[string]string{"source": provider.Name()}, nil
 }
-func (r *MetricsRuntime) provider(ctx context.Context, clusterID uint64) (service.MetricsProvider, error) {
+func (r *MetricsRuntime) provider(ctx context.Context, clusterID uint64) (kopsapp.MetricsProvider, error) {
 	if r == nil || r.service == nil {
 		return nil, kopsapp.ErrConflict
 	}

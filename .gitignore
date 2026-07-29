@@ -89,3 +89,8 @@ allplan.md
 !docs/architecture-refactor-plan-v2.md
 !backend/internal/README.md
 !frontend/src/features/README.md
+.tmp-go-build
+.tmp-go-cache
+.tmp-go-test
+.trae
+.agents

@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"k8s-platform-backend/internal/legacy/service"
+	platformapp "k8s-platform-backend/internal/platform/application"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 )
 
@@ -78,7 +79,7 @@ func (r *Runtime) TaskLogs(ctx context.Context, id int64, offset, limit int, ste
 	return logs, nil
 }
 
-func deploymentTask(task *service.Task) provisionapp.DeploymentTask {
+func deploymentTask(task *platformapp.Task) provisionapp.DeploymentTask {
 	result := provisionapp.DeploymentTask{
 		ID: task.ID, Type: task.Type, Status: string(task.Status), Title: task.Title, CreatedAt: task.CreatedAt,
 		CreatedBy: task.CreatedBy, Percent: task.Percent, Message: task.Message, Meta: task.Meta,

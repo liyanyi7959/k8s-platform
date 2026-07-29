@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
 // prometheusMockResponse 构造 Prometheus API 成功响应。
@@ -128,7 +130,7 @@ func TestMetricsServerProvider_TrendUnsupported(t *testing.T) {
 func TestProviderManager_SwitchProviderValidation(t *testing.T) {
 	// 无 db 的 K8sService 应返回错误。
 	svc := NewK8sService(nil, nil, 0)
-	err := svc.SwitchProvider(context.Background(), 1, MonitorSource("invalid"))
+	err := svc.SwitchProvider(context.Background(), 1, kopsapp.MonitorSource("invalid"))
 	if err == nil {
 		t.Fatal("expected error for invalid source")
 	}

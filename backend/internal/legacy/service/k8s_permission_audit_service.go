@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 
+	fleetapp "k8s-platform-backend/internal/fleet/application"
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	model "k8s-platform-backend/internal/kops/domain"
@@ -168,8 +169,8 @@ type PermissionAuditCompareResult struct {
 
 type K8sPermissionAuditService struct {
 	db            *gorm.DB
-	taskStore     *TaskStore
-	clusterReg    *ClusterRegistryService
+	taskStore     *platformapp.TaskStore
+	clusterReg    *fleetapp.Registry
 	k8sSvc        *K8sService
 	credentialTTL time.Duration
 	creds         *permissionAuditCredentialStore
@@ -240,7 +241,7 @@ type permissionAuditScannedObject struct {
 	Object     unstructured.Unstructured
 }
 
-func NewK8sPermissionAuditService(db *gorm.DB, taskStore *TaskStore, clusterReg *ClusterRegistryService, k8sSvc *K8sService, cache CacheStore, secret string) *K8sPermissionAuditService {
+func NewK8sPermissionAuditService(db *gorm.DB, taskStore *platformapp.TaskStore, clusterReg *fleetapp.Registry, k8sSvc *K8sService, cache CacheStore, secret string) *K8sPermissionAuditService {
 	return &K8sPermissionAuditService{
 		db:            db,
 		taskStore:     taskStore,
@@ -326,9 +327,9 @@ func (s *K8sPermissionAuditService) CreateManagedAudit(ctx context.Context, clus
 	if err := s.normalizeCreateRequest(&req); err != nil {
 		return PermissionAuditCreateResult{}, err
 	}
-	cluster, err := s.clusterReg.GetCluster(ctx, clusterID)
+	cluster, err := s.clusterReg.Get(ctx, clusterID)
 	if err != nil {
-		return PermissionAuditCreateResult{}, err
+		return PermissionAuditCreateResult{}, legacyClusterError(err)
 	}
 	audit := model.K8sPermissionAudit{
 		SourceType:  PermissionAuditSourceManaged,
@@ -849,22 +850,22 @@ func sanitizePermissionAuditFindingOrderColumn(col string) string {
 	return ""
 }
 
-func (s *K8sPermissionAuditService) createAuditTask(ctx context.Context, auditID uint64, sourceType, displayName string, createdBy uint64) (*Task, error) {
+func (s *K8sPermissionAuditService) createAuditTask(ctx context.Context, auditID uint64, sourceType, displayName string, createdBy uint64) (*platformapp.Task, error) {
 	title := fmt.Sprintf("K8s 权限分析：%s", firstNonEmpty(displayName, fmt.Sprintf("audit-%d", auditID)))
-	task := &Task{
+	task := &platformapp.Task{
 		Type:      "k8s_permission_audit",
-		Status:    TaskPending,
+		Status:    platformapp.TaskPending,
 		Title:     &title,
 		CreatedBy: int64(createdBy),
 		Meta: map[string]any{
 			"audit_id":    auditID,
 			"source_type": sourceType,
 		},
-		Steps: []TaskStep{
-			{Key: "prepare", Title: "准备分析", Status: StepPending},
-			{Key: "scan", Title: "扫描资源", Status: StepPending},
-			{Key: "analyze", Title: "分析权限", Status: StepPending},
-			{Key: "persist", Title: "保存结果", Status: StepPending},
+		Steps: []platformapp.TaskStep{
+			{Key: "prepare", Title: "准备分析", Status: platformapp.StepPending},
+			{Key: "scan", Title: "扫描资源", Status: platformapp.StepPending},
+			{Key: "analyze", Title: "分析权限", Status: platformapp.StepPending},
+			{Key: "persist", Title: "保存结果", Status: platformapp.StepPending},
 		},
 	}
 	if err := s.taskStore.Put(task); err != nil {
@@ -925,7 +926,7 @@ func (s *K8sPermissionAuditService) runAudit(auditID uint64) {
 	if err != nil {
 		return
 	}
-	var task *Task
+	var task *platformapp.Task
 	if row.TaskID != nil {
 		if t, ok := s.taskStore.Get(int64(*row.TaskID)); ok {
 			task = t
@@ -937,16 +938,16 @@ func (s *K8sPermissionAuditService) runAudit(auditID uint64) {
 		defer s.taskStore.UnregisterCancel(task.ID)
 	}
 	defer cancel()
-	updateStep := func(index int, status TaskStepStatus, message string) {
+	updateStep := func(index int, status platformapp.TaskStepStatus, message string) {
 		if task == nil || index < 0 || index >= len(task.Steps) {
 			return
 		}
 		now := time.Now().UTC()
 		task.Steps[index].Status = status
-		if status == StepRunning {
+		if status == platformapp.StepRunning {
 			task.Steps[index].StartedAt = &now
 		}
-		if status == StepSuccess || status == StepFailed {
+		if status == platformapp.StepSuccess || status == platformapp.StepFailed {
 			task.Steps[index].FinishedAt = &now
 		}
 		if strings.TrimSpace(message) != "" {
@@ -964,13 +965,13 @@ func (s *K8sPermissionAuditService) runAudit(auditID uint64) {
 		_ = s.db.WithContext(context.Background()).Model(&model.K8sPermissionAudit{}).Where("id = ?", auditID).Updates(updates).Error
 	}
 	if task != nil {
-		task.Status = TaskRunning
+		task.Status = platformapp.TaskRunning
 		startMsg := "K8s 权限分析开始"
 		task.Message = &startMsg
 		_ = task.Update()
 	}
 	setAuditStatus(PermissionAuditStatusRunning, nil)
-	updateStep(0, StepRunning, "准备 K8s 客户端与分析上下文")
+	updateStep(0, platformapp.StepRunning, "准备 K8s 客户端与分析上下文")
 	clients, auditReq, err := s.loadClientsForAudit(runCtx, row)
 	if err != nil {
 		if errors.Is(err, context.Canceled) || runCtx.Err() != nil {
@@ -978,11 +979,11 @@ func (s *K8sPermissionAuditService) runAudit(auditID uint64) {
 			return
 		}
 		s.finishAuditWithError(row, task, PermissionAuditStatusFailed, err)
-		updateStep(0, StepFailed, fmt.Sprintf("准备失败：%v", err))
+		updateStep(0, platformapp.StepFailed, fmt.Sprintf("准备失败：%v", err))
 		return
 	}
-	updateStep(0, StepSuccess, "准备完成")
-	updateStep(1, StepRunning, "开始扫描集群资源")
+	updateStep(0, platformapp.StepSuccess, "准备完成")
+	updateStep(1, platformapp.StepRunning, "开始扫描集群资源")
 	available, discoveryErrors := s.discoverAvailableResources(runCtx, clients.discovery)
 	objects, scanErrors, err := s.scanTargetResources(runCtx, clients.dynamic, available, auditReq, task)
 	if err != nil {
@@ -991,15 +992,15 @@ func (s *K8sPermissionAuditService) runAudit(auditID uint64) {
 			return
 		}
 		s.finishAuditWithError(row, task, PermissionAuditStatusFailed, err)
-		updateStep(1, StepFailed, fmt.Sprintf("扫描失败：%v", err))
+		updateStep(1, platformapp.StepFailed, fmt.Sprintf("扫描失败：%v", err))
 		return
 	}
 	if runCtx.Err() != nil {
 		s.finishAuditCanceled(row, task)
 		return
 	}
-	updateStep(1, StepSuccess, fmt.Sprintf("扫描完成，资源数：%d", len(objects)))
-	updateStep(2, StepRunning, "开始分析权限与资源归属")
+	updateStep(1, platformapp.StepSuccess, fmt.Sprintf("扫描完成，资源数：%d", len(objects)))
+	updateStep(2, platformapp.StepRunning, "开始分析权限与资源归属")
 	findings, summary, stats, analyzeErrors := s.analyzeScannedResources(runCtx, row, auditReq, clients.mapper, objects)
 	if runCtx.Err() != nil {
 		s.finishAuditCanceled(row, task)
@@ -1011,25 +1012,25 @@ func (s *K8sPermissionAuditService) runAudit(auditID uint64) {
 	if len(allErrors) > 0 {
 		status = PermissionAuditStatusIncomplete
 	}
-	updateStep(2, StepSuccess, fmt.Sprintf("分析完成，结论数：%d", len(findings)))
-	updateStep(3, StepRunning, "保存分析结果")
+	updateStep(2, platformapp.StepSuccess, fmt.Sprintf("分析完成，结论数：%d", len(findings)))
+	updateStep(3, platformapp.StepRunning, "保存分析结果")
 	if err := s.persistAuditResult(runCtx, row.ID, status, summary, stats, findings, allErrors); err != nil {
 		if errors.Is(err, context.Canceled) || runCtx.Err() != nil {
 			s.finishAuditCanceled(row, task)
 			return
 		}
 		s.finishAuditWithError(row, task, PermissionAuditStatusFailed, err)
-		updateStep(3, StepFailed, fmt.Sprintf("保存失败：%v", err))
+		updateStep(3, platformapp.StepFailed, fmt.Sprintf("保存失败：%v", err))
 		return
 	}
-	updateStep(3, StepSuccess, "结果已保存")
+	updateStep(3, platformapp.StepSuccess, "结果已保存")
 	if task != nil {
 		msg := "K8s 权限分析完成"
 		if status == PermissionAuditStatusIncomplete {
 			msg = "K8s 权限分析完成，但存在部分资源扫描失败"
-			task.Status = TaskSuccess
+			task.Status = platformapp.TaskSuccess
 		} else {
-			task.Status = TaskStatus(status)
+			task.Status = platformapp.TaskStatus(status)
 		}
 		task.Message = &msg
 		percent := 100
@@ -1041,14 +1042,14 @@ func (s *K8sPermissionAuditService) runAudit(auditID uint64) {
 	}
 }
 
-func (s *K8sPermissionAuditService) finishAuditWithError(row *model.K8sPermissionAudit, task *Task, status string, err error) {
+func (s *K8sPermissionAuditService) finishAuditWithError(row *model.K8sPermissionAudit, task *platformapp.Task, status string, err error) {
 	msg := firstNonEmpty(serviceErrorMessage(err), "权限分析执行失败")
 	_ = s.db.WithContext(context.Background()).Model(&model.K8sPermissionAudit{}).Where("id = ?", row.ID).Updates(map[string]any{
 		"status":     status,
 		"error_json": model.JSONMap{"message": msg},
 	}).Error
 	if task != nil {
-		task.Status = TaskFailed
+		task.Status = platformapp.TaskFailed
 		task.Message = &msg
 		_ = task.Update()
 		task.AppendLog("[Error] " + msg)
@@ -1058,14 +1059,14 @@ func (s *K8sPermissionAuditService) finishAuditWithError(row *model.K8sPermissio
 	}
 }
 
-func (s *K8sPermissionAuditService) finishAuditCanceled(row *model.K8sPermissionAudit, task *Task) {
+func (s *K8sPermissionAuditService) finishAuditCanceled(row *model.K8sPermissionAudit, task *platformapp.Task) {
 	msg := "K8s 权限分析已取消"
 	_ = s.db.WithContext(context.Background()).Model(&model.K8sPermissionAudit{}).Where("id = ?", row.ID).Updates(map[string]any{
 		"status":     PermissionAuditStatusCanceled,
 		"error_json": model.JSONMap{"message": msg},
 	}).Error
 	if task != nil {
-		task.Status = TaskCanceled
+		task.Status = platformapp.TaskCanceled
 		task.Message = &msg
 		_ = task.Update()
 		task.AppendLog(msg)
@@ -1156,7 +1157,7 @@ func (s *K8sPermissionAuditService) discoverAvailableResources(ctx context.Conte
 	return resources, partialErrors
 }
 
-func (s *K8sPermissionAuditService) scanTargetResources(ctx context.Context, dyn dynamic.Interface, available map[string]permissionAuditAvailableResource, req PermissionAuditCreateRequest, task *Task) ([]permissionAuditScannedObject, []string, error) {
+func (s *K8sPermissionAuditService) scanTargetResources(ctx context.Context, dyn dynamic.Interface, available map[string]permissionAuditAvailableResource, req PermissionAuditCreateRequest, task *platformapp.Task) ([]permissionAuditScannedObject, []string, error) {
 	targets := permissionAuditTargets(req.ResourceAllowlist)
 	objects := make([]permissionAuditScannedObject, 0, 256)
 	partialErrors := []string{}

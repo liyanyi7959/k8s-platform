@@ -2,21 +2,26 @@ package kops
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
+	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	kopsapp "k8s-platform-backend/internal/kops/application"
+	kopsdomain "k8s-platform-backend/internal/kops/domain"
 	"k8s-platform-backend/internal/legacy/service"
 )
 
-// ManifestRuntime adapts the retained Kubernetes executor and audit store to
-// the Kops manifest port. This is deliberately the sole legacy dependency of
-// the migrated manifest use case.
+// ManifestRuntime persists manifest operation records and delegates the
+// Kubernetes apply itself to the retained runtime. It is an anti-corruption
+// adapter; Kops application code has no dependency on legacy services.
 type ManifestRuntime struct {
-	service *service.ManifestApplyRecordService
+	db  *gorm.DB
+	k8s *service.K8sService
 }
 
 type NamespaceRuntime struct {
@@ -96,78 +101,188 @@ func (r *NamespaceRuntime) Events(ctx context.Context, query kopsapp.EventListQu
 	}
 	return map[string]any{"list": value}, nil
 }
-func NewManifestRuntime(service *service.ManifestApplyRecordService) *ManifestRuntime {
-	return &ManifestRuntime{service: service}
+func NewManifestRuntime(db *gorm.DB, k8s *service.K8sService) *ManifestRuntime {
+	return &ManifestRuntime{db: db, k8s: k8s}
 }
 
 func (r *ManifestRuntime) Execute(ctx context.Context, input kopsapp.ManifestApplyInput) (*kopsapp.ManifestApplyResult, error) {
-	if r == nil || r.service == nil {
+	if r == nil || r.db == nil || r.k8s == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	result, err := r.service.Execute(ctx, service.ManifestApplyExecuteRequest{
-		ClusterID: input.ClusterID, YAML: input.YAML, DefaultNamespace: input.DefaultNamespace, DryRun: input.DryRun,
-		CreateOnly: input.CreateOnly, SourceLabel: input.SourceLabel, SourceResource: input.SourceResource,
-		WorkloadKind: input.WorkloadKind, CreatedBy: input.CreatedBy, CreatedByName: input.CreatedByName,
-	})
+	if input.ClusterID == 0 || strings.TrimSpace(input.YAML) == "" {
+		return nil, kopsapp.ErrInvalidParams
+	}
+	input.YAML, input.DefaultNamespace = strings.TrimSpace(input.YAML), strings.TrimSpace(input.DefaultNamespace)
+	input.SourceLabel, input.SourceResource = strings.TrimSpace(input.SourceLabel), strings.TrimSpace(input.SourceResource)
+	input.WorkloadKind, input.CreatedByName = strings.TrimSpace(input.WorkloadKind), strings.TrimSpace(input.CreatedByName)
+	if input.SourceLabel == "" {
+		input.SourceLabel = "通用 YAML 变更"
+	}
+	row := kopsdomain.ManifestApplyRecord{
+		ClusterID: input.ClusterID, Status: "running", DryRun: input.DryRun, DefaultNamespace: input.DefaultNamespace,
+		SourceLabel: input.SourceLabel, SourceResource: input.SourceResource, WorkloadKind: input.WorkloadKind,
+		YAMLContent: input.YAML, CreatedBy: input.CreatedBy, CreatedByName: input.CreatedByName, Summary: manifestPendingSummary(input.DryRun),
+	}
+	if err := r.db.WithContext(ctx).Create(&row).Error; err != nil {
+		return nil, err
+	}
+	items, applyErr := r.k8s.ApplyManifestYAML(ctx, input.ClusterID, input.YAML, service.ManifestApplyOptions{DefaultNamespace: input.DefaultNamespace, DryRun: input.DryRun, CreateOnly: input.CreateOnly})
+	if applyErr != nil {
+		_ = r.db.WithContext(ctx).Model(&kopsdomain.ManifestApplyRecord{}).Where("id = ?", row.ID).Updates(map[string]any{"status": "failed", "summary": manifestFailureSummary(applyErr), "error_message": manifestErrorMessage(applyErr)}).Error
+		return nil, translateKopsRuntimeError(applyErr)
+	}
+	encoded, err := json.Marshal(items)
 	if err != nil {
-		return nil, translateKopsRuntimeError(err)
+		_ = r.db.WithContext(ctx).Model(&kopsdomain.ManifestApplyRecord{}).Where("id = ?", row.ID).Updates(map[string]any{"status": "failed", "summary": "执行成功，但结果序列化失败", "error_message": err.Error()}).Error
+		return nil, kopsapp.ErrWithMessage(kopsapp.ErrConflict, "执行成功，但记录结果失败")
+	}
+	summary := manifestSuccessSummary(items, input.DryRun)
+	if err := r.db.WithContext(ctx).Model(&kopsdomain.ManifestApplyRecord{}).Where("id = ?", row.ID).Updates(map[string]any{"status": "success", "result_json": string(encoded), "result_count": len(items), "summary": summary, "error_message": ""}).Error; err != nil {
+		return nil, kopsapp.ErrWithMessage(kopsapp.ErrConflict, "执行成功，但记录保存失败")
 	}
 	return &kopsapp.ManifestApplyResult{
-		RecordID: result.RecordID, Status: result.Status, DryRun: result.DryRun, Summary: result.Summary,
-		Items: manifestResultItems(result.Items),
+		RecordID: row.ID, Status: "success", DryRun: input.DryRun, Summary: summary, Items: manifestResultItems(items),
 	}, nil
 }
 
 func (r *ManifestRuntime) List(ctx context.Context, query kopsapp.ManifestRecordQuery) (*kopsapp.ManifestRecordPage, error) {
-	if r == nil || r.service == nil {
+	if r == nil || r.db == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	result, err := r.service.List(ctx, service.ManifestApplyRecordListParams{
-		ClusterID: query.ClusterID, Page: query.Page, PageSize: query.PageSize, Keyword: query.Keyword,
-		Status: query.Status, Mode: query.Mode, DefaultNamespace: query.DefaultNamespace,
-	})
-	if err != nil {
-		return nil, translateKopsRuntimeError(err)
+	if query.ClusterID == 0 {
+		return nil, kopsapp.ErrInvalidParams
 	}
-	items := make([]kopsapp.ManifestRecordListItem, 0, len(result.List))
-	for _, item := range result.List {
-		items = append(items, manifestRecordListItem(item))
+	if query.Page <= 0 {
+		query.Page = 1
 	}
-	return &kopsapp.ManifestRecordPage{List: items, Total: result.Total, Page: result.Page, PageSize: result.PageSize}, nil
+	if query.PageSize <= 0 || query.PageSize > 100 {
+		query.PageSize = 20
+	}
+	q := r.db.WithContext(ctx).Model(&kopsdomain.ManifestApplyRecord{}).Where("cluster_id = ?", query.ClusterID)
+	if value := strings.TrimSpace(query.Keyword); value != "" {
+		like := "%" + value + "%"
+		q = q.Where("source_label LIKE ? OR source_resource LIKE ? OR workload_kind LIKE ? OR default_namespace LIKE ? OR summary LIKE ? OR error_message LIKE ? OR created_by_name LIKE ?", like, like, like, like, like, like, like)
+	}
+	if value := strings.TrimSpace(query.Status); value != "" {
+		q = q.Where("status = ?", value)
+	}
+	switch strings.ToLower(strings.TrimSpace(query.Mode)) {
+	case "apply":
+		q = q.Where("dry_run = ?", false)
+	case "dry_run", "dryrun":
+		q = q.Where("dry_run = ?", true)
+	}
+	if value := strings.TrimSpace(query.DefaultNamespace); value != "" {
+		q = q.Where("default_namespace LIKE ?", "%"+value+"%")
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, err
+	}
+	var rows []kopsdomain.ManifestApplyRecord
+	if err := q.Order("created_at DESC").Offset((query.Page - 1) * query.PageSize).Limit(query.PageSize).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	items := make([]kopsapp.ManifestRecordListItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, manifestRecordListItem(row))
+	}
+	return &kopsapp.ManifestRecordPage{List: items, Total: int(total), Page: query.Page, PageSize: query.PageSize}, nil
 }
 
 func (r *ManifestRuntime) Get(ctx context.Context, clusterID, recordID uint64) (*kopsapp.ManifestRecordDetail, error) {
-	if r == nil || r.service == nil {
+	if r == nil || r.db == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	result, err := r.service.Get(ctx, clusterID, recordID)
-	if err != nil {
-		return nil, translateKopsRuntimeError(err)
+	if clusterID == 0 || recordID == 0 {
+		return nil, kopsapp.ErrInvalidParams
 	}
-	return &kopsapp.ManifestRecordDetail{
-		ManifestRecordListItem: manifestRecordListItem(result.ManifestApplyRecordListItem),
-		ClusterID:              result.ClusterID, YAMLContent: result.YAMLContent, ResultItems: manifestResultItems(result.ResultItems),
-	}, nil
+	var row kopsdomain.ManifestApplyRecord
+	if err := r.db.WithContext(ctx).Where("id = ? AND cluster_id = ?", recordID, clusterID).Take(&row).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, kopsapp.ErrNotFound
+		}
+		return nil, err
+	}
+	items, err := parseManifestResultItems(row.ResultJSON)
+	if err != nil {
+		return nil, err
+	}
+	return &kopsapp.ManifestRecordDetail{ManifestRecordListItem: manifestRecordListItem(row), ClusterID: row.ClusterID, YAMLContent: row.YAMLContent, ResultItems: manifestResultItems(items)}, nil
 }
 
 func manifestResultItems(items []service.ManifestApplyResultItem) []kopsapp.ManifestResultItem {
 	result := make([]kopsapp.ManifestResultItem, 0, len(items))
 	for _, item := range items {
-		result = append(result, kopsapp.ManifestResultItem{
-			APIVersion: item.APIVersion, Kind: item.Kind, Namespace: item.Namespace, Name: item.Name,
-			Operation: item.Operation, Resource: item.Resource, Scope: item.Scope,
-		})
+		result = append(result, kopsapp.ManifestResultItem{APIVersion: item.APIVersion, Kind: item.Kind, Namespace: item.Namespace, Name: item.Name, Operation: item.Operation, Resource: item.Resource, Scope: item.Scope})
 	}
 	return result
 }
 
-func manifestRecordListItem(item service.ManifestApplyRecordListItem) kopsapp.ManifestRecordListItem {
+func manifestRecordListItem(item kopsdomain.ManifestApplyRecord) kopsapp.ManifestRecordListItem {
 	return kopsapp.ManifestRecordListItem{
 		ID: item.ID, Status: item.Status, DryRun: item.DryRun, DefaultNamespace: item.DefaultNamespace,
 		SourceLabel: item.SourceLabel, SourceResource: item.SourceResource, WorkloadKind: item.WorkloadKind,
 		ResultCount: item.ResultCount, Summary: item.Summary, ErrorMessage: item.ErrorMessage,
 		CreatedBy: item.CreatedBy, CreatedByName: item.CreatedByName, CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt,
 	}
+}
+
+func parseManifestResultItems(raw string) ([]service.ManifestApplyResultItem, error) {
+	if strings.TrimSpace(raw) == "" {
+		return nil, nil
+	}
+	var items []service.ManifestApplyResultItem
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return nil, kopsapp.ErrWithMessage(kopsapp.ErrConflict, "部署记录结果解析失败")
+	}
+	return items, nil
+}
+
+func manifestPendingSummary(dryRun bool) string {
+	if dryRun {
+		return "DryRun 校验中"
+	}
+	return "资源应用中"
+}
+
+func manifestSuccessSummary(items []service.ManifestApplyResultItem, dryRun bool) string {
+	created, updated := 0, 0
+	for _, item := range items {
+		switch strings.ToLower(strings.TrimSpace(item.Operation)) {
+		case "create":
+			created++
+		case "update":
+			updated++
+		}
+	}
+	mode := "Apply"
+	if dryRun {
+		mode = "DryRun"
+	}
+	return fmt.Sprintf("%s 完成，%d 个资源，创建 %d，更新 %d", mode, len(items), created, updated)
+}
+
+func manifestErrorMessage(err error) string {
+	if message, ok := service.UserMessage(err); ok {
+		return strings.TrimSpace(message)
+	}
+	if err == nil {
+		return ""
+	}
+	return strings.TrimSpace(err.Error())
+}
+
+func manifestFailureSummary(err error) string {
+	return firstManifestText(manifestErrorMessage(err), "执行失败")
+}
+func firstManifestText(values ...string) string {
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func translateKopsRuntimeError(err error) error {

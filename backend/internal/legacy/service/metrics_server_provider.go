@@ -9,6 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
 // metricsServerProvider 通过 Kubernetes metrics-server 获取实时指标。
@@ -21,9 +23,9 @@ func newMetricsServerProvider(svc *K8sService) *metricsServerProvider {
 	return &metricsServerProvider{svc: svc}
 }
 
-func (p *metricsServerProvider) Name() string { return string(MonitorSourceMetricsServer) }
+func (p *metricsServerProvider) Name() string { return string(kopsapp.MonitorSourceMetricsServer) }
 
-func (p *metricsServerProvider) GetNodeMetrics(ctx context.Context, clusterID uint64) ([]NodeMetrics, error) {
+func (p *metricsServerProvider) GetNodeMetrics(ctx context.Context, clusterID uint64) ([]kopsapp.NodeMetrics, error) {
 	nodes, err := p.svc.List(ctx, clusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}, "", "", "", nil)
 	if err != nil {
 		return nil, err
@@ -54,7 +56,7 @@ func (p *metricsServerProvider) GetNodeMetrics(ctx context.Context, clusterID ui
 		}
 	}
 
-	result := make([]NodeMetrics, 0, len(nodes))
+	result := make([]kopsapp.NodeMetrics, 0, len(nodes))
 	for _, node := range nodes {
 		raw, ok := node.(map[string]any)
 		if !ok {
@@ -83,7 +85,7 @@ func (p *metricsServerProvider) GetNodeMetrics(ctx context.Context, clusterID ui
 			}
 		}
 
-		result = append(result, NodeMetrics{
+		result = append(result, kopsapp.NodeMetrics{
 			Name:           name,
 			CPUUsage:       cpuUsage,
 			MemoryUsage:    memUsage,
@@ -96,7 +98,7 @@ func (p *metricsServerProvider) GetNodeMetrics(ctx context.Context, clusterID ui
 	return result, nil
 }
 
-func (p *metricsServerProvider) GetPodMetrics(ctx context.Context, clusterID uint64, namespace string) ([]PodMetrics, error) {
+func (p *metricsServerProvider) GetPodMetrics(ctx context.Context, clusterID uint64, namespace string) ([]kopsapp.PodMetrics, error) {
 	dc, err := p.svc.dynamicClient(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -115,7 +117,7 @@ func (p *metricsServerProvider) GetPodMetrics(ctx context.Context, clusterID uin
 		return nil, normalizeK8sErr(err)
 	}
 
-	result := make([]PodMetrics, 0, len(metricsList.Items))
+	result := make([]kopsapp.PodMetrics, 0, len(metricsList.Items))
 	for _, item := range metricsList.Items {
 		meta, _ := item.Object["metadata"].(map[string]any)
 		name, _ := meta["name"].(string)
@@ -133,7 +135,7 @@ func (p *metricsServerProvider) GetPodMetrics(ctx context.Context, clusterID uin
 			cpuTotal += parseResourceQuantity(cpuStr)
 			memTotal += parseResourceQuantity(memStr)
 		}
-		result = append(result, PodMetrics{
+		result = append(result, kopsapp.PodMetrics{
 			Name:      name,
 			Namespace: ns,
 			CPU:       cpuTotal,
@@ -143,11 +145,11 @@ func (p *metricsServerProvider) GetPodMetrics(ctx context.Context, clusterID uin
 	return result, nil
 }
 
-func (p *metricsServerProvider) GetNodeMetricTrend(ctx context.Context, clusterID uint64, nodeName, metric string, start, end time.Time, step time.Duration) ([]MetricPoint, error) {
+func (p *metricsServerProvider) GetNodeMetricTrend(ctx context.Context, clusterID uint64, nodeName, metric string, start, end time.Time, step time.Duration) ([]kopsapp.MetricPoint, error) {
 	return nil, fmt.Errorf("metrics-server 不支持历史趋势查询")
 }
 
-func (p *metricsServerProvider) GetPodMetricTrend(ctx context.Context, clusterID uint64, namespace, podName, metric string, start, end time.Time, step time.Duration) ([]MetricPoint, error) {
+func (p *metricsServerProvider) GetPodMetricTrend(ctx context.Context, clusterID uint64, namespace, podName, metric string, start, end time.Time, step time.Duration) ([]kopsapp.MetricPoint, error) {
 	return nil, fmt.Errorf("metrics-server 不支持历史趋势查询")
 }
 

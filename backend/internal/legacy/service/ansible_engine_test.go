@@ -3,6 +3,8 @@ package service
 import (
 	"testing"
 	"time"
+
+	platformapp "k8s-platform-backend/internal/platform/application"
 )
 
 func TestFinishUnresolvedSubStepsUsesParentTerminalStatus(t *testing.T) {
@@ -10,18 +12,18 @@ func TestFinishUnresolvedSubStepsUsesParentTerminalStatus(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		parent   TaskStepStatus
-		expected TaskStepStatus
+		parent   platformapp.TaskStepStatus
+		expected platformapp.TaskStepStatus
 	}{
-		{name: "successful parent completes final task", parent: StepSuccess, expected: StepSuccess},
-		{name: "failed parent fails final task", parent: StepFailed, expected: StepFailed},
+		{name: "successful parent completes final task", parent: platformapp.StepSuccess, expected: platformapp.StepSuccess},
+		{name: "failed parent fails final task", parent: platformapp.StepFailed, expected: platformapp.StepFailed},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			step := TaskStep{
+			step := platformapp.TaskStep{
 				Status:   tt.parent,
-				SubSteps: []TaskSubStep{{Key: "pre_check-14", Status: StepRunning}},
+				SubSteps: []platformapp.TaskSubStep{{Key: "pre_check-14", Status: platformapp.StepRunning}},
 			}
 
 			finishUnresolvedSubSteps(&step, finishedAt)
@@ -40,32 +42,32 @@ func TestFinishUnresolvedSubStepsUsesParentTerminalStatus(t *testing.T) {
 func TestActiveDeployStepKey(t *testing.T) {
 	tests := []struct {
 		name string
-		task *Task
+		task *platformapp.Task
 		want string
 	}{
 		{name: "nil task", task: nil, want: ""},
 		{
 			name: "uses running step",
-			task: &Task{Steps: []TaskStep{
-				{Key: "pre_check", Status: StepSuccess},
-				{Key: "bootstrap", Status: StepRunning},
-				{Key: "container_runtime", Status: StepPending},
+			task: &platformapp.Task{Steps: []platformapp.TaskStep{
+				{Key: "pre_check", Status: platformapp.StepSuccess},
+				{Key: "bootstrap", Status: platformapp.StepRunning},
+				{Key: "container_runtime", Status: platformapp.StepPending},
 			}},
 			want: "bootstrap",
 		},
 		{
 			name: "falls back to first unresolved step before runner starts",
-			task: &Task{Steps: []TaskStep{
-				{Key: "pre_check", Status: StepSuccess},
-				{Key: "bootstrap", Status: StepPending},
+			task: &platformapp.Task{Steps: []platformapp.TaskStep{
+				{Key: "pre_check", Status: platformapp.StepSuccess},
+				{Key: "bootstrap", Status: platformapp.StepPending},
 			}},
 			want: "bootstrap",
 		},
 		{
 			name: "returns empty after all steps succeed",
-			task: &Task{Steps: []TaskStep{
-				{Key: "pre_check", Status: StepSuccess},
-				{Key: "bootstrap", Status: StepSuccess},
+			task: &platformapp.Task{Steps: []platformapp.TaskStep{
+				{Key: "pre_check", Status: platformapp.StepSuccess},
+				{Key: "bootstrap", Status: platformapp.StepSuccess},
 			}},
 			want: "",
 		},

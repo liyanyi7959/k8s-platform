@@ -10,6 +10,7 @@ import (
 	"errors"
 	"strings"
 
+	fleetdomain "k8s-platform-backend/internal/fleet/domain"
 	platformapp "k8s-platform-backend/internal/platform/application"
 )
 
@@ -85,6 +86,38 @@ func UserMessage(err error) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// firstUserFacingError is shared by retained runtime adapters that must
+// persist an API-safe failure message without duplicating error unwrapping.
+func firstUserFacingError(err error) string {
+	if message, ok := UserMessage(err); ok {
+		return strings.TrimSpace(message)
+	}
+	if err == nil {
+		return ""
+	}
+	return strings.TrimSpace(err.Error())
+}
+
+// legacyClusterError translates Fleet domain failures for retained runtime
+// code that still exposes the legacy service error vocabulary.
+func legacyClusterError(err error) error {
+	if err == nil {
+		return nil
+	}
+	switch {
+	case errors.Is(err, fleetdomain.ErrValidation):
+		return ErrWithMessage(ErrInvalidParams, err.Error())
+	case errors.Is(err, fleetdomain.ErrNotFound):
+		return ErrNotFound
+	case errors.Is(err, fleetdomain.ErrConflict):
+		return ErrConflict
+	case errors.Is(err, fleetdomain.ErrCrypto):
+		return ErrCrypto
+	default:
+		return err
+	}
 }
 
 // ─── PageResult：通用分页返回结构 ────────────────────────────

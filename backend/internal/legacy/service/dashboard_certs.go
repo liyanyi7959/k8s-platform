@@ -91,7 +91,7 @@ func (s *DashboardService) getClusterCertificateRisks(ctx context.Context, clust
 		unknown("kubelet", "kubelet 证书（节点）", "kubelet", "节点 kubelet HTTPS（10250，取最早到期）"),
 	}
 
-	kc, err := s.clusterReg.GetKubeconfig(ctx, clusterID)
+	kc, err := s.clusterReg.Kubeconfig(ctx, clusterID)
 	if err == nil && strings.TrimSpace(kc) != "" {
 		if cfg, err := clientcmd.Load([]byte(kc)); err == nil && cfg != nil {
 			serverURL, caData := extractKubeconfigClusterServerAndCA(cfg)

@@ -9,6 +9,7 @@ import (
 
 	"gorm.io/gorm"
 
+	platformapp "k8s-platform-backend/internal/platform/application"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 )
@@ -210,7 +211,7 @@ func (s *DeployService) executePlanWithRetryStep(ctx context.Context, id uint64,
 		if retryFromStep != "" {
 			meta["retry_from_step"] = retryFromStep
 		}
-		task := &Task{Type: "deploy_cluster", Status: TaskPending, Title: &title, CreatedBy: int64(userID), Percent: &percent, Message: &message, Meta: meta}
+		task := &platformapp.Task{Type: "deploy_cluster", Status: platformapp.TaskPending, Title: &title, CreatedBy: int64(userID), Percent: &percent, Message: &message, Meta: meta}
 		if err := s.taskStore.Put(task); err != nil {
 			return err
 		}
@@ -292,7 +293,7 @@ func (s *DeployService) RetryPlan(ctx context.Context, id uint64, userID uint64)
 				validKeys[st.Key] = struct{}{}
 			}
 			for _, st := range task.Steps {
-				if st.Status == StepFailed {
+				if st.Status == platformapp.StepFailed {
 					if _, ok := validKeys[st.Key]; ok {
 						retryFromStep = st.Key
 						break

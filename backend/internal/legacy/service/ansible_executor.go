@@ -11,13 +11,14 @@ import (
 	"github.com/apenella/go-ansible/pkg/execute"
 	"github.com/apenella/go-ansible/pkg/options"
 	"github.com/apenella/go-ansible/pkg/playbook"
+	platformapp "k8s-platform-backend/internal/platform/application"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 )
 
 // ansibleLogWriter 自定义 io.Writer，逐行捕获 Ansible 输出并写入 Task 日志
 type ansibleLogWriter struct {
-	task      *Task
-	store     *TaskStore
+	task      *platformapp.Task
+	store     *platformapp.TaskStore
 	mu        sync.Mutex
 	buf       []byte
 	stepIndex int // 当前执行的 task.Steps 索引
@@ -25,7 +26,7 @@ type ansibleLogWriter struct {
 	failedStepIndex int
 }
 
-func newAnsibleLogWriter(task *Task, store *TaskStore) *ansibleLogWriter {
+func newAnsibleLogWriter(task *platformapp.Task, store *platformapp.TaskStore) *ansibleLogWriter {
 	return &ansibleLogWriter{
 		task:            task,
 		store:           store,
@@ -110,15 +111,15 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 				}
 				// 标记前序步骤为完成
 				for j := 0; j < taskStepIndex; j++ {
-					if w.task.Steps[j].Status == StepRunning {
-						w.task.Steps[j].Status = StepSuccess
+					if w.task.Steps[j].Status == platformapp.StepRunning {
+						w.task.Steps[j].Status = platformapp.StepSuccess
 						w.task.Steps[j].FinishedAt = &now
 						w.finishRunningSubStep(j, now)
 					}
 				}
 				// 标记当前步骤为执行中（重试场景下已被标记为 success 的步骤不覆盖，避免把跳过的步骤重新置为 running）
-				if w.task.Steps[taskStepIndex].Status != StepSuccess {
-					w.task.Steps[taskStepIndex].Status = StepRunning
+				if w.task.Steps[taskStepIndex].Status != platformapp.StepSuccess {
+					w.task.Steps[taskStepIndex].Status = platformapp.StepRunning
 					if w.task.Steps[taskStepIndex].StartedAt == nil {
 						w.task.Steps[taskStepIndex].StartedAt = &now
 					}
@@ -145,7 +146,7 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 			found := false
 			for k := range step.SubSteps {
 				if step.SubSteps[k].Title == taskName {
-					step.SubSteps[k].Status = StepRunning
+					step.SubSteps[k].Status = platformapp.StepRunning
 					step.SubSteps[k].StartedAt = &now
 					step.SubSteps[k].FinishedAt = nil
 					found = true
@@ -154,10 +155,10 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 			}
 			if !found {
 				key := fmt.Sprintf("%s-%d", step.Key, len(step.SubSteps))
-				step.SubSteps = append(step.SubSteps, TaskSubStep{
+				step.SubSteps = append(step.SubSteps, platformapp.TaskSubStep{
 					Key:       key,
 					Title:     taskName,
-					Status:    StepRunning,
+					Status:    platformapp.StepRunning,
 					StartedAt: &now,
 				})
 			}
@@ -176,8 +177,8 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 			return
 		}
 		for i := range w.task.Steps {
-			if w.task.Steps[i].Status == StepRunning {
-				w.task.Steps[i].Status = StepSuccess
+			if w.task.Steps[i].Status == platformapp.StepRunning {
+				w.task.Steps[i].Status = platformapp.StepSuccess
 				w.task.Steps[i].FinishedAt = &now
 				w.finishRunningSubStep(i, now)
 			}
@@ -191,7 +192,7 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 	}
 }
 
-func findTaskStepIndex(task *Task, stepKey string) int {
+func findTaskStepIndex(task *platformapp.Task, stepKey string) int {
 	if task == nil {
 		return -1
 	}
@@ -218,7 +219,7 @@ func (w *ansibleLogWriter) markCurrentStepFailed(now time.Time) {
 		return
 	}
 	w.failedStepIndex = w.stepIndex
-	w.task.Steps[w.stepIndex].Status = StepFailed
+	w.task.Steps[w.stepIndex].Status = platformapp.StepFailed
 	w.task.Steps[w.stepIndex].FinishedAt = &now
 	w.finishRunningSubStep(w.stepIndex, now)
 }
@@ -230,12 +231,12 @@ func (w *ansibleLogWriter) finishRunningSubStep(stepIdx int, t time.Time) {
 	}
 	step := &w.task.Steps[stepIdx]
 	for k := range step.SubSteps {
-		if step.SubSteps[k].Status == StepRunning {
+		if step.SubSteps[k].Status == platformapp.StepRunning {
 			step.SubSteps[k].FinishedAt = &t
-			if step.Status == StepFailed {
-				step.SubSteps[k].Status = StepFailed
+			if step.Status == platformapp.StepFailed {
+				step.SubSteps[k].Status = platformapp.StepFailed
 			} else {
-				step.SubSteps[k].Status = StepSuccess
+				step.SubSteps[k].Status = platformapp.StepSuccess
 			}
 		}
 	}
@@ -251,7 +252,7 @@ type ansibleExecuteOptions struct {
 
 // runAnsiblePlaybook 执行 Ansible Playbook
 // 使用 go-ansible 库执行 playbook，输出通过自定义 writer 实时写入 task 日志
-func (s *DeployService) runAnsiblePlaybook(ctx context.Context, opts ansibleExecuteOptions, task *Task) error {
+func (s *DeployService) runAnsiblePlaybook(ctx context.Context, opts ansibleExecuteOptions, task *platformapp.Task) error {
 	// 创建自定义日志写入器
 	writer := newAnsibleLogWriter(task, s.taskStore)
 

@@ -10,6 +10,52 @@ type MetricPoint struct {
 	Timestamp int64   `json:"timestamp"`
 	Value     float64 `json:"value"`
 }
+
+// MonitorSource identifies the metrics backend selected for a cluster.
+type MonitorSource string
+
+const (
+	MonitorSourceAuto          MonitorSource = "auto"
+	MonitorSourcePrometheus    MonitorSource = "prometheus"
+	MonitorSourceMetricsServer MonitorSource = "metrics_server"
+)
+
+// PrometheusStatus records the latest observed health of a Prometheus source.
+type PrometheusStatus string
+
+const (
+	PrometheusStatusUnknown   PrometheusStatus = "unknown"
+	PrometheusStatusHealthy   PrometheusStatus = "healthy"
+	PrometheusStatusUnhealthy PrometheusStatus = "unhealthy"
+)
+
+type NodeMetrics struct {
+	Name           string  `json:"name"`
+	CPUUsage       float64 `json:"cpu_usage"`
+	MemoryUsage    float64 `json:"memory_usage"`
+	CPUCapacity    int64   `json:"cpu_capacity"`
+	MemoryCapacity int64   `json:"memory_capacity"`
+	CPUUsed        int64   `json:"cpu_used"`
+	MemoryUsed     int64   `json:"memory_used"`
+}
+
+type PodMetrics struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	CPU       int64  `json:"cpu"`
+	Memory    int64  `json:"memory"`
+}
+
+// MetricsProvider is implemented by infrastructure adapters such as
+// Prometheus and Kubernetes metrics-server clients.
+type MetricsProvider interface {
+	Name() string
+	GetNodeMetrics(context.Context, uint64) ([]NodeMetrics, error)
+	GetPodMetrics(context.Context, uint64, string) ([]PodMetrics, error)
+	GetNodeMetricTrend(context.Context, uint64, string, string, time.Time, time.Time, time.Duration) ([]MetricPoint, error)
+	GetPodMetricTrend(context.Context, uint64, string, string, string, time.Time, time.Time, time.Duration) ([]MetricPoint, error)
+	Health(context.Context, uint64) error
+}
 type MetricsTrendQuery struct {
 	ClusterID uint64
 	Target    string

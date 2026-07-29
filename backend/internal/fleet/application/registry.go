@@ -80,6 +80,22 @@ func (s *Registry) UpdateHealth(ctx context.Context, id uint64, apiOK bool, node
 func (s *Registry) UpdateMonitorSource(ctx context.Context, id uint64, source, url, status string) error {
 	return s.repository.UpdateMonitorSource(ctx, id, source, url, status)
 }
+
+// MonitorSource returns only the persisted monitoring-source fields required
+// by Kops runtime adapters, without exposing registry persistence details.
+func (s *Registry) MonitorSource(ctx context.Context, id uint64) (*domain.Cluster, error) {
+	row, err := s.repository.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &domain.Cluster{
+		ID:                   row.ID,
+		MonitorSource:        row.MonitorSource,
+		PrometheusURL:        row.PrometheusURL,
+		PrometheusStatus:     row.PrometheusStatus,
+		PrometheusDetectedAt: row.PrometheusDetectedAt,
+	}, nil
+}
 func (s *Registry) Patch(ctx context.Context, id uint64, request PatchRequest) error {
 	if request.Name != nil {
 		value := strings.TrimSpace(*request.Name)

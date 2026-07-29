@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	platformapp "k8s-platform-backend/internal/platform/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 )
 
@@ -39,7 +40,7 @@ func (s *DeployService) InstallPlanAddons(ctx context.Context, planID uint64, re
 		return 0, ErrWithMessage(ErrConflict, "以下组件已安装，不能重复安装："+strings.Join(alreadyInstalled, "、"))
 	}
 	for _, task := range s.taskStore.List() {
-		if task.Type != "install_cluster_addons" || (task.Status != TaskPending && task.Status != TaskRunning) {
+		if task.Type != "install_cluster_addons" || (task.Status != platformapp.TaskPending && task.Status != platformapp.TaskRunning) {
 			continue
 		}
 		if fmt.Sprint(task.Meta["deploy_plan_id"]) == fmt.Sprint(planID) {
@@ -53,9 +54,9 @@ func (s *DeployService) InstallPlanAddons(ctx context.Context, planID uint64, re
 	}
 	message := "组件安装任务已创建，正在准备 Master Ansible Runner"
 	percent := 0
-	task := &Task{
+	task := &platformapp.Task{
 		Type:      "install_cluster_addons",
-		Status:    TaskPending,
+		Status:    platformapp.TaskPending,
 		Title:     &title,
 		CreatedBy: int64(userID),
 		Percent:   &percent,
@@ -76,14 +77,14 @@ func (s *DeployService) InstallPlanAddons(ctx context.Context, planID uint64, re
 
 // GetLatestPlanAddonTask returns the most recent supplementary component task
 // so the deployment pipeline can show its status after a page refresh.
-func (s *DeployService) GetLatestPlanAddonTask(ctx context.Context, planID uint64) (*Task, error) {
+func (s *DeployService) GetLatestPlanAddonTask(ctx context.Context, planID uint64) (*platformapp.Task, error) {
 	if planID == 0 {
 		return nil, ErrInvalidParams
 	}
 	if _, _, err := s.getPlanWithNodes(ctx, planID); err != nil {
 		return nil, err
 	}
-	var latest *Task
+	var latest *platformapp.Task
 	for _, task := range s.taskStore.List() {
 		if task.Type != "install_cluster_addons" || fmt.Sprint(task.Meta["deploy_plan_id"]) != fmt.Sprint(planID) {
 			continue
@@ -106,7 +107,7 @@ func (s *DeployService) RetryPlanAddons(ctx context.Context, planID uint64, user
 	if task == nil {
 		return 0, ErrWithMessage(ErrNotFound, "未找到可重试的附加组件安装任务")
 	}
-	if task.Status != TaskFailed && task.Status != TaskCanceled {
+	if task.Status != platformapp.TaskFailed && task.Status != platformapp.TaskCanceled {
 		return 0, ErrWithMessage(ErrConflict, "当前附加组件任务无需重试")
 	}
 	addons := taskMetaStringSlice(task.Meta, "addons")
@@ -147,8 +148,8 @@ func (s *DeployService) addonInstallPipeline(ctx context.Context, planID uint64,
 	defer cancel()
 
 	now := time.Now().UTC()
-	task.Status = TaskRunning
-	task.Steps = []TaskStep{newAddonInstallTaskStep(addons, now)}
+	task.Status = platformapp.TaskRunning
+	task.Steps = []platformapp.TaskStep{newAddonInstallTaskStep(addons, now)}
 	message := "正在通过 Master 安装所选附加组件"
 	task.Message = &message
 	_ = s.taskStore.Put(task)
@@ -186,11 +187,11 @@ func (s *DeployService) addonInstallPipeline(ctx context.Context, planID uint64,
 		return
 	}
 	finished := time.Now().UTC()
-	task.Steps[0].Status = StepSuccess
+	task.Steps[0].Status = platformapp.StepSuccess
 	task.Steps[0].FinishedAt = &finished
 	percent := 100
 	task.Percent = &percent
-	task.Status = TaskSuccess
+	task.Status = platformapp.TaskSuccess
 	message = "附加组件安装完成：" + strings.Join(addons, ", ")
 	task.Message = &message
 	task.AppendLog("[info] "+message, "install_addons")
@@ -214,11 +215,11 @@ func isHelmOnlyAddonSelection(addons []string) bool {
 	return len(addons) == 1 && addons[0] == "helm"
 }
 
-func newAddonInstallTaskStep(addons []string, startedAt time.Time) TaskStep {
+func newAddonInstallTaskStep(addons []string, startedAt time.Time) platformapp.TaskStep {
 	if isHelmOnlyAddonSelection(addons) {
-		return TaskStep{Key: "install_helm", Title: "补充安装 Helm", Status: StepRunning, StartedAt: &startedAt}
+		return platformapp.TaskStep{Key: "install_helm", Title: "补充安装 Helm", Status: platformapp.StepRunning, StartedAt: &startedAt}
 	}
-	return TaskStep{Key: "install_addons", Title: "补充安装集群组件", Status: StepRunning, StartedAt: &startedAt}
+	return platformapp.TaskStep{Key: "install_addons", Title: "补充安装集群组件", Status: platformapp.StepRunning, StartedAt: &startedAt}
 }
 
 func selectedInstalledAddons(existing []string, helmInstalled bool, requested []string) []string {

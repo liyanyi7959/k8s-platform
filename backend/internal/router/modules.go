@@ -128,9 +128,9 @@ type incidentModule struct {
 
 type moduleRuntime struct {
 	taskStore       *platformapp.TaskStore
-	clusterRegistry *service.ClusterRegistryService
+	clusterRegistry *fleetapp.Registry
 	k8s             *service.K8sService
-	manifestApply   *service.ManifestApplyRecordService
+	manifestApply   *legacykops.ManifestRuntime
 	execSessions    *kopsapp.ExecSessionStore
 	logSessions     *kopsapp.PodLogSessionStore
 	dashboard       *service.DashboardService
@@ -242,9 +242,9 @@ func buildWorkspaceModule(d Deps, runtime moduleRuntime) workspaceModule {
 
 func buildModuleRuntime(d Deps) moduleRuntime {
 	taskStore := platformapp.NewTaskStore(d.DB)
-	clusterRegistry := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
+	clusterRegistry := fleetapp.NewRegistry(fleetmysql.NewRegistry(d.DB, d.EncryptionKey))
 	k8sService := service.NewK8sService(clusterRegistry, d.CacheStore, d.CacheTTL, d.K8sInsecureTLS)
-	manifestApply := service.NewManifestApplyRecordService(d.DB, k8sService)
+	manifestApply := legacykops.NewManifestRuntime(d.DB, k8sService)
 	return moduleRuntime{
 		taskStore:       taskStore,
 		clusterRegistry: clusterRegistry,
@@ -314,10 +314,8 @@ func fleetRuntimeError(err error) error {
 }
 
 func buildFleetModule(d Deps, runtime moduleRuntime) fleetModule {
-	repository := fleetmysql.NewRegistry(d.DB, d.EncryptionKey)
-	registry := fleetapp.NewRegistry(repository)
 	return fleetModule{
-		clusters:  fleethttp.NewClusterController(registry, fleetClusterRuntime{k8s: runtime.k8s}),
+		clusters:  fleethttp.NewClusterController(runtime.clusterRegistry, fleetClusterRuntime{k8s: runtime.k8s}),
 		dashboard: fleethttp.NewDashboardController(runtime.dashboard),
 	}
 }
@@ -334,7 +332,7 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 		d.EncryptionKey,
 	)
 	return kopsModule{
-		manifests:       kopshttp.NewManifestController(kopsapp.NewManifestService(legacykops.NewManifestRuntime(runtime.manifestApply))),
+		manifests:       kopshttp.NewManifestController(kopsapp.NewManifestService(runtime.manifestApply)),
 		namespaces:      kopshttp.NewNamespaceController(kopsapp.NewNamespaceService(legacykops.NewNamespaceRuntime(runtime.k8s))),
 		metrics:         kopshttp.NewMetricsController(kopsapp.NewMetricsService(legacykops.NewMetricsRuntime(runtime.k8s))),
 		connectivity:    kopshttp.NewConnectivityController(kopsapp.NewConnectivityService(legacykops.NewConnectivityRuntime(runtime.k8s))),
@@ -358,7 +356,7 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 }
 
 func buildChangeModule(d Deps, runtime moduleRuntime) changeModule {
-	workloadAction := service.NewWorkloadActionService(runtime.k8s, runtime.manifestApply)
+	workloadAction := kopsapp.NewActionProposalService(legacykops.NewActionProposalRuntime(runtime.k8s, runtime.manifestApply))
 	applicationService := changeapp.NewService(changemysql.NewRepository(d.DB))
 	return changeModule{
 		application: applicationService,

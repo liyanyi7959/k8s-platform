@@ -14,6 +14,7 @@ import (
 	changeapp "k8s-platform-backend/internal/change/application"
 	changedomain "k8s-platform-backend/internal/change/domain"
 	changeports "k8s-platform-backend/internal/change/ports"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 	kopsdomain "k8s-platform-backend/internal/kops/domain"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -63,12 +64,12 @@ type ConfirmAIActionProposalResult = aiapp.ActionConfirmationResult
 // aiapp.ActionService; this type only adapts the legacy Kops and Change ports.
 type AIActionService struct{ core *aiapp.ActionService }
 
-func NewAIActionService(db *gorm.DB, workloadSvc *WorkloadActionService) *AIActionService {
-	return NewAIActionServiceWithChangeService(db, workloadSvc, changeapp.NewService(changemysql.NewRepository(db)))
+func NewAIActionService(db *gorm.DB, workloadActions *kopsapp.ActionProposalService) *AIActionService {
+	return NewAIActionServiceWithChangeService(db, workloadActions, changeapp.NewService(changemysql.NewRepository(db)))
 }
 
-func NewAIActionServiceWithChangeService(db *gorm.DB, workloadSvc *WorkloadActionService, changeService *changeapp.Service) *AIActionService {
-	return &AIActionService{core: aiapp.NewActionService(db, workloadActionExecutor{service: workloadSvc}, changeConfirmationAdapter{service: changeService})}
+func NewAIActionServiceWithChangeService(db *gorm.DB, workloadActions *kopsapp.ActionProposalService, changeService *changeapp.Service) *AIActionService {
+	return &AIActionService{core: aiapp.NewActionService(db, workloadActionExecutor{service: workloadActions}, changeConfirmationAdapter{service: changeService})}
 }
 
 func (s *AIActionService) CreateProposal(ctx context.Context, clusterID, userID uint64, username string, req CreateAIActionProposalRequest) (CreateAIActionProposalResult, error) {
@@ -112,17 +113,19 @@ func listConversationActionProposals(ctx context.Context, db *gorm.DB, conversat
 	return aiapp.NewActionProjectionService(db, aiapp.ActionConfirmationText).ListConversation(ctx, conversationID)
 }
 
-type workloadActionExecutor struct{ service *WorkloadActionService }
+type workloadActionExecutor struct {
+	service *kopsapp.ActionProposalService
+}
 
 func (adapter workloadActionExecutor) PrepareAction(ctx context.Context, clusterID uint64, req aiapp.CreateActionProposalRequest) (aiapp.PreparedAction, error) {
 	if adapter.service == nil {
 		return aiapp.PreparedAction{}, errors.New("workload action service is required")
 	}
 	target := normalizeAIActionTarget(req.TargetResource)
-	prepared, err := adapter.service.PrepareProposal(ctx, PrepareWorkloadActionRequest{
+	prepared, err := adapter.service.Prepare(ctx, kopsapp.ActionProposalPrepareRequest{
 		ClusterID: clusterID, ActionType: req.ProposalType,
-		Target:  WorkloadActionTarget{Kind: target.Kind, Namespace: target.Namespace, Name: target.Name},
-		Payload: kopsdomain.JSONMap(req.Payload), Reason: strings.TrimSpace(req.Reason),
+		Target:  kopsapp.ActionProposalTarget{Kind: target.Kind, Namespace: target.Namespace, Name: target.Name},
+		Payload: req.Payload, Reason: strings.TrimSpace(req.Reason),
 	})
 	if err != nil {
 		return aiapp.PreparedAction{}, err
@@ -138,9 +141,9 @@ func (adapter workloadActionExecutor) ExecuteAction(ctx context.Context, proposa
 	if adapter.service == nil {
 		return aiapp.ActionExecutionResult{}, errors.New("workload action service is required")
 	}
-	result, err := adapter.service.ExecuteProposalAction(ctx, ExecuteWorkloadActionRequest{
+	result, err := adapter.service.Execute(ctx, kopsapp.ActionProposalExecutionRequest{
 		ClusterID: proposal.ClusterID, ActionType: proposal.ActionType,
-		Target: WorkloadActionTarget{Kind: proposal.TargetKind, Namespace: proposal.TargetNamespace, Name: proposal.TargetName},
+		Target: kopsapp.ActionProposalTarget{Kind: proposal.TargetKind, Namespace: proposal.TargetNamespace, Name: proposal.TargetName},
 		Change: kopsdomain.JSONMap(proposal.ChangeJSON), ProposalTitle: proposal.Title, CreatedBy: proposal.CreatedBy, CreatedByName: proposal.CreatedByName,
 	})
 	if err != nil {
@@ -178,6 +181,7 @@ func mapActionApplicationError(err error) error {
 	}
 	for _, candidate := range []struct{ application, legacy error }{
 		{aiapp.ErrInvalidParams, ErrInvalidParams}, {aiapp.ErrNotFound, ErrNotFound}, {aiapp.ErrConflict, ErrConflict}, {aiapp.ErrCrypto, ErrCrypto},
+		{kopsapp.ErrInvalidParams, ErrInvalidParams}, {kopsapp.ErrNotFound, ErrNotFound}, {kopsapp.ErrConflict, ErrConflict},
 	} {
 		if errors.Is(err, candidate.application) {
 			if message, ok := UserMessage(err); ok {

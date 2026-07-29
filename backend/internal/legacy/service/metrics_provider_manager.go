@@ -7,51 +7,57 @@ import (
 	"time"
 
 	fleetdomain "k8s-platform-backend/internal/fleet/domain"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
 // PrometheusInfo 集群 Prometheus 配置快照。
 type PrometheusInfo struct {
 	URL    string
-	Status PrometheusStatus
+	Status kopsapp.PrometheusStatus
 }
 
 var (
-	providerCache   = map[uint64]MetricsProvider{}
+	providerCache   = map[uint64]kopsapp.MetricsProvider{}
 	providerCacheMu sync.RWMutex
 )
 
 // GetPrometheusInfo 返回集群当前记录的 Prometheus 信息。
 func (s *K8sService) GetPrometheusInfo(ctx context.Context, clusterID uint64) (*PrometheusInfo, error) {
-	c, err := s.clusterReg.GetClusterMonitorSource(ctx, clusterID)
+	c, err := s.GetClusterMonitorSource(ctx, clusterID)
 	if err != nil {
 		return nil, err
 	}
 	return &PrometheusInfo{
 		URL:    c.PrometheusURL,
-		Status: PrometheusStatus(c.PrometheusStatus),
+		Status: kopsapp.PrometheusStatus(c.PrometheusStatus),
 	}, nil
 }
 
-// GetClusterMonitorSource 代理到 ClusterRegistryService，供控制器查询完整数据源配置。
+// GetClusterMonitorSource retrieves persisted monitoring configuration through Fleet.
 func (s *K8sService) GetClusterMonitorSource(ctx context.Context, clusterID uint64) (*fleetdomain.Cluster, error) {
-	return s.clusterReg.GetClusterMonitorSource(ctx, clusterID)
+	cluster, err := s.clusterReg.MonitorSource(ctx, clusterID)
+	return cluster, legacyClusterError(err)
+}
+
+func (s *K8sService) updateClusterMonitorSource(ctx context.Context, clusterID uint64, source kopsapp.MonitorSource, url string, status kopsapp.PrometheusStatus) error {
+	return legacyClusterError(s.clusterReg.UpdateMonitorSource(ctx, clusterID, string(source), url, string(status)))
 }
 
 // DetectAndUpdatePrometheus 检测集群内 Prometheus 并持久化结果。
 func (s *K8sService) DetectAndUpdatePrometheus(ctx context.Context, clusterID uint64) (*PrometheusInfo, error) {
 	info, err := s.DetectPrometheus(ctx, clusterID)
 	if err != nil {
-		_ = s.clusterReg.UpdateClusterMonitorSource(ctx, clusterID, MonitorSourceMetricsServer, "", PrometheusStatusUnhealthy)
+		_ = s.updateClusterMonitorSource(ctx, clusterID, kopsapp.MonitorSourceMetricsServer, "", kopsapp.PrometheusStatusUnhealthy)
 		return nil, err
 	}
 
-	status := PrometheusStatusHealthy
+	status := kopsapp.PrometheusStatusHealthy
 	pc := newPrometheusClient(info.URL)
 	if err := pc.health(ctx); err != nil {
-		status = PrometheusStatusUnhealthy
+		status = kopsapp.PrometheusStatusUnhealthy
 	}
 
-	if err := s.clusterReg.UpdateClusterMonitorSource(ctx, clusterID, MonitorSourcePrometheus, info.URL, status); err != nil {
+	if err := s.updateClusterMonitorSource(ctx, clusterID, kopsapp.MonitorSourcePrometheus, info.URL, status); err != nil {
 		return nil, err
 	}
 	return &PrometheusInfo{URL: info.URL, Status: status}, nil
@@ -59,25 +65,25 @@ func (s *K8sService) DetectAndUpdatePrometheus(ctx context.Context, clusterID ui
 
 // MetricsProvider 返回当前集群应使用的 MetricsProvider。
 // 首次调用或 source=auto 时会触发检测。
-func (s *K8sService) MetricsProvider(ctx context.Context, clusterID uint64) (MetricsProvider, error) {
-	c, err := s.clusterReg.GetClusterMonitorSource(ctx, clusterID)
+func (s *K8sService) MetricsProvider(ctx context.Context, clusterID uint64) (kopsapp.MetricsProvider, error) {
+	c, err := s.GetClusterMonitorSource(ctx, clusterID)
 	if err != nil {
 		return nil, err
 	}
 
-	source := MonitorSource(c.MonitorSource)
-	if source == MonitorSourceAuto || source == "" {
+	source := kopsapp.MonitorSource(c.MonitorSource)
+	if source == kopsapp.MonitorSourceAuto || source == "" {
 		// 未检测过，尝试检测 Prometheus。
 		if _, detectErr := s.DetectAndUpdatePrometheus(ctx, clusterID); detectErr == nil {
-			source = MonitorSourcePrometheus
+			source = kopsapp.MonitorSourcePrometheus
 		} else {
-			source = MonitorSourceMetricsServer
+			source = kopsapp.MonitorSourceMetricsServer
 		}
 	}
 
-	var provider MetricsProvider
+	var provider kopsapp.MetricsProvider
 	switch source {
-	case MonitorSourcePrometheus:
+	case kopsapp.MonitorSourcePrometheus:
 		provider = newPrometheusProvider(s)
 	default:
 		provider = newMetricsServerProvider(s)
@@ -92,21 +98,21 @@ func (s *K8sService) MetricsProvider(ctx context.Context, clusterID uint64) (Met
 }
 
 // SwitchProvider 手动切换数据源。
-func (s *K8sService) SwitchProvider(ctx context.Context, clusterID uint64, source MonitorSource) error {
+func (s *K8sService) SwitchProvider(ctx context.Context, clusterID uint64, source kopsapp.MonitorSource) error {
 	var url string
-	var status PrometheusStatus
+	var status kopsapp.PrometheusStatus
 	switch source {
-	case MonitorSourcePrometheus:
-		info, err := s.clusterReg.GetClusterMonitorSource(ctx, clusterID)
+	case kopsapp.MonitorSourcePrometheus:
+		info, err := s.GetClusterMonitorSource(ctx, clusterID)
 		if err != nil {
 			return err
 		}
 		url = info.PrometheusURL
-		status = PrometheusStatus(info.PrometheusStatus)
-	case MonitorSourceMetricsServer:
+		status = kopsapp.PrometheusStatus(info.PrometheusStatus)
+	case kopsapp.MonitorSourceMetricsServer:
 		url = ""
-		status = PrometheusStatusUnknown
-	case MonitorSourceAuto:
+		status = kopsapp.PrometheusStatusUnknown
+	case kopsapp.MonitorSourceAuto:
 		_, err := s.DetectAndUpdatePrometheus(ctx, clusterID)
 		return err
 	default:
@@ -117,26 +123,26 @@ func (s *K8sService) SwitchProvider(ctx context.Context, clusterID uint64, sourc
 	delete(providerCache, clusterID)
 	providerCacheMu.Unlock()
 
-	return s.clusterReg.UpdateClusterMonitorSource(ctx, clusterID, source, url, status)
+	return s.updateClusterMonitorSource(ctx, clusterID, source, url, status)
 }
 
 // HealthCheckAndSwitch 对当前数据源做健康检查，异常时自动降级，恢复后自动切回。
-func (s *K8sService) HealthCheckAndSwitch(ctx context.Context, clusterID uint64) (MetricsProvider, error) {
-	c, err := s.clusterReg.GetClusterMonitorSource(ctx, clusterID)
+func (s *K8sService) HealthCheckAndSwitch(ctx context.Context, clusterID uint64) (kopsapp.MetricsProvider, error) {
+	c, err := s.GetClusterMonitorSource(ctx, clusterID)
 	if err != nil {
 		return nil, err
 	}
 
-	source := MonitorSource(c.MonitorSource)
+	source := kopsapp.MonitorSource(c.MonitorSource)
 	prometheusURL := c.PrometheusURL
 
 	// 1. 尝试 Prometheus。
-	if source == MonitorSourcePrometheus || source == MonitorSourceAuto {
+	if source == kopsapp.MonitorSourcePrometheus || source == kopsapp.MonitorSourceAuto {
 		if prometheusURL != "" {
 			pc := newPrometheusClient(prometheusURL)
 			if err := pc.health(ctx); err == nil {
-				if source != MonitorSourcePrometheus || c.PrometheusStatus != string(PrometheusStatusHealthy) {
-					_ = s.clusterReg.UpdateClusterMonitorSource(ctx, clusterID, MonitorSourcePrometheus, prometheusURL, PrometheusStatusHealthy)
+				if source != kopsapp.MonitorSourcePrometheus || c.PrometheusStatus != string(kopsapp.PrometheusStatusHealthy) {
+					_ = s.updateClusterMonitorSource(ctx, clusterID, kopsapp.MonitorSourcePrometheus, prometheusURL, kopsapp.PrometheusStatusHealthy)
 				}
 				provider := newPrometheusProvider(s)
 				providerCacheMu.Lock()
@@ -146,7 +152,7 @@ func (s *K8sService) HealthCheckAndSwitch(ctx context.Context, clusterID uint64)
 			}
 		}
 		// Prometheus 不可用，降级到 metrics-server。
-		_ = s.clusterReg.UpdateClusterMonitorSource(ctx, clusterID, MonitorSourceMetricsServer, prometheusURL, PrometheusStatusUnhealthy)
+		_ = s.updateClusterMonitorSource(ctx, clusterID, kopsapp.MonitorSourceMetricsServer, prometheusURL, kopsapp.PrometheusStatusUnhealthy)
 	}
 
 	// 2. 使用 metrics-server。
