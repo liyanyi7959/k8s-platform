@@ -39,14 +39,15 @@ type k8sRouteArgs struct {
 	configuration *kopshttp.ConfigurationController
 	storage       *kopshttp.StorageController
 	helm          *kopshttp.HelmController
+	workloads     *kopshttp.WorkloadController
 	pods          *kopshttp.PodController
 	inspection    *kopshttp.InspectionController
 	creator       *kopshttp.ResourceCreatorController
 	perm          k8sPerms
 }
 
-func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sController, manifest *kopshttp.ManifestController, namespace *kopshttp.NamespaceController, metrics *kopshttp.MetricsController, connectivity *kopshttp.ConnectivityController, nodes *kopshttp.NodeController, platform *kopshttp.PlatformResourceController, relationships *kopshttp.RelationshipResourceController, batch *kopshttp.BatchController, network *kopshttp.NetworkController, configuration *kopshttp.ConfigurationController, storage *kopshttp.StorageController, helm *kopshttp.HelmController, pods *kopshttp.PodController, inspection *kopshttp.InspectionController, creators ...*kopshttp.ResourceCreatorController) {
-	if ctl == nil || manifest == nil || namespace == nil || metrics == nil || connectivity == nil || nodes == nil || platform == nil || relationships == nil || batch == nil || network == nil || configuration == nil || storage == nil || pods == nil || inspection == nil {
+func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sController, manifest *kopshttp.ManifestController, namespace *kopshttp.NamespaceController, metrics *kopshttp.MetricsController, connectivity *kopshttp.ConnectivityController, nodes *kopshttp.NodeController, platform *kopshttp.PlatformResourceController, relationships *kopshttp.RelationshipResourceController, batch *kopshttp.BatchController, network *kopshttp.NetworkController, configuration *kopshttp.ConfigurationController, storage *kopshttp.StorageController, helm *kopshttp.HelmController, workloads *kopshttp.WorkloadController, pods *kopshttp.PodController, inspection *kopshttp.InspectionController, creators ...*kopshttp.ResourceCreatorController) {
+	if ctl == nil || manifest == nil || namespace == nil || metrics == nil || connectivity == nil || nodes == nil || platform == nil || relationships == nil || batch == nil || network == nil || configuration == nil || storage == nil || helm == nil || workloads == nil || pods == nil || inspection == nil {
 		return
 	}
 	creator := &kopshttp.ResourceCreatorController{}
@@ -56,7 +57,7 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	k8s := authed.Group("")
 	resourceSupportReadPerm := middleware.RequireAnyPerm("k8s:read", "k8s:rbac_read")
 	args := k8sRouteArgs{
-		k8s: k8s, d: d, ctl: ctl, manifest: manifest, namespace: namespace, metrics: metrics, connectivity: connectivity, nodes: nodes, platform: platform, relationships: relationships, batch: batch, network: network, configuration: configuration, storage: storage, helm: helm, pods: pods, inspection: inspection, creator: creator,
+		k8s: k8s, d: d, ctl: ctl, manifest: manifest, namespace: namespace, metrics: metrics, connectivity: connectivity, nodes: nodes, platform: platform, relationships: relationships, batch: batch, network: network, configuration: configuration, storage: storage, helm: helm, workloads: workloads, pods: pods, inspection: inspection, creator: creator,
 		perm: k8sPerms{
 			read:                   middleware.RequirePerm("k8s:read"),
 			write:                  middleware.RequirePerm("k8s:write"),
@@ -256,7 +257,7 @@ func registerClusterResourceRoutes(a k8sRouteArgs) {
 // ── 工作负载：Pod / Deployment / StatefulSet / DaemonSet / ReplicaSet / Manifest ──
 
 func registerWorkloadRoutes(a k8sRouteArgs) {
-	k8s, ctl, manifest, metrics, relationships, pods, inspection, creator, p := a.k8s, a.ctl, a.manifest, a.metrics, a.relationships, a.pods, a.inspection, a.creator, a.perm
+	k8s, manifest, metrics, relationships, workloads, pods, inspection, creator, p := a.k8s, a.manifest, a.metrics, a.relationships, a.workloads, a.pods, a.inspection, a.creator, a.perm
 
 	// Pod
 	k8s.GET("/clusters/:id/pods", p.read, pods.List)
@@ -279,25 +280,25 @@ func registerWorkloadRoutes(a k8sRouteArgs) {
 	k8s.POST("/clusters/:id/manifest-applications", p.write, manifest.Apply)
 
 	// Workload (Deployment/StatefulSet/DaemonSet)
-	k8s.GET("/clusters/:id/workloads", p.read, ctl.ListWorkloads)
-	k8s.GET("/clusters/:id/workloads/deployments/:ns/:name/rollout-history", p.read, ctl.GetRolloutHistory)
-	k8s.POST("/clusters/:id/workloads/deployments/:ns/:name/rollout-undo", p.write, ctl.RolloutUndo)
-	k8s.POST("/clusters/:id/workloads/deployments/:ns/:name/rollback-attempts", p.write, ctl.RolloutUndo)
-	k8s.PATCH("/clusters/:id/workloads/scale", p.write, ctl.ScaleWorkload)
-	k8s.PATCH("/clusters/:id/workloads/restart", p.write, ctl.RestartWorkload)
-	k8s.PATCH("/clusters/:id/workloads/image", p.write, ctl.UpdateImage)
-	k8s.PATCH("/clusters/:id/workloads/rollout-pause", p.write, ctl.UpdateWorkloadPaused)
-	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/image-updates", p.write, ctl.UpdateImage)
-	k8s.PATCH("/clusters/:id/workloads/:kind/:ns/:name/pause-state", p.write, ctl.UpdateWorkloadPaused)
+	k8s.GET("/clusters/:id/workloads", p.read, workloads.List)
+	k8s.GET("/clusters/:id/workloads/deployments/:ns/:name/rollout-history", p.read, workloads.History)
+	k8s.POST("/clusters/:id/workloads/deployments/:ns/:name/rollout-undo", p.write, workloads.Undo)
+	k8s.POST("/clusters/:id/workloads/deployments/:ns/:name/rollback-attempts", p.write, workloads.Undo)
+	k8s.PATCH("/clusters/:id/workloads/scale", p.write, workloads.Scale)
+	k8s.PATCH("/clusters/:id/workloads/restart", p.write, workloads.Restart)
+	k8s.PATCH("/clusters/:id/workloads/image", p.write, workloads.Image)
+	k8s.PATCH("/clusters/:id/workloads/rollout-pause", p.write, workloads.Pause)
+	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/image-updates", p.write, workloads.Image)
+	k8s.PATCH("/clusters/:id/workloads/:kind/:ns/:name/pause-state", p.write, workloads.Pause)
 	k8s.POST("/clusters/:id/workloads/deployments", p.write, creator.CreateDeployment)
 	k8s.POST("/clusters/:id/workloads/statefulsets", p.write, creator.CreateStatefulSet)
 	k8s.POST("/clusters/:id/workloads/daemonsets", p.write, creator.CreateDaemonSet)
-	k8s.PATCH("/clusters/:id/workloads/deployments/edit", p.write, ctl.EditDeployment)
-	k8s.PATCH("/clusters/:id/workloads/statefulsets/edit", p.write, ctl.EditStatefulSet)
-	k8s.PATCH("/clusters/:id/workloads/daemonsets/edit", p.write, ctl.EditDaemonSet)
-	k8s.PATCH("/clusters/:id/workloads/yaml/edit", p.write, ctl.EditWorkloadYAML)
-	k8s.DELETE("/clusters/:id/workloads/:kind/:ns/:name", p.write, ctl.DeleteWorkload)
-	k8s.GET("/clusters/:id/workloads/:kind/:ns/:name/yaml", p.read, ctl.GetWorkloadYAML)
+	k8s.PATCH("/clusters/:id/workloads/deployments/edit", p.write, workloads.Edit(kopsapp.WorkloadDeployment))
+	k8s.PATCH("/clusters/:id/workloads/statefulsets/edit", p.write, workloads.Edit(kopsapp.WorkloadStatefulSet))
+	k8s.PATCH("/clusters/:id/workloads/daemonsets/edit", p.write, workloads.Edit(kopsapp.WorkloadDaemonSet))
+	k8s.PATCH("/clusters/:id/workloads/yaml/edit", p.write, workloads.ApplyYAML)
+	k8s.DELETE("/clusters/:id/workloads/:kind/:ns/:name", p.write, workloads.Delete)
+	k8s.GET("/clusters/:id/workloads/:kind/:ns/:name/yaml", p.read, workloads.YAML)
 
 	// ReplicaSet
 	k8s.GET("/clusters/:id/replicasets", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), relationships.List(kopsapp.RelationshipReplicaSet))
