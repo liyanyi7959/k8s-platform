@@ -83,6 +83,20 @@ type kopsModule struct {
 	manifests       *kopshttp.ManifestController
 	namespaces      *kopshttp.NamespaceController
 	metrics         *kopshttp.MetricsController
+	connectivity    *kopshttp.ConnectivityController
+	nodes           *kopshttp.NodeController
+	platform        *kopshttp.PlatformResourceController
+	relationships   *kopshttp.RelationshipResourceController
+	batch           *kopshttp.BatchController
+	network         *kopshttp.NetworkController
+	configuration   *kopshttp.ConfigurationController
+	storage         *kopshttp.StorageController
+	podLogStream    *kopshttp.PodLogStreamController
+	podExecStream   *kopshttp.PodExecStreamController
+	helm            *kopshttp.HelmController
+	pods            *kopshttp.PodController
+	inspection      *kopshttp.InspectionController
+	creator         *kopshttp.ResourceCreatorController
 }
 
 type aiModule struct {
@@ -271,13 +285,25 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 			runtime.k8s,
 			runtime.execSessions,
 			runtime.logSessions,
-			namespaceDiagnosis,
-			resourceInspection,
 			runtime.deploy,
 		),
 		manifests:       kopshttp.NewManifestController(kopsapp.NewManifestService(legacykops.NewManifestRuntime(runtime.manifestApply))),
-		namespaces:      kopshttp.NewNamespaceController(kopsapp.NewNamespaceService(legacykops.NewNamespaceRuntime(runtime.k8s, namespaceDiagnosis))),
+		namespaces:      kopshttp.NewNamespaceController(kopsapp.NewNamespaceService(legacykops.NewNamespaceRuntime(runtime.k8s))),
 		metrics:         kopshttp.NewMetricsController(kopsapp.NewMetricsService(legacykops.NewMetricsRuntime(runtime.k8s))),
+		connectivity:    kopshttp.NewConnectivityController(kopsapp.NewConnectivityService(legacykops.NewConnectivityRuntime(runtime.k8s))),
+		nodes:           kopshttp.NewNodeController(kopsapp.NewNodeService(legacykops.NewNodeRuntime(runtime.k8s))),
+		platform:        kopshttp.NewPlatformResourceController(kopsapp.NewPlatformResourceService(legacykops.NewPlatformResourceRuntime(runtime.k8s))),
+		relationships:   kopshttp.NewRelationshipResourceController(kopsapp.NewRelationshipResourceService(legacykops.NewRelationshipResourceRuntime(runtime.k8s))),
+		batch:           kopshttp.NewBatchController(kopsapp.NewBatchService(legacykops.NewBatchRuntime(runtime.k8s))),
+		network:         kopshttp.NewNetworkController(kopsapp.NewNetworkService(legacykops.NewNetworkRuntime(runtime.k8s))),
+		configuration:   kopshttp.NewConfigurationController(kopsapp.NewConfigurationService(legacykops.NewConfigurationRuntime(runtime.k8s))),
+		storage:         kopshttp.NewStorageController(kopsapp.NewStorageService(legacykops.NewStorageRuntime(runtime.k8s))),
+		podLogStream:    kopshttp.NewPodLogStreamController(legacykops.NewPodLogStreamRuntime(runtime.k8s), runtime.logSessions),
+		podExecStream:   kopshttp.NewPodExecStreamController(legacykops.NewPodExecStreamRuntime(runtime.k8s), runtime.execSessions),
+		helm:            kopshttp.NewHelmController(kopsapp.NewHelmService(legacykops.NewHelmRuntime(runtime.k8s, runtime.deploy))),
+		pods:            kopshttp.NewPodController(kopsapp.NewPodService(legacykops.NewPodRuntime(runtime.k8s), runtime.logSessions, runtime.execSessions)),
+		inspection:      kopshttp.NewInspectionController(kopsapp.NewInspectionService(legacykops.NewInspectionRuntime(namespaceDiagnosis, resourceInspection))),
+		creator:         kopshttp.NewResourceCreatorController(kopsapp.NewResourceCreatorService(legacykops.NewResourceCreatorRuntime(runtime.k8s))),
 		permissionAudit: kopshttp.NewPermissionAuditController(kopsapp.NewPermissionAuditService(legacykops.NewPermissionAuditRuntime(permissionAuditService))),
 		rbac:            kopshttp.NewRBACController(),
 	}

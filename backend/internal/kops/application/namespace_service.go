@@ -10,14 +10,23 @@ type NamespaceCreateInput struct {
 	Labels map[string]string `json:"labels"`
 }
 
+type EventListQuery struct {
+	ClusterID          uint64
+	Namespace          string
+	InvolvedObjectKind string
+	InvolvedObjectName string
+	InvolvedObjectUID  string
+	SortBy             string
+	Order              string
+}
+
 type NamespaceRuntime interface {
 	List(context.Context, uint64, string, string) (any, error)
 	Create(context.Context, uint64, NamespaceCreateInput) error
 	Delete(context.Context, uint64, string) error
 	YAML(context.Context, uint64, string) (any, error)
 	Summary(context.Context, uint64, string) (any, error)
-	Inspection(context.Context, uint64, string) (any, error)
-	WorkloadInventory(context.Context, uint64, string) (any, error)
+	Events(context.Context, EventListQuery) (any, error)
 }
 
 type NamespaceService struct{ runtime NamespaceRuntime }
@@ -83,23 +92,20 @@ func (s *NamespaceService) Summary(ctx context.Context, clusterID uint64, namesp
 	}
 	return s.runtime.Summary(ctx, clusterID, strings.TrimSpace(namespace))
 }
-func (s *NamespaceService) Inspection(ctx context.Context, clusterID uint64, namespace string) (any, error) {
-	if err := validateNamespace(clusterID, namespace); err != nil {
-		return nil, err
+func (s *NamespaceService) Events(ctx context.Context, query EventListQuery) (any, error) {
+	if query.ClusterID == 0 {
+		return nil, ErrInvalidParams
 	}
 	if s == nil || s.runtime == nil {
 		return nil, ErrConflict
 	}
-	return s.runtime.Inspection(ctx, clusterID, strings.TrimSpace(namespace))
-}
-func (s *NamespaceService) WorkloadInventory(ctx context.Context, clusterID uint64, namespace string) (any, error) {
-	if err := validateNamespace(clusterID, namespace); err != nil {
-		return nil, err
-	}
-	if s == nil || s.runtime == nil {
-		return nil, ErrConflict
-	}
-	return s.runtime.WorkloadInventory(ctx, clusterID, strings.TrimSpace(namespace))
+	query.Namespace = strings.TrimSpace(query.Namespace)
+	query.InvolvedObjectKind = strings.TrimSpace(query.InvolvedObjectKind)
+	query.InvolvedObjectName = strings.TrimSpace(query.InvolvedObjectName)
+	query.InvolvedObjectUID = strings.TrimSpace(query.InvolvedObjectUID)
+	query.SortBy = strings.TrimSpace(query.SortBy)
+	query.Order = strings.TrimSpace(query.Order)
+	return s.runtime.Events(ctx, query)
 }
 func validateNamespace(clusterID uint64, namespace string) error {
 	if clusterID == 0 || strings.TrimSpace(namespace) == "" {

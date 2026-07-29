@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/middleware"
 )
@@ -23,23 +24,39 @@ type k8sPerms struct {
 
 // k8sRouteArgs 封装子路由注册函数所需的全部依赖。
 type k8sRouteArgs struct {
-	k8s       *gin.RouterGroup
-	d         Deps
-	ctl       *controller.K8sController
-	manifest  *kopshttp.ManifestController
-	namespace *kopshttp.NamespaceController
-	metrics   *kopshttp.MetricsController
-	perm      k8sPerms
+	k8s           *gin.RouterGroup
+	d             Deps
+	ctl           *controller.K8sController
+	manifest      *kopshttp.ManifestController
+	namespace     *kopshttp.NamespaceController
+	metrics       *kopshttp.MetricsController
+	connectivity  *kopshttp.ConnectivityController
+	nodes         *kopshttp.NodeController
+	platform      *kopshttp.PlatformResourceController
+	relationships *kopshttp.RelationshipResourceController
+	batch         *kopshttp.BatchController
+	network       *kopshttp.NetworkController
+	configuration *kopshttp.ConfigurationController
+	storage       *kopshttp.StorageController
+	helm          *kopshttp.HelmController
+	pods          *kopshttp.PodController
+	inspection    *kopshttp.InspectionController
+	creator       *kopshttp.ResourceCreatorController
+	perm          k8sPerms
 }
 
-func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sController, manifest *kopshttp.ManifestController, namespace *kopshttp.NamespaceController, metrics *kopshttp.MetricsController) {
-	if ctl == nil || manifest == nil || namespace == nil || metrics == nil {
+func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sController, manifest *kopshttp.ManifestController, namespace *kopshttp.NamespaceController, metrics *kopshttp.MetricsController, connectivity *kopshttp.ConnectivityController, nodes *kopshttp.NodeController, platform *kopshttp.PlatformResourceController, relationships *kopshttp.RelationshipResourceController, batch *kopshttp.BatchController, network *kopshttp.NetworkController, configuration *kopshttp.ConfigurationController, storage *kopshttp.StorageController, helm *kopshttp.HelmController, pods *kopshttp.PodController, inspection *kopshttp.InspectionController, creators ...*kopshttp.ResourceCreatorController) {
+	if ctl == nil || manifest == nil || namespace == nil || metrics == nil || connectivity == nil || nodes == nil || platform == nil || relationships == nil || batch == nil || network == nil || configuration == nil || storage == nil || pods == nil || inspection == nil {
 		return
+	}
+	creator := &kopshttp.ResourceCreatorController{}
+	if len(creators) > 0 && creators[0] != nil {
+		creator = creators[0]
 	}
 	k8s := authed.Group("")
 	resourceSupportReadPerm := middleware.RequireAnyPerm("k8s:read", "k8s:rbac_read")
 	args := k8sRouteArgs{
-		k8s: k8s, d: d, ctl: ctl, manifest: manifest, namespace: namespace, metrics: metrics,
+		k8s: k8s, d: d, ctl: ctl, manifest: manifest, namespace: namespace, metrics: metrics, connectivity: connectivity, nodes: nodes, platform: platform, relationships: relationships, batch: batch, network: network, configuration: configuration, storage: storage, helm: helm, pods: pods, inspection: inspection, creator: creator,
 		perm: k8sPerms{
 			read:                   middleware.RequirePerm("k8s:read"),
 			write:                  middleware.RequirePerm("k8s:write"),
@@ -65,18 +82,18 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 }
 
 func registerCanonicalResourceUpdateRoutes(a k8sRouteArgs) {
-	k8s, ctl, p := a.k8s, a.ctl, a.perm
+	k8s, ctl, connectivity, platform, relationships, batch, network, configuration, storage, p := a.k8s, a.ctl, a.connectivity, a.platform, a.relationships, a.batch, a.network, a.configuration, a.storage, a.perm
 	namespaced := []struct {
 		resource string
 		handler  gin.HandlerFunc
 	}{
-		{"hpas", ctl.EditHPA}, {"pdbs", ctl.EditPDB}, {"leases", ctl.EditLease},
-		{"resourcequotas", ctl.EditResourceQuota}, {"limitranges", ctl.EditLimitRange},
-		{"replicasets", ctl.EditReplicaSet}, {"services", ctl.EditService}, {"ingresses", ctl.EditIngress},
-		{"networkpolicies", ctl.EditNetworkPolicy}, {"endpoints", ctl.EditEndpoints}, {"endpointslices", ctl.EditEndpointSlice},
-		{"configmaps", ctl.EditConfigMap}, {"secrets", ctl.EditSecret}, {"serviceaccounts", ctl.EditServiceAccount},
-		{"csistoragecapacities", ctl.EditCSIStorageCapacity}, {"volumesnapshots", ctl.EditVolumeSnapshot},
-		{"jobs", ctl.EditJob}, {"cronjobs", ctl.EditCronJob},
+		{"hpas", platform.Apply(kopsapp.PlatformHorizontalPodAutoscaler)}, {"pdbs", platform.Apply(kopsapp.PlatformPodDisruptionBudget)}, {"leases", connectivity.EditLease},
+		{"resourcequotas", platform.Apply(kopsapp.PlatformResourceQuota)}, {"limitranges", platform.Apply(kopsapp.PlatformLimitRange)},
+		{"replicasets", relationships.Apply(kopsapp.RelationshipReplicaSet)}, {"services", network.EditService}, {"ingresses", network.EditIngress},
+		{"networkpolicies", platform.Apply(kopsapp.PlatformNetworkPolicy)}, {"endpoints", connectivity.EditEndpoints}, {"endpointslices", connectivity.EditEndpointSlice},
+		{"configmaps", configuration.EditConfigMap}, {"secrets", configuration.EditSecret}, {"serviceaccounts", platform.Apply(kopsapp.PlatformServiceAccount)},
+		{"csistoragecapacities", platform.Apply(kopsapp.PlatformCSIStorageCapacity)}, {"volumesnapshots", storage.Apply(kopsapp.StorageVolumeSnapshot)},
+		{"jobs", batch.EditJob}, {"cronjobs", batch.EditCronJob},
 	}
 	for _, route := range namespaced {
 		k8s.PATCH("/clusters/:id/"+route.resource+"/:ns/:name", p.write, route.handler)
@@ -85,24 +102,24 @@ func registerCanonicalResourceUpdateRoutes(a k8sRouteArgs) {
 		resource string
 		handler  gin.HandlerFunc
 	}{
-		{"customresourcedefinitions", ctl.EditCustomResourceDefinition}, {"apiservices", ctl.EditAPIService},
-		{"priorityclasses", ctl.EditPriorityClass}, {"runtimeclasses", ctl.EditRuntimeClass},
-		{"validatingwebhookconfigurations", ctl.EditValidatingWebhookConfiguration},
-		{"mutatingwebhookconfigurations", ctl.EditMutatingWebhookConfiguration},
-		{"validatingadmissionpolicies", ctl.EditValidatingAdmissionPolicy},
-		{"validatingadmissionpolicybindings", ctl.EditValidatingAdmissionPolicyBinding},
-		{"ingressclasses", ctl.EditIngressClass}, {"storageclasses", ctl.EditStorageClass},
-		{"csidrivers", ctl.EditCSIDriver}, {"csinodes", ctl.EditCSINode},
-		{"volumeattachments", ctl.EditVolumeAttachment}, {"volumesnapshotclasses", ctl.EditVolumeSnapshotClass},
-		{"volumesnapshotcontents", ctl.EditVolumeSnapshotContent},
+		{"customresourcedefinitions", platform.Apply(kopsapp.PlatformCustomResourceDefinition)}, {"apiservices", platform.Apply(kopsapp.PlatformAPIService)},
+		{"priorityclasses", platform.Apply(kopsapp.PlatformPriorityClass)}, {"runtimeclasses", platform.Apply(kopsapp.PlatformRuntimeClass)},
+		{"validatingwebhookconfigurations", platform.Apply(kopsapp.PlatformValidatingWebhookConfiguration)},
+		{"mutatingwebhookconfigurations", platform.Apply(kopsapp.PlatformMutatingWebhookConfiguration)},
+		{"validatingadmissionpolicies", platform.Apply(kopsapp.PlatformValidatingAdmissionPolicy)},
+		{"validatingadmissionpolicybindings", platform.Apply(kopsapp.PlatformValidatingAdmissionPolicyBinding)},
+		{"ingressclasses", network.EditIngressClass}, {"storageclasses", storage.Apply(kopsapp.StorageClass)},
+		{"csidrivers", platform.Apply(kopsapp.PlatformCSIDriver)}, {"csinodes", platform.Apply(kopsapp.PlatformCSINode)},
+		{"volumeattachments", relationships.Apply(kopsapp.RelationshipVolumeAttachment)}, {"volumesnapshotclasses", storage.Apply(kopsapp.StorageVolumeSnapshotClass)},
+		{"volumesnapshotcontents", storage.Apply(kopsapp.StorageVolumeSnapshotContent)},
 	}
 	for _, route := range clusterScoped {
 		k8s.PATCH("/clusters/:id/"+route.resource+"/:name", p.write, route.handler)
 	}
-	k8s.PATCH("/clusters/:id/roles/:ns/:name", p.rbacWrite, ctl.EditRole)
-	k8s.PATCH("/clusters/:id/clusterroles/:name", p.rbacWrite, ctl.EditClusterRole)
-	k8s.PATCH("/clusters/:id/rolebindings/:ns/:name", p.rbacWrite, ctl.EditRoleBinding)
-	k8s.PATCH("/clusters/:id/clusterrolebindings/:name", p.rbacWrite, ctl.EditClusterRoleBinding)
+	k8s.PATCH("/clusters/:id/roles/:ns/:name", p.rbacWrite, platform.Apply(kopsapp.PlatformRole))
+	k8s.PATCH("/clusters/:id/clusterroles/:name", p.rbacWrite, platform.Apply(kopsapp.PlatformClusterRole))
+	k8s.PATCH("/clusters/:id/rolebindings/:ns/:name", p.rbacWrite, platform.Apply(kopsapp.PlatformRoleBinding))
+	k8s.PATCH("/clusters/:id/clusterrolebindings/:name", p.rbacWrite, platform.Apply(kopsapp.PlatformClusterRoleBinding))
 	k8s.PATCH("/clusters/:id/workloads/deployments/:ns/:name", p.write, ctl.EditDeployment)
 	k8s.PATCH("/clusters/:id/workloads/statefulsets/:ns/:name", p.write, ctl.EditStatefulSet)
 	k8s.PATCH("/clusters/:id/workloads/daemonsets/:ns/:name", p.write, ctl.EditDaemonSet)
@@ -114,7 +131,7 @@ func registerCanonicalResourceUpdateRoutes(a k8sRouteArgs) {
 // ── 集群级资源：Namespace / Node / HPA / PDB / Event / CRD / APIService / PriorityClass / RuntimeClass / Webhook / Lease ──
 
 func registerClusterResourceRoutes(a k8sRouteArgs) {
-	k8s, ctl, namespace, metrics, p := a.k8s, a.ctl, a.namespace, a.metrics, a.perm
+	k8s, namespace, metrics, connectivity, nodes, platform, inspection, storage, p := a.k8s, a.namespace, a.metrics, a.connectivity, a.nodes, a.platform, a.inspection, a.storage, a.perm
 
 	// Namespace
 	k8s.GET("/clusters/:id/namespaces", p.namespaceRead, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), namespace.List)
@@ -122,107 +139,107 @@ func registerClusterResourceRoutes(a k8sRouteArgs) {
 	k8s.DELETE("/clusters/:id/namespaces/:ns", p.namespaceWrite, namespace.Delete)
 	k8s.GET("/clusters/:id/namespaces/:ns/yaml", p.namespaceRead, namespace.YAML)
 	k8s.GET("/clusters/:id/namespaces/:ns/resources-summary", p.namespaceRead, namespace.Summary)
-	k8s.GET("/clusters/:id/namespaces/:ns/inspection", p.namespaceRead, namespace.Inspection)
-	k8s.GET("/clusters/:id/namespaces/:ns/workload-inventory", p.namespaceRead, namespace.WorkloadInventory)
+	k8s.GET("/clusters/:id/namespaces/:ns/inspection", p.namespaceRead, inspection.Namespace)
+	k8s.GET("/clusters/:id/namespaces/:ns/workload-inventory", p.namespaceRead, inspection.NamespaceWorkloadInventory)
 
 	// Node
-	k8s.GET("/clusters/:id/nodes", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListNodes)
-	k8s.GET("/clusters/:id/nodes/:name/detail", p.read, ctl.GetNodeDetail)
-	k8s.GET("/clusters/:id/nodes/:name/yaml", p.read, ctl.GetNodeYAML)
-	k8s.GET("/clusters/:id/nodes/:name/pods", p.read, ctl.ListNodePods)
-	k8s.GET("/clusters/:id/nodes/:name/events", p.read, ctl.ListNodeEvents)
-	k8s.POST("/clusters/:id/nodes/:name/cordon", p.write, ctl.CordonNode)
-	k8s.POST("/clusters/:id/nodes/:name/uncordon", p.write, ctl.UncordonNode)
-	k8s.POST("/clusters/:id/nodes/:name/drain", p.write, ctl.DrainNode)
-	k8s.POST("/clusters/:id/nodes/:name/cordon-requests", p.write, ctl.CordonNode)
-	k8s.POST("/clusters/:id/nodes/:name/uncordon-requests", p.write, ctl.UncordonNode)
-	k8s.POST("/clusters/:id/nodes/:name/drain-requests", p.write, ctl.DrainNode)
-	k8s.DELETE("/clusters/:id/nodes/:name", p.write, ctl.DeleteNode)
+	k8s.GET("/clusters/:id/nodes", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), nodes.List)
+	k8s.GET("/clusters/:id/nodes/:name/detail", p.read, nodes.Detail)
+	k8s.GET("/clusters/:id/nodes/:name/yaml", p.read, nodes.YAML)
+	k8s.GET("/clusters/:id/nodes/:name/pods", p.read, nodes.Pods)
+	k8s.GET("/clusters/:id/nodes/:name/events", p.read, nodes.Events)
+	k8s.POST("/clusters/:id/nodes/:name/cordon", p.write, nodes.Cordon)
+	k8s.POST("/clusters/:id/nodes/:name/uncordon", p.write, nodes.Uncordon)
+	k8s.POST("/clusters/:id/nodes/:name/drain", p.write, nodes.Drain)
+	k8s.POST("/clusters/:id/nodes/:name/cordon-requests", p.write, nodes.Cordon)
+	k8s.POST("/clusters/:id/nodes/:name/uncordon-requests", p.write, nodes.Uncordon)
+	k8s.POST("/clusters/:id/nodes/:name/drain-requests", p.write, nodes.Drain)
+	k8s.DELETE("/clusters/:id/nodes/:name", p.write, nodes.Delete)
 
 	// HPA
-	k8s.GET("/clusters/:id/hpas", p.read, ctl.ListHPAs)
-	k8s.PATCH("/clusters/:id/hpas/edit", p.write, ctl.EditHPA)
-	k8s.DELETE("/clusters/:id/hpas/:ns/:name", p.write, ctl.DeleteHPA)
-	k8s.GET("/clusters/:id/hpas/:ns/:name/yaml", p.read, ctl.GetHPAYAML)
+	k8s.GET("/clusters/:id/hpas", p.read, platform.List(kopsapp.PlatformHorizontalPodAutoscaler))
+	k8s.PATCH("/clusters/:id/hpas/edit", p.write, platform.Apply(kopsapp.PlatformHorizontalPodAutoscaler))
+	k8s.DELETE("/clusters/:id/hpas/:ns/:name", p.write, platform.Delete(kopsapp.PlatformHorizontalPodAutoscaler))
+	k8s.GET("/clusters/:id/hpas/:ns/:name/yaml", p.read, platform.YAML(kopsapp.PlatformHorizontalPodAutoscaler))
 
 	// PDB
-	k8s.GET("/clusters/:id/pdbs", p.read, ctl.ListPDBs)
-	k8s.PATCH("/clusters/:id/pdbs/edit", p.write, ctl.EditPDB)
-	k8s.DELETE("/clusters/:id/pdbs/:ns/:name", p.write, ctl.DeletePDB)
-	k8s.GET("/clusters/:id/pdbs/:ns/:name/yaml", p.read, ctl.GetPDBYAML)
+	k8s.GET("/clusters/:id/pdbs", p.read, platform.List(kopsapp.PlatformPodDisruptionBudget))
+	k8s.PATCH("/clusters/:id/pdbs/edit", p.write, platform.Apply(kopsapp.PlatformPodDisruptionBudget))
+	k8s.DELETE("/clusters/:id/pdbs/:ns/:name", p.write, platform.Delete(kopsapp.PlatformPodDisruptionBudget))
+	k8s.GET("/clusters/:id/pdbs/:ns/:name/yaml", p.read, platform.YAML(kopsapp.PlatformPodDisruptionBudget))
 
 	// Event
-	k8s.GET("/clusters/:id/events", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListEvents)
+	k8s.GET("/clusters/:id/events", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), namespace.Events)
 
 	// Lease
-	k8s.GET("/clusters/:id/leases", p.read, ctl.ListLeases)
-	k8s.PATCH("/clusters/:id/leases/edit", p.write, ctl.EditLease)
-	k8s.DELETE("/clusters/:id/leases/:ns/:name", p.write, ctl.DeleteLease)
-	k8s.GET("/clusters/:id/leases/:ns/:name/yaml", p.read, ctl.GetLeaseYAML)
+	k8s.GET("/clusters/:id/leases", p.read, connectivity.ListLeases)
+	k8s.PATCH("/clusters/:id/leases/edit", p.write, connectivity.EditLease)
+	k8s.DELETE("/clusters/:id/leases/:ns/:name", p.write, connectivity.DeleteLease)
+	k8s.GET("/clusters/:id/leases/:ns/:name/yaml", p.read, connectivity.LeaseYAML)
 
 	// ResourceQuota
-	k8s.GET("/clusters/:id/resourcequotas", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListResourceQuotas)
-	k8s.PATCH("/clusters/:id/resourcequotas/edit", p.write, ctl.EditResourceQuota)
-	k8s.DELETE("/clusters/:id/resourcequotas/:ns/:name", p.write, ctl.DeleteResourceQuota)
-	k8s.GET("/clusters/:id/resourcequotas/:ns/:name/yaml", p.read, ctl.GetResourceQuotaYAML)
+	k8s.GET("/clusters/:id/resourcequotas", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformResourceQuota))
+	k8s.PATCH("/clusters/:id/resourcequotas/edit", p.write, platform.Apply(kopsapp.PlatformResourceQuota))
+	k8s.DELETE("/clusters/:id/resourcequotas/:ns/:name", p.write, platform.Delete(kopsapp.PlatformResourceQuota))
+	k8s.GET("/clusters/:id/resourcequotas/:ns/:name/yaml", p.read, platform.YAML(kopsapp.PlatformResourceQuota))
 
 	// LimitRange
-	k8s.GET("/clusters/:id/limitranges", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListLimitRanges)
-	k8s.PATCH("/clusters/:id/limitranges/edit", p.write, ctl.EditLimitRange)
-	k8s.DELETE("/clusters/:id/limitranges/:ns/:name", p.write, ctl.DeleteLimitRange)
-	k8s.GET("/clusters/:id/limitranges/:ns/:name/yaml", p.read, ctl.GetLimitRangeYAML)
+	k8s.GET("/clusters/:id/limitranges", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformLimitRange))
+	k8s.PATCH("/clusters/:id/limitranges/edit", p.write, platform.Apply(kopsapp.PlatformLimitRange))
+	k8s.DELETE("/clusters/:id/limitranges/:ns/:name", p.write, platform.Delete(kopsapp.PlatformLimitRange))
+	k8s.GET("/clusters/:id/limitranges/:ns/:name/yaml", p.read, platform.YAML(kopsapp.PlatformLimitRange))
 
 	// CustomResourceDefinition
-	k8s.GET("/clusters/:id/customresourcedefinitions", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListCustomResourceDefinitions)
-	k8s.PATCH("/clusters/:id/customresourcedefinitions/edit", p.write, ctl.EditCustomResourceDefinition)
-	k8s.DELETE("/clusters/:id/customresourcedefinitions/:name", p.write, ctl.DeleteCustomResourceDefinition)
-	k8s.GET("/clusters/:id/customresourcedefinitions/:name/yaml", p.read, ctl.GetCustomResourceDefinitionYAML)
+	k8s.GET("/clusters/:id/customresourcedefinitions", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformCustomResourceDefinition))
+	k8s.PATCH("/clusters/:id/customresourcedefinitions/edit", p.write, platform.Apply(kopsapp.PlatformCustomResourceDefinition))
+	k8s.DELETE("/clusters/:id/customresourcedefinitions/:name", p.write, platform.Delete(kopsapp.PlatformCustomResourceDefinition))
+	k8s.GET("/clusters/:id/customresourcedefinitions/:name/yaml", p.read, platform.YAML(kopsapp.PlatformCustomResourceDefinition))
 
 	// APIService
-	k8s.GET("/clusters/:id/apiservices", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListAPIServices)
-	k8s.PATCH("/clusters/:id/apiservices/edit", p.write, ctl.EditAPIService)
-	k8s.DELETE("/clusters/:id/apiservices/:name", p.write, ctl.DeleteAPIService)
-	k8s.GET("/clusters/:id/apiservices/:name/yaml", p.read, ctl.GetAPIServiceYAML)
+	k8s.GET("/clusters/:id/apiservices", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformAPIService))
+	k8s.PATCH("/clusters/:id/apiservices/edit", p.write, platform.Apply(kopsapp.PlatformAPIService))
+	k8s.DELETE("/clusters/:id/apiservices/:name", p.write, platform.Delete(kopsapp.PlatformAPIService))
+	k8s.GET("/clusters/:id/apiservices/:name/yaml", p.read, platform.YAML(kopsapp.PlatformAPIService))
 
 	// PriorityClass
-	k8s.GET("/clusters/:id/priorityclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListPriorityClasses)
-	k8s.PATCH("/clusters/:id/priorityclasses/edit", p.write, ctl.EditPriorityClass)
-	k8s.DELETE("/clusters/:id/priorityclasses/:name", p.write, ctl.DeletePriorityClass)
-	k8s.GET("/clusters/:id/priorityclasses/:name/yaml", p.read, ctl.GetPriorityClassYAML)
+	k8s.GET("/clusters/:id/priorityclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformPriorityClass))
+	k8s.PATCH("/clusters/:id/priorityclasses/edit", p.write, platform.Apply(kopsapp.PlatformPriorityClass))
+	k8s.DELETE("/clusters/:id/priorityclasses/:name", p.write, platform.Delete(kopsapp.PlatformPriorityClass))
+	k8s.GET("/clusters/:id/priorityclasses/:name/yaml", p.read, platform.YAML(kopsapp.PlatformPriorityClass))
 
 	// RuntimeClass
-	k8s.GET("/clusters/:id/runtimeclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListRuntimeClasses)
-	k8s.PATCH("/clusters/:id/runtimeclasses/edit", p.write, ctl.EditRuntimeClass)
-	k8s.DELETE("/clusters/:id/runtimeclasses/:name", p.write, ctl.DeleteRuntimeClass)
-	k8s.GET("/clusters/:id/runtimeclasses/:name/yaml", p.read, ctl.GetRuntimeClassYAML)
+	k8s.GET("/clusters/:id/runtimeclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformRuntimeClass))
+	k8s.PATCH("/clusters/:id/runtimeclasses/edit", p.write, platform.Apply(kopsapp.PlatformRuntimeClass))
+	k8s.DELETE("/clusters/:id/runtimeclasses/:name", p.write, platform.Delete(kopsapp.PlatformRuntimeClass))
+	k8s.GET("/clusters/:id/runtimeclasses/:name/yaml", p.read, platform.YAML(kopsapp.PlatformRuntimeClass))
 
 	// ValidatingWebhookConfiguration
-	k8s.GET("/clusters/:id/validatingwebhookconfigurations", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListValidatingWebhookConfigurations)
-	k8s.PATCH("/clusters/:id/validatingwebhookconfigurations/edit", p.write, ctl.EditValidatingWebhookConfiguration)
-	k8s.DELETE("/clusters/:id/validatingwebhookconfigurations/:name", p.write, ctl.DeleteValidatingWebhookConfiguration)
-	k8s.GET("/clusters/:id/validatingwebhookconfigurations/:name/yaml", p.read, ctl.GetValidatingWebhookConfigurationYAML)
+	k8s.GET("/clusters/:id/validatingwebhookconfigurations", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformValidatingWebhookConfiguration))
+	k8s.PATCH("/clusters/:id/validatingwebhookconfigurations/edit", p.write, platform.Apply(kopsapp.PlatformValidatingWebhookConfiguration))
+	k8s.DELETE("/clusters/:id/validatingwebhookconfigurations/:name", p.write, platform.Delete(kopsapp.PlatformValidatingWebhookConfiguration))
+	k8s.GET("/clusters/:id/validatingwebhookconfigurations/:name/yaml", p.read, platform.YAML(kopsapp.PlatformValidatingWebhookConfiguration))
 
 	// MutatingWebhookConfiguration
-	k8s.GET("/clusters/:id/mutatingwebhookconfigurations", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListMutatingWebhookConfigurations)
-	k8s.PATCH("/clusters/:id/mutatingwebhookconfigurations/edit", p.write, ctl.EditMutatingWebhookConfiguration)
-	k8s.DELETE("/clusters/:id/mutatingwebhookconfigurations/:name", p.write, ctl.DeleteMutatingWebhookConfiguration)
-	k8s.GET("/clusters/:id/mutatingwebhookconfigurations/:name/yaml", p.read, ctl.GetMutatingWebhookConfigurationYAML)
+	k8s.GET("/clusters/:id/mutatingwebhookconfigurations", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformMutatingWebhookConfiguration))
+	k8s.PATCH("/clusters/:id/mutatingwebhookconfigurations/edit", p.write, platform.Apply(kopsapp.PlatformMutatingWebhookConfiguration))
+	k8s.DELETE("/clusters/:id/mutatingwebhookconfigurations/:name", p.write, platform.Delete(kopsapp.PlatformMutatingWebhookConfiguration))
+	k8s.GET("/clusters/:id/mutatingwebhookconfigurations/:name/yaml", p.read, platform.YAML(kopsapp.PlatformMutatingWebhookConfiguration))
 
 	// ValidatingAdmissionPolicy
-	k8s.GET("/clusters/:id/validatingadmissionpolicies", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListValidatingAdmissionPolicies)
-	k8s.PATCH("/clusters/:id/validatingadmissionpolicies/edit", p.write, ctl.EditValidatingAdmissionPolicy)
-	k8s.DELETE("/clusters/:id/validatingadmissionpolicies/:name", p.write, ctl.DeleteValidatingAdmissionPolicy)
-	k8s.GET("/clusters/:id/validatingadmissionpolicies/:name/yaml", p.read, ctl.GetValidatingAdmissionPolicyYAML)
+	k8s.GET("/clusters/:id/validatingadmissionpolicies", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformValidatingAdmissionPolicy))
+	k8s.PATCH("/clusters/:id/validatingadmissionpolicies/edit", p.write, platform.Apply(kopsapp.PlatformValidatingAdmissionPolicy))
+	k8s.DELETE("/clusters/:id/validatingadmissionpolicies/:name", p.write, platform.Delete(kopsapp.PlatformValidatingAdmissionPolicy))
+	k8s.GET("/clusters/:id/validatingadmissionpolicies/:name/yaml", p.read, platform.YAML(kopsapp.PlatformValidatingAdmissionPolicy))
 
 	// ValidatingAdmissionPolicyBinding
-	k8s.GET("/clusters/:id/validatingadmissionpolicybindings", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListValidatingAdmissionPolicyBindings)
-	k8s.PATCH("/clusters/:id/validatingadmissionpolicybindings/edit", p.write, ctl.EditValidatingAdmissionPolicyBinding)
-	k8s.DELETE("/clusters/:id/validatingadmissionpolicybindings/:name", p.write, ctl.DeleteValidatingAdmissionPolicyBinding)
-	k8s.GET("/clusters/:id/validatingadmissionpolicybindings/:name/yaml", p.read, ctl.GetValidatingAdmissionPolicyBindingYAML)
+	k8s.GET("/clusters/:id/validatingadmissionpolicybindings", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformValidatingAdmissionPolicyBinding))
+	k8s.PATCH("/clusters/:id/validatingadmissionpolicybindings/edit", p.write, platform.Apply(kopsapp.PlatformValidatingAdmissionPolicyBinding))
+	k8s.DELETE("/clusters/:id/validatingadmissionpolicybindings/:name", p.write, platform.Delete(kopsapp.PlatformValidatingAdmissionPolicyBinding))
+	k8s.GET("/clusters/:id/validatingadmissionpolicybindings/:name/yaml", p.read, platform.YAML(kopsapp.PlatformValidatingAdmissionPolicyBinding))
 
 	// Resource support
-	k8s.GET("/clusters/:id/resource-support", p.resourceSupportRead, ctl.GetResourceSupport)
-	k8s.GET("/clusters/:id/storage-snapshot-support", p.storageSnapshotSupport, ctl.GetStorageSnapshotSupport)
+	k8s.GET("/clusters/:id/resource-support", p.resourceSupportRead, storage.ResourceSupport)
+	k8s.GET("/clusters/:id/storage-snapshot-support", p.storageSnapshotSupport, storage.ResourceSupport)
 
 	// 资源使用率监控
 	k8s.GET("/clusters/:id/nodes/metrics", p.read, metrics.NodeMetrics)
@@ -239,21 +256,21 @@ func registerClusterResourceRoutes(a k8sRouteArgs) {
 // ── 工作负载：Pod / Deployment / StatefulSet / DaemonSet / ReplicaSet / Manifest ──
 
 func registerWorkloadRoutes(a k8sRouteArgs) {
-	k8s, ctl, manifest, metrics, p := a.k8s, a.ctl, a.manifest, a.metrics, a.perm
+	k8s, ctl, manifest, metrics, relationships, pods, inspection, creator, p := a.k8s, a.ctl, a.manifest, a.metrics, a.relationships, a.pods, a.inspection, a.creator, a.perm
 
 	// Pod
-	k8s.GET("/clusters/:id/pods", p.read, ctl.ListPods)
-	k8s.GET("/clusters/:id/podmetrics", p.read, ctl.ListPodMetrics)
+	k8s.GET("/clusters/:id/pods", p.read, pods.List)
+	k8s.GET("/clusters/:id/podmetrics", p.read, pods.Metrics)
 	// 资源使用率监控：Pod 维度 CPU/内存使用量（与上方 /podmetrics 区分，后者返回原始 PodMetrics 资源）
 	k8s.GET("/clusters/:id/pods/metrics", p.read, metrics.PodMetrics)
-	k8s.GET("/clusters/:id/pods/:ns/:pod/inspection", p.read, ctl.GetPodInspection)
-	k8s.GET("/clusters/:id/pods/:ns/:pod/yaml", p.read, ctl.GetPodYAML)
-	k8s.GET("/clusters/:id/pods/:ns/:pod/logs", p.read, ctl.GetPodLogs)
-	k8s.POST("/clusters/:id/pods/:ns/:pod/logs/session", p.read, ctl.CreatePodLogSession)
-	k8s.POST("/clusters/:id/pods/:ns/:pod/log-sessions", p.read, ctl.CreatePodLogSession)
-	k8s.DELETE("/clusters/:id/pods/:ns/:pod", p.write, ctl.DeletePod)
-	k8s.POST("/clusters/:id/pods/:ns/:pod/exec", p.exec, ctl.CreatePodExecSession)
-	k8s.POST("/clusters/:id/pods/:ns/:pod/exec-sessions", p.exec, ctl.CreatePodExecSession)
+	k8s.GET("/clusters/:id/pods/:ns/:pod/inspection", p.read, inspection.Pod)
+	k8s.GET("/clusters/:id/pods/:ns/:pod/yaml", p.read, pods.YAML)
+	k8s.GET("/clusters/:id/pods/:ns/:pod/logs", p.read, pods.Logs)
+	k8s.POST("/clusters/:id/pods/:ns/:pod/logs/session", p.read, pods.CreateLogSession)
+	k8s.POST("/clusters/:id/pods/:ns/:pod/log-sessions", p.read, pods.CreateLogSession)
+	k8s.DELETE("/clusters/:id/pods/:ns/:pod", p.write, pods.Delete)
+	k8s.POST("/clusters/:id/pods/:ns/:pod/exec", p.exec, pods.CreateExecSession)
+	k8s.POST("/clusters/:id/pods/:ns/:pod/exec-sessions", p.exec, pods.CreateExecSession)
 
 	// Manifest
 	k8s.GET("/clusters/:id/manifests/records", p.write, manifest.List)
@@ -272,9 +289,9 @@ func registerWorkloadRoutes(a k8sRouteArgs) {
 	k8s.PATCH("/clusters/:id/workloads/rollout-pause", p.write, ctl.UpdateWorkloadPaused)
 	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/image-updates", p.write, ctl.UpdateImage)
 	k8s.PATCH("/clusters/:id/workloads/:kind/:ns/:name/pause-state", p.write, ctl.UpdateWorkloadPaused)
-	k8s.POST("/clusters/:id/workloads/deployments", p.write, ctl.CreateDeployment)
-	k8s.POST("/clusters/:id/workloads/statefulsets", p.write, ctl.CreateStatefulSet)
-	k8s.POST("/clusters/:id/workloads/daemonsets", p.write, ctl.CreateDaemonSet)
+	k8s.POST("/clusters/:id/workloads/deployments", p.write, creator.CreateDeployment)
+	k8s.POST("/clusters/:id/workloads/statefulsets", p.write, creator.CreateStatefulSet)
+	k8s.POST("/clusters/:id/workloads/daemonsets", p.write, creator.CreateDaemonSet)
 	k8s.PATCH("/clusters/:id/workloads/deployments/edit", p.write, ctl.EditDeployment)
 	k8s.PATCH("/clusters/:id/workloads/statefulsets/edit", p.write, ctl.EditStatefulSet)
 	k8s.PATCH("/clusters/:id/workloads/daemonsets/edit", p.write, ctl.EditDaemonSet)
@@ -283,216 +300,216 @@ func registerWorkloadRoutes(a k8sRouteArgs) {
 	k8s.GET("/clusters/:id/workloads/:kind/:ns/:name/yaml", p.read, ctl.GetWorkloadYAML)
 
 	// ReplicaSet
-	k8s.GET("/clusters/:id/replicasets", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListReplicaSets)
-	k8s.PATCH("/clusters/:id/replicasets/edit", p.write, ctl.EditReplicaSet)
-	k8s.DELETE("/clusters/:id/replicasets/:ns/:name", p.write, ctl.DeleteReplicaSet)
-	k8s.GET("/clusters/:id/replicasets/:ns/:name/yaml", p.read, ctl.GetReplicaSetYAML)
+	k8s.GET("/clusters/:id/replicasets", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), relationships.List(kopsapp.RelationshipReplicaSet))
+	k8s.PATCH("/clusters/:id/replicasets/edit", p.write, relationships.Apply(kopsapp.RelationshipReplicaSet))
+	k8s.DELETE("/clusters/:id/replicasets/:ns/:name", p.write, relationships.Delete(kopsapp.RelationshipReplicaSet))
+	k8s.GET("/clusters/:id/replicasets/:ns/:name/yaml", p.read, relationships.YAML(kopsapp.RelationshipReplicaSet))
 }
 
 // ── 网络：Service / Ingress / IngressClass / NetworkPolicy / Endpoints / EndpointSlice ──
 
 func registerNetworkingRoutes(a k8sRouteArgs) {
-	k8s, ctl, p := a.k8s, a.ctl, a.perm
+	k8s, network, connectivity, platform, creator, p := a.k8s, a.network, a.connectivity, a.platform, a.creator, a.perm
 
 	// Service
-	k8s.GET("/clusters/:id/services", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListServices)
-	k8s.POST("/clusters/:id/services", p.write, ctl.CreateService)
-	k8s.PATCH("/clusters/:id/services/edit", p.write, ctl.EditService)
-	k8s.DELETE("/clusters/:id/services/:ns/:name", p.write, ctl.DeleteService)
-	k8s.GET("/clusters/:id/services/:ns/:name/yaml", p.read, ctl.GetServiceYAML)
+	k8s.GET("/clusters/:id/services", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), network.List(kopsapp.NetworkKubernetesService))
+	k8s.POST("/clusters/:id/services", p.write, creator.CreateService)
+	k8s.PATCH("/clusters/:id/services/edit", p.write, network.EditService)
+	k8s.DELETE("/clusters/:id/services/:ns/:name", p.write, network.Delete(kopsapp.NetworkKubernetesService))
+	k8s.GET("/clusters/:id/services/:ns/:name/yaml", p.read, network.YAML(kopsapp.NetworkKubernetesService))
 
 	// Ingress
-	k8s.GET("/clusters/:id/ingresses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListIngresses)
-	k8s.POST("/clusters/:id/ingresses", p.write, ctl.CreateIngress)
-	k8s.PATCH("/clusters/:id/ingresses/edit", p.write, ctl.EditIngress)
-	k8s.DELETE("/clusters/:id/ingresses/:ns/:name", p.write, ctl.DeleteIngress)
-	k8s.GET("/clusters/:id/ingresses/:ns/:name/yaml", p.read, ctl.GetIngressYAML)
+	k8s.GET("/clusters/:id/ingresses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), network.List(kopsapp.NetworkIngress))
+	k8s.POST("/clusters/:id/ingresses", p.write, creator.CreateIngress)
+	k8s.PATCH("/clusters/:id/ingresses/edit", p.write, network.EditIngress)
+	k8s.DELETE("/clusters/:id/ingresses/:ns/:name", p.write, network.Delete(kopsapp.NetworkIngress))
+	k8s.GET("/clusters/:id/ingresses/:ns/:name/yaml", p.read, network.YAML(kopsapp.NetworkIngress))
 
 	// NetworkPolicy
-	k8s.GET("/clusters/:id/networkpolicies", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListNetworkPolicies)
-	k8s.PATCH("/clusters/:id/networkpolicies/edit", p.write, ctl.EditNetworkPolicy)
-	k8s.DELETE("/clusters/:id/networkpolicies/:ns/:name", p.write, ctl.DeleteNetworkPolicy)
-	k8s.GET("/clusters/:id/networkpolicies/:ns/:name/yaml", p.read, ctl.GetNetworkPolicyYAML)
+	k8s.GET("/clusters/:id/networkpolicies", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformNetworkPolicy))
+	k8s.PATCH("/clusters/:id/networkpolicies/edit", p.write, platform.Apply(kopsapp.PlatformNetworkPolicy))
+	k8s.DELETE("/clusters/:id/networkpolicies/:ns/:name", p.write, platform.Delete(kopsapp.PlatformNetworkPolicy))
+	k8s.GET("/clusters/:id/networkpolicies/:ns/:name/yaml", p.read, platform.YAML(kopsapp.PlatformNetworkPolicy))
 
 	// IngressClass
-	k8s.GET("/clusters/:id/ingressclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListIngressClasses)
-	k8s.PATCH("/clusters/:id/ingressclasses/edit", p.write, ctl.EditIngressClass)
-	k8s.DELETE("/clusters/:id/ingressclasses/:name", p.write, ctl.DeleteIngressClass)
-	k8s.GET("/clusters/:id/ingressclasses/:name/yaml", p.read, ctl.GetIngressClassYAML)
+	k8s.GET("/clusters/:id/ingressclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), network.List(kopsapp.NetworkIngressClass))
+	k8s.PATCH("/clusters/:id/ingressclasses/edit", p.write, network.EditIngressClass)
+	k8s.DELETE("/clusters/:id/ingressclasses/:name", p.write, network.Delete(kopsapp.NetworkIngressClass))
+	k8s.GET("/clusters/:id/ingressclasses/:name/yaml", p.read, network.YAML(kopsapp.NetworkIngressClass))
 
 	// Endpoints
-	k8s.GET("/clusters/:id/endpoints", p.read, ctl.ListEndpoints)
-	k8s.PATCH("/clusters/:id/endpoints/edit", p.write, ctl.EditEndpoints)
-	k8s.DELETE("/clusters/:id/endpoints/:ns/:name", p.write, ctl.DeleteEndpoints)
-	k8s.GET("/clusters/:id/endpoints/:ns/:name/yaml", p.read, ctl.GetEndpointsYAML)
+	k8s.GET("/clusters/:id/endpoints", p.read, connectivity.ListEndpoints)
+	k8s.PATCH("/clusters/:id/endpoints/edit", p.write, connectivity.EditEndpoints)
+	k8s.DELETE("/clusters/:id/endpoints/:ns/:name", p.write, connectivity.DeleteEndpoints)
+	k8s.GET("/clusters/:id/endpoints/:ns/:name/yaml", p.read, connectivity.EndpointsYAML)
 
 	// EndpointSlice
-	k8s.GET("/clusters/:id/endpointslices", p.read, ctl.ListEndpointSlices)
-	k8s.PATCH("/clusters/:id/endpointslices/edit", p.write, ctl.EditEndpointSlice)
-	k8s.DELETE("/clusters/:id/endpointslices/:ns/:name", p.write, ctl.DeleteEndpointSlice)
-	k8s.GET("/clusters/:id/endpointslices/:ns/:name/yaml", p.read, ctl.GetEndpointSliceYAML)
+	k8s.GET("/clusters/:id/endpointslices", p.read, connectivity.ListEndpointSlices)
+	k8s.PATCH("/clusters/:id/endpointslices/edit", p.write, connectivity.EditEndpointSlice)
+	k8s.DELETE("/clusters/:id/endpointslices/:ns/:name", p.write, connectivity.DeleteEndpointSlice)
+	k8s.GET("/clusters/:id/endpointslices/:ns/:name/yaml", p.read, connectivity.EndpointSliceYAML)
 }
 
 // ── 配置与存储：ConfigMap / Secret / ServiceAccount / PVC / PV / StorageClass / CSI / VolumeSnapshot / VolumeAttachment ──
 
 func registerConfigStorageRoutes(a k8sRouteArgs) {
-	k8s, ctl, p := a.k8s, a.ctl, a.perm
+	k8s, configuration, storage, platform, relationships, p := a.k8s, a.configuration, a.storage, a.platform, a.relationships, a.perm
 
 	// ConfigMap
-	k8s.GET("/clusters/:id/configmaps", p.read, ctl.ListConfigMaps)
-	k8s.PATCH("/clusters/:id/configmaps/edit", p.write, ctl.EditConfigMap)
-	k8s.DELETE("/clusters/:id/configmaps/:ns/:name", p.write, ctl.DeleteConfigMap)
-	k8s.GET("/clusters/:id/configmaps/:ns/:name/yaml", p.read, ctl.GetConfigMapYAML)
-	k8s.GET("/clusters/:id/configmaps/:ns/:name/related", p.read, ctl.GetConfigMapRelated)
+	k8s.GET("/clusters/:id/configmaps", p.read, configuration.List(kopsapp.ConfigurationConfigMap))
+	k8s.PATCH("/clusters/:id/configmaps/edit", p.write, configuration.EditConfigMap)
+	k8s.DELETE("/clusters/:id/configmaps/:ns/:name", p.write, configuration.Delete(kopsapp.ConfigurationConfigMap))
+	k8s.GET("/clusters/:id/configmaps/:ns/:name/yaml", p.read, configuration.YAML(kopsapp.ConfigurationConfigMap))
+	k8s.GET("/clusters/:id/configmaps/:ns/:name/related", p.read, configuration.Related(kopsapp.ConfigurationConfigMap))
 
 	// Secret
-	k8s.GET("/clusters/:id/secrets", p.read, ctl.ListSecrets)
-	k8s.PATCH("/clusters/:id/secrets/edit", p.write, ctl.EditSecret)
-	k8s.DELETE("/clusters/:id/secrets/:ns/:name", p.write, ctl.DeleteSecret)
-	k8s.GET("/clusters/:id/secrets/:ns/:name/reveal", p.secretReveal, ctl.GetSecretReveal)
-	k8s.GET("/clusters/:id/secrets/:ns/:name/decoded-data", p.secretReveal, ctl.GetSecretReveal)
-	k8s.GET("/clusters/:id/secrets/:ns/:name/yaml", p.read, ctl.GetSecretYAML)
-	k8s.GET("/clusters/:id/secrets/:ns/:name/related", p.read, ctl.GetSecretRelated)
+	k8s.GET("/clusters/:id/secrets", p.read, configuration.List(kopsapp.ConfigurationSecret))
+	k8s.PATCH("/clusters/:id/secrets/edit", p.write, configuration.EditSecret)
+	k8s.DELETE("/clusters/:id/secrets/:ns/:name", p.write, configuration.Delete(kopsapp.ConfigurationSecret))
+	k8s.GET("/clusters/:id/secrets/:ns/:name/reveal", p.secretReveal, configuration.RevealSecret)
+	k8s.GET("/clusters/:id/secrets/:ns/:name/decoded-data", p.secretReveal, configuration.RevealSecret)
+	k8s.GET("/clusters/:id/secrets/:ns/:name/yaml", p.read, configuration.YAML(kopsapp.ConfigurationSecret))
+	k8s.GET("/clusters/:id/secrets/:ns/:name/related", p.read, configuration.Related(kopsapp.ConfigurationSecret))
 
 	// ServiceAccount
-	k8s.GET("/clusters/:id/serviceaccounts", p.read, ctl.ListServiceAccounts)
-	k8s.PATCH("/clusters/:id/serviceaccounts/edit", p.write, ctl.EditServiceAccount)
-	k8s.DELETE("/clusters/:id/serviceaccounts/:ns/:name", p.write, ctl.DeleteServiceAccount)
-	k8s.GET("/clusters/:id/serviceaccounts/:ns/:name/yaml", p.read, ctl.GetServiceAccountYAML)
+	k8s.GET("/clusters/:id/serviceaccounts", p.read, platform.List(kopsapp.PlatformServiceAccount))
+	k8s.PATCH("/clusters/:id/serviceaccounts/edit", p.write, platform.Apply(kopsapp.PlatformServiceAccount))
+	k8s.DELETE("/clusters/:id/serviceaccounts/:ns/:name", p.write, platform.Delete(kopsapp.PlatformServiceAccount))
+	k8s.GET("/clusters/:id/serviceaccounts/:ns/:name/yaml", p.read, platform.YAML(kopsapp.PlatformServiceAccount))
 
 	// PVC
-	k8s.GET("/clusters/:id/pvcs", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListPVCs)
-	k8s.POST("/clusters/:id/pvcs", p.write, ctl.CreatePVC)
-	k8s.DELETE("/clusters/:id/pvcs/:ns/:name", p.write, ctl.DeletePVC)
-	k8s.GET("/clusters/:id/pvcs/:ns/:name/yaml", p.read, ctl.GetPVCYAML)
+	k8s.GET("/clusters/:id/pvcs", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), storage.List(kopsapp.StoragePersistentVolumeClaim))
+	k8s.POST("/clusters/:id/pvcs", p.write, storage.CreatePVC)
+	k8s.DELETE("/clusters/:id/pvcs/:ns/:name", p.write, storage.Delete(kopsapp.StoragePersistentVolumeClaim))
+	k8s.GET("/clusters/:id/pvcs/:ns/:name/yaml", p.read, storage.YAML(kopsapp.StoragePersistentVolumeClaim))
 
 	// PV
-	k8s.GET("/clusters/:id/pvs", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListPVs)
-	k8s.DELETE("/clusters/:id/pvs/:name", p.write, ctl.DeletePV)
-	k8s.GET("/clusters/:id/pvs/:name/yaml", p.read, ctl.GetPVYAML)
+	k8s.GET("/clusters/:id/pvs", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), storage.List(kopsapp.StoragePersistentVolume))
+	k8s.DELETE("/clusters/:id/pvs/:name", p.write, storage.Delete(kopsapp.StoragePersistentVolume))
+	k8s.GET("/clusters/:id/pvs/:name/yaml", p.read, storage.YAML(kopsapp.StoragePersistentVolume))
 
 	// StorageClass
-	k8s.GET("/clusters/:id/storageclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListStorageClasses)
-	k8s.PATCH("/clusters/:id/storageclasses/edit", p.write, ctl.EditStorageClass)
-	k8s.DELETE("/clusters/:id/storageclasses/:name", p.write, ctl.DeleteStorageClass)
-	k8s.GET("/clusters/:id/storageclasses/:name/yaml", p.read, ctl.GetStorageClassYAML)
+	k8s.GET("/clusters/:id/storageclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), storage.List(kopsapp.StorageClass))
+	k8s.PATCH("/clusters/:id/storageclasses/edit", p.write, storage.Apply(kopsapp.StorageClass))
+	k8s.DELETE("/clusters/:id/storageclasses/:name", p.write, storage.Delete(kopsapp.StorageClass))
+	k8s.GET("/clusters/:id/storageclasses/:name/yaml", p.read, storage.YAML(kopsapp.StorageClass))
 
 	// CSIDriver
-	k8s.GET("/clusters/:id/csidrivers", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListCSIDrivers)
-	k8s.PATCH("/clusters/:id/csidrivers/edit", p.write, ctl.EditCSIDriver)
-	k8s.DELETE("/clusters/:id/csidrivers/:name", p.write, ctl.DeleteCSIDriver)
-	k8s.GET("/clusters/:id/csidrivers/:name/yaml", p.read, ctl.GetCSIDriverYAML)
+	k8s.GET("/clusters/:id/csidrivers", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformCSIDriver))
+	k8s.PATCH("/clusters/:id/csidrivers/edit", p.write, platform.Apply(kopsapp.PlatformCSIDriver))
+	k8s.DELETE("/clusters/:id/csidrivers/:name", p.write, platform.Delete(kopsapp.PlatformCSIDriver))
+	k8s.GET("/clusters/:id/csidrivers/:name/yaml", p.read, platform.YAML(kopsapp.PlatformCSIDriver))
 
 	// CSINode
-	k8s.GET("/clusters/:id/csinodes", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListCSINodes)
-	k8s.PATCH("/clusters/:id/csinodes/edit", p.write, ctl.EditCSINode)
-	k8s.DELETE("/clusters/:id/csinodes/:name", p.write, ctl.DeleteCSINode)
-	k8s.GET("/clusters/:id/csinodes/:name/yaml", p.read, ctl.GetCSINodeYAML)
+	k8s.GET("/clusters/:id/csinodes", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformCSINode))
+	k8s.PATCH("/clusters/:id/csinodes/edit", p.write, platform.Apply(kopsapp.PlatformCSINode))
+	k8s.DELETE("/clusters/:id/csinodes/:name", p.write, platform.Delete(kopsapp.PlatformCSINode))
+	k8s.GET("/clusters/:id/csinodes/:name/yaml", p.read, platform.YAML(kopsapp.PlatformCSINode))
 
 	// CSIStorageCapacity
-	k8s.GET("/clusters/:id/csistoragecapacities", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListCSIStorageCapacities)
-	k8s.PATCH("/clusters/:id/csistoragecapacities/edit", p.write, ctl.EditCSIStorageCapacity)
-	k8s.DELETE("/clusters/:id/csistoragecapacities/:ns/:name", p.write, ctl.DeleteCSIStorageCapacity)
-	k8s.GET("/clusters/:id/csistoragecapacities/:ns/:name/yaml", p.read, ctl.GetCSIStorageCapacityYAML)
+	k8s.GET("/clusters/:id/csistoragecapacities", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), platform.List(kopsapp.PlatformCSIStorageCapacity))
+	k8s.PATCH("/clusters/:id/csistoragecapacities/edit", p.write, platform.Apply(kopsapp.PlatformCSIStorageCapacity))
+	k8s.DELETE("/clusters/:id/csistoragecapacities/:ns/:name", p.write, platform.Delete(kopsapp.PlatformCSIStorageCapacity))
+	k8s.GET("/clusters/:id/csistoragecapacities/:ns/:name/yaml", p.read, platform.YAML(kopsapp.PlatformCSIStorageCapacity))
 
 	// VolumeAttachment
-	k8s.GET("/clusters/:id/volumeattachments", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListVolumeAttachments)
-	k8s.PATCH("/clusters/:id/volumeattachments/edit", p.write, ctl.EditVolumeAttachment)
-	k8s.DELETE("/clusters/:id/volumeattachments/:name", p.write, ctl.DeleteVolumeAttachment)
-	k8s.GET("/clusters/:id/volumeattachments/:name/yaml", p.read, ctl.GetVolumeAttachmentYAML)
+	k8s.GET("/clusters/:id/volumeattachments", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), relationships.List(kopsapp.RelationshipVolumeAttachment))
+	k8s.PATCH("/clusters/:id/volumeattachments/edit", p.write, relationships.Apply(kopsapp.RelationshipVolumeAttachment))
+	k8s.DELETE("/clusters/:id/volumeattachments/:name", p.write, relationships.Delete(kopsapp.RelationshipVolumeAttachment))
+	k8s.GET("/clusters/:id/volumeattachments/:name/yaml", p.read, relationships.YAML(kopsapp.RelationshipVolumeAttachment))
 
 	// VolumeSnapshot
-	k8s.GET("/clusters/:id/volumesnapshots", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListVolumeSnapshots)
-	k8s.PATCH("/clusters/:id/volumesnapshots/edit", p.write, ctl.EditVolumeSnapshot)
-	k8s.DELETE("/clusters/:id/volumesnapshots/:ns/:name", p.write, ctl.DeleteVolumeSnapshot)
-	k8s.GET("/clusters/:id/volumesnapshots/:ns/:name/yaml", p.read, ctl.GetVolumeSnapshotYAML)
+	k8s.GET("/clusters/:id/volumesnapshots", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), storage.List(kopsapp.StorageVolumeSnapshot))
+	k8s.PATCH("/clusters/:id/volumesnapshots/edit", p.write, storage.Apply(kopsapp.StorageVolumeSnapshot))
+	k8s.DELETE("/clusters/:id/volumesnapshots/:ns/:name", p.write, storage.Delete(kopsapp.StorageVolumeSnapshot))
+	k8s.GET("/clusters/:id/volumesnapshots/:ns/:name/yaml", p.read, storage.YAML(kopsapp.StorageVolumeSnapshot))
 
 	// VolumeSnapshotClass
-	k8s.GET("/clusters/:id/volumesnapshotclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListVolumeSnapshotClasses)
-	k8s.PATCH("/clusters/:id/volumesnapshotclasses/edit", p.write, ctl.EditVolumeSnapshotClass)
-	k8s.DELETE("/clusters/:id/volumesnapshotclasses/:name", p.write, ctl.DeleteVolumeSnapshotClass)
-	k8s.GET("/clusters/:id/volumesnapshotclasses/:name/yaml", p.read, ctl.GetVolumeSnapshotClassYAML)
+	k8s.GET("/clusters/:id/volumesnapshotclasses", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), storage.List(kopsapp.StorageVolumeSnapshotClass))
+	k8s.PATCH("/clusters/:id/volumesnapshotclasses/edit", p.write, storage.Apply(kopsapp.StorageVolumeSnapshotClass))
+	k8s.DELETE("/clusters/:id/volumesnapshotclasses/:name", p.write, storage.Delete(kopsapp.StorageVolumeSnapshotClass))
+	k8s.GET("/clusters/:id/volumesnapshotclasses/:name/yaml", p.read, storage.YAML(kopsapp.StorageVolumeSnapshotClass))
 
 	// VolumeSnapshotContent
-	k8s.GET("/clusters/:id/volumesnapshotcontents", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListVolumeSnapshotContents)
-	k8s.PATCH("/clusters/:id/volumesnapshotcontents/edit", p.write, ctl.EditVolumeSnapshotContent)
-	k8s.DELETE("/clusters/:id/volumesnapshotcontents/:name", p.write, ctl.DeleteVolumeSnapshotContent)
-	k8s.GET("/clusters/:id/volumesnapshotcontents/:name/yaml", p.read, ctl.GetVolumeSnapshotContentYAML)
+	k8s.GET("/clusters/:id/volumesnapshotcontents", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), storage.List(kopsapp.StorageVolumeSnapshotContent))
+	k8s.PATCH("/clusters/:id/volumesnapshotcontents/edit", p.write, storage.Apply(kopsapp.StorageVolumeSnapshotContent))
+	k8s.DELETE("/clusters/:id/volumesnapshotcontents/:name", p.write, storage.Delete(kopsapp.StorageVolumeSnapshotContent))
+	k8s.GET("/clusters/:id/volumesnapshotcontents/:name/yaml", p.read, storage.YAML(kopsapp.StorageVolumeSnapshotContent))
 }
 
 // ── RBAC：Role / ClusterRole / RoleBinding / ClusterRoleBinding ──
 
 func registerRBACRoutes(a k8sRouteArgs) {
-	k8s, ctl, p := a.k8s, a.ctl, a.perm
+	k8s, platform, p := a.k8s, a.platform, a.perm
 
 	// Role
-	k8s.GET("/clusters/:id/roles", p.rbacRead, ctl.ListRoles)
-	k8s.PATCH("/clusters/:id/roles/edit", p.rbacWrite, ctl.EditRole)
-	k8s.DELETE("/clusters/:id/roles/:ns/:name", p.rbacWrite, ctl.DeleteRole)
-	k8s.GET("/clusters/:id/roles/:ns/:name/yaml", p.rbacRead, ctl.GetRoleYAML)
+	k8s.GET("/clusters/:id/roles", p.rbacRead, platform.List(kopsapp.PlatformRole))
+	k8s.PATCH("/clusters/:id/roles/edit", p.rbacWrite, platform.Apply(kopsapp.PlatformRole))
+	k8s.DELETE("/clusters/:id/roles/:ns/:name", p.rbacWrite, platform.Delete(kopsapp.PlatformRole))
+	k8s.GET("/clusters/:id/roles/:ns/:name/yaml", p.rbacRead, platform.YAML(kopsapp.PlatformRole))
 
 	// ClusterRole
-	k8s.GET("/clusters/:id/clusterroles", p.rbacRead, ctl.ListClusterRoles)
-	k8s.PATCH("/clusters/:id/clusterroles/edit", p.rbacWrite, ctl.EditClusterRole)
-	k8s.DELETE("/clusters/:id/clusterroles/:name", p.rbacWrite, ctl.DeleteClusterRole)
-	k8s.GET("/clusters/:id/clusterroles/:name/yaml", p.rbacRead, ctl.GetClusterRoleYAML)
+	k8s.GET("/clusters/:id/clusterroles", p.rbacRead, platform.List(kopsapp.PlatformClusterRole))
+	k8s.PATCH("/clusters/:id/clusterroles/edit", p.rbacWrite, platform.Apply(kopsapp.PlatformClusterRole))
+	k8s.DELETE("/clusters/:id/clusterroles/:name", p.rbacWrite, platform.Delete(kopsapp.PlatformClusterRole))
+	k8s.GET("/clusters/:id/clusterroles/:name/yaml", p.rbacRead, platform.YAML(kopsapp.PlatformClusterRole))
 
 	// RoleBinding
-	k8s.GET("/clusters/:id/rolebindings", p.rbacRead, ctl.ListRoleBindings)
-	k8s.PATCH("/clusters/:id/rolebindings/edit", p.rbacWrite, ctl.EditRoleBinding)
-	k8s.DELETE("/clusters/:id/rolebindings/:ns/:name", p.rbacWrite, ctl.DeleteRoleBinding)
-	k8s.GET("/clusters/:id/rolebindings/:ns/:name/yaml", p.rbacRead, ctl.GetRoleBindingYAML)
+	k8s.GET("/clusters/:id/rolebindings", p.rbacRead, platform.List(kopsapp.PlatformRoleBinding))
+	k8s.PATCH("/clusters/:id/rolebindings/edit", p.rbacWrite, platform.Apply(kopsapp.PlatformRoleBinding))
+	k8s.DELETE("/clusters/:id/rolebindings/:ns/:name", p.rbacWrite, platform.Delete(kopsapp.PlatformRoleBinding))
+	k8s.GET("/clusters/:id/rolebindings/:ns/:name/yaml", p.rbacRead, platform.YAML(kopsapp.PlatformRoleBinding))
 
 	// ClusterRoleBinding
-	k8s.GET("/clusters/:id/clusterrolebindings", p.rbacRead, ctl.ListClusterRoleBindings)
-	k8s.PATCH("/clusters/:id/clusterrolebindings/edit", p.rbacWrite, ctl.EditClusterRoleBinding)
-	k8s.DELETE("/clusters/:id/clusterrolebindings/:name", p.rbacWrite, ctl.DeleteClusterRoleBinding)
-	k8s.GET("/clusters/:id/clusterrolebindings/:name/yaml", p.rbacRead, ctl.GetClusterRoleBindingYAML)
+	k8s.GET("/clusters/:id/clusterrolebindings", p.rbacRead, platform.List(kopsapp.PlatformClusterRoleBinding))
+	k8s.PATCH("/clusters/:id/clusterrolebindings/edit", p.rbacWrite, platform.Apply(kopsapp.PlatformClusterRoleBinding))
+	k8s.DELETE("/clusters/:id/clusterrolebindings/:name", p.rbacWrite, platform.Delete(kopsapp.PlatformClusterRoleBinding))
+	k8s.GET("/clusters/:id/clusterrolebindings/:name/yaml", p.rbacRead, platform.YAML(kopsapp.PlatformClusterRoleBinding))
 }
 
 // ── 批处理：Job / CronJob ──
 
 func registerBatchRoutes(a k8sRouteArgs) {
-	k8s, ctl, p := a.k8s, a.ctl, a.perm
+	k8s, batch, p := a.k8s, a.batch, a.perm
 
 	// Job
-	k8s.GET("/clusters/:id/jobs", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListJobs)
-	k8s.PATCH("/clusters/:id/jobs/edit", p.write, ctl.EditJob)
-	k8s.DELETE("/clusters/:id/jobs/completed", p.write, ctl.DeleteCompletedJobs)
-	k8s.DELETE("/clusters/:id/jobs/:ns/:name", p.write, ctl.DeleteJob)
-	k8s.GET("/clusters/:id/jobs/:ns/:name/yaml", p.read, ctl.GetJobYAML)
+	k8s.GET("/clusters/:id/jobs", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), batch.List(kopsapp.BatchJob))
+	k8s.PATCH("/clusters/:id/jobs/edit", p.write, batch.EditJob)
+	k8s.DELETE("/clusters/:id/jobs/completed", p.write, batch.DeleteCompletedJobs)
+	k8s.DELETE("/clusters/:id/jobs/:ns/:name", p.write, batch.Delete(kopsapp.BatchJob))
+	k8s.GET("/clusters/:id/jobs/:ns/:name/yaml", p.read, batch.YAML(kopsapp.BatchJob))
 
 	// CronJob
-	k8s.GET("/clusters/:id/cronjobs", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListCronJobs)
-	k8s.PATCH("/clusters/:id/cronjobs/edit", p.write, ctl.EditCronJob)
-	k8s.POST("/clusters/:id/cronjobs/:ns/:name/trigger", p.write, ctl.TriggerCronJob)
-	k8s.PATCH("/clusters/:id/cronjobs/:ns/:name/suspend", p.write, ctl.SuspendCronJob)
-	k8s.POST("/clusters/:id/cronjobs/:ns/:name/execution-requests", p.write, ctl.TriggerCronJob)
-	k8s.PATCH("/clusters/:id/cronjobs/:ns/:name/suspension-state", p.write, ctl.SuspendCronJob)
-	k8s.DELETE("/clusters/:id/cronjobs/:ns/:name", p.write, ctl.DeleteCronJob)
-	k8s.GET("/clusters/:id/cronjobs/:ns/:name/yaml", p.read, ctl.GetCronJobYAML)
+	k8s.GET("/clusters/:id/cronjobs", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), batch.List(kopsapp.BatchCronJob))
+	k8s.PATCH("/clusters/:id/cronjobs/edit", p.write, batch.EditCronJob)
+	k8s.POST("/clusters/:id/cronjobs/:ns/:name/trigger", p.write, batch.TriggerCronJob)
+	k8s.PATCH("/clusters/:id/cronjobs/:ns/:name/suspend", p.write, batch.SuspendCronJob)
+	k8s.POST("/clusters/:id/cronjobs/:ns/:name/execution-requests", p.write, batch.TriggerCronJob)
+	k8s.PATCH("/clusters/:id/cronjobs/:ns/:name/suspension-state", p.write, batch.SuspendCronJob)
+	k8s.DELETE("/clusters/:id/cronjobs/:ns/:name", p.write, batch.Delete(kopsapp.BatchCronJob))
+	k8s.GET("/clusters/:id/cronjobs/:ns/:name/yaml", p.read, batch.YAML(kopsapp.BatchCronJob))
 }
 
 // ── Helm 管理 ──
 
 func registerHelmRoutes(a k8sRouteArgs) {
-	k8s, ctl, p := a.k8s, a.ctl, a.perm
-	k8s.GET("/clusters/:id/helm/releases", p.read, ctl.ListHelmReleases)
-	k8s.GET("/clusters/:id/helm/releases/detail", p.read, ctl.GetHelmReleaseDetail)
-	k8s.GET("/clusters/:id/helm/releases/:ns/:name", p.read, ctl.GetHelmReleaseDetail)
-	k8s.POST("/clusters/:id/helm/preflight", p.write, ctl.HelmPreflight)
-	k8s.POST("/clusters/:id/helm/install", p.write, ctl.HelmInstall)
-	k8s.POST("/clusters/:id/helm/releases/:ns/:name/upgrade", p.write, ctl.HelmUpgrade)
-	k8s.POST("/clusters/:id/helm/releases/:ns/:name/rollback", p.write, ctl.HelmRollback)
-	k8s.POST("/clusters/:id/helm/preflight-checks", p.write, ctl.HelmPreflight)
-	k8s.POST("/clusters/:id/helm/releases", p.write, ctl.HelmInstall)
-	k8s.POST("/clusters/:id/helm/releases/:ns/:name/upgrade-attempts", p.write, ctl.HelmUpgrade)
-	k8s.POST("/clusters/:id/helm/releases/:ns/:name/rollback-attempts", p.write, ctl.HelmRollback)
-	k8s.DELETE("/clusters/:id/helm/releases/:ns/:name", p.write, ctl.HelmUninstall)
-	k8s.GET("/clusters/:id/helm/repos", p.read, ctl.HelmRepoList)
-	k8s.POST("/clusters/:id/helm/repos", p.write, ctl.HelmRepoAdd)
-	k8s.DELETE("/clusters/:id/helm/repos/:name", p.write, ctl.HelmRepoDelete)
-	k8s.GET("/clusters/:id/helm/search", p.read, ctl.HelmSearch)
+	k8s, helm, p := a.k8s, a.helm, a.perm
+	k8s.GET("/clusters/:id/helm/releases", p.read, helm.Releases)
+	k8s.GET("/clusters/:id/helm/releases/detail", p.read, helm.ReleaseDetail)
+	k8s.GET("/clusters/:id/helm/releases/:ns/:name", p.read, helm.ReleaseDetail)
+	k8s.POST("/clusters/:id/helm/preflight", p.write, helm.Preflight)
+	k8s.POST("/clusters/:id/helm/install", p.write, helm.Install)
+	k8s.POST("/clusters/:id/helm/releases/:ns/:name/upgrade", p.write, helm.Upgrade)
+	k8s.POST("/clusters/:id/helm/releases/:ns/:name/rollback", p.write, helm.Rollback)
+	k8s.POST("/clusters/:id/helm/preflight-checks", p.write, helm.Preflight)
+	k8s.POST("/clusters/:id/helm/releases", p.write, helm.Install)
+	k8s.POST("/clusters/:id/helm/releases/:ns/:name/upgrade-attempts", p.write, helm.Upgrade)
+	k8s.POST("/clusters/:id/helm/releases/:ns/:name/rollback-attempts", p.write, helm.Rollback)
+	k8s.DELETE("/clusters/:id/helm/releases/:ns/:name", p.write, helm.Uninstall)
+	k8s.GET("/clusters/:id/helm/repos", p.read, helm.Repositories)
+	k8s.POST("/clusters/:id/helm/repos", p.write, helm.AddRepository)
+	k8s.DELETE("/clusters/:id/helm/repos/:name", p.write, helm.DeleteRepository)
+	k8s.GET("/clusters/:id/helm/search", p.read, helm.Search)
 }
 
 // ── WebSocket ──

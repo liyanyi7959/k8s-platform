@@ -3,6 +3,9 @@ package kops
 import (
 	"context"
 	"errors"
+	"strings"
+
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	kopsapp "k8s-platform-backend/internal/kops/application"
@@ -17,12 +20,11 @@ type ManifestRuntime struct {
 }
 
 type NamespaceRuntime struct {
-	k8s       *service.K8sService
-	diagnosis *service.NamespaceDiagnosisService
+	k8s *service.K8sService
 }
 
-func NewNamespaceRuntime(k8s *service.K8sService, diagnosis *service.NamespaceDiagnosisService) *NamespaceRuntime {
-	return &NamespaceRuntime{k8s: k8s, diagnosis: diagnosis}
+func NewNamespaceRuntime(k8s *service.K8sService) *NamespaceRuntime {
+	return &NamespaceRuntime{k8s: k8s}
 }
 func (r *NamespaceRuntime) List(ctx context.Context, clusterID uint64, sortBy, order string) (any, error) {
 	if r == nil || r.k8s == nil {
@@ -70,21 +72,30 @@ func (r *NamespaceRuntime) Summary(ctx context.Context, clusterID uint64, namesp
 	}
 	return map[string]any{"namespace": namespace, "total": total, "items": out}, nil
 }
-func (r *NamespaceRuntime) Inspection(ctx context.Context, clusterID uint64, namespace string) (any, error) {
-	if r == nil || r.diagnosis == nil {
+func (r *NamespaceRuntime) Events(ctx context.Context, query kopsapp.EventListQuery) (any, error) {
+	if r == nil || r.k8s == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.diagnosis.GetNamespaceInspection(ctx, clusterID, namespace)
-	return value, translateKopsRuntimeError(err)
-}
-func (r *NamespaceRuntime) WorkloadInventory(ctx context.Context, clusterID uint64, namespace string) (any, error) {
-	if r == nil || r.diagnosis == nil {
-		return nil, kopsapp.ErrConflict
+	selectors := make([]fields.Selector, 0, 3)
+	if query.InvolvedObjectKind != "" {
+		selectors = append(selectors, fields.OneTermEqualSelector("involvedObject.kind", query.InvolvedObjectKind))
 	}
-	value, err := r.diagnosis.GetNamespaceWorkloadInventory(ctx, clusterID, namespace)
-	return value, translateKopsRuntimeError(err)
+	if query.InvolvedObjectName != "" {
+		selectors = append(selectors, fields.OneTermEqualSelector("involvedObject.name", query.InvolvedObjectName))
+	}
+	if query.InvolvedObjectUID != "" {
+		selectors = append(selectors, fields.OneTermEqualSelector("involvedObject.uid", query.InvolvedObjectUID))
+	}
+	var extra map[string]string
+	if len(selectors) > 0 {
+		extra = map[string]string{"field_selector": strings.TrimSpace(fields.AndSelectors(selectors...).String())}
+	}
+	value, err := r.k8s.List(ctx, query.ClusterID, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "events"}, query.Namespace, query.SortBy, query.Order, extra)
+	if err != nil {
+		return nil, translateKopsRuntimeError(err)
+	}
+	return map[string]any{"list": value}, nil
 }
-
 func NewManifestRuntime(service *service.ManifestApplyRecordService) *ManifestRuntime {
 	return &ManifestRuntime{service: service}
 }

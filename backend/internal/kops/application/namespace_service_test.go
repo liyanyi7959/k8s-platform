@@ -23,13 +23,7 @@ func (spy *namespaceRuntimeSpy) YAML(context.Context, uint64, string) (any, erro
 func (spy *namespaceRuntimeSpy) Summary(context.Context, uint64, string) (any, error) {
 	return nil, nil
 }
-func (spy *namespaceRuntimeSpy) Inspection(context.Context, uint64, string) (any, error) {
-	return nil, nil
-}
-func (spy *namespaceRuntimeSpy) WorkloadInventory(context.Context, uint64, string) (any, error) {
-	return nil, nil
-}
-
+func (spy *namespaceRuntimeSpy) Events(context.Context, EventListQuery) (any, error) { return nil, nil }
 func TestNamespaceServiceOwnsNamespaceValidation(t *testing.T) {
 	spy := &namespaceRuntimeSpy{}
 	service := NewNamespaceService(spy)

@@ -1,12 +1,14 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -26,12 +28,27 @@ import (
 //
 // 各资源类型的接口按文件拆分，参见 k8s_ctrl_*.go 系列文件。
 type K8sController struct {
-	svc                   *service.K8sService
-	execSessions          *kopsapp.ExecSessionStore
-	logSessions           *kopsapp.PodLogSessionStore
-	namespaceDiagnosisSvc *service.NamespaceDiagnosisService
-	resourceInspectSvc    *service.ResourceInspectionService
-	deploySvc             *service.DeployService
+	svc          *service.K8sService
+	execSessions *kopsapp.ExecSessionStore
+	logSessions  *kopsapp.PodLogSessionStore
+	deploySvc    *service.DeployService
+}
+
+func websocketCloseReason(err error, fallback string) string {
+	message := strings.TrimSpace(fallback)
+	if userMessage, ok := service.UserMessage(err); ok && strings.TrimSpace(userMessage) != "" {
+		message = strings.TrimSpace(userMessage)
+	} else if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = strings.TrimSpace(err.Error())
+	}
+	for len(message) > 120 {
+		_, size := utf8.DecodeLastRuneInString(message)
+		if size <= 0 {
+			break
+		}
+		message = message[:len(message)-size]
+	}
+	return strings.TrimSpace(message)
 }
 
 type K8sEditRequest struct {
@@ -49,8 +66,6 @@ func NewK8sController(
 	svc *service.K8sService,
 	execSessions *kopsapp.ExecSessionStore,
 	logSessions *kopsapp.PodLogSessionStore,
-	namespaceDiagnosisSvc *service.NamespaceDiagnosisService,
-	resourceInspectSvc *service.ResourceInspectionService,
 	deployServices ...*service.DeployService,
 ) *K8sController {
 	var deploySvc *service.DeployService
@@ -58,12 +73,10 @@ func NewK8sController(
 		deploySvc = deployServices[0]
 	}
 	return &K8sController{
-		svc:                   svc,
-		execSessions:          execSessions,
-		logSessions:           logSessions,
-		namespaceDiagnosisSvc: namespaceDiagnosisSvc,
-		resourceInspectSvc:    resourceInspectSvc,
-		deploySvc:             deploySvc,
+		svc:          svc,
+		execSessions: execSessions,
+		logSessions:  logSessions,
+		deploySvc:    deploySvc,
 	}
 }
 
@@ -93,6 +106,28 @@ func decodePathParam(s string) string {
 		return s
 	}
 	return v
+}
+
+// listNamespacedResource remains a shared legacy helper while the PodMetrics
+// endpoint is still owned by the retained Pod controller. Resource-specific
+// platform routes no longer depend on this controller package helper.
+func listNamespacedResource(c *gin.Context, kc *K8sController, gvr schema.GroupVersionResource) {
+	id, ok := parseClusterID(c)
+	if !ok {
+		resp.Fail(c, 4000, "invalid params")
+		return
+	}
+	namespace := strings.TrimSpace(c.Query("namespace"))
+	list, err := kc.svc.List(c.Request.Context(), id, gvr, namespace, c.Query("sort_by"), c.Query("order"), nil)
+	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			resp.OK(c, gin.H{"list": []any{}})
+			return
+		}
+		kc.writeServiceErr(c, err)
+		return
+	}
+	resp.OK(c, gin.H{"list": list})
 }
 
 // ──────────────────────────────────────────────────────────
@@ -264,9 +299,6 @@ func applyProbeTiming(container map[string]any, probeKey string, timing *editPro
 func gvrNamespaces() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
 }
-func gvrNodes() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}
-}
 func gvrPods() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
 }
@@ -276,29 +308,11 @@ func gvrPodMetrics() schema.GroupVersionResource {
 func gvrReplicaSets() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
 }
-func gvrServices() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-}
 func gvrEndpoints() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "endpoints"}
 }
-func gvrConfigMaps() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}
-}
-func gvrSecrets() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "secrets"}
-}
 func gvrEvents() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "events"}
-}
-func gvrPVs() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "persistentvolumes"}
-}
-func gvrPVCs() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "persistentvolumeclaims"}
-}
-func gvrIngresses() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "networking.k8s.io", Version: "v1", Resource: "ingresses"}
 }
 func gvrNetworkPolicies() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "networking.k8s.io", Version: "v1", Resource: "networkpolicies"}
@@ -306,32 +320,8 @@ func gvrNetworkPolicies() schema.GroupVersionResource {
 func gvrEndpointSlices() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "discovery.k8s.io", Version: "v1", Resource: "endpointslices"}
 }
-func gvrIngressClasses() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "networking.k8s.io", Version: "v1", Resource: "ingressclasses"}
-}
-func gvrStorageClasses() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "storageclasses"}
-}
-func gvrCSIDrivers() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "csidrivers"}
-}
-func gvrCSINodes() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "csinodes"}
-}
-func gvrCSIStorageCapacities() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "csistoragecapacities"}
-}
 func gvrVolumeAttachments() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "volumeattachments"}
-}
-func gvrVolumeSnapshots() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "snapshot.storage.k8s.io", Version: "v1", Resource: "volumesnapshots"}
-}
-func gvrVolumeSnapshotClasses() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "snapshot.storage.k8s.io", Version: "v1", Resource: "volumesnapshotclasses"}
-}
-func gvrVolumeSnapshotContents() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "snapshot.storage.k8s.io", Version: "v1", Resource: "volumesnapshotcontents"}
 }
 func gvrResourceQuotas() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "resourcequotas"}
@@ -348,47 +338,20 @@ func gvrAPIServices() schema.GroupVersionResource {
 func gvrPriorityClasses() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "scheduling.k8s.io", Version: "v1", Resource: "priorityclasses"}
 }
-func gvrRuntimeClasses() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "node.k8s.io", Version: "v1", Resource: "runtimeclasses"}
-}
 func gvrValidatingWebhookConfigurations() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "admissionregistration.k8s.io", Version: "v1", Resource: "validatingwebhookconfigurations"}
 }
 func gvrMutatingWebhookConfigurations() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "admissionregistration.k8s.io", Version: "v1", Resource: "mutatingwebhookconfigurations"}
 }
-func gvrValidatingAdmissionPolicies() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "admissionregistration.k8s.io", Version: "v1", Resource: "validatingadmissionpolicies"}
-}
-func gvrValidatingAdmissionPolicyBindings() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "admissionregistration.k8s.io", Version: "v1", Resource: "validatingadmissionpolicybindings"}
-}
-func gvrJobs() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "jobs"}
-}
-func gvrCronJobs() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "cronjobs"}
-}
 func gvrServiceAccounts() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "serviceaccounts"}
-}
-func gvrPDBs() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "policy", Version: "v1", Resource: "poddisruptionbudgets"}
 }
 func gvrHPAs() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "autoscaling", Version: "v2", Resource: "horizontalpodautoscalers"}
 }
-func gvrRoles() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles"}
-}
 func gvrClusterRoles() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles"}
-}
-func gvrRoleBindings() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "rolebindings"}
-}
-func gvrClusterRoleBindings() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterrolebindings"}
 }
 func gvrLeases() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "coordination.k8s.io", Version: "v1", Resource: "leases"}

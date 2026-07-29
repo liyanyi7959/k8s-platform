@@ -62,18 +62,11 @@ func (ctl *NamespaceController) Summary(c *gin.Context) {
 	result, err := ctl.service.Summary(c.Request.Context(), namespaceClusterID(c), namespacePath(c))
 	ctl.respond(c, result, err)
 }
-func (ctl *NamespaceController) Inspection(c *gin.Context) {
+func (ctl *NamespaceController) Events(c *gin.Context) {
 	if !ctl.ready(c) {
 		return
 	}
-	result, err := ctl.service.Inspection(c.Request.Context(), namespaceClusterID(c), namespacePath(c))
-	ctl.respond(c, result, err)
-}
-func (ctl *NamespaceController) WorkloadInventory(c *gin.Context) {
-	if !ctl.ready(c) {
-		return
-	}
-	result, err := ctl.service.WorkloadInventory(c.Request.Context(), namespaceClusterID(c), namespacePath(c))
+	result, err := ctl.service.Events(c.Request.Context(), kopsapp.EventListQuery{ClusterID: namespaceClusterID(c), Namespace: c.Query("namespace"), InvolvedObjectKind: c.Query("involved_object_kind"), InvolvedObjectName: c.Query("involved_object_name"), InvolvedObjectUID: c.Query("involved_object_uid"), SortBy: c.Query("sort_by"), Order: c.Query("order")})
 	ctl.respond(c, result, err)
 }
 func (ctl *NamespaceController) ready(c *gin.Context) bool {

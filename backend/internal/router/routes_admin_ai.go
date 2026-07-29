@@ -6,16 +6,19 @@ import (
 	aihttp "k8s-platform-backend/internal/ai/adapters/http"
 	audithttp "k8s-platform-backend/internal/audit/adapters/http"
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
+	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/middleware"
 	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
 )
 
-func registerWebSocketRoutes(authed *gin.RouterGroup, k8sCtl *controller.K8sController) {
+func registerWebSocketRoutes(authed *gin.RouterGroup, k8sCtl *controller.K8sController, podLog *kopshttp.PodLogStreamController, podExec *kopshttp.PodExecStreamController) {
 	ws := authed.Group("/ws")
-	if k8sCtl != nil {
-		ws.GET("/pod-log", middleware.RequirePerm("k8s:read"), k8sCtl.PodLogWS)
-		ws.GET("/pod-exec", middleware.RequirePerm("k8s:exec"), k8sCtl.PodExecWS)
+	if podLog != nil {
+		ws.GET("/pod-log", middleware.RequirePerm("k8s:read"), podLog.Stream)
+	}
+	if podExec != nil {
+		ws.GET("/pod-exec", middleware.RequirePerm("k8s:exec"), podExec.Stream)
 	}
 }
 

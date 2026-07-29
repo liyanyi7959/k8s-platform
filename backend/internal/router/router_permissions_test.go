@@ -180,7 +180,7 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp := performPermissionRequest(t, tt.method, tt.path, tt.perms, func(group *gin.RouterGroup) {
-				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{})
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			})
 			assertPermissionCode(t, resp, tt.wantCode)
 		})
@@ -191,7 +191,7 @@ func TestRegisterWebSocketRoutes_PodExecRequiresExecPerm(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	resp := performPermissionRequest(t, http.MethodGet, "/api/v1/ws/pod-exec?session_id=sid", []string{"k8s:read"}, func(group *gin.RouterGroup) {
-		registerWebSocketRoutes(group, &controller.K8sController{})
+		registerWebSocketRoutes(group, &controller.K8sController{}, nil, &kopshttp.PodExecStreamController{})
 	})
 
 	assertPermissionCode(t, resp, 1003)
@@ -234,7 +234,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPatch,
 			path:   "/api/v1/clusters/1/configmaps/default/demo",
 			register: func(group *gin.RouterGroup) {
-				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{})
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
 		},
 		{
@@ -242,7 +242,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodGet,
 			path:   "/api/v1/clusters/1/helm/releases/default/demo",
 			register: func(group *gin.RouterGroup) {
-				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{})
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
 		},
 		{
@@ -274,7 +274,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/clusters/1/nodes/node-a/drain-requests",
 			register: func(group *gin.RouterGroup) {
-				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{})
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
 		},
 		{
@@ -282,7 +282,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/clusters/1/manifest-applications",
 			register: func(group *gin.RouterGroup) {
-				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{})
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
 		},
 		{
@@ -290,7 +290,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/clusters/1/pods/default/demo/exec-sessions",
 			register: func(group *gin.RouterGroup) {
-				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{})
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
 		},
 		{
@@ -298,7 +298,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/clusters/1/helm/releases/default/demo/rollback-attempts",
 			register: func(group *gin.RouterGroup) {
-				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{})
+				registerK8sRoutes(group, Deps{}, &controller.K8sController{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
 		},
 		{
