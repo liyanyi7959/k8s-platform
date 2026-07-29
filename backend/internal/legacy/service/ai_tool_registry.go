@@ -9,7 +9,9 @@ import (
 
 	"gorm.io/gorm"
 
+	aiapp "k8s-platform-backend/internal/ai/application"
 	"k8s-platform-backend/internal/legacy/model"
+	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
 )
 
 type AIToolResult struct {
@@ -53,6 +55,19 @@ type AIToolCatalogItem struct {
 	Available           bool          `json:"available"`
 }
 
+type aiProjectRow struct {
+	ID          uint64 `gorm:"column:id"`
+	Name        string `gorm:"column:name"`
+	Description string `gorm:"column:description"`
+	ClusterID   uint64 `gorm:"column:cluster_id"`
+	Namespaces  string `gorm:"column:namespaces"`
+	QuotaCPU    string `gorm:"column:quota_cpu"`
+	QuotaMemory string `gorm:"column:quota_memory"`
+	QuotaPods   string `gorm:"column:quota_pods"`
+}
+
+func (aiProjectRow) TableName() string { return "projects" }
+
 type AIToolRegistry struct {
 	db    *gorm.DB
 	defs  map[string]AIToolDefinition
@@ -66,7 +81,7 @@ func NewAIToolRegistry(
 	inspectionSvc *ResourceInspectionService,
 	resourceQuerySvc *ResourceQueryService,
 	actionSvc *AIActionService,
-	exportPolicySvc *ResourceExportPolicyService,
+	exportPolicySvc *aiapp.ResourceExportPolicyService,
 ) *AIToolRegistry {
 	r := &AIToolRegistry{
 		db:    db,
@@ -873,7 +888,7 @@ func NewAIToolRegistry(
 			if r.db == nil {
 				return AIToolResult{}, ErrWithMessage(ErrNotFound, "database not available")
 			}
-			var projects []model.Project
+			var projects []aiProjectRow
 			if err := r.db.WithContext(ctx).Find(&projects).Error; err != nil {
 				return AIToolResult{}, ErrWithMessage(ErrNotFound, "查询项目列表失败: "+err.Error())
 			}
@@ -913,7 +928,7 @@ func NewAIToolRegistry(
 			if r.db == nil {
 				return AIToolResult{}, ErrWithMessage(ErrNotFound, "database not available")
 			}
-			var templates []model.AppTemplate
+			var templates []provisiondomain.AppTemplate
 			if err := r.db.WithContext(ctx).Find(&templates).Error; err != nil {
 				return AIToolResult{}, ErrWithMessage(ErrNotFound, "查询应用模板列表失败: "+err.Error())
 			}
@@ -991,8 +1006,13 @@ func NewAIToolRegistry(
 			if r.db == nil {
 				return AIToolResult{}, ErrWithMessage(ErrNotFound, "database not available")
 			}
-			var users []model.User
-			if err := r.db.WithContext(ctx).Find(&users).Error; err != nil {
+			var users []struct {
+				ID       uint64 `gorm:"column:id"`
+				Username string `gorm:"column:username"`
+				Email    string `gorm:"column:email"`
+				Status   string `gorm:"column:status"`
+			}
+			if err := r.db.WithContext(ctx).Table("users").Where("deleted_at IS NULL").Find(&users).Error; err != nil {
 				return AIToolResult{}, ErrWithMessage(ErrNotFound, "查询用户列表失败: "+err.Error())
 			}
 			items := make([]map[string]any, 0, len(users))

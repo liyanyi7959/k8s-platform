@@ -9,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
 
-	"k8s-platform-backend/internal/legacy/model"
 	"k8s-platform-backend/internal/legacy/service"
+	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
 	"k8s-platform-backend/pkg/resp"
 )
 
@@ -124,7 +124,7 @@ func (ac *AppTemplateController) CreateAppTemplate(c *gin.Context) {
 		return
 	}
 
-	t := &model.AppTemplate{
+	t := &provisiondomain.AppTemplate{
 		Name:             req.Name,
 		DisplayName:      req.DisplayName,
 		Description:      req.Description,

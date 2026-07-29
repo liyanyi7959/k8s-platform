@@ -6,13 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"k8s-platform-backend/internal/auth"
-	"k8s-platform-backend/internal/legacy/service"
 	"k8s-platform-backend/pkg/problem"
 )
 
 // AuthRequiredV2 keeps authentication behavior aligned with v1 while emitting
 // RFC 9457 Problem Details for the v2 API contract.
-func AuthRequiredV2(mgr *auth.Manager, rbacSvc *service.RbacService) gin.HandlerFunc {
+func AuthRequiredV2(mgr *auth.Manager, authorizationReader RolesPermissionsReader) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if mgr == nil {
 			problem.Write(c, 500, "https://aiops.local/problems/internal", "内部错误", "认证服务未初始化")
@@ -31,8 +30,8 @@ func AuthRequiredV2(mgr *auth.Manager, rbacSvc *service.RbacService) gin.Handler
 			c.Abort()
 			return
 		}
-		if rbacSvc != nil && claims.UserID > 0 {
-			if roles, perms, refreshErr := rbacSvc.GetUserRolesPerms(c.Request.Context(), uint64(claims.UserID)); refreshErr == nil {
+		if authorizationReader != nil && claims.UserID > 0 {
+			if roles, perms, refreshErr := authorizationReader.RolesPermissions(c.Request.Context(), uint64(claims.UserID)); refreshErr == nil {
 				claims.Roles, claims.Perms = roles, perms
 			}
 		}

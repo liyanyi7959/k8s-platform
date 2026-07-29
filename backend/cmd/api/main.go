@@ -31,12 +31,18 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	auditmysql "k8s-platform-backend/internal/audit/adapters/mysql"
+	auditapp "k8s-platform-backend/internal/audit/application"
+	auditdomain "k8s-platform-backend/internal/audit/domain"
 	"k8s-platform-backend/internal/auth"
 	"k8s-platform-backend/internal/config"
-	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/db"
-	"k8s-platform-backend/internal/router"
+	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
+	iammysql "k8s-platform-backend/internal/iam/adapters/mysql"
+	iamsmtp "k8s-platform-backend/internal/iam/adapters/smtp"
+	iamapp "k8s-platform-backend/internal/iam/application"
 	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/router"
 )
 
 func main() {
@@ -84,31 +90,47 @@ func main() {
 	}
 	defer func() { _ = cacheStore.Close() }()
 
-	rbacSvc := service.NewRbacService(gdb, cacheStore, 15*time.Minute)
-	auditSvc := service.NewAuditService(gdb)
-	captchaSvc := service.NewCaptchaService(cacheStore)
-	loginAttemptSvc := service.NewLoginAttemptService(cacheStore)
-	mailSvc := service.NewMailService(cfg.Mail)
-	pwdResetSvc := service.NewPasswordResetService(gdb, cacheStore, mailSvc)
+	auditSvc := auditapp.NewService(auditmysql.NewRepository(gdb))
+	iamAuthRepository := iammysql.NewAuthRepository(gdb)
+	iamAuthSvc := iamapp.NewAuthService(iamAuthRepository, iammysql.BcryptHasher{}, cacheStore, 15*time.Minute)
+	captchaSvc := iamapp.NewCaptchaService(cacheStore)
+	loginAttemptSvc := iamapp.NewLoginAttemptService(cacheStore)
+	mailSvc := iamsmtp.NewMailService(cfg.Mail)
+	pwdResetSvc := iamapp.NewPasswordResetService(iamAuthRepository, iammysql.BcryptHasher{}, cacheStore, mailSvc)
 	// 内置初始化：首次启动自动创建管理员用户/角色/权限点，确保系统可登录可用。
 	if err := service.EnsureBuiltinRBAC(gdb, cfg.Auth.AdminUsername, cfg.Auth.AdminPassword); err != nil {
 		zap.L().Fatal("ensure_builtin_rbac_failed", zap.Error(err))
 	}
-	if err := rbacSvc.InvalidateRoleUsersPerms(context.Background(), "admin"); err != nil {
+	if err := iamAuthSvc.InvalidateRole(context.Background(), "admin"); err != nil {
 		zap.L().Warn("invalidate_builtin_rbac_cache_failed", zap.Error(err))
 	}
-	authCtl := controller.NewAuthController(jwtMgr, rbacSvc, auditSvc, captchaSvc, loginAttemptSvc, pwdResetSvc, cfg.ParsedTokenTTL())
+	authAuditRecorder := iamhttp.AuthAuditRecorder(func(ctx context.Context, event iamhttp.AuthAuditEntry) {
+		auditSvc.Record(ctx, auditdomain.Entry{
+			UserID:       event.UserID,
+			Username:     event.Username,
+			Action:       event.Action,
+			Resource:     event.Resource,
+			ResourceName: event.ResourceName,
+			Path:         event.Path,
+			StatusCode:   event.StatusCode,
+			Detail:       event.Detail,
+			ClientIP:     event.ClientIP,
+			RequestID:    event.RequestID,
+		})
+	})
+	authCtl := iamhttp.NewAuthController(jwtMgr, iamAuthSvc, authAuditRecorder, captchaSvc, loginAttemptSvc, pwdResetSvc, cfg.ParsedTokenTTL())
 
 	r, err := router.New(router.Deps{
-		DB:             gdb,
-		JWTMgr:         jwtMgr,
-		AuthCtl:        authCtl,
-		RbacSvc:        rbacSvc,
-		EncryptionKey:  cfg.EncryptionKey(),
-		AIUploadDir:    cfg.AI.UploadDir,
-		CacheStore:     cacheStore,
-		CacheTTL:       cfg.ParsedRedisDefaultTTL(),
-		K8sInsecureTLS: cfg.K8s.InsecureSkipTLSVerify,
+		DB:                  gdb,
+		JWTMgr:              jwtMgr,
+		AuthCtl:             authCtl,
+		AuthorizationReader: iamAuthSvc,
+		IAMAuthService:      iamAuthSvc,
+		EncryptionKey:       cfg.EncryptionKey(),
+		AIUploadDir:         cfg.AI.UploadDir,
+		CacheStore:          cacheStore,
+		CacheTTL:            cfg.ParsedRedisDefaultTTL(),
+		K8sInsecureTLS:      cfg.K8s.InsecureSkipTLSVerify,
 	})
 	if err != nil {
 		zap.L().Fatal("new_router_failed", zap.Error(err))

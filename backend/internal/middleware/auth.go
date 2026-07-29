@@ -1,14 +1,21 @@
 package middleware
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 
 	"k8s-platform-backend/internal/auth"
-	"k8s-platform-backend/internal/legacy/service"
 	"k8s-platform-backend/pkg/resp"
 )
+
+// RolesPermissionsReader supplies the current authorization snapshot for a user.
+// Keeping this boundary local prevents HTTP middleware from depending on a business
+// implementation or storage adapter.
+type RolesPermissionsReader interface {
+	RolesPermissions(context.Context, uint64) ([]string, []string, error)
+}
 
 // GetClaims 从 gin.Context 中读取鉴权中间件注入的 token Claims。
 // 返回值说明：
@@ -40,8 +47,8 @@ func AuthRequired(mgr *auth.Manager) gin.HandlerFunc {
 // 1) 从 Authorization: Bearer <token> 解析 token（HTTP 请求）
 // 2) 对 WebSocket 请求做兼容：允许从 query string 的 token=... 读取（浏览器限制 header 场景）
 // 3) 解析 JWT 并写入 gin.Context，供后续 handler 使用
-// 4) 若传入 rbacSvc，则从 DB 读取用户最新 roles/perms 并覆盖到 Claims（降低“旧 token 权限快照”问题）
-func AuthRequiredWithRBAC(mgr *auth.Manager, rbacSvc *service.RbacService) gin.HandlerFunc {
+// 4) 若传入 authorizationReader，则读取用户最新 roles/perms 并覆盖到 Claims（降低“旧 token 权限快照”问题）
+func AuthRequiredWithRBAC(mgr *auth.Manager, authorizationReader RolesPermissionsReader) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if mgr == nil {
 			resp.Fail(c, 5000, "内部错误")
@@ -77,10 +84,10 @@ func AuthRequiredWithRBAC(mgr *auth.Manager, rbacSvc *service.RbacService) gin.H
 			return
 		}
 
-		if rbacSvc != nil && claims.UserID > 0 {
+		if authorizationReader != nil && claims.UserID > 0 {
 			// 从 DB 刷新角色与权限点：当后台调整了角色权限后，新请求能立即生效。
 			// 解析失败不阻断请求（仍沿用 token 中的快照），避免 DB 临时抖动导致系统不可用。
-			roles, perms, err := rbacSvc.GetUserRolesPerms(c.Request.Context(), uint64(claims.UserID))
+			roles, perms, err := authorizationReader.RolesPermissions(c.Request.Context(), uint64(claims.UserID))
 			if err == nil {
 				claims.Roles = roles
 				claims.Perms = perms

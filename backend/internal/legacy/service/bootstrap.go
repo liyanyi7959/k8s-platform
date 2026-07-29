@@ -9,11 +9,12 @@ package service
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	"k8s-platform-backend/internal/legacy/model"
+	"k8s-platform-backend/internal/iam/domain"
 )
 
 // EnsureBuiltinRBAC 初始化最小可用 RBAC 数据：
@@ -39,7 +40,7 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 		password = "admin@123"
 	}
 
-	permissionCatalog := BuiltinPermissionCatalog()
+	permissionCatalog := domain.BuiltinPermissionCatalog()
 	allCodes := make([]string, 0, len(permissionCatalog))
 	for _, item := range permissionCatalog {
 		allCodes = append(allCodes, item.Code)
@@ -48,11 +49,11 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 	return gdb.Transaction(func(tx *gorm.DB) error {
 		// 事务：保证初始化过程的原子性（中途失败不会留下半成品数据）。
 		// 权限点：只补齐缺失的条目
-		var existing []model.Permission
+		var existing []bootstrapPermission
 		if err := tx.Where("deleted_at IS NULL AND code IN ?", allCodes).Find(&existing).Error; err != nil {
 			return err
 		}
-		existingMap := map[string]model.Permission{}
+		existingMap := map[string]bootstrapPermission{}
 		for _, p := range existing {
 			existingMap[p.Code] = p
 		}
@@ -64,41 +65,41 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 					currentDesc = strings.TrimSpace(*existing.Desc)
 				}
 				if currentDesc != d {
-					if err := tx.Model(&model.Permission{}).Where("id = ?", existing.ID).Update("desc", &d).Error; err != nil {
+					if err := tx.Model(&bootstrapPermission{}).Where("id = ?", existing.ID).Update("desc", &d).Error; err != nil {
 						return err
 					}
 				}
 				continue
 			}
-			if err := tx.Create(&model.Permission{Code: item.Code, Desc: &d}).Error; err != nil {
+			if err := tx.Create(&bootstrapPermission{Code: item.Code, Desc: &d}).Error; err != nil {
 				return err
 			}
 		}
 
 		// 角色：admin（不存在则创建）。
-		var role model.Role
+		var role bootstrapRole
 		if err := tx.Where("deleted_at IS NULL AND name = ?", "admin").First(&role).Error; err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
 			}
 			desc := "内置管理员"
-			role = model.Role{Name: "admin", Code: "admin", Desc: &desc}
+			role = bootstrapRole{Name: "admin", Code: "admin", Desc: &desc}
 			if err := tx.Create(&role).Error; err != nil {
 				return err
 			}
 		}
 
-		var perms []model.Permission
+		var perms []bootstrapPermission
 		if err := tx.Where("deleted_at IS NULL AND code IN ?", allCodes).Find(&perms).Error; err != nil {
 			return err
 		}
 		// 绑定权限：采用全量覆盖，避免遗漏与重复。
-		if err := tx.Where("role_id = ?", role.ID).Delete(&model.RolePermission{}).Error; err != nil {
+		if err := tx.Where("role_id = ?", role.ID).Delete(&bootstrapRolePermission{}).Error; err != nil {
 			return err
 		}
-		links := make([]model.RolePermission, 0, len(perms))
+		links := make([]bootstrapRolePermission, 0, len(perms))
 		for _, p := range perms {
-			links = append(links, model.RolePermission{RoleID: role.ID, PermissionID: p.ID})
+			links = append(links, bootstrapRolePermission{RoleID: role.ID, PermissionID: p.ID})
 		}
 		if len(links) > 0 {
 			if err := tx.Create(&links).Error; err != nil {
@@ -107,7 +108,7 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 		}
 
 		// 管理员用户：不存在则创建（密码使用 bcrypt hash）。
-		var user model.User
+		var user bootstrapUser
 		if err := tx.Where("deleted_at IS NULL AND username = ?", username).First(&user).Error; err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
@@ -116,7 +117,7 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 			if err != nil {
 				return err
 			}
-			user = model.User{Username: username, PasswordHash: string(hash), Status: "active"}
+			user = bootstrapUser{Username: username, PasswordHash: string(hash), Status: "active"}
 			if err := tx.Create(&user).Error; err != nil {
 				return err
 			}
@@ -125,22 +126,63 @@ func EnsureBuiltinRBAC(gdb *gorm.DB, adminUsername, adminPassword string) error 
 			if genErr != nil {
 				return genErr
 			}
-			if err := tx.Model(&model.User{}).Where("id = ?", user.ID).Update("password_hash", string(hash)).Error; err != nil {
+			if err := tx.Model(&bootstrapUser{}).Where("id = ?", user.ID).Update("password_hash", string(hash)).Error; err != nil {
 				return err
 			}
 			user.PasswordHash = string(hash)
 		}
 
 		// 绑定 admin 角色（不存在则创建关联）。
-		var ur model.UserRole
+		var ur bootstrapUserRole
 		if err := tx.Where("user_id = ? AND role_id = ?", user.ID, role.ID).First(&ur).Error; err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
 			}
-			if err := tx.Create(&model.UserRole{UserID: user.ID, RoleID: role.ID}).Error; err != nil {
+			if err := tx.Create(&bootstrapUserRole{UserID: user.ID, RoleID: role.ID}).Error; err != nil {
 				return err
 			}
 		}
 		return nil
 	})
 }
+
+type bootstrapPermission struct {
+	ID   uint64  `gorm:"column:id"`
+	Code string  `gorm:"column:code"`
+	Desc *string `gorm:"column:desc"`
+}
+
+func (bootstrapPermission) TableName() string { return "permissions" }
+
+type bootstrapRole struct {
+	ID   uint64  `gorm:"column:id"`
+	Name string  `gorm:"column:name"`
+	Code string  `gorm:"column:code"`
+	Desc *string `gorm:"column:desc"`
+}
+
+func (bootstrapRole) TableName() string { return "roles" }
+
+type bootstrapRolePermission struct {
+	RoleID       uint64 `gorm:"column:role_id;primaryKey"`
+	PermissionID uint64 `gorm:"column:permission_id;primaryKey"`
+}
+
+func (bootstrapRolePermission) TableName() string { return "role_permissions" }
+
+type bootstrapUser struct {
+	ID           uint64    `gorm:"column:id"`
+	Username     string    `gorm:"column:username"`
+	PasswordHash string    `gorm:"column:password_hash"`
+	Status       string    `gorm:"column:status"`
+	CreatedAt    time.Time `gorm:"column:created_at"`
+}
+
+func (bootstrapUser) TableName() string { return "users" }
+
+type bootstrapUserRole struct {
+	UserID uint64 `gorm:"column:user_id;primaryKey"`
+	RoleID uint64 `gorm:"column:role_id;primaryKey"`
+}
+
+func (bootstrapUserRole) TableName() string { return "user_roles" }

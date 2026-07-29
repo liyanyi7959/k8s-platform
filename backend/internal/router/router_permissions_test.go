@@ -9,6 +9,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"k8s-platform-backend/internal/auth"
+	fleethttp "k8s-platform-backend/internal/fleet/adapters/http"
+	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
+	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
 	"k8s-platform-backend/internal/legacy/controller"
 )
 
@@ -205,7 +208,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/clusters/1/health-checks",
 			register: func(group *gin.RouterGroup) {
-				registerClusterRoutes(group, Deps{}, &controller.ClusterManageController{})
+				registerClusterRoutes(group, Deps{}, &fleethttp.ClusterController{})
 			},
 		},
 		{
@@ -221,7 +224,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPatch,
 			path:   "/api/v1/monitor/alerts/1",
 			register: func(group *gin.RouterGroup) {
-				registerMonitorIncidentRoutes(group, &controller.MonitorIncidentController{})
+				registerMonitorIncidentRoutes(group, &incidenthttp.LegacyController{})
 			},
 		},
 		{
@@ -301,7 +304,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/users/1/password-reset-requests",
 			register: func(group *gin.RouterGroup) {
-				registerUserRoutes(group, &controller.UserController{})
+				registerUserRoutes(group, &iamhttp.Controller{})
 			},
 		},
 	}

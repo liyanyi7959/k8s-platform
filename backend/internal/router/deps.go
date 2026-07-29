@@ -12,8 +12,10 @@ import (
 	"gorm.io/gorm"
 
 	"k8s-platform-backend/internal/auth"
-	"k8s-platform-backend/internal/legacy/controller"
+	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
+	iamapp "k8s-platform-backend/internal/iam/application"
 	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/middleware"
 )
 
 // Deps 聚合路由层构建所需的全部外部依赖。
@@ -24,9 +26,10 @@ import (
 //	r, err := router.New(deps)
 type Deps struct {
 	// ── 必需 ──
-	JWTMgr  *auth.Manager
-	AuthCtl *controller.AuthController
-	RbacSvc *service.RbacService
+	JWTMgr              *auth.Manager
+	AuthCtl             *iamhttp.AuthController
+	AuthorizationReader middleware.RolesPermissionsReader
+	IAMAuthService      *iamapp.AuthService
 
 	// ── 可选：DB 存在时才注入 ──
 	DB             *gorm.DB

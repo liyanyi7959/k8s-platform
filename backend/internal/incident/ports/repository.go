@@ -21,3 +21,15 @@ type Repository interface {
 type ClusterReader interface {
 	Names(context.Context, []uint64) (map[uint64]string, error)
 }
+
+type MonitoringRepository interface {
+	ListAlertRules(context.Context, int, int) ([]domain.AlertRule, int64, error)
+	CreateAlertRule(context.Context, *domain.AlertRule) error
+	UpdateAlertRule(context.Context, uint64, domain.AlertRule) error
+	ToggleAlertRule(context.Context, uint64, bool) error
+	DeleteAlertRule(context.Context, uint64) error
+	UpsertAlert(context.Context, domain.AlertmanagerAlert) (uint64, error)
+	ListLegacyIncidents(context.Context, int, int, string) ([]domain.LegacyIncident, int64, error)
+	GetLegacyIncident(context.Context, uint64) (domain.LegacyIncident, []domain.TimelineEntry, error)
+	LinkAI(context.Context, uint64, string, uint64, domain.Actor) error
+}

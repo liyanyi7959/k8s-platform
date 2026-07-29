@@ -107,6 +107,7 @@ func toDomain(row incidentRow) domain.Incident {
 // package remains available only to legacy code during migration.
 type incidentRow struct {
 	ID               uint64     `gorm:"column:id;primaryKey"`
+	Fingerprint      string     `gorm:"column:fingerprint"`
 	AlertName        string     `gorm:"column:alert_name"`
 	ClusterID        uint64     `gorm:"column:cluster_id"`
 	Namespace        string     `gorm:"column:namespace"`
@@ -115,6 +116,9 @@ type incidentRow struct {
 	Severity         string     `gorm:"column:severity"`
 	Status           string     `gorm:"column:status"`
 	Summary          string     `gorm:"column:summary"`
+	Description      string     `gorm:"column:description"`
+	LabelsJSON       jsonMap    `gorm:"column:labels_json;type:json"`
+	AnnotationsJSON  jsonMap    `gorm:"column:annotations_json;type:json"`
 	AIConversationID *uint64    `gorm:"column:ai_conversation_id"`
 	AIProposalID     *uint64    `gorm:"column:ai_proposal_id"`
 	AssigneeID       *uint64    `gorm:"column:assignee_id"`

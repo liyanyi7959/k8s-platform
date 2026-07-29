@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 
-	"k8s-platform-backend/internal/legacy/service"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/pkg/resp"
 )
 
@@ -198,7 +198,7 @@ func (kc *K8sController) CreatePodLogSession(c *gin.Context) {
 	}
 	sessionID := kc.logSessions.NewSessionID()
 	wsURL := "/api/v1/ws/pod-log?session_id=" + url.QueryEscape(sessionID)
-	kc.logSessions.Put(sessionID, service.PodLogSession{
+	kc.logSessions.Put(sessionID, kopsapp.PodLogSession{
 		ClusterID: id,
 		Namespace: decodePathParam(c.Param("ns")),
 		Pod:       decodePathParam(c.Param("pod")),
@@ -407,7 +407,7 @@ func (kc *K8sController) CreatePodExecSession(c *gin.Context) {
 	)
 	sessionID := kc.execSessions.NewSessionID()
 	wsURL := "/api/v1/ws/pod-exec?session_id=" + url.QueryEscape(sessionID)
-	kc.execSessions.Put(sessionID, service.ExecSession{
+	kc.execSessions.Put(sessionID, kopsapp.ExecSession{
 		Kind:      "pod",
 		UserID:    currentUserID(c),
 		ClusterID: id,

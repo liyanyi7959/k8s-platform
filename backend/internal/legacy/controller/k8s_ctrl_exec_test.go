@@ -7,13 +7,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"k8s-platform-backend/internal/legacy/service"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
 func TestPodExecWS_UpgradeFailureKeepsSession(t *testing.T) {
-	store := service.NewExecSessionStore(0)
+	store := kopsapp.NewExecSessionStore(0)
 	defer store.Close()
-	store.Put("sid", service.ExecSession{ClusterID: 1, Namespace: "default", Pod: "demo"})
+	store.Put("sid", kopsapp.ExecSession{ClusterID: 1, Namespace: "default", Pod: "demo"})
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)

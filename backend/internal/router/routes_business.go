@@ -3,20 +3,22 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
+	"k8s-platform-backend/internal/audit/ports"
+	fleethttp "k8s-platform-backend/internal/fleet/adapters/http"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
 	"k8s-platform-backend/internal/legacy/controller"
-	"k8s-platform-backend/internal/legacy/service"
 	"k8s-platform-backend/internal/middleware"
+	workspacehttp "k8s-platform-backend/internal/workspace/adapters/http"
 )
 
-func registerIncidentV2Routes(r *gin.Engine, d Deps, auditSvc *service.AuditService, ctl *incidenthttp.Controller) {
+func registerIncidentV2Routes(r *gin.Engine, d Deps, auditRecorder ports.Recorder, ctl *incidenthttp.Controller) {
 	if ctl == nil {
 		return
 	}
 	v2 := r.Group("/api/v2")
-	v2.Use(middleware.AuthRequiredV2(d.JWTMgr, d.RbacSvc))
-	if auditSvc != nil {
-		v2.Use(middleware.AuditLogger(auditSvc))
+	v2.Use(middleware.AuthRequiredV2(d.JWTMgr, d.AuthorizationReader))
+	if auditRecorder != nil {
+		v2.Use(middleware.AuditLogger(auditRecorder))
 	}
 	read := middleware.RequirePermV2("monitor:read")
 	manage := middleware.RequirePermV2("incident:manage")
@@ -45,7 +47,7 @@ func registerAutomationTaskRoutes(authed *gin.RouterGroup, ctl *controller.Autom
 	tasks.POST("/:id/cancellation-requests", execute, ctl.Cancel)
 }
 
-func registerMonitorIncidentRoutes(authed *gin.RouterGroup, ctl *controller.MonitorIncidentController) {
+func registerMonitorIncidentRoutes(authed *gin.RouterGroup, ctl *incidenthttp.LegacyController) {
 	if ctl == nil {
 		return
 	}
@@ -162,7 +164,7 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 
 // ── 项目管理 ──
 
-func registerProjectRoutes(authed *gin.RouterGroup, ctl *controller.ProjectController) {
+func registerProjectRoutes(authed *gin.RouterGroup, ctl *workspacehttp.Controller) {
 	if ctl == nil {
 		return
 	}
@@ -220,7 +222,7 @@ func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sP
 
 // ── 集群管理 ──
 
-func registerClusterRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.ClusterManageController) {
+func registerClusterRoutes(authed *gin.RouterGroup, d Deps, ctl *fleethttp.ClusterController) {
 	if ctl == nil {
 		return
 	}
@@ -238,7 +240,7 @@ func registerClusterRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.Clus
 
 // ── 仪表盘 ──
 
-func registerDashboardRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.DashboardController) {
+func registerDashboardRoutes(authed *gin.RouterGroup, d Deps, ctl *fleethttp.DashboardController) {
 	if ctl == nil {
 		return
 	}

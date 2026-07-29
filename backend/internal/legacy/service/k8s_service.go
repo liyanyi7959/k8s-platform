@@ -30,6 +30,11 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	maxKubeconfigContentSize = 1024 * 1024
+	maxEncodedKubeconfigSize = maxKubeconfigContentSize*4/3 + 4096
+)
+
 // NormalizeKubeconfigContent accepts a regular kubeconfig or a kubeconfig whose
 // complete content was Base64 encoded, and returns canonical plaintext content.
 func NormalizeKubeconfigContent(kubeconfig string) (string, error) {

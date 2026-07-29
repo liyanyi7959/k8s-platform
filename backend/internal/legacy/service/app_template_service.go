@@ -8,7 +8,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"k8s-platform-backend/internal/legacy/model"
+	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
 )
 
 // AppTemplateService 应用商店模板服务，负责模板的 CRUD 与内置模板初始化。
@@ -23,7 +23,7 @@ func NewAppTemplateService(db *gorm.DB) *AppTemplateService {
 
 // CreateAppTemplate 创建应用模板。会校验名称非空且不与已存在模板重名。
 // 创建成功后 t.ID 会被 GORM 回填。
-func (s *AppTemplateService) CreateAppTemplate(ctx context.Context, t *model.AppTemplate) error {
+func (s *AppTemplateService) CreateAppTemplate(ctx context.Context, t *provisiondomain.AppTemplate) error {
 	if s.db == nil {
 		return errors.New("db is required")
 	}
@@ -37,7 +37,7 @@ func (s *AppTemplateService) CreateAppTemplate(ctx context.Context, t *model.App
 	t.Name = name
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var existing model.AppTemplate
+		var existing provisiondomain.AppTemplate
 		if err := tx.Where("deleted_at IS NULL AND name = ?", name).First(&existing).Error; err == nil {
 			return ErrConflict
 		} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -48,39 +48,39 @@ func (s *AppTemplateService) CreateAppTemplate(ctx context.Context, t *model.App
 }
 
 // ListAppTemplates 分页查询应用模板列表，可选按分类过滤，按 id 倒序排列。
-func (s *AppTemplateService) ListAppTemplates(ctx context.Context, category string, page, pageSize int) (PageResult[model.AppTemplate], error) {
+func (s *AppTemplateService) ListAppTemplates(ctx context.Context, category string, page, pageSize int) (PageResult[provisiondomain.AppTemplate], error) {
 	if s.db == nil {
-		return PageResult[model.AppTemplate]{}, errors.New("db is required")
+		return PageResult[provisiondomain.AppTemplate]{}, errors.New("db is required")
 	}
 	page, pageSize = normalizePage(page, pageSize)
 
-	q := s.db.WithContext(ctx).Model(&model.AppTemplate{}).Where("deleted_at IS NULL")
+	q := s.db.WithContext(ctx).Model(&provisiondomain.AppTemplate{}).Where("deleted_at IS NULL")
 	if category != "" {
 		q = q.Where("category = ?", category)
 	}
 
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
-		return PageResult[model.AppTemplate]{}, err
+		return PageResult[provisiondomain.AppTemplate]{}, err
 	}
 
-	var rows []model.AppTemplate
+	var rows []provisiondomain.AppTemplate
 	if err := q.Order("id desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&rows).Error; err != nil {
-		return PageResult[model.AppTemplate]{}, err
+		return PageResult[provisiondomain.AppTemplate]{}, err
 	}
 
-	return PageResult[model.AppTemplate]{List: rows, Total: int(total), Page: page, PageSize: pageSize}, nil
+	return PageResult[provisiondomain.AppTemplate]{List: rows, Total: int(total), Page: page, PageSize: pageSize}, nil
 }
 
 // GetAppTemplate 根据 ID 查询模板详情。
-func (s *AppTemplateService) GetAppTemplate(ctx context.Context, id uint64) (*model.AppTemplate, error) {
+func (s *AppTemplateService) GetAppTemplate(ctx context.Context, id uint64) (*provisiondomain.AppTemplate, error) {
 	if s.db == nil {
 		return nil, errors.New("db is required")
 	}
 	if id == 0 {
 		return nil, ErrWithMessage(ErrInvalidParams, "模板ID无效")
 	}
-	var t model.AppTemplate
+	var t provisiondomain.AppTemplate
 	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&t).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
@@ -103,7 +103,7 @@ func (s *AppTemplateService) UpdateAppTemplate(ctx context.Context, id uint64, u
 	}
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row model.AppTemplate
+		var row provisiondomain.AppTemplate
 		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return ErrNotFound
@@ -119,7 +119,7 @@ func (s *AppTemplateService) UpdateAppTemplate(ctx context.Context, id uint64, u
 			}
 			updates["name"] = name
 			if name != row.Name {
-				var existing model.AppTemplate
+				var existing provisiondomain.AppTemplate
 				if err := tx.Select("id").Where("deleted_at IS NULL AND name = ? AND id <> ?", name, id).First(&existing).Error; err == nil {
 					return ErrConflict
 				} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -128,7 +128,7 @@ func (s *AppTemplateService) UpdateAppTemplate(ctx context.Context, id uint64, u
 			}
 		}
 
-		return tx.Model(&model.AppTemplate{}).Where("id = ? AND deleted_at IS NULL", id).Updates(updates).Error
+		return tx.Model(&provisiondomain.AppTemplate{}).Where("id = ? AND deleted_at IS NULL", id).Updates(updates).Error
 	})
 }
 
@@ -141,7 +141,7 @@ func (s *AppTemplateService) DeleteAppTemplate(ctx context.Context, id uint64) e
 		return ErrWithMessage(ErrInvalidParams, "模板ID无效")
 	}
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row model.AppTemplate
+		var row provisiondomain.AppTemplate
 		if err := tx.Select("id, is_builtin").Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return ErrNotFound
@@ -152,14 +152,14 @@ func (s *AppTemplateService) DeleteAppTemplate(ctx context.Context, id uint64) e
 			return ErrWithMessage(ErrInvalidParams, "内置模板不可删除")
 		}
 		now := time.Now().UTC()
-		return tx.Model(&model.AppTemplate{}).Where("id = ? AND deleted_at IS NULL", id).Update("deleted_at", &now).Error
+		return tx.Model(&provisiondomain.AppTemplate{}).Where("id = ? AND deleted_at IS NULL", id).Update("deleted_at", &now).Error
 	})
 }
 
 // ─── 内置模板初始化 ───────────────────────────────────────────
 
 // builtinAppTemplates 为内置应用模板列表。
-var builtinAppTemplates = []model.AppTemplate{
+var builtinAppTemplates = []provisiondomain.AppTemplate{
 	{
 		Name:        "nginx-deploy",
 		DisplayName: "Nginx",
@@ -443,7 +443,7 @@ func (s *AppTemplateService) SeedBuiltinAppTemplates(ctx context.Context) error 
 	}
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, t := range builtinAppTemplates {
-			var existing model.AppTemplate
+			var existing provisiondomain.AppTemplate
 			err := tx.Where("deleted_at IS NULL AND name = ?", t.Name).First(&existing).Error
 			if err == nil {
 				// 已存在的内置 Helm 模板补齐后续版本新增的默认来源与 values，
@@ -460,7 +460,7 @@ func (s *AppTemplateService) SeedBuiltinAppTemplates(ctx context.Context) error 
 						updates["helm_values_yaml"] = t.HelmValuesYAML
 					}
 					if len(updates) > 0 {
-						if err := tx.Model(&model.AppTemplate{}).Where("id = ?", existing.ID).Updates(updates).Error; err != nil {
+						if err := tx.Model(&provisiondomain.AppTemplate{}).Where("id = ?", existing.ID).Updates(updates).Error; err != nil {
 							return err
 						}
 					}

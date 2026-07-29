@@ -3,8 +3,11 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
+	audithttp "k8s-platform-backend/internal/audit/adapters/http"
+	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/middleware"
+	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
 )
 
 func registerWebSocketRoutes(authed *gin.RouterGroup, k8sCtl *controller.K8sController) {
@@ -15,14 +18,14 @@ func registerWebSocketRoutes(authed *gin.RouterGroup, k8sCtl *controller.K8sCont
 	}
 }
 
-func registerAuditRoutes(authed *gin.RouterGroup, ctl *controller.AuditController) {
+func registerAuditRoutes(authed *gin.RouterGroup, ctl *audithttp.Controller) {
 	if ctl == nil {
 		return
 	}
 	authed.GET("/audit-logs", middleware.RequirePerm("user:read"), ctl.List)
 }
 
-func registerUserRoutes(authed *gin.RouterGroup, ctl *controller.UserController) {
+func registerUserRoutes(authed *gin.RouterGroup, ctl *iamhttp.Controller) {
 	if ctl == nil {
 		return
 	}
@@ -47,7 +50,7 @@ func registerUserRoutes(authed *gin.RouterGroup, ctl *controller.UserController)
 	authed.GET("/permissions", read, ctl.ListPermissions)
 }
 
-func registerSystemRoutes(authed *gin.RouterGroup, ctl *controller.SystemSettingController) {
+func registerSystemRoutes(authed *gin.RouterGroup, ctl *platformhttp.SettingsController) {
 	if ctl == nil {
 		return
 	}

@@ -16,7 +16,7 @@ import (
 
 const modulePrefix = "k8s-platform-backend/internal/"
 
-var migratedContexts = []string{"change", "incident"}
+var migratedContexts = []string{"ai", "audit", "change", "fleet", "iam", "incident", "kops", "platform", "provisioning", "workspace"}
 
 func TestDomainPackagesStayFrameworkIndependent(t *testing.T) {
 	root := backendRoot(t)
@@ -150,7 +150,7 @@ func TestLegacyBusinessLayerDoesNotGrow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("walk legacy business layer: %v", err)
 	}
-	const migrationBaseline = 168
+	const migrationBaseline = 135
 	if count > migrationBaseline {
 		t.Fatalf("legacy Go files = %d, baseline = %d; new behavior must live in a bounded context", count, migrationBaseline)
 	}

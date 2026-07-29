@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 
-	"k8s-platform-backend/internal/legacy/service"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/pkg/resp"
 )
 
@@ -42,7 +42,7 @@ func (dc *DeployController) CreateServerTerminalSession(c *gin.Context) {
 	}
 
 	sessionID := dc.terminalSessions.NewSessionID()
-	dc.terminalSessions.Put(sessionID, service.ExecSession{
+	dc.terminalSessions.Put(sessionID, kopsapp.ExecSession{
 		Kind:      "server",
 		UserID:    currentUserID(c),
 		ServerID:  id,

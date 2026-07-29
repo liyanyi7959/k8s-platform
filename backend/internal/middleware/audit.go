@@ -9,13 +9,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/audit/domain"
+	"k8s-platform-backend/internal/audit/ports"
 )
 
 // AuditLogger 写操作审计中间件。
 // 仅对 POST/PUT/PATCH/DELETE 请求生效，自动从路由信息中提取资源和动作。
-func AuditLogger(auditSvc *service.AuditService) gin.HandlerFunc {
+func AuditLogger(recorder ports.Recorder) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if recorder == nil {
+			c.Next()
+			return
+		}
 		method := c.Request.Method
 		path := c.Request.URL.Path
 		if !shouldAuditRequest(method, path) {
@@ -78,7 +83,7 @@ func AuditLogger(auditSvc *service.AuditService) gin.HandlerFunc {
 		action := inferAction(method, path)
 		resource, resourceName, clusterID, namespace := parsePath(path)
 
-		entry := service.AuditEntry{
+		entry := domain.Entry{
 			UserID:       userID,
 			Username:     username,
 			Action:       action,
@@ -97,7 +102,7 @@ func AuditLogger(auditSvc *service.AuditService) gin.HandlerFunc {
 		auditCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		go func() {
 			defer cancel()
-			auditSvc.Record(auditCtx, entry)
+			recorder.Record(auditCtx, entry)
 		}()
 	}
 }

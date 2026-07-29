@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -10,6 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	aiapp "k8s-platform-backend/internal/ai/application"
+	aidomain "k8s-platform-backend/internal/ai/domain"
 	"k8s-platform-backend/internal/legacy/model"
 )
 
@@ -573,7 +576,7 @@ func (s *ResourceInspectionService) InspectResource(
 	kind,
 	namespace,
 	name string,
-	policy *ResourceExportPolicyService,
+	policy *aiapp.ResourceExportPolicyService,
 ) (AIToolResult, error) {
 	if s == nil || s.k8sSvc == nil {
 		return AIToolResult{}, ErrK8s
@@ -595,7 +598,7 @@ func (s *ResourceInspectionService) InspectResource(
 		ns = ""
 	}
 	if policy == nil {
-		policy = NewResourceExportPolicyService()
+		policy = aiapp.NewResourceExportPolicyService()
 	}
 
 	obj, err := s.k8sSvc.GetObject(ctx, clusterID, gvr, ns, resName)
@@ -633,11 +636,11 @@ func (s *ResourceInspectionService) InspectResource(
 	}, nil
 }
 
-func (s *ResourceInspectionService) ExportResourceYAML(ctx context.Context, clusterID uint64, kind, namespace, name string, policy *ResourceExportPolicyService) (AIToolResult, error) {
+func (s *ResourceInspectionService) ExportResourceYAML(ctx context.Context, clusterID uint64, kind, namespace, name string, policy *aiapp.ResourceExportPolicyService) (AIToolResult, error) {
 	return s.exportResourceYAML(ctx, clusterID, kind, namespace, name, policy, false)
 }
 
-func (s *ResourceInspectionService) ExportMaskedResourceYAML(ctx context.Context, clusterID uint64, kind, namespace, name string, policy *ResourceExportPolicyService) (AIToolResult, error) {
+func (s *ResourceInspectionService) ExportMaskedResourceYAML(ctx context.Context, clusterID uint64, kind, namespace, name string, policy *aiapp.ResourceExportPolicyService) (AIToolResult, error) {
 	return s.exportResourceYAML(ctx, clusterID, kind, namespace, name, policy, true)
 }
 
@@ -647,7 +650,7 @@ func (s *ResourceInspectionService) exportResourceYAML(
 	kind,
 	namespace,
 	name string,
-	policy *ResourceExportPolicyService,
+	policy *aiapp.ResourceExportPolicyService,
 	forceMasked bool,
 ) (AIToolResult, error) {
 	if s == nil || s.k8sSvc == nil {
@@ -674,7 +677,7 @@ func (s *ResourceInspectionService) exportResourceYAML(
 		return AIToolResult{}, err
 	}
 	if policy == nil {
-		policy = NewResourceExportPolicyService()
+		policy = aiapp.NewResourceExportPolicyService()
 	}
 	var (
 		exportedYAML string
@@ -684,6 +687,9 @@ func (s *ResourceInspectionService) exportResourceYAML(
 		exportedYAML, masked, err = policy.ExportMaskedYAML(resKind, yamlText)
 	} else {
 		exportedYAML, masked, err = policy.ExportYAML(resKind, yamlText)
+	}
+	if errors.Is(err, aidomain.ErrSensitiveResourceExport) {
+		return AIToolResult{}, ErrWithMessage(ErrK8sForbidden, err.Error())
 	}
 	if err != nil {
 		return AIToolResult{}, err

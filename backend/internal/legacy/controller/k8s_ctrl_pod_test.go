@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"k8s-platform-backend/internal/legacy/service"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
 func TestCreatePodLogSession_InvalidTailLines(t *testing.T) {
@@ -18,7 +18,7 @@ func TestCreatePodLogSession_InvalidTailLines(t *testing.T) {
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Params = gin.Params{{Key: "id", Value: "1"}, {Key: "ns", Value: "default"}, {Key: "pod", Value: "demo"}}
 
-	ctl := &K8sController{logSessions: service.NewPodLogSessionStore(0)}
+	ctl := &K8sController{logSessions: kopsapp.NewPodLogSessionStore(0)}
 	ctl.CreatePodLogSession(c)
 
 	body := jsonBody(w)
@@ -32,7 +32,7 @@ func TestPodLogWS_MissingSessionID(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/ws/pod-log", nil)
 
-	ctl := &K8sController{logSessions: service.NewPodLogSessionStore(0)}
+	ctl := &K8sController{logSessions: kopsapp.NewPodLogSessionStore(0)}
 	ctl.PodLogWS(c)
 
 	body := jsonBody(w)

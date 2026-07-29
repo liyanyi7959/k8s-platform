@@ -2,14 +2,35 @@ package router
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
+	aiapp "k8s-platform-backend/internal/ai/application"
+	audithttp "k8s-platform-backend/internal/audit/adapters/http"
+	auditmysql "k8s-platform-backend/internal/audit/adapters/mysql"
+	auditapp "k8s-platform-backend/internal/audit/application"
 	changemysql "k8s-platform-backend/internal/change/adapters/mysql"
 	changeapp "k8s-platform-backend/internal/change/application"
-	"k8s-platform-backend/internal/legacy/controller"
+	fleethttp "k8s-platform-backend/internal/fleet/adapters/http"
+	fleetmysql "k8s-platform-backend/internal/fleet/adapters/mysql"
+	fleetapp "k8s-platform-backend/internal/fleet/application"
+	"k8s-platform-backend/internal/fleet/domain"
+	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
+	iammysql "k8s-platform-backend/internal/iam/adapters/mysql"
+	iamapp "k8s-platform-backend/internal/iam/application"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
 	incidentmysql "k8s-platform-backend/internal/incident/adapters/mysql"
 	incidentapp "k8s-platform-backend/internal/incident/application"
+	kopsapp "k8s-platform-backend/internal/kops/application"
+	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/legacy/service"
+	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
+	platformmysql "k8s-platform-backend/internal/platform/adapters/mysql"
+	platformapp "k8s-platform-backend/internal/platform/application"
+	workspacehttp "k8s-platform-backend/internal/workspace/adapters/http"
+	workspacemysql "k8s-platform-backend/internal/workspace/adapters/mysql"
+	workspaceapp "k8s-platform-backend/internal/workspace/application"
+	workspaceports "k8s-platform-backend/internal/workspace/ports"
 )
 
 type applicationModules struct {
@@ -26,25 +47,25 @@ type applicationModules struct {
 }
 
 type auditModule struct {
-	service    *service.AuditService
-	controller *controller.AuditController
+	service    *auditapp.Service
+	controller *audithttp.Controller
 }
 
 type iamModule struct {
-	users *controller.UserController
+	users *iamhttp.Controller
 }
 
 type platformModule struct {
-	settings *controller.SystemSettingController
+	settings *platformhttp.SettingsController
 }
 
 type workspaceModule struct {
-	projects *controller.ProjectController
+	projects *workspacehttp.Controller
 }
 
 type fleetModule struct {
-	clusters  *controller.ClusterManageController
-	dashboard *controller.DashboardController
+	clusters  *fleethttp.ClusterController
+	dashboard *fleethttp.DashboardController
 }
 
 type kopsModule struct {
@@ -69,7 +90,7 @@ type provisioningModule struct {
 }
 
 type incidentModule struct {
-	legacy *controller.MonitorIncidentController
+	legacy *incidenthttp.LegacyController
 	v2     *incidenthttp.Controller
 }
 
@@ -78,8 +99,8 @@ type moduleRuntime struct {
 	clusterRegistry *service.ClusterRegistryService
 	k8s             *service.K8sService
 	manifestApply   *service.ManifestApplyRecordService
-	execSessions    *service.ExecSessionStore
-	logSessions     *service.PodLogSessionStore
+	execSessions    *kopsapp.ExecSessionStore
+	logSessions     *kopsapp.PodLogSessionStore
 	dashboard       *service.DashboardService
 	deploy          *service.DeployService
 }
@@ -92,16 +113,46 @@ func buildApplicationModules(d Deps) applicationModules {
 	runtime := buildModuleRuntime(d)
 	modules := applicationModules{}
 	modules.audit = buildAuditModule(d)
-	modules.iam = iamModule{users: controller.NewUserController(d.RbacSvc)}
+	modules.iam = buildIAMModule(d)
 	modules.platform = buildPlatformModule(d)
-	modules.workspace = workspaceModule{projects: controller.NewProjectController(service.NewProjectService(d.DB), runtime.k8s)}
-	modules.fleet = buildFleetModule(runtime)
+	modules.workspace = buildWorkspaceModule(d, runtime)
+	modules.fleet = buildFleetModule(d, runtime)
 	modules.kops = buildKopsModule(d, runtime)
 	modules.change = buildChangeModule(d, runtime)
 	modules.ai = buildAIModule(d, runtime, modules.change)
 	modules.provisioning = buildProvisioningModule(d, runtime)
 	modules.incident = buildIncidentModule(d)
 	return modules
+}
+
+func buildIAMModule(d Deps) iamModule {
+	repository := iammysql.NewAuthRepository(d.DB)
+	authService := d.IAMAuthService
+	if authService == nil {
+		authService = iamapp.NewAuthService(repository, iammysql.BcryptHasher{}, d.CacheStore, d.CacheTTL)
+	}
+	users := iamapp.NewUserManagement(repository, iammysql.BcryptHasher{}, authService)
+	roles := iamapp.NewRoleManagement(repository, authService)
+	return iamModule{users: iamhttp.NewController(users, roles)}
+}
+
+type namespaceResourceReader struct{ k8s *service.K8sService }
+
+func (reader namespaceResourceReader) Summary(ctx context.Context, clusterID uint64, namespace string) ([]workspaceports.ResourceCount, int, error) {
+	items, total, err := reader.k8s.GetNamespaceResourcesSummary(ctx, clusterID, namespace)
+	if err != nil {
+		return nil, 0, err
+	}
+	result := make([]workspaceports.ResourceCount, 0, len(items))
+	for _, item := range items {
+		result = append(result, workspaceports.ResourceCount{Key: item.Key, Count: item.Count})
+	}
+	return result, total, nil
+}
+
+func buildWorkspaceModule(d Deps, runtime moduleRuntime) workspaceModule {
+	applicationService := workspaceapp.NewService(workspacemysql.NewRepository(d.DB), namespaceResourceReader{k8s: runtime.k8s})
+	return workspaceModule{projects: workspacehttp.NewController(applicationService)}
 }
 
 func buildModuleRuntime(d Deps) moduleRuntime {
@@ -114,28 +165,75 @@ func buildModuleRuntime(d Deps) moduleRuntime {
 		clusterRegistry: clusterRegistry,
 		k8s:             k8sService,
 		manifestApply:   manifestApply,
-		execSessions:    service.NewExecSessionStore(0),
-		logSessions:     service.NewPodLogSessionStore(0),
+		execSessions:    kopsapp.NewExecSessionStore(0),
+		logSessions:     kopsapp.NewPodLogSessionStore(0),
 		dashboard:       service.NewDashboardService(d.DB, clusterRegistry, k8sService, d.CacheStore),
 		deploy:          service.NewDeployService(d.DB, d.EncryptionKey, taskStore, clusterRegistry),
 	}
 }
 
 func buildAuditModule(d Deps) auditModule {
-	auditService := service.NewAuditService(d.DB)
-	return auditModule{service: auditService, controller: controller.NewAuditController(auditService)}
+	auditService := auditapp.NewService(auditmysql.NewRepository(d.DB))
+	return auditModule{service: auditService, controller: audithttp.NewController(auditService)}
 }
 
 func buildPlatformModule(d Deps) platformModule {
+	settingsService := platformapp.NewService(platformmysql.NewSettingsRepository(d.DB))
 	return platformModule{
-		settings: controller.NewSystemSettingController(service.NewSystemSettingsService(d.DB)),
+		settings: platformhttp.NewSettingsController(settingsService),
 	}
 }
 
-func buildFleetModule(runtime moduleRuntime) fleetModule {
+type fleetClusterRuntime struct{ k8s *service.K8sService }
+
+func (runtime fleetClusterRuntime) NormalizeAndValidate(ctx context.Context, value string) (string, error) {
+	normalized, err := service.NormalizeKubeconfigContent(value)
+	if err != nil {
+		return "", fleetRuntimeError(err)
+	}
+	if err := runtime.k8s.ValidateKubeconfigFormat(ctx, normalized); err != nil {
+		return "", fleetRuntimeError(err)
+	}
+	return normalized, nil
+}
+func (runtime fleetClusterRuntime) CheckHealth(ctx context.Context, id uint64) (bool, int, int, string, error) {
+	apiOK, ready, total, version, err := runtime.k8s.CheckHealth(ctx, id)
+	return apiOK, ready, total, version, fleetRuntimeError(err)
+}
+func (runtime fleetClusterRuntime) StopCaches(id uint64) { runtime.k8s.StopClusterCaches(id) }
+
+func fleetRuntimeError(err error) error {
+	if err == nil {
+		return nil
+	}
+	switch {
+	case errors.Is(err, service.ErrInvalidParams):
+		return fmt.Errorf("%w: %v", domain.ErrValidation, err)
+	case errors.Is(err, service.ErrNotFound):
+		return fmt.Errorf("%w: %v", domain.ErrNotFound, err)
+	case errors.Is(err, service.ErrK8sUnauthorized):
+		return domain.ErrRuntimeUnauthorized
+	case errors.Is(err, service.ErrK8sForbidden):
+		return domain.ErrRuntimeForbidden
+	case errors.Is(err, service.ErrK8sNetwork):
+		return domain.ErrRuntimeNetwork
+	case errors.Is(err, service.ErrK8sTimeout):
+		return domain.ErrRuntimeTimeout
+	case errors.Is(err, service.ErrK8sTLS):
+		return domain.ErrRuntimeTLS
+	case errors.Is(err, service.ErrK8s):
+		return domain.ErrRuntime
+	default:
+		return err
+	}
+}
+
+func buildFleetModule(d Deps, runtime moduleRuntime) fleetModule {
+	repository := fleetmysql.NewRegistry(d.DB, d.EncryptionKey)
+	registry := fleetapp.NewRegistry(repository)
 	return fleetModule{
-		clusters:  controller.NewClusterManageController(runtime.clusterRegistry, runtime.k8s),
-		dashboard: controller.NewDashboardController(runtime.dashboard),
+		clusters:  fleethttp.NewClusterController(registry, fleetClusterRuntime{k8s: runtime.k8s}),
+		dashboard: fleethttp.NewDashboardController(runtime.dashboard),
 	}
 }
 
@@ -184,7 +282,7 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 		resourceInspection,
 		resourceQuery,
 		change.actions,
-		service.NewResourceExportPolicyService(),
+		aiapp.NewResourceExportPolicyService(),
 	)
 	toolService := service.NewAIToolService(d.DB, toolRegistry)
 	chatService := service.NewAIChatService(
@@ -219,8 +317,9 @@ func buildProvisioningModule(d Deps, runtime moduleRuntime) provisioningModule {
 func buildIncidentModule(d Deps) incidentModule {
 	repository := incidentmysql.NewRepository(d.DB)
 	applicationService := incidentapp.NewService(repository, repository)
+	monitoringService := incidentapp.NewMonitoringService(repository)
 	return incidentModule{
-		legacy: controller.NewMonitorIncidentController(service.NewMonitorIncidentService(d.DB), applicationService),
+		legacy: incidenthttp.NewLegacyController(monitoringService, applicationService),
 		v2:     incidenthttp.NewController(applicationService),
 	}
 }

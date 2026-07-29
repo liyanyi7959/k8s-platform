@@ -9,18 +9,19 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"k8s-platform-backend/internal/middleware"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/middleware"
 	"k8s-platform-backend/pkg/resp"
 )
 
 type DeployController struct {
 	svc              *service.DeployService
-	terminalSessions *service.ExecSessionStore
+	terminalSessions *kopsapp.ExecSessionStore
 }
 
-func NewDeployController(svc *service.DeployService, terminalSessions ...*service.ExecSessionStore) *DeployController {
-	var sessions *service.ExecSessionStore
+func NewDeployController(svc *service.DeployService, terminalSessions ...*kopsapp.ExecSessionStore) *DeployController {
+	var sessions *kopsapp.ExecSessionStore
 	if len(terminalSessions) > 0 {
 		sessions = terminalSessions[0]
 	}

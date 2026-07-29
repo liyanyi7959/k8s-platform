@@ -86,7 +86,7 @@ func registerRoutes(
 
 	// ── 需认证接口 ──
 	authed := api.Group("")
-	authed.Use(middleware.AuthRequiredWithRBAC(d.JWTMgr, d.RbacSvc))
+	authed.Use(middleware.AuthRequiredWithRBAC(d.JWTMgr, d.AuthorizationReader))
 
 	// ── 审计中间件（仅对写操作生效） ──
 	if modules.audit.service != nil {

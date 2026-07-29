@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/remotecommand"
 
+	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
 	"k8s-platform-backend/pkg/resp"
 )
@@ -27,8 +28,8 @@ import (
 type K8sController struct {
 	svc                   *service.K8sService
 	manifestSvc           *service.ManifestApplyRecordService
-	execSessions          *service.ExecSessionStore
-	logSessions           *service.PodLogSessionStore
+	execSessions          *kopsapp.ExecSessionStore
+	logSessions           *kopsapp.PodLogSessionStore
 	namespaceDiagnosisSvc *service.NamespaceDiagnosisService
 	resourceInspectSvc    *service.ResourceInspectionService
 	deploySvc             *service.DeployService
@@ -48,8 +49,8 @@ type K8sNamespacedEditRequest struct {
 func NewK8sController(
 	svc *service.K8sService,
 	manifestSvc *service.ManifestApplyRecordService,
-	execSessions *service.ExecSessionStore,
-	logSessions *service.PodLogSessionStore,
+	execSessions *kopsapp.ExecSessionStore,
+	logSessions *kopsapp.PodLogSessionStore,
 	namespaceDiagnosisSvc *service.NamespaceDiagnosisService,
 	resourceInspectSvc *service.ResourceInspectionService,
 	deployServices ...*service.DeployService,
