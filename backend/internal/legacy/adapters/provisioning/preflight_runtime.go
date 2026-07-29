@@ -10,9 +10,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"k8s-platform-backend/internal/legacy/service"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
+	secretcrypto "k8s-platform-backend/internal/transport/secretcrypto"
+	sshtransport "k8s-platform-backend/internal/transport/ssh"
 )
 
 // PreflightRuntime owns deployment-plan readiness reads and managed SSH
@@ -91,7 +92,7 @@ func (r *PreflightRuntime) checkNode(ctx context.Context, node model.DeployPlanN
 		return
 	}
 	server.AuthType = authType
-	probe, probeErr := service.ProbeSSH(ctx, server, credential)
+	probe, probeErr := sshtransport.Probe(ctx, deploymentSSHConfig(server), credential)
 	if probeErr != nil {
 		result.Add(provisionapp.NodeSSHConnectionFailureCheck(node.ServerID, server.Name, probeErr.Error()))
 		return
@@ -102,7 +103,7 @@ func (r *PreflightRuntime) checkNode(ctx context.Context, node model.DeployPlanN
 		CPUCores: preflightUintValue(probe.CPUCores), MemoryMB: preflightUint64Value(probe.MemoryMB), DiskGB: preflightUint64Value(probe.DiskGB),
 	}))
 
-	client, dialErr := service.DialDeploySSH(ctx, server, credential)
+	client, dialErr := sshtransport.Dial(ctx, deploymentSSHConfig(server), credential)
 	if dialErr != nil {
 		result.Add(provisionapp.NodeRuntimeCheck(provisionapp.PreflightNodeRuntime{
 			ServerID: node.ServerID, ServerName: server.Name, ConnectionMessage: dialErr.Error(),
@@ -110,7 +111,7 @@ func (r *PreflightRuntime) checkNode(ctx context.Context, node model.DeployPlanN
 		return
 	}
 	defer client.Close()
-	output, commandErr := service.RunSSHCommand(client, `command -v python3 >/dev/null 2>&1 && echo python3=ok || echo python3=missing; if [ "$(id -u)" = "0" ] || sudo -n true >/dev/null 2>&1; then echo privilege=ok; elif command -v sudo >/dev/null 2>&1; then echo privilege=password; else echo privilege=missing; fi`)
+	output, commandErr := sshtransport.RunCommand(client, `command -v python3 >/dev/null 2>&1 && echo python3=ok || echo python3=missing; if [ "$(id -u)" = "0" ] || sudo -n true >/dev/null 2>&1; then echo privilege=ok; elif command -v sudo >/dev/null 2>&1; then echo privilege=password; else echo privilege=missing; fi`)
 	privilegeUsable := strings.Contains(output, "privilege=ok") || (authType != "key" && strings.Contains(output, "privilege=password"))
 	result.Add(provisionapp.NodeRuntimeCheck(provisionapp.PreflightNodeRuntime{
 		ServerID: node.ServerID, ServerName: server.Name, CommandFailed: commandErr != nil,
@@ -133,7 +134,7 @@ func (r *PreflightRuntime) serverCredential(ctx context.Context, serverID uint64
 		credentialCiphertext = credential.CredentialEnc
 		authType = credential.AuthType
 	}
-	secret, err := service.DecryptRuntimeSecret(r.encryptionKey, credentialCiphertext)
+	secret, err := secretcrypto.Decrypt(r.encryptionKey, credentialCiphertext)
 	if err != nil {
 		return model.DeployServer{}, "", "", fmt.Errorf("解密凭证失败: %w", err)
 	}

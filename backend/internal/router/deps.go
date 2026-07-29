@@ -14,8 +14,8 @@ import (
 	"k8s-platform-backend/internal/auth"
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	iamapp "k8s-platform-backend/internal/iam/application"
-	"k8s-platform-backend/internal/legacy/service"
 	"k8s-platform-backend/internal/middleware"
+	cachetransport "k8s-platform-backend/internal/transport/cache"
 )
 
 // Deps 聚合路由层构建所需的全部外部依赖。
@@ -35,7 +35,7 @@ type Deps struct {
 	DB             *gorm.DB
 	EncryptionKey  string
 	AIUploadDir    string
-	CacheStore     service.CacheStore
+	CacheStore     cachetransport.CacheStore
 	CacheTTL       time.Duration
 	K8sInsecureTLS bool
 }

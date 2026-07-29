@@ -11,6 +11,8 @@ import (
 	"k8s-platform-backend/internal/legacy/service"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
+	secretcrypto "k8s-platform-backend/internal/transport/secretcrypto"
+	sshtransport "k8s-platform-backend/internal/transport/ssh"
 )
 
 // MasterHelmRuntime owns the managed-Master SSH boundary used by Helm.
@@ -37,13 +39,13 @@ func (r *MasterHelmRuntime) Ensure(ctx context.Context, clusterID uint64) (provi
 	if err != nil {
 		return provisionapp.HelmMasterPreflight{}, err
 	}
-	client, err := service.DialDeploySSH(ctx, master, credential)
+	client, err := sshtransport.Dial(ctx, masterSSHConfig(master), credential)
 	if err != nil {
 		return provisionapp.HelmMasterPreflight{}, service.ErrWithMessage(service.ErrConflict, "Master SSH 连接失败，已阻止 Helm 部署："+err.Error())
 	}
 	defer client.Close()
 
-	output, err := service.RunPrivilegedSSHCommand(client, master, credential, provisionapp.HelmMasterEnsureScript())
+	output, err := sshtransport.RunPrivilegedCommand(client, master.AuthType, credential, provisionapp.HelmMasterEnsureScript())
 	if err != nil {
 		return provisionapp.HelmMasterPreflight{}, service.ErrWithMessage(service.ErrConflict, "Master Helm 安装或校验失败："+err.Error())
 	}
@@ -122,13 +124,13 @@ func (r *MasterHelmRuntime) run(ctx context.Context, clusterID uint64, script st
 	if err != nil {
 		return "", err
 	}
-	client, err := service.DialDeploySSH(ctx, master, credential)
+	client, err := sshtransport.Dial(ctx, masterSSHConfig(master), credential)
 	if err != nil {
 		return "", service.ErrWithMessage(service.ErrConflict, "Master SSH 连接失败，已阻止 Helm 操作："+err.Error())
 	}
 	defer client.Close()
 
-	output, err := service.RunPrivilegedSSHCommand(client, master, credential, script)
+	output, err := sshtransport.RunPrivilegedCommand(client, master.AuthType, credential, script)
 	if err != nil {
 		return output, service.ErrWithMessage(service.ErrConflict, "Master 执行 Helm 命令失败："+err.Error())
 	}
@@ -181,11 +183,15 @@ func (r *MasterHelmRuntime) serverCredential(ctx context.Context, serverID uint6
 		credentialCiphertext = credential.CredentialEnc
 		server.AuthType = credential.AuthType
 	}
-	credential, err := service.DecryptRuntimeSecret(r.encryptionKey, credentialCiphertext)
+	credential, err := secretcrypto.Decrypt(r.encryptionKey, credentialCiphertext)
 	if err != nil {
 		return model.DeployServer{}, "", err
 	}
 	return server, credential, nil
+}
+
+func masterSSHConfig(server model.DeployServer) sshtransport.Config {
+	return sshtransport.Config{Host: server.IP, Port: server.SSHPort, User: server.User, AuthType: server.AuthType}
 }
 
 func masterHelmRuntimeError(err error) error {

@@ -41,8 +41,8 @@ import (
 	iammysql "k8s-platform-backend/internal/iam/adapters/mysql"
 	iamsmtp "k8s-platform-backend/internal/iam/adapters/smtp"
 	iamapp "k8s-platform-backend/internal/iam/application"
-	"k8s-platform-backend/internal/legacy/service"
 	"k8s-platform-backend/internal/router"
+	cachetransport "k8s-platform-backend/internal/transport/cache"
 )
 
 func main() {
@@ -84,7 +84,7 @@ func main() {
 
 	// 5) 组装依赖：JWT 管理器、RBAC 服务、控制器与路由。
 	jwtMgr := auth.NewManager(cfg.JWT.Secret)
-	cacheStore, err := service.NewRedisCacheStore(cfg.Redis)
+	cacheStore, err := cachetransport.NewRedisCacheStore(cfg.Redis)
 	if err != nil {
 		zap.L().Fatal("init_redis_failed", zap.Error(err))
 	}

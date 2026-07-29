@@ -16,10 +16,11 @@ import (
 	"gorm.io/gorm"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"k8s-platform-backend/internal/legacy/service"
 	platformapp "k8s-platform-backend/internal/platform/application"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
+	secretcrypto "k8s-platform-backend/internal/transport/secretcrypto"
+	sshtransport "k8s-platform-backend/internal/transport/ssh"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -72,7 +73,7 @@ func (r *AnsibleRunner) Run(ctx context.Context, plan model.DeployPlan, nodes []
 		return "", logErr("读取 Master Runner 凭据失败", err)
 	}
 	master.AuthType = authType
-	client, err := service.DialDeploySSH(ctx, master, credential)
+	client, err := sshtransport.Dial(ctx, deploymentSSHConfig(master), credential)
 	if err != nil {
 		return "", logErr("连接 Master Runner 失败", err)
 	}
@@ -80,7 +81,7 @@ func (r *AnsibleRunner) Run(ctx context.Context, plan model.DeployPlan, nodes []
 
 	workspace := fmt.Sprintf("/tmp/k8s-platform-deploy-%d-%d", plan.ID, task.ID)
 	defer func() {
-		_, cleanupErr := service.RunSSHCommand(client, "rm -rf -- "+runnerShellQuote(workspace))
+		_, cleanupErr := sshtransport.RunCommand(client, "rm -rf -- "+runnerShellQuote(workspace))
 		if cleanupErr != nil {
 			task.AppendLog(fmt.Sprintf("[warn] Runner 临时目录清理失败: %v", cleanupErr), activeTaskStepKey(task))
 		} else {
@@ -103,7 +104,7 @@ func (r *AnsibleRunner) Run(ctx context.Context, plan model.DeployPlan, nodes []
 			needSSHPass = true
 		}
 	}
-	if output, bootstrapErr := service.RunPrivilegedSSHCommand(client, master, credential, runnerBootstrapScript(needSSHPass)); bootstrapErr != nil {
+	if output, bootstrapErr := sshtransport.RunPrivilegedCommand(client, master.AuthType, credential, runnerBootstrapScript(needSSHPass)); bootstrapErr != nil {
 		if strings.TrimSpace(output) != "" {
 			task.AppendLog("[runner] "+strings.TrimSpace(output), activeTaskStepKey(task))
 		}
@@ -131,7 +132,7 @@ func (r *AnsibleRunner) Run(ctx context.Context, plan model.DeployPlan, nodes []
 	if err := runStreamingSSHCommand(ctx, client, command, writer); err != nil {
 		return "", logErr("Ansible Playbook 执行失败", err)
 	}
-	kubeconfig, err := service.RunPrivilegedSSHCommand(client, master, credential, "cat /etc/kubernetes/admin.conf")
+	kubeconfig, err := sshtransport.RunPrivilegedCommand(client, master.AuthType, credential, "cat /etc/kubernetes/admin.conf")
 	if err != nil {
 		return "", logErr("从 Master 读取 kubeconfig 失败", err)
 	}
@@ -157,7 +158,7 @@ func (r *AnsibleRunner) serverCredential(ctx context.Context, serverID uint64) (
 		}
 		ciphertext, authType = credential.CredentialEnc, credential.AuthType
 	}
-	secret, err := service.DecryptRuntimeSecret(r.encryptionKey, ciphertext)
+	secret, err := secretcrypto.Decrypt(r.encryptionKey, ciphertext)
 	if err != nil {
 		return model.DeployServer{}, "", "", fmt.Errorf("解密凭证失败: %w", err)
 	}

@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	"k8s-platform-backend/internal/legacy/service"
+	cachetransport "k8s-platform-backend/internal/transport/cache"
 )
 
 // DashboardCache adapts the retained cache transport to the Fleet cache port.
 // Cache availability is intentionally best-effort and never part of the
 // dashboard application's business contract.
-type DashboardCache struct{ store service.CacheStore }
+type DashboardCache struct{ store cachetransport.CacheStore }
 
-func NewDashboardCache(store service.CacheStore) *DashboardCache {
+func NewDashboardCache(store cachetransport.CacheStore) *DashboardCache {
 	return &DashboardCache{store: store}
 }
 

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,6 +91,28 @@ func TestCachedConfigurationReaderFiltersAndSortsSnapshots(t *testing.T) {
 	}
 }
 
+func TestCachedConfigurationReaderFiltersPodSnapshotByLabel(t *testing.T) {
+	objects := []k8sruntime.Object{
+		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "api", Namespace: "ops", Labels: map[string]string{"app": "api"}}},
+		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "worker", Namespace: "ops", Labels: map[string]string{"app": "worker"}}},
+		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "api-default", Namespace: "default", Labels: map[string]string{"app": "api"}}},
+	}
+	payload, err := marshalCachedConfigurationObjects(CachedPods, objects)
+	if err != nil {
+		t.Fatalf("marshal pod cache: %v", err)
+	}
+	transport := &cachedConfigurationTransportStub{cache: map[string][]byte{
+		kopsapp.ObjectListCacheKey(7, string(CachedPods)): payload,
+	}}
+	items, err := NewCachedConfigurationReader(transport).ListWithLabelSelector(context.Background(), 7, CachedPods, "ops", "metadata.name", "asc", "app=api")
+	if err != nil {
+		t.Fatalf("list pods: %v", err)
+	}
+	if len(items) != 1 || items[0].(map[string]any)["metadata"].(map[string]any)["name"] != "api" {
+		t.Fatalf("filtered pod snapshot = %#v", items)
+	}
+}
+
 func TestCachedConfigurationCodecsCoverServiceAccountsAndHPAs(t *testing.T) {
 	for _, test := range []struct {
 		name     string
@@ -105,6 +128,16 @@ func TestCachedConfigurationCodecsCoverServiceAccountsAndHPAs(t *testing.T) {
 			name:     "hpas",
 			resource: CachedHPAs,
 			objects:  []k8sruntime.Object{&autoscalingv2.HorizontalPodAutoscaler{ObjectMeta: metav1.ObjectMeta{Name: "web", Namespace: "ops"}}},
+		},
+		{
+			name:     "deployments",
+			resource: CachedDeployments,
+			objects:  []k8sruntime.Object{&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "api", Namespace: "ops"}}},
+		},
+		{
+			name:     "statefulsets",
+			resource: CachedStatefulSets,
+			objects:  []k8sruntime.Object{&appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "db", Namespace: "ops"}}},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

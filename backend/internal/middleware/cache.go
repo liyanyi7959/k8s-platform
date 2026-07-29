@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"k8s-platform-backend/internal/legacy/service"
+	cachetransport "k8s-platform-backend/internal/transport/cache"
 )
 
 type cacheBodyWriter struct {
@@ -24,7 +24,7 @@ func (w *cacheBodyWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
-func CacheJSON(store service.CacheStore, ttl time.Duration) gin.HandlerFunc {
+func CacheJSON(store cachetransport.CacheStore, ttl time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if store == nil || !store.Enabled() || c.Request.Method != http.MethodGet {
 			c.Next()

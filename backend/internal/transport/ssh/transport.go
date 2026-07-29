@@ -1,4 +1,7 @@
-package service
+// Package ssh provides a context-neutral transport for managed SSH sessions.
+// Callers retain credential storage, command policy, and domain-specific error
+// mapping; this package owns only connection and command execution mechanics.
+package ssh
 
 import (
 	"bytes"
@@ -9,46 +12,40 @@ import (
 	"strings"
 	"time"
 
-	provisionapp "k8s-platform-backend/internal/provisioning/application"
-	model "k8s-platform-backend/internal/provisioning/domain"
-
 	"golang.org/x/crypto/ssh"
 )
 
-// ProbeSSH is the narrow transport port used by Provisioning runtime adapters.
-func ProbeSSH(ctx context.Context, server model.DeployServer, credential string) (provisionapp.SSHProbeResult, error) {
-	client, err := DialDeploySSH(ctx, server, credential)
-	if err != nil {
-		return provisionapp.SSHProbeResult{}, err
-	}
-	defer client.Close()
-	output, err := RunSSHCommand(client, `uname -s && uname -r && (grep -E '^(NAME|ID|ID_LIKE|VERSION_ID)=' /etc/os-release 2>/dev/null || true) && echo "---HW---" && nproc 2>/dev/null && (free -m 2>/dev/null | awk '/^Mem:/{print $2}' || cat /proc/meminfo 2>/dev/null | awk '/MemTotal/{print $2}') && (df -BG / 2>/dev/null | awk 'NR==2{gsub(/G/,"",$2);print $2}' || echo 0)`)
-	if err != nil {
-		return provisionapp.SSHProbeResult{}, err
-	}
-	result := parseSSHProbeOutput(output)
-	result.Status = "available"
-	result.Message = "SSH 连接成功"
-	return result, nil
+type Config struct {
+	Host     string
+	Port     int
+	User     string
+	AuthType string
 }
 
-// DialDeploySSH returns an authenticated SSH client and keeps credential
-// cipher handling outside of this retained transport package.
-func DialDeploySSH(ctx context.Context, server model.DeployServer, credential string) (*ssh.Client, error) {
-	auth, err := buildSSHAuth(server.AuthType, credential)
+type ProbeResult struct {
+	OS        string
+	OSVersion string
+	Kernel    string
+	CPUCores  *uint
+	MemoryMB  *uint64
+	DiskGB    *uint64
+}
+
+func Dial(ctx context.Context, config Config, credential string) (*ssh.Client, error) {
+	auth, err := buildAuth(config.AuthType, credential)
 	if err != nil {
 		return nil, err
 	}
-	config := &ssh.ClientConfig{
-		User: server.User, Auth: []ssh.AuthMethod{auth}, HostKeyCallback: ssh.InsecureIgnoreHostKey(), Timeout: 8 * time.Second,
+	clientConfig := &ssh.ClientConfig{
+		User: config.User, Auth: []ssh.AuthMethod{auth}, HostKeyCallback: ssh.InsecureIgnoreHostKey(), Timeout: 8 * time.Second,
 	}
-	address := net.JoinHostPort(server.IP, fmt.Sprintf("%d", server.SSHPort))
+	address := net.JoinHostPort(config.Host, fmt.Sprintf("%d", config.Port))
 	dialer := &net.Dialer{Timeout: 8 * time.Second}
 	connection, err := dialer.DialContext(ctx, "tcp", address)
 	if err != nil {
 		return nil, fmt.Errorf("SSH 连接失败: %w", err)
 	}
-	sshConnection, channels, requests, err := ssh.NewClientConn(connection, address, config)
+	sshConnection, channels, requests, err := ssh.NewClientConn(connection, address, clientConfig)
 	if err != nil {
 		connection.Close()
 		message := err.Error()
@@ -64,9 +61,20 @@ func DialDeploySSH(ctx context.Context, server model.DeployServer, credential st
 	return ssh.NewClient(sshConnection, channels, requests), nil
 }
 
-// RunSSHCommand executes a non-privileged command over an authenticated
-// client. Callers own command selection and policy.
-func RunSSHCommand(client *ssh.Client, command string) (string, error) {
+func Probe(ctx context.Context, config Config, credential string) (ProbeResult, error) {
+	client, err := Dial(ctx, config, credential)
+	if err != nil {
+		return ProbeResult{}, err
+	}
+	defer client.Close()
+	output, err := RunCommand(client, `uname -s && uname -r && (grep -E '^(NAME|ID|ID_LIKE|VERSION_ID)=' /etc/os-release 2>/dev/null || true) && echo "---HW---" && nproc 2>/dev/null && (free -m 2>/dev/null | awk '/^Mem:/{print $2}' || cat /proc/meminfo 2>/dev/null | awk '/MemTotal/{print $2}') && (df -BG / 2>/dev/null | awk 'NR==2{gsub(/G/,"",$2);print $2}' || echo 0)`)
+	if err != nil {
+		return ProbeResult{}, err
+	}
+	return parseProbeOutput(output), nil
+}
+
+func RunCommand(client *ssh.Client, command string) (string, error) {
 	session, err := client.NewSession()
 	if err != nil {
 		return "", fmt.Errorf("创建 SSH 会话失败: %w", err)
@@ -84,9 +92,7 @@ func RunSSHCommand(client *ssh.Client, command string) (string, error) {
 	return stdout.String(), nil
 }
 
-// RunPrivilegedSSHCommand executes a caller-provided script with the managed
-// server credential. The runner adapter owns all provisioning policy.
-func RunPrivilegedSSHCommand(client *ssh.Client, server model.DeployServer, credential, script string) (string, error) {
+func RunPrivilegedCommand(client *ssh.Client, authType, credential, script string) (string, error) {
 	session, err := client.NewSession()
 	if err != nil {
 		return "", err
@@ -94,8 +100,8 @@ func RunPrivilegedSSHCommand(client *ssh.Client, server model.DeployServer, cred
 	defer session.Close()
 	var stdout, stderr bytes.Buffer
 	session.Stdout, session.Stderr = &stdout, &stderr
-	command := `if [ "$(id -u)" = "0" ]; then sh -c ` + sshShellQuote(script) + `; else sudo -S -p '' sh -c ` + sshShellQuote(script) + `; fi`
-	if server.AuthType != "key" {
+	command := `if [ "$(id -u)" = "0" ]; then sh -c ` + shellQuote(script) + `; else sudo -S -p '' sh -c ` + shellQuote(script) + `; fi`
+	if authType != "key" {
 		session.Stdin = strings.NewReader(credential + "\n")
 	}
 	if err := session.Run(command); err != nil {
@@ -108,7 +114,7 @@ func RunPrivilegedSSHCommand(client *ssh.Client, server model.DeployServer, cred
 	return stdout.String(), nil
 }
 
-func buildSSHAuth(authType, credential string) (ssh.AuthMethod, error) {
+func buildAuth(authType, credential string) (ssh.AuthMethod, error) {
 	switch strings.TrimSpace(authType) {
 	case "password", "":
 		return ssh.Password(credential), nil
@@ -123,11 +129,11 @@ func buildSSHAuth(authType, credential string) (ssh.AuthMethod, error) {
 	}
 }
 
-func sshShellQuote(value string) string { return "'" + strings.ReplaceAll(value, "'", `'"'"'`) + "'" }
+func shellQuote(value string) string { return "'" + strings.ReplaceAll(value, "'", `'"'"'`) + "'" }
 
-func parseSSHProbeOutput(output string) provisionapp.SSHProbeResult {
+func parseProbeOutput(output string) ProbeResult {
 	lines := strings.Split(strings.TrimSpace(output), "\n")
-	result := provisionapp.SSHProbeResult{}
+	result := ProbeResult{}
 	hardwareStart := -1
 	for index, line := range lines {
 		if strings.TrimSpace(line) == "---HW---" {

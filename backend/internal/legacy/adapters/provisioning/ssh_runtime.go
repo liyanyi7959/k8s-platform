@@ -10,6 +10,8 @@ import (
 	"k8s-platform-backend/internal/legacy/service"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
+	secretcrypto "k8s-platform-backend/internal/transport/secretcrypto"
+	sshtransport "k8s-platform-backend/internal/transport/ssh"
 )
 
 // SSHRuntime owns the registered-server SSH probe and terminal connection
@@ -33,11 +35,18 @@ func (r *SSHRuntime) ProbeServerSSH(ctx context.Context, id uint64) (provisionap
 		_ = r.updateServerStatus(ctx, id, "unavailable")
 		return provisionapp.SSHProbeResult{}, err
 	}
-	result, err := service.ProbeSSH(ctx, server, credential)
+	probe, err := sshtransport.Probe(ctx, deploymentSSHConfig(server), credential)
+	result := provisionapp.SSHProbeResult{
+		OS: probe.OS, OSVersion: probe.OSVersion, Kernel: probe.Kernel,
+		CPUCores: probe.CPUCores, MemoryMB: probe.MemoryMB, DiskGB: probe.DiskGB,
+	}
 	status := "available"
 	if err != nil {
 		status = "unavailable"
 		result = provisionapp.SSHProbeResult{Status: status, Message: err.Error()}
+	} else {
+		result.Status = status
+		result.Message = "SSH 连接成功"
 	}
 	updates := map[string]any{"status": status}
 	if result.OS != "" {
@@ -81,13 +90,17 @@ func (r *SSHRuntime) OpenServerSSH(ctx context.Context, id uint64) (*ssh.Client,
 		_ = r.updateServerStatus(ctx, id, "unavailable")
 		return nil, "", err
 	}
-	client, err := service.DialDeploySSH(ctx, server, credential)
+	client, err := sshtransport.Dial(ctx, deploymentSSHConfig(server), credential)
 	if err != nil {
 		_ = r.updateServerStatus(ctx, id, "unavailable")
 		return nil, "", service.ErrWithMessage(service.ErrInvalidParams, err.Error())
 	}
 	_ = r.updateServerStatus(ctx, id, "available")
 	return client, server.Name, nil
+}
+
+func deploymentSSHConfig(server model.DeployServer) sshtransport.Config {
+	return sshtransport.Config{Host: server.IP, Port: server.SSHPort, User: server.User, AuthType: server.AuthType}
 }
 
 func (r *SSHRuntime) resolveServerSSHConfig(ctx context.Context, id uint64) (model.DeployServer, string, error) {
@@ -115,7 +128,7 @@ func (r *SSHRuntime) resolveServerSSHConfig(ctx context.Context, id uint64) (mod
 		server.AuthType = credential.AuthType
 	}
 
-	credential, err := service.DecryptRuntimeSecret(r.encryptionKey, credentialEnc)
+	credential, err := secretcrypto.Decrypt(r.encryptionKey, credentialEnc)
 	if err != nil {
 		return model.DeployServer{}, "", service.ErrWithMessage(service.ErrCrypto, "服务器凭证解密失败")
 	}

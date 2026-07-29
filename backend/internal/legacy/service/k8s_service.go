@@ -30,6 +30,7 @@ import (
 	fleetapp "k8s-platform-backend/internal/fleet/application"
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
+	cachetransport "k8s-platform-backend/internal/transport/cache"
 )
 
 // K8s 哨兵错误已统一迁移至 errors.go（ErrK8s / ErrK8sNetwork / ErrK8sTimeout 等）。
@@ -43,7 +44,7 @@ type K8sService struct {
 	clusterReg *fleetapp.Registry
 	podCache   *podCacheManager
 	objCache   *objCacheManager
-	cache      CacheStore
+	cache      cachetransport.CacheStore
 	podTTL     time.Duration
 	clients    kopsclient.ClientFactory
 
@@ -55,7 +56,7 @@ const k8sRequestTimeout = 60 * time.Second
 const k8sListPageLimit int64 = 500
 
 // NewK8sService 创建 K8sService。
-func NewK8sService(clusterReg *fleetapp.Registry, cacheStore CacheStore, podCacheTTL time.Duration, insecureSkipTLS ...bool) *K8sService {
+func NewK8sService(clusterReg *fleetapp.Registry, cacheStore cachetransport.CacheStore, podCacheTTL time.Duration, insecureSkipTLS ...bool) *K8sService {
 	if podCacheTTL <= 0 {
 		podCacheTTL = 60 * time.Second
 	}
