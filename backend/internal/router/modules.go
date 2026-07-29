@@ -91,6 +91,7 @@ type kopsModule struct {
 	network         *kopshttp.NetworkController
 	configuration   *kopshttp.ConfigurationController
 	storage         *kopshttp.StorageController
+	workloads       *kopshttp.WorkloadController
 	podLogStream    *kopshttp.PodLogStreamController
 	podExecStream   *kopshttp.PodExecStreamController
 	helm            *kopshttp.HelmController
@@ -298,6 +299,7 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 		network:         kopshttp.NewNetworkController(kopsapp.NewNetworkService(legacykops.NewNetworkRuntime(runtime.k8s))),
 		configuration:   kopshttp.NewConfigurationController(kopsapp.NewConfigurationService(legacykops.NewConfigurationRuntime(runtime.k8s))),
 		storage:         kopshttp.NewStorageController(kopsapp.NewStorageService(legacykops.NewStorageRuntime(runtime.k8s))),
+		workloads:       kopshttp.NewWorkloadController(kopsapp.NewWorkloadService(legacykops.NewWorkloadRuntime(runtime.k8s))),
 		podLogStream:    kopshttp.NewPodLogStreamController(legacykops.NewPodLogStreamRuntime(runtime.k8s), runtime.logSessions),
 		podExecStream:   kopshttp.NewPodExecStreamController(legacykops.NewPodExecStreamRuntime(runtime.k8s), runtime.execSessions),
 		helm:            kopshttp.NewHelmController(kopsapp.NewHelmService(legacykops.NewHelmRuntime(runtime.k8s, runtime.deploy))),
