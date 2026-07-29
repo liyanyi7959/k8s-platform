@@ -560,3 +560,127 @@ func containersUseNamedRef(spec map[string]any, name, fromKey, valueKey string) 
 	}
 	return false
 }
+
+func controllersFromPods(pods []domain.JSONMap) []domain.JSONMap {
+	byKey := map[string]domain.JSONMap{}
+	for _, pod := range pods {
+		owners, _ := pod["owners"].([]domain.JSONMap)
+		for _, owner := range owners {
+			kind, name := strings.TrimSpace(fmt.Sprint(owner["kind"])), strings.TrimSpace(fmt.Sprint(owner["name"]))
+			if kind != "" && name != "" {
+				byKey[kind+"/"+name] = domain.JSONMap{"kind": kind, "name": name}
+			}
+		}
+	}
+	controllers := make([]domain.JSONMap, 0, len(byKey))
+	for _, controller := range byKey {
+		controllers = append(controllers, controller)
+	}
+	sortControllers(controllers)
+	return controllers
+}
+
+func sortControllers(controllers []domain.JSONMap) {
+	sort.SliceStable(controllers, func(i, j int) bool {
+		return strings.TrimSpace(fmt.Sprint(controllers[i]["kind"]))+"/"+strings.TrimSpace(fmt.Sprint(controllers[i]["name"])) < strings.TrimSpace(fmt.Sprint(controllers[j]["kind"]))+"/"+strings.TrimSpace(fmt.Sprint(controllers[j]["name"]))
+	})
+}
+
+func mapToLabelSelector(labels map[string]any) string {
+	keys := make([]string, 0, len(labels))
+	for key := range labels {
+		if strings.TrimSpace(key) != "" {
+			keys = append(keys, key)
+		}
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		parts = append(parts, key+"="+strings.TrimSpace(fmt.Sprint(labels[key])))
+	}
+	return strings.Join(parts, ",")
+}
+
+func resultSortKey(result domain.JSONMap) string {
+	return strings.TrimSpace(fmt.Sprint(result["kind"])) + "\x00" + strings.TrimSpace(fmt.Sprint(result["namespace"])) + "\x00" + strings.TrimSpace(fmt.Sprint(result["name"]))
+}
+
+func objectMetaString(object map[string]any, key string) string {
+	return strings.TrimSpace(fmt.Sprint(mapValue(object, "metadata")[key]))
+}
+
+func mapValue(source map[string]any, key string) map[string]any {
+	if source == nil {
+		return nil
+	}
+	value, _ := source[key].(map[string]any)
+	return value
+}
+
+func mapFromAny(value any) map[string]any {
+	result, _ := value.(map[string]any)
+	return result
+}
+
+func boolValue(value any) bool {
+	switch typed := value.(type) {
+	case bool:
+		return typed
+	case string:
+		parsed, err := strconv.ParseBool(strings.TrimSpace(typed))
+		return err == nil && parsed
+	default:
+		return false
+	}
+}
+
+func intValue(value any) int {
+	switch typed := value.(type) {
+	case int:
+		return typed
+	case int32:
+		return int(typed)
+	case int64:
+		return int(typed)
+	case float64:
+		return int(typed)
+	case string:
+		parsed, _ := strconv.Atoi(strings.TrimSpace(typed))
+		return parsed
+	default:
+		return 0
+	}
+}
+
+func truncate(input string, limit int) string {
+	raw := strings.TrimSpace(input)
+	if limit <= 0 || len([]rune(raw)) <= limit {
+		return raw
+	}
+	return string([]rune(raw)[:limit]) + "..."
+}
+
+func clampResultLimit(limit, fallback int) int {
+	if fallback <= 0 {
+		fallback = 50
+	}
+	if limit <= 0 {
+		limit = fallback
+	}
+	if limit < 1 {
+		return 1
+	}
+	if limit > 200 {
+		return 200
+	}
+	return limit
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
+}
