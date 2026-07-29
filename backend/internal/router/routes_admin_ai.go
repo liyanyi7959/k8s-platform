@@ -7,12 +7,11 @@ import (
 	audithttp "k8s-platform-backend/internal/audit/adapters/http"
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
-	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/middleware"
 	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
 )
 
-func registerWebSocketRoutes(authed *gin.RouterGroup, k8sCtl *controller.K8sController, podLog *kopshttp.PodLogStreamController, podExec *kopshttp.PodExecStreamController) {
+func registerWebSocketRoutes(authed *gin.RouterGroup, podLog *kopshttp.PodLogStreamController, podExec *kopshttp.PodExecStreamController) {
 	ws := authed.Group("/ws")
 	if podLog != nil {
 		ws.GET("/pod-log", middleware.RequirePerm("k8s:read"), podLog.Stream)
@@ -65,8 +64,8 @@ func registerSystemRoutes(authed *gin.RouterGroup, ctl *platformhttp.SettingsCon
 	authed.PUT("/system/settings", write, ctl.Update)
 }
 
-func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController, management *aihttp.ManagementController) {
-	if ctl == nil || management == nil {
+func registerAIRoutes(authed *gin.RouterGroup, runtime *aihttp.RuntimeController, management *aihttp.ManagementController) {
+	if runtime == nil || management == nil {
 		return
 	}
 
@@ -80,21 +79,21 @@ func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController, man
 	ai.PATCH("/providers/:id", aiWritePerm, management.PatchProvider)
 	ai.DELETE("/providers/:id", aiWritePerm, management.DeleteProvider)
 	ai.GET("/models", aiReadPerm, management.ListModels)
-	ai.GET("/tools", aiReadPerm, ctl.ListTools)
+	ai.GET("/tools", aiReadPerm, runtime.ListTools)
 	ai.POST("/models", aiWritePerm, management.CreateModel)
 	ai.PATCH("/models/:id", aiWritePerm, management.PatchModel)
 	ai.DELETE("/models/:id", aiWritePerm, management.DeleteModel)
 	ai.GET("/route-settings", aiWritePerm, management.GetRouteSettings)
 	ai.PUT("/route-settings", aiWritePerm, management.UpdateRouteSettings)
 	ai.GET("/conversations", aiReadPerm, management.ListConversations)
-	ai.GET("/conversations/:id", aiReadPerm, ctl.GetConversation)
+	ai.GET("/conversations/:id", aiReadPerm, runtime.GetConversation)
 	ai.DELETE("/conversations/:id", aiReadPerm, management.DeleteConversation)
-	ai.GET("/files/:id/content", aiReadPerm, ctl.DownloadAttachmentContent)
+	ai.GET("/files/:id/content", aiReadPerm, runtime.DownloadAttachmentContent)
 
 	clusters := authed.Group("/clusters")
 	clusters.POST("/:id/ai/conversations", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), management.CreateConversation)
-	clusters.POST("/:id/ai/chat", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), ctl.SendChat)
-	clusters.POST("/:id/ai/chat/stream", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), ctl.SendChatStream)
-	clusters.POST("/:id/ai/actions/propose", clusterReadPerm, middleware.RequirePerm("ai:change_propose"), ctl.CreateActionProposal)
-	clusters.POST("/:id/ai/actions/:actionId/confirm", clusterReadPerm, middleware.RequirePerm("ai:change_confirm"), middleware.RequirePerm("k8s:write"), ctl.ConfirmActionProposal)
+	clusters.POST("/:id/ai/chat", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), runtime.SendChat)
+	clusters.POST("/:id/ai/chat/stream", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), runtime.SendChatStream)
+	clusters.POST("/:id/ai/actions/propose", clusterReadPerm, middleware.RequirePerm("ai:change_propose"), runtime.CreateActionProposal)
+	clusters.POST("/:id/ai/actions/:actionId/confirm", clusterReadPerm, middleware.RequirePerm("ai:change_confirm"), middleware.RequirePerm("k8s:write"), runtime.ConfirmActionProposal)
 }

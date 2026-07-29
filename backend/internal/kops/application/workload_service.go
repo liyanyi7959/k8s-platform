@@ -62,13 +62,13 @@ type WorkloadEditInput struct {
 	Namespace string       `json:"namespace"`
 	Name      string       `json:"name"`
 
-	Replicas       *int                 `json:"replicas"`
-	Labels         map[string]string    `json:"labels"`
-	Tolerations    []WorkloadToleration `json:"tolerations"`
-	Containers     []WorkloadContainer  `json:"containers"`
-	InitContainers []WorkloadContainer  `json:"initContainers"`
-	Strategy       *WorkloadStrategy    `json:"strategy"`
-	Volumes        []map[string]any     `json:"volumes"`
+	Replicas       *int                    `json:"replicas"`
+	Labels         map[string]string       `json:"labels"`
+	Tolerations    []WorkloadToleration    `json:"tolerations"`
+	Containers     []WorkloadEditContainer `json:"containers"`
+	InitContainers []WorkloadEditContainer `json:"initContainers"`
+	Strategy       *WorkloadStrategy       `json:"strategy"`
+	Volumes        []map[string]any        `json:"volumes"`
 }
 
 type WorkloadStrategy struct {
@@ -85,7 +85,7 @@ type WorkloadToleration struct {
 	TolerationSeconds *int64  `json:"tolerationSeconds"`
 }
 
-type WorkloadContainer struct {
+type WorkloadEditContainer struct {
 	Name            string                   `json:"name"`
 	Image           *string                  `json:"image"`
 	ImagePullPolicy *string                  `json:"imagePullPolicy"`
@@ -329,7 +329,7 @@ func workloadSelectorLabels(spec map[string]any) map[string]string {
 	return result
 }
 
-func applyWorkloadContainerUpdates(containers []any, updates []WorkloadContainer) error {
+func applyWorkloadContainerUpdates(containers []any, updates []WorkloadEditContainer) error {
 	byName := make(map[string]map[string]any, len(containers))
 	for _, value := range containers {
 		container, _ := value.(map[string]any)

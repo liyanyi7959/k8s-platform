@@ -5,7 +5,6 @@ import (
 
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/middleware"
 )
 
@@ -26,7 +25,6 @@ type k8sPerms struct {
 type k8sRouteArgs struct {
 	k8s           *gin.RouterGroup
 	d             Deps
-	ctl           *controller.K8sController
 	manifest      *kopshttp.ManifestController
 	namespace     *kopshttp.NamespaceController
 	metrics       *kopshttp.MetricsController
@@ -46,8 +44,8 @@ type k8sRouteArgs struct {
 	perm          k8sPerms
 }
 
-func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sController, manifest *kopshttp.ManifestController, namespace *kopshttp.NamespaceController, metrics *kopshttp.MetricsController, connectivity *kopshttp.ConnectivityController, nodes *kopshttp.NodeController, platform *kopshttp.PlatformResourceController, relationships *kopshttp.RelationshipResourceController, batch *kopshttp.BatchController, network *kopshttp.NetworkController, configuration *kopshttp.ConfigurationController, storage *kopshttp.StorageController, helm *kopshttp.HelmController, workloads *kopshttp.WorkloadController, pods *kopshttp.PodController, inspection *kopshttp.InspectionController, creators ...*kopshttp.ResourceCreatorController) {
-	if ctl == nil || manifest == nil || namespace == nil || metrics == nil || connectivity == nil || nodes == nil || platform == nil || relationships == nil || batch == nil || network == nil || configuration == nil || storage == nil || helm == nil || workloads == nil || pods == nil || inspection == nil {
+func registerK8sRoutes(authed *gin.RouterGroup, d Deps, manifest *kopshttp.ManifestController, namespace *kopshttp.NamespaceController, metrics *kopshttp.MetricsController, connectivity *kopshttp.ConnectivityController, nodes *kopshttp.NodeController, platform *kopshttp.PlatformResourceController, relationships *kopshttp.RelationshipResourceController, batch *kopshttp.BatchController, network *kopshttp.NetworkController, configuration *kopshttp.ConfigurationController, storage *kopshttp.StorageController, helm *kopshttp.HelmController, workloads *kopshttp.WorkloadController, pods *kopshttp.PodController, inspection *kopshttp.InspectionController, creators ...*kopshttp.ResourceCreatorController) {
+	if manifest == nil || namespace == nil || metrics == nil || connectivity == nil || nodes == nil || platform == nil || relationships == nil || batch == nil || network == nil || configuration == nil || storage == nil || helm == nil || workloads == nil || pods == nil || inspection == nil {
 		return
 	}
 	creator := &kopshttp.ResourceCreatorController{}
@@ -57,7 +55,7 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 	k8s := authed.Group("")
 	resourceSupportReadPerm := middleware.RequireAnyPerm("k8s:read", "k8s:rbac_read")
 	args := k8sRouteArgs{
-		k8s: k8s, d: d, ctl: ctl, manifest: manifest, namespace: namespace, metrics: metrics, connectivity: connectivity, nodes: nodes, platform: platform, relationships: relationships, batch: batch, network: network, configuration: configuration, storage: storage, helm: helm, workloads: workloads, pods: pods, inspection: inspection, creator: creator,
+		k8s: k8s, d: d, manifest: manifest, namespace: namespace, metrics: metrics, connectivity: connectivity, nodes: nodes, platform: platform, relationships: relationships, batch: batch, network: network, configuration: configuration, storage: storage, helm: helm, workloads: workloads, pods: pods, inspection: inspection, creator: creator,
 		perm: k8sPerms{
 			read:                   middleware.RequirePerm("k8s:read"),
 			write:                  middleware.RequirePerm("k8s:write"),
@@ -83,7 +81,7 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sContr
 }
 
 func registerCanonicalResourceUpdateRoutes(a k8sRouteArgs) {
-	k8s, ctl, connectivity, platform, relationships, batch, network, configuration, storage, p := a.k8s, a.ctl, a.connectivity, a.platform, a.relationships, a.batch, a.network, a.configuration, a.storage, a.perm
+	k8s, connectivity, platform, relationships, batch, network, configuration, storage, workloads, p := a.k8s, a.connectivity, a.platform, a.relationships, a.batch, a.network, a.configuration, a.storage, a.workloads, a.perm
 	namespaced := []struct {
 		resource string
 		handler  gin.HandlerFunc
@@ -121,12 +119,12 @@ func registerCanonicalResourceUpdateRoutes(a k8sRouteArgs) {
 	k8s.PATCH("/clusters/:id/clusterroles/:name", p.rbacWrite, platform.Apply(kopsapp.PlatformClusterRole))
 	k8s.PATCH("/clusters/:id/rolebindings/:ns/:name", p.rbacWrite, platform.Apply(kopsapp.PlatformRoleBinding))
 	k8s.PATCH("/clusters/:id/clusterrolebindings/:name", p.rbacWrite, platform.Apply(kopsapp.PlatformClusterRoleBinding))
-	k8s.PATCH("/clusters/:id/workloads/deployments/:ns/:name", p.write, ctl.EditDeployment)
-	k8s.PATCH("/clusters/:id/workloads/statefulsets/:ns/:name", p.write, ctl.EditStatefulSet)
-	k8s.PATCH("/clusters/:id/workloads/daemonsets/:ns/:name", p.write, ctl.EditDaemonSet)
-	k8s.PATCH("/clusters/:id/workloads/:kind/:ns/:name/yaml", p.write, ctl.EditWorkloadYAML)
-	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/scale-operations", p.write, ctl.ScaleWorkload)
-	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/restart-operations", p.write, ctl.RestartWorkload)
+	k8s.PATCH("/clusters/:id/workloads/deployments/:ns/:name", p.write, workloads.Edit(kopsapp.WorkloadDeployment))
+	k8s.PATCH("/clusters/:id/workloads/statefulsets/:ns/:name", p.write, workloads.Edit(kopsapp.WorkloadStatefulSet))
+	k8s.PATCH("/clusters/:id/workloads/daemonsets/:ns/:name", p.write, workloads.Edit(kopsapp.WorkloadDaemonSet))
+	k8s.PATCH("/clusters/:id/workloads/:kind/:ns/:name/yaml", p.write, workloads.ApplyYAML)
+	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/scale-operations", p.write, workloads.Scale)
+	k8s.POST("/clusters/:id/workloads/:kind/:ns/:name/restart-operations", p.write, workloads.Restart)
 }
 
 // ── 集群级资源：Namespace / Node / HPA / PDB / Event / CRD / APIService / PriorityClass / RuntimeClass / Webhook / Lease ──

@@ -23,6 +23,7 @@ func TestMigratedRoutesDoNotReturnToLegacyControllers(t *testing.T) {
 				"ctl.ListProviders", "ctl.CreateProvider", "ctl.PatchProvider", "ctl.DeleteProvider",
 				"ctl.ListModels", "ctl.CreateModel", "ctl.PatchModel", "ctl.DeleteModel",
 				"ctl.GetRouteSettings", "ctl.UpdateRouteSettings", "ctl.ListConversations", "ctl.DeleteConversation", "ctl.CreateConversation",
+				"ctl.ListTools", "ctl.GetConversation", "ctl.DownloadAttachmentContent", "ctl.SendChat", "ctl.SendChatStream", "ctl.CreateActionProposal", "ctl.ConfirmActionProposal",
 			},
 		},
 		{
@@ -32,6 +33,7 @@ func TestMigratedRoutesDoNotReturnToLegacyControllers(t *testing.T) {
 				"ctl.ListCredentials", "ctl.CreateCredential", "ctl.UpdateCredential", "ctl.DeleteCredential",
 				"ctl.ListPlans", "ctl.CreatePlan", "ctl.UpdatePlan", "ctl.DeletePlan",
 				"ctl.ExecutePlan", "ctl.CancelPlan", "ctl.RetryPlan", "ctl.GetDeployTask", "ctl.GetDeployTaskLogs",
+				"ctl.TestSSH", "ctl.CreateServerTerminalSession", "ctl.ServerTerminalWS", "*controller.AutomationTaskController",
 			},
 		},
 		{
@@ -69,6 +71,8 @@ func TestMigratedRoutesDoNotReturnToLegacyControllers(t *testing.T) {
 				"ctl.ListPods", "ctl.ListPodMetrics", "ctl.GetPodYAML", "ctl.GetPodLogs", "ctl.CreatePodLogSession", "ctl.DeletePod",
 				"ctl.CreatePodExecSession",
 				"ctl.ListHelmReleases", "ctl.GetHelmReleaseDetail", "ctl.HelmPreflight", "ctl.HelmInstall", "ctl.HelmUninstall", "ctl.HelmUpgrade", "ctl.HelmRollback", "ctl.HelmRepoList", "ctl.HelmRepoAdd", "ctl.HelmRepoDelete", "ctl.HelmSearch",
+				"ctl.ListWorkloads", "ctl.GetRolloutHistory", "ctl.RolloutUndo", "ctl.ScaleWorkload", "ctl.RestartWorkload", "ctl.UpdateImage", "ctl.UpdateWorkloadPaused",
+				"ctl.EditDeployment", "ctl.EditStatefulSet", "ctl.EditDaemonSet", "ctl.EditWorkloadYAML", "ctl.DeleteWorkload", "ctl.GetWorkloadYAML",
 				"ctl.ListEvents", "ctl.ListServiceAccounts", "ctl.GetServiceAccountYAML", "ctl.EditServiceAccount", "ctl.DeleteServiceAccount",
 				"ctl.ListHPAs", "ctl.GetHPAYAML", "ctl.EditHPA", "ctl.DeleteHPA",
 				"ctl.ListNodeMetrics", "ctl.ListPodMetricsUsage", "ctl.GetMetricsSource", "ctl.DetectMetricsSource",

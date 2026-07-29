@@ -7,7 +7,7 @@ import (
 	fleethttp "k8s-platform-backend/internal/fleet/adapters/http"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
-	"k8s-platform-backend/internal/legacy/controller"
+	legacyprovision "k8s-platform-backend/internal/legacy/adapters/provisioning"
 	"k8s-platform-backend/internal/middleware"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 	workspacehttp "k8s-platform-backend/internal/workspace/adapters/http"
@@ -35,7 +35,7 @@ func registerIncidentV2Routes(r *gin.Engine, d Deps, auditRecorder ports.Recorde
 	incidents.POST("/:id/resolution-attempts", manage, ctl.Resolve)
 }
 
-func registerAutomationTaskRoutes(authed *gin.RouterGroup, ctl *controller.AutomationTaskController) {
+func registerAutomationTaskRoutes(authed *gin.RouterGroup, ctl *legacyprovision.AutomationTaskController) {
 	if ctl == nil {
 		return
 	}
@@ -70,8 +70,8 @@ func registerMonitorIncidentRoutes(authed *gin.RouterGroup, ctl *incidenthttp.Le
 	monitor.POST("/incidents/:id/ai-proposal", manage, ctl.LinkAIProposal)
 }
 
-func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployController, serverCtl *provisionhttp.ServerController, credentialCtl *provisionhttp.CredentialController, planCtl *provisionhttp.DeployPlanController, runtimeCtl *provisionhttp.RuntimeController, taskCtl *provisionhttp.TaskController, configCtl *provisionhttp.DeployConfigController) {
-	if ctl == nil || serverCtl == nil || credentialCtl == nil || planCtl == nil || runtimeCtl == nil || taskCtl == nil {
+func registerDeployRoutes(authed *gin.RouterGroup, serverAccess *legacyprovision.ServerAccessController, serverCtl *provisionhttp.ServerController, credentialCtl *provisionhttp.CredentialController, planCtl *provisionhttp.DeployPlanController, runtimeCtl *provisionhttp.RuntimeController, taskCtl *provisionhttp.TaskController, configCtl *provisionhttp.DeployConfigController) {
+	if serverAccess == nil || serverCtl == nil || credentialCtl == nil || planCtl == nil || runtimeCtl == nil || taskCtl == nil {
 		return
 	}
 	deploy := authed.Group("/deploy")
@@ -93,11 +93,11 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.POST("/servers", writeServer, serverCtl.Create)
 	deploy.GET("/servers/:id", readServer, serverCtl.Get)
 	deploy.PUT("/servers/:id", writeServer, serverCtl.Update)
-	deploy.POST("/servers/:id/test-ssh", readServer, ctl.TestSSH)
-	deploy.POST("/servers/:id/connection-checks", writeServer, ctl.TestSSH)
-	deploy.POST("/servers/:id/terminal-session", writeServer, ctl.CreateServerTerminalSession)
-	deploy.POST("/servers/:id/terminal-sessions", writeServer, ctl.CreateServerTerminalSession)
-	deploy.GET("/servers/terminal/ws", writeServer, ctl.ServerTerminalWS)
+	deploy.POST("/servers/:id/test-ssh", readServer, serverAccess.TestSSH)
+	deploy.POST("/servers/:id/connection-checks", writeServer, serverAccess.TestSSH)
+	deploy.POST("/servers/:id/terminal-session", writeServer, serverAccess.CreateTerminalSession)
+	deploy.POST("/servers/:id/terminal-sessions", writeServer, serverAccess.CreateTerminalSession)
+	deploy.GET("/servers/terminal/ws", writeServer, serverAccess.TerminalWS)
 	deploy.DELETE("/servers/:id", deleteServer, serverCtl.Delete)
 
 	// SSH 凭证

@@ -52,9 +52,9 @@ func (ctl *WorkloadController) Undo(c *gin.Context) {
 func (ctl *WorkloadController) Scale(c *gin.Context) {
 	var request struct {
 		Kind      kopsapp.WorkloadKind `json:"kind"`
-		Namespace string                `json:"namespace"`
-		Name      string                `json:"name"`
-		Replicas  int                   `json:"replicas"`
+		Namespace string               `json:"namespace"`
+		Name      string               `json:"name"`
+		Replicas  int                  `json:"replicas"`
 	}
 	if !ctl.bind(c, &request) {
 		return
@@ -68,8 +68,8 @@ func (ctl *WorkloadController) Scale(c *gin.Context) {
 func (ctl *WorkloadController) Restart(c *gin.Context) {
 	var request struct {
 		Kind      kopsapp.WorkloadKind `json:"kind"`
-		Namespace string                `json:"namespace"`
-		Name      string                `json:"name"`
+		Namespace string               `json:"namespace"`
+		Name      string               `json:"name"`
 	}
 	if !ctl.bind(c, &request) {
 		return

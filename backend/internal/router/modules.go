@@ -26,9 +26,9 @@ import (
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
+	legacyai "k8s-platform-backend/internal/legacy/adapters/ai"
 	legacykops "k8s-platform-backend/internal/legacy/adapters/kops"
 	legacyprovision "k8s-platform-backend/internal/legacy/adapters/provisioning"
-	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/legacy/service"
 	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
 	platformmysql "k8s-platform-backend/internal/platform/adapters/mysql"
@@ -77,7 +77,6 @@ type fleetModule struct {
 }
 
 type kopsModule struct {
-	resources       *controller.K8sController
 	permissionAudit *kopshttp.PermissionAuditController
 	rbac            *kopshttp.RBACController
 	manifests       *kopshttp.ManifestController
@@ -101,7 +100,7 @@ type kopsModule struct {
 }
 
 type aiModule struct {
-	controller *controller.AIController
+	runtime    *aihttp.RuntimeController
 	management *aihttp.ManagementController
 }
 
@@ -111,15 +110,15 @@ type changeModule struct {
 }
 
 type provisioningModule struct {
-	deploy      *controller.DeployController
-	servers     *provisionhttp.ServerController
-	credentials *provisionhttp.CredentialController
-	plans       *provisionhttp.DeployPlanController
-	runtime     *provisionhttp.RuntimeController
-	tasks       *provisionhttp.TaskController
-	config      *provisionhttp.DeployConfigController
-	automation  *controller.AutomationTaskController
-	appTemplate *provisionhttp.AppTemplateController
+	serverAccess *legacyprovision.ServerAccessController
+	servers      *provisionhttp.ServerController
+	credentials  *provisionhttp.CredentialController
+	plans        *provisionhttp.DeployPlanController
+	runtime      *provisionhttp.RuntimeController
+	tasks        *provisionhttp.TaskController
+	config       *provisionhttp.DeployConfigController
+	automation   *legacyprovision.AutomationTaskController
+	appTemplate  *provisionhttp.AppTemplateController
 }
 
 type incidentModule struct {
@@ -282,12 +281,6 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 		d.EncryptionKey,
 	)
 	return kopsModule{
-		resources: controller.NewK8sController(
-			runtime.k8s,
-			runtime.execSessions,
-			runtime.logSessions,
-			runtime.deploy,
-		),
 		manifests:       kopshttp.NewManifestController(kopsapp.NewManifestService(legacykops.NewManifestRuntime(runtime.manifestApply))),
 		namespaces:      kopshttp.NewNamespaceController(kopsapp.NewNamespaceService(legacykops.NewNamespaceRuntime(runtime.k8s))),
 		metrics:         kopshttp.NewMetricsController(kopsapp.NewMetricsService(legacykops.NewMetricsRuntime(runtime.k8s))),
@@ -345,16 +338,13 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 	providerService := aiapp.NewAIProviderService(d.DB, d.EncryptionKey)
 	routeSettingsService := aiapp.NewAIRouteSettingsService(d.DB)
 	conversationService := aiapp.NewConversationService(d.DB)
-	return aiModule{controller: controller.NewAIController(
-		providerService,
-		routeSettingsService,
-		conversationService,
+	runtimeAdapter := legacyai.NewRuntime(
 		service.NewAIConversationDetailService(d.DB),
 		chatService,
-		fileService,
 		toolService,
 		change.actions,
-	), management: aihttp.NewManagementController(providerService, routeSettingsService, conversationService)}
+	)
+	return aiModule{runtime: aihttp.NewRuntimeController(runtimeAdapter, fileService), management: aihttp.NewManagementController(providerService, routeSettingsService, conversationService)}
 }
 
 func buildProvisioningModule(d Deps, runtime moduleRuntime) provisioningModule {
@@ -363,15 +353,15 @@ func buildProvisioningModule(d Deps, runtime moduleRuntime) provisioningModule {
 	credentialService := provisionapp.NewCredentialService(d.DB, d.EncryptionKey)
 	_ = appTemplateService.SeedBuiltinAppTemplates(context.Background())
 	return provisioningModule{
-		deploy:      controller.NewDeployController(runtime.deploy, runtime.execSessions),
-		servers:     provisionhttp.NewServerController(serverService),
-		credentials: provisionhttp.NewCredentialController(credentialService),
-		plans:       provisionhttp.NewDeployPlanController(provisionapp.NewDeployPlanService(d.DB)),
-		runtime:     provisionhttp.NewRuntimeController(provisionapp.NewRuntimeService(legacyprovision.NewRuntime(runtime.deploy))),
-		tasks:       provisionhttp.NewTaskController(provisionapp.NewTaskService(legacyprovision.NewRuntime(runtime.deploy))),
-		config:      provisionhttp.NewDeployConfigController(provisionapp.NewDeployConfigService(d.DB)),
-		automation:  controller.NewAutomationTaskController(service.NewTaskService(runtime.taskStore)),
-		appTemplate: provisionhttp.NewAppTemplateController(appTemplateService),
+		serverAccess: legacyprovision.NewServerAccessController(runtime.deploy, runtime.execSessions),
+		servers:      provisionhttp.NewServerController(serverService),
+		credentials:  provisionhttp.NewCredentialController(credentialService),
+		plans:        provisionhttp.NewDeployPlanController(provisionapp.NewDeployPlanService(d.DB)),
+		runtime:      provisionhttp.NewRuntimeController(provisionapp.NewRuntimeService(legacyprovision.NewRuntime(runtime.deploy))),
+		tasks:        provisionhttp.NewTaskController(provisionapp.NewTaskService(legacyprovision.NewRuntime(runtime.deploy))),
+		config:       provisionhttp.NewDeployConfigController(provisionapp.NewDeployConfigService(d.DB)),
+		automation:   legacyprovision.NewAutomationTaskController(service.NewTaskService(runtime.taskStore)),
+		appTemplate:  provisionhttp.NewAppTemplateController(appTemplateService),
 	}
 }
 
