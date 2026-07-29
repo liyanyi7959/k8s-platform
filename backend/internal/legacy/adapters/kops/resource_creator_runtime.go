@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // ResourceCreatorRuntime translates Kops creation inputs directly into typed

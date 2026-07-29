@@ -7,7 +7,7 @@ import (
 
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // NamespaceDiagnosisRuntime is the Kubernetes transport adapter for the

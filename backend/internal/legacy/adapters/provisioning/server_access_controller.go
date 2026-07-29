@@ -19,7 +19,7 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 	"k8s-platform-backend/internal/middleware"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	"k8s-platform-backend/pkg/resp"

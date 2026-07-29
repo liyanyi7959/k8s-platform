@@ -54,13 +54,6 @@ type K8sService struct {
 const k8sRequestTimeout = 60 * time.Second
 const k8sListPageLimit int64 = 500
 
-// KubeconfigProvider is the only Fleet dependency needed by the Kubernetes
-// transport. Keeping it as a port prevents this Kops adapter from reaching
-// into Fleet internals.
-type KubeconfigProvider interface {
-	Kubeconfig(context.Context, uint64) (string, error)
-}
-
 // KubeconfigErrorNormalizer is supplied at composition time so Fleet-domain
 // failures retain their previous API semantics without coupling this adapter
 // to Fleet domain types.

@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // NamespaceSummaryRuntime is the Kubernetes-facing side of the namespace
