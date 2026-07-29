@@ -29,11 +29,23 @@ type RuntimeChatRequest struct {
 	UserPerms      []string            `json:"-"`
 }
 
-type RuntimeChatImage struct {
-	Name        string `json:"name"`
-	ContentType string `json:"content_type"`
-	DataURL     string `json:"data_url"`
-	Size        int64  `json:"size"`
+// RuntimeChatImage is retained as the runtime-port name while the shared
+// input policy owns the transport-neutral image contract.
+type RuntimeChatImage = ChatImageInput
+
+// RuntimeChatResponse is the application-owned result contract for a
+// completed chat turn. Runtime adapters may enrich the response internally,
+// but HTTP callers no longer depend on legacy service DTOs.
+type RuntimeChatResponse struct {
+	ConversationID     uint64             `json:"conversation_id"`
+	UserMessageID      uint64             `json:"user_message_id"`
+	AssistantMessageID uint64             `json:"assistant_message_id"`
+	AssistantMessage   string             `json:"assistant_message"`
+	ProviderName       string             `json:"provider_name"`
+	ModelName          string             `json:"model_name"`
+	ModelCode          string             `json:"model_code"`
+	ToolCalls          []ToolCallItem     `json:"tool_calls"`
+	ActionProposals    []ActionProposalItem `json:"action_proposals"`
 }
 
 type RuntimeStreamChunk struct {
@@ -41,6 +53,20 @@ type RuntimeStreamChunk struct {
 	Content  string `json:"content"`
 	Error    string `json:"error"`
 	Progress string `json:"progress,omitempty"`
+}
+
+// RuntimeStreamDoneData is encoded in the terminal SSE event payload.
+// Keeping it alongside RuntimeStreamChunk makes the streaming contract
+// explicit at the application boundary instead of in a legacy coordinator.
+type RuntimeStreamDoneData struct {
+	ConversationID     uint64               `json:"conversation_id"`
+	UserMessageID      uint64               `json:"user_message_id"`
+	AssistantMessageID uint64               `json:"assistant_message_id"`
+	ProviderName       string               `json:"provider_name"`
+	ModelName          string               `json:"model_name"`
+	ModelCode          string               `json:"model_code"`
+	ToolCalls          []ToolCallItem       `json:"tool_calls"`
+	ActionProposals    []ActionProposalItem `json:"action_proposals"`
 }
 
 type ActionTargetResource struct {

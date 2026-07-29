@@ -13,6 +13,7 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
 
+	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
@@ -20,66 +21,67 @@ import (
 
 type HelmRuntime struct {
 	k8s    *service.K8sService
-	deploy *service.DeployService
+	nodes  *kopsruntime.NodeOperations
+	master *MasterHelmRuntime
 }
 
-func NewHelmRuntime(k8s *service.K8sService, deploy *service.DeployService) *HelmRuntime {
-	return &HelmRuntime{k8s: k8s, deploy: deploy}
+func NewHelmRuntime(k8s *service.K8sService, nodes *kopsruntime.NodeOperations, master *MasterHelmRuntime) *HelmRuntime {
+	return &HelmRuntime{k8s: k8s, nodes: nodes, master: master}
 }
 func (r *HelmRuntime) Preflight(ctx context.Context, clusterID uint64) (string, any, error) {
-	if r == nil || r.k8s == nil || r.deploy == nil {
+	if r == nil || r.nodes == nil || r.master == nil {
 		return "", nil, kopsapp.ErrConflict
 	}
-	apiOK, ready, total, version, err := r.k8s.CheckHealth(ctx, clusterID)
+	apiOK, ready, total, version, err := r.nodes.CheckHealth(ctx, clusterID)
 	if err != nil {
 		return "", nil, translateKopsRuntimeError(err)
 	}
 	if !apiOK || total == 0 || ready == 0 {
 		return "", nil, fmt.Errorf("%w: cluster unavailable", kopsapp.ErrConflict)
 	}
-	master, err := r.deploy.EnsureClusterMasterHelm(ctx, clusterID)
+	master, err := r.master.Ensure(ctx, clusterID)
 	if err != nil {
 		return "", nil, translateKopsRuntimeError(err)
 	}
 	return version, master, nil
 }
 func (r *HelmRuntime) Install(ctx context.Context, input kopsapp.HelmInstallInput) (string, error) {
-	if r == nil || r.deploy == nil {
+	if r == nil || r.master == nil {
 		return "", kopsapp.ErrConflict
 	}
-	value, err := r.deploy.InstallClusterMasterHelm(ctx, input.ClusterID, provisionapp.HelmMasterInstallRequest{ReleaseName: input.ReleaseName, Namespace: input.Namespace, Chart: input.Chart, Version: input.Version, RepoName: input.RepoName, RepoURL: input.RepoURL, ValuesYAML: input.ValuesYAML})
+	value, err := r.master.Install(ctx, input.ClusterID, provisionapp.HelmMasterInstallRequest{ReleaseName: input.ReleaseName, Namespace: input.Namespace, Chart: input.Chart, Version: input.Version, RepoName: input.RepoName, RepoURL: input.RepoURL, ValuesYAML: input.ValuesYAML})
 	if err != nil {
 		return "", translateKopsRuntimeError(err)
 	}
 	return value.Output, nil
 }
 func (r *HelmRuntime) ListRepositories(ctx context.Context, clusterID uint64) (any, error) {
-	if r == nil || r.deploy == nil {
+	if r == nil || r.master == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.deploy.ListClusterMasterHelmRepos(ctx, clusterID)
+	value, err := r.master.ListRepositories(ctx, clusterID)
 	if err != nil {
 		return nil, translateKopsRuntimeError(err)
 	}
 	return value, nil
 }
 func (r *HelmRuntime) AddRepository(ctx context.Context, input kopsapp.HelmRepositoryInput) error {
-	if r == nil || r.deploy == nil {
+	if r == nil || r.master == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.deploy.AddClusterMasterHelmRepo(ctx, input.ClusterID, input.Name, input.URL))
+	return translateKopsRuntimeError(r.master.AddRepository(ctx, input.ClusterID, input.Name, input.URL))
 }
 func (r *HelmRuntime) DeleteRepository(ctx context.Context, clusterID uint64, name string) error {
-	if r == nil || r.deploy == nil {
+	if r == nil || r.master == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.deploy.DeleteClusterMasterHelmRepo(ctx, clusterID, name))
+	return translateKopsRuntimeError(r.master.DeleteRepository(ctx, clusterID, name))
 }
 func (r *HelmRuntime) Search(ctx context.Context, clusterID uint64, keyword string) (any, error) {
-	if r == nil || r.deploy == nil {
+	if r == nil || r.master == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.deploy.SearchClusterMasterHelmCharts(ctx, clusterID, keyword)
+	value, err := r.master.SearchCharts(ctx, clusterID, keyword)
 	if err != nil {
 		return nil, translateKopsRuntimeError(err)
 	}

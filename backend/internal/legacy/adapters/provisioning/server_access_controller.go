@@ -1,6 +1,7 @@
 package provisioning
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -20,19 +21,30 @@ import (
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
 	"k8s-platform-backend/internal/middleware"
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	"k8s-platform-backend/pkg/resp"
 )
 
-// ServerAccessController is a boundary adapter for SSH diagnostics and the
-// interactive terminal. The deployment HTTP surface itself stays in the
-// provisioning context while the retained SSH implementation is isolated here.
+// ServerAccessController is the HTTP adapter for SSH diagnostics and the
+// interactive terminal. Its runtime dependency is independent from
+// DeploymentExecutor, which owns Ansible and deployment-plan execution.
 type ServerAccessController struct {
-	deploy   *service.DeployService
+	runtime  serverAccessRuntime
 	sessions *kopsapp.ExecSessionStore
+	servers  serverAccessReader
 }
 
-func NewServerAccessController(deploy *service.DeployService, sessions *kopsapp.ExecSessionStore) *ServerAccessController {
-	return &ServerAccessController{deploy: deploy, sessions: sessions}
+type serverAccessRuntime interface {
+	ProbeServerSSH(context.Context, uint64) (provisionapp.SSHProbeResult, error)
+	OpenServerSSH(context.Context, uint64) (*ssh.Client, string, error)
+}
+
+type serverAccessReader interface {
+	Get(context.Context, uint64) (provisionapp.DeployServerItem, error)
+}
+
+func NewServerAccessController(runtime serverAccessRuntime, sessions *kopsapp.ExecSessionStore, servers serverAccessReader) *ServerAccessController {
+	return &ServerAccessController{runtime: runtime, sessions: sessions, servers: servers}
 }
 
 func (ctl *ServerAccessController) TestSSH(c *gin.Context) {
@@ -40,11 +52,11 @@ func (ctl *ServerAccessController) TestSSH(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if ctl == nil || ctl.deploy == nil {
+	if ctl == nil || ctl.runtime == nil {
 		resp.Fail(c, 5000, "internal error")
 		return
 	}
-	data, err := ctl.deploy.ProbeServerSSH(c.Request.Context(), id)
+	data, err := ctl.runtime.ProbeServerSSH(c.Request.Context(), id)
 	if err != nil {
 		writeServerAccessError(c, err)
 		return
@@ -57,11 +69,11 @@ func (ctl *ServerAccessController) CreateTerminalSession(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if ctl == nil || ctl.deploy == nil || ctl.sessions == nil {
+	if ctl == nil || ctl.runtime == nil || ctl.sessions == nil || ctl.servers == nil {
 		resp.Fail(c, 5000, "terminal service is unavailable")
 		return
 	}
-	server, err := ctl.deploy.GetServer(c.Request.Context(), id)
+	server, err := ctl.servers.Get(c.Request.Context(), id)
 	if err != nil {
 		writeServerAccessError(c, err)
 		return
@@ -77,7 +89,7 @@ func (ctl *ServerAccessController) CreateTerminalSession(c *gin.Context) {
 
 func (ctl *ServerAccessController) TerminalWS(c *gin.Context) {
 	sessionID := strings.TrimSpace(c.Query("session_id"))
-	if sessionID == "" || ctl == nil || ctl.sessions == nil || ctl.deploy == nil {
+	if sessionID == "" || ctl == nil || ctl.sessions == nil || ctl.runtime == nil {
 		resp.Fail(c, 4000, "invalid params")
 		return
 	}
@@ -103,7 +115,7 @@ func (ctl *ServerAccessController) TerminalWS(c *gin.Context) {
 		_ = connection.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "session invalid"), time.Now().Add(3*time.Second))
 		return
 	}
-	client, server, err := ctl.deploy.OpenServerSSH(c.Request.Context(), terminal.ServerID)
+	client, serverName, err := ctl.runtime.OpenServerSSH(c.Request.Context(), terminal.ServerID)
 	if err != nil {
 		_ = connection.WriteMessage(websocket.BinaryMessage, append([]byte{3}, []byte(err.Error())...))
 		_ = connection.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, serverTerminalCloseReason(err, "SSH connection failed")), time.Now().Add(3*time.Second))
@@ -140,7 +152,7 @@ func (ctl *ServerAccessController) TerminalWS(c *gin.Context) {
 		_ = connection.WriteMessage(websocket.BinaryMessage, append([]byte{3}, []byte("start remote shell failed: "+err.Error())...))
 		return
 	}
-	zap.L().Info("server_terminal_ws: terminal started", zap.String("session_id", sessionID), zap.Uint64("server_id", terminal.ServerID), zap.String("server", server.Name), zap.Uint64("user_id", terminal.UserID))
+	zap.L().Info("server_terminal_ws: terminal started", zap.String("session_id", sessionID), zap.Uint64("server_id", terminal.ServerID), zap.String("server", serverName), zap.Uint64("user_id", terminal.UserID))
 	serverTerminalBridge(connection, sshSession, stdin, stdout, stderr)
 }
 
@@ -254,12 +266,16 @@ func writeServerAccessError(c *gin.Context, err error) {
 	if userMessage, ok := service.UserMessage(err); ok && strings.TrimSpace(userMessage) != "" {
 		message = userMessage
 	}
+	var provisioningError *provisionapp.Error
+	if errors.As(err, &provisioningError) && strings.TrimSpace(provisioningError.UserMessage()) != "" {
+		message = provisioningError.UserMessage()
+	}
 	switch {
-	case errors.Is(err, service.ErrInvalidParams):
+	case errors.Is(err, service.ErrInvalidParams), errors.Is(err, provisionapp.ErrInvalidParams):
 		resp.Fail(c, 4000, message)
-	case errors.Is(err, service.ErrNotFound):
+	case errors.Is(err, service.ErrNotFound), errors.Is(err, provisionapp.ErrNotFound):
 		resp.Fail(c, 4040, message)
-	case errors.Is(err, service.ErrConflict):
+	case errors.Is(err, service.ErrConflict), errors.Is(err, provisionapp.ErrConflict):
 		resp.Fail(c, 4090, message)
 	default:
 		resp.Fail(c, 5000, message)

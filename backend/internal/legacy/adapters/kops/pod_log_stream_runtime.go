@@ -4,18 +4,21 @@ import (
 	"context"
 	"io"
 
-	"k8s-platform-backend/internal/legacy/service"
+	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
-type PodLogStreamRuntime struct{ service *service.K8sService }
+type PodLogStreamRuntime struct {
+	streams *kopsruntime.PodStreamOperations
+}
 
-func NewPodLogStreamRuntime(service *service.K8sService) *PodLogStreamRuntime {
-	return &PodLogStreamRuntime{service: service}
+func NewPodLogStreamRuntime(streams *kopsruntime.PodStreamOperations) *PodLogStreamRuntime {
+	return &PodLogStreamRuntime{streams: streams}
 }
 
 func (r *PodLogStreamRuntime) Stream(ctx context.Context, clusterID uint64, namespace, pod, container string, follow bool, tailLines int64, previous bool) (io.ReadCloser, error) {
-	if r == nil || r.service == nil {
-		return nil, service.ErrInvalidParams
+	if r == nil || r.streams == nil {
+		return nil, kopsapp.ErrConflict
 	}
-	return r.service.PodLogStream(ctx, clusterID, namespace, pod, container, follow, tailLines, previous)
+	return r.streams.PodLogStream(ctx, clusterID, namespace, pod, container, follow, tailLines, previous)
 }

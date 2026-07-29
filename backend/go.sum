@@ -30,12 +30,6 @@ github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d h1:UrqY+r/O
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d/go.mod h1:HI8ITrYtUY+O+ZhtlqUnD8+KwNPOyugEhfP9fdUIaEQ=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
-github.com/apenella/go-ansible v1.3.0 h1:INNaVzrgQMNIO9Yvnly6lA5KfN/pY3m1Z37gpmlUzPM=
-github.com/apenella/go-ansible v1.3.0/go.mod h1:qiLWolQqLkCoqFlPvdsKhxk7O0qjIBCPNhUKpH/vjaU=
-github.com/apenella/go-common-utils/data v0.0.0-20220913191136-86daaa87e7df h1:sEikY2P+NZK/7VZUwIsnXIGElhsuFDSxh1bZYwHxdcI=
-github.com/apenella/go-common-utils/data v0.0.0-20220913191136-86daaa87e7df/go.mod h1:cLVL6GjUiKG/WyBzX+KD6h/XRV/HnNZIZbMNNiBgQ9o=
-github.com/apenella/go-common-utils/error v0.0.0-20220913191136-86daaa87e7df h1:SvlYbjlsSQDS7hbVT1h012/zdgvcwWJ+Yd9XRiiY/8s=
-github.com/apenella/go-common-utils/error v0.0.0-20220913191136-86daaa87e7df/go.mod h1:+3dyIlHX350xJIUIffwMLswZXU+N2FwDE05VuKqxYdw=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 h1:DklsrG3dyBCFEj5IhUbnKptjxatkF07cF2ak3yi77so=
@@ -389,8 +383,6 @@ github.com/shopspring/decimal v1.4.0/go.mod h1:gawqmDU56v4yIKSwfBSFip1HdCCXN8/+D
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
-github.com/sosedoff/ansible-vault-go v0.2.0 h1:XqkBdqbXgTuFQ++NdrZvSdUTNozeb6S3V5x7FVs17vg=
-github.com/sosedoff/ansible-vault-go v0.2.0/go.mod h1:wMU54HNJfY0n0KIgbpA9m15NBfaUDlJrAsaZp0FwzkI=
 github.com/spf13/cast v1.7.0 h1:ntdiHjuueXFgm5nzDRdOS4yfT43P5Fnud6DH50rz/7w=
 github.com/spf13/cast v1.7.0/go.mod h1:ancEpBxwJDODSW/UG4rDrAqiKolqNNh2DX3mk86cAdo=
 github.com/spf13/cobra v1.8.1 h1:e5/vxKd/rZsfSJMUX1agtjeTDf+qv1/JdBF8gg5k9ZM=

@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"testing"
+	"time"
 )
 
 // ────────── deriveKey ──────────
@@ -122,5 +124,22 @@ func TestCrypto_TooShortCiphertext(t *testing.T) {
 	}
 	if !errors.Is(err, ErrCrypto) {
 		t.Errorf("error should be ErrCrypto, got %v", err)
+	}
+}
+
+func TestPermissionAuditCredentialStoreRoundTripAndDelete(t *testing.T) {
+	store := NewPermissionAuditCredentialStore(NoopCacheStore{}, "test-master-key")
+	ctx := context.Background()
+	if err := store.Put(ctx, 17, "credential", time.Minute); err != nil {
+		t.Fatal(err)
+	}
+	value, found, err := store.Get(ctx, 17)
+	if err != nil || !found || value != "credential" {
+		t.Fatalf("credential = (%q, %t, %v), want (credential, true, nil)", value, found, err)
+	}
+	store.Delete(ctx, 17)
+	_, found, err = store.Get(ctx, 17)
+	if err != nil || found {
+		t.Fatalf("credential after delete = (found=%t, err=%v), want (false, nil)", found, err)
 	}
 }

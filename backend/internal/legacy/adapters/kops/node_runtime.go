@@ -5,15 +5,21 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
 )
 
 var nodeGVR = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}
 
-type NodeRuntime struct{ service *service.K8sService }
+type NodeRuntime struct {
+	service    *service.K8sService
+	operations *kopsruntime.NodeOperations
+}
 
-func NewNodeRuntime(service *service.K8sService) *NodeRuntime { return &NodeRuntime{service: service} }
+func NewNodeRuntime(service *service.K8sService, operations *kopsruntime.NodeOperations) *NodeRuntime {
+	return &NodeRuntime{service: service, operations: operations}
+}
 
 func (r *NodeRuntime) List(ctx context.Context, query kopsapp.NodeListQuery) (any, error) {
 	if r == nil || r.service == nil {
@@ -49,10 +55,10 @@ func (r *NodeRuntime) YAML(ctx context.Context, ref kopsapp.NodeReference) (any,
 }
 
 func (r *NodeRuntime) Pods(ctx context.Context, ref kopsapp.NodeReference, sortBy, order string) (any, error) {
-	if r == nil || r.service == nil {
+	if r == nil || r.operations == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.service.ListPodsOnNode(ctx, ref.ClusterID, ref.Name, sortBy, order)
+	value, err := r.operations.ListPods(ctx, ref.ClusterID, ref.Name, sortBy, order)
 	if err != nil {
 		return nil, translateKopsRuntimeError(err)
 	}
@@ -60,10 +66,10 @@ func (r *NodeRuntime) Pods(ctx context.Context, ref kopsapp.NodeReference, sortB
 }
 
 func (r *NodeRuntime) Events(ctx context.Context, ref kopsapp.NodeReference) (any, error) {
-	if r == nil || r.service == nil {
+	if r == nil || r.operations == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.service.ListNodeEvents(ctx, ref.ClusterID, ref.Name)
+	value, err := r.operations.ListEvents(ctx, ref.ClusterID, ref.Name)
 	if err != nil {
 		return nil, translateKopsRuntimeError(err)
 	}
@@ -71,17 +77,17 @@ func (r *NodeRuntime) Events(ctx context.Context, ref kopsapp.NodeReference) (an
 }
 
 func (r *NodeRuntime) SetSchedulable(ctx context.Context, ref kopsapp.NodeReference, unschedulable bool) error {
-	if r == nil || r.service == nil {
+	if r == nil || r.operations == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.service.UpdateNodeSchedulable(ctx, ref.ClusterID, ref.Name, unschedulable))
+	return translateKopsRuntimeError(r.operations.SetSchedulable(ctx, ref.ClusterID, ref.Name, unschedulable))
 }
 
 func (r *NodeRuntime) Drain(ctx context.Context, input kopsapp.NodeDrainInput) error {
-	if r == nil || r.service == nil {
+	if r == nil || r.operations == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.service.DrainNode(ctx, input.ClusterID, input.Name, service.DrainNodeOptions{
+	return translateKopsRuntimeError(r.operations.Drain(ctx, input.ClusterID, input.Name, kopsruntime.NodeDrainOptions{
 		TimeoutSeconds: input.TimeoutSeconds, Force: input.Force, IgnoreDaemonSets: input.IgnoreDaemonSets,
 	}))
 }

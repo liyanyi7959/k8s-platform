@@ -98,7 +98,7 @@ func main() {
 	mailSvc := iamsmtp.NewMailService(cfg.Mail)
 	pwdResetSvc := iamapp.NewPasswordResetService(iamAuthRepository, iammysql.BcryptHasher{}, cacheStore, mailSvc)
 	// 内置初始化：首次启动自动创建管理员用户/角色/权限点，确保系统可登录可用。
-	if err := service.EnsureBuiltinRBAC(gdb, cfg.Auth.AdminUsername, cfg.Auth.AdminPassword); err != nil {
+	if err := iammysql.EnsureBuiltinRBAC(gdb, cfg.Auth.AdminUsername, cfg.Auth.AdminPassword); err != nil {
 		zap.L().Fatal("ensure_builtin_rbac_failed", zap.Error(err))
 	}
 	if err := iamAuthSvc.InvalidateRole(context.Background(), "admin"); err != nil {

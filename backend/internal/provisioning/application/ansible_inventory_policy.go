@@ -7,6 +7,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// KubernetesMinorVersion returns the major.minor component consumed by the
+// Ansible inventory and package-selection variables. Keeping this derivation
+// in Provisioning prevents transport adapters from owning deployment policy.
+func KubernetesMinorVersion(version string) string {
+	version = strings.TrimPrefix(strings.TrimSpace(version), "v")
+	parts := strings.Split(version, ".")
+	if len(parts) >= 2 {
+		return parts[0] + "." + parts[1]
+	}
+	return version
+}
+
 // InventoryHost is the transport-neutral host description used to render an
 // Ansible inventory. The runtime adapter owns credential lookup and temporary
 // private-key files; this policy deliberately only decides its YAML shape.

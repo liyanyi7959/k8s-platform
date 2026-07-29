@@ -14,6 +14,14 @@ func TestInventoryNodeAlias(t *testing.T) {
 	}
 }
 
+func TestKubernetesMinorVersion(t *testing.T) {
+	for input, want := range map[string]string{"v1.31.4": "1.31", "1.30.0": "1.30", "v1": "1"} {
+		if got := KubernetesMinorVersion(input); got != want {
+			t.Fatalf("KubernetesMinorVersion(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
 func TestMarshalAnsibleInventoryMasksSecrets(t *testing.T) {
 	content, err := MarshalAnsibleInventory(
 		[]InventoryHost{{Alias: "master01", IP: "192.0.2.10", SSHPort: 22, User: "ops", Password: "super-secret"}},

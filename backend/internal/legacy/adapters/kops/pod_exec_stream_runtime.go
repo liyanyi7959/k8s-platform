@@ -6,22 +6,25 @@ import (
 
 	"k8s.io/client-go/tools/remotecommand"
 
-	"k8s-platform-backend/internal/legacy/service"
+	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
-type PodExecStreamRuntime struct{ service *service.K8sService }
+type PodExecStreamRuntime struct {
+	streams *kopsruntime.PodStreamOperations
+}
 
-func NewPodExecStreamRuntime(service *service.K8sService) *PodExecStreamRuntime {
-	return &PodExecStreamRuntime{service: service}
+func NewPodExecStreamRuntime(streams *kopsruntime.PodStreamOperations) *PodExecStreamRuntime {
+	return &PodExecStreamRuntime{streams: streams}
 }
 
 func (r *PodExecStreamRuntime) Stream(ctx context.Context, clusterID uint64, namespace, pod string, container string, command []string, tty bool, stdin io.Reader, stdout, stderr io.Writer, resizeQueue remotecommand.TerminalSizeQueue) error {
-	if r == nil || r.service == nil {
-		return service.ErrInvalidParams
+	if r == nil || r.streams == nil {
+		return kopsapp.ErrConflict
 	}
 	var target *string
 	if container != "" {
 		target = &container
 	}
-	return r.service.PodExec(ctx, clusterID, namespace, pod, target, command, tty, stdin, stdout, stderr, resizeQueue)
+	return r.streams.PodExec(ctx, clusterID, namespace, pod, target, command, tty, stdin, stdout, stderr, resizeQueue)
 }

@@ -7,14 +7,18 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
 )
 
-type WorkloadRuntime struct{ service *service.K8sService }
+type WorkloadRuntime struct {
+	service    *service.K8sService
+	operations *kopsruntime.WorkloadOperations
+}
 
-func NewWorkloadRuntime(service *service.K8sService) *WorkloadRuntime {
-	return &WorkloadRuntime{service: service}
+func NewWorkloadRuntime(service *service.K8sService, operations *kopsruntime.WorkloadOperations) *WorkloadRuntime {
+	return &WorkloadRuntime{service: service, operations: operations}
 }
 
 func (r *WorkloadRuntime) List(ctx context.Context, query kopsapp.WorkloadQuery) (any, error) {
@@ -48,10 +52,10 @@ func (r *WorkloadRuntime) List(ctx context.Context, query kopsapp.WorkloadQuery)
 }
 
 func (r *WorkloadRuntime) History(ctx context.Context, ref kopsapp.WorkloadRef) (any, error) {
-	if r == nil || r.service == nil {
+	if r == nil || r.operations == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.service.RolloutHistory(ctx, ref.ClusterID, ref.Namespace, ref.Name, string(ref.Kind))
+	value, err := r.operations.RolloutHistory(ctx, ref.ClusterID, ref.Namespace, ref.Name, string(ref.Kind))
 	if err != nil {
 		return nil, translateKopsRuntimeError(err)
 	}
@@ -59,10 +63,10 @@ func (r *WorkloadRuntime) History(ctx context.Context, ref kopsapp.WorkloadRef) 
 }
 
 func (r *WorkloadRuntime) Undo(ctx context.Context, ref kopsapp.WorkloadRef, revision int) error {
-	if r == nil || r.service == nil {
+	if r == nil || r.operations == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.service.RolloutUndo(ctx, ref.ClusterID, ref.Namespace, ref.Name, string(ref.Kind), revision))
+	return translateKopsRuntimeError(r.operations.RolloutUndo(ctx, ref.ClusterID, ref.Namespace, ref.Name, string(ref.Kind), revision))
 }
 
 func (r *WorkloadRuntime) Patch(ctx context.Context, ref kopsapp.WorkloadRef, patch map[string]any) error {
@@ -77,17 +81,17 @@ func (r *WorkloadRuntime) Patch(ctx context.Context, ref kopsapp.WorkloadRef, pa
 }
 
 func (r *WorkloadRuntime) Image(ctx context.Context, input kopsapp.WorkloadImage) error {
-	if r == nil || r.service == nil {
+	if r == nil || r.operations == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.service.UpdateWorkloadImage(ctx, input.ClusterID, input.Namespace, input.Name, string(input.Kind), input.Container, input.Image))
+	return translateKopsRuntimeError(r.operations.UpdateWorkloadImage(ctx, input.ClusterID, input.Namespace, input.Name, string(input.Kind), input.Container, input.Image))
 }
 
 func (r *WorkloadRuntime) Pause(ctx context.Context, ref kopsapp.WorkloadRef, paused bool) error {
-	if r == nil || r.service == nil {
+	if r == nil || r.operations == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.service.UpdateWorkloadPaused(ctx, ref.ClusterID, ref.Namespace, ref.Name, string(ref.Kind), paused))
+	return translateKopsRuntimeError(r.operations.UpdateWorkloadPaused(ctx, ref.ClusterID, ref.Namespace, ref.Name, string(ref.Kind), paused))
 }
 
 func (r *WorkloadRuntime) Object(ctx context.Context, ref kopsapp.WorkloadRef) (map[string]any, error) {
@@ -154,12 +158,15 @@ func workloadGVR(kind kopsapp.WorkloadKind) (schema.GroupVersionResource, error)
 // API translation; risk policy and operation orchestration live in Kops.
 type ActionProposalRuntime struct {
 	k8s       *service.K8sService
+	nodes     *kopsruntime.NodeOperations
+	pods      *kopsruntime.PodOperations
+	workloads *kopsruntime.WorkloadOperations
 	batch     *BatchRuntime
 	manifests kopsapp.ManifestRuntime
 }
 
-func NewActionProposalRuntime(k8s *service.K8sService, manifests kopsapp.ManifestRuntime) *ActionProposalRuntime {
-	return &ActionProposalRuntime{k8s: k8s, batch: NewBatchRuntime(k8s), manifests: manifests}
+func NewActionProposalRuntime(k8s *service.K8sService, nodes *kopsruntime.NodeOperations, pods *kopsruntime.PodOperations, workloads *kopsruntime.WorkloadOperations, manifests kopsapp.ManifestRuntime) *ActionProposalRuntime {
+	return &ActionProposalRuntime{k8s: k8s, nodes: nodes, pods: pods, workloads: workloads, batch: NewBatchRuntime(k8s), manifests: manifests}
 }
 
 func (r *ActionProposalRuntime) Inspect(ctx context.Context, clusterID uint64, actionType string, target kopsapp.ActionProposalTarget) (map[string]any, error) {
@@ -201,24 +208,24 @@ func (r *ActionProposalRuntime) Scale(ctx context.Context, clusterID uint64, tar
 }
 
 func (r *ActionProposalRuntime) UpdateImage(ctx context.Context, clusterID uint64, target kopsapp.ActionProposalTarget, container, image string) error {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.workloads == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.k8s.UpdateWorkloadImage(ctx, clusterID, target.Namespace, target.Name, target.Kind, container, image))
+	return translateKopsRuntimeError(r.workloads.UpdateWorkloadImage(ctx, clusterID, target.Namespace, target.Name, target.Kind, container, image))
 }
 
 func (r *ActionProposalRuntime) Pause(ctx context.Context, clusterID uint64, target kopsapp.ActionProposalTarget, paused bool) error {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.workloads == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.k8s.UpdateWorkloadPaused(ctx, clusterID, target.Namespace, target.Name, target.Kind, paused))
+	return translateKopsRuntimeError(r.workloads.UpdateWorkloadPaused(ctx, clusterID, target.Namespace, target.Name, target.Kind, paused))
 }
 
 func (r *ActionProposalRuntime) Undo(ctx context.Context, clusterID uint64, target kopsapp.ActionProposalTarget, revision int) error {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.workloads == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.k8s.RolloutUndo(ctx, clusterID, target.Namespace, target.Name, target.Kind, revision))
+	return translateKopsRuntimeError(r.workloads.RolloutUndo(ctx, clusterID, target.Namespace, target.Name, target.Kind, revision))
 }
 
 func (r *ActionProposalRuntime) DeleteWorkload(ctx context.Context, clusterID uint64, target kopsapp.ActionProposalTarget) error {
@@ -248,24 +255,24 @@ func (r *ActionProposalRuntime) DeleteResource(ctx context.Context, clusterID ui
 }
 
 func (r *ActionProposalRuntime) DeletePod(ctx context.Context, clusterID uint64, target kopsapp.ActionProposalTarget, force bool) error {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.pods == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.k8s.DeletePod(ctx, clusterID, target.Namespace, target.Name, force))
+	return translateKopsRuntimeError(r.pods.Delete(ctx, clusterID, target.Namespace, target.Name, force))
 }
 
 func (r *ActionProposalRuntime) SetNodeSchedulable(ctx context.Context, clusterID uint64, name string, unschedulable bool) error {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.nodes == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.k8s.UpdateNodeSchedulable(ctx, clusterID, name, unschedulable))
+	return translateKopsRuntimeError(r.nodes.SetSchedulable(ctx, clusterID, name, unschedulable))
 }
 
 func (r *ActionProposalRuntime) DrainNode(ctx context.Context, clusterID uint64, name string, options kopsapp.ActionProposalDrainOptions) error {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.nodes == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.k8s.DrainNode(ctx, clusterID, name, service.DrainNodeOptions{TimeoutSeconds: options.TimeoutSeconds, Force: options.Force, IgnoreDaemonSets: options.IgnoreDaemonSets}))
+	return translateKopsRuntimeError(r.nodes.Drain(ctx, clusterID, name, kopsruntime.NodeDrainOptions{TimeoutSeconds: options.TimeoutSeconds, Force: options.Force, IgnoreDaemonSets: options.IgnoreDaemonSets}))
 }
 
 func (r *ActionProposalRuntime) TriggerCronJob(ctx context.Context, clusterID uint64, target kopsapp.ActionProposalTarget) (string, error) {

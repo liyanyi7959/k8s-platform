@@ -347,20 +347,9 @@ func appendActionProposalMessage(tx *gorm.DB, conversationID, userID uint64, tit
 func appendActionExecutionMessage(tx *gorm.DB, conversationID, userID uint64, title, status, summary string) error {
 	return tx.Create(&domain.AIMessage{
 		ConversationID: conversationID, Role: "system", MessageType: "action_execution",
-		Content: fmt.Sprintf("变更提案执行%s：%s\n%s", actionExecutionStatusLabel(status), strings.TrimSpace(title), strings.TrimSpace(summary)),
+		Content: fmt.Sprintf("变更提案执行%s：%s\n%s", ActionExecutionStatusLabel(status), strings.TrimSpace(title), strings.TrimSpace(summary)),
 		Status:  "created", CreatedBy: userID,
 	}).Error
-}
-
-func actionExecutionStatusLabel(status string) string {
-	switch strings.ToLower(strings.TrimSpace(status)) {
-	case "succeeded":
-		return "成功"
-	case "failed":
-		return "失败"
-	default:
-		return "完成"
-	}
 }
 
 func actionErrorMessage(err error) string {

@@ -4,9 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
+	corev1 "k8s.io/api/core/v1"
+	apiresource "k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type StorageRuntime struct{ service *service.K8sService }
@@ -66,7 +72,42 @@ func (r *StorageRuntime) CreatePVC(ctx context.Context, input kopsapp.CreatePVCI
 	if r == nil || r.service == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.service.CreatePVC(ctx, input.ClusterID, service.CreatePVCInput{Namespace: input.Namespace, Name: input.Name, StorageClass: input.StorageClass, AccessModes: input.AccessModes, Capacity: input.Capacity}))
+	client, err := r.service.TypedClient(ctx, input.ClusterID)
+	if err != nil {
+		return translateKopsRuntimeError(err)
+	}
+	quantity, err := apiresource.ParseQuantity(input.Capacity)
+	if err != nil || quantity.Sign() <= 0 {
+		return kopsapp.ErrInvalidParams
+	}
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{Name: strings.TrimSpace(input.Name), Namespace: strings.TrimSpace(input.Namespace)},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: pvcAccessModes(input.AccessModes),
+			Resources:   corev1.VolumeResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceStorage: quantity}},
+		},
+	}
+	if storageClass := strings.TrimSpace(input.StorageClass); storageClass != "" {
+		pvc.Spec.StorageClassName = &storageClass
+	}
+	_, err = client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(ctx, pvc, metav1.CreateOptions{})
+	return translateKopsRuntimeError(service.NormalizeKubernetesError(err))
+}
+
+func pvcAccessModes(values []string) []corev1.PersistentVolumeAccessMode {
+	if len(values) == 0 {
+		return []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
+	}
+	modes := make([]corev1.PersistentVolumeAccessMode, 0, len(values))
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			modes = append(modes, corev1.PersistentVolumeAccessMode(value))
+		}
+	}
+	if len(modes) == 0 {
+		return []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
+	}
+	return modes
 }
 func (r *StorageRuntime) Supports(ctx context.Context, clusterID uint64, capability kopsapp.StorageCapability) (bool, error) {
 	if r == nil || r.service == nil {

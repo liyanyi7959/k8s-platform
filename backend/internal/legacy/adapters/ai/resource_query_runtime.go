@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -12,12 +13,28 @@ import (
 	"k8s-platform-backend/internal/legacy/service"
 )
 
+// NodeEventReader keeps node-event selection in the Kops infrastructure
+// adapter while letting AI retain its own resource-query port.
+type NodeEventReader interface {
+	ListEvents(context.Context, uint64, string) ([]any, error)
+}
+
+// PodLogReader keeps log streaming transport in the Kops infrastructure
+// adapter while AI only depends on its resource-query port.
+type PodLogReader interface {
+	PodLogs(context.Context, uint64, string, string, string, int64, bool) (string, error)
+}
+
 // ResourceQueryRuntime adapts the retained Kubernetes transport to AI's
 // resource-query port. Query orchestration stays in ai/application.
-type ResourceQueryRuntime struct{ k8s *service.K8sService }
+type ResourceQueryRuntime struct {
+	k8s        *service.K8sService
+	nodeEvents NodeEventReader
+	podLogs    PodLogReader
+}
 
-func NewResourceQueryRuntime(k8s *service.K8sService) *ResourceQueryRuntime {
-	return &ResourceQueryRuntime{k8s: k8s}
+func NewResourceQueryRuntime(k8s *service.K8sService, nodeEvents NodeEventReader, podLogs PodLogReader) *ResourceQueryRuntime {
+	return &ResourceQueryRuntime{k8s: k8s, nodeEvents: nodeEvents, podLogs: podLogs}
 }
 
 func (r *ResourceQueryRuntime) List(ctx context.Context, clusterID uint64, resource aiapp.ResourceReference, namespace, sortBy, order string, options map[string]string) ([]map[string]any, error) {
@@ -39,10 +56,10 @@ func (r *ResourceQueryRuntime) Get(ctx context.Context, clusterID uint64, resour
 }
 
 func (r *ResourceQueryRuntime) ListNodeEvents(ctx context.Context, clusterID uint64, name string) ([]map[string]any, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.nodeEvents == nil {
 		return nil, aiapp.ErrConflict
 	}
-	items, err := r.k8s.ListNodeEvents(ctx, clusterID, name)
+	items, err := r.nodeEvents.ListEvents(ctx, clusterID, name)
 	if err != nil {
 		return nil, err
 	}
@@ -50,10 +67,10 @@ func (r *ResourceQueryRuntime) ListNodeEvents(ctx context.Context, clusterID uin
 }
 
 func (r *ResourceQueryRuntime) PodLogs(ctx context.Context, clusterID uint64, namespace, pod, container string, tailLines int64, previous bool) (string, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.podLogs == nil {
 		return "", aiapp.ErrConflict
 	}
-	return r.k8s.PodLogs(ctx, clusterID, namespace, pod, container, tailLines, previous)
+	return r.podLogs.PodLogs(ctx, clusterID, namespace, pod, container, tailLines, previous)
 }
 
 func resourceGVR(resource aiapp.ResourceReference) schema.GroupVersionResource {
@@ -85,6 +102,18 @@ func (ResourceQueryPresenter) ListItemSummary(kind string, object map[string]any
 	case "pod":
 		return aidomain.JSONMap(kopsapp.BuildInspectionPodOverview(object))
 	default:
-		return aidomain.JSONMap(kopsapp.BuildInspectionResourceOverview(resourceKind, service.AIObjectMetaString(object, "namespace"), service.AIObjectMetaString(object, "name"), object))
+		return aidomain.JSONMap(kopsapp.BuildInspectionResourceOverview(resourceKind, objectMetaString(object, "namespace"), objectMetaString(object, "name"), object))
 	}
+}
+
+func objectMetaString(item any, key string) string {
+	object, ok := item.(map[string]any)
+	if !ok {
+		return ""
+	}
+	metadata, ok := object["metadata"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(metadata[key]))
 }

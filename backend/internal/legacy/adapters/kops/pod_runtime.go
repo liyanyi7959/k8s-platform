@@ -2,14 +2,22 @@ package kops
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type PodRuntime struct{ service *service.K8sService }
+type PodRuntime struct {
+	service    *service.K8sService
+	operations *kopsruntime.PodOperations
+	streams    *kopsruntime.PodStreamOperations
+}
 
-func NewPodRuntime(service *service.K8sService) *PodRuntime { return &PodRuntime{service: service} }
+func NewPodRuntime(service *service.K8sService, operations *kopsruntime.PodOperations, streams *kopsruntime.PodStreamOperations) *PodRuntime {
+	return &PodRuntime{service: service, operations: operations, streams: streams}
+}
 func (r *PodRuntime) List(ctx context.Context, query kopsapp.PodListQuery) (any, error) {
 	if r == nil || r.service == nil {
 		return nil, kopsapp.ErrConflict
@@ -45,20 +53,20 @@ func (r *PodRuntime) YAML(ctx context.Context, ref kopsapp.PodReference) (any, e
 	return map[string]string{"text": value}, nil
 }
 func (r *PodRuntime) Logs(ctx context.Context, input kopsapp.PodLogsInput) (any, error) {
-	if r == nil || r.service == nil {
+	if r == nil || r.streams == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.service.PodLogs(ctx, input.ClusterID, input.Namespace, input.Name, input.Container, input.TailLines, input.Previous)
+	value, err := r.streams.PodLogs(ctx, input.ClusterID, input.Namespace, input.Name, input.Container, input.TailLines, input.Previous)
 	if err != nil {
 		return nil, translateKopsRuntimeError(err)
 	}
 	return map[string]string{"text": value}, nil
 }
 func (r *PodRuntime) Delete(ctx context.Context, ref kopsapp.PodReference, force bool) error {
-	if r == nil || r.service == nil {
+	if r == nil || r.operations == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.service.DeletePod(ctx, ref.ClusterID, ref.Namespace, ref.Name, force))
+	return translateKopsRuntimeError(r.operations.Delete(ctx, ref.ClusterID, ref.Namespace, ref.Name, force))
 }
 
 var podGVR = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}

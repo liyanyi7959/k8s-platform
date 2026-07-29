@@ -6,6 +6,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/service"
 )
@@ -14,28 +15,30 @@ import (
 // Namespace diagnosis remains a separate transitional service; all object,
 // event, metric and log access is delegated directly to K8sService here.
 type InspectionRuntime struct {
-	k8s       *service.K8sService
-	namespace *service.NamespaceDiagnosisService
+	k8s              *service.K8sService
+	nodes            *kopsruntime.NodeOperations
+	workloadsRuntime *kopsruntime.WorkloadOperations
+	podStreams       *kopsruntime.PodStreamOperations
+	namespace        kopsapp.NamespaceDiagnosisReader
+	workloads        kopsapp.NamespaceWorkloadReader
 }
 
-func NewInspectionRuntime(k8s *service.K8sService, namespace *service.NamespaceDiagnosisService) *InspectionRuntime {
-	return &InspectionRuntime{k8s: k8s, namespace: namespace}
+func NewInspectionRuntime(k8s *service.K8sService, nodes *kopsruntime.NodeOperations, workloadsRuntime *kopsruntime.WorkloadOperations, podStreams *kopsruntime.PodStreamOperations, namespace kopsapp.NamespaceDiagnosisReader, workloads kopsapp.NamespaceWorkloadReader) *InspectionRuntime {
+	return &InspectionRuntime{k8s: k8s, nodes: nodes, workloadsRuntime: workloadsRuntime, podStreams: podStreams, namespace: namespace, workloads: workloads}
 }
 
 func (r *InspectionRuntime) Namespace(ctx context.Context, clusterID uint64, namespace string) (any, error) {
 	if r == nil || r.namespace == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.namespace.GetNamespaceInspection(ctx, clusterID, namespace)
-	return value, translateKopsRuntimeError(err)
+	return r.namespace.NamespaceInspection(ctx, clusterID, namespace)
 }
 
 func (r *InspectionRuntime) NamespaceWorkloadInventory(ctx context.Context, clusterID uint64, namespace string) (any, error) {
-	if r == nil || r.namespace == nil {
+	if r == nil || r.workloads == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.namespace.GetNamespaceWorkloadInventory(ctx, clusterID, namespace)
-	return value, translateKopsRuntimeError(err)
+	return r.workloads.NamespaceWorkloadInventory(ctx, clusterID, namespace)
 }
 
 func (r *InspectionRuntime) Object(ctx context.Context, ref kopsapp.InspectionResourceReference) (map[string]any, error) {
@@ -63,18 +66,18 @@ func (r *InspectionRuntime) YAML(ctx context.Context, ref kopsapp.InspectionReso
 }
 
 func (r *InspectionRuntime) NodeEvents(ctx context.Context, clusterID uint64, name string) ([]any, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.nodes == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.k8s.ListNodeEvents(ctx, clusterID, name)
+	value, err := r.nodes.ListEvents(ctx, clusterID, name)
 	return value, translateKopsRuntimeError(err)
 }
 
 func (r *InspectionRuntime) RolloutHistory(ctx context.Context, ref kopsapp.InspectionResourceReference) ([]any, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.workloadsRuntime == nil {
 		return nil, kopsapp.ErrConflict
 	}
-	value, err := r.k8s.RolloutHistory(ctx, ref.ClusterID, ref.Namespace, ref.Name, ref.Kind)
+	value, err := r.workloadsRuntime.RolloutHistory(ctx, ref.ClusterID, ref.Namespace, ref.Name, ref.Kind)
 	if err != nil {
 		return nil, translateKopsRuntimeError(err)
 	}
@@ -108,10 +111,10 @@ func (r *InspectionRuntime) List(ctx context.Context, clusterID uint64, kind, na
 }
 
 func (r *InspectionRuntime) PodLogs(ctx context.Context, clusterID uint64, namespace, name string, tailLines int64) (string, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.podStreams == nil {
 		return "", kopsapp.ErrConflict
 	}
-	value, err := r.k8s.PodLogs(ctx, clusterID, namespace, name, "", tailLines, false)
+	value, err := r.podStreams.PodLogs(ctx, clusterID, namespace, name, "", tailLines, false)
 	return value, translateKopsRuntimeError(err)
 }
 

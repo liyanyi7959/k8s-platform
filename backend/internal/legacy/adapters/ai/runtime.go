@@ -6,16 +6,15 @@ import (
 	"strings"
 
 	aiapp "k8s-platform-backend/internal/ai/application"
-	aidomain "k8s-platform-backend/internal/ai/domain"
 	"k8s-platform-backend/internal/fleet/ports"
 	"k8s-platform-backend/internal/legacy/service"
 )
 
 type Runtime struct {
 	conversations *aiapp.ConversationDetailService
-	chat          *service.AIChatService
-	tools         *service.AIToolService
-	actions       *service.AIActionService
+	chat          *ChatRuntime
+	tools         *AIToolService
+	actions       *ActionRuntime
 }
 
 // ClusterReadPort adapts the Fleet dashboard read model to the AI application
@@ -34,7 +33,7 @@ func (p *ClusterReadPort) ClusterCertificateRisks(ctx context.Context, clusterID
 	return p.dashboard.GetClusterCertificateRisks(ctx, clusterID)
 }
 
-func NewRuntime(conversations *aiapp.ConversationDetailService, chat *service.AIChatService, tools *service.AIToolService, actions *service.AIActionService) *Runtime {
+func NewRuntime(conversations *aiapp.ConversationDetailService, chat *ChatRuntime, tools *AIToolService, actions *ActionRuntime) *Runtime {
 	return &Runtime{conversations: conversations, chat: chat, tools: tools, actions: actions}
 }
 
@@ -62,7 +61,7 @@ func (r *Runtime) SendMessage(ctx context.Context, userID uint64, username strin
 	if r == nil || r.chat == nil {
 		return nil, aiapp.ErrConflict
 	}
-	value, err := r.chat.SendMessage(ctx, userID, username, runtimeChatRequest(input))
+	value, err := r.chat.SendMessage(ctx, userID, username, input)
 	return value, translateRuntimeError(err)
 }
 
@@ -70,23 +69,14 @@ func (r *Runtime) SendChatStream(ctx context.Context, userID uint64, username st
 	if r == nil || r.chat == nil {
 		return aiapp.ErrConflict
 	}
-	return translateRuntimeError(r.chat.SendChatStream(ctx, userID, username, runtimeChatRequest(input), func(chunk service.AIStreamChunk) {
-		emit(aiapp.RuntimeStreamChunk{Type: chunk.Type, Content: chunk.Content, Error: chunk.Error, Progress: chunk.Progress})
-	}))
+	return translateRuntimeError(r.chat.SendChatStream(ctx, userID, username, input, emit))
 }
 
 func (r *Runtime) CreateProposal(ctx context.Context, clusterID, userID uint64, username string, input aiapp.CreateActionProposalRequest) (any, error) {
 	if r == nil || r.actions == nil {
 		return nil, aiapp.ErrConflict
 	}
-	value, err := r.actions.CreateProposal(ctx, clusterID, userID, username, service.CreateAIActionProposalRequest{
-		ConversationID: input.ConversationID,
-		MessageID:      input.MessageID,
-		ProposalType:   input.ProposalType,
-		TargetResource: service.AIActionTargetResource{Kind: input.TargetResource.Kind, Namespace: input.TargetResource.Namespace, Name: input.TargetResource.Name},
-		Payload:        aidomain.JSONMap(input.Payload),
-		Reason:         input.Reason,
-	})
+	value, err := r.actions.CreateProposal(ctx, clusterID, userID, username, input)
 	return value, translateRuntimeError(err)
 }
 
@@ -94,25 +84,8 @@ func (r *Runtime) ConfirmProposal(ctx context.Context, clusterID, proposalID, us
 	if r == nil || r.actions == nil {
 		return nil, aiapp.ErrConflict
 	}
-	value, err := r.actions.ConfirmProposal(ctx, clusterID, proposalID, userID, username, service.ConfirmAIActionProposalRequest{
-		ConfirmationText: input.ConfirmationText,
-		ConfirmRisk:      input.ConfirmRisk,
-		OperatorComment:  input.OperatorComment,
-	})
+	value, err := r.actions.ConfirmProposal(ctx, clusterID, proposalID, userID, username, input)
 	return value, translateRuntimeError(err)
-}
-
-func runtimeChatRequest(input aiapp.RuntimeChatRequest) service.AIChatRequest {
-	images := make([]service.AIChatImageInput, len(input.Images))
-	for index, image := range input.Images {
-		images[index] = service.AIChatImageInput{Name: image.Name, ContentType: image.ContentType, DataURL: image.DataURL, Size: image.Size}
-	}
-	return service.AIChatRequest{
-		ClusterID: input.ClusterID, ConversationID: input.ConversationID, Message: input.Message, AssistantMode: input.AssistantMode,
-		ProviderID: input.ProviderID, ModelID: input.ModelID, PreferModel: input.PreferModel, Namespace: input.Namespace,
-		ResourceKind: input.ResourceKind, ResourceName: input.ResourceName, Images: images, Uploads: input.Uploads,
-		UserPerms: append([]string(nil), input.UserPerms...),
-	}
 }
 
 func translateRuntimeError(err error) error {

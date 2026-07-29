@@ -216,8 +216,7 @@ func normalizePermissionAuditListQuery(query PermissionAuditListQuery) Permissio
 	query.Status = strings.TrimSpace(query.Status)
 	query.RiskLevel = strings.TrimSpace(query.RiskLevel)
 	query.Keyword = strings.TrimSpace(query.Keyword)
-	query.SortBy = strings.TrimSpace(query.SortBy)
-	query.Order = strings.TrimSpace(query.Order)
+	query.SortBy, query.Order = NormalizePermissionAuditListSort(query.SortBy, query.Order)
 	return query
 }
 
@@ -238,8 +237,7 @@ func normalizePermissionAuditFindingsQuery(query PermissionAuditFindingsQuery) P
 	query.Namespace = strings.TrimSpace(query.Namespace)
 	query.Kind = strings.TrimSpace(query.Kind)
 	query.Keyword = strings.TrimSpace(query.Keyword)
-	query.SortBy = strings.TrimSpace(query.SortBy)
-	query.Order = strings.TrimSpace(query.Order)
+	query.SortBy, query.Order = NormalizePermissionAuditFindingSort(query.SortBy, query.Order)
 	return query
 }
 

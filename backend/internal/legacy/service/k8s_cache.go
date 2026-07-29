@@ -2,10 +2,8 @@ package service
 
 import (
 	"context"
-	"crypto/sha1"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -15,36 +13,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
+
+	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
 // ---------------------------------------------------------------------------
 // Constants & shared types for caching
 // ---------------------------------------------------------------------------
 
-const informerSyncTimeout = 12 * time.Second
-const informerBackoffBase = 15 * time.Second
-const informerBackoffMax = 5 * time.Minute
-
 type cacheBackoffState struct {
 	fails int
 	next  time.Time
-}
-
-func backoffDuration(fails int) time.Duration {
-	if fails <= 0 {
-		return informerBackoffBase
-	}
-	d := informerBackoffBase
-	for i := 1; i < fails; i++ {
-		d *= 2
-		if d >= informerBackoffMax {
-			return informerBackoffMax
-		}
-	}
-	if d > informerBackoffMax {
-		d = informerBackoffMax
-	}
-	return d
 }
 
 func safeClose(ch chan struct{}) {
@@ -133,7 +112,7 @@ func (m *objCacheManager) recordFailure(clusterID uint64, kind string) {
 		per[kind] = st
 	}
 	st.fails++
-	st.next = now.Add(backoffDuration(st.fails))
+	st.next = now.Add(kopsapp.InformerBackoffDelay(st.fails))
 }
 
 func (m *objCacheManager) resetBackoff(clusterID uint64, kind string) {
@@ -254,7 +233,7 @@ func (s *K8sService) getOrStartObjCache(ctx context.Context, clusterID uint64, k
 				s.objCache.mu.Unlock()
 				s.startObjAllRedisRefresher(clusterID, entry, stopCh)
 			}
-		case <-time.After(informerSyncTimeout):
+		case <-time.After(kopsapp.InformerSyncTimeout):
 			s.objCache.mu.Lock()
 			s.objCache.recordFailure(clusterID, k)
 			s.objCache.removeEntry(clusterID, k, entry)
@@ -274,13 +253,7 @@ func (s *K8sService) startObjAllRedisRefresher(clusterID uint64, entry *objCache
 	if ttl <= 0 {
 		ttl = 20 * time.Second
 	}
-	interval := ttl / 2
-	if interval < 2*time.Second {
-		interval = 2 * time.Second
-	}
-	if interval > 10*time.Second {
-		interval = 10 * time.Second
-	}
+	interval := kopsapp.InformerRefreshInterval(ttl)
 
 	go func() {
 		ticker := time.NewTicker(interval)
@@ -294,82 +267,79 @@ func (s *K8sService) startObjAllRedisRefresher(clusterID uint64, entry *objCache
 					continue
 				}
 				switch entry.kind {
-				case "deployments":
-					items := deploymentsFromInformerStore(entry.informer)
-					if len(items) == 0 {
-						continue
-					}
-					arr := make([]appsv1.Deployment, 0, len(items))
-					for _, it := range items {
-						if it != nil {
-							arr = append(arr, *it)
-						}
-					}
-					b, err := json.Marshal(arr)
-					if err != nil || len(b) == 0 {
-						continue
-					}
-					wctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-					_ = s.cache.Set(wctx, s.objAllCacheKey(clusterID, entry.kind), b, ttl)
-					cancel()
-				case "statefulsets":
-					items := statefulSetsFromInformerStore(entry.informer)
-					if len(items) == 0 {
-						continue
-					}
-					arr := make([]appsv1.StatefulSet, 0, len(items))
-					for _, it := range items {
-						if it != nil {
-							arr = append(arr, *it)
-						}
-					}
-					b, err := json.Marshal(arr)
-					if err != nil || len(b) == 0 {
-						continue
-					}
-					wctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-					_ = s.cache.Set(wctx, s.objAllCacheKey(clusterID, entry.kind), b, ttl)
-					cancel()
-				case "configmaps":
-					items := configMapsFromInformerStore(entry.informer)
-					if len(items) == 0 {
-						continue
-					}
-					arr := make([]corev1.ConfigMap, 0, len(items))
-					for _, it := range items {
-						if it != nil {
-							arr = append(arr, *it)
-						}
-					}
-					b, err := json.Marshal(arr)
-					if err != nil || len(b) == 0 {
-						continue
-					}
-					wctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-					_ = s.cache.Set(wctx, s.objAllCacheKey(clusterID, entry.kind), b, ttl)
-					cancel()
-				case "secrets":
-					items := secretsFromInformerStore(entry.informer)
-					if len(items) == 0 {
-						continue
-					}
-					arr := make([]corev1.Secret, 0, len(items))
-					for _, it := range items {
-						if it != nil {
-							arr = append(arr, *it)
-						}
-					}
-					b, err := json.Marshal(arr)
-					if err != nil || len(b) == 0 {
-						continue
-					}
-					wctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-					_ = s.cache.Set(wctx, s.objAllCacheKey(clusterID, entry.kind), b, ttl)
-					cancel()
+				case "deployments", "statefulsets", "configmaps", "secrets":
+					s.refreshTypedObjectSnapshot(clusterID, entry.kind, entry.informer, ttl)
 				}
 			}
 		}
 	}()
+}
+
+// refreshTypedObjectSnapshot keeps the retained cache transport responsible
+// only for informer snapshots. Read selection, filtering and Secret masking
+// are owned by the Kops cached-configuration runtime.
+func (s *K8sService) refreshTypedObjectSnapshot(clusterID uint64, kind string, informer cache.SharedIndexInformer, ttl time.Duration) {
+	if s == nil || s.cache == nil || informer == nil || clusterID == 0 {
+		return
+	}
+	objects := informer.GetStore().List()
+	if len(objects) == 0 {
+		return
+	}
+	var (
+		payload []byte
+		err     error
+	)
+	switch kind {
+	case "configmaps":
+		items := make([]corev1.ConfigMap, 0, len(objects))
+		for _, object := range objects {
+			if item, ok := object.(*corev1.ConfigMap); ok && item != nil {
+				items = append(items, *item.DeepCopy())
+			}
+		}
+		payload, err = json.Marshal(items)
+	case "secrets":
+		items := make([]corev1.Secret, 0, len(objects))
+		for _, object := range objects {
+			if item, ok := object.(*corev1.Secret); ok && item != nil {
+				items = append(items, *item.DeepCopy())
+			}
+		}
+		payload, err = json.Marshal(items)
+	case "deployments":
+		items := make([]appsv1.Deployment, 0, len(objects))
+		for _, object := range objects {
+			if item, ok := object.(*appsv1.Deployment); ok && item != nil {
+				items = append(items, *item.DeepCopy())
+			}
+		}
+		payload, err = json.Marshal(items)
+	case "statefulsets":
+		items := make([]appsv1.StatefulSet, 0, len(objects))
+		for _, object := range objects {
+			if item, ok := object.(*appsv1.StatefulSet); ok && item != nil {
+				items = append(items, *item.DeepCopy())
+			}
+		}
+		payload, err = json.Marshal(items)
+	case "pods":
+		items := make([]corev1.Pod, 0, len(objects))
+		for _, object := range objects {
+			if item, ok := object.(*corev1.Pod); ok && item != nil {
+				items = append(items, *item.DeepCopy())
+			}
+		}
+		payload, err = json.Marshal(items)
+	default:
+		return
+	}
+	if err != nil || len(payload) == 0 {
+		return
+	}
+	writeContext, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	_ = s.cache.Set(writeContext, kopsapp.ObjectListCacheKey(clusterID, kind), payload, ttl)
+	cancel()
 }
 
 // ---------------------------------------------------------------------------
@@ -439,7 +409,7 @@ func (m *podCacheManager) recordFailure(clusterID uint64) {
 		m.backoff[clusterID] = st
 	}
 	st.fails++
-	st.next = time.Now().Add(backoffDuration(st.fails))
+	st.next = time.Now().Add(kopsapp.InformerBackoffDelay(st.fails))
 }
 
 func (m *podCacheManager) resetBackoff(clusterID uint64) {
@@ -507,7 +477,7 @@ func (s *K8sService) getOrStartPodCache(ctx context.Context, clusterID uint64) (
 				s.podCache.mu.Unlock()
 				s.startPodsAllRedisRefresher(clusterID, entry, stopCh)
 			}
-		case <-time.After(informerSyncTimeout):
+		case <-time.After(kopsapp.InformerSyncTimeout):
 			s.podCache.mu.Lock()
 			s.podCache.recordFailure(clusterID)
 			if cur := s.podCache.clusters[clusterID]; cur == entry {
@@ -529,13 +499,7 @@ func (s *K8sService) startPodsAllRedisRefresher(clusterID uint64, entry *podCach
 	if ttl <= 0 {
 		ttl = 20 * time.Second
 	}
-	interval := ttl / 2
-	if interval < 2*time.Second {
-		interval = 2 * time.Second
-	}
-	if interval > 10*time.Second {
-		interval = 10 * time.Second
-	}
+	interval := kopsapp.InformerRefreshInterval(ttl)
 
 	go func() {
 		ticker := time.NewTicker(interval)
@@ -548,59 +512,8 @@ func (s *K8sService) startPodsAllRedisRefresher(clusterID uint64, entry *podCach
 				if !entry.informer.HasSynced() {
 					continue
 				}
-				pods := podsFromInformerStore(entry.informer)
-				if len(pods) == 0 {
-					continue
-				}
-				arr := make([]corev1.Pod, 0, len(pods))
-				for _, p := range pods {
-					if p != nil {
-						arr = append(arr, *p)
-					}
-				}
-				b, err := json.Marshal(arr)
-				if err != nil || len(b) == 0 {
-					continue
-				}
-				wctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-				_ = s.cache.Set(wctx, s.podsAllCacheKey(clusterID), b, ttl)
-				cancel()
+				s.refreshTypedObjectSnapshot(clusterID, "pods", entry.informer, ttl)
 			}
 		}
 	}()
-}
-
-// ---------------------------------------------------------------------------
-// Cache key helpers
-// ---------------------------------------------------------------------------
-
-func (s *K8sService) objAllCacheKey(clusterID uint64, kind string) string {
-	k := strings.TrimSpace(kind)
-	if k == "" {
-		k = "unknown"
-	}
-	k = strings.ReplaceAll(k, ":", "_")
-	return fmt.Sprintf("k8s:v1:cluster:%d:%s_all", clusterID, k)
-}
-
-func (s *K8sService) podsAllCacheKey(clusterID uint64) string {
-	return fmt.Sprintf("k8s:v1:cluster:%d:pods_all", clusterID)
-}
-
-func (s *K8sService) podsListCacheKey(clusterID uint64, namespace string, labelSelector string) string {
-	ns := strings.TrimSpace(namespace)
-	ls := strings.TrimSpace(labelSelector)
-	if ns == "" && ls == "" {
-		return s.podsAllCacheKey(clusterID)
-	}
-	if ns == "" {
-		ns = "_all"
-	}
-	ns = strings.ReplaceAll(ns, ":", "_")
-	lsKey := "none"
-	if ls != "" {
-		sum := sha1.Sum([]byte(ls))
-		lsKey = fmt.Sprintf("%x", sum[:])
-	}
-	return fmt.Sprintf("k8s:v1:cluster:%d:pods:ns:%s:ls:%s", clusterID, ns, lsKey)
 }

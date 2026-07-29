@@ -2,18 +2,16 @@ package ai
 
 import (
 	"context"
-
-	"k8s-platform-backend/internal/legacy/service"
 )
 
 // ConversationProjection adapts the remaining legacy tool/action projections
 // to the AI application's read-only conversation-detail port.
 type ConversationProjection struct {
-	tools   *service.AIToolService
-	actions *service.AIActionService
+	tools   *AIToolService
+	actions *ActionRuntime
 }
 
-func NewConversationProjection(tools *service.AIToolService, actions *service.AIActionService) *ConversationProjection {
+func NewConversationProjection(tools *AIToolService, actions *ActionRuntime) *ConversationProjection {
 	return &ConversationProjection{tools: tools, actions: actions}
 }
 

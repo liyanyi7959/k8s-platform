@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	kopsdomain "k8s-platform-backend/internal/kops/domain"
 	"k8s-platform-backend/internal/legacy/service"
@@ -26,11 +27,12 @@ type ManifestRuntime struct {
 
 type NamespaceRuntime struct {
 	k8s     *service.K8sService
+	nodes   *kopsruntime.NodeOperations
 	summary kopsapp.NamespaceResourceSummaryReader
 }
 
-func NewNamespaceRuntime(k8s *service.K8sService, summary kopsapp.NamespaceResourceSummaryReader) *NamespaceRuntime {
-	return &NamespaceRuntime{k8s: k8s, summary: summary}
+func NewNamespaceRuntime(k8s *service.K8sService, nodes *kopsruntime.NodeOperations, summary kopsapp.NamespaceResourceSummaryReader) *NamespaceRuntime {
+	return &NamespaceRuntime{k8s: k8s, nodes: nodes, summary: summary}
 }
 func (r *NamespaceRuntime) List(ctx context.Context, clusterID uint64, sortBy, order string) (any, error) {
 	if r == nil || r.k8s == nil {
@@ -43,10 +45,10 @@ func (r *NamespaceRuntime) List(ctx context.Context, clusterID uint64, sortBy, o
 	return map[string]any{"list": value}, nil
 }
 func (r *NamespaceRuntime) Create(ctx context.Context, clusterID uint64, input kopsapp.NamespaceCreateInput) error {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.nodes == nil {
 		return kopsapp.ErrConflict
 	}
-	return translateKopsRuntimeError(r.k8s.CreateNamespace(ctx, clusterID, input.Name, input.Labels))
+	return translateKopsRuntimeError(r.nodes.CreateNamespace(ctx, clusterID, input.Name, input.Labels))
 }
 func (r *NamespaceRuntime) Delete(ctx context.Context, clusterID uint64, namespace string) error {
 	if r == nil || r.k8s == nil {
@@ -127,7 +129,7 @@ func (r *ManifestRuntime) Execute(ctx context.Context, input kopsapp.ManifestApp
 	if err := r.db.WithContext(ctx).Create(&row).Error; err != nil {
 		return nil, err
 	}
-	items, applyErr := r.k8s.ApplyManifestYAML(ctx, input.ClusterID, input.YAML, service.ManifestApplyOptions{DefaultNamespace: input.DefaultNamespace, DryRun: input.DryRun, CreateOnly: input.CreateOnly})
+	items, applyErr := r.applyManifestYAML(ctx, input.ClusterID, input.YAML, manifestApplyOptions{DefaultNamespace: input.DefaultNamespace, DryRun: input.DryRun, CreateOnly: input.CreateOnly})
 	if applyErr != nil {
 		_ = r.db.WithContext(ctx).Model(&kopsdomain.ManifestApplyRecord{}).Where("id = ?", row.ID).Updates(map[string]any{"status": "failed", "summary": manifestFailureSummary(applyErr), "error_message": manifestErrorMessage(applyErr)}).Error
 		return nil, translateKopsRuntimeError(applyErr)
@@ -212,7 +214,7 @@ func (r *ManifestRuntime) Get(ctx context.Context, clusterID, recordID uint64) (
 	return &kopsapp.ManifestRecordDetail{ManifestRecordListItem: manifestRecordListItem(row), ClusterID: row.ClusterID, YAMLContent: row.YAMLContent, ResultItems: manifestResultItems(items)}, nil
 }
 
-func manifestResultItems(items []service.ManifestApplyResultItem) []kopsapp.ManifestResultItem {
+func manifestResultItems(items []manifestApplyResultItem) []kopsapp.ManifestResultItem {
 	result := make([]kopsapp.ManifestResultItem, 0, len(items))
 	for _, item := range items {
 		result = append(result, kopsapp.ManifestResultItem{APIVersion: item.APIVersion, Kind: item.Kind, Namespace: item.Namespace, Name: item.Name, Operation: item.Operation, Resource: item.Resource, Scope: item.Scope})
@@ -229,11 +231,11 @@ func manifestRecordListItem(item kopsdomain.ManifestApplyRecord) kopsapp.Manifes
 	}
 }
 
-func parseManifestResultItems(raw string) ([]service.ManifestApplyResultItem, error) {
+func parseManifestResultItems(raw string) ([]manifestApplyResultItem, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, nil
 	}
-	var items []service.ManifestApplyResultItem
+	var items []manifestApplyResultItem
 	if err := json.Unmarshal([]byte(raw), &items); err != nil {
 		return nil, kopsapp.ErrWithMessage(kopsapp.ErrConflict, "部署记录结果解析失败")
 	}
@@ -247,7 +249,7 @@ func manifestPendingSummary(dryRun bool) string {
 	return "资源应用中"
 }
 
-func manifestSuccessSummary(items []service.ManifestApplyResultItem, dryRun bool) string {
+func manifestSuccessSummary(items []manifestApplyResultItem, dryRun bool) string {
 	created, updated := 0, 0
 	for _, item := range items {
 		switch strings.ToLower(strings.TrimSpace(item.Operation)) {

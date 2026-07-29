@@ -56,6 +56,15 @@ func (e *ServiceError) Unwrap() error {
 	return e.Kind
 }
 
+// UserMessage lets bounded-context policies obtain the API-safe error text
+// through a small interface, without importing the legacy error package.
+func (e *ServiceError) UserMessage() string {
+	if e == nil {
+		return ""
+	}
+	return strings.TrimSpace(e.Message)
+}
+
 // ErrWithMessage 创建一个携带用户提示的 ServiceError。
 // kind 为哨兵错误，message 为面向用户的中文说明。
 func ErrWithMessage(kind error, message string) error {
@@ -86,18 +95,6 @@ func UserMessage(err error) (string, bool) {
 		}
 	}
 	return "", false
-}
-
-// firstUserFacingError is shared by retained runtime adapters that must
-// persist an API-safe failure message without duplicating error unwrapping.
-func firstUserFacingError(err error) string {
-	if message, ok := UserMessage(err); ok {
-		return strings.TrimSpace(message)
-	}
-	if err == nil {
-		return ""
-	}
-	return strings.TrimSpace(err.Error())
 }
 
 // legacyClusterError translates Fleet domain failures for retained runtime

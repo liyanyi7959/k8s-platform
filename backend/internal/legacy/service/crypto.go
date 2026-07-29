@@ -10,12 +10,17 @@
 package service
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
+	"strings"
+	"sync"
+	"time"
 )
 
 // ErrCrypto 已统一迁移至 errors.go。
@@ -79,4 +84,97 @@ func decryptText(secret, ciphertextB64 string) (string, error) {
 		return "", ErrCrypto
 	}
 	return string(pt), nil
+}
+
+const permissionAuditCredentialTTL = 2 * time.Hour
+
+// PermissionAuditCredentialTTL is the lifetime used for transient ad-hoc
+// audit credentials. The Kops scan engine receives a narrow store interface,
+// keeping this retained package limited to cache and encryption infrastructure.
+func PermissionAuditCredentialTTL() time.Duration { return permissionAuditCredentialTTL }
+
+// PermissionAuditCredentialStore is the encrypted, short-lived credential
+// cache for ad-hoc permission audits. It owns no scan policy or task flow.
+type PermissionAuditCredentialStore struct {
+	cache  CacheStore
+	secret string
+	mu     sync.RWMutex
+	mem    map[uint64]string
+}
+
+func NewPermissionAuditCredentialStore(cache CacheStore, secret string) *PermissionAuditCredentialStore {
+	return &PermissionAuditCredentialStore{cache: cache, secret: secret, mem: map[uint64]string{}}
+}
+
+func (s *PermissionAuditCredentialStore) key(auditID uint64) string {
+	return fmt.Sprintf("k8s:permission-audit:cred:%d", auditID)
+}
+
+func (s *PermissionAuditCredentialStore) Put(ctx context.Context, auditID uint64, kubeconfig string, ttl time.Duration) error {
+	if auditID == 0 || strings.TrimSpace(kubeconfig) == "" {
+		return ErrWithMessage(ErrInvalidParams, "临时凭据不能为空")
+	}
+	if s.cache != nil && s.cache.Enabled() {
+		payload := []byte(kubeconfig)
+		if strings.TrimSpace(s.secret) != "" {
+			enc, err := encryptText(s.secret, kubeconfig)
+			if err != nil {
+				return err
+			}
+			payload = []byte(enc)
+		}
+		if err := s.cache.Set(ctx, s.key(auditID), payload, ttl); err != nil {
+			return err
+		}
+	}
+	s.mu.Lock()
+	s.mem[auditID] = kubeconfig
+	s.mu.Unlock()
+	return nil
+}
+
+// Get reports found=false when the transient credential expired, separately
+// from cache/decryption failures so the engine can preserve its API contract.
+func (s *PermissionAuditCredentialStore) Get(ctx context.Context, auditID uint64) (value string, found bool, err error) {
+	if auditID == 0 {
+		return "", false, nil
+	}
+	if s.cache != nil && s.cache.Enabled() {
+		payload, cached, cacheErr := s.cache.Get(ctx, s.key(auditID))
+		if cacheErr != nil {
+			return "", false, cacheErr
+		}
+		if cached && len(payload) > 0 {
+			if strings.TrimSpace(s.secret) != "" {
+				value, err = decryptText(s.secret, string(payload))
+				if err != nil {
+					return "", false, err
+				}
+				return value, true, nil
+			}
+			return string(payload), true, nil
+		}
+	}
+	s.mu.RLock()
+	value, found = s.mem[auditID]
+	s.mu.RUnlock()
+	return value, found && strings.TrimSpace(value) != "", nil
+}
+
+func (s *PermissionAuditCredentialStore) Delete(ctx context.Context, auditID uint64) {
+	if auditID == 0 {
+		return
+	}
+	if s.cache != nil && s.cache.Enabled() {
+		_ = s.cache.Del(ctx, s.key(auditID))
+	}
+	s.mu.Lock()
+	delete(s.mem, auditID)
+	s.mu.Unlock()
+}
+
+// DecryptRuntimeSecret exposes the existing credential cipher to a bounded
+// runtime adapter without duplicating the encryption implementation.
+func DecryptRuntimeSecret(secret, ciphertextB64 string) (string, error) {
+	return decryptText(secret, ciphertextB64)
 }
