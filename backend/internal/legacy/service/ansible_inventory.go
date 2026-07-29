@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/provisioning/domain"
 
 	"gopkg.in/yaml.v3"
 )

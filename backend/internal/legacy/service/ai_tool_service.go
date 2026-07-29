@@ -11,8 +11,7 @@ import (
 	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	aidomain "k8s-platform-backend/internal/ai/domain"
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/ai/domain"
 )
 
 type AIToolContextRequest struct {
@@ -137,7 +136,7 @@ func (s *AIToolService) executeRegisteredTool(
 	}
 	if payload, err := json.Marshal(params); err == nil {
 		row.CommandText = string(payload)
-		row.ParamsJSON = aidomain.JSONMap(params)
+		row.ParamsJSON = model.JSONMap(params)
 	}
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
 		return AIToolCallItem{}, ""
@@ -181,14 +180,14 @@ func (s *AIToolService) executeRegisteredTool(
 	resultJSON := toolEvidenceMap(result)
 	row.Status = "succeeded"
 	row.ResultSummary = result.Summary
-	row.ResultJSON = aidomain.JSONMap(resultJSON)
+	row.ResultJSON = model.JSONMap(resultJSON)
 	_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
 		"status":         row.Status,
 		"result_summary": row.ResultSummary,
 		"result_json":    row.ResultJSON,
 	}).Error
 
-	row.ResultJSON = aidomain.JSONMap(resultJSON)
+	row.ResultJSON = model.JSONMap(resultJSON)
 	contextBlock := "工具 " + toolName + ": " + result.Summary + "\n" + compactToolResult(resultJSON)
 	return buildAIToolCallItem(row), contextBlock
 }

@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/provisioning/domain"
 
 	"golang.org/x/crypto/ssh"
 	"k8s.io/client-go/tools/clientcmd"

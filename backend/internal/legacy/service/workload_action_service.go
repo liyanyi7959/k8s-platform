@@ -9,7 +9,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"k8s-platform-backend/internal/legacy/model"
+	aidomain "k8s-platform-backend/internal/ai/domain"
+	model "k8s-platform-backend/internal/kops/domain"
 )
 
 type WorkloadActionTarget struct {
@@ -165,10 +166,10 @@ func (s *WorkloadActionService) PrepareProposal(
 				fmt.Sprintf("建议将 %s %s/%s 中容器 %s 的镜像更新为 %s。", target.Kind, target.Namespace, target.Name, containerName, image),
 			),
 			Change: model.JSONMap{
-				"payload":  payload,
-				"preview":  preview,
+				"payload":   payload,
+				"preview":   preview,
 				"container": containerName,
-				"image":    image,
+				"image":     image,
 			},
 			Preview: preview,
 			Diff:    fmt.Sprintf("container %s image -> %s", containerName, image),
@@ -259,7 +260,7 @@ func (s *WorkloadActionService) PrepareProposal(
 			RiskLevel:    "high",
 			ConfirmLevel: "double",
 			Title:        fmt.Sprintf("删除 %s %s/%s", target.Kind, target.Namespace, target.Name),
-			Summary: firstNonEmpty(reason, fmt.Sprintf("建议删除 %s %s/%s。", target.Kind, target.Namespace, target.Name)),
+			Summary:      firstNonEmpty(reason, fmt.Sprintf("建议删除 %s %s/%s。", target.Kind, target.Namespace, target.Name)),
 			Change: model.JSONMap{
 				"payload": payload,
 				"preview": preview,
@@ -489,7 +490,7 @@ func (s *WorkloadActionService) ExecuteProposalAction(
 	}
 
 	target := normalizeWorkloadActionTarget(req.Target)
-	changePayload := aiActionPayload(req.Change)
+	changePayload := aiActionPayload(aidomain.JSONMap(req.Change))
 
 	switch normalizeAIActionType(req.ActionType) {
 	case aiActionTypeRestartWorkload:
@@ -851,7 +852,7 @@ func aiDeleteResourceConfirmLevel(kind string) string {
 	}
 }
 
-func changePayloadBoolOrDefault(payload model.JSONMap, key string, fallback bool) bool {
+func changePayloadBoolOrDefault(payload map[string]any, key string, fallback bool) bool {
 	if payload == nil {
 		return fallback
 	}

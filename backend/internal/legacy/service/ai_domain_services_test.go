@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/ai/domain"
 )
 
 func TestBuildAIClusterOverviewResult(t *testing.T) {

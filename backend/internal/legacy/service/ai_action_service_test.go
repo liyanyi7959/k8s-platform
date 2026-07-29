@@ -4,8 +4,7 @@ import (
 	"testing"
 	"time"
 
-	aidomain "k8s-platform-backend/internal/ai/domain"
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/ai/domain"
 )
 
 // ────────── normalizeAIActionType ──────────
@@ -303,7 +302,7 @@ func TestBuildAIActionProposalItem(t *testing.T) {
 		Status:          "pending",
 		Title:           "Scale to 3",
 		Summary:         "scaling up",
-		ChangeJSON:      aidomain.JSONMap{"replicas": 3},
+		ChangeJSON:      model.JSONMap{"replicas": 3},
 		CreatedBy:       1,
 		CreatedByName:   "admin",
 		CreatedAt:       now,
@@ -365,7 +364,7 @@ func TestBuildAIActionExecutionItem(t *testing.T) {
 		OperatorID:      2,
 		OperatorName:    "ops",
 		CommandSnapshot: `{"action":"restart"}`,
-		ResultJSON:      aidomain.JSONMap{"pods_restarted": 3},
+		ResultJSON:      model.JSONMap{"pods_restarted": 3},
 		StartedAt:       &now,
 		FinishedAt:      &now,
 		CreatedAt:       now,

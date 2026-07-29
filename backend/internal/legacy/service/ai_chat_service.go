@@ -17,8 +17,7 @@ import (
 
 	aigateway "k8s-platform-backend/internal/ai/adapters/gateway"
 	aiapp "k8s-platform-backend/internal/ai/application"
-	aidomain "k8s-platform-backend/internal/ai/domain"
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/ai/domain"
 )
 
 type (
@@ -257,7 +256,7 @@ func buildAIGatewayFileContexts(uploads []AIChatUploadInput) []AIGatewayFileCont
 	return out
 }
 
-func validateAIChatModelInputs(aiModel aidomain.AIModel, images []model.JSONMap, files []AIGatewayFileContext) error {
+func validateAIChatModelInputs(aiModel model.AIModel, images []model.JSONMap, files []AIGatewayFileContext) error {
 	if len(images) > 0 && !aiModel.SupportsVision {
 		return ErrWithMessage(ErrInvalidParams, "当前模型不支持图片输入，请切换到支持视觉的模型")
 	}
@@ -354,7 +353,7 @@ func (s *AIChatService) startConversationTurn(
 		MessageType:    "text",
 		Content:        message,
 		Status:         "created",
-		StructuredJSON: aidomain.JSONMap(userMessageStructured),
+		StructuredJSON: model.JSONMap(userMessageStructured),
 		CreatedBy:      userID,
 	}
 	if err := s.db.WithContext(ctx).Create(&userMessage).Error; err != nil {
@@ -383,7 +382,7 @@ func (s *AIChatService) startConversationTurn(
 			Update("structured_json", userMessageStructured).Error; err != nil {
 			return aiPreparedConversationTurn{}, err
 		}
-		userMessage.StructuredJSON = aidomain.JSONMap(userMessageStructured)
+		userMessage.StructuredJSON = model.JSONMap(userMessageStructured)
 	}
 
 	runStarted = false
@@ -772,8 +771,8 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		}
 	}
 
-	assistantContent, assistantStructured := normalizeAIModelAnswer(assistantResp.Content)
-	assistantStructured = mergeAIStructuredPayload(assistantStructured, turn.assistantMessageStructured)
+	assistantContent, assistantStructured := aiapp.NormalizeModelAnswer(assistantResp.Content)
+	assistantStructured = aiapp.MergeStructuredPayload(assistantStructured, model.JSONMap(turn.assistantMessageStructured))
 	assistantResp.Content = assistantContent
 
 	assistantMessage := model.AIMessage{
@@ -782,7 +781,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		MessageType:    "text",
 		Content:        assistantContent,
 		Status:         "created",
-		StructuredJSON: aidomain.JSONMap(assistantStructured),
+		StructuredJSON: model.JSONMap(assistantStructured),
 		ToolCallCount:  len(toolCalls),
 		TokenInput:     assistantResp.Usage.RequestTokens,
 		TokenOutput:    assistantResp.Usage.ResponseTokens,
@@ -972,8 +971,8 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 			if streamErr != nil {
 				// 流式调用失败时降级使用非流式结果
 				fullContent := assistantResp.Content
-				assistantContent, assistantStructured := normalizeAIModelAnswer(fullContent)
-				assistantStructured = mergeAIStructuredPayload(assistantStructured, turn.assistantMessageStructured)
+				assistantContent, assistantStructured := aiapp.NormalizeModelAnswer(fullContent)
+				assistantStructured = aiapp.MergeStructuredPayload(assistantStructured, model.JSONMap(turn.assistantMessageStructured))
 
 				assistantMessage := model.AIMessage{
 					ConversationID: turn.conversation.ID,
@@ -981,7 +980,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 					MessageType:    "text",
 					Content:        assistantContent,
 					Status:         "created",
-					StructuredJSON: aidomain.JSONMap(assistantStructured),
+					StructuredJSON: model.JSONMap(assistantStructured),
 					ToolCallCount:  len(toolCalls),
 					TokenInput:     assistantResp.Usage.RequestTokens,
 					TokenOutput:    assistantResp.Usage.ResponseTokens,
@@ -1207,8 +1206,8 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 			streamResult.Usage.TotalTokens = streamResult.Usage.RequestTokens + streamResult.Usage.ResponseTokens
 		}
 
-		assistantContent, assistantStructured := normalizeAIModelAnswer(fullContent.String())
-		assistantStructured = mergeAIStructuredPayload(assistantStructured, turn.assistantMessageStructured)
+		assistantContent, assistantStructured := aiapp.NormalizeModelAnswer(fullContent.String())
+		assistantStructured = aiapp.MergeStructuredPayload(assistantStructured, model.JSONMap(turn.assistantMessageStructured))
 
 		assistantMessage := model.AIMessage{
 			ConversationID: turn.conversation.ID,
@@ -1216,7 +1215,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 			MessageType:    "text",
 			Content:        assistantContent,
 			Status:         "created",
-			StructuredJSON: aidomain.JSONMap(assistantStructured),
+			StructuredJSON: model.JSONMap(assistantStructured),
 			ToolCallCount:  len(toolCalls),
 			TokenInput:     streamResult.Usage.RequestTokens,
 			TokenOutput:    streamResult.Usage.ResponseTokens,
@@ -1367,8 +1366,8 @@ func (s *AIChatService) streamFunctionCallingResponse(
 		streamResult.Usage.TotalTokens = streamResult.Usage.RequestTokens + streamResult.Usage.ResponseTokens
 	}
 
-	assistantContent, assistantStructured := normalizeAIModelAnswer(fullContent.String())
-	assistantStructured = mergeAIStructuredPayload(assistantStructured, turn.assistantMessageStructured)
+	assistantContent, assistantStructured := aiapp.NormalizeModelAnswer(fullContent.String())
+	assistantStructured = aiapp.MergeStructuredPayload(assistantStructured, model.JSONMap(turn.assistantMessageStructured))
 
 	assistantMessage := model.AIMessage{
 		ConversationID: turn.conversation.ID,
@@ -1376,7 +1375,7 @@ func (s *AIChatService) streamFunctionCallingResponse(
 		MessageType:    "text",
 		Content:        assistantContent,
 		Status:         "created",
-		StructuredJSON: aidomain.JSONMap(assistantStructured),
+		StructuredJSON: model.JSONMap(assistantStructured),
 		ToolCallCount:  len(toolCalls),
 		TokenInput:     streamResult.Usage.RequestTokens,
 		TokenOutput:    streamResult.Usage.ResponseTokens,
@@ -1663,7 +1662,7 @@ func (s *AIChatService) finishConversationRun(conversationID uint64, result aiCo
 		MessageType:    "text",
 		Content:        content,
 		Status:         messageStatus,
-		StructuredJSON: aidomain.JSONMap(result.StructuredPayload),
+		StructuredJSON: model.JSONMap(result.StructuredPayload),
 		ToolCallCount:  result.ToolCallCount,
 	}).Error
 }
@@ -1698,11 +1697,11 @@ func (s *AIChatService) ensureConversation(ctx context.Context, userID uint64, u
 		return conversation, nil
 	}
 
-	mode := normalizeAIAssistantMode(req.AssistantMode)
+	mode := aiapp.NormalizeAssistantMode(req.AssistantMode)
 	if mode == "" {
 		mode = "diagnose"
 	}
-	title := buildConversationTitle(req.Message)
+	title := aiapp.BuildConversationTitle(req.Message)
 	conversation := model.AIConversation{
 		ClusterID:     req.ClusterID,
 		ProviderID:    req.ProviderID,
@@ -1825,7 +1824,7 @@ func (s aiMessageRequestScope) matches(other aiMessageRequestScope) bool {
 }
 
 func buildConversationSummary(content string) string {
-	return buildConversationTitle(content)
+	return aiapp.BuildConversationTitle(content)
 }
 
 func (s *AIChatService) autoCreateActionProposals(
@@ -2223,7 +2222,7 @@ func buildAIDiagnosticEvidenceDigest(toolCalls []AIToolCallItem, diagnosticNotes
 }
 
 func effectiveAIGatewayMode(mode string, toolCalls []AIToolCallItem, diagnosticNotes string) string {
-	normalizedMode := normalizeAIAssistantMode(mode)
+	normalizedMode := aiapp.NormalizeAssistantMode(mode)
 	if normalizedMode == "" {
 		normalizedMode = "diagnose"
 	}
@@ -2238,7 +2237,7 @@ func ptrUint64(v uint64) *uint64 {
 }
 
 func buildAIAutoDiagnosticsPlan(mode string, req AIChatRequest, message string) aiAutoDiagnosticsPlan {
-	normalizedMode := normalizeAIAssistantMode(mode)
+	normalizedMode := aiapp.NormalizeAssistantMode(mode)
 	if normalizedMode == "diagnose" {
 		return aiAutoDiagnosticsPlan{
 			Enabled: true,

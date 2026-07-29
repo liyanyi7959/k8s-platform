@@ -12,8 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	aiapp "k8s-platform-backend/internal/ai/application"
-	aidomain "k8s-platform-backend/internal/ai/domain"
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/ai/domain"
 )
 
 type ClusterReadModelService struct {
@@ -688,7 +687,7 @@ func (s *ResourceInspectionService) exportResourceYAML(
 	} else {
 		exportedYAML, masked, err = policy.ExportYAML(resKind, yamlText)
 	}
-	if errors.Is(err, aidomain.ErrSensitiveResourceExport) {
+	if errors.Is(err, model.ErrSensitiveResourceExport) {
 		return AIToolResult{}, ErrWithMessage(ErrK8sForbidden, err.Error())
 	}
 	if err != nil {

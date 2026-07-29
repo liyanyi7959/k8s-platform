@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/provisioning/domain"
 )
 
 // ansiblePipeline 执行基于 Ansible Playbook 的 K8s 集群部署流水线

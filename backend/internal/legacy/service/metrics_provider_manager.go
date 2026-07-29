@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s-platform-backend/internal/legacy/model"
+	fleetdomain "k8s-platform-backend/internal/fleet/domain"
 )
 
 // PrometheusInfo 集群 Prometheus 配置快照。
@@ -33,7 +33,7 @@ func (s *K8sService) GetPrometheusInfo(ctx context.Context, clusterID uint64) (*
 }
 
 // GetClusterMonitorSource 代理到 ClusterRegistryService，供控制器查询完整数据源配置。
-func (s *K8sService) GetClusterMonitorSource(ctx context.Context, clusterID uint64) (*model.Cluster, error) {
+func (s *K8sService) GetClusterMonitorSource(ctx context.Context, clusterID uint64) (*fleetdomain.Cluster, error) {
 	return s.clusterReg.GetClusterMonitorSource(ctx, clusterID)
 }
 

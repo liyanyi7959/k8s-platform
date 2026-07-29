@@ -206,6 +206,11 @@ type clusterRow struct {
 	DeletedAt            *time.Time `gorm:"column:deleted_at"`
 }
 
+// ClusterRow is the Fleet-owned persistence projection for the clusters
+// table. It is exported for read-only consumers that still require a narrow
+// database projection while they move behind Fleet application ports.
+type ClusterRow = clusterRow
+
 func (clusterRow) TableName() string { return "clusters" }
 func toDomain(row clusterRow) domain.Cluster {
 	return domain.Cluster{ID: row.ID, Name: row.Name, Type: row.Type, Status: row.Status, KubeconfigEncrypted: row.KubeconfigEncrypted, K8sVersion: row.K8sVersion, Description: row.Description, NodeCount: row.NodeCount, LastHealthAt: row.LastHealthAt, MonitorSource: row.MonitorSource, PrometheusURL: row.PrometheusURL, PrometheusStatus: row.PrometheusStatus, PrometheusDetectedAt: row.PrometheusDetectedAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, DeletedAt: row.DeletedAt}

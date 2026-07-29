@@ -8,7 +8,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/provisioning/domain"
 )
 
 // DryRunStep 表示模拟运行的单个步骤

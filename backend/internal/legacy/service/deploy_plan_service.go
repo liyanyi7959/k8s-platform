@@ -9,7 +9,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/provisioning/domain"
 )
 
 type SSHCredentialItem struct {

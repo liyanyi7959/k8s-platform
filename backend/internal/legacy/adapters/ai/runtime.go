@@ -6,18 +6,18 @@ import (
 	"strings"
 
 	aiapp "k8s-platform-backend/internal/ai/application"
-	legacymodel "k8s-platform-backend/internal/legacy/model"
+	aidomain "k8s-platform-backend/internal/ai/domain"
 	"k8s-platform-backend/internal/legacy/service"
 )
 
 type Runtime struct {
-	conversations *service.AIConversationDetailService
+	conversations *aiapp.ConversationDetailService
 	chat          *service.AIChatService
 	tools         *service.AIToolService
 	actions       *service.AIActionService
 }
 
-func NewRuntime(conversations *service.AIConversationDetailService, chat *service.AIChatService, tools *service.AIToolService, actions *service.AIActionService) *Runtime {
+func NewRuntime(conversations *aiapp.ConversationDetailService, chat *service.AIChatService, tools *service.AIToolService, actions *service.AIActionService) *Runtime {
 	return &Runtime{conversations: conversations, chat: chat, tools: tools, actions: actions}
 }
 
@@ -37,7 +37,7 @@ func (r *Runtime) Conversation(ctx context.Context, id uint64) (any, error) {
 	if r == nil || r.conversations == nil {
 		return nil, aiapp.ErrConflict
 	}
-	value, err := r.conversations.GetConversation(ctx, id)
+	value, err := r.conversations.Get(ctx, id)
 	return value, translateRuntimeError(err)
 }
 
@@ -67,7 +67,7 @@ func (r *Runtime) CreateProposal(ctx context.Context, clusterID, userID uint64, 
 		MessageID:      input.MessageID,
 		ProposalType:   input.ProposalType,
 		TargetResource: service.AIActionTargetResource{Kind: input.TargetResource.Kind, Namespace: input.TargetResource.Namespace, Name: input.TargetResource.Name},
-		Payload:        legacymodel.JSONMap(input.Payload),
+		Payload:        aidomain.JSONMap(input.Payload),
 		Reason:         input.Reason,
 	})
 	return value, translateRuntimeError(err)

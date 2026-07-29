@@ -9,7 +9,6 @@ import (
 	fleetmysql "k8s-platform-backend/internal/fleet/adapters/mysql"
 	fleetapp "k8s-platform-backend/internal/fleet/application"
 	"k8s-platform-backend/internal/fleet/domain"
-	"k8s-platform-backend/internal/legacy/model"
 )
 
 type ClusterItem = fleetapp.ClusterItem
@@ -53,12 +52,12 @@ func (s *ClusterRegistryService) UpdateClusterHealth(ctx context.Context, id uin
 func (s *ClusterRegistryService) UpdateClusterMonitorSource(ctx context.Context, id uint64, source MonitorSource, url string, status PrometheusStatus) error {
 	return legacyClusterError(s.application.UpdateMonitorSource(ctx, id, string(source), url, string(status)))
 }
-func (s *ClusterRegistryService) GetClusterMonitorSource(ctx context.Context, id uint64) (*model.Cluster, error) {
+func (s *ClusterRegistryService) GetClusterMonitorSource(ctx context.Context, id uint64) (*domain.Cluster, error) {
 	row, err := s.repository.Get(ctx, id)
 	if err != nil {
 		return nil, legacyClusterError(err)
 	}
-	return &model.Cluster{ID: row.ID, MonitorSource: row.MonitorSource, PrometheusURL: row.PrometheusURL, PrometheusStatus: row.PrometheusStatus, PrometheusDetectedAt: row.PrometheusDetectedAt}, nil
+	return &domain.Cluster{ID: row.ID, MonitorSource: row.MonitorSource, PrometheusURL: row.PrometheusURL, PrometheusStatus: row.PrometheusStatus, PrometheusDetectedAt: row.PrometheusDetectedAt}, nil
 }
 func (s *ClusterRegistryService) PatchCluster(ctx context.Context, id uint64, request PatchClusterRequest) error {
 	return legacyClusterError(s.application.Patch(ctx, id, request))

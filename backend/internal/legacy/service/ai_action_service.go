@@ -9,46 +9,42 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
+	aiapp "k8s-platform-backend/internal/ai/application"
 	model "k8s-platform-backend/internal/ai/domain"
 	changemysql "k8s-platform-backend/internal/change/adapters/mysql"
 	changeapp "k8s-platform-backend/internal/change/application"
 	changedomain "k8s-platform-backend/internal/change/domain"
 	changeports "k8s-platform-backend/internal/change/ports"
-	legacymodel "k8s-platform-backend/internal/legacy/model"
+	kopsdomain "k8s-platform-backend/internal/kops/domain"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
-	aiActionTypeRestartWorkload      = "restart_workload"
-	aiActionTypeScaleWorkload        = "scale_workload"
-	aiActionTypeUpdateWorkloadImage  = "update_workload_image"
-	aiActionTypePauseWorkloadRollout = "pause_workload_rollout"
-	aiActionTypeRolloutUndo          = "rollout_undo"
-	aiActionTypeDeleteWorkload       = "delete_workload"
-	aiActionTypeDeleteResource       = "delete_resource"
-	aiActionTypeDeletePod            = "delete_pod"
-	aiActionTypeCordonNode           = "cordon_node"
-	aiActionTypeUncordonNode         = "uncordon_node"
-	aiActionTypeDrainNode            = "drain_node"
-	aiActionTypeTriggerCronJob       = "trigger_cronjob"
-	aiActionTypeSuspendCronJob       = "suspend_cronjob"
-	aiActionTypeDeleteCompletedJobs  = "delete_completed_jobs"
-	aiActionTypeApplyManifest        = "apply_manifest"
+	aiActionTypeRestartWorkload      = aiapp.ActionTypeRestartWorkload
+	aiActionTypeScaleWorkload        = aiapp.ActionTypeScaleWorkload
+	aiActionTypeUpdateWorkloadImage  = aiapp.ActionTypeUpdateWorkloadImage
+	aiActionTypePauseWorkloadRollout = aiapp.ActionTypePauseWorkloadRollout
+	aiActionTypeRolloutUndo          = aiapp.ActionTypeRolloutUndo
+	aiActionTypeDeleteWorkload       = aiapp.ActionTypeDeleteWorkload
+	aiActionTypeDeleteResource       = aiapp.ActionTypeDeleteResource
+	aiActionTypeDeletePod            = aiapp.ActionTypeDeletePod
+	aiActionTypeCordonNode           = aiapp.ActionTypeCordonNode
+	aiActionTypeUncordonNode         = aiapp.ActionTypeUncordonNode
+	aiActionTypeDrainNode            = aiapp.ActionTypeDrainNode
+	aiActionTypeTriggerCronJob       = aiapp.ActionTypeTriggerCronJob
+	aiActionTypeSuspendCronJob       = aiapp.ActionTypeSuspendCronJob
+	aiActionTypeDeleteCompletedJobs  = aiapp.ActionTypeDeleteCompletedJobs
+	aiActionTypeApplyManifest        = aiapp.ActionTypeApplyManifest
 )
 
-type AIActionTargetResource struct {
-	Kind      string `json:"kind"`
-	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
-}
+type AIActionTargetResource = aiapp.ActionTargetResource
 
 type CreateAIActionProposalRequest struct {
 	ConversationID uint64                 `json:"conversation_id"`
 	MessageID      *uint64                `json:"message_id"`
 	ProposalType   string                 `json:"proposal_type"`
 	TargetResource AIActionTargetResource `json:"target_resource"`
-	Payload        legacymodel.JSONMap    `json:"payload"`
+	Payload        model.JSONMap          `json:"payload"`
 	Reason         string                 `json:"reason"`
 }
 
@@ -59,18 +55,18 @@ type ConfirmAIActionProposalRequest struct {
 }
 
 type AIActionExecutionItem struct {
-	ID              uint64              `json:"id"`
-	ProposalID      uint64              `json:"proposal_id"`
-	Status          string              `json:"status"`
-	ExecutionNo     int                 `json:"execution_no"`
-	OperatorID      uint64              `json:"operator_id"`
-	OperatorName    string              `json:"operator_name"`
-	CommandSnapshot string              `json:"command_snapshot"`
-	Result          legacymodel.JSONMap `json:"result,omitempty"`
-	ErrorMessage    string              `json:"error_message,omitempty"`
-	StartedAt       *string             `json:"started_at,omitempty"`
-	FinishedAt      *string             `json:"finished_at,omitempty"`
-	CreatedAt       string              `json:"created_at"`
+	ID              uint64        `json:"id"`
+	ProposalID      uint64        `json:"proposal_id"`
+	Status          string        `json:"status"`
+	ExecutionNo     int           `json:"execution_no"`
+	OperatorID      uint64        `json:"operator_id"`
+	OperatorName    string        `json:"operator_name"`
+	CommandSnapshot string        `json:"command_snapshot"`
+	Result          model.JSONMap `json:"result,omitempty"`
+	ErrorMessage    string        `json:"error_message,omitempty"`
+	StartedAt       *string       `json:"started_at,omitempty"`
+	FinishedAt      *string       `json:"finished_at,omitempty"`
+	CreatedAt       string        `json:"created_at"`
 }
 
 type AIActionProposalItem struct {
@@ -88,7 +84,7 @@ type AIActionProposalItem struct {
 	Status                   string                  `json:"status"`
 	Title                    string                  `json:"title"`
 	Summary                  string                  `json:"summary"`
-	Change                   legacymodel.JSONMap     `json:"change,omitempty"`
+	Change                   model.JSONMap           `json:"change,omitempty"`
 	CreatedBy                uint64                  `json:"created_by"`
 	CreatedByName            string                  `json:"created_by_name"`
 	ApprovedBy               *uint64                 `json:"approved_by,omitempty"`
@@ -379,7 +375,7 @@ func (s *AIActionService) buildProposalRow(
 	target := normalizeAIActionTarget(req.TargetResource)
 	payload := req.Payload
 	if payload == nil {
-		payload = legacymodel.JSONMap{}
+		payload = model.JSONMap{}
 	}
 	prepared, err := s.workloadSvc.PrepareProposal(ctx, PrepareWorkloadActionRequest{
 		ClusterID:  clusterID,
@@ -389,7 +385,7 @@ func (s *AIActionService) buildProposalRow(
 			Namespace: target.Namespace,
 			Name:      target.Name,
 		},
-		Payload: payload,
+		Payload: kopsdomain.JSONMap(payload),
 		Reason:  strings.TrimSpace(req.Reason),
 	})
 	if err != nil {
@@ -531,12 +527,12 @@ func (s *AIActionService) executeProposal(
 func (s *AIActionService) runProposalAction(
 	ctx context.Context,
 	proposal model.AIActionProposal,
-) (legacymodel.JSONMap, string, error) {
+) (model.JSONMap, string, error) {
 	result, err := s.workloadSvc.ExecuteProposalAction(ctx, ExecuteWorkloadActionRequest{
 		ClusterID:     proposal.ClusterID,
 		ActionType:    proposal.ActionType,
 		Target:        WorkloadActionTarget{Kind: proposal.TargetKind, Namespace: proposal.TargetNamespace, Name: proposal.TargetName},
-		Change:        legacymodel.JSONMap(proposal.ChangeJSON),
+		Change:        kopsdomain.JSONMap(proposal.ChangeJSON),
 		ProposalTitle: proposal.Title,
 		CreatedBy:     proposal.CreatedBy,
 		CreatedByName: proposal.CreatedByName,
@@ -544,7 +540,7 @@ func (s *AIActionService) runProposalAction(
 	if err != nil {
 		return nil, "", err
 	}
-	return result.Result, result.Summary, nil
+	return model.JSONMap(result.Result), result.Summary, nil
 }
 
 func (s *AIActionService) nextExecutionNo(ctx context.Context, proposalID uint64) (int, error) {
@@ -653,7 +649,7 @@ func buildAIActionProposalItem(
 		Status:                   row.Status,
 		Title:                    row.Title,
 		Summary:                  row.Summary,
-		Change:                   legacymodel.JSONMap(row.ChangeJSON),
+		Change:                   model.JSONMap(row.ChangeJSON),
 		CreatedBy:                row.CreatedBy,
 		CreatedByName:            row.CreatedByName,
 		ApprovedBy:               row.ApprovedBy,
@@ -689,7 +685,7 @@ func buildAIActionExecutionItem(row model.AIActionExecution) AIActionExecutionIt
 		OperatorID:      row.OperatorID,
 		OperatorName:    row.OperatorName,
 		CommandSnapshot: row.CommandSnapshot,
-		Result:          legacymodel.JSONMap(row.ResultJSON),
+		Result:          model.JSONMap(row.ResultJSON),
 		ErrorMessage:    row.ErrorMessage,
 		StartedAt:       startedAt,
 		FinishedAt:      finishedAt,
@@ -698,106 +694,25 @@ func buildAIActionExecutionItem(row model.AIActionExecution) AIActionExecutionIt
 }
 
 func normalizeAIActionType(v string) string {
-	switch strings.ToLower(strings.TrimSpace(v)) {
-	case aiActionTypeRestartWorkload:
-		return aiActionTypeRestartWorkload
-	case aiActionTypeScaleWorkload:
-		return aiActionTypeScaleWorkload
-	case aiActionTypeUpdateWorkloadImage:
-		return aiActionTypeUpdateWorkloadImage
-	case aiActionTypePauseWorkloadRollout:
-		return aiActionTypePauseWorkloadRollout
-	case aiActionTypeRolloutUndo:
-		return aiActionTypeRolloutUndo
-	case aiActionTypeDeleteWorkload:
-		return aiActionTypeDeleteWorkload
-	case aiActionTypeDeleteResource:
-		return aiActionTypeDeleteResource
-	case aiActionTypeDeletePod:
-		return aiActionTypeDeletePod
-	case aiActionTypeCordonNode:
-		return aiActionTypeCordonNode
-	case aiActionTypeUncordonNode:
-		return aiActionTypeUncordonNode
-	case aiActionTypeDrainNode:
-		return aiActionTypeDrainNode
-	case aiActionTypeTriggerCronJob:
-		return aiActionTypeTriggerCronJob
-	case aiActionTypeSuspendCronJob:
-		return aiActionTypeSuspendCronJob
-	case aiActionTypeDeleteCompletedJobs:
-		return aiActionTypeDeleteCompletedJobs
-	case aiActionTypeApplyManifest:
-		return aiActionTypeApplyManifest
-	default:
-		return ""
-	}
+	return aiapp.NormalizeActionType(v)
 }
 
 func normalizeAIActionTarget(target AIActionTargetResource) AIActionTargetResource {
-	kind := strings.TrimSpace(target.Kind)
-	switch strings.ToLower(kind) {
-	case "namespace":
-		kind = "Namespace"
-	case "node":
-		kind = "Node"
-	case "pod":
-		kind = "Pod"
-	case "deployment":
-		kind = "Deployment"
-	case "statefulset":
-		kind = "StatefulSet"
-	case "daemonset":
-		kind = "DaemonSet"
-	case "replicaset":
-		kind = "ReplicaSet"
-	case "service":
-		kind = "Service"
-	case "ingress":
-		kind = "Ingress"
-	case "configmap":
-		kind = "ConfigMap"
-	case "secret":
-		kind = "Secret"
-	case "persistentvolumeclaim", "pvc":
-		kind = "PersistentVolumeClaim"
-	case "persistentvolume", "pv":
-		kind = "PersistentVolume"
-	case "storageclass":
-		kind = "StorageClass"
-	case "job":
-		kind = "Job"
-	case "cronjob":
-		kind = "CronJob"
-	}
-	return AIActionTargetResource{
-		Kind:      kind,
-		Namespace: strings.TrimSpace(target.Namespace),
-		Name:      strings.TrimSpace(target.Name),
-	}
+	return aiapp.NormalizeActionTarget(target)
 }
 
 func aiActionWorkloadGVR(kind string) (schema.GroupVersionResource, bool) {
-	switch strings.TrimSpace(kind) {
-	case "Deployment":
-		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}, true
-	case "StatefulSet":
-		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}, true
-	case "DaemonSet":
-		return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}, true
-	default:
-		return schema.GroupVersionResource{}, false
-	}
+	return aiapp.ActionWorkloadGVR(kind)
 }
 
-func aiActionPayload(change legacymodel.JSONMap) legacymodel.JSONMap {
+func aiActionPayload(change model.JSONMap) model.JSONMap {
 	if change == nil {
-		return legacymodel.JSONMap{}
+		return model.JSONMap{}
 	}
 	if payload, ok := change["payload"].(map[string]any); ok && payload != nil {
-		return legacymodel.JSONMap(payload)
+		return model.JSONMap(payload)
 	}
-	return legacymodel.JSONMap{}
+	return model.JSONMap{}
 }
 
 func aiActionExecutionStatusLabel(status string) string {

@@ -10,7 +10,8 @@ import (
 	"gorm.io/gorm"
 
 	aiapp "k8s-platform-backend/internal/ai/application"
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/ai/domain"
+	fleetmysql "k8s-platform-backend/internal/fleet/adapters/mysql"
 	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
 )
 
@@ -968,7 +969,7 @@ func NewAIToolRegistry(
 			if r.db == nil {
 				return AIToolResult{}, ErrWithMessage(ErrNotFound, "database not available")
 			}
-			var clusters []model.Cluster
+			var clusters []fleetmysql.ClusterRow
 			if err := r.db.WithContext(ctx).Find(&clusters).Error; err != nil {
 				return AIToolResult{}, ErrWithMessage(ErrNotFound, "查询集群列表失败: "+err.Error())
 			}

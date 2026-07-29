@@ -10,7 +10,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/provisioning/domain"
 )
 
 const helmVersionToInstall = "v3.16.4"

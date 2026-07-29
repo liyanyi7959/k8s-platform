@@ -150,9 +150,22 @@ func TestLegacyBusinessLayerDoesNotGrow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("walk legacy business layer: %v", err)
 	}
-	const migrationBaseline = 111
+	const migrationBaseline = 93
 	if count > migrationBaseline {
 		t.Fatalf("legacy Go files = %d, baseline = %d; new behavior must live in a bounded context", count, migrationBaseline)
+	}
+}
+
+func TestLegacyModelCompatibilityPackageIsEmpty(t *testing.T) {
+	modelDir := filepath.Join(backendRoot(t), "internal", "legacy", "model")
+	entries, err := os.ReadDir(modelDir)
+	if err != nil && !os.IsNotExist(err) {
+		t.Fatalf("read legacy model directory: %v", err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
+			t.Errorf("legacy model compatibility source must not be reintroduced: %s", entry.Name())
+		}
 	}
 }
 

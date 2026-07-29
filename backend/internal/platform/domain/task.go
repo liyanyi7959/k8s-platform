@@ -1,4 +1,4 @@
-package model
+package domain
 
 import (
 	"database/sql/driver"
@@ -6,17 +6,9 @@ import (
 	"time"
 )
 
-// TaskStatus 任务状态枚举
-const (
-	TaskPending  = "pending"
-	TaskRunning  = "running"
-	TaskSuccess  = "success"
-	TaskFailed   = "failed"
-	TaskTimeout  = "timeout"
-	TaskCanceled = "canceled"
-)
-
-// Task 任务模型
+// Task and its supporting values are platform-wide asynchronous work records.
+// They intentionally live outside a business context because cluster, Kops and
+// provisioning workflows all persist to the same task centre.
 type Task struct {
 	ID        uint64    `gorm:"primaryKey;autoIncrement"`
 	Type      string    `gorm:"size:64;not null"`
@@ -31,7 +23,6 @@ type Task struct {
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP(3)"`
 }
 
-// TaskLog 任务日志模型
 type TaskLog struct {
 	ID        uint64    `gorm:"primaryKey;autoIncrement"`
 	TaskID    uint64    `gorm:"index;not null"`
@@ -40,10 +31,9 @@ type TaskLog struct {
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP(3)"`
 }
 
-// JSONMap 用于 GORM 的 JSON 字段映射
 type JSONMap map[string]any
 
-func (j *JSONMap) Scan(value interface{}) error {
+func (j *JSONMap) Scan(value any) error {
 	if value == nil {
 		*j = nil
 		return nil
@@ -62,20 +52,18 @@ func (j JSONMap) Value() (driver.Value, error) {
 	return json.Marshal(j)
 }
 
-// JSONSteps 用于 GORM 的 Steps 字段映射
 type JSONSteps []TaskStep
 
 type TaskStep struct {
-	Key        string      `json:"key"`
-	Title      string      `json:"title"`
-	Status     string      `json:"status"` // pending/running/success/failed
-	StartedAt  *time.Time  `json:"started_at,omitempty"`
-	FinishedAt *time.Time  `json:"finished_at,omitempty"`
-	Message    string      `json:"message,omitempty"`
+	Key        string        `json:"key"`
+	Title      string        `json:"title"`
+	Status     string        `json:"status"`
+	StartedAt  *time.Time    `json:"started_at,omitempty"`
+	FinishedAt *time.Time    `json:"finished_at,omitempty"`
+	Message    string        `json:"message,omitempty"`
 	SubSteps   []TaskSubStep `json:"sub_steps,omitempty"`
 }
 
-// TaskSubStep 任务子步骤。
 type TaskSubStep struct {
 	Key        string     `json:"key"`
 	Title      string     `json:"title"`
@@ -84,7 +72,7 @@ type TaskSubStep struct {
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
 }
 
-func (j *JSONSteps) Scan(value interface{}) error {
+func (j *JSONSteps) Scan(value any) error {
 	if value == nil {
 		*j = nil
 		return nil

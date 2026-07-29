@@ -338,8 +338,9 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 	providerService := aiapp.NewAIProviderService(d.DB, d.EncryptionKey)
 	routeSettingsService := aiapp.NewAIRouteSettingsService(d.DB)
 	conversationService := aiapp.NewConversationService(d.DB)
+	conversationDetailService := aiapp.NewConversationDetailService(d.DB, legacyai.NewConversationProjection(toolService, change.actions))
 	runtimeAdapter := legacyai.NewRuntime(
-		service.NewAIConversationDetailService(d.DB),
+		conversationDetailService,
 		chatService,
 		toolService,
 		change.actions,

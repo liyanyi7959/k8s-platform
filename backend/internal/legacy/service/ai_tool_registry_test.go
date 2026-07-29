@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/ai/domain"
 )
 
 // ────────── Register / Get ──────────

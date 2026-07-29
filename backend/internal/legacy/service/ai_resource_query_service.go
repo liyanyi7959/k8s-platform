@@ -8,7 +8,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/ai/domain"
 )
 
 type ResourceQueryService struct {
@@ -74,12 +74,12 @@ func (s *ResourceQueryService) ListResources(
 	return AIToolResult{
 		Summary: summary,
 		Evidence: model.JSONMap{
-			"kind":          resKind,
-			"namespace":     ns,
+			"kind":           resKind,
+			"namespace":      ns,
 			"label_selector": strings.TrimSpace(labelSelector),
-			"total":         len(items),
-			"returned":      len(summaries),
-			"items":         summaries,
+			"total":          len(items),
+			"returned":       len(summaries),
+			"items":          summaries,
 		},
 		RawRef: model.JSONMap{
 			"cluster_id": clusterID,
@@ -301,7 +301,7 @@ func (s *ResourceQueryService) GetResourceLogs(
 		evidence["related_pods"] = relatedPods
 	}
 	return AIToolResult{
-		Summary: fmt.Sprintf("Collected logs for %s via pod %s/%s", resKind, ns, podName),
+		Summary:  fmt.Sprintf("Collected logs for %s via pod %s/%s", resKind, ns, podName),
 		Evidence: evidence,
 		RawRef: model.JSONMap{
 			"cluster_id": clusterID,
@@ -482,16 +482,16 @@ func buildAIEventEvidenceItems(items []any) []model.JSONMap {
 		}
 		involved, _ := obj["involvedObject"].(map[string]any)
 		evidence = append(evidence, model.JSONMap{
-			"type":           strings.TrimSpace(fmt.Sprint(obj["type"])),
-			"reason":         strings.TrimSpace(fmt.Sprint(obj["reason"])),
-			"message":        strings.TrimSpace(fmt.Sprint(obj["message"])),
-			"namespace":      aiObjectMetaString(obj, "namespace"),
-			"name":           aiObjectMetaString(obj, "name"),
-			"event_time":     firstNonEmpty(strings.TrimSpace(fmt.Sprint(obj["eventTime"])), strings.TrimSpace(fmt.Sprint(obj["lastTimestamp"])), strings.TrimSpace(fmt.Sprint(aiMapValue(obj, "metadata")["creationTimestamp"]))),
-			"involved_kind":  strings.TrimSpace(fmt.Sprint(involved["kind"])),
-			"involved_name":  strings.TrimSpace(fmt.Sprint(involved["name"])),
-			"involved_uid":   strings.TrimSpace(fmt.Sprint(involved["uid"])),
-			"count":          aiIntValue(obj["count"]),
+			"type":          strings.TrimSpace(fmt.Sprint(obj["type"])),
+			"reason":        strings.TrimSpace(fmt.Sprint(obj["reason"])),
+			"message":       strings.TrimSpace(fmt.Sprint(obj["message"])),
+			"namespace":     aiObjectMetaString(obj, "namespace"),
+			"name":          aiObjectMetaString(obj, "name"),
+			"event_time":    firstNonEmpty(strings.TrimSpace(fmt.Sprint(obj["eventTime"])), strings.TrimSpace(fmt.Sprint(obj["lastTimestamp"])), strings.TrimSpace(fmt.Sprint(aiMapValue(obj, "metadata")["creationTimestamp"]))),
+			"involved_kind": strings.TrimSpace(fmt.Sprint(involved["kind"])),
+			"involved_name": strings.TrimSpace(fmt.Sprint(involved["name"])),
+			"involved_uid":  strings.TrimSpace(fmt.Sprint(involved["uid"])),
+			"count":         aiIntValue(obj["count"]),
 		})
 		if len(evidence) >= 20 {
 			break
@@ -589,14 +589,14 @@ func buildAIPodReference(obj map[string]any) model.JSONMap {
 	status, _ := obj["status"].(map[string]any)
 	ready, restarts := aiPodReadyAndRestarts(obj)
 	return model.JSONMap{
-		"kind":       "Pod",
-		"namespace":  aiObjectMetaString(obj, "namespace"),
-		"name":       aiObjectMetaString(obj, "name"),
-		"phase":      strings.TrimSpace(fmt.Sprint(status["phase"])),
-		"node":       strings.TrimSpace(fmt.Sprint(spec["nodeName"])),
-		"ready":      ready,
-		"restarts":   restarts,
-		"owners":     extractAIOwnerReferences(obj),
+		"kind":      "Pod",
+		"namespace": aiObjectMetaString(obj, "namespace"),
+		"name":      aiObjectMetaString(obj, "name"),
+		"phase":     strings.TrimSpace(fmt.Sprint(status["phase"])),
+		"node":      strings.TrimSpace(fmt.Sprint(spec["nodeName"])),
+		"ready":     ready,
+		"restarts":  restarts,
+		"owners":    extractAIOwnerReferences(obj),
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"k8s-platform-backend/internal/legacy/model"
+	model "k8s-platform-backend/internal/ai/domain"
 )
 
 func (s *NamespaceDiagnosisService) GetNamespaceWorkloadInventory(ctx context.Context, clusterID uint64, namespace string) (AIToolResult, error) {
