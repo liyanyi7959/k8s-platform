@@ -35,7 +35,7 @@ func registerIncidentV2Routes(r *gin.Engine, d Deps, auditRecorder ports.Recorde
 	incidents.POST("/:id/resolution-attempts", manage, ctl.Resolve)
 }
 
-func registerAutomationTaskRoutes(authed *gin.RouterGroup, ctl *legacyprovision.AutomationTaskController) {
+func registerAutomationTaskRoutes(authed *gin.RouterGroup, ctl *provisionhttp.AutomationTaskController) {
 	if ctl == nil {
 		return
 	}

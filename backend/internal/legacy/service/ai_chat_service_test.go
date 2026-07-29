@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	aigateway "k8s-platform-backend/internal/ai/adapters/gateway"
+	aiapp "k8s-platform-backend/internal/ai/application"
 	model "k8s-platform-backend/internal/ai/domain"
 )
 
@@ -70,9 +71,15 @@ func TestBuildAIAutoDiagnosticsPlan(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plan := buildAIAutoDiagnosticsPlan(tt.mode, tt.req, tt.message)
+			plan := aiapp.BuildChatDiagnosticsPlan(aiapp.ChatDiagnosticsRequest{
+				AssistantMode: tt.mode,
+				Namespace:     tt.req.Namespace,
+				ResourceKind:  tt.req.ResourceKind,
+				ResourceName:  tt.req.ResourceName,
+				Message:       tt.message,
+			})
 			if plan.Enabled != tt.enabled {
-				t.Fatalf("buildAIAutoDiagnosticsPlan().Enabled = %v, want %v", plan.Enabled, tt.enabled)
+				t.Fatalf("BuildChatDiagnosticsPlan().Enabled = %v, want %v", plan.Enabled, tt.enabled)
 			}
 		})
 	}

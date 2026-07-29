@@ -17,6 +17,22 @@ type Runtime struct {
 	actions       *service.AIActionService
 }
 
+// ClusterReadPort adapts the legacy dashboard read model to the AI
+// application port without letting the AI context depend on legacy services.
+type ClusterReadPort struct{ dashboard *service.DashboardService }
+
+func NewClusterReadPort(dashboard *service.DashboardService) *ClusterReadPort {
+	return &ClusterReadPort{dashboard: dashboard}
+}
+
+func (p *ClusterReadPort) ClusterOverview(ctx context.Context, clusterID uint64) (map[string]any, error) {
+	return p.dashboard.GetClusterOverview(ctx, clusterID)
+}
+
+func (p *ClusterReadPort) ClusterCertificateRisks(ctx context.Context, clusterID uint64) ([]map[string]any, error) {
+	return p.dashboard.GetClusterCertificateRisks(ctx, clusterID)
+}
+
 func NewRuntime(conversations *aiapp.ConversationDetailService, chat *service.AIChatService, tools *service.AIToolService, actions *service.AIActionService) *Runtime {
 	return &Runtime{conversations: conversations, chat: chat, tools: tools, actions: actions}
 }

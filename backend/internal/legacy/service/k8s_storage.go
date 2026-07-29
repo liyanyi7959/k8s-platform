@@ -30,10 +30,7 @@ func (s *K8sService) CreatePVC(ctx context.Context, clusterID uint64, input Crea
 		return ErrInvalidParams
 	}
 
-	accessModes, err := normalizePVCAccessModes(input.AccessModes)
-	if err != nil {
-		return err
-	}
+	accessModes := pvcAccessModes(input.AccessModes)
 
 	quantity, err := apiresource.ParseQuantity(capacity)
 	if err != nil || quantity.Sign() <= 0 {
@@ -63,44 +60,18 @@ func (s *K8sService) CreatePVC(ctx context.Context, clusterID uint64, input Crea
 	return normalizeK8sErr(err)
 }
 
-func normalizePVCAccessModes(values []string) ([]corev1.PersistentVolumeAccessMode, error) {
+func pvcAccessModes(values []string) []corev1.PersistentVolumeAccessMode {
 	if len(values) == 0 {
-		return []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, nil
+		return []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	}
-	result := make([]corev1.PersistentVolumeAccessMode, 0, len(values))
-	seen := make(map[corev1.PersistentVolumeAccessMode]struct{}, len(values))
-	for _, raw := range values {
-		value := strings.TrimSpace(raw)
-		if value == "" {
-			continue
+	modes := make([]corev1.PersistentVolumeAccessMode, 0, len(values))
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			modes = append(modes, corev1.PersistentVolumeAccessMode(value))
 		}
-		mode, ok := mapPVCAccessMode(value)
-		if !ok {
-			return nil, ErrWithMessage(ErrInvalidParams, "access_modes 无效")
-		}
-		if _, exists := seen[mode]; exists {
-			continue
-		}
-		seen[mode] = struct{}{}
-		result = append(result, mode)
 	}
-	if len(result) == 0 {
-		return []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, nil
+	if len(modes) == 0 {
+		return []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	}
-	return result, nil
-}
-
-func mapPVCAccessMode(value string) (corev1.PersistentVolumeAccessMode, bool) {
-	switch strings.TrimSpace(value) {
-	case string(corev1.ReadWriteOnce):
-		return corev1.ReadWriteOnce, true
-	case string(corev1.ReadOnlyMany):
-		return corev1.ReadOnlyMany, true
-	case string(corev1.ReadWriteMany):
-		return corev1.ReadWriteMany, true
-	case string(corev1.ReadWriteOncePod):
-		return corev1.ReadWriteOncePod, true
-	default:
-		return "", false
-	}
+	return modes
 }

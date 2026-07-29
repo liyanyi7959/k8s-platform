@@ -24,6 +24,7 @@ import (
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	model "k8s-platform-backend/internal/kops/domain"
+	platformapp "k8s-platform-backend/internal/platform/application"
 )
 
 const (
@@ -594,7 +595,7 @@ func (s *K8sPermissionAuditService) CancelAudit(ctx context.Context, auditID uin
 	if row.TaskID == nil || *row.TaskID == 0 {
 		return ErrWithMessage(ErrConflict, "当前分析没有可取消任务")
 	}
-	if err := NewTaskService(s.taskStore).Cancel(int64(*row.TaskID)); err != nil {
+	if err := platformapp.NewTaskService(s.taskStore).Cancel(int64(*row.TaskID)); err != nil {
 		switch err {
 		case ErrTaskNotFound:
 			return ErrNotFound

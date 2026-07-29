@@ -9,6 +9,7 @@ import (
 
 	"gorm.io/gorm"
 
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 )
 
@@ -230,7 +231,7 @@ func (s *DeployService) RetryStep(ctx context.Context, id uint64, stepKey string
 		return 0, ErrWithMessage(ErrInvalidParams, "步骤 key 不能为空")
 	}
 	var found bool
-	for _, st := range ansibleSteps {
+	for _, st := range provisionapp.DefaultAnsibleSteps() {
 		if st.Key == stepKey {
 			found = true
 			break
@@ -285,6 +286,7 @@ func (s *DeployService) RetryPlan(ctx context.Context, id uint64, userID uint64)
 	retryFromStep := ""
 	if plan.TaskID != nil && *plan.TaskID > 0 {
 		if task, ok := s.taskStore.Get(int64(*plan.TaskID)); ok {
+			ansibleSteps := provisionapp.DefaultAnsibleSteps()
 			validKeys := make(map[string]struct{}, len(ansibleSteps))
 			for _, st := range ansibleSteps {
 				validKeys[st.Key] = struct{}{}

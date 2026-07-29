@@ -5,22 +5,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
-
-	"gopkg.in/yaml.v3"
 )
 
 // nodeAlias 生成 inventory 中的节点别名：角色+序号+IP（IP 的 . 替换为 -）。
 // 例如：master01-192-168-19-129、worker02-192-168-19-130。
 // 该别名同时作为 k8s 节点名称（bootstrap role 会将 hostname 设为 inventory_hostname）。
 func nodeAlias(role string, idx int, ip string) string {
-	prefix := "worker"
-	if role == "master" {
-		prefix = "master"
-	}
-	return fmt.Sprintf("%s%02d-%s", prefix, idx, strings.ReplaceAll(ip, ".", "-"))
+	return provisionapp.InventoryNodeAlias(role, idx, ip)
 }
 
 // inventoryHost 表示 inventory 中的单个主机
@@ -122,51 +116,17 @@ func (s *DeployService) generateInventoryFile(ctx context.Context, plan model.De
 }
 
 func marshalInventory(masters, workers []inventoryHost, maskSecret bool) (string, error) {
-	hosts := func(items []inventoryHost) map[string]any {
-		result := make(map[string]any, len(items))
+	convert := func(items []inventoryHost) []provisionapp.InventoryHost {
+		result := make([]provisionapp.InventoryHost, 0, len(items))
 		for _, host := range items {
-			vars := map[string]any{
-				"ansible_host": host.IP,
-				"ansible_port": host.SSHPort,
-				"ansible_user": host.User,
-			}
-			if host.KeyFile != "" {
-				keyFile := host.KeyFile
-				if maskSecret {
-					keyFile = "<temporary-private-key>"
-				}
-				vars["ansible_ssh_private_key_file"] = keyFile
-			} else {
-				password := host.Password
-				if maskSecret {
-					password = "***"
-				}
-				vars["ansible_password"] = password
-				vars["ansible_become_password"] = password
-			}
-			alias := host.Alias
-			if alias == "" {
-				alias = host.IP
-			}
-			result[alias] = vars
+			result = append(result, provisionapp.InventoryHost{
+				Alias: host.Alias, IP: host.IP, SSHPort: host.SSHPort, User: host.User,
+				AuthType: host.AuthType, Password: host.Password, KeyFile: host.KeyFile,
+			})
 		}
 		return result
 	}
-
-	document := map[string]any{
-		"all": map[string]any{
-			"vars": map[string]any{"ansible_python_interpreter": "/usr/bin/python3"},
-			"children": map[string]any{
-				"master": map[string]any{"hosts": hosts(masters)},
-				"worker": map[string]any{"hosts": hosts(workers)},
-			},
-		},
-	}
-	data, err := yaml.Marshal(document)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
+	return provisionapp.MarshalAnsibleInventory(convert(masters), convert(workers), maskSecret)
 }
 
 // getServerCredentialForNode 获取节点服务器的凭据信息

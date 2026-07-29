@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -39,14 +38,6 @@ type (
 const (
 	aiUploadKindImage = aiapp.UploadKindImage
 	aiUploadKindText  = aiapp.UploadKindText
-)
-
-var (
-	scaleReplicaPatterns = []*regexp.Regexp{
-		regexp.MustCompile("(?i)(?:replicas?|副本(?:数)?)[^\\d]{0,8}(\\d{1,4})"),
-		regexp.MustCompile("(?i)(?:调整到|改到|改成|改为|设为|设置为|to|=|为|到)[^\\d]{0,4}(\\d{1,4})\\s*(?:replicas?|副本)?"),
-		regexp.MustCompile("(?i)(?:scale|扩容|缩容|扩缩容|横向扩展|横向缩容)[^\\d]{0,10}(\\d{1,4})"),
-	}
 )
 
 type AIChatRequest struct {
@@ -100,12 +91,6 @@ func NewAIChatService(
 	fileSvc *AIFileService,
 ) *AIChatService {
 	return &AIChatService{db: db, gateway: gateway, toolSvc: toolSvc, actionSvc: actionSvc, fileSvc: fileSvc}
-}
-
-type aiAutoDiagnosticsPlan struct {
-	Enabled  bool
-	Optional bool
-	Timeout  time.Duration
 }
 
 type aiMessageRequestScope struct {
@@ -409,10 +394,10 @@ func (s *AIChatService) startConversationTurn(
 // buildFunctionCallingTools 从工具注册表构建 LLM function calling 工具列表
 // 只暴露只读工具（query/inspect/export），不暴露变更提案工具（proposal）
 func (s *AIChatService) buildFunctionCallingTools(userPerms []string) []AIToolSpec {
-	if s == nil || s.toolSvc == nil || s.toolSvc.registry == nil {
+	if s == nil || s.toolSvc == nil {
 		return nil
 	}
-	defs := s.toolSvc.registry.List()
+	defs := s.toolSvc.ListDefinitions()
 	tools := make([]AIToolSpec, 0, len(defs))
 	for _, def := range defs {
 		// 排除变更提案类工具
@@ -559,7 +544,7 @@ func (s *AIChatService) runFunctionCallingLoop(
 				_ = json.Unmarshal([]byte(tc.Arguments), &input)
 			}
 
-			item, block := s.toolSvc.executeRegisteredTool(ctx, toolReq, tc.Name, input)
+			item, block := s.toolSvc.Execute(ctx, toolReq, tc.Name, input)
 			if item.ID > 0 {
 				toolCalls = append(toolCalls, item)
 			}
@@ -688,7 +673,13 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 
 	if !modelSupportsTools {
 		// 降级模式：使用现有的规则引擎进行关键词匹配诊断
-		diagPlan := buildAIAutoDiagnosticsPlan(turn.conversation.AssistantMode, req, turn.message)
+		diagPlan := aiapp.BuildChatDiagnosticsPlan(aiapp.ChatDiagnosticsRequest{
+			AssistantMode: turn.conversation.AssistantMode,
+			Namespace:     req.Namespace,
+			ResourceKind:  req.ResourceKind,
+			ResourceName:  req.ResourceName,
+			Message:       turn.message,
+		})
 		if diagPlan.Enabled {
 			diagCtx := ctx
 			cancel := func() {}
@@ -1047,7 +1038,13 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 
 	if !modelSupportsTools {
 		// 降级模式：使用规则引擎进行诊断
-		diagPlan := buildAIAutoDiagnosticsPlan(turn.conversation.AssistantMode, req, turn.message)
+		diagPlan := aiapp.BuildChatDiagnosticsPlan(aiapp.ChatDiagnosticsRequest{
+			AssistantMode: turn.conversation.AssistantMode,
+			Namespace:     req.Namespace,
+			ResourceKind:  req.ResourceKind,
+			ResourceName:  req.ResourceName,
+			Message:       turn.message,
+		})
 		if diagPlan.Enabled {
 			diagCtx := ctx
 			cancel := func() {}
@@ -1840,7 +1837,11 @@ func (s *AIChatService) autoCreateActionProposals(
 		return nil
 	}
 
-	specs := buildAutoActionProposalSpecs(req, message)
+	specs := aiapp.BuildAutoActionProposalSpecs(aiapp.ChatActionIntentRequest{
+		ResourceKind: req.ResourceKind,
+		Namespace:    req.Namespace,
+		ResourceName: req.ResourceName,
+	}, message)
 	if len(specs) == 0 {
 		return nil
 	}
@@ -1871,7 +1872,7 @@ func (s *AIChatService) hasOpenProposal(
 	ctx context.Context,
 	conversationID uint64,
 	clusterID uint64,
-	spec autoActionProposalSpec,
+	spec aiapp.AutoActionProposalSpec,
 ) bool {
 	if s.db == nil {
 		return false
@@ -1912,173 +1913,6 @@ func (s *AIChatService) hasOpenProposal(
 		}
 	}
 	return false
-}
-
-type autoActionProposalSpec struct {
-	ProposalType   string
-	TargetResource AIActionTargetResource
-	Payload        model.JSONMap
-	Reason         string
-}
-
-func buildAutoActionProposalSpecs(req AIChatRequest, message string) []autoActionProposalSpec {
-	target := normalizeAIActionTarget(AIActionTargetResource{
-		Kind:      req.ResourceKind,
-		Namespace: req.Namespace,
-		Name:      req.ResourceName,
-	})
-	if target.Kind == "" || target.Name == "" {
-		return nil
-	}
-	// Node 是集群级资源，不需要命名空间；其他资源需要命名空间
-	if !strings.EqualFold(target.Kind, "Node") && target.Namespace == "" {
-		return nil
-	}
-
-	trimmedMessage := strings.TrimSpace(message)
-	if trimmedMessage == "" || hasTentativeActionIntent(trimmedMessage) {
-		return nil
-	}
-
-	specs := make([]autoActionProposalSpec, 0, 4)
-
-	// 工作负载类操作（仅 Deployment/StatefulSet/DaemonSet）
-	_, isWorkload := aiActionWorkloadGVR(target.Kind)
-	if isWorkload {
-		if isExplicitRestartIntent(trimmedMessage) {
-			specs = append(specs, autoActionProposalSpec{
-				ProposalType:   aiActionTypeRestartWorkload,
-				TargetResource: target,
-				Payload:        model.JSONMap{},
-				Reason:         "Auto-generated rollout restart proposal from the latest chat intent. Please verify scope before confirming.",
-			})
-		}
-
-		if !strings.EqualFold(target.Kind, "DaemonSet") {
-			if replicas, ok := detectScaleReplicaTarget(trimmedMessage); ok && isExplicitScaleIntent(trimmedMessage) {
-				specs = append(specs, autoActionProposalSpec{
-					ProposalType:   aiActionTypeScaleWorkload,
-					TargetResource: target,
-					Payload: model.JSONMap{
-						"replicas": replicas,
-					},
-					Reason: "Auto-generated scale proposal from the latest chat intent. Please verify target replicas before confirming.",
-				})
-			}
-		}
-
-		// 删除工作负载意图
-		if isExplicitDeleteIntent(trimmedMessage) {
-			specs = append(specs, autoActionProposalSpec{
-				ProposalType:   aiActionTypeDeleteWorkload,
-				TargetResource: target,
-				Payload:        model.JSONMap{},
-				Reason:         "Auto-generated delete proposal from chat intent. This is a HIGH RISK operation requiring double confirmation.",
-			})
-		}
-
-		// 更新镜像意图
-		if isExplicitUpdateImageIntent(trimmedMessage) {
-			if newImage := detectImageFromMessage(trimmedMessage); newImage != "" {
-				specs = append(specs, autoActionProposalSpec{
-					ProposalType:   aiActionTypeUpdateWorkloadImage,
-					TargetResource: target,
-					Payload: model.JSONMap{
-						"new_image": newImage,
-					},
-					Reason: "Auto-generated image update proposal. Please verify the new image before confirming.",
-				})
-			}
-		}
-	}
-
-	// Pod 类操作：删除 Pod
-	if strings.EqualFold(target.Kind, "Pod") && isExplicitDeletePodIntent(trimmedMessage) {
-		specs = append(specs, autoActionProposalSpec{
-			ProposalType:   aiActionTypeDeletePod,
-			TargetResource: target,
-			Payload:        model.JSONMap{},
-			Reason:         "Auto-generated pod deletion proposal. Pod will be recreated by its controller if managed.",
-		})
-	}
-
-	// Node 类操作：封锁/驱逐
-	if strings.EqualFold(target.Kind, "Node") {
-		if isExplicitCordonIntent(trimmedMessage) {
-			specs = append(specs, autoActionProposalSpec{
-				ProposalType:   aiActionTypeCordonNode,
-				TargetResource: target,
-				Payload:        model.JSONMap{},
-				Reason:         "Auto-generated node cordon proposal. Node will stop scheduling new pods.",
-			})
-		}
-		if isExplicitDrainIntent(trimmedMessage) {
-			specs = append(specs, autoActionProposalSpec{
-				ProposalType:   aiActionTypeDrainNode,
-				TargetResource: target,
-				Payload:        model.JSONMap{},
-				Reason:         "Auto-generated node drain proposal. This is a HIGH RISK operation requiring double confirmation. All pods will be evicted.",
-			})
-		}
-	}
-
-	return specs
-}
-
-func isExplicitRestartIntent(message string) bool {
-	lower := strings.ToLower(strings.TrimSpace(message))
-	if strings.Contains(lower, "rollout restart") || strings.Contains(message, "\u6eda\u52a8\u91cd\u542f") {
-		return true
-	}
-	if !strings.Contains(lower, "restart") && !strings.Contains(message, "\u91cd\u542f") {
-		return false
-	}
-	if strings.HasPrefix(lower, "restart ") || strings.HasPrefix(lower, "please restart") {
-		return true
-	}
-	return containsAny(
-		message,
-		"\u5e2e\u6211\u91cd\u542f",
-		"\u8bf7\u91cd\u542f",
-		"\u6267\u884c\u91cd\u542f",
-		"\u53d1\u8d77\u91cd\u542f",
-		"\u5148\u91cd\u542f",
-		"\u7acb\u5373\u91cd\u542f",
-	)
-}
-
-func isExplicitScaleIntent(message string) bool {
-	lower := strings.ToLower(strings.TrimSpace(message))
-	if containsAny(lower, "scale", "replica", "replicas") {
-		return true
-	}
-	return containsAny(
-		message,
-		"\u6269\u5bb9",
-		"\u7f29\u5bb9",
-		"\u6269\u7f29\u5bb9",
-		"\u526f\u672c",
-		"\u526f\u672c\u6570",
-		"\u8c03\u6574\u526f\u672c",
-		"\u8c03\u6574\u5230",
-		"\u6539\u6210",
-		"\u6539\u4e3a",
-	)
-}
-
-func detectScaleReplicaTarget(message string) (int, bool) {
-	for _, pattern := range scaleReplicaPatterns {
-		matches := pattern.FindStringSubmatch(message)
-		if len(matches) < 2 {
-			continue
-		}
-		replicas, err := strconv.Atoi(matches[1])
-		if err != nil || replicas < 0 {
-			continue
-		}
-		return replicas, true
-	}
-	return 0, false
 }
 
 func hasTentativeActionIntent(message string) bool {
@@ -2234,161 +2068,4 @@ func effectiveAIGatewayMode(mode string, toolCalls []AIToolCallItem, diagnosticN
 
 func ptrUint64(v uint64) *uint64 {
 	return &v
-}
-
-func buildAIAutoDiagnosticsPlan(mode string, req AIChatRequest, message string) aiAutoDiagnosticsPlan {
-	normalizedMode := aiapp.NormalizeAssistantMode(mode)
-	if normalizedMode == "diagnose" {
-		return aiAutoDiagnosticsPlan{
-			Enabled: true,
-			Timeout: 20 * time.Second,
-		}
-	}
-
-	if shouldRunChatDiagnostics(req, message) {
-		return aiAutoDiagnosticsPlan{
-			Enabled:  true,
-			Optional: true,
-			Timeout:  12 * time.Second,
-		}
-	}
-
-	return aiAutoDiagnosticsPlan{}
-}
-
-func shouldRunChatDiagnostics(req AIChatRequest, message string) bool {
-	trimmedMessage := strings.TrimSpace(message)
-	if trimmedMessage == "" {
-		return false
-	}
-	if isGenericKnowledgeQuestion(trimmedMessage) {
-		return false
-	}
-
-	namespace := strings.TrimSpace(req.Namespace)
-	kind := strings.TrimSpace(req.ResourceKind)
-	name := strings.TrimSpace(req.ResourceName)
-	if kind != "" && name != "" {
-		return true
-	}
-	if namespace != "" && (looksLikeScopedClusterQuestion(trimmedMessage) || aiNeedsBroadInspection(trimmedMessage) || aiNeedsConfigSearch(trimmedMessage) || aiNeedsResourceYAML(trimmedMessage)) {
-		return true
-	}
-	if namespace == "" && (aiNeedsClusterInspection(trimmedMessage) || aiNeedsBroadInspection(trimmedMessage) || aiNeedsControlPlaneInspection(trimmedMessage)) {
-		return true
-	}
-	return false
-}
-
-func isGenericKnowledgeQuestion(message string) bool {
-	if containsAny(message,
-		"哪些方面", "从哪些方面", "一般怎么", "通常怎么", "如何", "怎么做", "是什么", "有哪些", "最佳实践", "注意事项", "巡检思路", "排查思路", "设计方案", "实施步骤",
-	) {
-		return true
-	}
-	lower := strings.ToLower(strings.TrimSpace(message))
-	return containsAny(lower,
-		"what is", "how to", "best practice", "checklist", "overview", "introduction", "general", "typically", "usually",
-	)
-}
-
-func looksLikeScopedClusterQuestion(message string) bool {
-	if containsAny(message,
-		"这个集群", "当前集群", "本集群", "这个命名空间", "当前命名空间", "这个服务", "这个 deployment", "这个 pod", "帮我看", "帮我查", "看看", "查一下", "分析一下", "诊断一下", "排查一下",
-	) {
-		return true
-	}
-	lower := strings.ToLower(strings.TrimSpace(message))
-	return containsAny(lower,
-		"check", "inspect", "diagnose", "analyze", "look into", "current cluster", "this cluster", "this namespace", "show me", "health", "usage", "metrics",
-	)
-}
-
-func aiNeedsClusterInspection(message string) bool {
-	text := strings.ToLower(strings.TrimSpace(message))
-	if text == "" {
-		return false
-	}
-	return containsAny(text,
-		"current cluster",
-		"this cluster",
-		"cluster status",
-		"cluster overview",
-		"cluster health",
-	) || containsAny(
-		message,
-		"当前集群",
-		"这个集群",
-		"本集群",
-		"集群状态",
-		"集群概览",
-		"集群健康",
-	)
-}
-
-func aiNeedsControlPlaneInspection(message string) bool {
-	text := strings.ToLower(strings.TrimSpace(message))
-	if text == "" {
-		return false
-	}
-	return containsAny(text,
-		"control plane",
-		"apiserver",
-		"api server",
-		"controller manager",
-		"scheduler",
-		"etcd",
-		"certificate",
-		"cert expiry",
-	) || containsAny(
-		message,
-		"控制面",
-		"api server",
-		"apiserver",
-		"调度器",
-		"controller-manager",
-		"etcd",
-		"证书",
-		"证书风险",
-		"证书过期",
-	)
-}
-
-func aiNeedsBroadInspection(message string) bool {
-	text := strings.ToLower(strings.TrimSpace(message))
-	if text == "" {
-		return false
-	}
-	return containsAny(text,
-		"inspection",
-		"full inspection",
-		"full check",
-		"health check",
-		"resource usage",
-		"metrics",
-		"usage",
-		"inventory",
-	) || containsAny(
-		message,
-		"巡检",
-		"巡查",
-		"完整检查",
-		"完整巡检",
-		"资源使用",
-		"使用情况",
-		"资源个数",
-		"资源数量",
-		"指标",
-		"健康检查",
-		"排查",
-	)
-}
-
-func aiNeedsResourceYAML(message string) bool {
-	text := strings.ToLower(strings.TrimSpace(message))
-	if text == "" {
-		return false
-	}
-	return containsAny(text, "yaml", "manifest", "spec", "mysql", "database", "connection", "password", "config", "secret", "environment", "env", "datasource") ||
-		containsAny(message, "配置", "清单", "导出", "数据库", "连接", "密码", "密钥", "环境变量", "数据源")
 }

@@ -250,7 +250,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/automation/tasks/1/cancellation-requests",
 			register: func(group *gin.RouterGroup) {
-				registerAutomationTaskRoutes(group, &legacyprovision.AutomationTaskController{})
+				registerAutomationTaskRoutes(group, &provisionhttp.AutomationTaskController{})
 			},
 		},
 		{

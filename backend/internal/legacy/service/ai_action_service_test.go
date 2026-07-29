@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	aiapp "k8s-platform-backend/internal/ai/application"
 	model "k8s-platform-backend/internal/ai/domain"
+	changedomain "k8s-platform-backend/internal/change/domain"
 )
 
 // ────────── normalizeAIActionType ──────────
@@ -308,7 +310,7 @@ func TestBuildAIActionProposalItem(t *testing.T) {
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}
-	item := buildAIActionProposalItem(proposal, nil)
+	item := aiapp.BuildActionProposalItem(proposal, nil, changedomain.ConfirmationText)
 	if item.ID != 10 {
 		t.Fatalf("id = %d, want 10", item.ID)
 	}
@@ -340,7 +342,7 @@ func TestBuildAIActionProposalItem_WithExecutions(t *testing.T) {
 	exes := []model.AIActionExecution{
 		{ID: 1, ProposalID: 20, Status: "succeeded", ExecutionNo: 1, CreatedAt: now},
 	}
-	item := buildAIActionProposalItem(proposal, exes)
+	item := aiapp.BuildActionProposalItem(proposal, exes, changedomain.ConfirmationText)
 	if item.LatestExecution == nil {
 		t.Fatal("latest_execution should not be nil")
 	}
@@ -369,7 +371,7 @@ func TestBuildAIActionExecutionItem(t *testing.T) {
 		FinishedAt:      &now,
 		CreatedAt:       now,
 	}
-	item := buildAIActionExecutionItem(exe)
+	item := aiapp.BuildActionExecutionItem(exe)
 	if item.ID != 5 {
 		t.Fatalf("id = %d", item.ID)
 	}

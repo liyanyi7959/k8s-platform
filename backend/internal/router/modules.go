@@ -117,7 +117,7 @@ type provisioningModule struct {
 	runtime      *provisionhttp.RuntimeController
 	tasks        *provisionhttp.TaskController
 	config       *provisionhttp.DeployConfigController
-	automation   *legacyprovision.AutomationTaskController
+	automation   *provisionhttp.AutomationTaskController
 	appTemplate  *provisionhttp.AppTemplateController
 }
 
@@ -127,7 +127,7 @@ type incidentModule struct {
 }
 
 type moduleRuntime struct {
-	taskStore       *service.TaskStore
+	taskStore       *platformapp.TaskStore
 	clusterRegistry *service.ClusterRegistryService
 	k8s             *service.K8sService
 	manifestApply   *service.ManifestApplyRecordService
@@ -135,6 +135,59 @@ type moduleRuntime struct {
 	logSessions     *kopsapp.PodLogSessionStore
 	dashboard       *service.DashboardService
 	deploy          *service.DeployService
+}
+
+// automationTaskRuntime bridges the platform-wide task centre into the
+// Provisioning automation use case at the composition root.
+type automationTaskRuntime struct{ tasks *platformapp.TaskService }
+
+func (runtime automationTaskRuntime) ListAutomationTasks(request provisionapp.AutomationTaskListRequest) (any, error) {
+	if runtime.tasks == nil {
+		return nil, provisionapp.ErrConflict
+	}
+	return runtime.tasks.List(platformapp.ListTasksRequest{
+		Page: request.Page, PageSize: request.PageSize, Type: request.Type, Status: request.Status,
+		Keyword: request.Keyword, SortBy: request.SortBy, Order: request.Order,
+	}), nil
+}
+
+func (runtime automationTaskRuntime) GetAutomationTask(taskID int64) (any, error) {
+	if runtime.tasks == nil {
+		return nil, provisionapp.ErrConflict
+	}
+	task, found := runtime.tasks.Get(taskID)
+	if !found {
+		return nil, provisionapp.ErrNotFound
+	}
+	return task, nil
+}
+
+func (runtime automationTaskRuntime) AutomationTaskLogs(taskID int64, offset, limit int) ([]string, error) {
+	if runtime.tasks == nil {
+		return nil, provisionapp.ErrConflict
+	}
+	logs, found := runtime.tasks.Logs(taskID, offset, limit)
+	if !found {
+		return nil, provisionapp.ErrNotFound
+	}
+	return logs, nil
+}
+
+func (runtime automationTaskRuntime) CancelAutomationTask(taskID int64) error {
+	if runtime.tasks == nil {
+		return provisionapp.ErrConflict
+	}
+	err := runtime.tasks.Cancel(taskID)
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, platformapp.ErrTaskNotFound):
+		return provisionapp.ErrNotFound
+	case errors.Is(err, platformapp.ErrTaskCannotCancel):
+		return provisionapp.ErrConflict
+	default:
+		return err
+	}
 }
 
 func buildApplicationModules(d Deps) applicationModules {
@@ -188,7 +241,7 @@ func buildWorkspaceModule(d Deps, runtime moduleRuntime) workspaceModule {
 }
 
 func buildModuleRuntime(d Deps) moduleRuntime {
-	taskStore := service.NewTaskStore(d.DB)
+	taskStore := platformapp.NewTaskStore(d.DB)
 	clusterRegistry := service.NewClusterRegistryService(d.DB, d.EncryptionKey)
 	k8sService := service.NewK8sService(clusterRegistry, d.CacheStore, d.CacheTTL, d.K8sInsecureTLS)
 	manifestApply := service.NewManifestApplyRecordService(d.DB, k8sService)
@@ -320,14 +373,14 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 	fileService := aiapp.NewAIFileService(d.DB, d.AIUploadDir)
 	toolRegistry := service.NewAIToolRegistry(
 		d.DB,
-		service.NewClusterReadModelService(runtime.dashboard),
+		aiapp.NewClusterReadModelService(legacyai.NewClusterReadPort(runtime.dashboard)),
 		namespaceDiagnosis,
 		resourceInspection,
 		resourceQuery,
 		change.actions,
 		aiapp.NewResourceExportPolicyService(),
 	)
-	toolService := service.NewAIToolService(d.DB, toolRegistry)
+	toolService := aiapp.NewToolService(d.DB, toolRegistry)
 	chatService := service.NewAIChatService(
 		d.DB,
 		aigateway.NewAIGatewayService(d.DB, d.EncryptionKey),
@@ -361,7 +414,7 @@ func buildProvisioningModule(d Deps, runtime moduleRuntime) provisioningModule {
 		runtime:      provisionhttp.NewRuntimeController(provisionapp.NewRuntimeService(legacyprovision.NewRuntime(runtime.deploy))),
 		tasks:        provisionhttp.NewTaskController(provisionapp.NewTaskService(legacyprovision.NewRuntime(runtime.deploy))),
 		config:       provisionhttp.NewDeployConfigController(provisionapp.NewDeployConfigService(d.DB)),
-		automation:   legacyprovision.NewAutomationTaskController(service.NewTaskService(runtime.taskStore)),
+		automation:   provisionhttp.NewAutomationTaskController(provisionapp.NewAutomationTaskService(automationTaskRuntime{tasks: platformapp.NewTaskService(runtime.taskStore)})),
 		appTemplate:  provisionhttp.NewAppTemplateController(appTemplateService),
 	}
 }

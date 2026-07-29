@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"gorm.io/gorm"
+
 	aiapp "k8s-platform-backend/internal/ai/application"
 	model "k8s-platform-backend/internal/ai/domain"
 	changemysql "k8s-platform-backend/internal/change/adapters/mysql"
@@ -54,661 +53,178 @@ type ConfirmAIActionProposalRequest struct {
 	OperatorComment  string `json:"operator_comment"`
 }
 
-type AIActionExecutionItem struct {
-	ID              uint64        `json:"id"`
-	ProposalID      uint64        `json:"proposal_id"`
-	Status          string        `json:"status"`
-	ExecutionNo     int           `json:"execution_no"`
-	OperatorID      uint64        `json:"operator_id"`
-	OperatorName    string        `json:"operator_name"`
-	CommandSnapshot string        `json:"command_snapshot"`
-	Result          model.JSONMap `json:"result,omitempty"`
-	ErrorMessage    string        `json:"error_message,omitempty"`
-	StartedAt       *string       `json:"started_at,omitempty"`
-	FinishedAt      *string       `json:"finished_at,omitempty"`
-	CreatedAt       string        `json:"created_at"`
-}
+type AIActionExecutionItem = aiapp.ActionExecutionItem
+type AIActionProposalItem = aiapp.ActionProposalItem
+type CreateAIActionProposalResult = aiapp.ActionProposalResult
+type ConfirmAIActionProposalResult = aiapp.ActionConfirmationResult
 
-type AIActionProposalItem struct {
-	ID                       uint64                  `json:"id"`
-	ConversationID           uint64                  `json:"conversation_id"`
-	MessageID                *uint64                 `json:"message_id,omitempty"`
-	ToolCallID               *uint64                 `json:"tool_call_id,omitempty"`
-	ClusterID                uint64                  `json:"cluster_id"`
-	ActionType               string                  `json:"action_type"`
-	TargetKind               string                  `json:"target_kind"`
-	TargetNamespace          string                  `json:"target_namespace"`
-	TargetName               string                  `json:"target_name"`
-	RiskLevel                string                  `json:"risk_level"`
-	ConfirmLevel             string                  `json:"confirm_level"`
-	Status                   string                  `json:"status"`
-	Title                    string                  `json:"title"`
-	Summary                  string                  `json:"summary"`
-	Change                   model.JSONMap           `json:"change,omitempty"`
-	CreatedBy                uint64                  `json:"created_by"`
-	CreatedByName            string                  `json:"created_by_name"`
-	ApprovedBy               *uint64                 `json:"approved_by,omitempty"`
-	ApprovedByName           string                  `json:"approved_by_name"`
-	ApprovedAt               *string                 `json:"approved_at,omitempty"`
-	SecondApprovedBy         *uint64                 `json:"second_approved_by,omitempty"`
-	SecondApprovedName       string                  `json:"second_approved_name"`
-	SecondApprovedAt         *string                 `json:"second_approved_at,omitempty"`
-	RequiredConfirmationText string                  `json:"required_confirmation_text"`
-	LatestExecution          *AIActionExecutionItem  `json:"latest_execution,omitempty"`
-	Executions               []AIActionExecutionItem `json:"executions,omitempty"`
-	CreatedAt                string                  `json:"created_at"`
-	UpdatedAt                string                  `json:"updated_at"`
-}
-
-type CreateAIActionProposalResult struct {
-	ProposalID               uint64               `json:"proposal_id"`
-	Status                   string               `json:"status"`
-	RiskLevel                string               `json:"risk_level"`
-	NeedSecondConfirm        bool                 `json:"need_second_confirm"`
-	RequiredConfirmationText string               `json:"required_confirmation_text"`
-	Preview                  string               `json:"preview"`
-	Diff                     string               `json:"diff"`
-	Proposal                 AIActionProposalItem `json:"proposal"`
-}
-
-type ConfirmAIActionProposalResult struct {
-	ProposalID      uint64                 `json:"proposal_id"`
-	ExecutionStatus string                 `json:"execution_status"`
-	ResultSummary   string                 `json:"result_summary"`
-	Proposal        AIActionProposalItem   `json:"proposal"`
-	Execution       *AIActionExecutionItem `json:"execution,omitempty"`
-}
-
-type AIActionService struct {
-	db            *gorm.DB
-	workloadSvc   *WorkloadActionService
-	changeService *changeapp.Service
-}
+// AIActionService is a compatibility facade for callers that have not moved
+// to the AI application package yet. Proposal orchestration belongs to
+// aiapp.ActionService; this type only adapts the legacy Kops and Change ports.
+type AIActionService struct{ core *aiapp.ActionService }
 
 func NewAIActionService(db *gorm.DB, workloadSvc *WorkloadActionService) *AIActionService {
 	return NewAIActionServiceWithChangeService(db, workloadSvc, changeapp.NewService(changemysql.NewRepository(db)))
 }
 
 func NewAIActionServiceWithChangeService(db *gorm.DB, workloadSvc *WorkloadActionService, changeService *changeapp.Service) *AIActionService {
-	return &AIActionService{db: db, workloadSvc: workloadSvc, changeService: changeService}
+	return &AIActionService{core: aiapp.NewActionService(db, workloadActionExecutor{service: workloadSvc}, changeConfirmationAdapter{service: changeService})}
 }
 
-func (s *AIActionService) CreateProposal(
-	ctx context.Context,
-	clusterID uint64,
-	userID uint64,
-	username string,
-	req CreateAIActionProposalRequest,
-) (CreateAIActionProposalResult, error) {
-	if s.db == nil {
-		return CreateAIActionProposalResult{}, errors.New("db is required")
+func (s *AIActionService) CreateProposal(ctx context.Context, clusterID, userID uint64, username string, req CreateAIActionProposalRequest) (CreateAIActionProposalResult, error) {
+	if s == nil || s.core == nil {
+		return CreateAIActionProposalResult{}, errors.New("action application service is required")
 	}
-	if s.workloadSvc == nil {
-		return CreateAIActionProposalResult{}, errors.New("workload action service is required")
-	}
-	if clusterID == 0 || req.ConversationID == 0 {
-		return CreateAIActionProposalResult{}, ErrWithMessage(ErrInvalidParams, "集群或会话参数无效")
-	}
-
-	actionType := normalizeAIActionType(req.ProposalType)
-	if actionType == "" {
-		return CreateAIActionProposalResult{}, ErrWithMessage(ErrInvalidParams, "当前动作类型暂不支持")
-	}
-
-	var conversation model.AIConversation
-	if err := s.db.WithContext(ctx).
-		Where("deleted_at IS NULL AND id = ? AND cluster_id = ?", req.ConversationID, clusterID).
-		First(&conversation).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return CreateAIActionProposalResult{}, ErrNotFound
-		}
-		return CreateAIActionProposalResult{}, err
-	}
-
-	proposalRow, preview, diffText, err := s.buildProposalRow(ctx, clusterID, userID, username, req)
-	if err != nil {
-		return CreateAIActionProposalResult{}, err
-	}
-
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&proposalRow).Error; err != nil {
-			return err
-		}
-		if err := s.appendProposalMessageTx(tx, proposalRow.ConversationID, userID, proposalRow.Title, proposalRow.Summary); err != nil {
-			return err
-		}
-		return tx.Model(&model.AIConversation{}).
-			Where("id = ?", proposalRow.ConversationID).
-			Updates(map[string]any{
-				"status":          "waiting_confirm",
-				"last_message_at": time.Now().UTC(),
-			}).Error
-	}); err != nil {
-		return CreateAIActionProposalResult{}, err
-	}
-
-	item, err := s.GetProposal(ctx, clusterID, proposalRow.ID)
-	if err != nil {
-		return CreateAIActionProposalResult{}, err
-	}
-
-	return CreateAIActionProposalResult{
-		ProposalID:               proposalRow.ID,
-		Status:                   proposalRow.Status,
-		RiskLevel:                proposalRow.RiskLevel,
-		NeedSecondConfirm:        proposalRow.ConfirmLevel == "double",
-		RequiredConfirmationText: buildAIActionConfirmationText(proposalRow.ID),
-		Preview:                  preview,
-		Diff:                     diffText,
-		Proposal:                 item,
-	}, nil
-}
-
-func (s *AIActionService) ConfirmProposal(
-	ctx context.Context,
-	clusterID uint64,
-	proposalID uint64,
-	userID uint64,
-	username string,
-	req ConfirmAIActionProposalRequest,
-) (ConfirmAIActionProposalResult, error) {
-	if s.db == nil {
-		return ConfirmAIActionProposalResult{}, errors.New("db is required")
-	}
-	if s.workloadSvc == nil {
-		return ConfirmAIActionProposalResult{}, errors.New("workload action service is required")
-	}
-	if clusterID == 0 || proposalID == 0 {
-		return ConfirmAIActionProposalResult{}, ErrWithMessage(ErrInvalidParams, "提案参数无效")
-	}
-	if s.changeService == nil {
-		return ConfirmAIActionProposalResult{}, errors.New("change application service is required")
-	}
-
-	confirmation, err := s.changeService.Confirm(ctx, changeapp.ConfirmCommand{
-		ClusterID: clusterID, ProposalID: proposalID, ActorID: userID, ActorName: username,
-		RiskAccepted: req.ConfirmRisk, ConfirmationText: req.ConfirmationText,
+	result, err := s.core.CreateProposal(ctx, clusterID, userID, username, aiapp.CreateActionProposalRequest{
+		ConversationID: req.ConversationID, MessageID: req.MessageID, ProposalType: req.ProposalType,
+		TargetResource: req.TargetResource, Payload: map[string]any(req.Payload), Reason: req.Reason,
 	})
-	if err != nil {
-		return ConfirmAIActionProposalResult{}, mapChangeConfirmationError(err)
-	}
-
-	if confirmation.Decision == changedomain.DecisionRecordFirstApproval {
-		item, err := s.GetProposal(ctx, clusterID, proposalID)
-		if err != nil {
-			return ConfirmAIActionProposalResult{}, err
-		}
-		return ConfirmAIActionProposalResult{
-			ProposalID:      proposalID,
-			ExecutionStatus: "waiting_second_confirm",
-			ResultSummary:   "已完成首次确认，等待第二位审批人确认后执行",
-			Proposal:        item,
-		}, nil
-	}
-
-	if confirmation.Decision != changedomain.DecisionExecute {
-		return ConfirmAIActionProposalResult{}, ErrWithMessage(ErrConflict, "该提案当前状态不允许确认")
-	}
-
-	var proposal model.AIActionProposal
-	if err := s.db.WithContext(ctx).
-		Where("id = ? AND cluster_id = ?", proposalID, clusterID).
-		First(&proposal).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ConfirmAIActionProposalResult{}, ErrNotFound
-		}
-		return ConfirmAIActionProposalResult{}, err
-	}
-
-	executionRow, summary, err := s.executeProposal(ctx, proposal, userID, username, strings.TrimSpace(req.OperatorComment))
-	if err != nil {
-		return ConfirmAIActionProposalResult{}, err
-	}
-	item, err := s.GetProposal(ctx, clusterID, proposal.ID)
-	if err != nil {
-		return ConfirmAIActionProposalResult{}, err
-	}
-
-	return ConfirmAIActionProposalResult{
-		ProposalID:      proposal.ID,
-		ExecutionStatus: executionRow.Status,
-		ResultSummary:   summary,
-		Proposal:        item,
-		Execution:       ptrAIActionExecutionItem(buildAIActionExecutionItem(executionRow)),
-	}, nil
+	return result, mapActionApplicationError(err)
 }
 
-func (s *AIActionService) GetProposal(ctx context.Context, clusterID uint64, proposalID uint64) (AIActionProposalItem, error) {
-	if s.db == nil {
-		return AIActionProposalItem{}, errors.New("db is required")
+func (s *AIActionService) ConfirmProposal(ctx context.Context, clusterID, proposalID, userID uint64, username string, req ConfirmAIActionProposalRequest) (ConfirmAIActionProposalResult, error) {
+	if s == nil || s.core == nil {
+		return ConfirmAIActionProposalResult{}, errors.New("action application service is required")
 	}
-	if clusterID == 0 || proposalID == 0 {
-		return AIActionProposalItem{}, ErrWithMessage(ErrInvalidParams, "提案参数无效")
+	result, err := s.core.ConfirmProposal(ctx, clusterID, proposalID, userID, username, aiapp.ConfirmActionProposalRequest{
+		ConfirmationText: req.ConfirmationText, ConfirmRisk: req.ConfirmRisk, OperatorComment: req.OperatorComment,
+	})
+	return result, mapActionApplicationError(err)
+}
+
+func (s *AIActionService) GetProposal(ctx context.Context, clusterID, proposalID uint64) (AIActionProposalItem, error) {
+	if s == nil || s.core == nil {
+		return AIActionProposalItem{}, errors.New("action application service is required")
 	}
-	var row model.AIActionProposal
-	if err := s.db.WithContext(ctx).
-		Where("id = ? AND cluster_id = ?", proposalID, clusterID).
-		First(&row).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return AIActionProposalItem{}, ErrNotFound
-		}
-		return AIActionProposalItem{}, err
-	}
-	items, err := listConversationActionProposals(ctx, s.db, row.ConversationID)
-	if err != nil {
-		return AIActionProposalItem{}, err
-	}
-	for _, item := range items {
-		if item.ID == proposalID {
-			return item, nil
-		}
-	}
-	return AIActionProposalItem{}, ErrNotFound
+	result, err := s.core.GetProposal(ctx, clusterID, proposalID)
+	return result, mapActionApplicationError(err)
 }
 
 func (s *AIActionService) ListConversationProposals(ctx context.Context, conversationID uint64) ([]AIActionProposalItem, error) {
-	return listConversationActionProposals(ctx, s.db, conversationID)
+	if s == nil || s.core == nil {
+		return nil, errors.New("action application service is required")
+	}
+	result, err := s.core.ListConversationProposals(ctx, conversationID)
+	return result, mapActionApplicationError(err)
 }
 
 func listConversationActionProposals(ctx context.Context, db *gorm.DB, conversationID uint64) ([]AIActionProposalItem, error) {
-	if db == nil {
-		return nil, errors.New("db is required")
-	}
-	if conversationID == 0 {
-		return nil, ErrWithMessage(ErrInvalidParams, "会话 ID 无效")
-	}
-
-	var proposals []model.AIActionProposal
-	if err := db.WithContext(ctx).
-		Where("conversation_id = ?", conversationID).
-		Order("created_at DESC, id DESC").
-		Find(&proposals).Error; err != nil {
-		return nil, err
-	}
-
-	executionMap, err := listActionExecutionsByProposal(ctx, db, proposals)
-	if err != nil {
-		return nil, err
-	}
-
-	items := make([]AIActionProposalItem, 0, len(proposals))
-	for _, row := range proposals {
-		items = append(items, buildAIActionProposalItem(row, executionMap[row.ID]))
-	}
-	return items, nil
+	return aiapp.NewActionProjectionService(db, aiapp.ActionConfirmationText).ListConversation(ctx, conversationID)
 }
 
-func listActionExecutionsByProposal(
-	ctx context.Context,
-	db *gorm.DB,
-	proposals []model.AIActionProposal,
-) (map[uint64][]model.AIActionExecution, error) {
-	result := make(map[uint64][]model.AIActionExecution, len(proposals))
-	if len(proposals) == 0 {
-		return result, nil
-	}
-	ids := make([]uint64, 0, len(proposals))
-	for _, row := range proposals {
-		ids = append(ids, row.ID)
-	}
+type workloadActionExecutor struct{ service *WorkloadActionService }
 
-	var rows []model.AIActionExecution
-	if err := db.WithContext(ctx).
-		Where("proposal_id IN ?", ids).
-		Order("created_at DESC, id DESC").
-		Find(&rows).Error; err != nil {
-		return nil, err
+func (adapter workloadActionExecutor) PrepareAction(ctx context.Context, clusterID uint64, req aiapp.CreateActionProposalRequest) (aiapp.PreparedAction, error) {
+	if adapter.service == nil {
+		return aiapp.PreparedAction{}, errors.New("workload action service is required")
 	}
-	for _, row := range rows {
-		result[row.ProposalID] = append(result[row.ProposalID], row)
-	}
-	return result, nil
-}
-
-func (s *AIActionService) buildProposalRow(
-	ctx context.Context,
-	clusterID uint64,
-	userID uint64,
-	username string,
-	req CreateAIActionProposalRequest,
-) (model.AIActionProposal, string, string, error) {
 	target := normalizeAIActionTarget(req.TargetResource)
-	payload := req.Payload
-	if payload == nil {
-		payload = model.JSONMap{}
-	}
-	prepared, err := s.workloadSvc.PrepareProposal(ctx, PrepareWorkloadActionRequest{
-		ClusterID:  clusterID,
-		ActionType: req.ProposalType,
-		Target: WorkloadActionTarget{
-			Kind:      target.Kind,
-			Namespace: target.Namespace,
-			Name:      target.Name,
-		},
-		Payload: kopsdomain.JSONMap(payload),
-		Reason:  strings.TrimSpace(req.Reason),
+	prepared, err := adapter.service.PrepareProposal(ctx, PrepareWorkloadActionRequest{
+		ClusterID: clusterID, ActionType: req.ProposalType,
+		Target:  WorkloadActionTarget{Kind: target.Kind, Namespace: target.Namespace, Name: target.Name},
+		Payload: kopsdomain.JSONMap(req.Payload), Reason: strings.TrimSpace(req.Reason),
 	})
 	if err != nil {
-		return model.AIActionProposal{}, "", "", err
+		return aiapp.PreparedAction{}, err
 	}
-
-	row := model.AIActionProposal{
-		ConversationID:  req.ConversationID,
-		MessageID:       req.MessageID,
-		ClusterID:       clusterID,
-		ActionType:      prepared.ActionType,
-		TargetKind:      prepared.Target.Kind,
-		TargetNamespace: prepared.Target.Namespace,
-		TargetName:      prepared.Target.Name,
-		RiskLevel:       prepared.RiskLevel,
-		ConfirmLevel:    prepared.ConfirmLevel,
-		Status:          "pending_confirm",
-		Title:           prepared.Title,
-		Summary:         prepared.Summary,
-		ChangeJSON:      model.JSONMap(prepared.Change),
-		CreatedBy:       userID,
-		CreatedByName:   strings.TrimSpace(username),
-	}
-	return row, prepared.Preview, prepared.Diff, nil
+	return aiapp.PreparedAction{
+		ActionType: prepared.ActionType, Target: aiapp.ActionTargetResource{Kind: prepared.Target.Kind, Namespace: prepared.Target.Namespace, Name: prepared.Target.Name},
+		RiskLevel: prepared.RiskLevel, ConfirmLevel: prepared.ConfirmLevel, Title: prepared.Title, Summary: prepared.Summary,
+		Change: model.JSONMap(prepared.Change), Preview: prepared.Preview, Diff: prepared.Diff,
+	}, nil
 }
 
-func (s *AIActionService) executeProposal(
-	ctx context.Context,
-	proposal model.AIActionProposal,
-	userID uint64,
-	username string,
-	operatorComment string,
-) (model.AIActionExecution, string, error) {
-	executionNo, err := s.nextExecutionNo(ctx, proposal.ID)
-	if err != nil {
-		return model.AIActionExecution{}, "", err
+func (adapter workloadActionExecutor) ExecuteAction(ctx context.Context, proposal model.AIActionProposal) (aiapp.ActionExecutionResult, error) {
+	if adapter.service == nil {
+		return aiapp.ActionExecutionResult{}, errors.New("workload action service is required")
 	}
-
-	startedAt := time.Now().UTC()
-	commandSnapshot := s.buildExecutionSnapshot(proposal, operatorComment)
-	executionRow := model.AIActionExecution{
-		ProposalID:      proposal.ID,
-		ConversationID:  proposal.ConversationID,
-		ClusterID:       proposal.ClusterID,
-		ExecutionNo:     executionNo,
-		Status:          "running",
-		StartedAt:       &startedAt,
-		OperatorID:      userID,
-		OperatorName:    strings.TrimSpace(username),
-		CommandSnapshot: commandSnapshot,
-	}
-	if err := s.db.WithContext(ctx).Create(&executionRow).Error; err != nil {
-		return model.AIActionExecution{}, "", err
-	}
-
-	approveUpdates := map[string]any{
-		"status": "executing",
-	}
-	if proposal.ConfirmLevel == "double" {
-		approveUpdates["second_approved_by"] = userID
-		approveUpdates["second_approved_name"] = strings.TrimSpace(username)
-		approveUpdates["second_approved_at"] = &startedAt
-	} else if proposal.ApprovedBy == nil {
-		approveUpdates["approved_by"] = userID
-		approveUpdates["approved_by_name"] = strings.TrimSpace(username)
-		approveUpdates["approved_at"] = &startedAt
-	}
-	if err := s.db.WithContext(ctx).Model(&model.AIActionProposal{}).
-		Where("id = ?", proposal.ID).
-		Updates(approveUpdates).Error; err != nil {
-		return model.AIActionExecution{}, "", err
-	}
-
-	resultJSON, summary, execErr := s.runProposalAction(ctx, proposal)
-	finishedAt := time.Now().UTC()
-	if execErr != nil {
-		_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			_ = tx.Model(&model.AIActionExecution{}).
-				Where("id = ?", executionRow.ID).
-				Updates(map[string]any{
-					"status":        "failed",
-					"finished_at":   &finishedAt,
-					"error_message": firstUserFacingError(execErr),
-				}).Error
-			_ = tx.Model(&model.AIActionProposal{}).
-				Where("id = ?", proposal.ID).
-				Updates(map[string]any{
-					"status": "failed",
-				}).Error
-			_ = s.appendExecutionMessageTx(tx, proposal.ConversationID, userID, proposal.Title, "failed", firstUserFacingError(execErr))
-			_ = tx.Model(&model.AIConversation{}).
-				Where("id = ?", proposal.ConversationID).
-				Updates(map[string]any{
-					"status":          "open",
-					"last_message_at": &finishedAt,
-				}).Error
-			return nil
-		})
-		return model.AIActionExecution{}, "", execErr
-	}
-
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&model.AIActionExecution{}).
-			Where("id = ?", executionRow.ID).
-			Updates(map[string]any{
-				"status":        "succeeded",
-				"finished_at":   &finishedAt,
-				"result_json":   resultJSON,
-				"error_message": "",
-			}).Error; err != nil {
-			return err
-		}
-		if err := tx.Model(&model.AIActionProposal{}).
-			Where("id = ?", proposal.ID).
-			Updates(map[string]any{
-				"status": "succeeded",
-			}).Error; err != nil {
-			return err
-		}
-		if err := s.appendExecutionMessageTx(tx, proposal.ConversationID, userID, proposal.Title, "succeeded", summary); err != nil {
-			return err
-		}
-		return tx.Model(&model.AIConversation{}).
-			Where("id = ?", proposal.ConversationID).
-			Updates(map[string]any{
-				"status":          "open",
-				"last_message_at": &finishedAt,
-			}).Error
-	}); err != nil {
-		return model.AIActionExecution{}, "", err
-	}
-
-	executionRow.Status = "succeeded"
-	executionRow.ResultJSON = model.JSONMap(resultJSON)
-	executionRow.FinishedAt = &finishedAt
-	return executionRow, summary, nil
-}
-
-func (s *AIActionService) runProposalAction(
-	ctx context.Context,
-	proposal model.AIActionProposal,
-) (model.JSONMap, string, error) {
-	result, err := s.workloadSvc.ExecuteProposalAction(ctx, ExecuteWorkloadActionRequest{
-		ClusterID:     proposal.ClusterID,
-		ActionType:    proposal.ActionType,
-		Target:        WorkloadActionTarget{Kind: proposal.TargetKind, Namespace: proposal.TargetNamespace, Name: proposal.TargetName},
-		Change:        kopsdomain.JSONMap(proposal.ChangeJSON),
-		ProposalTitle: proposal.Title,
-		CreatedBy:     proposal.CreatedBy,
-		CreatedByName: proposal.CreatedByName,
+	result, err := adapter.service.ExecuteProposalAction(ctx, ExecuteWorkloadActionRequest{
+		ClusterID: proposal.ClusterID, ActionType: proposal.ActionType,
+		Target: WorkloadActionTarget{Kind: proposal.TargetKind, Namespace: proposal.TargetNamespace, Name: proposal.TargetName},
+		Change: kopsdomain.JSONMap(proposal.ChangeJSON), ProposalTitle: proposal.Title, CreatedBy: proposal.CreatedBy, CreatedByName: proposal.CreatedByName,
 	})
 	if err != nil {
-		return nil, "", err
+		return aiapp.ActionExecutionResult{}, err
 	}
-	return model.JSONMap(result.Result), result.Summary, nil
+	return aiapp.ActionExecutionResult{Result: model.JSONMap(result.Result), Summary: result.Summary}, nil
 }
 
-func (s *AIActionService) nextExecutionNo(ctx context.Context, proposalID uint64) (int, error) {
-	var maxNo int
-	if err := s.db.WithContext(ctx).
-		Model(&model.AIActionExecution{}).
-		Select("COALESCE(MAX(execution_no), 0)").
-		Where("proposal_id = ?", proposalID).
-		Scan(&maxNo).Error; err != nil {
-		return 0, err
-	}
-	return maxNo + 1, nil
-}
+type changeConfirmationAdapter struct{ service *changeapp.Service }
 
-func (s *AIActionService) buildExecutionSnapshot(proposal model.AIActionProposal, operatorComment string) string {
-	payload := map[string]any{
-		"action_type":      proposal.ActionType,
-		"target_kind":      proposal.TargetKind,
-		"target_namespace": proposal.TargetNamespace,
-		"target_name":      proposal.TargetName,
-		"change":           proposal.ChangeJSON,
-		"operator_comment": strings.TrimSpace(operatorComment),
+func (adapter changeConfirmationAdapter) ConfirmAction(ctx context.Context, req aiapp.ActionConfirmationRequest) (aiapp.ActionConfirmationDecision, error) {
+	if adapter.service == nil {
+		return "", errors.New("change application service is required")
 	}
-	raw, err := json.Marshal(payload)
+	result, err := adapter.service.Confirm(ctx, changeapp.ConfirmCommand{
+		ClusterID: req.ClusterID, ProposalID: req.ProposalID, ActorID: req.ActorID, ActorName: req.ActorName,
+		RiskAccepted: req.RiskAccepted, ConfirmationText: req.ConfirmationText,
+	})
 	if err != nil {
-		return ""
+		return "", mapChangeConfirmationApplicationError(err)
 	}
-	return string(raw)
-}
-
-func (s *AIActionService) appendProposalMessageTx(
-	tx *gorm.DB,
-	conversationID uint64,
-	userID uint64,
-	title string,
-	summary string,
-) error {
-	message := model.AIMessage{
-		ConversationID: conversationID,
-		Role:           "system",
-		MessageType:    "proposal",
-		Content:        fmt.Sprintf("已生成变更提案：%s\n%s", strings.TrimSpace(title), strings.TrimSpace(summary)),
-		Status:         "created",
-		CreatedBy:      userID,
-	}
-	return tx.Create(&message).Error
-}
-
-func (s *AIActionService) appendExecutionMessageTx(
-	tx *gorm.DB,
-	conversationID uint64,
-	userID uint64,
-	title string,
-	status string,
-	summary string,
-) error {
-	content := fmt.Sprintf("变更提案执行%s：%s\n%s", aiActionExecutionStatusLabel(status), strings.TrimSpace(title), strings.TrimSpace(summary))
-	message := model.AIMessage{
-		ConversationID: conversationID,
-		Role:           "system",
-		MessageType:    "action_execution",
-		Content:        content,
-		Status:         "created",
-		CreatedBy:      userID,
-	}
-	return tx.Create(&message).Error
-}
-
-func buildAIActionProposalItem(
-	row model.AIActionProposal,
-	executions []model.AIActionExecution,
-) AIActionProposalItem {
-	var approvedAt *string
-	if row.ApprovedAt != nil {
-		v := row.ApprovedAt.UTC().Format(time.RFC3339)
-		approvedAt = &v
-	}
-	var secondApprovedAt *string
-	if row.SecondApprovedAt != nil {
-		v := row.SecondApprovedAt.UTC().Format(time.RFC3339)
-		secondApprovedAt = &v
-	}
-
-	executionItems := make([]AIActionExecutionItem, 0, len(executions))
-	for _, row := range executions {
-		executionItems = append(executionItems, buildAIActionExecutionItem(row))
-	}
-
-	var latestExecution *AIActionExecutionItem
-	if len(executionItems) > 0 {
-		latestExecution = ptrAIActionExecutionItem(executionItems[0])
-	}
-
-	return AIActionProposalItem{
-		ID:                       row.ID,
-		ConversationID:           row.ConversationID,
-		MessageID:                row.MessageID,
-		ToolCallID:               row.ToolCallID,
-		ClusterID:                row.ClusterID,
-		ActionType:               row.ActionType,
-		TargetKind:               row.TargetKind,
-		TargetNamespace:          row.TargetNamespace,
-		TargetName:               row.TargetName,
-		RiskLevel:                row.RiskLevel,
-		ConfirmLevel:             row.ConfirmLevel,
-		Status:                   row.Status,
-		Title:                    row.Title,
-		Summary:                  row.Summary,
-		Change:                   model.JSONMap(row.ChangeJSON),
-		CreatedBy:                row.CreatedBy,
-		CreatedByName:            row.CreatedByName,
-		ApprovedBy:               row.ApprovedBy,
-		ApprovedByName:           row.ApprovedByName,
-		ApprovedAt:               approvedAt,
-		SecondApprovedBy:         row.SecondApprovedBy,
-		SecondApprovedName:       row.SecondApprovedName,
-		SecondApprovedAt:         secondApprovedAt,
-		RequiredConfirmationText: buildAIActionConfirmationText(row.ID),
-		LatestExecution:          latestExecution,
-		Executions:               executionItems,
-		CreatedAt:                row.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:                row.UpdatedAt.UTC().Format(time.RFC3339),
+	switch result.Decision {
+	case changedomain.DecisionRecordFirstApproval:
+		return aiapp.ActionFirstApproval, nil
+	case changedomain.DecisionExecute:
+		return aiapp.ActionExecute, nil
+	default:
+		return "", aiapp.ErrorWithMessage(aiapp.ErrConflict, "该提案当前状态不允许确认")
 	}
 }
 
-func buildAIActionExecutionItem(row model.AIActionExecution) AIActionExecutionItem {
-	var startedAt *string
-	if row.StartedAt != nil {
-		v := row.StartedAt.UTC().Format(time.RFC3339)
-		startedAt = &v
+func mapActionApplicationError(err error) error {
+	if err == nil {
+		return nil
 	}
-	var finishedAt *string
-	if row.FinishedAt != nil {
-		v := row.FinishedAt.UTC().Format(time.RFC3339)
-		finishedAt = &v
+	for _, candidate := range []struct{ application, legacy error }{
+		{aiapp.ErrInvalidParams, ErrInvalidParams}, {aiapp.ErrNotFound, ErrNotFound}, {aiapp.ErrConflict, ErrConflict}, {aiapp.ErrCrypto, ErrCrypto},
+	} {
+		if errors.Is(err, candidate.application) {
+			if message, ok := UserMessage(err); ok {
+				return ErrWithMessage(candidate.legacy, message)
+			}
+			return candidate.legacy
+		}
 	}
-	return AIActionExecutionItem{
-		ID:              row.ID,
-		ProposalID:      row.ProposalID,
-		Status:          row.Status,
-		ExecutionNo:     row.ExecutionNo,
-		OperatorID:      row.OperatorID,
-		OperatorName:    row.OperatorName,
-		CommandSnapshot: row.CommandSnapshot,
-		Result:          model.JSONMap(row.ResultJSON),
-		ErrorMessage:    row.ErrorMessage,
-		StartedAt:       startedAt,
-		FinishedAt:      finishedAt,
-		CreatedAt:       row.CreatedAt.UTC().Format(time.RFC3339),
+	return err
+}
+
+func mapChangeConfirmationApplicationError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, changedomain.ErrAlreadyExecuted):
+		return aiapp.ErrorWithMessage(aiapp.ErrConflict, "该提案已执行，无需重复确认")
+	case errors.Is(err, changedomain.ErrNotConfirmable):
+		return aiapp.ErrorWithMessage(aiapp.ErrConflict, "该提案当前状态不允许确认")
+	case errors.Is(err, changedomain.ErrSameApprover):
+		return aiapp.ErrorWithMessage(aiapp.ErrConflict, "双人确认提案需要由其他成员完成第二次确认")
+	case errors.Is(err, changedomain.ErrRiskNotAccepted):
+		return aiapp.ErrorWithMessage(aiapp.ErrInvalidParams, "请先确认已知晓本次变更风险")
+	case errors.Is(err, changedomain.ErrInvalidConfirmation):
+		return aiapp.ErrorWithMessage(aiapp.ErrInvalidParams, "确认短语不正确")
+	case errors.Is(err, changeports.ErrProposalNotFound):
+		return aiapp.ErrNotFound
+	case errors.Is(err, changeports.ErrConcurrentChange):
+		return aiapp.ErrorWithMessage(aiapp.ErrConflict, "提案已被其他请求更新，请刷新后重试")
+	case errors.Is(err, changeapp.ErrInvalidCommand):
+		return aiapp.ErrorWithMessage(aiapp.ErrInvalidParams, "提案确认参数无效")
+	default:
+		return err
 	}
 }
 
-func normalizeAIActionType(v string) string {
-	return aiapp.NormalizeActionType(v)
-}
-
+// The helpers below keep legacy Kops callers source-compatible while their
+// runtime implementation is migrated. The policy itself resides in aiapp.
+func normalizeAIActionType(v string) string { return aiapp.NormalizeActionType(v) }
 func normalizeAIActionTarget(target AIActionTargetResource) AIActionTargetResource {
 	return aiapp.NormalizeActionTarget(target)
 }
-
 func aiActionWorkloadGVR(kind string) (schema.GroupVersionResource, bool) {
 	return aiapp.ActionWorkloadGVR(kind)
 }
 
 func aiActionPayload(change model.JSONMap) model.JSONMap {
-	if change == nil {
-		return model.JSONMap{}
-	}
 	if payload, ok := change["payload"].(map[string]any); ok && payload != nil {
 		return model.JSONMap(payload)
 	}
@@ -726,41 +242,44 @@ func aiActionExecutionStatusLabel(status string) string {
 	}
 }
 
-func jsonIntValue(v any) (int, bool) {
-	switch n := v.(type) {
+func jsonIntValue(value any) (int, bool) {
+	switch number := value.(type) {
 	case int:
-		return n, true
+		return number, true
 	case int8:
-		return int(n), true
+		return int(number), true
 	case int16:
-		return int(n), true
+		return int(number), true
 	case int32:
-		return int(n), true
+		return int(number), true
 	case int64:
-		return int(n), true
+		return int(number), true
 	case uint:
-		return int(n), true
+		return int(number), true
 	case uint8:
-		return int(n), true
+		return int(number), true
 	case uint16:
-		return int(n), true
+		return int(number), true
 	case uint32:
-		return int(n), true
+		return int(number), true
 	case uint64:
-		return int(n), true
+		return int(number), true
 	case float32:
-		return int(n), true
+		return int(number), true
 	case float64:
-		return int(n), true
+		return int(number), true
 	default:
 		return 0, false
 	}
 }
 
 func jsonNestedInt(obj map[string]any, keys ...string) int {
+	if len(keys) == 0 {
+		return 0
+	}
 	current := obj
-	for i := 0; i < len(keys)-1; i++ {
-		next, _ := current[keys[i]].(map[string]any)
+	for _, key := range keys[:len(keys)-1] {
+		next, _ := current[key].(map[string]any)
 		if next == nil {
 			return 0
 		}
@@ -773,9 +292,7 @@ func jsonNestedInt(obj map[string]any, keys ...string) int {
 	return value
 }
 
-func ptrAIActionExecutionItem(item AIActionExecutionItem) *AIActionExecutionItem {
-	return &item
-}
+func ptrAIActionExecutionItem(item AIActionExecutionItem) *AIActionExecutionItem { return &item }
 
 func validateAIActionConfirmation(proposal model.AIActionProposal, req ConfirmAIActionProposalRequest) error {
 	err := changedomain.ValidateConfirmation(proposal.ID, changedomain.Confirmation{RiskAccepted: req.ConfirmRisk, Text: req.ConfirmationText})
@@ -783,44 +300,22 @@ func validateAIActionConfirmation(proposal model.AIActionProposal, req ConfirmAI
 }
 
 func buildAIActionConfirmationText(proposalID uint64) string {
-	return changedomain.ConfirmationText(proposalID)
+	return aiapp.ActionConfirmationText(proposalID)
 }
 
 func mapChangeConfirmationError(err error) error {
-	switch {
-	case err == nil:
-		return nil
-	case errors.Is(err, changedomain.ErrAlreadyExecuted):
-		return ErrWithMessage(ErrConflict, "该提案已执行，无需重复确认")
-	case errors.Is(err, changedomain.ErrNotConfirmable):
-		return ErrWithMessage(ErrConflict, "该提案当前状态不允许确认")
-	case errors.Is(err, changedomain.ErrSameApprover):
-		return ErrWithMessage(ErrConflict, "双人确认提案需要由其他成员完成第二次确认")
-	case errors.Is(err, changedomain.ErrRiskNotAccepted):
-		return ErrWithMessage(ErrInvalidParams, "请先确认已知晓本次变更风险")
-	case errors.Is(err, changedomain.ErrInvalidConfirmation):
-		return ErrWithMessage(ErrInvalidParams, "确认短语不正确")
-	case errors.Is(err, changeports.ErrProposalNotFound):
-		return ErrNotFound
-	case errors.Is(err, changeports.ErrConcurrentChange):
-		return ErrWithMessage(ErrConflict, "提案已被其他请求更新，请刷新后重试")
-	case errors.Is(err, changeapp.ErrInvalidCommand):
-		return ErrWithMessage(ErrInvalidParams, "提案确认参数无效")
-	default:
-		return err
-	}
+	return mapActionApplicationError(mapChangeConfirmationApplicationError(err))
 }
 
-func aiActionString(v any) string {
-	switch value := v.(type) {
+func aiActionString(value any) string {
+	switch typed := value.(type) {
 	case string:
-		return strings.TrimSpace(value)
+		return strings.TrimSpace(typed)
 	case []byte:
-		return strings.TrimSpace(string(value))
+		return strings.TrimSpace(string(typed))
+	case nil:
+		return ""
 	default:
-		if value == nil {
-			return ""
-		}
-		return strings.TrimSpace(fmt.Sprint(value))
+		return strings.TrimSpace(fmt.Sprint(typed))
 	}
 }

@@ -1,8 +1,13 @@
 package service
 
-import "testing"
+import (
+	"testing"
+
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
+)
 
 func TestAnsibleLogWriterStopsStepProgressAfterFailure(t *testing.T) {
+	ansibleSteps := provisionapp.DefaultAnsibleSteps()
 	task := &Task{Steps: make([]TaskStep, len(ansibleSteps))}
 	for i, definition := range ansibleSteps {
 		task.Steps[i] = TaskStep{Key: definition.Key, Title: definition.Title, Status: StepPending}
@@ -40,8 +45,8 @@ func TestHasAnsibleRecapFailure(t *testing.T) {
 		{line: "worker-1 : ok=0 changed=0 unreachable=1 failed=0 skipped=0", want: true},
 	}
 	for _, tt := range tests {
-		if got := hasAnsibleRecapFailure(tt.line); got != tt.want {
-			t.Fatalf("hasAnsibleRecapFailure(%q) = %v, want %v", tt.line, got, tt.want)
+		if got := provisionapp.HasAnsibleRecapFailure(tt.line); got != tt.want {
+			t.Fatalf("HasAnsibleRecapFailure(%q) = %v, want %v", tt.line, got, tt.want)
 		}
 	}
 }

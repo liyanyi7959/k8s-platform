@@ -15,46 +15,13 @@ import (
 	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
 )
 
-type AIToolResult struct {
-	Summary  string        `json:"summary"`
-	Evidence model.JSONMap `json:"evidence,omitempty"`
-	RawRef   model.JSONMap `json:"raw_ref,omitempty"`
-}
-
-type AIToolDefinition struct {
-	Name                string
-	Category            string
-	Description         string
-	RequiredPermissions []string
-	RiskLevel           string
-	ConfirmLevel        string
-	Timeout             time.Duration
-	RedactionPolicy     string
-	InputSchema         model.JSONMap
-	OutputSchema        model.JSONMap
-	Handler             func(ctx context.Context, req AIToolContextRequest, input map[string]any) (AIToolResult, error)
-}
-
-type AIToolPlanStep struct {
-	ToolName string        `json:"tool_name"`
-	Params   model.JSONMap `json:"params,omitempty"`
-	Reason   string        `json:"reason,omitempty"`
-}
-
-type AIToolCatalogItem struct {
-	Name                string        `json:"name"`
-	Category            string        `json:"category"`
-	Description         string        `json:"description"`
-	RequiredPermissions []string      `json:"required_permissions"`
-	MissingPermissions  []string      `json:"missing_permissions,omitempty"`
-	RiskLevel           string        `json:"risk_level"`
-	ConfirmLevel        string        `json:"confirm_level"`
-	TimeoutSeconds      int64         `json:"timeout_seconds"`
-	RedactionPolicy     string        `json:"redaction_policy,omitempty"`
-	InputSchema         model.JSONMap `json:"input_schema,omitempty"`
-	OutputSchema        model.JSONMap `json:"output_schema,omitempty"`
-	Available           bool          `json:"available"`
-}
+type AIToolContextRequest = aiapp.ToolContextRequest
+type AIToolResult = aiapp.ToolResult
+type AIToolDefinition = aiapp.ToolDefinition
+type AIToolPlanStep = aiapp.ToolPlanStep
+type AIToolCatalogItem = aiapp.ToolCatalogItem
+type AIToolCallItem = aiapp.ToolCallItem
+type AIToolService = aiapp.ToolService
 
 type aiProjectRow struct {
 	ID          uint64 `gorm:"column:id"`
@@ -69,6 +36,13 @@ type aiProjectRow struct {
 
 func (aiProjectRow) TableName() string { return "projects" }
 
+type clusterReadModel interface {
+	GetClusterHealth(context.Context, uint64) (AIToolResult, error)
+	GetClusterInventory(context.Context, uint64) (AIToolResult, error)
+	GetClusterOverview(context.Context, uint64) (AIToolResult, error)
+	GetClusterCertificateRisks(context.Context, uint64) (AIToolResult, error)
+}
+
 type AIToolRegistry struct {
 	db    *gorm.DB
 	defs  map[string]AIToolDefinition
@@ -77,7 +51,7 @@ type AIToolRegistry struct {
 
 func NewAIToolRegistry(
 	db *gorm.DB,
-	clusterSvc *ClusterReadModelService,
+	clusterSvc clusterReadModel,
 	namespaceSvc *NamespaceDiagnosisService,
 	inspectionSvc *ResourceInspectionService,
 	resourceQuerySvc *ResourceQueryService,
@@ -1058,6 +1032,10 @@ func (r *AIToolRegistry) Get(name string) (AIToolDefinition, bool) {
 	return def, ok
 }
 
+func (r *AIToolRegistry) ValidateToolPermissions(required, userPerms []string, toolName string) error {
+	return toolPermissionErr(required, userPerms, toolName)
+}
+
 func (r *AIToolRegistry) List() []AIToolDefinition {
 	if r == nil {
 		return nil
@@ -1122,11 +1100,11 @@ func (r *AIToolRegistry) PlanAutoDiagnostics(req AIToolContextRequest) []AIToolP
 	kind := strings.TrimSpace(req.ResourceKind)
 	name := strings.TrimSpace(req.ResourceName)
 	strictResourceScope := kind != "" && name != ""
-	broadInspection := aiNeedsBroadInspection(query)
-	clusterInspection := aiNeedsClusterInspection(query)
-	controlPlaneInspection := aiNeedsControlPlaneInspection(query)
+	broadInspection := aiapp.NeedsBroadInspection(query)
+	clusterInspection := aiapp.NeedsClusterInspection(query)
+	controlPlaneInspection := aiapp.NeedsControlPlaneInspection(query)
 	broadensScope := aiExplicitlyBroadensResourceScope(query)
-	yamlIntent := aiNeedsResourceYAML(query)
+	yamlIntent := aiapp.NeedsResourceYAML(query)
 
 	if !strictResourceScope || clusterInspection || controlPlaneInspection || broadInspection || broadensScope {
 		add("cluster.health", "Baseline cluster health reused from platform read model", model.JSONMap{
@@ -1192,7 +1170,7 @@ func (r *AIToolRegistry) PlanAutoDiagnostics(req AIToolContextRequest) []AIToolP
 
 	if kind == "" || name == "" {
 		// 有命名空间且检测到配置/数据库相关意图时，发现命名空间下的配置资源和工作负载
-		if namespace != "" && (yamlIntent || aiNeedsConfigSearch(query)) {
+		if namespace != "" && (yamlIntent || aiapp.NeedsConfigSearch(query)) {
 			// 列出工作负载，LLM 可从中发现 Redis 相关的 Deployment/StatefulSet
 			add("namespace.workloads", "列出工作负载，帮助发现 Redis 相关应用及其环境变量配置", model.JSONMap{
 				"cluster_id": req.ClusterID,
@@ -1396,16 +1374,6 @@ func aiNeedsRelatedResources(query string) bool {
 		"控制器",
 		"引用",
 	)
-}
-
-// aiNeedsConfigSearch 判断用户消息是否涉及配置、数据库或密钥等需要发现 ConfigMap/Secret 的意图
-func aiNeedsConfigSearch(message string) bool {
-	text := strings.ToLower(strings.TrimSpace(message))
-	if text == "" {
-		return false
-	}
-	return containsAny(text, "mysql", "database", "redis", "mongodb", "postgres", "config") ||
-		containsAny(message, "数据库", "配置", "连接", "密码", "密钥", "数据源", "环境变量")
 }
 
 func hasAllPermissions(userPerms []string, required []string) bool {

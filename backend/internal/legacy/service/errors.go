@@ -9,6 +9,8 @@ package service
 import (
 	"errors"
 	"strings"
+
+	platformapp "k8s-platform-backend/internal/platform/application"
 )
 
 // ─── 通用业务哨兵错误 ─────────────────────────────────────
@@ -31,8 +33,8 @@ var (
 
 // ─── 任务哨兵错误 ───────────────────────────────────────────
 var (
-	ErrTaskNotFound     = errors.New("not found")
-	ErrTaskCannotCancel = errors.New("cannot cancel")
+	ErrTaskNotFound     = platformapp.ErrTaskNotFound
+	ErrTaskCannotCancel = platformapp.ErrTaskCannotCancel
 )
 
 // ─── ServiceError：错误类型 + 面向用户的消息 ─────────────────

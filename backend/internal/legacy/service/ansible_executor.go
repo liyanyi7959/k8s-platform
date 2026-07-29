@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -12,47 +11,8 @@ import (
 	"github.com/apenella/go-ansible/pkg/execute"
 	"github.com/apenella/go-ansible/pkg/options"
 	"github.com/apenella/go-ansible/pkg/playbook"
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
 )
-
-// ansibleStepDef 定义 Ansible 部署流水线步骤
-type ansibleStepDef struct {
-	Key   string
-	Title string
-	// PlayName 是 site.yml 中 PLAY 的名称，用于匹配输出
-	PlayName string
-}
-
-// ansibleSteps 定义了 7 个部署步骤与 site.yml 中 PLAY 名称的映射
-var ansibleSteps = []ansibleStepDef{
-	{Key: "pre_check", Title: "环境预检", PlayName: "环境预检"},
-	{Key: "bootstrap", Title: "基础环境初始化", PlayName: "基础环境初始化"},
-	{Key: "container_runtime", Title: "容器运行时安装", PlayName: "容器运行时安装"},
-	{Key: "kubeadm_init", Title: "Kubernetes Master 初始化", PlayName: "Kubernetes Master 初始化"},
-	{Key: "join_workers", Title: "Worker 节点加入集群", PlayName: "Worker 节点加入集群"},
-	{Key: "install_cni", Title: "安装 CNI 网络插件", PlayName: "安装 CNI 网络插件"},
-	{Key: "install_helm", Title: "安装 Helm", PlayName: "安装 Helm"},
-	{Key: "install_addons", Title: "安装 Kubernetes 扩展组件", PlayName: "安装 Kubernetes 扩展组件"},
-	{Key: "register", Title: "节点注册到管理平台", PlayName: "节点注册到管理平台"},
-}
-
-// computeEnabledSteps 根据起始步骤 key 返回需要执行的步骤 key 列表。
-// retryFromStep 为空时返回 nil，表示执行全部步骤（不传 retry_enabled_steps）。
-func computeEnabledSteps(retryFromStep string) []string {
-	if retryFromStep == "" {
-		return nil
-	}
-	started := false
-	var steps []string
-	for _, step := range ansibleSteps {
-		if step.Key == retryFromStep {
-			started = true
-		}
-		if started {
-			steps = append(steps, step.Key)
-		}
-	}
-	return steps
-}
 
 // ansibleLogWriter 自定义 io.Writer，逐行捕获 Ansible 输出并写入 Task 日志
 type ansibleLogWriter struct {
@@ -138,8 +98,8 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 		if w.failedStepIndex >= 0 {
 			return
 		}
-		playName := extractPlayName(trimmed)
-		for _, step := range ansibleSteps {
+		playName := provisionapp.ExtractAnsiblePlayName(trimmed)
+		for _, step := range provisionapp.DefaultAnsibleSteps() {
 			if strings.Contains(playName, step.PlayName) {
 				taskStepIndex := findTaskStepIndex(w.task, step.Key)
 				// 补装任务只包含 install_addons（或 install_helm）等子集。未选中的
@@ -176,7 +136,7 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 
 	// 检测 TASK 开始
 	if strings.HasPrefix(trimmed, "TASK [") {
-		taskName := extractPlayName(trimmed)
+		taskName := provisionapp.ExtractAnsiblePlayName(trimmed)
 		if taskName != "" && w.stepIndex >= 0 && w.stepIndex < len(w.task.Steps) {
 			step := &w.task.Steps[w.stepIndex]
 			// 结束当前运行中的子步骤
@@ -226,7 +186,7 @@ func (w *ansibleLogWriter) parseStepProgress(line string) {
 	}
 
 	// 某些回调插件只在 recap 中给出失败计数，没有 FAILED! 明细。
-	if hasAnsibleRecapFailure(trimmed) {
+	if provisionapp.HasAnsibleRecapFailure(trimmed) {
 		w.markCurrentStepFailed(now)
 	}
 }
@@ -263,20 +223,6 @@ func (w *ansibleLogWriter) markCurrentStepFailed(now time.Time) {
 	w.finishRunningSubStep(w.stepIndex, now)
 }
 
-func hasAnsibleRecapFailure(line string) bool {
-	for _, field := range strings.Fields(line) {
-		parts := strings.SplitN(field, "=", 2)
-		if len(parts) != 2 || (parts[0] != "failed" && parts[0] != "unreachable") {
-			continue
-		}
-		count, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-		if err == nil && count > 0 {
-			return true
-		}
-	}
-	return false
-}
-
 // finishRunningSubStep 将指定大步骤下运行中的子步骤标记为完成（根据最终状态）。
 func (w *ansibleLogWriter) finishRunningSubStep(stepIdx int, t time.Time) {
 	if stepIdx < 0 || stepIdx >= len(w.task.Steps) {
@@ -293,16 +239,6 @@ func (w *ansibleLogWriter) finishRunningSubStep(stepIdx int, t time.Time) {
 			}
 		}
 	}
-}
-
-// extractPlayName 从 "PLAY [xxx]" 行中提取方括号内的名称
-func extractPlayName(line string) string {
-	start := strings.Index(line, "[")
-	end := strings.Index(line, "]")
-	if start == -1 || end == -1 || end <= start {
-		return ""
-	}
-	return line[start+1 : end]
 }
 
 // ansibleExecuteOptions Ansible 执行参数

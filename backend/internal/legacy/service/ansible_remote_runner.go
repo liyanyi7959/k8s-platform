@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 
 	"golang.org/x/crypto/ssh"
@@ -205,7 +206,7 @@ func (s *DeployService) buildRunnerArchive(ctx context.Context, plan model.Deplo
 	}
 	// 计算重试时需要执行的步骤列表；为空表示全部执行（不传 retry_enabled_steps）
 	retryFromStep, _ := task.Meta["retry_from_step"].(string)
-	enabledSteps := computeEnabledSteps(retryFromStep)
+	enabledSteps := provisionapp.ComputeEnabledAnsibleSteps(retryFromStep)
 	if requestedSteps := taskMetaStringSlice(task.Meta, "enabled_steps"); len(requestedSteps) > 0 {
 		enabledSteps = requestedSteps
 	}

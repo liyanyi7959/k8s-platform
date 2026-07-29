@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 )
 
@@ -29,6 +30,7 @@ func (s *DeployService) ansiblePipeline(ctx context.Context, planID uint64, task
 	_ = s.taskStore.Put(task)
 
 	// 初始化步骤状态
+	ansibleSteps := provisionapp.DefaultAnsibleSteps()
 	task.Steps = make([]TaskStep, len(ansibleSteps))
 	retryFromStep, _ := task.Meta["retry_from_step"].(string)
 	startIdx := 0

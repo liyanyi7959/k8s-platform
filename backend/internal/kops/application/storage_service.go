@@ -161,9 +161,17 @@ func (s *StorageService) CreatePVC(ctx context.Context, input CreatePVCInput) er
 	if input.ClusterID == 0 || input.Namespace == "" || input.Name == "" || input.Capacity == "" {
 		return ErrInvalidParams
 	}
+	modes, err := NormalizePVCAccessModes(input.AccessModes)
+	if err != nil {
+		return err
+	}
+	if err := ValidatePVCCapacity(input.Capacity); err != nil {
+		return err
+	}
 	if s == nil || s.runtime == nil {
 		return ErrConflict
 	}
+	input.AccessModes = modes
 	return s.runtime.CreatePVC(ctx, input)
 }
 
