@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 

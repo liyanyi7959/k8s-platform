@@ -8,7 +8,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 	secretcrypto "k8s-platform-backend/internal/transport/secretcrypto"

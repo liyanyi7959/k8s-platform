@@ -12,7 +12,7 @@ import (
 	fleetapp "k8s-platform-backend/internal/fleet/application"
 	fleetdomain "k8s-platform-backend/internal/fleet/domain"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // PrometheusInfo is the persisted Prometheus endpoint snapshot consumed by

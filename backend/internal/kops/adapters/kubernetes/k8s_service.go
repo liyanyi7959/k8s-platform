@@ -1,4 +1,4 @@
-package service
+package kubernetes
 
 import (
 	"context"
@@ -27,8 +27,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/yaml"
 
-	fleetapp "k8s-platform-backend/internal/fleet/application"
-	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	cachetransport "k8s-platform-backend/internal/transport/cache"
 )
@@ -41,12 +39,13 @@ import (
 // - 统一将 K8s 常见错误（NotFound/AlreadyExists/BadRequest 等）归一化为业务错误；
 // - 为 controller 层提供面向"资源 + 动作"的方法（List/GetYAML/Delete/Patch/Exec 等）。
 type K8sService struct {
-	clusterReg *fleetapp.Registry
+	clusterReg               KubeconfigProvider
+	clusterErrorNormalizer   KubeconfigErrorNormalizer
 	podCache   *podCacheManager
 	objCache   *objCacheManager
 	cache      cachetransport.CacheStore
 	podTTL     time.Duration
-	clients    kopsclient.ClientFactory
+	clients    ClientFactory
 
 	apiResourcesMu       sync.Mutex
 	apiResourcesInFlight map[string]*apiResourcesFlight
@@ -55,8 +54,20 @@ type K8sService struct {
 const k8sRequestTimeout = 60 * time.Second
 const k8sListPageLimit int64 = 500
 
+// KubeconfigProvider is the only Fleet dependency needed by the Kubernetes
+// transport. Keeping it as a port prevents this Kops adapter from reaching
+// into Fleet internals.
+type KubeconfigProvider interface {
+	Kubeconfig(context.Context, uint64) (string, error)
+}
+
+// KubeconfigErrorNormalizer is supplied at composition time so Fleet-domain
+// failures retain their previous API semantics without coupling this adapter
+// to Fleet domain types.
+type KubeconfigErrorNormalizer func(error) error
+
 // NewK8sService 创建 K8sService。
-func NewK8sService(clusterReg *fleetapp.Registry, cacheStore cachetransport.CacheStore, podCacheTTL time.Duration, insecureSkipTLS ...bool) *K8sService {
+func NewK8sService(clusterReg KubeconfigProvider, cacheStore cachetransport.CacheStore, podCacheTTL time.Duration, normalizer KubeconfigErrorNormalizer, insecureSkipTLS ...bool) *K8sService {
 	if podCacheTTL <= 0 {
 		podCacheTTL = 60 * time.Second
 	}
@@ -64,7 +75,17 @@ func NewK8sService(clusterReg *fleetapp.Registry, cacheStore cachetransport.Cach
 	if len(insecureSkipTLS) > 0 {
 		skip = insecureSkipTLS[0]
 	}
-	return &K8sService{clusterReg: clusterReg, podCache: newPodCacheManager(), objCache: newObjCacheManager(), cache: cacheStore, podTTL: podCacheTTL, clients: kopsclient.NewClientFactory(k8sRequestTimeout, skip)}
+	return &K8sService{clusterReg: clusterReg, clusterErrorNormalizer: normalizer, podCache: newPodCacheManager(), objCache: newObjCacheManager(), cache: cacheStore, podTTL: podCacheTTL, clients: NewClientFactory(k8sRequestTimeout, skip)}
+}
+
+func (s *K8sService) normalizeClusterError(err error) error {
+	if err == nil || s == nil || s.clusterErrorNormalizer == nil {
+		return err
+	}
+	if normalized := s.clusterErrorNormalizer(err); normalized != nil {
+		return normalized
+	}
+	return err
 }
 
 // ---------------------------------------------------------------------------
@@ -78,7 +99,7 @@ func (s *K8sService) restConfig(ctx context.Context, clusterID uint64) (*rest.Co
 	}
 	kc, err := s.clusterReg.Kubeconfig(ctx, clusterID)
 	if err != nil {
-		return nil, legacyClusterError(err)
+		return nil, s.normalizeClusterError(err)
 	}
 	cfg, err := s.clientFactory().RESTConfig(kc)
 	if err != nil {
@@ -93,18 +114,18 @@ func (s *K8sService) GetKubeconfig(ctx context.Context, clusterID uint64) (strin
 		return "", errors.New("cluster registry is required")
 	}
 	value, err := s.clusterReg.Kubeconfig(ctx, clusterID)
-	return value, legacyClusterError(err)
+	return value, s.normalizeClusterError(err)
 }
 
 func (s *K8sService) ValidateKubeconfig(ctx context.Context, kubeconfig string) error {
 	err := s.clientFactory().Validate(ctx, kubeconfig)
-	if errors.Is(err, kopsclient.ErrKubeconfigEmpty) {
+	if errors.Is(err, ErrKubeconfigEmpty) {
 		return ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
 	}
-	if errors.Is(err, kopsclient.ErrKubeconfigTooLarge) {
+	if errors.Is(err, ErrKubeconfigTooLarge) {
 		return ErrWithMessage(ErrInvalidParams, "kubeconfig 内容不能超过 1MB")
 	}
-	if errors.Is(err, kopsclient.ErrInvalidKubeconfig) {
+	if errors.Is(err, ErrInvalidKubeconfig) {
 		return ErrWithMessage(ErrInvalidParams, "kubeconfig 格式无效，请上传原始 YAML/JSON 或其 Base64 内容")
 	}
 	return normalizeK8sErr(err)
@@ -135,7 +156,7 @@ func (s *K8sService) VerifyClusterAPI(ctx context.Context, clusterID uint64) (st
 // ValidateKubeconfigFormat 仅校验 kubeconfig 格式是否合法（能正确解析出 REST 配置），
 // 不会实际连接 K8s API Server。适用于编辑/更新场景——用户可能在离线环境中更新凭据。
 func (s *K8sService) ValidateKubeconfigFormat(_ context.Context, kubeconfig string) error {
-	_, err := kopsclient.NormalizeKubeconfigContent(kubeconfig)
+	_, err := NormalizeKubeconfigContent(kubeconfig)
 	return legacyKubeconfigError(err)
 }
 
@@ -253,20 +274,20 @@ func (s *K8sService) NormalizeKubernetesRuntimeError(err error) error {
 	return normalizeK8sErr(err)
 }
 
-func (s *K8sService) clientFactory() kopsclient.ClientFactory {
+func (s *K8sService) clientFactory() ClientFactory {
 	if s != nil {
 		return s.clients
 	}
-	return kopsclient.NewClientFactory(k8sRequestTimeout, false)
+	return NewClientFactory(k8sRequestTimeout, false)
 }
 
 func legacyKubeconfigError(err error) error {
 	switch {
 	case err == nil:
 		return nil
-	case errors.Is(err, kopsclient.ErrKubeconfigEmpty):
+	case errors.Is(err, ErrKubeconfigEmpty):
 		return ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
-	case errors.Is(err, kopsclient.ErrKubeconfigTooLarge):
+	case errors.Is(err, ErrKubeconfigTooLarge):
 		return ErrWithMessage(ErrInvalidParams, "kubeconfig 内容不能超过 1MB")
 	default:
 		return ErrWithMessage(ErrInvalidParams, "kubeconfig 格式无效，请上传原始 YAML/JSON 或其 Base64 内容")

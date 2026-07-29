@@ -5,7 +5,7 @@ import (
 
 	fleetapp "k8s-platform-backend/internal/fleet/application"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // MetricsRuntime formats Kops metrics responses while provider discovery and

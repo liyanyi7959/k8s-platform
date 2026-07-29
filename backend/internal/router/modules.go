@@ -30,7 +30,6 @@ import (
 	legacyfleet "k8s-platform-backend/internal/legacy/adapters/fleet"
 	legacykops "k8s-platform-backend/internal/legacy/adapters/kops"
 	legacyprovision "k8s-platform-backend/internal/legacy/adapters/provisioning"
-	"k8s-platform-backend/internal/legacy/service"
 	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
 	platformmysql "k8s-platform-backend/internal/platform/adapters/mysql"
 	platformapp "k8s-platform-backend/internal/platform/application"
@@ -129,7 +128,7 @@ type incidentModule struct {
 type moduleRuntime struct {
 	taskStore          *platformapp.TaskStore
 	clusterRegistry    *fleetapp.Registry
-	k8s                *service.K8sService
+	k8s                *kopsclient.K8sService
 	nodeOperations     *kopsruntime.NodeOperations
 	podOperations      *kopsruntime.PodOperations
 	podStreams         *kopsruntime.PodStreamOperations
@@ -251,7 +250,7 @@ func buildWorkspaceModule(d Deps, runtime moduleRuntime) workspaceModule {
 func buildModuleRuntime(d Deps) moduleRuntime {
 	taskStore := platformapp.NewTaskStore(d.DB)
 	clusterRegistry := fleetapp.NewRegistry(fleetmysql.NewRegistry(d.DB, d.EncryptionKey))
-	k8sService := service.NewK8sService(clusterRegistry, d.CacheStore, d.CacheTTL, d.K8sInsecureTLS)
+	k8sService := kopsclient.NewK8sService(clusterRegistry, d.CacheStore, d.CacheTTL, normalizeKubeconfigRegistryError, d.K8sInsecureTLS)
 	kubernetesTransport := kopsKubernetesTransport{k8s: k8sService}
 	nodeOperations := kopsruntime.NewNodeOperations(kubernetesTransport)
 	podOperations := kopsruntime.NewPodOperations(kubernetesTransport)
@@ -301,14 +300,14 @@ func buildFleetModule(d Deps, runtime moduleRuntime) fleetModule {
 func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 	inspection := kopsapp.NewInspectionService(legacykops.NewInspectionRuntime(runtime.k8s, runtime.nodeOperations, runtime.workloadOperations, runtime.podStreams, runtime.namespaceDiagnosis, runtime.namespaceWorkloads))
 	permissionAuditTransport := kopsclient.NewPermissionAuditTransport(runtime.clusterRegistry, d.K8sInsecureTLS)
-	permissionAuditCredentials := service.NewPermissionAuditCredentialStore(d.CacheStore, d.EncryptionKey)
+	permissionAuditCredentials := kopsclient.NewPermissionAuditCredentialStore(d.CacheStore, d.EncryptionKey)
 	permissionAuditEngine := legacykops.NewPermissionAuditEngine(
 		d.DB,
 		runtime.taskStore,
 		runtime.clusterRegistry,
 		permissionAuditTransport,
 		permissionAuditCredentials,
-		service.PermissionAuditCredentialTTL(),
+		kopsclient.PermissionAuditCredentialTTL(),
 	)
 	return kopsModule{
 		manifests:       kopshttp.NewManifestController(kopsapp.NewManifestService(runtime.manifestApply)),

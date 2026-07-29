@@ -14,7 +14,7 @@ import (
 	model "k8s-platform-backend/internal/ai/domain"
 	fleetmysql "k8s-platform-backend/internal/fleet/adapters/mysql"
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
 )
 

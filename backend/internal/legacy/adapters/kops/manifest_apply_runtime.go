@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/restmapper"
 
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 // manifestApplyOptions and manifestApplyResultItem are deliberately local to

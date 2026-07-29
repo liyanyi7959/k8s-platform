@@ -1,4 +1,4 @@
-package service
+package kubernetes
 
 import (
 	"errors"
@@ -104,7 +104,6 @@ func TestSentinels_Independent(t *testing.T) {
 	sentinels := []error{
 		ErrNotFound, ErrConflict, ErrInvalidParams, ErrCrypto,
 		ErrK8s, ErrK8sNetwork, ErrK8sTimeout, ErrK8sUnauthorized, ErrK8sForbidden, ErrK8sTLS,
-		ErrTaskNotFound, ErrTaskCannotCancel,
 	}
 	for i := 0; i < len(sentinels); i++ {
 		for j := i + 1; j < len(sentinels); j++ {
@@ -117,12 +116,3 @@ func TestSentinels_Independent(t *testing.T) {
 
 // ────────── PageResult ──────────
 
-func TestPageResult_Zero(t *testing.T) {
-	pr := PageResult[string]{List: nil, Total: 0, Page: 1, PageSize: 10}
-	if pr.Total != 0 || pr.Page != 1 || pr.PageSize != 10 {
-		t.Error("PageResult zero value mismatch")
-	}
-	if pr.List != nil {
-		t.Error("List should be nil")
-	}
-}

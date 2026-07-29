@@ -7,7 +7,7 @@ import (
 
 	aiapp "k8s-platform-backend/internal/ai/application"
 	"k8s-platform-backend/internal/fleet/ports"
-	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/kops/adapters/legacycompat"
 )
 
 type Runtime struct {
