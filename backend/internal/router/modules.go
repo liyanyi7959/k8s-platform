@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	aigateway "k8s-platform-backend/internal/ai/adapters/gateway"
 	aiapp "k8s-platform-backend/internal/ai/application"
 	audithttp "k8s-platform-backend/internal/audit/adapters/http"
 	auditmysql "k8s-platform-backend/internal/audit/adapters/mysql"
@@ -21,12 +22,16 @@ import (
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
 	incidentmysql "k8s-platform-backend/internal/incident/adapters/mysql"
 	incidentapp "k8s-platform-backend/internal/incident/application"
+	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
+	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/legacy/service"
 	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
 	platformmysql "k8s-platform-backend/internal/platform/adapters/mysql"
 	platformapp "k8s-platform-backend/internal/platform/application"
+	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	workspacehttp "k8s-platform-backend/internal/workspace/adapters/http"
 	workspacemysql "k8s-platform-backend/internal/workspace/adapters/mysql"
 	workspaceapp "k8s-platform-backend/internal/workspace/application"
@@ -71,6 +76,7 @@ type fleetModule struct {
 type kopsModule struct {
 	resources       *controller.K8sController
 	permissionAudit *controller.K8sPermissionAuditController
+	rbac            *kopshttp.RBACController
 }
 
 type aiModule struct {
@@ -84,9 +90,10 @@ type changeModule struct {
 
 type provisioningModule struct {
 	deploy      *controller.DeployController
-	config      *controller.DeployConfigController
+	plans       *provisionhttp.DeployPlanController
+	config      *provisionhttp.DeployConfigController
 	automation  *controller.AutomationTaskController
-	appTemplate *controller.AppTemplateController
+	appTemplate *provisionhttp.AppTemplateController
 }
 
 type incidentModule struct {
@@ -187,7 +194,7 @@ func buildPlatformModule(d Deps) platformModule {
 type fleetClusterRuntime struct{ k8s *service.K8sService }
 
 func (runtime fleetClusterRuntime) NormalizeAndValidate(ctx context.Context, value string) (string, error) {
-	normalized, err := service.NormalizeKubeconfigContent(value)
+	normalized, err := kopsclient.NormalizeKubeconfigContent(value)
 	if err != nil {
 		return "", fleetRuntimeError(err)
 	}
@@ -258,6 +265,7 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 			d.CacheStore,
 			d.EncryptionKey,
 		)),
+		rbac: kopshttp.NewRBACController(),
 	}
 }
 
@@ -274,7 +282,7 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 	namespaceDiagnosis := service.NewNamespaceDiagnosisService(runtime.k8s)
 	resourceInspection := service.NewResourceInspectionService(runtime.k8s)
 	resourceQuery := service.NewResourceQueryService(runtime.k8s)
-	fileService := service.NewAIFileService(d.DB, d.AIUploadDir)
+	fileService := aiapp.NewAIFileService(d.DB, d.AIUploadDir)
 	toolRegistry := service.NewAIToolRegistry(
 		d.DB,
 		service.NewClusterReadModelService(runtime.dashboard),
@@ -287,15 +295,16 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 	toolService := service.NewAIToolService(d.DB, toolRegistry)
 	chatService := service.NewAIChatService(
 		d.DB,
-		service.NewAIGatewayService(d.DB, d.EncryptionKey),
+		aigateway.NewAIGatewayService(d.DB, d.EncryptionKey),
 		toolService,
 		change.actions,
 		fileService,
 	)
 	return aiModule{controller: controller.NewAIController(
-		service.NewAIProviderService(d.DB, d.EncryptionKey),
-		service.NewAIRouteSettingsService(d.DB),
-		service.NewAIConversationService(d.DB),
+		aiapp.NewAIProviderService(d.DB, d.EncryptionKey),
+		aiapp.NewAIRouteSettingsService(d.DB),
+		aiapp.NewConversationService(d.DB),
+		service.NewAIConversationDetailService(d.DB),
 		chatService,
 		fileService,
 		toolService,
@@ -304,13 +313,14 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 }
 
 func buildProvisioningModule(d Deps, runtime moduleRuntime) provisioningModule {
-	appTemplateService := service.NewAppTemplateService(d.DB)
+	appTemplateService := provisionapp.NewAppTemplateService(d.DB)
 	_ = appTemplateService.SeedBuiltinAppTemplates(context.Background())
 	return provisioningModule{
 		deploy:      controller.NewDeployController(runtime.deploy, runtime.execSessions),
-		config:      controller.NewDeployConfigController(service.NewDeployConfigService(d.DB)),
+		plans:       provisionhttp.NewDeployPlanController(provisionapp.NewDeployPlanService(d.DB)),
+		config:      provisionhttp.NewDeployConfigController(provisionapp.NewDeployConfigService(d.DB)),
 		automation:  controller.NewAutomationTaskController(service.NewTaskService(runtime.taskStore)),
-		appTemplate: controller.NewAppTemplateController(appTemplateService),
+		appTemplate: provisionhttp.NewAppTemplateController(appTemplateService),
 	}
 }
 

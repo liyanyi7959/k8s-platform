@@ -76,6 +76,12 @@ func UserMessage(err error) (string, bool) {
 			return msg, true
 		}
 	}
+	var carrier interface{ UserMessage() string }
+	if errors.As(err, &carrier) && carrier != nil {
+		if msg := strings.TrimSpace(carrier.UserMessage()); msg != "" {
+			return msg, true
+		}
+	}
 	return "", false
 }
 

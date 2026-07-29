@@ -21,7 +21,9 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"k8s-platform-backend/internal/legacy/model"
+	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
+	kopsapp "k8s-platform-backend/internal/kops/application"
+	model "k8s-platform-backend/internal/kops/domain"
 )
 
 const (
@@ -364,7 +366,7 @@ func (s *K8sPermissionAuditService) CreateAdhocAudit(ctx context.Context, req Pe
 	if kubeconfig == "" {
 		return PermissionAuditCreateResult{}, ErrWithMessage(ErrInvalidParams, "管理员凭据不能为空")
 	}
-	clusterName, err := s.validateAdhocKubeconfig(ctx, kubeconfig)
+	clusterName, kubeconfig, err := s.validateAdhocKubeconfig(ctx, kubeconfig)
 	if err != nil {
 		return PermissionAuditCreateResult{}, err
 	}
@@ -884,14 +886,14 @@ func (s *K8sPermissionAuditService) getAuditRow(ctx context.Context, auditID uin
 	return &row, nil
 }
 
-func (s *K8sPermissionAuditService) validateAdhocKubeconfig(ctx context.Context, kubeconfig string) (string, error) {
-	kc := strings.TrimSpace(kubeconfig)
-	if kc == "" {
-		return "", ErrWithMessage(ErrInvalidParams, "管理员凭据不能为空")
+func (s *K8sPermissionAuditService) validateAdhocKubeconfig(ctx context.Context, kubeconfig string) (string, string, error) {
+	kc, err := kopsclient.NormalizeKubeconfigContent(kubeconfig)
+	if err != nil {
+		return "", "", legacyKubeconfigError(err)
 	}
 	loaded, err := clientcmd.Load([]byte(kc))
 	if err != nil {
-		return "", ErrWithMessage(ErrInvalidParams, "管理员凭据格式无效")
+		return "", "", ErrWithMessage(ErrInvalidParams, "管理员凭据格式无效")
 	}
 	clusterName := ""
 	if loaded != nil {
@@ -900,20 +902,20 @@ func (s *K8sPermissionAuditService) validateAdhocKubeconfig(ctx context.Context,
 			clusterName = firstNonEmpty(clusterName, strings.TrimSpace(ctxCfg.Cluster))
 		}
 	}
-	cfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
+	factory := s.k8sSvc.clientFactory().WithRequestTimeout(15 * time.Second)
+	cfg, err := factory.RESTConfig(kc)
 	if err != nil {
-		return "", ErrWithMessage(ErrInvalidParams, "管理员凭据格式无效")
+		return "", "", ErrWithMessage(ErrInvalidParams, "管理员凭据格式无效")
 	}
-	cfg.Timeout = 15 * time.Second
-	disc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	disc, err := factory.DiscoveryClient(cfg)
 	if err != nil {
-		return clusterName, normalizeK8sErr(err)
+		return clusterName, "", normalizeK8sErr(err)
 	}
 	_, err = disc.ServerVersion()
 	if err != nil {
-		return clusterName, normalizeK8sErr(err)
+		return clusterName, "", normalizeK8sErr(err)
 	}
-	return clusterName, nil
+	return clusterName, kc, nil
 }
 
 func (s *K8sPermissionAuditService) runAudit(auditID uint64) {
@@ -1090,6 +1092,7 @@ func (s *K8sPermissionAuditService) loadClientsForAudit(ctx context.Context, row
 	}
 	var cfg *rest.Config
 	var err error
+	factory := s.k8sSvc.clientFactory()
 	switch row.SourceType {
 	case PermissionAuditSourceManaged:
 		if row.ClusterID == nil || *row.ClusterID == 0 {
@@ -1101,21 +1104,18 @@ func (s *K8sPermissionAuditService) loadClientsForAudit(ctx context.Context, row
 		if getErr != nil {
 			return nil, request, ErrWithMessage(ErrNotFound, "临时管理员凭据已失效，请重新发起分析")
 		}
-		cfg, err = clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig))
-		if err == nil {
-			cfg.Timeout = k8sRequestTimeout
-		}
+		cfg, err = factory.RESTConfig(kubeconfig)
 	default:
 		return nil, request, ErrWithMessage(ErrInvalidParams, "未知的分析来源")
 	}
 	if err != nil {
 		return nil, request, normalizeK8sErr(err)
 	}
-	dyn, err := dynamic.NewForConfig(rest.CopyConfig(cfg))
+	dyn, err := factory.DynamicClient(rest.CopyConfig(cfg))
 	if err != nil {
 		return nil, request, normalizeK8sErr(err)
 	}
-	disc, err := discovery.NewDiscoveryClientForConfig(rest.CopyConfig(cfg))
+	disc, err := factory.DiscoveryClient(rest.CopyConfig(cfg))
 	if err != nil {
 		return nil, request, normalizeK8sErr(err)
 	}
@@ -2230,11 +2230,11 @@ func (s *K8sPermissionAuditService) GenerateRBACRecommendation(ctx context.Conte
 	if len(namespaces) == 0 {
 		namespaces = []string{"default"}
 	}
-	matrix := DefaultRBACMatrix(namespaces)
+	matrix := kopsapp.DefaultRBACMatrix(namespaces)
 	if len(allowlist) > 0 {
-		matrix = filterRBACMatrixByAllowlist(matrix, allowlist)
+		matrix = kopsapp.FilterRBACMatrixByResources(matrix, allowlist)
 	}
-	yaml := BuildRBACFromMatrix(matrix)
+	yaml := kopsapp.BuildRBACFromMatrix(matrix)
 	return RBACRecommendationResult{
 		YAMLContent:      yaml,
 		ServiceAccount:   matrix.ServiceAccount,
@@ -2244,8 +2244,8 @@ func (s *K8sPermissionAuditService) GenerateRBACRecommendation(ctx context.Conte
 }
 
 func buildMinimumRBACYAML(namespaces []string) string {
-	matrix := DefaultRBACMatrix(namespaces)
-	return BuildRBACFromMatrix(matrix)
+	matrix := kopsapp.DefaultRBACMatrix(namespaces)
+	return kopsapp.BuildRBACFromMatrix(matrix)
 }
 
 func (s *K8sPermissionAuditService) loadLatestAuditNamespaces(ctx context.Context, clusterID uint64) []string {

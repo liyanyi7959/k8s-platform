@@ -29,6 +29,10 @@ type errMapping struct {
 	fallback string
 }
 
+type categorizedApplicationError interface {
+	ErrorCode() string
+}
+
 // WriteServiceErr 将 service 层错误映射为前端约定的业务错误码。
 // 通用映射（ErrInvalidParams → 4000, ErrNotFound → 4040, ErrConflict → 4090）
 // 已内置。通过 extras 可在通用映射之前追加领域特定映射，如 K8s / SSH 错误。
@@ -75,6 +79,14 @@ func WriteServiceErr(c *gin.Context, err error, extras ...errMapping) {
 			msg = m
 		}
 		resp.Fail(c, 5000, msg)
+	case applicationErrorCode(err) == "invalid_params":
+		resp.Fail(c, 4000, serviceErrorMessage(err, "参数错误"))
+	case applicationErrorCode(err) == "not_found":
+		resp.Fail(c, 4040, serviceErrorMessage(err, "未找到资源"))
+	case applicationErrorCode(err) == "conflict":
+		resp.Fail(c, 4090, serviceErrorMessage(err, "资源冲突"))
+	case applicationErrorCode(err) == "crypto":
+		resp.Fail(c, 5000, serviceErrorMessage(err, "加密/解密错误"))
 	default:
 		// 尝试提取 ServiceError 中的用户可读消息
 		msg := "内部错误"
@@ -83,6 +95,21 @@ func WriteServiceErr(c *gin.Context, err error, extras ...errMapping) {
 		}
 		resp.Fail(c, 5000, msg)
 	}
+}
+
+func applicationErrorCode(err error) string {
+	var categorized categorizedApplicationError
+	if errors.As(err, &categorized) && categorized != nil {
+		return categorized.ErrorCode()
+	}
+	return ""
+}
+
+func serviceErrorMessage(err error, fallback string) string {
+	if message, ok := service.UserMessage(err); ok && message != "" {
+		return message
+	}
+	return fallback
 }
 
 // ──────────────────────────────────────────────────────────

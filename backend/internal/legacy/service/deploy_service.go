@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 
 	"k8s-platform-backend/internal/legacy/model"
+	provisionapp "k8s-platform-backend/internal/provisioning/application"
+	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
 )
 
 type DeployService struct {
@@ -17,12 +19,12 @@ type DeployService struct {
 	encryptionKey   string
 	taskStore       *TaskStore
 	clusterRegistry *ClusterRegistryService
-	deployConfig    *DeployConfigService
+	deployConfig    *provisionapp.DeployConfigService
 	ansibleDir      string // Ansible playbook 目录路径，空则使用默认 "ansible"
 }
 
 func NewDeployService(db *gorm.DB, encryptionKey string, taskStore *TaskStore, clusterRegistry *ClusterRegistryService) *DeployService {
-	return &DeployService{db: db, encryptionKey: encryptionKey, taskStore: taskStore, clusterRegistry: clusterRegistry, deployConfig: NewDeployConfigService(db)}
+	return &DeployService{db: db, encryptionKey: encryptionKey, taskStore: taskStore, clusterRegistry: clusterRegistry, deployConfig: provisionapp.NewDeployConfigService(db)}
 }
 
 func (s *DeployService) GetTaskStore() *TaskStore {
@@ -165,7 +167,7 @@ func (s *DeployService) CreateServer(ctx context.Context, req CreateDeployServer
 		credential = enc
 	}
 	remark := stringPtrOrNil(req.Remark)
-	row := model.DeployServer{Name: name, IP: ip, SSHPort: port, User: user, AuthType: authType, CredentialID: credentialID, CredentialEnc: credential, Status: "registered", Labels: model.JSONMap(req.Labels), Remark: remark}
+	row := model.DeployServer{Name: name, IP: ip, SSHPort: port, User: user, AuthType: authType, CredentialID: credentialID, CredentialEnc: credential, Status: "registered", Labels: provisiondomain.JSONMap(req.Labels), Remark: remark}
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := ensureServerUnique(tx, ip, port, 0); err != nil {
 			return err

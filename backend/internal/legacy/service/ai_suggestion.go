@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	aidomain "k8s-platform-backend/internal/ai/domain"
 	"k8s-platform-backend/internal/legacy/model"
 )
 
@@ -17,23 +18,7 @@ var (
 	aiLeadingTrailingSpacePatter = regexp.MustCompile(`[ \t]+\n`)
 )
 
-type AISuggestedAction struct {
-	MessageID              *uint64 `json:"message_id,omitempty"`
-	ActionType             string  `json:"action_type"`
-	Title                  string  `json:"title"`
-	Reason                 string  `json:"reason"`
-	TargetKind             string  `json:"target_kind,omitempty"`
-	TargetNamespace        string  `json:"target_namespace,omitempty"`
-	TargetName             string  `json:"target_name,omitempty"`
-	Replicas               *int    `json:"replicas,omitempty"`
-	ManifestYAML           string  `json:"manifest_yaml,omitempty"`
-	DefaultNamespace       string  `json:"default_namespace,omitempty"`
-	RiskLevel              string  `json:"risk_level,omitempty"`
-	RequiresConfirmation   bool    `json:"requires_confirmation"`
-	AutoProposalEligible   bool    `json:"auto_proposal_eligible"`
-	ProposalCreated        bool    `json:"proposal_created"`
-	ProposalID             *uint64 `json:"proposal_id,omitempty"`
-}
+type AISuggestedAction = aidomain.AISuggestedAction
 
 type aiActionsEnvelope struct {
 	SuggestedActions []AISuggestedAction `json:"suggested_actions"`
@@ -221,17 +206,17 @@ func buildSuggestedActionsStructured(actions []AISuggestedAction) model.JSONMap 
 	payload := make([]map[string]any, 0, len(actions))
 	for _, action := range actions {
 		item := map[string]any{
-			"action_type":             action.ActionType,
-			"title":                   action.Title,
-			"reason":                  action.Reason,
-			"target_kind":             action.TargetKind,
-			"target_namespace":        action.TargetNamespace,
-			"target_name":             action.TargetName,
-			"risk_level":              action.RiskLevel,
-			"requires_confirmation":   action.RequiresConfirmation,
-			"auto_proposal_eligible":  action.AutoProposalEligible,
-			"proposal_created":        action.ProposalCreated,
-			"default_namespace":       action.DefaultNamespace,
+			"action_type":            action.ActionType,
+			"title":                  action.Title,
+			"reason":                 action.Reason,
+			"target_kind":            action.TargetKind,
+			"target_namespace":       action.TargetNamespace,
+			"target_name":            action.TargetName,
+			"risk_level":             action.RiskLevel,
+			"requires_confirmation":  action.RequiresConfirmation,
+			"auto_proposal_eligible": action.AutoProposalEligible,
+			"proposal_created":       action.ProposalCreated,
+			"default_namespace":      action.DefaultNamespace,
 		}
 		if action.Replicas != nil {
 			item["replicas"] = *action.Replicas
@@ -282,7 +267,7 @@ func normalizeAIModelAnswer(content string) (string, model.JSONMap) {
 		normalized = "本轮模型返回了无效的工具调用片段，平台已忽略该内容。请重试，或缩小范围后再次提问。"
 		guardStructured["response_guard"] = model.JSONMap{
 			"tool_call_stripped": true,
-			"fallback_applied":  true,
+			"fallback_applied":   true,
 		}
 	}
 

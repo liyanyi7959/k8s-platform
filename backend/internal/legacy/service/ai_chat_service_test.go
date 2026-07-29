@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	aigateway "k8s-platform-backend/internal/ai/adapters/gateway"
+	aidomain "k8s-platform-backend/internal/ai/domain"
 	"k8s-platform-backend/internal/legacy/model"
 )
 
@@ -214,7 +216,7 @@ func TestBuildAIMessageScopeSnapshotIncludesAttachments(t *testing.T) {
 }
 
 func TestBuildAIGatewayScopeNote(t *testing.T) {
-	note := buildAIGatewayScopeNote("devops", "Deployment", "bkci-auth")
+	note := aigateway.BuildScopeNote("devops", "Deployment", "bkci-auth")
 	if !strings.Contains(note, "namespace=devops") {
 		t.Fatalf("expected namespace scope note, got %q", note)
 	}
@@ -281,7 +283,7 @@ func TestBuildScopedGatewayHistoryFiltersPreviousScope(t *testing.T) {
 			ID:      1,
 			Role:    "user",
 			Content: "show deployment a",
-			StructuredJSON: model.JSONMap{
+			StructuredJSON: aidomain.JSONMap{
 				"request_scope": model.JSONMap{
 					"assistant_mode": "diagnose",
 					"namespace":      "payments",
@@ -294,7 +296,7 @@ func TestBuildScopedGatewayHistoryFiltersPreviousScope(t *testing.T) {
 			ID:      2,
 			Role:    "assistant",
 			Content: "deployment a reply",
-			StructuredJSON: model.JSONMap{
+			StructuredJSON: aidomain.JSONMap{
 				"request_scope": model.JSONMap{
 					"assistant_mode": "diagnose",
 					"namespace":      "payments",
@@ -307,7 +309,7 @@ func TestBuildScopedGatewayHistoryFiltersPreviousScope(t *testing.T) {
 			ID:      3,
 			Role:    "user",
 			Content: "show deployment b",
-			StructuredJSON: model.JSONMap{
+			StructuredJSON: aidomain.JSONMap{
 				"request_scope": model.JSONMap{
 					"assistant_mode": "diagnose",
 					"namespace":      "payments",
@@ -339,7 +341,7 @@ func TestBuildScopedGatewayHistoryKeepsCurrentScopeChain(t *testing.T) {
 			ID:      10,
 			Role:    "user",
 			Content: "first question",
-			StructuredJSON: model.JSONMap{
+			StructuredJSON: aidomain.JSONMap{
 				"request_scope": model.JSONMap{
 					"assistant_mode": "chat",
 					"namespace":      "devops",
@@ -352,7 +354,7 @@ func TestBuildScopedGatewayHistoryKeepsCurrentScopeChain(t *testing.T) {
 			ID:      11,
 			Role:    "assistant",
 			Content: "first reply",
-			StructuredJSON: model.JSONMap{
+			StructuredJSON: aidomain.JSONMap{
 				"request_scope": model.JSONMap{
 					"assistant_mode": "chat",
 					"namespace":      "devops",
@@ -365,7 +367,7 @@ func TestBuildScopedGatewayHistoryKeepsCurrentScopeChain(t *testing.T) {
 			ID:      12,
 			Role:    "user",
 			Content: "follow up",
-			StructuredJSON: model.JSONMap{
+			StructuredJSON: aidomain.JSONMap{
 				"request_scope": model.JSONMap{
 					"assistant_mode": "chat",
 					"namespace":      "devops",

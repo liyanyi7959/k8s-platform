@@ -11,38 +11,42 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"k8s-platform-backend/internal/middleware"
+	aiapp "k8s-platform-backend/internal/ai/application"
 	"k8s-platform-backend/internal/legacy/service"
+	"k8s-platform-backend/internal/middleware"
 	"k8s-platform-backend/pkg/resp"
 )
 
 type AIController struct {
-	providerSvc      *service.AIProviderService
-	routeSettingsSvc *service.AIRouteSettingsService
-	conversationSvc  *service.AIConversationService
-	chatSvc          *service.AIChatService
-	fileSvc          *service.AIFileService
-	toolSvc          *service.AIToolService
-	actionSvc        *service.AIActionService
+	providerSvc           *aiapp.AIProviderService
+	routeSettingsSvc      *aiapp.AIRouteSettingsService
+	conversationSvc       *aiapp.ConversationService
+	conversationDetailSvc *service.AIConversationDetailService
+	chatSvc               *service.AIChatService
+	fileSvc               *aiapp.AIFileService
+	toolSvc               *service.AIToolService
+	actionSvc             *service.AIActionService
 }
 
 func NewAIController(
-	providerSvc *service.AIProviderService,
-	routeSettingsSvc *service.AIRouteSettingsService,
-	conversationSvc *service.AIConversationService,
+	providerSvc *aiapp.AIProviderService,
+	routeSettingsSvc *aiapp.AIRouteSettingsService,
+	conversationSvc *aiapp.ConversationService,
+	conversationDetailSvc *service.AIConversationDetailService,
 	chatSvc *service.AIChatService,
-	fileSvc *service.AIFileService,
+	fileSvc *aiapp.AIFileService,
 	toolSvc *service.AIToolService,
 	actionSvc *service.AIActionService,
 ) *AIController {
 	return &AIController{
-		providerSvc:      providerSvc,
-		routeSettingsSvc: routeSettingsSvc,
-		conversationSvc:  conversationSvc,
-		chatSvc:          chatSvc,
-		fileSvc:          fileSvc,
-		toolSvc:          toolSvc,
-		actionSvc:        actionSvc,
+		providerSvc:           providerSvc,
+		routeSettingsSvc:      routeSettingsSvc,
+		conversationSvc:       conversationSvc,
+		conversationDetailSvc: conversationDetailSvc,
+		chatSvc:               chatSvc,
+		fileSvc:               fileSvc,
+		toolSvc:               toolSvc,
+		actionSvc:             actionSvc,
 	}
 }
 
@@ -56,7 +60,7 @@ func (ctl *AIController) ListProviders(c *gin.Context) {
 }
 
 func (ctl *AIController) CreateProvider(c *gin.Context) {
-	var req service.CreateAIProviderRequest
+	var req aiapp.CreateAIProviderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "参数错误")
 		return
@@ -75,7 +79,7 @@ func (ctl *AIController) PatchProvider(c *gin.Context) {
 		resp.Fail(c, 4000, "参数错误")
 		return
 	}
-	var req service.PatchAIProviderRequest
+	var req aiapp.PatchAIProviderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "参数错误")
 		return
@@ -106,7 +110,7 @@ func (ctl *AIController) ListModels(c *gin.Context) {
 		enabled := raw == "1" || strings.EqualFold(raw, "true")
 		enabledPtr = &enabled
 	}
-	items, err := ctl.providerSvc.ListModels(c.Request.Context(), service.ListAIModelsRequest{
+	items, err := ctl.providerSvc.ListModels(c.Request.Context(), aiapp.ListAIModelsRequest{
 		ProviderID: uint64(parseInt64(c.Query("provider_id"), 0)),
 		ModelType:  c.Query("model_type"),
 		Enabled:    enabledPtr,
@@ -140,7 +144,7 @@ func (ctl *AIController) GetRouteSettings(c *gin.Context) {
 }
 
 func (ctl *AIController) UpdateRouteSettings(c *gin.Context) {
-	var req service.UpdateAIRouteSettingsRequest
+	var req aiapp.UpdateAIRouteSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "鍙傛暟閿欒")
 		return
@@ -154,7 +158,7 @@ func (ctl *AIController) UpdateRouteSettings(c *gin.Context) {
 }
 
 func (ctl *AIController) CreateModel(c *gin.Context) {
-	var req service.CreateAIModelRequest
+	var req aiapp.CreateAIModelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "参数错误")
 		return
@@ -173,7 +177,7 @@ func (ctl *AIController) PatchModel(c *gin.Context) {
 		resp.Fail(c, 4000, "参数错误")
 		return
 	}
-	var req service.PatchAIModelRequest
+	var req aiapp.PatchAIModelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "参数错误")
 		return
@@ -199,7 +203,7 @@ func (ctl *AIController) DeleteModel(c *gin.Context) {
 }
 
 func (ctl *AIController) ListConversations(c *gin.Context) {
-	result, err := ctl.conversationSvc.ListConversations(c.Request.Context(), service.ListAIConversationsRequest{
+	result, err := ctl.conversationSvc.List(c.Request.Context(), aiapp.ConversationListRequest{
 		Page:          parseInt(c.DefaultQuery("page", "1"), 1),
 		PageSize:      parseInt(c.DefaultQuery("page_size", "20"), 20),
 		ClusterID:     uint64(parseInt64(c.Query("cluster_id"), 0)),
@@ -220,7 +224,7 @@ func (ctl *AIController) GetConversation(c *gin.Context) {
 		resp.Fail(c, 4000, "参数错误")
 		return
 	}
-	data, err := ctl.conversationSvc.GetConversation(c.Request.Context(), id)
+	data, err := ctl.conversationDetailSvc.GetConversation(c.Request.Context(), id)
 	if err != nil {
 		WriteServiceErr(c, err)
 		return
@@ -234,7 +238,7 @@ func (ctl *AIController) DeleteConversation(c *gin.Context) {
 		resp.Fail(c, 4000, "参数错误")
 		return
 	}
-	if err := ctl.conversationSvc.DeleteConversation(c.Request.Context(), id); err != nil {
+	if err := ctl.conversationSvc.Delete(c.Request.Context(), id); err != nil {
 		WriteServiceErr(c, err)
 		return
 	}
@@ -248,7 +252,7 @@ func (ctl *AIController) CreateConversation(c *gin.Context) {
 		return
 	}
 
-	var req service.CreateAIConversationRequest
+	var req aiapp.CreateConversationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "参数错误")
 		return
@@ -263,7 +267,7 @@ func (ctl *AIController) CreateConversation(c *gin.Context) {
 		username = strings.TrimSpace(claims.Username)
 	}
 
-	id, err := ctl.conversationSvc.CreateConversation(c.Request.Context(), clusterID, userID, username, req)
+	id, err := ctl.conversationSvc.Create(c.Request.Context(), clusterID, userID, username, req)
 	if err != nil {
 		WriteServiceErr(c, err)
 		return

@@ -6,8 +6,10 @@ import (
 	"k8s-platform-backend/internal/audit/ports"
 	fleethttp "k8s-platform-backend/internal/fleet/adapters/http"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
+	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/middleware"
+	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 	workspacehttp "k8s-platform-backend/internal/workspace/adapters/http"
 )
 
@@ -68,8 +70,8 @@ func registerMonitorIncidentRoutes(authed *gin.RouterGroup, ctl *incidenthttp.Le
 	monitor.POST("/incidents/:id/ai-proposal", manage, ctl.LinkAIProposal)
 }
 
-func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployController, configCtl *controller.DeployConfigController) {
-	if ctl == nil {
+func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployController, planCtl *provisionhttp.DeployPlanController, configCtl *provisionhttp.DeployConfigController) {
+	if ctl == nil || planCtl == nil {
 		return
 	}
 	deploy := authed.Group("/deploy")
@@ -108,10 +110,10 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.POST("/credential-deletion-requests", deleteCredential, ctl.BatchDeleteCredentials)
 
 	// 部署计划
-	deploy.GET("/plans", readPlan, ctl.ListPlans)
-	deploy.POST("/plans", writePlan, ctl.CreatePlan)
-	deploy.GET("/plans/:id", readPlan, ctl.GetPlan)
-	deploy.PUT("/plans/:id", writePlan, ctl.UpdatePlan)
+	deploy.GET("/plans", readPlan, planCtl.List)
+	deploy.POST("/plans", writePlan, planCtl.Create)
+	deploy.GET("/plans/:id", readPlan, planCtl.Get)
+	deploy.PUT("/plans/:id", writePlan, planCtl.Update)
 	deploy.GET("/plans/:id/dry-run", readPlan, ctl.DryRunPlan)
 	deploy.POST("/plans/:id/preflight", execDeploy, ctl.PreflightPlan)
 	deploy.POST("/plans/:id/preflight/ignore", execDeploy, ctl.SetPreflightIgnore)
@@ -132,7 +134,7 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	deploy.POST("/plans/:id/addons/retry", execDeploy, ctl.RetryPlanAddons)
 	deploy.POST("/plans/:id/addon-installations", execDeploy, ctl.InstallPlanAddons)
 	deploy.POST("/plans/:id/addon-retry-attempts", execDeploy, ctl.RetryPlanAddons)
-	deploy.DELETE("/plans/:id", deletePlan, ctl.DeletePlan)
+	deploy.DELETE("/plans/:id", deletePlan, planCtl.Delete)
 
 	// 部署任务日志
 	deploy.GET("/tasks/:taskId", readPlan, ctl.GetDeployTask)
@@ -183,7 +185,7 @@ func registerProjectRoutes(authed *gin.RouterGroup, ctl *workspacehttp.Controlle
 
 // ── 应用商店 ──
 
-func registerAppTemplateRoutes(authed *gin.RouterGroup, ctl *controller.AppTemplateController) {
+func registerAppTemplateRoutes(authed *gin.RouterGroup, ctl *provisionhttp.AppTemplateController) {
 	if ctl == nil {
 		return
 	}
@@ -196,7 +198,7 @@ func registerAppTemplateRoutes(authed *gin.RouterGroup, ctl *controller.AppTempl
 	authed.DELETE("/app-templates/:id", write, ctl.DeleteAppTemplate)
 }
 
-func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sPermissionAuditController) {
+func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sPermissionAuditController, rbac *kopshttp.RBACController) {
 	if ctl == nil {
 		return
 	}
@@ -205,8 +207,13 @@ func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sP
 	clusters.POST("/:id/permission-audits", auditPerm, ctl.CreateManaged)
 	clusters.GET("/:id/permission-audits/latest", auditPerm, ctl.LatestForCluster)
 	clusters.GET("/:id/permission-audits/recommend-rbac", auditPerm, ctl.RecommendRBAC)
-	clusters.GET("/:id/permission-audits/rbac-matrix/default", auditPerm, ctl.DefaultRBACMatrix)
-	clusters.POST("/:id/permission-audits/rbac-matrix/yaml", auditPerm, ctl.RBACFromMatrix)
+	if rbac == nil {
+		clusters.GET("/:id/permission-audits/rbac-matrix/default", auditPerm, ctl.DefaultRBACMatrix)
+		clusters.POST("/:id/permission-audits/rbac-matrix/yaml", auditPerm, ctl.RBACFromMatrix)
+	} else {
+		clusters.GET("/:id/permission-audits/rbac-matrix/default", auditPerm, rbac.Default)
+		clusters.POST("/:id/permission-audits/rbac-matrix/yaml", auditPerm, rbac.Build)
+	}
 
 	audits := authed.Group("/permission-audits")
 	audits.GET("", auditPerm, ctl.List)

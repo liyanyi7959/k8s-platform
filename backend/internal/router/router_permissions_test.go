@@ -216,7 +216,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/deploy/servers/1/connection-checks",
 			register: func(group *gin.RouterGroup) {
-				registerDeployRoutes(group, &controller.DeployController{}, nil)
+				registerDeployRoutes(group, &controller.DeployController{}, &provisionhttp.DeployPlanController{}, nil)
 			},
 		},
 		{
@@ -256,7 +256,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/deploy/plans/1/preflight-checks",
 			register: func(group *gin.RouterGroup) {
-				registerDeployRoutes(group, &controller.DeployController{}, nil)
+				registerDeployRoutes(group, &controller.DeployController{}, &provisionhttp.DeployPlanController{}, nil)
 			},
 		},
 		{
@@ -264,7 +264,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/permission-audits/1/cancellation-requests",
 			register: func(group *gin.RouterGroup) {
-				registerPermissionAuditRoutes(group, &controller.K8sPermissionAuditController{})
+				registerPermissionAuditRoutes(group, &controller.K8sPermissionAuditController{}, nil)
 			},
 		},
 		{

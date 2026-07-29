@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	aidomain "k8s-platform-backend/internal/ai/domain"
 	"k8s-platform-backend/internal/legacy/model"
 )
 
@@ -290,23 +291,23 @@ func TestAIActionString(t *testing.T) {
 func TestBuildAIActionProposalItem(t *testing.T) {
 	now := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 	proposal := model.AIActionProposal{
-		ID:               10,
-		ConversationID:   100,
-		ClusterID:        1,
-		ActionType:       "scale_workload",
-		TargetKind:       "Deployment",
-		TargetName:       "nginx",
-		TargetNamespace:  "default",
-		RiskLevel:        "medium",
-		ConfirmLevel:     "single",
-		Status:           "pending",
-		Title:            "Scale to 3",
-		Summary:          "scaling up",
-		ChangeJSON:       model.JSONMap{"replicas": 3},
-		CreatedBy:        1,
-		CreatedByName:    "admin",
-		CreatedAt:        now,
-		UpdatedAt:        now,
+		ID:              10,
+		ConversationID:  100,
+		ClusterID:       1,
+		ActionType:      "scale_workload",
+		TargetKind:      "Deployment",
+		TargetName:      "nginx",
+		TargetNamespace: "default",
+		RiskLevel:       "medium",
+		ConfirmLevel:    "single",
+		Status:          "pending",
+		Title:           "Scale to 3",
+		Summary:         "scaling up",
+		ChangeJSON:      aidomain.JSONMap{"replicas": 3},
+		CreatedBy:       1,
+		CreatedByName:   "admin",
+		CreatedAt:       now,
+		UpdatedAt:       now,
 	}
 	item := buildAIActionProposalItem(proposal, nil)
 	if item.ID != 10 {
@@ -364,7 +365,7 @@ func TestBuildAIActionExecutionItem(t *testing.T) {
 		OperatorID:      2,
 		OperatorName:    "ops",
 		CommandSnapshot: `{"action":"restart"}`,
-		ResultJSON:      model.JSONMap{"pods_restarted": 3},
+		ResultJSON:      aidomain.JSONMap{"pods_restarted": 3},
 		StartedAt:       &now,
 		FinishedAt:      &now,
 		CreatedAt:       now,

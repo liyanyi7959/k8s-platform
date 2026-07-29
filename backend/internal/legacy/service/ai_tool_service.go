@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	aidomain "k8s-platform-backend/internal/ai/domain"
 	"k8s-platform-backend/internal/legacy/model"
 )
 
@@ -136,7 +137,7 @@ func (s *AIToolService) executeRegisteredTool(
 	}
 	if payload, err := json.Marshal(params); err == nil {
 		row.CommandText = string(payload)
-		row.ParamsJSON = model.JSONMap(params)
+		row.ParamsJSON = aidomain.JSONMap(params)
 	}
 	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
 		return AIToolCallItem{}, ""
@@ -180,14 +181,14 @@ func (s *AIToolService) executeRegisteredTool(
 	resultJSON := toolEvidenceMap(result)
 	row.Status = "succeeded"
 	row.ResultSummary = result.Summary
-	row.ResultJSON = resultJSON
+	row.ResultJSON = aidomain.JSONMap(resultJSON)
 	_ = s.db.WithContext(ctx).Model(&model.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
 		"status":         row.Status,
 		"result_summary": row.ResultSummary,
 		"result_json":    row.ResultJSON,
 	}).Error
 
-	row.ResultJSON = resultJSON
+	row.ResultJSON = aidomain.JSONMap(resultJSON)
 	contextBlock := "工具 " + toolName + ": " + result.Summary + "\n" + compactToolResult(resultJSON)
 	return buildAIToolCallItem(row), contextBlock
 }
@@ -202,7 +203,7 @@ func buildAIToolCallItem(row model.AIToolCall) AIToolCallItem {
 		RiskLevel:     row.RiskLevel,
 		ConfirmLevel:  row.ConfirmLevel,
 		ResultSummary: row.ResultSummary,
-		Result:        row.ResultJSON,
+		Result:        model.JSONMap(row.ResultJSON),
 		ErrorMessage:  row.ErrorMessage,
 		CreatedAt:     row.CreatedAt.UTC().Format(time.RFC3339),
 	}

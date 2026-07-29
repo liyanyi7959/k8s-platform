@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"crypto/sha1"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,44 +25,10 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
+
+	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 )
-
-const (
-	maxKubeconfigContentSize = 1024 * 1024
-	maxEncodedKubeconfigSize = maxKubeconfigContentSize*4/3 + 4096
-)
-
-// NormalizeKubeconfigContent accepts a regular kubeconfig or a kubeconfig whose
-// complete content was Base64 encoded, and returns canonical plaintext content.
-func NormalizeKubeconfigContent(kubeconfig string) (string, error) {
-	kc := strings.TrimSpace(kubeconfig)
-	if kc == "" {
-		return "", ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
-	}
-	if len(kc) <= maxKubeconfigContentSize {
-		if _, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc)); err == nil {
-			return kc, nil
-		}
-	}
-	if len(kc) > maxEncodedKubeconfigSize {
-		return "", ErrWithMessage(ErrInvalidParams, "kubeconfig 内容不能超过 1MB")
-	}
-
-	encoded := strings.Join(strings.Fields(kc), "")
-	decoded, err := base64.StdEncoding.DecodeString(encoded)
-	if err == nil && len(decoded) <= maxKubeconfigContentSize {
-		decodedKubeconfig := strings.TrimSpace(string(decoded))
-		if _, parseErr := clientcmd.RESTConfigFromKubeConfig([]byte(decodedKubeconfig)); parseErr == nil {
-			return decodedKubeconfig, nil
-		}
-	}
-	if len(kc) > maxKubeconfigContentSize {
-		return "", ErrWithMessage(ErrInvalidParams, "kubeconfig 内容不能超过 1MB")
-	}
-	return "", ErrWithMessage(ErrInvalidParams, "kubeconfig 格式无效，请上传原始 YAML/JSON 或其 Base64 内容")
-}
 
 // K8s 哨兵错误已统一迁移至 errors.go（ErrK8s / ErrK8sNetwork / ErrK8sTimeout 等）。
 
@@ -73,12 +38,12 @@ func NormalizeKubeconfigContent(kubeconfig string) (string, error) {
 // - 统一将 K8s 常见错误（NotFound/AlreadyExists/BadRequest 等）归一化为业务错误；
 // - 为 controller 层提供面向"资源 + 动作"的方法（List/GetYAML/Delete/Patch/Exec 等）。
 type K8sService struct {
-	clusterReg  *ClusterRegistryService
-	podCache    *podCacheManager
-	objCache    *objCacheManager
-	cache       CacheStore
-	podTTL      time.Duration
-	insecureTLS bool
+	clusterReg *ClusterRegistryService
+	podCache   *podCacheManager
+	objCache   *objCacheManager
+	cache      CacheStore
+	podTTL     time.Duration
+	clients    kopsclient.ClientFactory
 
 	apiResourcesMu       sync.Mutex
 	apiResourcesInFlight map[string]*apiResourcesFlight
@@ -96,7 +61,7 @@ func NewK8sService(clusterReg *ClusterRegistryService, cacheStore CacheStore, po
 	if len(insecureSkipTLS) > 0 {
 		skip = insecureSkipTLS[0]
 	}
-	return &K8sService{clusterReg: clusterReg, podCache: newPodCacheManager(), objCache: newObjCacheManager(), cache: cacheStore, podTTL: podCacheTTL, insecureTLS: skip}
+	return &K8sService{clusterReg: clusterReg, podCache: newPodCacheManager(), objCache: newObjCacheManager(), cache: cacheStore, podTTL: podCacheTTL, clients: kopsclient.NewClientFactory(k8sRequestTimeout, skip)}
 }
 
 // ---------------------------------------------------------------------------
@@ -112,15 +77,9 @@ func (s *K8sService) restConfig(ctx context.Context, clusterID uint64) (*rest.Co
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
+	cfg, err := s.clientFactory().RESTConfig(kc)
 	if err != nil {
 		return nil, ErrWithMessage(ErrInvalidParams, "集群凭据无效")
-	}
-	cfg.Timeout = k8sRequestTimeout
-	if s.insecureTLS {
-		cfg.TLSClientConfig.Insecure = true
-		cfg.TLSClientConfig.CAData = nil
-		cfg.TLSClientConfig.CAFile = ""
 	}
 	return cfg, nil
 }
@@ -134,25 +93,16 @@ func (s *K8sService) GetKubeconfig(ctx context.Context, clusterID uint64) (strin
 }
 
 func (s *K8sService) ValidateKubeconfig(ctx context.Context, kubeconfig string) error {
-	kc, err := NormalizeKubeconfigContent(kubeconfig)
-	if err != nil {
-		return err
+	err := s.clientFactory().Validate(ctx, kubeconfig)
+	if errors.Is(err, kopsclient.ErrKubeconfigEmpty) {
+		return ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
 	}
-	cfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kc))
-	if err != nil {
-		return ErrWithMessage(ErrInvalidParams, "kubeconfig 无效")
+	if errors.Is(err, kopsclient.ErrKubeconfigTooLarge) {
+		return ErrWithMessage(ErrInvalidParams, "kubeconfig 内容不能超过 1MB")
 	}
-	cfg.Timeout = k8sRequestTimeout
-	if s.insecureTLS {
-		cfg.TLSClientConfig.Insecure = true
-		cfg.TLSClientConfig.CAData = nil
-		cfg.TLSClientConfig.CAFile = ""
+	if errors.Is(err, kopsclient.ErrInvalidKubeconfig) {
+		return ErrWithMessage(ErrInvalidParams, "kubeconfig 格式无效，请上传原始 YAML/JSON 或其 Base64 内容")
 	}
-	cs, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return normalizeK8sErr(err)
-	}
-	_, err = cs.Discovery().ServerVersion()
 	return normalizeK8sErr(err)
 }
 
@@ -181,8 +131,8 @@ func (s *K8sService) VerifyClusterAPI(ctx context.Context, clusterID uint64) (st
 // ValidateKubeconfigFormat 仅校验 kubeconfig 格式是否合法（能正确解析出 REST 配置），
 // 不会实际连接 K8s API Server。适用于编辑/更新场景——用户可能在离线环境中更新凭据。
 func (s *K8sService) ValidateKubeconfigFormat(_ context.Context, kubeconfig string) error {
-	_, err := NormalizeKubeconfigContent(kubeconfig)
-	return err
+	_, err := kopsclient.NormalizeKubeconfigContent(kubeconfig)
+	return legacyKubeconfigError(err)
 }
 
 // dynamicClient 创建 dynamic client，用于访问任意 GVR（包含 CRD）资源。
@@ -191,7 +141,7 @@ func (s *K8sService) dynamicClient(ctx context.Context, clusterID uint64) (*dyna
 	if err != nil {
 		return nil, err
 	}
-	return dynamic.NewForConfig(cfg)
+	return s.clientFactory().DynamicClient(cfg)
 }
 
 func (s *K8sService) discoveryClient(ctx context.Context, clusterID uint64) (*discovery.DiscoveryClient, error) {
@@ -199,7 +149,7 @@ func (s *K8sService) discoveryClient(ctx context.Context, clusterID uint64) (*di
 	if err != nil {
 		return nil, err
 	}
-	return discovery.NewDiscoveryClientForConfig(cfg)
+	return s.clientFactory().DiscoveryClient(cfg)
 }
 
 // typedClient 创建 typed client（Clientset），用于访问 core/apps 等内置资源的强类型接口。
@@ -208,7 +158,7 @@ func (s *K8sService) typedClient(ctx context.Context, clusterID uint64) (*kubern
 	if err != nil {
 		return nil, err
 	}
-	return kubernetes.NewForConfig(cfg)
+	return s.clientFactory().TypedClient(cfg)
 }
 
 func (s *K8sService) typedClientForInformer(ctx context.Context, clusterID uint64) (*kubernetes.Clientset, error) {
@@ -216,9 +166,27 @@ func (s *K8sService) typedClientForInformer(ctx context.Context, clusterID uint6
 	if err != nil {
 		return nil, err
 	}
-	cfg2 := rest.CopyConfig(cfg)
-	cfg2.Timeout = 0
-	return kubernetes.NewForConfig(cfg2)
+	return s.clientFactory().InformerClient(cfg)
+}
+
+func (s *K8sService) clientFactory() kopsclient.ClientFactory {
+	if s != nil {
+		return s.clients
+	}
+	return kopsclient.NewClientFactory(k8sRequestTimeout, false)
+}
+
+func legacyKubeconfigError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, kopsclient.ErrKubeconfigEmpty):
+		return ErrWithMessage(ErrInvalidParams, "kubeconfig 不能为空")
+	case errors.Is(err, kopsclient.ErrKubeconfigTooLarge):
+		return ErrWithMessage(ErrInvalidParams, "kubeconfig 内容不能超过 1MB")
+	default:
+		return ErrWithMessage(ErrInvalidParams, "kubeconfig 格式无效，请上传原始 YAML/JSON 或其 Base64 内容")
+	}
 }
 
 // ---------------------------------------------------------------------------

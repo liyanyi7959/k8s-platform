@@ -15,7 +15,31 @@ import (
 
 	"gorm.io/gorm"
 
+	aigateway "k8s-platform-backend/internal/ai/adapters/gateway"
+	aiapp "k8s-platform-backend/internal/ai/application"
+	aidomain "k8s-platform-backend/internal/ai/domain"
 	"k8s-platform-backend/internal/legacy/model"
+)
+
+type (
+	AIChatUploadInput       = aiapp.AIChatUploadInput
+	AIFileService           = aiapp.AIFileService
+	AIMessageAttachmentItem = aiapp.AIMessageAttachmentItem
+	AIGatewayService        = aigateway.AIGatewayService
+	AIGatewayRequest        = aigateway.AIGatewayRequest
+	AIGatewayResponse       = aigateway.AIGatewayResponse
+	AIGatewayStreamResult   = aigateway.AIGatewayStreamResult
+	AIGatewayUsage          = aigateway.AIGatewayUsage
+	AIGatewayMessage        = aigateway.AIGatewayMessage
+	AIGatewayImage          = aigateway.AIGatewayImage
+	AIGatewayFileContext    = aigateway.AIGatewayFileContext
+	AIToolSpec              = aigateway.AIToolSpec
+	AIToolCall              = aigateway.AIToolCall
+)
+
+const (
+	aiUploadKindImage = aiapp.UploadKindImage
+	aiUploadKindText  = aiapp.UploadKindText
 )
 
 var (
@@ -233,7 +257,7 @@ func buildAIGatewayFileContexts(uploads []AIChatUploadInput) []AIGatewayFileCont
 	return out
 }
 
-func validateAIChatModelInputs(aiModel model.AIModel, images []model.JSONMap, files []AIGatewayFileContext) error {
+func validateAIChatModelInputs(aiModel aidomain.AIModel, images []model.JSONMap, files []AIGatewayFileContext) error {
 	if len(images) > 0 && !aiModel.SupportsVision {
 		return ErrWithMessage(ErrInvalidParams, "当前模型不支持图片输入，请切换到支持视觉的模型")
 	}
@@ -300,7 +324,7 @@ func (s *AIChatService) startConversationTurn(
 		return aiPreparedConversationTurn{}, errors.New("ai file service is required")
 	}
 	if len(gatewayImages) > 0 || len(fileContexts) > 0 {
-		_, aiModel, _, err := s.gateway.resolveInvocationTarget(ctx, AIGatewayRequest{
+		_, aiModel, _, err := s.gateway.ResolveInvocationTarget(ctx, AIGatewayRequest{
 			AssistantMode:   conversation.AssistantMode,
 			ProviderID:      selectedProviderID,
 			ModelID:         selectedModelID,
@@ -330,7 +354,7 @@ func (s *AIChatService) startConversationTurn(
 		MessageType:    "text",
 		Content:        message,
 		Status:         "created",
-		StructuredJSON: userMessageStructured,
+		StructuredJSON: aidomain.JSONMap(userMessageStructured),
 		CreatedBy:      userID,
 	}
 	if err := s.db.WithContext(ctx).Create(&userMessage).Error; err != nil {
@@ -359,7 +383,7 @@ func (s *AIChatService) startConversationTurn(
 			Update("structured_json", userMessageStructured).Error; err != nil {
 			return aiPreparedConversationTurn{}, err
 		}
-		userMessage.StructuredJSON = userMessageStructured
+		userMessage.StructuredJSON = aidomain.JSONMap(userMessageStructured)
 	}
 
 	runStarted = false
@@ -651,7 +675,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 			Messages:        history,
 			CurrentImages:   turn.gatewayImages,
 			CurrentFiles:    turn.fileContexts,
-			ScopeNote:       buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
+			ScopeNote:       aigateway.BuildScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
 			Tools:           tools,
 		}
 
@@ -730,7 +754,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 			CurrentFiles:      turn.fileContexts,
 			DiagnosticSummary: diagnosticSummary,
 			DiagnosticNotes:   diagnosticNotes,
-			ScopeNote:         buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
+			ScopeNote:         aigateway.BuildScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
 		})
 		if err != nil {
 			s.finishConversationRun(turn.conversation.ID, aiConversationRunResult{
@@ -758,7 +782,7 @@ func (s *AIChatService) SendMessage(ctx context.Context, userID uint64, username
 		MessageType:    "text",
 		Content:        assistantContent,
 		Status:         "created",
-		StructuredJSON: assistantStructured,
+		StructuredJSON: aidomain.JSONMap(assistantStructured),
 		ToolCallCount:  len(toolCalls),
 		TokenInput:     assistantResp.Usage.RequestTokens,
 		TokenOutput:    assistantResp.Usage.ResponseTokens,
@@ -919,7 +943,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 			Messages:        history,
 			CurrentImages:   turn.gatewayImages,
 			CurrentFiles:    turn.fileContexts,
-			ScopeNote:       buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
+			ScopeNote:       aigateway.BuildScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
 			Tools:           tools,
 		}
 
@@ -942,7 +966,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 				Messages:            updatedHistory,
 				CurrentImages:       turn.gatewayImages,
 				CurrentFiles:        turn.fileContexts,
-				ScopeNote:           buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
+				ScopeNote:           aigateway.BuildScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
 				FunctionCallingMode: true,
 			})
 			if streamErr != nil {
@@ -957,7 +981,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 					MessageType:    "text",
 					Content:        assistantContent,
 					Status:         "created",
-					StructuredJSON: assistantStructured,
+					StructuredJSON: aidomain.JSONMap(assistantStructured),
 					ToolCallCount:  len(toolCalls),
 					TokenInput:     assistantResp.Usage.RequestTokens,
 					TokenOutput:    assistantResp.Usage.ResponseTokens,
@@ -1096,7 +1120,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 			CurrentFiles:      turn.fileContexts,
 			DiagnosticSummary: diagnosticSummary,
 			DiagnosticNotes:   diagnosticNotes,
-			ScopeNote:         buildAIGatewayScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
+			ScopeNote:         aigateway.BuildScopeNote(req.Namespace, req.ResourceKind, req.ResourceName),
 		})
 		if err != nil {
 			s.finishConversationRun(turn.conversation.ID, aiConversationRunResult{
@@ -1192,7 +1216,7 @@ func (s *AIChatService) SendChatStream(ctx context.Context, userID uint64, usern
 			MessageType:    "text",
 			Content:        assistantContent,
 			Status:         "created",
-			StructuredJSON: assistantStructured,
+			StructuredJSON: aidomain.JSONMap(assistantStructured),
 			ToolCallCount:  len(toolCalls),
 			TokenInput:     streamResult.Usage.RequestTokens,
 			TokenOutput:    streamResult.Usage.ResponseTokens,
@@ -1352,7 +1376,7 @@ func (s *AIChatService) streamFunctionCallingResponse(
 		MessageType:    "text",
 		Content:        assistantContent,
 		Status:         "created",
-		StructuredJSON: assistantStructured,
+		StructuredJSON: aidomain.JSONMap(assistantStructured),
 		ToolCallCount:  len(toolCalls),
 		TokenInput:     streamResult.Usage.RequestTokens,
 		TokenOutput:    streamResult.Usage.ResponseTokens,
@@ -1639,7 +1663,7 @@ func (s *AIChatService) finishConversationRun(conversationID uint64, result aiCo
 		MessageType:    "text",
 		Content:        content,
 		Status:         messageStatus,
-		StructuredJSON: result.StructuredPayload,
+		StructuredJSON: aidomain.JSONMap(result.StructuredPayload),
 		ToolCallCount:  result.ToolCallCount,
 	}).Error
 }
@@ -1743,7 +1767,7 @@ func buildScopedGatewayHistory(rows []model.AIMessage, currentScope aiMessageReq
 	seenScopedCurrent := false
 	for i := len(rows) - 1; i >= 0; i-- {
 		row := rows[i]
-		rowScope := extractAIMessageRequestScope(row.StructuredJSON)
+		rowScope := extractAIMessageRequestScope(model.JSONMap(row.StructuredJSON))
 		if rowScope.hasExplicitScope() {
 			if !currentScope.matches(rowScope) {
 				break
@@ -1881,7 +1905,7 @@ func (s *AIChatService) hasOpenProposal(
 		return false
 	}
 	for _, row := range rows {
-		if replicas, ok := jsonIntValue(aiActionPayload(row.ChangeJSON)["replicas"]); ok && replicas == targetReplicas {
+		if replicas, ok := jsonIntValue(aiActionPayload(model.JSONMap(row.ChangeJSON))["replicas"]); ok && replicas == targetReplicas {
 			return true
 		}
 		if replicas, ok := jsonIntValue(row.ChangeJSON["target_replicas"]); ok && replicas == targetReplicas {

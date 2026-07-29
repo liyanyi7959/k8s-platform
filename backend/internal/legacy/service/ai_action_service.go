@@ -11,11 +11,12 @@ import (
 	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	model "k8s-platform-backend/internal/ai/domain"
 	changemysql "k8s-platform-backend/internal/change/adapters/mysql"
 	changeapp "k8s-platform-backend/internal/change/application"
 	changedomain "k8s-platform-backend/internal/change/domain"
 	changeports "k8s-platform-backend/internal/change/ports"
-	"k8s-platform-backend/internal/legacy/model"
+	legacymodel "k8s-platform-backend/internal/legacy/model"
 )
 
 const (
@@ -47,7 +48,7 @@ type CreateAIActionProposalRequest struct {
 	MessageID      *uint64                `json:"message_id"`
 	ProposalType   string                 `json:"proposal_type"`
 	TargetResource AIActionTargetResource `json:"target_resource"`
-	Payload        model.JSONMap          `json:"payload"`
+	Payload        legacymodel.JSONMap    `json:"payload"`
 	Reason         string                 `json:"reason"`
 }
 
@@ -58,18 +59,18 @@ type ConfirmAIActionProposalRequest struct {
 }
 
 type AIActionExecutionItem struct {
-	ID              uint64        `json:"id"`
-	ProposalID      uint64        `json:"proposal_id"`
-	Status          string        `json:"status"`
-	ExecutionNo     int           `json:"execution_no"`
-	OperatorID      uint64        `json:"operator_id"`
-	OperatorName    string        `json:"operator_name"`
-	CommandSnapshot string        `json:"command_snapshot"`
-	Result          model.JSONMap `json:"result,omitempty"`
-	ErrorMessage    string        `json:"error_message,omitempty"`
-	StartedAt       *string       `json:"started_at,omitempty"`
-	FinishedAt      *string       `json:"finished_at,omitempty"`
-	CreatedAt       string        `json:"created_at"`
+	ID              uint64              `json:"id"`
+	ProposalID      uint64              `json:"proposal_id"`
+	Status          string              `json:"status"`
+	ExecutionNo     int                 `json:"execution_no"`
+	OperatorID      uint64              `json:"operator_id"`
+	OperatorName    string              `json:"operator_name"`
+	CommandSnapshot string              `json:"command_snapshot"`
+	Result          legacymodel.JSONMap `json:"result,omitempty"`
+	ErrorMessage    string              `json:"error_message,omitempty"`
+	StartedAt       *string             `json:"started_at,omitempty"`
+	FinishedAt      *string             `json:"finished_at,omitempty"`
+	CreatedAt       string              `json:"created_at"`
 }
 
 type AIActionProposalItem struct {
@@ -87,7 +88,7 @@ type AIActionProposalItem struct {
 	Status                   string                  `json:"status"`
 	Title                    string                  `json:"title"`
 	Summary                  string                  `json:"summary"`
-	Change                   model.JSONMap           `json:"change,omitempty"`
+	Change                   legacymodel.JSONMap     `json:"change,omitempty"`
 	CreatedBy                uint64                  `json:"created_by"`
 	CreatedByName            string                  `json:"created_by_name"`
 	ApprovedBy               *uint64                 `json:"approved_by,omitempty"`
@@ -378,7 +379,7 @@ func (s *AIActionService) buildProposalRow(
 	target := normalizeAIActionTarget(req.TargetResource)
 	payload := req.Payload
 	if payload == nil {
-		payload = model.JSONMap{}
+		payload = legacymodel.JSONMap{}
 	}
 	prepared, err := s.workloadSvc.PrepareProposal(ctx, PrepareWorkloadActionRequest{
 		ClusterID:  clusterID,
@@ -408,7 +409,7 @@ func (s *AIActionService) buildProposalRow(
 		Status:          "pending_confirm",
 		Title:           prepared.Title,
 		Summary:         prepared.Summary,
-		ChangeJSON:      prepared.Change,
+		ChangeJSON:      model.JSONMap(prepared.Change),
 		CreatedBy:       userID,
 		CreatedByName:   strings.TrimSpace(username),
 	}
@@ -522,7 +523,7 @@ func (s *AIActionService) executeProposal(
 	}
 
 	executionRow.Status = "succeeded"
-	executionRow.ResultJSON = resultJSON
+	executionRow.ResultJSON = model.JSONMap(resultJSON)
 	executionRow.FinishedAt = &finishedAt
 	return executionRow, summary, nil
 }
@@ -530,12 +531,12 @@ func (s *AIActionService) executeProposal(
 func (s *AIActionService) runProposalAction(
 	ctx context.Context,
 	proposal model.AIActionProposal,
-) (model.JSONMap, string, error) {
+) (legacymodel.JSONMap, string, error) {
 	result, err := s.workloadSvc.ExecuteProposalAction(ctx, ExecuteWorkloadActionRequest{
 		ClusterID:     proposal.ClusterID,
 		ActionType:    proposal.ActionType,
 		Target:        WorkloadActionTarget{Kind: proposal.TargetKind, Namespace: proposal.TargetNamespace, Name: proposal.TargetName},
-		Change:        proposal.ChangeJSON,
+		Change:        legacymodel.JSONMap(proposal.ChangeJSON),
 		ProposalTitle: proposal.Title,
 		CreatedBy:     proposal.CreatedBy,
 		CreatedByName: proposal.CreatedByName,
@@ -652,7 +653,7 @@ func buildAIActionProposalItem(
 		Status:                   row.Status,
 		Title:                    row.Title,
 		Summary:                  row.Summary,
-		Change:                   row.ChangeJSON,
+		Change:                   legacymodel.JSONMap(row.ChangeJSON),
 		CreatedBy:                row.CreatedBy,
 		CreatedByName:            row.CreatedByName,
 		ApprovedBy:               row.ApprovedBy,
@@ -688,7 +689,7 @@ func buildAIActionExecutionItem(row model.AIActionExecution) AIActionExecutionIt
 		OperatorID:      row.OperatorID,
 		OperatorName:    row.OperatorName,
 		CommandSnapshot: row.CommandSnapshot,
-		Result:          row.ResultJSON,
+		Result:          legacymodel.JSONMap(row.ResultJSON),
 		ErrorMessage:    row.ErrorMessage,
 		StartedAt:       startedAt,
 		FinishedAt:      finishedAt,
@@ -789,14 +790,14 @@ func aiActionWorkloadGVR(kind string) (schema.GroupVersionResource, bool) {
 	}
 }
 
-func aiActionPayload(change model.JSONMap) model.JSONMap {
+func aiActionPayload(change legacymodel.JSONMap) legacymodel.JSONMap {
 	if change == nil {
-		return model.JSONMap{}
+		return legacymodel.JSONMap{}
 	}
 	if payload, ok := change["payload"].(map[string]any); ok && payload != nil {
-		return model.JSONMap(payload)
+		return legacymodel.JSONMap(payload)
 	}
-	return model.JSONMap{}
+	return legacymodel.JSONMap{}
 }
 
 func aiActionExecutionStatusLabel(status string) string {
