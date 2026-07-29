@@ -27,7 +27,6 @@ import (
 // 各资源类型的接口按文件拆分，参见 k8s_ctrl_*.go 系列文件。
 type K8sController struct {
 	svc                   *service.K8sService
-	manifestSvc           *service.ManifestApplyRecordService
 	execSessions          *kopsapp.ExecSessionStore
 	logSessions           *kopsapp.PodLogSessionStore
 	namespaceDiagnosisSvc *service.NamespaceDiagnosisService
@@ -48,7 +47,6 @@ type K8sNamespacedEditRequest struct {
 // NewK8sController 创建 K8sController。
 func NewK8sController(
 	svc *service.K8sService,
-	manifestSvc *service.ManifestApplyRecordService,
 	execSessions *kopsapp.ExecSessionStore,
 	logSessions *kopsapp.PodLogSessionStore,
 	namespaceDiagnosisSvc *service.NamespaceDiagnosisService,
@@ -61,7 +59,6 @@ func NewK8sController(
 	}
 	return &K8sController{
 		svc:                   svc,
-		manifestSvc:           manifestSvc,
 		execSessions:          execSessions,
 		logSessions:           logSessions,
 		namespaceDiagnosisSvc: namespaceDiagnosisSvc,

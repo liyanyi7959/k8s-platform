@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
+	aihttp "k8s-platform-backend/internal/ai/adapters/http"
 	audithttp "k8s-platform-backend/internal/audit/adapters/http"
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	"k8s-platform-backend/internal/legacy/controller"
@@ -61,8 +62,8 @@ func registerSystemRoutes(authed *gin.RouterGroup, ctl *platformhttp.SettingsCon
 	authed.PUT("/system/settings", write, ctl.Update)
 }
 
-func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController) {
-	if ctl == nil {
+func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController, management *aihttp.ManagementController) {
+	if ctl == nil || management == nil {
 		return
 	}
 
@@ -71,24 +72,24 @@ func registerAIRoutes(authed *gin.RouterGroup, ctl *controller.AIController) {
 	clusterReadPerm := middleware.RequirePerm("cluster:read")
 
 	ai := authed.Group("/ai")
-	ai.GET("/providers", aiWritePerm, ctl.ListProviders)
-	ai.POST("/providers", aiWritePerm, ctl.CreateProvider)
-	ai.PATCH("/providers/:id", aiWritePerm, ctl.PatchProvider)
-	ai.DELETE("/providers/:id", aiWritePerm, ctl.DeleteProvider)
-	ai.GET("/models", aiReadPerm, ctl.ListModels)
+	ai.GET("/providers", aiWritePerm, management.ListProviders)
+	ai.POST("/providers", aiWritePerm, management.CreateProvider)
+	ai.PATCH("/providers/:id", aiWritePerm, management.PatchProvider)
+	ai.DELETE("/providers/:id", aiWritePerm, management.DeleteProvider)
+	ai.GET("/models", aiReadPerm, management.ListModels)
 	ai.GET("/tools", aiReadPerm, ctl.ListTools)
-	ai.POST("/models", aiWritePerm, ctl.CreateModel)
-	ai.PATCH("/models/:id", aiWritePerm, ctl.PatchModel)
-	ai.DELETE("/models/:id", aiWritePerm, ctl.DeleteModel)
-	ai.GET("/route-settings", aiWritePerm, ctl.GetRouteSettings)
-	ai.PUT("/route-settings", aiWritePerm, ctl.UpdateRouteSettings)
-	ai.GET("/conversations", aiReadPerm, ctl.ListConversations)
+	ai.POST("/models", aiWritePerm, management.CreateModel)
+	ai.PATCH("/models/:id", aiWritePerm, management.PatchModel)
+	ai.DELETE("/models/:id", aiWritePerm, management.DeleteModel)
+	ai.GET("/route-settings", aiWritePerm, management.GetRouteSettings)
+	ai.PUT("/route-settings", aiWritePerm, management.UpdateRouteSettings)
+	ai.GET("/conversations", aiReadPerm, management.ListConversations)
 	ai.GET("/conversations/:id", aiReadPerm, ctl.GetConversation)
-	ai.DELETE("/conversations/:id", aiReadPerm, ctl.DeleteConversation)
+	ai.DELETE("/conversations/:id", aiReadPerm, management.DeleteConversation)
 	ai.GET("/files/:id/content", aiReadPerm, ctl.DownloadAttachmentContent)
 
 	clusters := authed.Group("/clusters")
-	clusters.POST("/:id/ai/conversations", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), ctl.CreateConversation)
+	clusters.POST("/:id/ai/conversations", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), management.CreateConversation)
 	clusters.POST("/:id/ai/chat", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), ctl.SendChat)
 	clusters.POST("/:id/ai/chat/stream", clusterReadPerm, middleware.RequireAnyPerm("ai:chat", "ai:diagnose"), ctl.SendChatStream)
 	clusters.POST("/:id/ai/actions/propose", clusterReadPerm, middleware.RequirePerm("ai:change_propose"), ctl.CreateActionProposal)

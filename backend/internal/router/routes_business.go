@@ -70,8 +70,8 @@ func registerMonitorIncidentRoutes(authed *gin.RouterGroup, ctl *incidenthttp.Le
 	monitor.POST("/incidents/:id/ai-proposal", manage, ctl.LinkAIProposal)
 }
 
-func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployController, planCtl *provisionhttp.DeployPlanController, configCtl *provisionhttp.DeployConfigController) {
-	if ctl == nil || planCtl == nil {
+func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployController, serverCtl *provisionhttp.ServerController, credentialCtl *provisionhttp.CredentialController, planCtl *provisionhttp.DeployPlanController, runtimeCtl *provisionhttp.RuntimeController, taskCtl *provisionhttp.TaskController, configCtl *provisionhttp.DeployConfigController) {
+	if ctl == nil || serverCtl == nil || credentialCtl == nil || planCtl == nil || runtimeCtl == nil || taskCtl == nil {
 		return
 	}
 	deploy := authed.Group("/deploy")
@@ -88,58 +88,58 @@ func registerDeployRoutes(authed *gin.RouterGroup, ctl *controller.DeployControl
 	execDeploy := middleware.RequirePerm("deploy:execute")
 
 	// 服务器管理
-	deploy.GET("/servers", readServer, ctl.ListServers)
-	deploy.GET("/servers/summary", readServer, ctl.GetServerSummary)
-	deploy.POST("/servers", writeServer, ctl.CreateServer)
-	deploy.GET("/servers/:id", readServer, ctl.GetServer)
-	deploy.PUT("/servers/:id", writeServer, ctl.UpdateServer)
+	deploy.GET("/servers", readServer, serverCtl.List)
+	deploy.GET("/servers/summary", readServer, serverCtl.Summary)
+	deploy.POST("/servers", writeServer, serverCtl.Create)
+	deploy.GET("/servers/:id", readServer, serverCtl.Get)
+	deploy.PUT("/servers/:id", writeServer, serverCtl.Update)
 	deploy.POST("/servers/:id/test-ssh", readServer, ctl.TestSSH)
 	deploy.POST("/servers/:id/connection-checks", writeServer, ctl.TestSSH)
 	deploy.POST("/servers/:id/terminal-session", writeServer, ctl.CreateServerTerminalSession)
 	deploy.POST("/servers/:id/terminal-sessions", writeServer, ctl.CreateServerTerminalSession)
 	deploy.GET("/servers/terminal/ws", writeServer, ctl.ServerTerminalWS)
-	deploy.DELETE("/servers/:id", deleteServer, ctl.DeleteServer)
+	deploy.DELETE("/servers/:id", deleteServer, serverCtl.Delete)
 
 	// SSH 凭证
-	deploy.GET("/credentials", readCredential, ctl.ListCredentials)
-	deploy.POST("/credentials", writeCredential, ctl.CreateCredential)
-	deploy.GET("/credentials/:id", readCredential, ctl.GetCredential)
-	deploy.PUT("/credentials/:id", writeCredential, ctl.UpdateCredential)
-	deploy.DELETE("/credentials/:id", deleteCredential, ctl.DeleteCredential)
-	deploy.POST("/credentials/batch-delete", deleteCredential, ctl.BatchDeleteCredentials)
-	deploy.POST("/credential-deletion-requests", deleteCredential, ctl.BatchDeleteCredentials)
+	deploy.GET("/credentials", readCredential, credentialCtl.List)
+	deploy.POST("/credentials", writeCredential, credentialCtl.Create)
+	deploy.GET("/credentials/:id", readCredential, credentialCtl.Get)
+	deploy.PUT("/credentials/:id", writeCredential, credentialCtl.Update)
+	deploy.DELETE("/credentials/:id", deleteCredential, credentialCtl.Delete)
+	deploy.POST("/credentials/batch-delete", deleteCredential, credentialCtl.BatchDelete)
+	deploy.POST("/credential-deletion-requests", deleteCredential, credentialCtl.BatchDelete)
 
 	// 部署计划
 	deploy.GET("/plans", readPlan, planCtl.List)
 	deploy.POST("/plans", writePlan, planCtl.Create)
 	deploy.GET("/plans/:id", readPlan, planCtl.Get)
 	deploy.PUT("/plans/:id", writePlan, planCtl.Update)
-	deploy.GET("/plans/:id/dry-run", readPlan, ctl.DryRunPlan)
-	deploy.POST("/plans/:id/preflight", execDeploy, ctl.PreflightPlan)
-	deploy.POST("/plans/:id/preflight/ignore", execDeploy, ctl.SetPreflightIgnore)
-	deploy.GET("/plans/:id/simulations", readPlan, ctl.DryRunPlan)
-	deploy.POST("/plans/:id/preflight-checks", execDeploy, ctl.PreflightPlan)
-	deploy.POST("/plans/:id/preflight-checks/overrides", execDeploy, ctl.SetPreflightIgnore)
-	deploy.GET("/plans/:id/ansible-config", readPlan, ctl.GetPlanAnsibleConfig)
-	deploy.POST("/plans/:id/execute", execDeploy, ctl.ExecutePlan)
-	deploy.POST("/plans/:id/cancel", execDeploy, ctl.CancelPlan)
-	deploy.POST("/plans/:id/retry", execDeploy, ctl.RetryPlan)
-	deploy.POST("/plans/:id/steps/:stepKey/retry", execDeploy, ctl.RetryDeployStep)
-	deploy.POST("/plans/:id/executions", execDeploy, ctl.ExecutePlan)
-	deploy.POST("/plans/:id/cancellation-requests", execDeploy, ctl.CancelPlan)
-	deploy.POST("/plans/:id/retry-attempts", execDeploy, ctl.RetryPlan)
-	deploy.POST("/plans/:id/steps/:stepKey/retry-attempts", execDeploy, ctl.RetryDeployStep)
-	deploy.GET("/plans/:id/addons/task", readPlan, ctl.GetPlanAddonTask)
-	deploy.POST("/plans/:id/addons/install", execDeploy, ctl.InstallPlanAddons)
-	deploy.POST("/plans/:id/addons/retry", execDeploy, ctl.RetryPlanAddons)
-	deploy.POST("/plans/:id/addon-installations", execDeploy, ctl.InstallPlanAddons)
-	deploy.POST("/plans/:id/addon-retry-attempts", execDeploy, ctl.RetryPlanAddons)
+	deploy.GET("/plans/:id/dry-run", readPlan, runtimeCtl.DryRun)
+	deploy.POST("/plans/:id/preflight", execDeploy, runtimeCtl.Preflight)
+	deploy.POST("/plans/:id/preflight/ignore", execDeploy, runtimeCtl.SetPreflightIgnore)
+	deploy.GET("/plans/:id/simulations", readPlan, runtimeCtl.DryRun)
+	deploy.POST("/plans/:id/preflight-checks", execDeploy, runtimeCtl.Preflight)
+	deploy.POST("/plans/:id/preflight-checks/overrides", execDeploy, runtimeCtl.SetPreflightIgnore)
+	deploy.GET("/plans/:id/ansible-config", readPlan, runtimeCtl.AnsibleConfig)
+	deploy.POST("/plans/:id/execute", execDeploy, runtimeCtl.Execute)
+	deploy.POST("/plans/:id/cancel", execDeploy, runtimeCtl.Cancel)
+	deploy.POST("/plans/:id/retry", execDeploy, runtimeCtl.Retry)
+	deploy.POST("/plans/:id/steps/:stepKey/retry", execDeploy, runtimeCtl.RetryStep)
+	deploy.POST("/plans/:id/executions", execDeploy, runtimeCtl.Execute)
+	deploy.POST("/plans/:id/cancellation-requests", execDeploy, runtimeCtl.Cancel)
+	deploy.POST("/plans/:id/retry-attempts", execDeploy, runtimeCtl.Retry)
+	deploy.POST("/plans/:id/steps/:stepKey/retry-attempts", execDeploy, runtimeCtl.RetryStep)
+	deploy.GET("/plans/:id/addons/task", readPlan, runtimeCtl.LatestAddonTask)
+	deploy.POST("/plans/:id/addons/install", execDeploy, runtimeCtl.InstallAddons)
+	deploy.POST("/plans/:id/addons/retry", execDeploy, runtimeCtl.RetryAddons)
+	deploy.POST("/plans/:id/addon-installations", execDeploy, runtimeCtl.InstallAddons)
+	deploy.POST("/plans/:id/addon-retry-attempts", execDeploy, runtimeCtl.RetryAddons)
 	deploy.DELETE("/plans/:id", deletePlan, planCtl.Delete)
 
 	// 部署任务日志
-	deploy.GET("/tasks/:taskId", readPlan, ctl.GetDeployTask)
-	deploy.GET("/tasks/:taskId/logs", readPlan, ctl.GetDeployTaskLogs)
-	deploy.GET("/tasks/:taskId/logs/sse", readPlan, ctl.GetDeployTaskLogsSSE)
+	deploy.GET("/tasks/:taskId", readPlan, taskCtl.Get)
+	deploy.GET("/tasks/:taskId/logs", readPlan, taskCtl.Logs)
+	deploy.GET("/tasks/:taskId/logs/sse", readPlan, taskCtl.LogsSSE)
 
 	// 部署配置管理
 	if configCtl != nil {
@@ -198,33 +198,30 @@ func registerAppTemplateRoutes(authed *gin.RouterGroup, ctl *provisionhttp.AppTe
 	authed.DELETE("/app-templates/:id", write, ctl.DeleteAppTemplate)
 }
 
-func registerPermissionAuditRoutes(authed *gin.RouterGroup, ctl *controller.K8sPermissionAuditController, rbac *kopshttp.RBACController) {
-	if ctl == nil {
+func registerPermissionAuditRoutes(authed *gin.RouterGroup, auditCtl *kopshttp.PermissionAuditController, rbac *kopshttp.RBACController) {
+	if auditCtl == nil {
 		return
 	}
 	auditPerm := middleware.RequirePerm("k8s:permission_audit")
 	clusters := authed.Group("/clusters")
-	clusters.POST("/:id/permission-audits", auditPerm, ctl.CreateManaged)
-	clusters.GET("/:id/permission-audits/latest", auditPerm, ctl.LatestForCluster)
-	clusters.GET("/:id/permission-audits/recommend-rbac", auditPerm, ctl.RecommendRBAC)
-	if rbac == nil {
-		clusters.GET("/:id/permission-audits/rbac-matrix/default", auditPerm, ctl.DefaultRBACMatrix)
-		clusters.POST("/:id/permission-audits/rbac-matrix/yaml", auditPerm, ctl.RBACFromMatrix)
-	} else {
+	clusters.POST("/:id/permission-audits", auditPerm, auditCtl.CreateManaged)
+	clusters.GET("/:id/permission-audits/latest", auditPerm, auditCtl.LatestForCluster)
+	clusters.GET("/:id/permission-audits/recommend-rbac", auditPerm, auditCtl.RecommendRBAC)
+	if rbac != nil {
 		clusters.GET("/:id/permission-audits/rbac-matrix/default", auditPerm, rbac.Default)
 		clusters.POST("/:id/permission-audits/rbac-matrix/yaml", auditPerm, rbac.Build)
 	}
 
 	audits := authed.Group("/permission-audits")
-	audits.GET("", auditPerm, ctl.List)
-	audits.GET("/:id", auditPerm, ctl.Get)
-	audits.GET("/:id/logs", auditPerm, ctl.Logs)
-	audits.GET("/:id/compare", auditPerm, ctl.Compare)
-	audits.GET("/:id/findings", auditPerm, ctl.ListFindings)
-	audits.POST("/:id/cancel", auditPerm, ctl.Cancel)
-	audits.POST("/adhoc", auditPerm, ctl.CreateAdhoc)
-	audits.POST("/:id/cancellation-requests", auditPerm, ctl.Cancel)
-	audits.POST("/ad-hoc-audits", auditPerm, ctl.CreateAdhoc)
+	audits.GET("", auditPerm, auditCtl.List)
+	audits.GET("/:id", auditPerm, auditCtl.Get)
+	audits.GET("/:id/logs", auditPerm, auditCtl.Logs)
+	audits.GET("/:id/compare", auditPerm, auditCtl.Compare)
+	audits.GET("/:id/findings", auditPerm, auditCtl.ListFindings)
+	audits.POST("/:id/cancel", auditPerm, auditCtl.Cancel)
+	audits.POST("/adhoc", auditPerm, auditCtl.CreateAdhoc)
+	audits.POST("/:id/cancellation-requests", auditPerm, auditCtl.Cancel)
+	audits.POST("/ad-hoc-audits", auditPerm, auditCtl.CreateAdhoc)
 }
 
 // ── 集群管理 ──

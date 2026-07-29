@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
+	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/middleware"
 )
@@ -22,20 +23,23 @@ type k8sPerms struct {
 
 // k8sRouteArgs 封装子路由注册函数所需的全部依赖。
 type k8sRouteArgs struct {
-	k8s  *gin.RouterGroup
-	d    Deps
-	ctl  *controller.K8sController
-	perm k8sPerms
+	k8s       *gin.RouterGroup
+	d         Deps
+	ctl       *controller.K8sController
+	manifest  *kopshttp.ManifestController
+	namespace *kopshttp.NamespaceController
+	metrics   *kopshttp.MetricsController
+	perm      k8sPerms
 }
 
-func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sController) {
-	if ctl == nil {
+func registerK8sRoutes(authed *gin.RouterGroup, d Deps, ctl *controller.K8sController, manifest *kopshttp.ManifestController, namespace *kopshttp.NamespaceController, metrics *kopshttp.MetricsController) {
+	if ctl == nil || manifest == nil || namespace == nil || metrics == nil {
 		return
 	}
 	k8s := authed.Group("")
 	resourceSupportReadPerm := middleware.RequireAnyPerm("k8s:read", "k8s:rbac_read")
 	args := k8sRouteArgs{
-		k8s: k8s, d: d, ctl: ctl,
+		k8s: k8s, d: d, ctl: ctl, manifest: manifest, namespace: namespace, metrics: metrics,
 		perm: k8sPerms{
 			read:                   middleware.RequirePerm("k8s:read"),
 			write:                  middleware.RequirePerm("k8s:write"),
@@ -110,16 +114,16 @@ func registerCanonicalResourceUpdateRoutes(a k8sRouteArgs) {
 // ── 集群级资源：Namespace / Node / HPA / PDB / Event / CRD / APIService / PriorityClass / RuntimeClass / Webhook / Lease ──
 
 func registerClusterResourceRoutes(a k8sRouteArgs) {
-	k8s, ctl, p := a.k8s, a.ctl, a.perm
+	k8s, ctl, namespace, metrics, p := a.k8s, a.ctl, a.namespace, a.metrics, a.perm
 
 	// Namespace
-	k8s.GET("/clusters/:id/namespaces", p.namespaceRead, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListNamespaces)
-	k8s.POST("/clusters/:id/namespaces", p.namespaceWrite, ctl.CreateNamespace)
-	k8s.DELETE("/clusters/:id/namespaces/:ns", p.namespaceWrite, ctl.DeleteNamespace)
-	k8s.GET("/clusters/:id/namespaces/:ns/yaml", p.namespaceRead, ctl.GetNamespaceYAML)
-	k8s.GET("/clusters/:id/namespaces/:ns/resources-summary", p.namespaceRead, ctl.GetNamespaceResourcesSummary)
-	k8s.GET("/clusters/:id/namespaces/:ns/inspection", p.namespaceRead, ctl.GetNamespaceInspection)
-	k8s.GET("/clusters/:id/namespaces/:ns/workload-inventory", p.namespaceRead, ctl.GetNamespaceWorkloadInventory)
+	k8s.GET("/clusters/:id/namespaces", p.namespaceRead, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), namespace.List)
+	k8s.POST("/clusters/:id/namespaces", p.namespaceWrite, namespace.Create)
+	k8s.DELETE("/clusters/:id/namespaces/:ns", p.namespaceWrite, namespace.Delete)
+	k8s.GET("/clusters/:id/namespaces/:ns/yaml", p.namespaceRead, namespace.YAML)
+	k8s.GET("/clusters/:id/namespaces/:ns/resources-summary", p.namespaceRead, namespace.Summary)
+	k8s.GET("/clusters/:id/namespaces/:ns/inspection", p.namespaceRead, namespace.Inspection)
+	k8s.GET("/clusters/:id/namespaces/:ns/workload-inventory", p.namespaceRead, namespace.WorkloadInventory)
 
 	// Node
 	k8s.GET("/clusters/:id/nodes", p.read, middleware.CacheJSON(a.d.CacheStore, a.d.CacheTTL), ctl.ListNodes)
@@ -221,27 +225,27 @@ func registerClusterResourceRoutes(a k8sRouteArgs) {
 	k8s.GET("/clusters/:id/storage-snapshot-support", p.storageSnapshotSupport, ctl.GetStorageSnapshotSupport)
 
 	// 资源使用率监控
-	k8s.GET("/clusters/:id/nodes/metrics", p.read, ctl.ListNodeMetrics)
-	k8s.GET("/clusters/:id/metrics/source", p.read, ctl.GetMetricsSource)
-	k8s.POST("/clusters/:id/metrics/detect", p.write, ctl.DetectMetricsSource)
-	k8s.POST("/clusters/:id/metrics/switch", p.write, ctl.SwitchMetricsSource)
-	k8s.GET("/clusters/:id/metrics/trend", p.read, ctl.GetMetricsTrend)
-	k8s.POST("/clusters/:id/metrics/health-check", p.read, ctl.HealthCheckMetricsSource)
-	k8s.POST("/clusters/:id/metrics/source-detection-runs", p.write, ctl.DetectMetricsSource)
-	k8s.POST("/clusters/:id/metrics/source-change-requests", p.write, ctl.SwitchMetricsSource)
-	k8s.POST("/clusters/:id/metrics/health-checks", p.read, ctl.HealthCheckMetricsSource)
+	k8s.GET("/clusters/:id/nodes/metrics", p.read, metrics.NodeMetrics)
+	k8s.GET("/clusters/:id/metrics/source", p.read, metrics.Source)
+	k8s.POST("/clusters/:id/metrics/detect", p.write, metrics.Detect)
+	k8s.POST("/clusters/:id/metrics/switch", p.write, metrics.Switch)
+	k8s.GET("/clusters/:id/metrics/trend", p.read, metrics.Trend)
+	k8s.POST("/clusters/:id/metrics/health-check", p.read, metrics.HealthCheck)
+	k8s.POST("/clusters/:id/metrics/source-detection-runs", p.write, metrics.Detect)
+	k8s.POST("/clusters/:id/metrics/source-change-requests", p.write, metrics.Switch)
+	k8s.POST("/clusters/:id/metrics/health-checks", p.read, metrics.HealthCheck)
 }
 
 // ── 工作负载：Pod / Deployment / StatefulSet / DaemonSet / ReplicaSet / Manifest ──
 
 func registerWorkloadRoutes(a k8sRouteArgs) {
-	k8s, ctl, p := a.k8s, a.ctl, a.perm
+	k8s, ctl, manifest, metrics, p := a.k8s, a.ctl, a.manifest, a.metrics, a.perm
 
 	// Pod
 	k8s.GET("/clusters/:id/pods", p.read, ctl.ListPods)
 	k8s.GET("/clusters/:id/podmetrics", p.read, ctl.ListPodMetrics)
 	// 资源使用率监控：Pod 维度 CPU/内存使用量（与上方 /podmetrics 区分，后者返回原始 PodMetrics 资源）
-	k8s.GET("/clusters/:id/pods/metrics", p.read, ctl.ListPodMetricsUsage)
+	k8s.GET("/clusters/:id/pods/metrics", p.read, metrics.PodMetrics)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/inspection", p.read, ctl.GetPodInspection)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/yaml", p.read, ctl.GetPodYAML)
 	k8s.GET("/clusters/:id/pods/:ns/:pod/logs", p.read, ctl.GetPodLogs)
@@ -252,10 +256,10 @@ func registerWorkloadRoutes(a k8sRouteArgs) {
 	k8s.POST("/clusters/:id/pods/:ns/:pod/exec-sessions", p.exec, ctl.CreatePodExecSession)
 
 	// Manifest
-	k8s.GET("/clusters/:id/manifests/records", p.write, ctl.ListManifestRecords)
-	k8s.GET("/clusters/:id/manifests/records/:recordId", p.write, ctl.GetManifestRecord)
-	k8s.POST("/clusters/:id/manifests/apply", p.write, ctl.ApplyManifest)
-	k8s.POST("/clusters/:id/manifest-applications", p.write, ctl.ApplyManifest)
+	k8s.GET("/clusters/:id/manifests/records", p.write, manifest.List)
+	k8s.GET("/clusters/:id/manifests/records/:recordId", p.write, manifest.Get)
+	k8s.POST("/clusters/:id/manifests/apply", p.write, manifest.Apply)
+	k8s.POST("/clusters/:id/manifest-applications", p.write, manifest.Apply)
 
 	// Workload (Deployment/StatefulSet/DaemonSet)
 	k8s.GET("/clusters/:id/workloads", p.read, ctl.ListWorkloads)

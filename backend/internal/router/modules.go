@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	aigateway "k8s-platform-backend/internal/ai/adapters/gateway"
+	aihttp "k8s-platform-backend/internal/ai/adapters/http"
 	aiapp "k8s-platform-backend/internal/ai/application"
 	audithttp "k8s-platform-backend/internal/audit/adapters/http"
 	auditmysql "k8s-platform-backend/internal/audit/adapters/mysql"
@@ -25,6 +26,8 @@ import (
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
+	legacykops "k8s-platform-backend/internal/legacy/adapters/kops"
+	legacyprovision "k8s-platform-backend/internal/legacy/adapters/provisioning"
 	"k8s-platform-backend/internal/legacy/controller"
 	"k8s-platform-backend/internal/legacy/service"
 	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
@@ -75,12 +78,16 @@ type fleetModule struct {
 
 type kopsModule struct {
 	resources       *controller.K8sController
-	permissionAudit *controller.K8sPermissionAuditController
+	permissionAudit *kopshttp.PermissionAuditController
 	rbac            *kopshttp.RBACController
+	manifests       *kopshttp.ManifestController
+	namespaces      *kopshttp.NamespaceController
+	metrics         *kopshttp.MetricsController
 }
 
 type aiModule struct {
 	controller *controller.AIController
+	management *aihttp.ManagementController
 }
 
 type changeModule struct {
@@ -90,7 +97,11 @@ type changeModule struct {
 
 type provisioningModule struct {
 	deploy      *controller.DeployController
+	servers     *provisionhttp.ServerController
+	credentials *provisionhttp.CredentialController
 	plans       *provisionhttp.DeployPlanController
+	runtime     *provisionhttp.RuntimeController
+	tasks       *provisionhttp.TaskController
 	config      *provisionhttp.DeployConfigController
 	automation  *controller.AutomationTaskController
 	appTemplate *provisionhttp.AppTemplateController
@@ -247,25 +258,28 @@ func buildFleetModule(d Deps, runtime moduleRuntime) fleetModule {
 func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 	namespaceDiagnosis := service.NewNamespaceDiagnosisService(runtime.k8s)
 	resourceInspection := service.NewResourceInspectionService(runtime.k8s)
+	permissionAuditService := service.NewK8sPermissionAuditService(
+		d.DB,
+		runtime.taskStore,
+		runtime.clusterRegistry,
+		runtime.k8s,
+		d.CacheStore,
+		d.EncryptionKey,
+	)
 	return kopsModule{
 		resources: controller.NewK8sController(
 			runtime.k8s,
-			runtime.manifestApply,
 			runtime.execSessions,
 			runtime.logSessions,
 			namespaceDiagnosis,
 			resourceInspection,
 			runtime.deploy,
 		),
-		permissionAudit: controller.NewK8sPermissionAuditController(service.NewK8sPermissionAuditService(
-			d.DB,
-			runtime.taskStore,
-			runtime.clusterRegistry,
-			runtime.k8s,
-			d.CacheStore,
-			d.EncryptionKey,
-		)),
-		rbac: kopshttp.NewRBACController(),
+		manifests:       kopshttp.NewManifestController(kopsapp.NewManifestService(legacykops.NewManifestRuntime(runtime.manifestApply))),
+		namespaces:      kopshttp.NewNamespaceController(kopsapp.NewNamespaceService(legacykops.NewNamespaceRuntime(runtime.k8s, namespaceDiagnosis))),
+		metrics:         kopshttp.NewMetricsController(kopsapp.NewMetricsService(legacykops.NewMetricsRuntime(runtime.k8s))),
+		permissionAudit: kopshttp.NewPermissionAuditController(kopsapp.NewPermissionAuditService(legacykops.NewPermissionAuditRuntime(permissionAuditService))),
+		rbac:            kopshttp.NewRBACController(),
 	}
 }
 
@@ -300,24 +314,33 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 		change.actions,
 		fileService,
 	)
+	providerService := aiapp.NewAIProviderService(d.DB, d.EncryptionKey)
+	routeSettingsService := aiapp.NewAIRouteSettingsService(d.DB)
+	conversationService := aiapp.NewConversationService(d.DB)
 	return aiModule{controller: controller.NewAIController(
-		aiapp.NewAIProviderService(d.DB, d.EncryptionKey),
-		aiapp.NewAIRouteSettingsService(d.DB),
-		aiapp.NewConversationService(d.DB),
+		providerService,
+		routeSettingsService,
+		conversationService,
 		service.NewAIConversationDetailService(d.DB),
 		chatService,
 		fileService,
 		toolService,
 		change.actions,
-	)}
+	), management: aihttp.NewManagementController(providerService, routeSettingsService, conversationService)}
 }
 
 func buildProvisioningModule(d Deps, runtime moduleRuntime) provisioningModule {
 	appTemplateService := provisionapp.NewAppTemplateService(d.DB)
+	serverService := provisionapp.NewServerService(d.DB, d.EncryptionKey)
+	credentialService := provisionapp.NewCredentialService(d.DB, d.EncryptionKey)
 	_ = appTemplateService.SeedBuiltinAppTemplates(context.Background())
 	return provisioningModule{
 		deploy:      controller.NewDeployController(runtime.deploy, runtime.execSessions),
+		servers:     provisionhttp.NewServerController(serverService),
+		credentials: provisionhttp.NewCredentialController(credentialService),
 		plans:       provisionhttp.NewDeployPlanController(provisionapp.NewDeployPlanService(d.DB)),
+		runtime:     provisionhttp.NewRuntimeController(provisionapp.NewRuntimeService(legacyprovision.NewRuntime(runtime.deploy))),
+		tasks:       provisionhttp.NewTaskController(provisionapp.NewTaskService(legacyprovision.NewRuntime(runtime.deploy))),
 		config:      provisionhttp.NewDeployConfigController(provisionapp.NewDeployConfigService(d.DB)),
 		automation:  controller.NewAutomationTaskController(service.NewTaskService(runtime.taskStore)),
 		appTemplate: provisionhttp.NewAppTemplateController(appTemplateService),
