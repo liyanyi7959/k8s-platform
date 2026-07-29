@@ -13,7 +13,7 @@ import (
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
-	legacyprovision "k8s-platform-backend/internal/legacy/adapters/provisioning"
+	legacyprovision "k8s-platform-backend/internal/integration/provisioning"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 )
 
