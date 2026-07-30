@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,12 +11,19 @@ import (
 	"github.com/gin-gonic/gin"
 
 	kopsapp "k8s-platform-backend/internal/kops/application"
+	"k8s-platform-backend/pkg/resp"
 )
 
-type manifestControllerRuntime struct{ input kopsapp.ManifestApplyInput }
+type manifestControllerRuntime struct {
+	input kopsapp.ManifestApplyInput
+	err   error
+}
 
 func (runtime *manifestControllerRuntime) Execute(_ context.Context, input kopsapp.ManifestApplyInput) (*kopsapp.ManifestApplyResult, error) {
 	runtime.input = input
+	if runtime.err != nil {
+		return nil, runtime.err
+	}
 	return &kopsapp.ManifestApplyResult{RecordID: 5, Status: "success", DryRun: input.DryRun}, nil
 }
 
@@ -56,5 +64,28 @@ func TestManifestControllerRejectsInvalidPathAndBody(t *testing.T) {
 		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"code":4000`) {
 			t.Fatalf("%s response = %d %s", path, response.Code, response.Body.String())
 		}
+	}
+}
+
+func TestManifestControllerKeepsClusterCredentialFailureSeparateFromPlatformSession(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	runtime := &manifestControllerRuntime{err: kopsapp.ErrRuntimeUnauthorized}
+	router := gin.New()
+	router.POST("/clusters/:id/manifests/apply", NewManifestController(kopsapp.NewManifestService(runtime)).Apply)
+	request := httptest.NewRequest(http.MethodPost, "/clusters/4/manifests/apply", strings.NewReader(`{"yaml":"apiVersion: v1"}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+
+	router.ServeHTTP(response, request)
+
+	var body resp.ApiResponse[any]
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Code != resp.CodeClusterCredentialInvalid {
+		t.Fatalf("code = %d, want cluster credential error %d", body.Code, resp.CodeClusterCredentialInvalid)
+	}
+	if body.Code == resp.CodePlatformSessionExpired {
+		t.Fatal("cluster credential failure must not use the platform session-expired code")
 	}
 }

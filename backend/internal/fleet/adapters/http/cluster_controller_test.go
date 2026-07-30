@@ -2,12 +2,16 @@ package http
 
 import (
 	"bytes"
+	"encoding/json"
 	"mime/multipart"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+
+	"k8s-platform-backend/internal/fleet/domain"
+	"k8s-platform-backend/pkg/resp"
 )
 
 func multipartImportContext(t *testing.T, filename, content string) *gin.Context {
@@ -56,5 +60,23 @@ func TestBindImportJSON(t *testing.T) {
 	}
 	if input.Name != "devops7.2" || input.Description != "demo" {
 		t.Fatalf("unexpected request: %#v", input)
+	}
+}
+
+func TestWriteClusterErrorKeepsClusterCredentialFailureSeparateFromPlatformSession(t *testing.T) {
+	response := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(response)
+
+	writeClusterError(ctx, domain.ErrRuntimeUnauthorized)
+
+	var body resp.ApiResponse[any]
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Code != resp.CodeClusterCredentialInvalid {
+		t.Fatalf("code = %d, want cluster credential error %d", body.Code, resp.CodeClusterCredentialInvalid)
+	}
+	if body.Code == resp.CodePlatformSessionExpired {
+		t.Fatal("cluster credential failure must not use the platform session-expired code")
 	}
 }

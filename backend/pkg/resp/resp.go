@@ -21,6 +21,17 @@ type Result struct {
 	Data    interface{} `json:"data"`
 }
 
+const (
+	// CodePlatformSessionExpired is reserved for a missing or expired AIOPS login session.
+	// Frontend clients use it to clear the platform token and return to the login page.
+	CodePlatformSessionExpired = 1002
+
+	// CodeClusterCredentialInvalid identifies authentication failures returned by a
+	// managed Kubernetes cluster. It must not be confused with a platform session
+	// failure: callers can keep using AIOPS while repairing the affected cluster.
+	CodeClusterCredentialInvalid = 2001
+)
+
 func normalizeMessage(msg string) string {
 	switch strings.ToLower(strings.TrimSpace(msg)) {
 	case "invalid params":

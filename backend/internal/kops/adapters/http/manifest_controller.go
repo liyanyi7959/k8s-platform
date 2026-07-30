@@ -143,7 +143,7 @@ func writeKopsApplicationError(c *gin.Context, err error) {
 	case errors.Is(err, kopsapp.ErrConflict):
 		resp.Fail(c, 4090, kopsErrorMessage(err, "conflict"))
 	case errors.Is(err, kopsapp.ErrRuntimeUnauthorized):
-		resp.Fail(c, 1002, kopsErrorMessage(err, "credentials invalid or expired"))
+		resp.Fail(c, resp.CodeClusterCredentialInvalid, kopsErrorMessage(err, "credentials invalid or expired"))
 	case errors.Is(err, kopsapp.ErrRuntimeForbidden):
 		resp.Fail(c, 1003, kopsErrorMessage(err, "permission denied"))
 	case errors.Is(err, kopsapp.ErrRuntimeNetwork):

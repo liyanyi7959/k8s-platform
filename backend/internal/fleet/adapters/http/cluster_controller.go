@@ -222,7 +222,7 @@ func writeClusterError(c *gin.Context, err error) {
 	case errors.Is(err, domain.ErrCrypto):
 		resp.Fail(c, 5000, "集群凭证处理失败")
 	case errors.Is(err, domain.ErrRuntimeUnauthorized):
-		resp.Fail(c, 1002, "凭据无效或已过期")
+		resp.Fail(c, resp.CodeClusterCredentialInvalid, "凭据无效或已过期")
 	case errors.Is(err, domain.ErrRuntimeForbidden):
 		resp.Fail(c, 1003, "权限不足")
 	case errors.Is(err, domain.ErrRuntimeNetwork):

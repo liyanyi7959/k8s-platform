@@ -47,6 +47,7 @@ import {
 } from '@ant-design/icons'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { getCurrentUser, logout as requestLogout } from '@/features/iam/api'
+import { shouldInvalidatePlatformSession } from '@/utils/session-auth'
 import { listClusters } from '@/features/fleet/api/clusters'
 import { listIncidents } from '@/features/incident/api'
 import ChangePasswordModal from '@/features/iam/components/ChangePasswordModal'
@@ -1221,7 +1222,7 @@ export const request: RequestConfig = {
     (response: any) => {
       const { status, data: payload } = response
 
-      if (status === 401) {
+      if (shouldInvalidatePlatformSession(status)) {
         localStorage.removeItem('token')
         if (!isLoginRoute()) {
           history.replace(LOGIN_PATH)
@@ -1240,7 +1241,7 @@ export const request: RequestConfig = {
         return response
       }
 
-      if (payload.code === 401 || payload.code === 1002) {
+      if (shouldInvalidatePlatformSession(status, payload.code)) {
         localStorage.removeItem('token')
         if (!isLoginRoute()) {
           history.replace(LOGIN_PATH)
