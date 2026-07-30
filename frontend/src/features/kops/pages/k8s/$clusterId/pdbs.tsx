@@ -50,11 +50,11 @@ const PDBsPage: React.FC = () => {
 
   const relatedPods = (podsData?.items || []).filter((pod) => {
     if (!detailPDB?.selector || !pod.labels) return false
-    const selectorPairs = detailPDB.selector.split(',').filter(Boolean).map((s) => {
-      const [k, v] = s.split('=').map((x) => x.trim())
-      return [k, v]
+    const selectorPairs = detailPDB.selector.split(',').flatMap((s) => {
+      const [key, value] = s.split('=').map((part) => part.trim())
+      return key ? [[key, value ?? ''] as const] : []
     })
-    return selectorPairs.every(([k, v]) => pod.labels?.[k] === v)
+    return selectorPairs.every(([key, value]) => pod.labels?.[key] === value)
   })
 
   const columns: ProColumns<PDB>[] = [

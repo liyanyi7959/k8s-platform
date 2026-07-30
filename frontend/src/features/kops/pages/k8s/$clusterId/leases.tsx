@@ -1,6 +1,6 @@
 import GenericResourceList, { rawColumn, rawField } from '@/features/kops/components/GenericResourceList'
 import type { GenericResourceItem } from '@/features/kops/api/k8s'
-import { Descriptions, Space, Tag } from 'antd'
+import { Descriptions, Space } from 'antd'
 import { formatDate } from '@/utils'
 
 const renderDetail = (record: GenericResourceItem) => {

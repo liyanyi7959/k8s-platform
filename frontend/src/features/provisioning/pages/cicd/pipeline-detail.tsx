@@ -2,8 +2,8 @@
  * 流水线详情 - 展示流水线配置、阶段步骤与执行历史
  */
 import React from 'react'
-import { useParams, history } from '@umijs/max'
-import { Button, Card, Col, Descriptions, Row, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { history } from '@umijs/max'
+import { Button, Card, Descriptions, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
   PlayCircleOutlined,
@@ -108,8 +108,7 @@ stages:
 `
 
 const PipelineDetailPage: React.FC = () => {
-  const params = useParams()
-  const pipelineId = params.id || '1'
+  const pipelineStatus = STATUS_META[PIPELINE.status] ?? STATUS_META.idle!
 
   return (
     <AppPage keepHeaderTitle title={PIPELINE.name}>
@@ -118,7 +117,7 @@ const PipelineDetailPage: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
             <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/pipelines')}>返回</Button>
-            <Tag color={STATUS_META[PIPELINE.status].color}>{STATUS_META[PIPELINE.status].text}</Tag>
+            <Tag color={pipelineStatus.color}>{pipelineStatus.text}</Tag>
           </Space>
           <Space>
             <Button type="primary" icon={<PlayCircleOutlined />}>执行</Button>

@@ -12,8 +12,8 @@ import {
   Space,
   Typography,
   message,
-  type ColumnsType,
 } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import { DownloadOutlined, ThunderboltOutlined, SafetyOutlined } from '@ant-design/icons'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { AppPage, YamlEditor } from '@/components'
@@ -106,7 +106,7 @@ const PermissionAuditsPage: React.FC = () => {
       dataIndex: 'label',
       width: 220,
       fixed: 'left',
-      render: (_, record) => (
+      render: (_: unknown, record: RBACMatrixRow) => (
         <div>
           <Text strong>{record.label}</Text>
           <div style={{ fontSize: 11, color: '#94a3b8' }}>

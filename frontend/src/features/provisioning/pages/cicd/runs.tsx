@@ -32,7 +32,7 @@ const columns: ProColumns<RunRecord>[] = [
     title: '流水线',
     dataIndex: 'pipeline',
     key: 'pipeline',
-    render: (pipeline: string) => <strong>{pipeline}</strong>,
+    render: (_, record) => <strong>{record.pipeline}</strong>,
   },
   {
     title: '触发者',
@@ -45,8 +45,8 @@ const columns: ProColumns<RunRecord>[] = [
     dataIndex: 'status',
     key: 'status',
     width: 100,
-    render: (status: string) => {
-      const cfg = STATUS_MAP[status] || STATUS_MAP.failed
+    render: (_, record) => {
+      const cfg = STATUS_MAP[record.status] ?? STATUS_MAP.failed!
       return <Tag color={cfg.color}>{cfg.text}</Tag>
     },
   },

@@ -273,13 +273,13 @@ const IngressesPage: React.FC = () => {
               />
             )}
 
-            {detailIngress.tlsConfigs && detailIngress.tlsConfigs.length > 0 && (
+            {(detailIngress.tlsConfigs?.length ?? 0) > 0 && (
               <Table
                 size="small"
-                title={() => `TLS 配置 (${detailIngress.tlsConfigs.length} 条)`}
+                title={() => `TLS 配置 (${detailIngress.tlsConfigs?.length ?? 0} 条)`}
                 rowKey={(_, i) => String(i)}
                 pagination={false}
-                dataSource={detailIngress.tlsConfigs}
+                dataSource={detailIngress.tlsConfigs ?? []}
                 columns={[
                   { title: 'Hosts', dataIndex: 'hosts', render: (v: string[]) => v?.join(', ') || '-' },
                   { title: 'Secret', dataIndex: 'secretName', render: (v) => <Tag>{v}</Tag> },

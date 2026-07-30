@@ -108,7 +108,7 @@ const JobsPage: React.FC = () => {
       width: 90,
       align: 'center' as const,
       search: false,
-      sorter: (a, b) => (a.completions || 0) - (b.completions || 0),
+      sorter: (a, b) => Number.parseInt(a.completions, 10) - Number.parseInt(b.completions, 10),
     },
     {
       title: '并行度',

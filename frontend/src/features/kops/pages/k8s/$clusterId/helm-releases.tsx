@@ -275,13 +275,13 @@ const HelmReleasesPage: React.FC = () => {
   }
 
   const columns: ProColumns<any>[] = [
-    { title: 'Release', dataIndex: 'name', width: 210, fixed: 'left', ellipsis: true, render: (value: string, record: any) => <Button type="link" style={{ padding: 0 }} onClick={() => setDetailTarget(record)}>{value}</Button> },
-    { title: '命名空间', dataIndex: 'namespace', width: 150, render: (value: string) => <Tag>{value}</Tag> },
+    { title: 'Release', dataIndex: 'name', width: 210, fixed: 'left', ellipsis: true, render: (_, record) => <Button type="link" style={{ padding: 0 }} onClick={() => setDetailTarget(record)}>{String(record.name || '-')}</Button> },
+    { title: '命名空间', dataIndex: 'namespace', width: 150, render: (_, record) => <Tag>{String(record.namespace || '-')}</Tag> },
     { title: 'Revision', dataIndex: 'revision', width: 90, align: 'center' },
-    { title: '状态', dataIndex: 'status', width: 140, render: (value: string) => <Tag color={statusColorMap[value] || 'default'}>{value || 'unknown'}</Tag> },
-    { title: 'Chart', dataIndex: 'chart', width: 240, ellipsis: true, render: (value: string) => value || '-' },
-    { title: 'App 版本', dataIndex: 'app_version', width: 130, render: (value: string) => value || '-' },
-    { title: '更新时间', dataIndex: 'updated', width: 200, render: (value: string) => value ? formatDate(value) : '-' },
+    { title: '状态', dataIndex: 'status', width: 140, render: (_, record) => { const status = String(record.status || 'unknown'); return <Tag color={statusColorMap[status] || 'default'}>{status}</Tag> } },
+    { title: 'Chart', dataIndex: 'chart', width: 240, ellipsis: true, render: (_, record) => String(record.chart || '-') },
+    { title: 'App 版本', dataIndex: 'app_version', width: 130, render: (_, record) => String(record.app_version || '-') },
+    { title: '更新时间', dataIndex: 'updated', width: 200, render: (_, record) => record.updated ? formatDate(String(record.updated)) : '-' },
     {
       title: '操作', width: 150, fixed: 'right', render: (_: any, record: any) => <Space>
         <Tooltip title="查看详情"><Button type="text" icon={<EyeOutlined />} onClick={() => setDetailTarget(record)} /></Tooltip>

@@ -91,7 +91,7 @@ const EnvironmentsPage: React.FC = () => {
           <Row gutter={[16, 16]}>
             {ENVIRONMENTS.map((env) => {
               const envColor = ENV_TYPE_COLOR[env.type]
-              const statusMeta = STATUS_META[env.status]
+              const statusMeta = STATUS_META[env.status] ?? STATUS_META.idle!
               return (
                 <Col xs={24} sm={12} lg={8} key={env.id}>
                   <Card

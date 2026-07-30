@@ -350,9 +350,9 @@ const ServicesPage: React.FC = () => {
               setBatchLoading(true)
               try {
                 await Promise.all(
-                  (selectedRowKeys as string[]).map((key) => {
+                  (selectedRowKeys as string[]).flatMap((key) => {
                     const [ns, name] = key.split('/')
-                    return deleteService(clusterId, ns, name)
+                    return ns && name ? [deleteService(clusterId, ns, name)] : []
                   })
                 )
                 message.success(`已删除 ${selectedRowKeys.length} 个 Service`)

@@ -22,7 +22,6 @@ import {
   Tabs,
   Tag,
   Tooltip,
-  Typography,
 } from 'antd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppPage } from '@/components'
@@ -39,8 +38,6 @@ import {
   updateAIProvider,
 } from '@/features/ai/api'
 import type { AIModel, AIProvider } from '@/features/ai/types'
-
-const { Text } = Typography
 
 const PROVIDER_TYPE_OPTIONS = [
   { value: 'openai', label: 'OpenAI' },

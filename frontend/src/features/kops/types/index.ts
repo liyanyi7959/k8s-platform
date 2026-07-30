@@ -237,6 +237,7 @@ export interface Ingress {
   age: string
   createdAt: string
   tls?: boolean
+  labels?: Record<string, string>
   rules?: any[]
   tlsConfigs?: Array<{ hosts: string[]; secretName: string }>
 }
@@ -254,6 +255,7 @@ export interface PersistentVolume {
   storageClass: string
   reason: string
   createdAt: string
+  labels?: Record<string, string>
 }
 
 export type PersistentVolumeList = PageResult<PersistentVolume>
@@ -278,11 +280,11 @@ export type PersistentVolumeClaimList = PageResult<PersistentVolumeClaim>
 export interface NodeDetail extends Node {
   version?: string
   containerRuntime?: string
-  addresses: NodeAddress[]
-  conditions: NodeCondition[]
-  images: NodeImage[]
-  allocatable: NodeResources
-  capacity: NodeResources
+  addresses?: NodeAddress[]
+  conditions?: NodeCondition[]
+  images?: NodeImage[]
+  allocatable?: Record<string, string> & Partial<NodeResources>
+  capacity?: Record<string, string> & Partial<NodeResources>
 }
 
 export interface NodeAddress {
@@ -293,6 +295,7 @@ export interface NodeAddress {
 export interface NodeCondition {
   type: string   // Ready / MemoryPressure / DiskPressure / PIDPressure
   status: string
+  reason: string
   message: string
   lastTransitionTime: string
 }

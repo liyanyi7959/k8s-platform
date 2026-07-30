@@ -27,15 +27,15 @@ const columns: ProColumns<ArtifactRecord>[] = [
     title: '制品名称',
     dataIndex: 'name',
     key: 'name',
-    render: (name: string) => <strong>{name}</strong>,
+    render: (_, record) => <strong>{record.name}</strong>,
   },
   {
     title: '类型',
     dataIndex: 'type',
     key: 'type',
     width: 120,
-    render: (type: string) => {
-      const cfg = TYPE_MAP[type] || TYPE_MAP.package
+    render: (_, record) => {
+      const cfg = TYPE_MAP[record.type] ?? TYPE_MAP.package!
       return <Tag color={cfg.color}>{cfg.text}</Tag>
     },
   },
@@ -44,7 +44,7 @@ const columns: ProColumns<ArtifactRecord>[] = [
     dataIndex: 'version',
     key: 'version',
     width: 120,
-    render: (version: string) => <Tag>{version}</Tag>,
+    render: (_, record) => <Tag>{record.version}</Tag>,
   },
   {
     title: '大小',

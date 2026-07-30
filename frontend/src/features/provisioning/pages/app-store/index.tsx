@@ -158,6 +158,8 @@ function TemplateCatalogTable({ deployType, onPreview }: { deployType: 'yaml' | 
   const [editing, setEditing] = useState<AppTemplate | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [form] = Form.useForm<AppTemplate>()
+  const templateValue = Form.useWatch('template', form) ?? ''
+  const helmValues = Form.useWatch('helm_values_yaml', form) ?? ''
   const templatesQuery = useQuery({ queryKey: ['app-templates'], queryFn: () => listAppTemplates() })
   const createMutation = useMutation({
     mutationFn: (payload: Partial<AppTemplate>) => createAppTemplate(payload),
@@ -195,7 +197,10 @@ function TemplateCatalogTable({ deployType, onPreview }: { deployType: 'yaml' | 
   }), [category, deployType, keyword, templatesQuery.data?.list])
   const columns: ProColumns<AppTemplate>[] = [
     { title: '应用', width: 220, render: (_, record) => <Space><span style={{ fontSize: 20 }}>{record.icon || '📦'}</span><Space direction="vertical" size={0}><Text strong>{record.display_name || record.name}</Text><Text type="secondary" style={{ fontSize: 12 }}>{record.name}</Text></Space></Space> },
-    { title: '分类', dataIndex: 'category', width: 110, render: (value: string) => value ? <Tag color={CATEGORY_COLORS[value]}>{CATEGORY_LABELS[value] || value}</Tag> : '-' },
+    { title: '分类', dataIndex: 'category', width: 110, render: (_, record) => {
+      const value = record.category
+      return value ? <Tag color={CATEGORY_COLORS[value]}>{CATEGORY_LABELS[value] || value}</Tag> : '-'
+    } },
     ...(deployType === 'helm' ? [
       { title: 'Chart', dataIndex: 'template', width: 220, ellipsis: true },
       { title: '默认来源', width: 250, ellipsis: true, render: (_: unknown, record: AppTemplate) => record.helm_repo_url ? <Space direction="vertical" size={0}><Text>{record.helm_repo_name || '-'}</Text><Text type="secondary" style={{ fontSize: 12 }}>{record.helm_repo_url}</Text></Space> : <Text type="secondary">安装时选择</Text> },
@@ -204,7 +209,7 @@ function TemplateCatalogTable({ deployType, onPreview }: { deployType: 'yaml' | 
       { title: '说明', dataIndex: 'description', ellipsis: true },
       { title: '变量', width: 90, render: (_: unknown, record: AppTemplate) => parseVariables(record.variables).length || '-' },
     ] as ProColumns<AppTemplate>[]),
-    { title: '更新于', dataIndex: 'updated_at', width: 170, render: (value: string) => value ? formatDate(value, 'YYYY-MM-DD HH:mm') : '-' },
+    { title: '更新于', dataIndex: 'updated_at', width: 170, render: (_, record) => record.updated_at ? formatDate(record.updated_at, 'YYYY-MM-DD HH:mm') : '-' },
     { title: '操作', width: 132, fixed: 'right', align: 'center', render: (_: unknown, record: AppTemplate) => <Space size={2}>
       <Tooltip title="查看"><Button type="text" shape="circle" icon={<EyeOutlined />} onClick={() => onPreview(record)} /></Tooltip>
       <Tooltip title="编辑"><Button type="text" shape="circle" icon={<EditOutlined />} onClick={() => openEdit(record)} /></Tooltip>
@@ -240,7 +245,7 @@ function TemplateCatalogTable({ deployType, onPreview }: { deployType: 'yaml' | 
         </Row>
         <Form.Item name="description" label="说明"><Input.TextArea rows={2} placeholder="描述此应用的用途和注意事项" /></Form.Item>
         {deployType === 'yaml' ? <>
-          <Form.Item name="template" label="YAML 模板" rules={[{ required: true, message: '请输入 YAML 模板内容' }]}><YamlEditor height={300} /></Form.Item>
+          <Form.Item name="template" label="YAML 模板" rules={[{ required: true, message: '请输入 YAML 模板内容' }]}><YamlEditor value={templateValue} onChange={(value) => form.setFieldValue('template', value)} height={300} /></Form.Item>
           <Form.Item name="variables" label="变量定义（JSON）"><Input.TextArea rows={3} placeholder='[{"name":"NAMESPACE","default":"default"}]' /></Form.Item>
         </> : <>
           <Row gutter={16}>
@@ -251,7 +256,7 @@ function TemplateCatalogTable({ deployType, onPreview }: { deployType: 'yaml' | 
             <Col span={10}><Form.Item name="helm_repo_name" label="默认仓库名称（可选）"><Input placeholder="例如 bitnami" /></Form.Item></Col>
             <Col span={14}><Form.Item name="helm_repo_url" label="默认仓库地址（可选）"><Input placeholder="https://charts.example.com/repo" /></Form.Item></Col>
           </Row>
-          <Form.Item name="helm_values_yaml" label="默认 values.yaml"><YamlEditor height={280} /></Form.Item>
+          <Form.Item name="helm_values_yaml" label="默认 values.yaml"><YamlEditor value={helmValues} onChange={(value) => form.setFieldValue('helm_values_yaml', value)} height={280} /></Form.Item>
         </>}
       </Form>
     </Modal>

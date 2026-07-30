@@ -68,15 +68,15 @@ const columns: ProColumns<PipelineRecord>[] = [
     dataIndex: 'trigger',
     key: 'trigger',
     width: 140,
-    render: (trigger: string) => <Tag>{trigger}</Tag>,
+    render: (_, record) => <Tag>{record.trigger}</Tag>,
   },
   {
     title: '最近状态',
     dataIndex: 'status',
     key: 'status',
     width: 100,
-    render: (status: string) => {
-      const cfg = STATUS_MAP[status] || STATUS_MAP.idle
+    render: (_, record) => {
+      const cfg = STATUS_MAP[record.status] ?? STATUS_MAP.idle!
       return <Tag color={cfg.color}>{cfg.text}</Tag>
     },
   },

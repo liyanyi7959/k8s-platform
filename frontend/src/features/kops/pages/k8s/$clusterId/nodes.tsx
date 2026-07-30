@@ -8,15 +8,11 @@ import {
   Drawer,
   Descriptions,
   Tabs,
-  Progress,
   Badge,
   Modal,
   Switch,
   InputNumber,
   Typography,
-  Row,
-  Col,
-  Card,
   Tooltip,
   Input,
   Select,
@@ -30,7 +26,6 @@ import {
   StopOutlined,
   PlayCircleOutlined,
   ExclamationCircleOutlined,
-  InfoCircleOutlined,
   EyeOutlined,
   CloudServerOutlined,
   SearchOutlined,
@@ -120,7 +115,7 @@ export default function NodesPage() {
   }, [allPodsData])
 
   const filteredData = (() => {
-    let items = nodesData?.items || nodesData || []
+    let items = nodesData?.items ?? []
     if (searchValue) {
       const v = searchValue.toLowerCase()
       items = items.filter((i: any) => {

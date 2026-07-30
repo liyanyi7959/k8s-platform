@@ -27,11 +27,12 @@ function explainCron(cron: string): string {
     '@yearly': '每年 1 月 1 日 0 点执行一次',
     '@annually': '每年 1 月 1 日 0 点执行一次',
   }
-  if (presets[cron.toLowerCase()]) return presets[cron.toLowerCase()]
+  const preset = presets[cron.toLowerCase()]
+  if (preset) return preset
 
   const parts = cron.trim().split(/\s+/)
   if (parts.length !== 5) return cron
-  const [min, hour, day, month, week] = parts
+  const [min = '', hour = '', day = '', month = '', week = ''] = parts
 
   // */N * * * * → 每 N 分钟
   if (min.startsWith('*/') && hour === '*' && day === '*' && month === '*' && week === '*')

@@ -1,6 +1,6 @@
 import GenericResourceList, { rawColumn, rawField } from '@/features/kops/components/GenericResourceList'
 import type { GenericResourceItem } from '@/features/kops/api/k8s'
-import { Descriptions, Tag, Space, Table } from 'antd'
+import { Descriptions, Space, Table } from 'antd'
 
 const renderDetail = (record: GenericResourceItem) => {
   const spec = (rawField(record, 'spec') as any) || {}

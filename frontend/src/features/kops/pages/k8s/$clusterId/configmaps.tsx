@@ -6,7 +6,7 @@ import {
   ProFormTextArea,
   type ProColumns,
 } from '@ant-design/pro-components'
-import { Space, message, Popconfirm, Tag, Button, Tooltip, Input, Select, Typography, Drawer, Descriptions, Table } from 'antd'
+import { Space, message, Popconfirm, Tag, Button, Tooltip, Input, Select, Typography, Drawer, Descriptions } from 'antd'
 import { PlusOutlined, EyeOutlined, DeleteOutlined, ProfileOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listConfigMaps, deleteConfigMap, createConfigMap } from '@/features/kops/api/k8s'

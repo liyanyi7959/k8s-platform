@@ -2,7 +2,7 @@
  * 制品详情 - 展示制品信息、拉取命令与版本历史
  */
 import React, { useState } from 'react'
-import { useParams, history } from '@umijs/max'
+import { history } from '@umijs/max'
 import { Button, Card, Descriptions, Space, Table, Tag, Tooltip, Typography, message } from 'antd'
 import {
   ArrowLeftOutlined,
@@ -13,7 +13,7 @@ import {
 import { AppPage } from '@/components'
 import { DESIGN_COLORS } from '@/theme/designTokens'
 
-const { Text, Paragraph } = Typography
+const { Text } = Typography
 
 const ARTIFACT = {
   id: '1',
@@ -44,9 +44,8 @@ const PULL_COMMANDS: Record<string, string> = {
 }
 
 const ArtifactDetailPage: React.FC = () => {
-  const params = useParams()
   const [copied, setCopied] = useState(false)
-  const pullCmd = PULL_COMMANDS[ARTIFACT.type] || PULL_COMMANDS.image
+  const pullCmd = PULL_COMMANDS[ARTIFACT.type] ?? PULL_COMMANDS.image!
 
   const handleCopy = () => {
     navigator.clipboard.writeText(pullCmd).then(() => {

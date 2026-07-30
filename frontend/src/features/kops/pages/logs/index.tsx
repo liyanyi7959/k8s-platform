@@ -43,7 +43,7 @@ function splitLogLines(raw: string): Array<{ time?: string; content: string }> {
     .filter(Boolean)
     .map((line) => {
       const match = line.match(/^(\d{4}-\d{2}-\d{2}T\S+?)\s+(.*)$/)
-      return match ? { time: match[1], content: match[2] } : { content: line }
+      return match ? { time: match[1] ?? '', content: match[2] ?? '' } : { content: line }
     })
 }
 
@@ -64,7 +64,8 @@ const LogsPage: React.FC = () => {
   const clusters = clusterResult?.items || []
 
   useEffect(() => {
-    if (clusterScope === 'all' && clusters.length === 1) setClusterScope(String(clusters[0].id))
+    const onlyCluster = clusters[0]
+    if (clusterScope === 'all' && onlyCluster) setClusterScope(String(onlyCluster.id))
   }, [clusterScope, clusters])
 
   const clusterOptions = useMemo(

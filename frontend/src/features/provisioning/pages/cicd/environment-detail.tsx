@@ -2,8 +2,8 @@
  * 环境详情 - 展示环境信息、部署历史与环境变量
  */
 import React from 'react'
-import { useParams, history } from '@umijs/max'
-import { Button, Card, Descriptions, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { history } from '@umijs/max'
+import { Button, Card, Descriptions, Space, Table, Tag, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
   RocketOutlined,
@@ -56,7 +56,6 @@ const ENV_TYPE_COLOR: Record<string, string> = {
 }
 
 const EnvironmentDetailPage: React.FC = () => {
-  const params = useParams()
   const envColor = ENV_TYPE_COLOR[ENV.type] || DESIGN_COLORS.primary
 
   return (

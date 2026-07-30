@@ -434,7 +434,7 @@ export default function CicdOverviewPage() {
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {RECENT_RUNS.map((run, idx) => {
-                  const meta = RUN_STATUS_META[run.status]
+                  const meta = RUN_STATUS_META[run.status] ?? RUN_STATUS_META.failed!
                   return (
                     <div
                       key={run.id}
@@ -476,8 +476,8 @@ export default function CicdOverviewPage() {
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {ENVIRONMENTS.map((env) => {
-                  const meta = ENV_STATUS_META[env.status]
-                  const envColor = ENV_TYPE_COLOR[env.type]
+                  const meta = ENV_STATUS_META[env.status] ?? ENV_STATUS_META.idle!
+                  const envColor = ENV_TYPE_COLOR[env.type] ?? DESIGN_COLORS.primary
                   return (
                     <div
                       key={env.name}

@@ -2,8 +2,8 @@
  * 执行详情 - 展示执行概览、阶段时间线与实时日志
  */
 import React, { useState } from 'react'
-import { useParams, history } from '@umijs/max'
-import { Button, Card, Descriptions, Space, Steps, Tag, Tooltip, Typography } from 'antd'
+import { history } from '@umijs/max'
+import { Button, Card, Descriptions, Space, Steps, Tag, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
   ReloadOutlined,
@@ -77,9 +77,9 @@ const STATUS_META: Record<string, { color: string; text: string }> = {
 }
 
 const RunDetailPage: React.FC = () => {
-  const params = useParams()
   const [activeStage, setActiveStage] = useState(0)
-  const currentStage = STAGES[activeStage] || STAGES[0]
+  const currentStage = STAGES[activeStage] ?? STAGES[0]!
+  const runStatus = STATUS_META[RUN.status] ?? STATUS_META.failed!
 
   return (
     <AppPage keepHeaderTitle title={`执行 #${RUN.id}`}>
@@ -88,7 +88,7 @@ const RunDetailPage: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
             <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/runs')}>返回</Button>
-            <Tag color={STATUS_META[RUN.status].color}>{STATUS_META[RUN.status].text}</Tag>
+            <Tag color={runStatus.color}>{runStatus.text}</Tag>
             <Text type="secondary">耗时 {RUN.duration}</Text>
           </Space>
           <Space>
@@ -108,7 +108,7 @@ const RunDetailPage: React.FC = () => {
             </Descriptions.Item>
             <Descriptions.Item label="触发者">{RUN.trigger}</Descriptions.Item>
             <Descriptions.Item label="状态">
-              <Tag color={STATUS_META[RUN.status].color}>{STATUS_META[RUN.status].text}</Tag>
+              <Tag color={runStatus.color}>{runStatus.text}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="开始时间">{RUN.startedAt}</Descriptions.Item>
             <Descriptions.Item label="结束时间">{RUN.finishedAt}</Descriptions.Item>

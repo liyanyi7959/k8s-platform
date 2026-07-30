@@ -22,7 +22,6 @@ import {
   ClearOutlined,
   ClusterOutlined,
   CopyOutlined,
-  DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
   FileSearchOutlined,
@@ -910,8 +909,9 @@ const AIChatPage: React.FC = () => {
                                   if (idx <= 0) return
                                   let userMsg = ''
                                   for (let i = idx - 1; i >= 0; i--) {
-                                    if (messages[i].role === 'user') {
-                                      userMsg = messages[i].content
+                                    const previousMessage = messages[i]
+                                    if (previousMessage?.role === 'user') {
+                                      userMsg = previousMessage.content
                                       break
                                     }
                                   }

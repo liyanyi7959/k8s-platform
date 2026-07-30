@@ -104,8 +104,8 @@ export default function PodMetricsPage() {
         container?: string
         usage?: { cpu?: string; memory?: string }
       }>) || []
-    const window = rawField(record, 'window')
-    const timestamp = rawField(record, 'timestamp')
+    const window = rawField(record, 'window') as string | undefined
+    const timestamp = rawField(record, 'timestamp') as string | undefined
 
     return (
       <Space direction="vertical" style={{ width: '100%' }} size="middle">

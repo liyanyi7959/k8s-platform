@@ -266,7 +266,12 @@ const NamespacesPage: React.FC = () => {
                 children: (lrData?.items || []).length > 0 ? (
                   <Space direction="vertical" style={{ width: '100%' }} size="middle">
                     {(lrData?.items || []).map((lr: any) => {
-                      const limits = lr.raw?.spec?.limits || []
+                      const limits = (lr.raw?.spec?.limits || []) as Array<{
+                        type?: string
+                        max?: Record<string, string>
+                        min?: Record<string, string>
+                        default?: Record<string, string>
+                      }>
                       return (
                         <Table
                           key={lr.name}

@@ -1,11 +1,13 @@
-import React from 'react'
 import GenericResourceList, { rawColumn, rawField } from '@/features/kops/components/GenericResourceList'
 import type { GenericResourceItem } from '@/features/kops/api/k8s'
 import { Descriptions, Table, Tag, Space } from 'antd'
 
 const renderDetail = (record: GenericResourceItem) => {
   const controller = rawField(record, 'spec.controller') as string
-  const defaultBackend = rawField(record, 'spec.defaultBackend')
+  const defaultBackend = rawField(record, 'spec.defaultBackend') as {
+    service?: { name?: string; port?: { number?: number; name?: string } }
+    resource?: { kind?: string; name?: string }
+  } | undefined
 
   const backendData = defaultBackend ? [{
     key: 0,
