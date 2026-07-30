@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultTerminalSessionTTL        = 10 * time.Minute
+	defaultTerminalSessionTTL        = time.Minute
 	defaultTerminalSessionGCInterval = time.Minute
 )
 

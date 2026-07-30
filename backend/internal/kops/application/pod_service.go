@@ -89,7 +89,7 @@ func (s *PodService) CreateExecSession(input PodExecSessionInput) (*PodExecSessi
 	}
 	sessionID := s.execs.NewSessionID()
 	s.execs.Put(sessionID, ExecSession{Kind: "pod", UserID: input.UserID, ClusterID: ref.ClusterID, Namespace: ref.Namespace, Pod: ref.Name, Container: container, Command: command, TTY: input.TTY, CreatedAt: time.Now().UTC()})
-	return &PodExecSessionResult{SessionID: sessionID, WSURL: "/streams/v2/" + sessionID + "?kind=pod-exec"}, nil
+	return &PodExecSessionResult{SessionID: sessionID, WSURL: "/streams/v2/pod-exec/" + sessionID}, nil
 }
 func (s *PodService) List(ctx context.Context, query PodListQuery) (any, error) {
 	if query.ClusterID == 0 {
@@ -157,7 +157,7 @@ func (s *PodService) CreateLogSession(input PodLogSessionInput) (*PodLogSessionR
 	}
 	sessionID := s.sessions.NewSessionID()
 	s.sessions.Put(sessionID, PodLogSession{ClusterID: ref.ClusterID, Namespace: ref.Namespace, Pod: ref.Name, Container: container, Follow: follow, TailLines: tailLines, Previous: input.Previous, CreatedAt: time.Now().UTC()})
-	return &PodLogSessionResult{SessionID: sessionID, WSURL: "/streams/v2/" + sessionID + "?kind=pod-log"}, nil
+	return &PodLogSessionResult{SessionID: sessionID, WSURL: "/streams/v2/pod-logs/" + sessionID}, nil
 }
 func (s *PodService) Delete(ctx context.Context, ref PodReference, force bool) error {
 	if err := validatePodReference(ref); err != nil {

@@ -76,7 +76,7 @@ func (ctl *ServerAccessController) CreateTerminalSession(c *gin.Context) {
 	ctl.sessions.Put(sessionID, provisionports.TerminalSession{UserID: serverAccessUserID(c), ServerID: id, CreatedAt: time.Now().UTC()})
 	resp.OK(c, gin.H{
 		"session_id": sessionID,
-		"ws_url":     "/streams/v2/" + url.PathEscape(sessionID) + "?kind=server-terminal",
+		"ws_url":     "/streams/v2/server-terminal/" + url.PathEscape(sessionID),
 		"server":     server,
 	})
 }
@@ -92,10 +92,6 @@ func (ctl *ServerAccessController) TerminalWS(c *gin.Context) {
 		resp.Fail(c, 4040, "terminal session not found")
 		return
 	}
-	if pending.UserID == 0 || pending.UserID != serverAccessUserID(c) {
-		resp.Fail(c, 1003, "terminal session does not belong to the current user")
-		return
-	}
 	upgrader := websocket.Upgrader{ReadBufferSize: 4096, WriteBufferSize: 4096, CheckOrigin: sameOriginServerTerminalRequest}
 	connection, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -105,7 +101,7 @@ func (ctl *ServerAccessController) TerminalWS(c *gin.Context) {
 	defer connection.Close()
 
 	terminal, ok := ctl.sessions.Take(sessionID)
-	if !ok || terminal.UserID != serverAccessUserID(c) {
+	if !ok {
 		_ = connection.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "session invalid"), time.Now().Add(3*time.Second))
 		return
 	}
@@ -247,16 +243,12 @@ func serverAccessID(c *gin.Context, name string) (uint64, bool) {
 	return id, true
 }
 
-// terminalStreamTicketID accepts the V2 stream route's path ticket while
-// retaining the query parameter for older/internal callers of this adapter.
+// terminalStreamTicketID reads the opaque ticket only from the typed V2 route.
 func terminalStreamTicketID(c *gin.Context) string {
 	if c == nil {
 		return ""
 	}
-	if ticketID := strings.TrimSpace(c.Param("ticket_id")); ticketID != "" {
-		return ticketID
-	}
-	return strings.TrimSpace(c.Query("session_id"))
+	return strings.TrimSpace(c.Param("ticket_id"))
 }
 
 func serverAccessUserID(c *gin.Context) uint64 {
@@ -288,7 +280,7 @@ func writeServerAccessError(c *gin.Context, err error) {
 func sameOriginServerTerminalRequest(request *http.Request) bool {
 	origin := strings.TrimSpace(request.Header.Get("Origin"))
 	if origin == "" {
-		return true
+		return false
 	}
 	parsedOrigin, err := url.Parse(origin)
 	if err != nil {

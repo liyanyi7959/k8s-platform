@@ -14,7 +14,6 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 
 	kopsapp "k8s-platform-backend/internal/kops/application"
-	"k8s-platform-backend/internal/middleware"
 	"k8s-platform-backend/pkg/resp"
 )
 
@@ -41,14 +40,9 @@ func (ctl *PodExecStreamController) Stream(c *gin.Context) {
 		resp.Fail(c, 4000, "invalid params")
 		return
 	}
-	userID := podStreamUserID(c)
 	pending, ok := ctl.sessions.Get(sessionID)
 	if !ok || (pending.Kind != "" && pending.Kind != "pod") {
 		resp.Fail(c, 4040, "not found")
-		return
-	}
-	if pending.UserID != 0 && pending.UserID != userID {
-		resp.Fail(c, 1003, "permission denied")
 		return
 	}
 	upgrader := websocket.Upgrader{ReadBufferSize: 4096, WriteBufferSize: 4096, CheckOrigin: podStreamSameOrigin}
@@ -58,7 +52,7 @@ func (ctl *PodExecStreamController) Stream(c *gin.Context) {
 	}
 	defer func() { _ = conn.Close() }()
 	session, ok := ctl.sessions.Take(sessionID)
-	if !ok || (session.Kind != "" && session.Kind != "pod") || (session.UserID != 0 && session.UserID != userID) {
+	if !ok || (session.Kind != "" && session.Kind != "pod") {
 		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "session not found"), time.Now().Add(3*time.Second))
 		return
 	}
@@ -172,13 +166,6 @@ func (q *podExecSizeQueue) Next() *remotecommand.TerminalSize {
 		return nil
 	}
 	return &value
-}
-func podStreamUserID(c *gin.Context) uint64 {
-	claims, ok := middleware.GetClaims(c)
-	if !ok || claims == nil || claims.UserID <= 0 {
-		return 0
-	}
-	return uint64(claims.UserID)
 }
 func podExecCloseMessage(err error) string {
 	value := strings.TrimSpace(err.Error())

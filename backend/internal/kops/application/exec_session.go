@@ -48,7 +48,7 @@ type ExecSessionStore struct {
 }
 
 // defaultExecSessionTTL 为会话的默认过期时间。
-const defaultExecSessionTTL = 10 * time.Minute
+const defaultExecSessionTTL = time.Minute
 
 // defaultExecSessionGCInterval 为后台清理周期。
 const defaultExecSessionGCInterval = time.Minute

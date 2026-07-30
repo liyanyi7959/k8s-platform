@@ -1,8 +1,6 @@
 package router
 
 import (
-	"strings"
-
 	"github.com/gin-gonic/gin"
 
 	aihttp "k8s-platform-backend/internal/ai/adapters/http"
@@ -19,42 +17,19 @@ func registerWebSocketRoutes(r *gin.Engine, d Deps, podLog *kopshttp.PodLogStrea
 		return
 	}
 	streams := r.Group("/streams/v2")
-	streams.Use(middleware.V2Contract(), middleware.AuthRequiredV2(d.JWTMgr, d.AuthorizationReader))
-	streams.GET("/:ticket_id", func(c *gin.Context) {
-		ticketID := strings.TrimSpace(c.Param("ticket_id"))
-		kind := strings.TrimSpace(c.Query("kind"))
-		if ticketID == "" {
-			c.Status(400)
-			return
-		}
-		switch kind {
-		case "pod-log":
-			if podLog != nil {
-				middleware.RequirePermV2("k8s:read")(c)
-				if !c.IsAborted() {
-					podLog.Stream(c)
-				}
-				return
-			}
-		case "pod-exec":
-			if podExec != nil {
-				middleware.RequirePermV2("k8s:exec")(c)
-				if !c.IsAborted() {
-					podExec.Stream(c)
-				}
-				return
-			}
-		case "server-terminal":
-			if terminal != nil {
-				middleware.RequirePermV2("deploy:server_write")(c)
-				if !c.IsAborted() {
-					terminal.TerminalWS(c)
-				}
-				return
-			}
-		}
-		c.Status(404)
-	})
+	streams.Use(middleware.V2Contract())
+	// WebSocket upgrades authenticate with an opaque, short-lived, one-time ticket.
+	// The ticket is issued only by an authenticated REST endpoint and is scoped to
+	// one stream type, so JWTs and client-selected stream kinds never enter URLs.
+	if podLog != nil {
+		streams.GET("/pod-logs/:ticket_id", podLog.Stream)
+	}
+	if podExec != nil {
+		streams.GET("/pod-exec/:ticket_id", podExec.Stream)
+	}
+	if terminal != nil {
+		streams.GET("/server-terminal/:ticket_id", terminal.TerminalWS)
+	}
 }
 
 func registerAuditRoutes(authed *gin.RouterGroup, ctl *audithttp.Controller) {

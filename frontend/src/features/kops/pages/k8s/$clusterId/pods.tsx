@@ -232,8 +232,7 @@ const LogPane: React.FC<LogPaneProps> = ({
         if (cancelled || !wsUrl) return
         const url = new URL(wsUrl, window.location.href)
         url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-        const token = localStorage.getItem('token')
-        if (token) url.searchParams.set('token', token)
+        url.host = window.location.host
         const ws = new WebSocket(url.toString())
         wsRef.current = ws
 
@@ -647,10 +646,19 @@ const PodEventsTab: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, po
       dataIndex: 'type',
       width: 80,
       render: (t: string) => (
-        <Badge status={t === 'Warning' ? 'warning' : t === 'Normal' ? 'success' : 'default'} text={t || '-'} />
+        <Badge
+          status={t === 'Warning' ? 'warning' : t === 'Normal' ? 'success' : 'default'}
+          text={t || '-'}
+        />
       ),
     },
-    { title: '原因', dataIndex: 'reason', width: 140, ellipsis: true, render: (t: string) => t || '-' },
+    {
+      title: '原因',
+      dataIndex: 'reason',
+      width: 140,
+      ellipsis: true,
+      render: (t: string) => t || '-',
+    },
     { title: '消息', dataIndex: 'message', render: (t: string) => t || '-' },
     {
       title: '时间',
@@ -716,7 +724,11 @@ const PodMetricsTab: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, p
           render: (v: string) => {
             if (!v || v === '-') return <Text type="secondary">-</Text>
             const millicores = v.endsWith('n') ? parseInt(v) / 1_000_000 : parseInt(v)
-            return <Tag color="blue">{millicores >= 1000 ? `${(millicores / 1000).toFixed(2)} Core` : `${millicores} m`}</Tag>
+            return (
+              <Tag color="blue">
+                {millicores >= 1000 ? `${(millicores / 1000).toFixed(2)} Core` : `${millicores} m`}
+              </Tag>
+            )
           },
         },
         {
@@ -729,7 +741,11 @@ const PodMetricsTab: React.FC<{ clusterId: number; pod: Pod }> = ({ clusterId, p
             let display = v
             if (unit === 'Ki') display = `${(bytes / 1024).toFixed(1)} MB`
             else if (unit === 'Mi') display = `${bytes.toFixed(1)} MB`
-            else if (bytes > 0) display = bytes >= 1073741824 ? `${(bytes / 1073741824).toFixed(2)} GB` : `${(bytes / 1048576).toFixed(1)} MB`
+            else if (bytes > 0)
+              display =
+                bytes >= 1073741824
+                  ? `${(bytes / 1073741824).toFixed(2)} GB`
+                  : `${(bytes / 1048576).toFixed(1)} MB`
             return <Tag color="purple">{display}</Tag>
           },
         },
@@ -789,7 +805,7 @@ const PodsPage: React.FC = () => {
     queryFn: ({ signal }) => listPods(clusterId, { namespace: namespace || undefined }, signal),
     enabled: !!clusterId,
     // 抽屉打开时暂停轮询，避免打断编辑/查看
-    refetchInterval: (detailDrawer.open || yamlDrawer.open || logDrawer.open) ? false : 60_000,
+    refetchInterval: detailDrawer.open || yamlDrawer.open || logDrawer.open ? false : 60_000,
     staleTime: 60_000,
   })
 
@@ -802,8 +818,15 @@ const PodsPage: React.FC = () => {
         if (searchType === 'name') return p.name.toLowerCase().includes(v)
         if (searchType === 'node') return p.nodeName?.toLowerCase().includes(v)
         // label
-        return p.labels && Object.entries(p.labels).some(([k, val]) =>
-          `${k}=${val}`.toLowerCase().includes(v) || k.toLowerCase().includes(v) || String(val).toLowerCase().includes(v))
+        return (
+          p.labels &&
+          Object.entries(p.labels).some(
+            ([k, val]) =>
+              `${k}=${val}`.toLowerCase().includes(v) ||
+              k.toLowerCase().includes(v) ||
+              String(val).toLowerCase().includes(v),
+          )
+        )
       })
     }
     if (statusFilter) list = list.filter((p) => p.status === statusFilter)
@@ -878,7 +901,9 @@ const PodsPage: React.FC = () => {
               style={{ width: '100%', marginTop: 8 }}
               placeholder="选择容器"
               defaultValue={firstContainerName}
-              onChange={(v) => { container = v }}
+              onChange={(v) => {
+                container = v
+              }}
               options={containers.map((c) => ({ value: c.name, label: c.name }))}
             />
           ),
@@ -891,13 +916,53 @@ const PodsPage: React.FC = () => {
     } else if (pod.containers && pod.containers.length === 1) {
       container = pod.containers[0]!.name
     }
+    const origin = window.location.origin
+    const terminalPopup = window.open('/k8s/terminal', '_blank', 'width=900,height=600')
+    if (!terminalPopup) {
+      message.error('Browser blocked the terminal window')
+      return
+    }
+    let wsUrl = ''
+    let popupReady = false
+    let active = true
+    let handoffTimer: number | undefined
+    const cleanup = () => {
+      active = false
+      window.removeEventListener('message', onTerminalReady)
+      if (handoffTimer !== undefined) window.clearTimeout(handoffTimer)
+    }
+    const deliver = () => {
+      if (!active || terminalPopup.closed || !popupReady || !wsUrl) return
+      terminalPopup.postMessage({ type: 'aiops-terminal-connect', wsUrl }, origin)
+      cleanup()
+    }
+    const onTerminalReady = (event: MessageEvent) => {
+      if (
+        event.origin !== origin ||
+        event.source !== terminalPopup ||
+        event.data?.type !== 'aiops-terminal-ready'
+      )
+        return
+      popupReady = true
+      deliver()
+    }
+    window.addEventListener('message', onTerminalReady)
+    handoffTimer = window.setTimeout(() => {
+      if (!active) return
+      cleanup()
+      terminalPopup.close()
+      message.error('Terminal window initialization timed out')
+    }, 10_000)
     try {
       const res = await getPodTerminalUrl(clusterId, pod.namespace, pod.name, { container })
-      const token = localStorage.getItem('token') || ''
-      const params = new URLSearchParams({ ws_url: res.url })
-      if (token) params.set('token', token)
-      window.open(`/k8s/terminal?${params.toString()}`, '_blank', 'width=900,height=600')
+      if (!res.url) throw new Error('empty terminal ticket url')
+      wsUrl = res.url
+      deliver()
     } catch {
+      if (active) {
+        cleanup()
+        terminalPopup.close()
+      }
       message.error('获取终端连接失败')
     }
   }
@@ -931,8 +996,15 @@ const PodsPage: React.FC = () => {
         key: `${p.namespace}/${p.name}`,
         label: p.name,
         children: (
-          <LogPane clusterId={clusterId} pod={p} tailLines={tailLines} refreshNonce={logRefresh}
-            previous={logPrevious} keyword={logKeyword} live={logLive} />
+          <LogPane
+            clusterId={clusterId}
+            pod={p}
+            tailLines={tailLines}
+            refreshNonce={logRefresh}
+            previous={logPrevious}
+            keyword={logKeyword}
+            live={logLive}
+          />
         ),
       }))
     }
@@ -944,8 +1016,16 @@ const PodsPage: React.FC = () => {
           key: c.name,
           label: c.name,
           children: (
-            <LogPane clusterId={clusterId} pod={pod} tailLines={tailLines} refreshNonce={logRefresh}
-              container={c.name} previous={logPrevious} keyword={logKeyword} live={logLive} />
+            <LogPane
+              clusterId={clusterId}
+              pod={pod}
+              tailLines={tailLines}
+              refreshNonce={logRefresh}
+              container={c.name}
+              previous={logPrevious}
+              keyword={logKeyword}
+              live={logLive}
+            />
           ),
         }))
       }
@@ -954,8 +1034,15 @@ const PodsPage: React.FC = () => {
           key: pod.name,
           label: pod.name,
           children: (
-            <LogPane clusterId={clusterId} pod={pod} tailLines={tailLines} refreshNonce={logRefresh}
-              previous={logPrevious} keyword={logKeyword} live={logLive} />
+            <LogPane
+              clusterId={clusterId}
+              pod={pod}
+              tailLines={tailLines}
+              refreshNonce={logRefresh}
+              previous={logPrevious}
+              keyword={logKeyword}
+              live={logLive}
+            />
           ),
         },
       ]
@@ -966,12 +1053,18 @@ const PodsPage: React.FC = () => {
   // ═══ 详情-容器表格列 ═══
   const containerColumns: TableProps<PodContainer>['columns'] = [
     { title: '名称', dataIndex: 'name', width: 120, render: (t: string) => <Tag>{t}</Tag> },
-    { title: '镜像', dataIndex: 'image', ellipsis: true, render: (t: string) => <Text style={{ fontSize: 11 }}>{t}</Text> },
+    {
+      title: '镜像',
+      dataIndex: 'image',
+      ellipsis: true,
+      render: (t: string) => <Text style={{ fontSize: 11 }}>{t}</Text>,
+    },
     {
       title: '就绪',
       dataIndex: 'ready',
       width: 70,
-      render: (t?: boolean) => (t ? <Badge status="success" text="是" /> : <Badge status="error" text="否" />),
+      render: (t?: boolean) =>
+        t ? <Badge status="success" text="是" /> : <Badge status="error" text="否" />,
     },
     { title: '重启', dataIndex: 'restartCount', width: 60, render: (t?: number) => t ?? 0 },
     { title: '状态', dataIndex: 'state', width: 90, render: (t?: string) => t || '-' },
@@ -1020,7 +1113,12 @@ const PodsPage: React.FC = () => {
 
   // ═══ 详情-存储表格列 ═══
   const volumeColumns: TableProps<PodVolume>['columns'] = [
-    { title: '卷名', dataIndex: 'name', width: 140, render: (t: string) => <Tag color="cyan">{t}</Tag> },
+    {
+      title: '卷名',
+      dataIndex: 'name',
+      width: 140,
+      render: (t: string) => <Tag color="cyan">{t}</Tag>,
+    },
     {
       title: '类型',
       dataIndex: 'type',
@@ -1065,7 +1163,13 @@ const PodsPage: React.FC = () => {
       title: '状态',
       dataIndex: 'status',
       width: 130,
-      render: (_, record) => <PodStatusTag status={record.status} containerReason={record.containerReason} ready={record.ready} />,
+      render: (_, record) => (
+        <PodStatusTag
+          status={record.status}
+          containerReason={record.containerReason}
+          ready={record.ready}
+        />
+      ),
     },
     {
       title: 'Ready',
@@ -1093,7 +1197,13 @@ const PodsPage: React.FC = () => {
       width: 120,
       render: (t) => <Tag color="blue">{(t as string) || '-'}</Tag>,
     },
-    { title: '节点', dataIndex: 'nodeName', width: 130, ellipsis: true, render: (t) => (t as string) || '-' },
+    {
+      title: '节点',
+      dataIndex: 'nodeName',
+      width: 130,
+      ellipsis: true,
+      render: (t) => (t as string) || '-',
+    },
     {
       title: '所属',
       width: 180,
@@ -1106,14 +1216,24 @@ const PodsPage: React.FC = () => {
       width: 90,
       render: (t) => <Tag>{(t as string) || 'BestEffort'}</Tag>,
     },
-    { title: 'Age', dataIndex: 'createdAt', width: 90, ellipsis: true, sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(), render: (_, r) => formatDate(r.createdAt) },
+    {
+      title: 'Age',
+      dataIndex: 'createdAt',
+      width: 90,
+      ellipsis: true,
+      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      render: (_, r) => formatDate(r.createdAt),
+    },
     {
       title: '操作',
       valueType: 'option',
       width: 200,
       fixed: 'right',
       render: (_, record) => (
-        <Space size="small" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Space
+          size="small"
+          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+        >
           <Tooltip title="查看日志">
             <a onClick={() => handleViewLogs(record)}>
               <FileTextOutlined />
@@ -1149,7 +1269,11 @@ const PodsPage: React.FC = () => {
               </Space>
             }
             onConfirm={() => {
-              deleteMutation.mutate({ namespace: record.namespace, name: record.name, force: singleForce })
+              deleteMutation.mutate({
+                namespace: record.namespace,
+                name: record.name,
+                force: singleForce,
+              })
               setSingleForce(false)
             }}
             onCancel={() => setSingleForce(false)}
@@ -1211,12 +1335,28 @@ const PodsPage: React.FC = () => {
           <Input.Search
             key="search"
             allowClear
-            placeholder={searchType === 'name' ? '按名称搜索' : searchType === 'node' ? '按节点搜索' : '按标签搜索'}
+            placeholder={
+              searchType === 'name'
+                ? '按名称搜索'
+                : searchType === 'node'
+                  ? '按节点搜索'
+                  : '按标签搜索'
+            }
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             style={{ width: 280 }}
-            addonBefore={<Select value={searchType} onChange={(v) => setSearchType(v)} style={{ width: 70 }}
-              options={[{ value: 'name', label: '名称' }, { value: 'node', label: '节点' }, { value: 'label', label: '标签' }]} />}
+            addonBefore={
+              <Select
+                value={searchType}
+                onChange={(v) => setSearchType(v)}
+                style={{ width: 70 }}
+                options={[
+                  { value: 'name', label: '名称' },
+                  { value: 'node', label: '节点' },
+                  { value: 'label', label: '标签' },
+                ]}
+              />
+            }
             prefix={<SearchOutlined />}
           />,
           <Select
@@ -1233,7 +1373,12 @@ const PodsPage: React.FC = () => {
               { value: 'Succeeded', label: 'Succeeded' },
             ]}
           />,
-          <NamespaceSelector key="ns" clusterId={clusterId} value={namespace} onChange={setNamespace} />,
+          <NamespaceSelector
+            key="ns"
+            clusterId={clusterId}
+            value={namespace}
+            onChange={setNamespace}
+          />,
           <Button key="refresh" icon={<ReloadOutlined />} onClick={() => refetch()}>
             刷新
           </Button>,
@@ -1262,16 +1407,25 @@ const PodsPage: React.FC = () => {
               style={{ width: 180 }}
             />
             <Tooltip title="WebSocket 实时流式日志（follow）">
-              <Button size="small" type={logLive ? 'primary' : 'default'} onClick={() => {
-                const nextLive = !logLive
-                if (nextLive) setLogPrevious(false)
-                setLogLive(nextLive)
-              }}>
+              <Button
+                size="small"
+                type={logLive ? 'primary' : 'default'}
+                onClick={() => {
+                  const nextLive = !logLive
+                  if (nextLive) setLogPrevious(false)
+                  setLogLive(nextLive)
+                }}
+              >
                 实时
               </Button>
             </Tooltip>
             <Tooltip title="查看上一容器日志">
-              <Button size="small" type={logPrevious ? 'primary' : 'default'} onClick={() => setLogPrevious(!logPrevious)} disabled={logLive}>
+              <Button
+                size="small"
+                type={logPrevious ? 'primary' : 'default'}
+                onClick={() => setLogPrevious(!logPrevious)}
+                disabled={logLive}
+              >
                 历史
               </Button>
             </Tooltip>
@@ -1297,9 +1451,7 @@ const PodsPage: React.FC = () => {
           </Space>
         }
       >
-        {logTabs.length > 0 && (
-          <Tabs items={logTabs} size="small" destroyInactiveTabPane={false} />
-        )}
+        {logTabs.length > 0 && <Tabs items={logTabs} size="small" destroyInactiveTabPane={false} />}
       </Drawer>
 
       {/* ═══ 详情抽屉（5 个 Tab）═══ */}
@@ -1329,13 +1481,21 @@ const PodsPage: React.FC = () => {
                     <Descriptions.Item label="Pod IP">{detailPod.ip || '-'}</Descriptions.Item>
                     <Descriptions.Item label="节点">{detailPod.nodeName || '-'}</Descriptions.Item>
                     <Descriptions.Item label="重启次数">{detailPod.restarts}</Descriptions.Item>
-                    <Descriptions.Item label="QoS">{detailPod.qosClass || 'BestEffort'}</Descriptions.Item>
+                    <Descriptions.Item label="QoS">
+                      {detailPod.qosClass || 'BestEffort'}
+                    </Descriptions.Item>
                     <Descriptions.Item label="所属">
                       <OwnerTag clusterId={clusterId} pod={detailPod} />
                     </Descriptions.Item>
-                    <Descriptions.Item label="ServiceAccount">{detailPod.serviceAccountName || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="重启策略">{detailPod.restartPolicy || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="DNS 策略">{detailPod.dnsPolicy || '-'}</Descriptions.Item>
+                    <Descriptions.Item label="ServiceAccount">
+                      {detailPod.serviceAccountName || '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="重启策略">
+                      {detailPod.restartPolicy || '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="DNS 策略">
+                      {detailPod.dnsPolicy || '-'}
+                    </Descriptions.Item>
                     <Descriptions.Item label="创建时间" span={2}>
                       {formatDate(detailPod.createdAt)}
                     </Descriptions.Item>
@@ -1428,19 +1588,43 @@ const PodsPage: React.FC = () => {
                         <Descriptions.Item key={key} label={label}>
                           {probe ? (
                             <Space size="small" wrap>
-                              {probe.path && <Tag>HTTP {probe.path}:{probe.port}</Tag>}
+                              {probe.path && (
+                                <Tag>
+                                  HTTP {probe.path}:{probe.port}
+                                </Tag>
+                              )}
                               {!probe.path && probe.port && <Tag>TCP :{probe.port}</Tag>}
-                              {probe.delay != null && <Text type="secondary" style={{ fontSize: 11 }}>延迟 {probe.delay}s</Text>}
-                              {probe.period != null && <Text type="secondary" style={{ fontSize: 11 }}>周期 {probe.period}s</Text>}
-                              {probe.timeout != null && <Text type="secondary" style={{ fontSize: 11 }}>超时 {probe.timeout}s</Text>}
-                              {probe.failure != null && <Text type="secondary" style={{ fontSize: 11 }}>失败 {probe.failure}</Text>}
+                              {probe.delay != null && (
+                                <Text type="secondary" style={{ fontSize: 11 }}>
+                                  延迟 {probe.delay}s
+                                </Text>
+                              )}
+                              {probe.period != null && (
+                                <Text type="secondary" style={{ fontSize: 11 }}>
+                                  周期 {probe.period}s
+                                </Text>
+                              )}
+                              {probe.timeout != null && (
+                                <Text type="secondary" style={{ fontSize: 11 }}>
+                                  超时 {probe.timeout}s
+                                </Text>
+                              )}
+                              {probe.failure != null && (
+                                <Text type="secondary" style={{ fontSize: 11 }}>
+                                  失败 {probe.failure}
+                                </Text>
+                              )}
                             </Space>
-                          ) : <Text type="secondary">未配置</Text>}
+                          ) : (
+                            <Text type="secondary">未配置</Text>
+                          )}
                         </Descriptions.Item>
                       )
                     })}
                   </Descriptions>
-                ) : <Text type="secondary">暂无探针数据</Text>,
+                ) : (
+                  <Text type="secondary">暂无探针数据</Text>
+                ),
               },
               {
                 key: 'scheduling',
@@ -1448,12 +1632,22 @@ const PodsPage: React.FC = () => {
                 children: detailPod.scheduling ? (
                   <Descriptions bordered column={1} size="small">
                     <Descriptions.Item label="节点选择器">
-                      {detailPod.scheduling.nodeSelector
-                        ? Object.entries(detailPod.scheduling.nodeSelector).map(([k, v]) => <Tag key={k}>{k}={v}</Tag>)
-                        : <Text type="secondary">无</Text>}
+                      {detailPod.scheduling.nodeSelector ? (
+                        Object.entries(detailPod.scheduling.nodeSelector).map(([k, v]) => (
+                          <Tag key={k}>
+                            {k}={v}
+                          </Tag>
+                        ))
+                      ) : (
+                        <Text type="secondary">无</Text>
+                      )}
                     </Descriptions.Item>
-                    <Descriptions.Item label="指定节点">{detailPod.scheduling.nodeName || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="优先级">{detailPod.scheduling.priorityClassName || '-'}</Descriptions.Item>
+                    <Descriptions.Item label="指定节点">
+                      {detailPod.scheduling.nodeName || '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="优先级">
+                      {detailPod.scheduling.priorityClassName || '-'}
+                    </Descriptions.Item>
                     {detailPod.scheduling.tolerations?.length ? (
                       <Descriptions.Item label="容忍度">
                         <Table
@@ -1473,42 +1667,78 @@ const PodsPage: React.FC = () => {
                     ) : null}
                     {detailPod.scheduling.affinity && (
                       <Descriptions.Item label="亲和性">
-                        <pre style={{ fontSize: 11, maxHeight: 200, overflow: 'auto' }}>{detailPod.scheduling.affinity}</pre>
+                        <pre style={{ fontSize: 11, maxHeight: 200, overflow: 'auto' }}>
+                          {detailPod.scheduling.affinity}
+                        </pre>
                       </Descriptions.Item>
                     )}
                   </Descriptions>
-                ) : <Text type="secondary">暂无调度数据</Text>,
+                ) : (
+                  <Text type="secondary">暂无调度数据</Text>
+                ),
               },
               {
                 key: 'security',
                 label: '安全',
                 children: detailPod.security ? (
                   <Descriptions bordered column={1} size="small">
-                    <Descriptions.Item label="ServiceAccount">{detailPod.security.serviceAccountName || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="runAsUser">{detailPod.security.runAsUser ?? '-'}</Descriptions.Item>
-                    <Descriptions.Item label="runAsGroup">{detailPod.security.runAsGroup ?? '-'}</Descriptions.Item>
-                    <Descriptions.Item label="runAsNonRoot">{detailPod.security.runAsNonRoot ? '是' : '否'}</Descriptions.Item>
-                    <Descriptions.Item label="privileged">{detailPod.security.privileged ? <Tag color="error">是</Tag> : '否'}</Descriptions.Item>
-                    <Descriptions.Item label="只读根文件系统">{detailPod.security.readOnlyRootFilesystem ? '是' : '否'}</Descriptions.Item>
+                    <Descriptions.Item label="ServiceAccount">
+                      {detailPod.security.serviceAccountName || '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="runAsUser">
+                      {detailPod.security.runAsUser ?? '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="runAsGroup">
+                      {detailPod.security.runAsGroup ?? '-'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="runAsNonRoot">
+                      {detailPod.security.runAsNonRoot ? '是' : '否'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="privileged">
+                      {detailPod.security.privileged ? <Tag color="error">是</Tag> : '否'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="只读根文件系统">
+                      {detailPod.security.readOnlyRootFilesystem ? '是' : '否'}
+                    </Descriptions.Item>
                     {detailPod.security.capabilities && (
                       <Descriptions.Item label="Capabilities">
                         <Space direction="vertical" size={0}>
                           {detailPod.security.capabilities.add?.length ? (
-                            <div><Text type="secondary" style={{ fontSize: 11 }}>添加: </Text>{detailPod.security.capabilities.add.map((c) => <Tag key={c} color="warning">{c}</Tag>)}</div>
+                            <div>
+                              <Text type="secondary" style={{ fontSize: 11 }}>
+                                添加:{' '}
+                              </Text>
+                              {detailPod.security.capabilities.add.map((c) => (
+                                <Tag key={c} color="warning">
+                                  {c}
+                                </Tag>
+                              ))}
+                            </div>
                           ) : null}
                           {detailPod.security.capabilities.drop?.length ? (
-                            <div><Text type="secondary" style={{ fontSize: 11 }}>移除: </Text>{detailPod.security.capabilities.drop.map((c) => <Tag key={c}>{c}</Tag>)}</div>
+                            <div>
+                              <Text type="secondary" style={{ fontSize: 11 }}>
+                                移除:{' '}
+                              </Text>
+                              {detailPod.security.capabilities.drop.map((c) => (
+                                <Tag key={c}>{c}</Tag>
+                              ))}
+                            </div>
                           ) : null}
                         </Space>
                       </Descriptions.Item>
                     )}
                     {detailPod.security.imagePullSecrets?.length ? (
                       <Descriptions.Item label="镜像拉取密钥">
-                        {detailPod.security.imagePullSecrets.map((s) => <Tag key={s}>{s}</Tag>)}
+                        {detailPod.security.imagePullSecrets.map((s) => (
+                          <Tag key={s}>{s}</Tag>
+                        ))}
                       </Descriptions.Item>
                     ) : null}
                   </Descriptions>
-                ) : <Text type="secondary">暂无安全数据</Text>,
+                ) : (
+                  <Text type="secondary">暂无安全数据</Text>
+                ),
               },
               {
                 key: 'env',
@@ -1521,11 +1751,23 @@ const PodsPage: React.FC = () => {
                     dataSource={detailPod.envVars}
                     columns={[
                       { title: '名称', dataIndex: 'name', width: 180 },
-                      { title: '值', dataIndex: 'value', ellipsis: true, render: (v: string) => v || '-' },
-                      { title: '来源', dataIndex: 'valueFrom', width: 120, render: (v: string) => v ? <Tag>{v}</Tag> : '-' },
+                      {
+                        title: '值',
+                        dataIndex: 'value',
+                        ellipsis: true,
+                        render: (v: string) => v || '-',
+                      },
+                      {
+                        title: '来源',
+                        dataIndex: 'valueFrom',
+                        width: 120,
+                        render: (v: string) => (v ? <Tag>{v}</Tag> : '-'),
+                      },
                     ]}
                   />
-                ) : <Text type="secondary">暂无环境变量</Text>,
+                ) : (
+                  <Text type="secondary">暂无环境变量</Text>
+                ),
               },
               {
                 key: 'metrics',
@@ -1554,14 +1796,20 @@ const PodsPage: React.FC = () => {
               >
                 应用
               </Button>
-              <Button icon={<CloseOutlined />} onClick={() => {
-                setYamlDrawer((p) => ({ ...p, yaml: yamlOriginal, editing: false }))
-              }}>
+              <Button
+                icon={<CloseOutlined />}
+                onClick={() => {
+                  setYamlDrawer((p) => ({ ...p, yaml: yamlOriginal, editing: false }))
+                }}
+              >
                 取消
               </Button>
             </Space>
           ) : (
-            <Button icon={<EditOutlined />} onClick={() => setYamlDrawer((p) => ({ ...p, editing: true }))}>
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => setYamlDrawer((p) => ({ ...p, editing: true }))}
+            >
               编辑
             </Button>
           )

@@ -106,22 +106,18 @@ type podLogFrame struct {
 	Message string `json:"message,omitempty"`
 }
 
-// streamTicketID accepts the V2 stream route's path ticket while retaining the
-// query parameter for older/internal callers of this adapter.
+// streamTicketID reads the opaque ticket only from the typed V2 route.
 func streamTicketID(c *gin.Context) string {
 	if c == nil {
 		return ""
 	}
-	if ticketID := strings.TrimSpace(c.Param("ticket_id")); ticketID != "" {
-		return ticketID
-	}
-	return strings.TrimSpace(c.Query("session_id"))
+	return strings.TrimSpace(c.Param("ticket_id"))
 }
 
 func podStreamSameOrigin(request *http.Request) bool {
 	origin := strings.TrimSpace(request.Header.Get("Origin"))
 	if origin == "" {
-		return true
+		return false
 	}
 	parsed, err := url.Parse(origin)
 	if err != nil {

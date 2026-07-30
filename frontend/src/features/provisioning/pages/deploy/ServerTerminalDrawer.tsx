@@ -84,14 +84,18 @@ export default function ServerTerminalDrawer({ open, server, onClose }: ServerTe
         terminal.loadAddon(new WebLinksAddon())
         terminal.open(containerRef.current)
         fitAddon.fit()
-        terminal.write(`\x1b[38;5;75mAIOPS Secure Shell\x1b[0m  ${server.user}@${server.ip}:${server.sshPort}\r\n`)
+        terminal.write(
+          `\x1b[38;5;75mAIOPS Secure Shell\x1b[0m  ${server.user}@${server.ip}:${server.sshPort}\r\n`,
+        )
         terminal.write('\x1b[38;5;244m正在申请一次性终端会话…\x1b[0m\r\n')
 
         const resize = () => {
           if (!terminal) return
           fitAddon.fit()
           if (socket?.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: 'resize', cols: terminal.cols, rows: terminal.rows }))
+            socket.send(
+              JSON.stringify({ type: 'resize', cols: terminal.cols, rows: terminal.rows }),
+            )
           }
         }
         window.addEventListener('resize', resize)
@@ -103,8 +107,6 @@ export default function ServerTerminalDrawer({ open, server, onClose }: ServerTe
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
         const parsedUrl = new URL(session.wsUrl, window.location.origin)
-        const token = localStorage.getItem('token')
-        if (token) parsedUrl.searchParams.set('token', token)
         parsedUrl.protocol = protocol
         parsedUrl.host = window.location.host
 

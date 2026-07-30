@@ -10,13 +10,12 @@ import (
 func TestStreamTicketIDUsesPathTicketAfterQueryIsRead(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	context, _ := gin.CreateTestContext(httptest.NewRecorder())
-	context.Request = httptest.NewRequest("GET", "/streams/v2/ticket-from-path?kind=pod-exec", nil)
+	context.Request = httptest.NewRequest("GET", "/streams/v2/pod-exec/ticket-from-path?ignored=value", nil)
 	context.Params = gin.Params{{Key: "ticket_id", Value: "ticket-from-path"}}
 
-	// The router reads kind before delegating. Gin caches that query map, so a
-	// later RawQuery rewrite cannot be used to pass a session id downstream.
-	if got := context.Query("kind"); got != "pod-exec" {
-		t.Fatalf("kind = %q, want pod-exec", got)
+	// A query read must never change where the adapter gets a capability ticket.
+	if got := context.Query("ignored"); got != "value" {
+		t.Fatalf("ignored = %q, want value", got)
 	}
 	context.Request.URL.RawQuery = "session_id=legacy-ticket"
 
@@ -25,12 +24,12 @@ func TestStreamTicketIDUsesPathTicketAfterQueryIsRead(t *testing.T) {
 	}
 }
 
-func TestStreamTicketIDAcceptsLegacyQuery(t *testing.T) {
+func TestStreamTicketIDRejectsQueryTicket(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	context, _ := gin.CreateTestContext(httptest.NewRecorder())
 	context.Request = httptest.NewRequest("GET", "/ws?session_id=legacy-ticket", nil)
 
-	if got := streamTicketID(context); got != "legacy-ticket" {
-		t.Fatalf("stream ticket = %q, want legacy-ticket", got)
+	if got := streamTicketID(context); got != "" {
+		t.Fatalf("stream ticket = %q, want empty", got)
 	}
 }
