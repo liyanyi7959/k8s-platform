@@ -1,6 +1,12 @@
 package application
 
-import "testing"
+import (
+	"context"
+	"testing"
+	"time"
+
+	"k8s-platform-backend/internal/platform/domain"
+)
 
 func TestFilterTasksAppliesScopeKeywordAndSort(t *testing.T) {
 	firstTitle := "Deploy API"
@@ -34,5 +40,107 @@ func TestTaskCanCancelOnlyWhilePendingOrRunning(t *testing.T) {
 		}
 	}
 }
+
+func TestTaskStorePersistsTaskAndLogsThroughPorts(t *testing.T) {
+	tasks := newMemoryTaskRepository()
+	logs := &memoryTaskLogRepository{}
+	store := NewTaskStore(tasks, logs)
+	title := "Install cluster"
+	task := &Task{Type: "install_cluster", Status: TaskPending, Title: &title, CreatedBy: 7}
+
+	if err := store.Put(task); err != nil {
+		t.Fatalf("Put() error = %v", err)
+	}
+	if task.ID == 0 || task.CreatedAt == "" {
+		t.Fatalf("Put() did not assign task identity: %#v", task)
+	}
+	task.AppendLog("preflight started", "preflight")
+	task.Status = TaskRunning
+	if err := task.Update(); err != nil {
+		t.Fatalf("Update() error = %v", err)
+	}
+
+	loaded, found := store.Get(task.ID)
+	if !found || loaded.Status != TaskRunning {
+		t.Fatalf("Get() = %#v, %v; want running task", loaded, found)
+	}
+	entries := loaded.LogEntries(0, 10, "preflight")
+	if len(entries) != 1 || entries[0].Content != "preflight started" {
+		t.Fatalf("LogEntries() = %#v", entries)
+	}
+}
+
+type memoryTaskRepository struct {
+	nextID uint64
+	tasks  map[uint64]domain.Task
+}
+
+func newMemoryTaskRepository() *memoryTaskRepository {
+	return &memoryTaskRepository{tasks: map[uint64]domain.Task{}}
+}
+
+func (r *memoryTaskRepository) Create(_ context.Context, task *domain.Task) error {
+	r.nextID++
+	task.ID = r.nextID
+	task.CreatedAt = time.Date(2026, 7, 30, 0, 0, 0, 0, time.UTC)
+	r.tasks[task.ID] = *task
+	return nil
+}
+
+func (r *memoryTaskRepository) Update(_ context.Context, task *domain.Task) error {
+	r.tasks[task.ID] = *task
+	return nil
+}
+
+func (r *memoryTaskRepository) FindByID(_ context.Context, id uint64) (*domain.Task, error) {
+	task, found := r.tasks[id]
+	if !found {
+		return nil, domainTaskNotFound{}
+	}
+	return &task, nil
+}
+
+func (r *memoryTaskRepository) List(_ context.Context) ([]domain.Task, error) {
+	items := make([]domain.Task, 0, len(r.tasks))
+	for _, task := range r.tasks {
+		items = append(items, task)
+	}
+	return items, nil
+}
+
+type memoryTaskLogRepository struct{ entries []domain.TaskLog }
+
+func (r *memoryTaskLogRepository) Append(_ context.Context, entry *domain.TaskLog) error {
+	entry.CreatedAt = time.Date(2026, 7, 30, 0, 0, 0, 0, time.UTC)
+	r.entries = append(r.entries, *entry)
+	return nil
+}
+
+func (r *memoryTaskLogRepository) List(_ context.Context, taskID uint64, offset, limit int, stepKey string) ([]domain.TaskLog, error) {
+	items := make([]domain.TaskLog, 0, len(r.entries))
+	for _, entry := range r.entries {
+		if entry.TaskID == taskID && (stepKey == "" || entry.StepKey == stepKey) {
+			items = append(items, entry)
+		}
+	}
+	if limit <= 0 {
+		return items, nil
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	if offset >= len(items) {
+		return []domain.TaskLog{}, nil
+	}
+	end := offset + limit
+	if end > len(items) {
+		end = len(items)
+	}
+	return items[offset:end], nil
+}
+
+type domainTaskNotFound struct{}
+
+func (domainTaskNotFound) Error() string { return "task not found" }
 
 func int64Ptr(value int64) *int64 { return &value }

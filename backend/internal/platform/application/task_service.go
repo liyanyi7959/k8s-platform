@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -8,15 +9,16 @@ import (
 	"sync"
 	"time"
 
-	"gorm.io/gorm"
 	"k8s-platform-backend/internal/platform/domain"
+	"k8s-platform-backend/internal/platform/ports"
 )
 
 // TaskStore owns the platform-wide asynchronous task centre. Cluster, Kops
 // and provisioning workflows share this store, so it belongs to platform
 // rather than to a legacy business package.
 type TaskStore struct {
-	db       *gorm.DB
+	tasks    ports.TaskRepository
+	logs     ports.TaskLogRepository
 	cancelMu sync.Mutex
 	cancels  map[int64]func()
 }
@@ -84,8 +86,8 @@ type TaskLogEntry struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func NewTaskStore(db *gorm.DB) *TaskStore {
-	return &TaskStore{db: db, cancels: map[int64]func(){}}
+func NewTaskStore(tasks ports.TaskRepository, logs ports.TaskLogRepository) *TaskStore {
+	return &TaskStore{tasks: tasks, logs: logs, cancels: map[int64]func(){}}
 }
 
 func (s *TaskStore) RegisterCancel(id int64, cancel func()) {
@@ -124,19 +126,19 @@ func (s *TaskStore) CancelExecution(id int64) {
 func (*TaskStore) NextID() int64 { return 0 }
 
 func (s *TaskStore) Put(task *Task) error {
-	if s == nil || s.db == nil {
-		return errors.New("db not initialized")
+	if s == nil || s.tasks == nil {
+		return errors.New("task repository is required")
 	}
 	if task == nil {
 		return errors.New("task is required")
 	}
-	row, updates := taskToModelAndUpdates(task)
+	row := taskToDomain(task)
 	if task.ID > 0 {
-		if err := s.db.Model(&domain.Task{}).Where("id = ?", task.ID).Updates(updates).Error; err != nil {
+		if err := s.tasks.Update(context.Background(), row); err != nil {
 			return err
 		}
 	} else {
-		if err := s.db.Create(row).Error; err != nil {
+		if err := s.tasks.Create(context.Background(), row); err != nil {
 			return err
 		}
 		task.ID = int64(row.ID)
@@ -147,22 +149,22 @@ func (s *TaskStore) Put(task *Task) error {
 }
 
 func (s *TaskStore) Get(id int64) (*Task, bool) {
-	if s == nil || s.db == nil || id <= 0 {
+	if s == nil || s.tasks == nil || id <= 0 {
 		return nil, false
 	}
-	var row domain.Task
-	if err := s.db.First(&row, id).Error; err != nil {
+	row, err := s.tasks.FindByID(context.Background(), uint64(id))
+	if err != nil || row == nil {
 		return nil, false
 	}
-	return s.toTask(&row), true
+	return s.toTask(row), true
 }
 
 func (s *TaskStore) List() []*Task {
-	if s == nil || s.db == nil {
+	if s == nil || s.tasks == nil {
 		return []*Task{}
 	}
-	var rows []domain.Task
-	if err := s.db.Find(&rows).Error; err != nil {
+	rows, err := s.tasks.List(context.Background())
+	if err != nil {
 		return []*Task{}
 	}
 	items := make([]*Task, 0, len(rows))
@@ -172,7 +174,7 @@ func (s *TaskStore) List() []*Task {
 	return items
 }
 
-func taskToModelAndUpdates(task *Task) (*domain.Task, map[string]any) {
+func taskToDomain(task *Task) *domain.Task {
 	row := &domain.Task{Type: task.Type, Status: string(task.Status), Percent: 0, CreatedBy: uint64(task.CreatedBy)}
 	if task.ID > 0 {
 		row.ID = uint64(task.ID)
@@ -192,10 +194,7 @@ func taskToModelAndUpdates(task *Task) (*domain.Task, map[string]any) {
 	if task.Steps != nil {
 		row.Steps = toDomainTaskSteps(task.Steps)
 	}
-	return row, map[string]any{
-		"type": row.Type, "status": row.Status, "title": row.Title, "percent": row.Percent,
-		"message": row.Message, "created_by": row.CreatedBy, "meta": row.Meta, "steps": row.Steps,
-	}
+	return row
 }
 
 func toDomainTaskSteps(steps []TaskStep) domain.JSONSteps {
@@ -267,29 +266,26 @@ func fromDomainSubSteps(steps []domain.TaskSubStep) []TaskSubStep {
 }
 
 func (task *Task) AppendLog(line string, stepKey ...string) {
-	if task == nil || task.store == nil || task.store.db == nil {
+	if task == nil || task.store == nil || task.store.logs == nil {
 		return
 	}
 	key := ""
 	if len(stepKey) > 0 {
 		key = stepKey[0]
 	}
-	task.store.db.Create(&domain.TaskLog{TaskID: uint64(task.ID), StepKey: key, Content: line})
+	_ = task.store.logs.Append(context.Background(), &domain.TaskLog{TaskID: uint64(task.ID), StepKey: key, Content: line})
 }
 
 func (task *Task) LogEntries(offset, limit int, stepKey ...string) []TaskLogEntry {
-	if task == nil || task.store == nil || task.store.db == nil {
+	if task == nil || task.store == nil || task.store.logs == nil {
 		return []TaskLogEntry{}
 	}
-	var rows []domain.TaskLog
-	query := task.store.db.Where("task_id = ?", task.ID).Order("id asc")
-	if len(stepKey) > 0 && stepKey[0] != "" {
-		query = query.Where("step_key = ?", stepKey[0])
+	key := ""
+	if len(stepKey) > 0 {
+		key = stepKey[0]
 	}
-	if limit > 0 {
-		query = query.Offset(offset).Limit(limit)
-	}
-	if err := query.Find(&rows).Error; err != nil {
+	rows, err := task.store.logs.List(context.Background(), uint64(task.ID), offset, limit, key)
+	if err != nil {
 		return []TaskLogEntry{}
 	}
 	entries := make([]TaskLogEntry, len(rows))

@@ -1221,8 +1221,9 @@ export const request: RequestConfig = {
   responseInterceptors: [
     (response: any) => {
       const { status, data: payload } = response
+      const isProblemDetails = payload && typeof payload === 'object' && typeof payload.status === 'number' && typeof payload.title === 'string' && typeof payload.type === 'string'
 
-      if (shouldInvalidatePlatformSession(status)) {
+      if (shouldInvalidatePlatformSession(status, undefined, isProblemDetails ? payload.type : undefined)) {
         localStorage.removeItem('token')
         if (!isLoginRoute()) {
           history.replace(LOGIN_PATH)
@@ -1231,7 +1232,6 @@ export const request: RequestConfig = {
         throw createRequestError('登录已过期，请重新登录', 401)
       }
 
-      const isProblemDetails = payload && typeof payload === 'object' && typeof payload.status === 'number' && typeof payload.title === 'string' && typeof payload.type === 'string'
       if (isProblemDetails) {
         throw createRequestError(payload.detail || payload.title, payload.status, payload)
       }

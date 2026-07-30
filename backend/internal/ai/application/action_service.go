@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	"k8s-platform-backend/internal/ai/domain"
+	"k8s-platform-backend/internal/ai/ports"
 )
 
 // PreparedAction is the domain-neutral output of an action runtime while a
@@ -39,14 +38,11 @@ type ActionExecutorPort interface {
 }
 
 type ActionConfirmationRequest struct {
-	ClusterID        uint64
-	ProposalID       uint64
-	ActorID          uint64
-	ActorName        string
-	RiskAccepted     bool
-	ConfirmationText string
+	ClusterID, ProposalID, ActorID uint64
+	ActorName                      string
+	RiskAccepted                   bool
+	ConfirmationText               string
 }
-
 type ActionConfirmationDecision string
 
 const (
@@ -68,7 +64,6 @@ type ActionProposalResult struct {
 	Diff                     string             `json:"diff"`
 	Proposal                 ActionProposalItem `json:"proposal"`
 }
-
 type ActionConfirmationResult struct {
 	ProposalID      uint64               `json:"proposal_id"`
 	ExecutionStatus string               `json:"execution_status"`
@@ -77,32 +72,25 @@ type ActionConfirmationResult struct {
 	Execution       *ActionExecutionItem `json:"execution,omitempty"`
 }
 
-// ActionService owns the AI proposal and execution lifecycle. The actual
-// cluster work and change confirmation aggregate are injected through ports,
-// so this use case remains independent from Kops and Change internals.
+// ActionService owns the AI proposal and execution lifecycle. Persistence is
+// supplied by a port so transaction and ORM details stay in the adapter.
 type ActionService struct {
-	db           *gorm.DB
+	repository   ports.ActionRepository
 	executor     ActionExecutorPort
 	confirmation ActionConfirmationPort
 	projections  *ActionProjectionService
 }
 
-func NewActionService(db *gorm.DB, executor ActionExecutorPort, confirmation ActionConfirmationPort) *ActionService {
-	return &ActionService{
-		db:           db,
-		executor:     executor,
-		confirmation: confirmation,
-		projections:  NewActionProjectionService(db, ActionConfirmationText),
-	}
+func NewActionService(repository ports.ActionRepository, executor ActionExecutorPort, confirmation ActionConfirmationPort) *ActionService {
+	return &ActionService{repository: repository, executor: executor, confirmation: confirmation, projections: NewActionProjectionService(repository, ActionConfirmationText)}
 }
-
 func ActionConfirmationText(proposalID uint64) string {
 	return fmt.Sprintf("confirm-proposal-%d", proposalID)
 }
 
 func (s *ActionService) CreateProposal(ctx context.Context, clusterID, userID uint64, username string, req CreateActionProposalRequest) (ActionProposalResult, error) {
-	if s == nil || s.db == nil {
-		return ActionProposalResult{}, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return ActionProposalResult{}, errors.New("action repository is required")
 	}
 	if s.executor == nil {
 		return ActionProposalResult{}, errors.New("action executor is required")
@@ -113,53 +101,30 @@ func (s *ActionService) CreateProposal(ctx context.Context, clusterID, userID ui
 	if NormalizeActionType(req.ProposalType) == "" {
 		return ActionProposalResult{}, ErrorWithMessage(ErrInvalidParams, "当前动作类型暂不支持")
 	}
-
-	var conversation domain.AIConversation
-	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ? AND cluster_id = ?", req.ConversationID, clusterID).First(&conversation).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	if _, err := s.repository.FindConversationInCluster(ctx, req.ConversationID, clusterID); err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
 			return ActionProposalResult{}, ErrNotFound
 		}
 		return ActionProposalResult{}, err
 	}
-
 	prepared, err := s.executor.PrepareAction(ctx, clusterID, req)
 	if err != nil {
 		return ActionProposalResult{}, err
 	}
-	row := domain.AIActionProposal{
-		ConversationID: req.ConversationID, MessageID: req.MessageID, ClusterID: clusterID,
-		ActionType: prepared.ActionType, TargetKind: prepared.Target.Kind, TargetNamespace: prepared.Target.Namespace,
-		TargetName: prepared.Target.Name, RiskLevel: prepared.RiskLevel, ConfirmLevel: prepared.ConfirmLevel,
-		Status: "pending_confirm", Title: prepared.Title, Summary: prepared.Summary, ChangeJSON: prepared.Change,
-		CreatedBy: userID, CreatedByName: strings.TrimSpace(username),
-	}
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&row).Error; err != nil {
-			return err
-		}
-		if err := appendActionProposalMessage(tx, row.ConversationID, userID, row.Title, row.Summary); err != nil {
-			return err
-		}
-		return tx.Model(&domain.AIConversation{}).Where("id = ?", row.ConversationID).Updates(map[string]any{
-			"status": "waiting_confirm", "last_message_at": time.Now().UTC(),
-		}).Error
-	}); err != nil {
+	row := domain.AIActionProposal{ConversationID: req.ConversationID, MessageID: req.MessageID, ClusterID: clusterID, ActionType: prepared.ActionType, TargetKind: prepared.Target.Kind, TargetNamespace: prepared.Target.Namespace, TargetName: prepared.Target.Name, RiskLevel: prepared.RiskLevel, ConfirmLevel: prepared.ConfirmLevel, Status: "pending_confirm", Title: prepared.Title, Summary: prepared.Summary, ChangeJSON: prepared.Change, CreatedBy: userID, CreatedByName: strings.TrimSpace(username)}
+	if err := s.repository.CreateActionProposal(ctx, &row, actionProposalMessage(row.ConversationID, userID, row.Title, row.Summary), time.Now().UTC()); err != nil {
 		return ActionProposalResult{}, err
 	}
-
 	proposal, err := s.GetProposal(ctx, clusterID, row.ID)
 	if err != nil {
 		return ActionProposalResult{}, err
 	}
-	return ActionProposalResult{
-		ProposalID: row.ID, Status: row.Status, RiskLevel: row.RiskLevel, NeedSecondConfirm: row.ConfirmLevel == "double",
-		RequiredConfirmationText: ActionConfirmationText(row.ID), Preview: prepared.Preview, Diff: prepared.Diff, Proposal: proposal,
-	}, nil
+	return ActionProposalResult{ProposalID: row.ID, Status: row.Status, RiskLevel: row.RiskLevel, NeedSecondConfirm: row.ConfirmLevel == "double", RequiredConfirmationText: ActionConfirmationText(row.ID), Preview: prepared.Preview, Diff: prepared.Diff, Proposal: proposal}, nil
 }
 
 func (s *ActionService) ConfirmProposal(ctx context.Context, clusterID, proposalID, userID uint64, username string, req ConfirmActionProposalRequest) (ActionConfirmationResult, error) {
-	if s == nil || s.db == nil {
-		return ActionConfirmationResult{}, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return ActionConfirmationResult{}, errors.New("action repository is required")
 	}
 	if s.executor == nil {
 		return ActionConfirmationResult{}, errors.New("action executor is required")
@@ -170,11 +135,7 @@ func (s *ActionService) ConfirmProposal(ctx context.Context, clusterID, proposal
 	if clusterID == 0 || proposalID == 0 {
 		return ActionConfirmationResult{}, ErrorWithMessage(ErrInvalidParams, "提案参数无效")
 	}
-
-	decision, err := s.confirmation.ConfirmAction(ctx, ActionConfirmationRequest{
-		ClusterID: clusterID, ProposalID: proposalID, ActorID: userID, ActorName: username,
-		RiskAccepted: req.ConfirmRisk, ConfirmationText: req.ConfirmationText,
-	})
+	decision, err := s.confirmation.ConfirmAction(ctx, ActionConfirmationRequest{ClusterID: clusterID, ProposalID: proposalID, ActorID: userID, ActorName: username, RiskAccepted: req.ConfirmRisk, ConfirmationText: req.ConfirmationText})
 	if err != nil {
 		return ActionConfirmationResult{}, err
 	}
@@ -188,10 +149,9 @@ func (s *ActionService) ConfirmProposal(ctx context.Context, clusterID, proposal
 	if decision != ActionExecute {
 		return ActionConfirmationResult{}, ErrorWithMessage(ErrConflict, "该提案当前状态不允许确认")
 	}
-
-	var proposalRow domain.AIActionProposal
-	if err := s.db.WithContext(ctx).Where("id = ? AND cluster_id = ?", proposalID, clusterID).First(&proposalRow).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	proposalRow, err := s.repository.FindActionProposalInCluster(ctx, proposalID, clusterID)
+	if err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
 			return ActionConfirmationResult{}, ErrNotFound
 		}
 		return ActionConfirmationResult{}, err
@@ -209,15 +169,15 @@ func (s *ActionService) ConfirmProposal(ctx context.Context, clusterID, proposal
 }
 
 func (s *ActionService) GetProposal(ctx context.Context, clusterID, proposalID uint64) (ActionProposalItem, error) {
-	if s == nil || s.db == nil {
-		return ActionProposalItem{}, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return ActionProposalItem{}, errors.New("action repository is required")
 	}
 	if clusterID == 0 || proposalID == 0 {
 		return ActionProposalItem{}, ErrorWithMessage(ErrInvalidParams, "提案参数无效")
 	}
-	var proposal domain.AIActionProposal
-	if err := s.db.WithContext(ctx).Where("id = ? AND cluster_id = ?", proposalID, clusterID).First(&proposal).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	proposal, err := s.repository.FindActionProposalInCluster(ctx, proposalID, clusterID)
+	if err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
 			return ActionProposalItem{}, ErrNotFound
 		}
 		return ActionProposalItem{}, err
@@ -233,7 +193,6 @@ func (s *ActionService) GetProposal(ctx context.Context, clusterID, proposalID u
 	}
 	return ActionProposalItem{}, ErrNotFound
 }
-
 func (s *ActionService) ListConversationProposals(ctx context.Context, conversationID uint64) ([]ActionProposalItem, error) {
 	if s == nil || s.projections == nil {
 		return nil, errors.New("action projection service is required")
@@ -247,51 +206,26 @@ func (s *ActionService) executeProposal(ctx context.Context, proposal domain.AIA
 		return domain.AIActionExecution{}, "", err
 	}
 	startedAt := time.Now().UTC()
-	execution := domain.AIActionExecution{
-		ProposalID: proposal.ID, ConversationID: proposal.ConversationID, ClusterID: proposal.ClusterID,
-		ExecutionNo: executionNo, Status: "running", StartedAt: &startedAt, OperatorID: userID,
-		OperatorName: strings.TrimSpace(username), CommandSnapshot: actionExecutionSnapshot(proposal, operatorComment),
-	}
-	if err := s.db.WithContext(ctx).Create(&execution).Error; err != nil {
+	execution := domain.AIActionExecution{ProposalID: proposal.ID, ConversationID: proposal.ConversationID, ClusterID: proposal.ClusterID, ExecutionNo: executionNo, Status: "running", StartedAt: &startedAt, OperatorID: userID, OperatorName: strings.TrimSpace(username), CommandSnapshot: actionExecutionSnapshot(proposal, operatorComment)}
+	if err := s.repository.CreateActionExecution(ctx, &execution); err != nil {
 		return domain.AIActionExecution{}, "", err
 	}
-
-	proposalUpdates := map[string]any{"status": "executing"}
+	approval := ports.ActionApproval{ProposalID: proposal.ID}
 	if proposal.ConfirmLevel == "double" {
-		proposalUpdates["second_approved_by"] = userID
-		proposalUpdates["second_approved_name"] = strings.TrimSpace(username)
-		proposalUpdates["second_approved_at"] = &startedAt
+		approval.SecondApprovedBy, approval.SecondApprovedName, approval.SecondApprovedAt = &userID, strings.TrimSpace(username), &startedAt
 	} else if proposal.ApprovedBy == nil {
-		proposalUpdates["approved_by"] = userID
-		proposalUpdates["approved_by_name"] = strings.TrimSpace(username)
-		proposalUpdates["approved_at"] = &startedAt
+		approval.ApprovedBy, approval.ApprovedByName, approval.ApprovedAt = &userID, strings.TrimSpace(username), &startedAt
 	}
-	if err := s.db.WithContext(ctx).Model(&domain.AIActionProposal{}).Where("id = ?", proposal.ID).Updates(proposalUpdates).Error; err != nil {
+	if err := s.repository.MarkActionExecuting(ctx, proposal.ID, approval); err != nil {
 		return domain.AIActionExecution{}, "", err
 	}
-
 	result, executeErr := s.executor.ExecuteAction(ctx, proposal)
 	finishedAt := time.Now().UTC()
 	if executeErr != nil {
 		s.finishFailedExecution(ctx, execution.ID, proposal, userID, finishedAt, executeErr)
 		return domain.AIActionExecution{}, "", executeErr
 	}
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&domain.AIActionExecution{}).Where("id = ?", execution.ID).Updates(map[string]any{
-			"status": "succeeded", "finished_at": &finishedAt, "result_json": result.Result, "error_message": "",
-		}).Error; err != nil {
-			return err
-		}
-		if err := tx.Model(&domain.AIActionProposal{}).Where("id = ?", proposal.ID).Update("status", "succeeded").Error; err != nil {
-			return err
-		}
-		if err := appendActionExecutionMessage(tx, proposal.ConversationID, userID, proposal.Title, "succeeded", result.Summary); err != nil {
-			return err
-		}
-		return tx.Model(&domain.AIConversation{}).Where("id = ?", proposal.ConversationID).Updates(map[string]any{
-			"status": "open", "last_message_at": &finishedAt,
-		}).Error
-	}); err != nil {
+	if err := s.repository.CompleteActionExecution(ctx, ports.ActionCompletion{ExecutionID: execution.ID, ProposalID: proposal.ID, ConversationID: proposal.ConversationID, UserID: userID, Title: proposal.Title, Summary: result.Summary, FinishedAt: finishedAt, Result: result.Result}); err != nil {
 		return domain.AIActionExecution{}, "", err
 	}
 	execution.Status = "succeeded"
@@ -299,59 +233,22 @@ func (s *ActionService) executeProposal(ctx context.Context, proposal domain.AIA
 	execution.FinishedAt = &finishedAt
 	return execution, result.Summary, nil
 }
-
-// finishFailedExecution intentionally preserves the original action failure:
-// errors while recording the failure should not obscure an executor error.
 func (s *ActionService) finishFailedExecution(ctx context.Context, executionID uint64, proposal domain.AIActionProposal, userID uint64, finishedAt time.Time, executionErr error) {
-	message := actionErrorMessage(executionErr)
-	_ = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		_ = tx.Model(&domain.AIActionExecution{}).Where("id = ?", executionID).Updates(map[string]any{
-			"status": "failed", "finished_at": &finishedAt, "error_message": message,
-		}).Error
-		_ = tx.Model(&domain.AIActionProposal{}).Where("id = ?", proposal.ID).Update("status", "failed").Error
-		_ = appendActionExecutionMessage(tx, proposal.ConversationID, userID, proposal.Title, "failed", message)
-		_ = tx.Model(&domain.AIConversation{}).Where("id = ?", proposal.ConversationID).Updates(map[string]any{
-			"status": "open", "last_message_at": &finishedAt,
-		}).Error
-		return nil
-	})
+	_ = s.repository.FailActionExecution(ctx, ports.ActionFailure{ExecutionID: executionID, ProposalID: proposal.ID, ConversationID: proposal.ConversationID, UserID: userID, Title: proposal.Title, Message: actionErrorMessage(executionErr), FinishedAt: finishedAt})
 }
-
 func (s *ActionService) nextExecutionNo(ctx context.Context, proposalID uint64) (int, error) {
-	var maxNo int
-	if err := s.db.WithContext(ctx).Model(&domain.AIActionExecution{}).Select("COALESCE(MAX(execution_no), 0)").Where("proposal_id = ?", proposalID).Scan(&maxNo).Error; err != nil {
-		return 0, err
-	}
-	return maxNo + 1, nil
+	return s.repository.NextActionExecutionNumber(ctx, proposalID)
 }
-
 func actionExecutionSnapshot(proposal domain.AIActionProposal, operatorComment string) string {
-	raw, err := json.Marshal(map[string]any{
-		"action_type": proposal.ActionType, "target_kind": proposal.TargetKind, "target_namespace": proposal.TargetNamespace,
-		"target_name": proposal.TargetName, "change": proposal.ChangeJSON, "operator_comment": strings.TrimSpace(operatorComment),
-	})
+	raw, err := json.Marshal(map[string]any{"action_type": proposal.ActionType, "target_kind": proposal.TargetKind, "target_namespace": proposal.TargetNamespace, "target_name": proposal.TargetName, "change": proposal.ChangeJSON, "operator_comment": strings.TrimSpace(operatorComment)})
 	if err != nil {
 		return ""
 	}
 	return string(raw)
 }
-
-func appendActionProposalMessage(tx *gorm.DB, conversationID, userID uint64, title, summary string) error {
-	return tx.Create(&domain.AIMessage{
-		ConversationID: conversationID, Role: "system", MessageType: "proposal",
-		Content: fmt.Sprintf("已生成变更提案：%s\n%s", strings.TrimSpace(title), strings.TrimSpace(summary)),
-		Status:  "created", CreatedBy: userID,
-	}).Error
+func actionProposalMessage(conversationID, userID uint64, title, summary string) domain.AIMessage {
+	return domain.AIMessage{ConversationID: conversationID, Role: "system", MessageType: "proposal", Content: fmt.Sprintf("已生成变更提案：%s\n%s", strings.TrimSpace(title), strings.TrimSpace(summary)), Status: "created", CreatedBy: userID}
 }
-
-func appendActionExecutionMessage(tx *gorm.DB, conversationID, userID uint64, title, status, summary string) error {
-	return tx.Create(&domain.AIMessage{
-		ConversationID: conversationID, Role: "system", MessageType: "action_execution",
-		Content: fmt.Sprintf("变更提案执行%s：%s\n%s", ActionExecutionStatusLabel(status), strings.TrimSpace(title), strings.TrimSpace(summary)),
-		Status:  "created", CreatedBy: userID,
-	}).Error
-}
-
 func actionErrorMessage(err error) string {
 	if err == nil {
 		return ""

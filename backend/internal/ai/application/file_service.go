@@ -18,9 +18,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"gorm.io/gorm"
-
 	aidomain "k8s-platform-backend/internal/ai/domain"
+	"k8s-platform-backend/internal/ai/ports"
 )
 
 const (
@@ -67,16 +66,16 @@ type AIMessageAttachmentItem struct {
 }
 
 type AIFileService struct {
-	db      *gorm.DB
-	baseDir string
+	repository ports.FileRepository
+	baseDir    string
 }
 
-func NewAIFileService(db *gorm.DB, baseDir string) *AIFileService {
+func NewAIFileService(repository ports.FileRepository, baseDir string) *AIFileService {
 	baseDir = strings.TrimSpace(baseDir)
 	if baseDir == "" {
 		baseDir = defaultAIUploadDir
 	}
-	return &AIFileService{db: db, baseDir: baseDir}
+	return &AIFileService{repository: repository, baseDir: baseDir}
 }
 
 func (s *AIFileService) NormalizeChatUploads(files []*multipart.FileHeader) ([]AIChatUploadInput, error) {
@@ -109,8 +108,8 @@ func (s *AIFileService) SaveChatUploads(
 	if len(uploads) == 0 {
 		return nil, nil
 	}
-	if s == nil || s.db == nil {
-		return nil, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return nil, errors.New("file repository is required")
 	}
 
 	baseDir, err := filepath.Abs(s.baseDir)
@@ -153,7 +152,7 @@ func (s *AIFileService) SaveChatUploads(
 		return nil, nil
 	}
 
-	if err := s.db.WithContext(ctx).Create(&rows).Error; err != nil {
+	if err := s.repository.CreateUploadedFiles(ctx, rows); err != nil {
 		cleanupAIUploadFiles(writtenPaths)
 		return nil, err
 	}
@@ -166,22 +165,23 @@ func (s *AIFileService) SaveChatUploads(
 }
 
 func (s *AIFileService) ListMessageAttachments(ctx context.Context, conversationID uint64) (map[uint64][]AIMessageAttachmentItem, error) {
-	return ListConversationAttachments(ctx, s.db, conversationID)
+	if s == nil || s.repository == nil {
+		return nil, errors.New("file repository is required")
+	}
+	return ListConversationAttachments(ctx, s.repository, conversationID)
 }
 
 func (s *AIFileService) OpenAttachment(ctx context.Context, id uint64) (AIMessageAttachmentItem, *os.File, error) {
-	if s == nil || s.db == nil {
-		return AIMessageAttachmentItem{}, nil, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return AIMessageAttachmentItem{}, nil, errors.New("file repository is required")
 	}
 	if id == 0 {
 		return AIMessageAttachmentItem{}, nil, ErrWithMessage(ErrInvalidParams, "附件 ID 无效")
 	}
 
-	var row aidomain.AIUploadedFile
-	if err := s.db.WithContext(ctx).
-		Where("deleted_at IS NULL AND id = ?", id).
-		First(&row).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	row, err := s.repository.FindUploadedFile(ctx, id)
+	if err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
 			return AIMessageAttachmentItem{}, nil, ErrNotFound
 		}
 		return AIMessageAttachmentItem{}, nil, err
@@ -197,17 +197,14 @@ func (s *AIFileService) OpenAttachment(ctx context.Context, id uint64) (AIMessag
 	return buildAIMessageAttachmentItem(row), file, nil
 }
 
-func ListConversationAttachments(ctx context.Context, db *gorm.DB, conversationID uint64) (map[uint64][]AIMessageAttachmentItem, error) {
+func ListConversationAttachments(ctx context.Context, repository ports.FileRepository, conversationID uint64) (map[uint64][]AIMessageAttachmentItem, error) {
 	out := make(map[uint64][]AIMessageAttachmentItem)
-	if db == nil || conversationID == 0 {
+	if repository == nil || conversationID == 0 {
 		return out, nil
 	}
 
-	var rows []aidomain.AIUploadedFile
-	if err := db.WithContext(ctx).
-		Where("deleted_at IS NULL AND conversation_id = ?", conversationID).
-		Order("created_at ASC, id ASC").
-		Find(&rows).Error; err != nil {
+	rows, err := repository.ListConversationFiles(ctx, conversationID)
+	if err != nil {
 		return nil, err
 	}
 

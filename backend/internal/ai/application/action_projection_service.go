@@ -5,9 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"gorm.io/gorm"
-
 	"k8s-platform-backend/internal/ai/domain"
+	"k8s-platform-backend/internal/ai/ports"
 )
 
 type ActionExecutionItem struct {
@@ -57,23 +56,23 @@ type ActionProposalItem struct {
 }
 
 type ActionProjectionService struct {
-	db               *gorm.DB
+	repository       ports.ActionRepository
 	confirmationText func(uint64) string
 }
 
-func NewActionProjectionService(db *gorm.DB, confirmationText func(uint64) string) *ActionProjectionService {
-	return &ActionProjectionService{db: db, confirmationText: confirmationText}
+func NewActionProjectionService(repository ports.ActionRepository, confirmationText func(uint64) string) *ActionProjectionService {
+	return &ActionProjectionService{repository: repository, confirmationText: confirmationText}
 }
 
 func (s *ActionProjectionService) ListConversation(ctx context.Context, conversationID uint64) ([]ActionProposalItem, error) {
-	if s == nil || s.db == nil {
-		return nil, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return nil, errors.New("action repository is required")
 	}
 	if conversationID == 0 {
 		return nil, ErrorWithMessage(ErrInvalidParams, "会话 ID 无效")
 	}
-	var proposals []domain.AIActionProposal
-	if err := s.db.WithContext(ctx).Where("conversation_id = ?", conversationID).Order("created_at DESC, id DESC").Find(&proposals).Error; err != nil {
+	proposals, err := s.repository.ListActionProposals(ctx, conversationID)
+	if err != nil {
 		return nil, err
 	}
 	executionMap, err := s.listExecutions(ctx, proposals)
@@ -96,8 +95,8 @@ func (s *ActionProjectionService) listExecutions(ctx context.Context, proposals 
 	for _, proposal := range proposals {
 		ids = append(ids, proposal.ID)
 	}
-	var rows []domain.AIActionExecution
-	if err := s.db.WithContext(ctx).Where("proposal_id IN ?", ids).Order("created_at DESC, id DESC").Find(&rows).Error; err != nil {
+	rows, err := s.repository.ListActionExecutions(ctx, ids)
+	if err != nil {
 		return nil, err
 	}
 	for _, row := range rows {

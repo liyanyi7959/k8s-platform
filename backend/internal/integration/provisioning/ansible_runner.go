@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	platformapp "k8s-platform-backend/internal/platform/application"
+	provisionmysql "k8s-platform-backend/internal/provisioning/adapters/mysql"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
 	secretcrypto "k8s-platform-backend/internal/transport/secretcrypto"
@@ -39,7 +40,7 @@ func NewAnsibleRunner(db *gorm.DB, encryptionKey string, taskStore *platformapp.
 	return &AnsibleRunner{
 		db:            db,
 		encryptionKey: encryptionKey,
-		config:        provisionapp.NewDeployConfigService(db),
+		config:        provisionapp.NewDeployConfigService(provisionmysql.NewRepository(db)),
 		taskStore:     taskStore,
 	}
 }

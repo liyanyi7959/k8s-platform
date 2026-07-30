@@ -5,9 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"gorm.io/gorm"
-
 	"k8s-platform-backend/internal/ai/domain"
+	"k8s-platform-backend/internal/ai/ports"
 )
 
 // ConversationDetailProjectionPort supplies read-only projections owned by
@@ -16,6 +15,11 @@ import (
 type ConversationDetailProjectionPort interface {
 	ListToolCallItems(context.Context, uint64) ([]any, error)
 	ListActionProposalItems(context.Context, uint64) ([]any, error)
+}
+
+type ConversationDetailRepository interface {
+	ports.ConversationRepository
+	ports.FileRepository
 }
 
 type ConversationMessageItem struct {
@@ -42,35 +46,35 @@ type ConversationDetail struct {
 }
 
 type ConversationDetailService struct {
-	db          *gorm.DB
+	repository  ConversationDetailRepository
 	projections ConversationDetailProjectionPort
 }
 
-func NewConversationDetailService(db *gorm.DB, projections ConversationDetailProjectionPort) *ConversationDetailService {
-	return &ConversationDetailService{db: db, projections: projections}
+func NewConversationDetailService(repository ConversationDetailRepository, projections ConversationDetailProjectionPort) *ConversationDetailService {
+	return &ConversationDetailService{repository: repository, projections: projections}
 }
 
 func (s *ConversationDetailService) Get(ctx context.Context, id uint64) (ConversationDetail, error) {
-	if s == nil || s.db == nil || s.projections == nil {
+	if s == nil || s.repository == nil || s.projections == nil {
 		return ConversationDetail{}, errors.New("conversation detail service is required")
 	}
 	if id == 0 {
 		return ConversationDetail{}, ErrorWithMessage(ErrInvalidParams, "会话 ID 无效")
 	}
 
-	var conversation domain.AIConversation
-	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&conversation).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	conversation, err := s.repository.FindConversation(ctx, id)
+	if err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
 			return ConversationDetail{}, ErrNotFound
 		}
 		return ConversationDetail{}, err
 	}
 
-	var messages []domain.AIMessage
-	if err := s.db.WithContext(ctx).Where("conversation_id = ?", id).Order("created_at ASC, id ASC").Find(&messages).Error; err != nil {
+	messages, err := s.repository.ListConversationMessages(ctx, id)
+	if err != nil {
 		return ConversationDetail{}, err
 	}
-	attachmentsByMessage, err := ListConversationAttachments(ctx, s.db, id)
+	attachmentsByMessage, err := ListConversationAttachments(ctx, s.repository, id)
 	if err != nil {
 		return ConversationDetail{}, err
 	}

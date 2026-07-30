@@ -7,26 +7,24 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"errors"
 	"io"
 	"net"
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
+	"k8s-platform-backend/internal/provisioning/ports"
 )
 
-// ServerService owns registered provisioning hosts. SSH probing and terminal
-// transport remain runtime adapters and consume the persisted host afterward.
+// ServerService owns registered provisioning hosts. Persistence is supplied by
+// a repository so runtime use cases are independent of the database driver.
 type ServerService struct {
-	db            *gorm.DB
+	repository    ports.Repository
 	encryptionKey string
 }
 
-func NewServerService(db *gorm.DB, encryptionKey string) *ServerService {
-	return &ServerService{db: db, encryptionKey: encryptionKey}
+func NewServerService(repository ports.Repository, encryptionKey string) *ServerService {
+	return &ServerService{repository: repository, encryptionKey: encryptionKey}
 }
 
 type DeployServerItem struct {
@@ -49,14 +47,12 @@ type DeployServerItem struct {
 	CreatedAt    string         `json:"created_at"`
 	UpdatedAt    string         `json:"updated_at"`
 }
-
 type ListDeployServersRequest struct {
 	Page     int
 	PageSize int
 	Keyword  string
 	Status   string
 }
-
 type DeployServerSummary struct {
 	Total       int64 `json:"total"`
 	Available   int64 `json:"available"`
@@ -66,7 +62,6 @@ type DeployServerSummary struct {
 	MemoryMB    int64 `json:"memory_mb"`
 	DiskGB      int64 `json:"disk_gb"`
 }
-
 type CreateDeployServerRequest struct {
 	Name         string         `json:"name"`
 	IP           string         `json:"ip"`
@@ -78,7 +73,6 @@ type CreateDeployServerRequest struct {
 	Labels       map[string]any `json:"labels"`
 	Remark       string         `json:"remark"`
 }
-
 type UpdateDeployServerRequest struct {
 	Name         *string        `json:"name"`
 	IP           *string        `json:"ip"`
@@ -93,46 +87,24 @@ type UpdateDeployServerRequest struct {
 
 func (s *ServerService) List(ctx context.Context, req ListDeployServersRequest) (PageResult[DeployServerItem], error) {
 	page, pageSize := normalizePage(req.Page, req.PageSize)
-	q := s.db.WithContext(ctx).Model(&provisiondomain.DeployServer{}).Where("deleted_at IS NULL")
-	if keyword := strings.TrimSpace(req.Keyword); keyword != "" {
-		q = q.Where("name LIKE ? OR ip LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
-	}
-	if status := strings.TrimSpace(req.Status); status != "" {
-		q = q.Where("status = ?", status)
-	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return PageResult[DeployServerItem]{}, err
-	}
-	var rows []provisiondomain.DeployServer
-	if err := q.Order("id desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&rows).Error; err != nil {
+	rows, total, err := s.repository.ListServers(ctx, ports.ServerListQuery{Keyword: strings.TrimSpace(req.Keyword), Status: strings.TrimSpace(req.Status), Offset: (page - 1) * pageSize, Limit: pageSize})
+	if err != nil {
 		return PageResult[DeployServerItem]{}, err
 	}
 	items := make([]DeployServerItem, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, deployServerToItem(row))
 	}
-	return PageResult[DeployServerItem]{List: items, Total: int(total), Page: page, PageSize: pageSize}, nil
+	return PageResult[DeployServerItem]{List: items, Total: total, Page: page, PageSize: pageSize}, nil
 }
-
 func (s *ServerService) Summary(ctx context.Context) (DeployServerSummary, error) {
-	var summary DeployServerSummary
-	err := s.db.WithContext(ctx).Model(&provisiondomain.DeployServer{}).
-		Where("deleted_at IS NULL").
-		Select(`COUNT(*) AS total,
-			COALESCE(SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END), 0) AS available,
-			COALESCE(SUM(CASE WHEN status = 'registered' THEN 1 ELSE 0 END), 0) AS registered,
-			COALESCE(SUM(CASE WHEN status = 'unavailable' THEN 1 ELSE 0 END), 0) AS unavailable,
-			COALESCE(SUM(cpu_cores), 0) AS cpu_cores,
-			COALESCE(SUM(memory_mb), 0) AS memory_mb,
-			COALESCE(SUM(disk_gb), 0) AS disk_gb`).
-		Scan(&summary).Error
-	return summary, err
+	summary, err := s.repository.ServerSummary(ctx)
+	return DeployServerSummary(summary), err
 }
 
 func (s *ServerService) Create(ctx context.Context, req CreateDeployServerRequest) (uint64, error) {
-	useCredentialReference := req.CredentialID != nil && *req.CredentialID > 0
-	name, ip, user, authType, credential, err := normalizeServerInput(req.Name, req.IP, req.User, req.AuthType, req.Credential, useCredentialReference)
+	useReference := req.CredentialID != nil && *req.CredentialID > 0
+	name, ip, user, authType, credential, err := normalizeServerInput(req.Name, req.IP, req.User, req.AuthType, req.Credential, useReference)
 	if err != nil {
 		return 0, err
 	}
@@ -141,43 +113,40 @@ func (s *ServerService) Create(ctx context.Context, req CreateDeployServerReques
 		return 0, err
 	}
 	var credentialID *uint64
-	if useCredentialReference {
-		var savedCredential provisiondomain.SSHCredential
-		if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", *req.CredentialID).First(&savedCredential).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return 0, ErrWithMessage(ErrNotFound, "指定的凭据不存在")
-			}
+	if useReference {
+		saved, found, err := s.repository.FindCredential(ctx, *req.CredentialID)
+		if err != nil {
 			return 0, err
 		}
-		credentialID, authType, credential = req.CredentialID, savedCredential.AuthType, savedCredential.CredentialEnc
+		if !found {
+			return 0, ErrWithMessage(ErrNotFound, "指定的凭据不存在")
+		}
+		credentialID, authType, credential = req.CredentialID, saved.AuthType, saved.CredentialEnc
 	} else if credential, err = encryptProvisioningSecret(s.encryptionKey, credential); err != nil {
 		return 0, err
 	}
-	row := provisiondomain.DeployServer{
-		Name: name, IP: ip, SSHPort: port, User: user, AuthType: authType, CredentialID: credentialID, CredentialEnc: credential,
-		Status: "registered", Labels: provisiondomain.JSONMap(req.Labels), Remark: stringPtrOrNil(req.Remark),
-	}
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := ensureServerUnique(tx, ip, port, 0); err != nil {
+	row := provisiondomain.DeployServer{Name: name, IP: ip, SSHPort: port, User: user, AuthType: authType, CredentialID: credentialID, CredentialEnc: credential, Status: "registered", Labels: provisiondomain.JSONMap(req.Labels), Remark: stringPtrOrNil(req.Remark)}
+	err = s.repository.Transaction(ctx, func(tx ports.Repository) error {
+		if err := ensureServerUnique(ctx, tx, ip, port, 0); err != nil {
 			return err
 		}
-		return tx.Create(&row).Error
-	}); err != nil {
+		return tx.CreateServer(ctx, &row)
+	})
+	if err != nil {
 		return 0, err
 	}
 	return row.ID, nil
 }
-
 func (s *ServerService) Get(ctx context.Context, id uint64) (DeployServerItem, error) {
 	if id == 0 {
 		return DeployServerItem{}, ErrInvalidParams
 	}
-	var row provisiondomain.DeployServer
-	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return DeployServerItem{}, ErrNotFound
-		}
+	row, found, err := s.repository.FindServer(ctx, id)
+	if err != nil {
 		return DeployServerItem{}, err
+	}
+	if !found {
+		return DeployServerItem{}, ErrNotFound
 	}
 	return deployServerToItem(row), nil
 }
@@ -186,13 +155,13 @@ func (s *ServerService) Update(ctx context.Context, id uint64, req UpdateDeployS
 	if id == 0 {
 		return ErrInvalidParams
 	}
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row provisiondomain.DeployServer
-		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
+	return s.repository.Transaction(ctx, func(tx ports.Repository) error {
+		row, found, err := tx.FindServer(ctx, id)
+		if err != nil {
 			return err
+		}
+		if !found {
+			return ErrNotFound
 		}
 		updates, ip, port := map[string]any{}, row.IP, row.SSHPort
 		if req.Name != nil {
@@ -210,14 +179,14 @@ func (s *ServerService) Update(ctx context.Context, id uint64, req UpdateDeployS
 			updates["ip"] = ip
 		}
 		if req.SSHPort != nil {
-			var err error
-			if port, err = validSSHPort(*req.SSHPort); err != nil {
+			port, err = validSSHPort(*req.SSHPort)
+			if err != nil {
 				return err
 			}
 			updates["ssh_port"] = port
 		}
 		if ip != row.IP || port != row.SSHPort {
-			if err := ensureServerUnique(tx, ip, port, id); err != nil {
+			if err := ensureServerUnique(ctx, tx, ip, port, id); err != nil {
 				return err
 			}
 		}
@@ -240,24 +209,24 @@ func (s *ServerService) Update(ctx context.Context, id uint64, req UpdateDeployS
 			if credentialID == nil || *credentialID == 0 {
 				updates["credential_id"] = nil
 			} else {
-				var savedCredential provisiondomain.SSHCredential
-				if err := tx.Where("deleted_at IS NULL AND id = ?", *credentialID).First(&savedCredential).Error; err != nil {
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						return ErrWithMessage(ErrNotFound, "指定的凭据不存在")
-					}
+				saved, found, err := tx.FindCredential(ctx, *credentialID)
+				if err != nil {
 					return err
 				}
+				if !found {
+					return ErrWithMessage(ErrNotFound, "指定的凭据不存在")
+				}
 				updates["credential_id"] = *credentialID
-				updates["auth_type"] = savedCredential.AuthType
-				updates["credential_enc"] = savedCredential.CredentialEnc
+				updates["auth_type"] = saved.AuthType
+				updates["credential_enc"] = saved.CredentialEnc
 				updates["status"] = "registered"
 			}
 		} else if req.Credential != nil {
-			credential := strings.TrimSpace(*req.Credential)
-			if credential == "" {
+			value := strings.TrimSpace(*req.Credential)
+			if value == "" {
 				return ErrWithMessage(ErrInvalidParams, "凭证不能为空")
 			}
-			encrypted, err := encryptProvisioningSecret(s.encryptionKey, credential)
+			encrypted, err := encryptProvisioningSecret(s.encryptionKey, value)
 			if err != nil {
 				return err
 			}
@@ -274,27 +243,26 @@ func (s *ServerService) Update(ctx context.Context, id uint64, req UpdateDeployS
 		if len(updates) == 0 {
 			return nil
 		}
-		return tx.Model(&provisiondomain.DeployServer{}).Where("id = ?", id).Updates(updates).Error
+		return tx.UpdateServer(ctx, id, updates)
 	})
 }
-
 func (s *ServerService) Delete(ctx context.Context, id uint64) error {
 	if id == 0 {
 		return ErrInvalidParams
 	}
 	now := time.Now().UTC()
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row provisiondomain.DeployServer
-		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
+	return s.repository.Transaction(ctx, func(tx ports.Repository) error {
+		row, found, err := tx.FindServer(ctx, id)
+		if err != nil {
 			return err
+		}
+		if !found {
+			return ErrNotFound
 		}
 		if row.Status == "in_use" {
 			return ErrWithMessage(ErrConflict, "服务器正在使用中，无法删除")
 		}
-		return tx.Model(&provisiondomain.DeployServer{}).Where("id = ?", id).Update("deleted_at", &now).Error
+		return tx.SoftDeleteServer(ctx, id, now)
 	})
 }
 
@@ -307,7 +275,6 @@ func validSSHPort(value int) (int, error) {
 	}
 	return value, nil
 }
-
 func normalizeServerInput(name, ip, user, authType, credential string, skipCredentialCheck bool) (string, string, string, string, string, error) {
 	name, ip, user, credential = strings.TrimSpace(name), strings.TrimSpace(ip), strings.TrimSpace(user), strings.TrimSpace(credential)
 	if name == "" {
@@ -328,7 +295,6 @@ func normalizeServerInput(name, ip, user, authType, credential string, skipCrede
 	}
 	return name, ip, user, authType, credential, nil
 }
-
 func normalizeAuthType(value string) string {
 	switch strings.TrimSpace(value) {
 	case "", "password":
@@ -339,30 +305,19 @@ func normalizeAuthType(value string) string {
 		return ""
 	}
 }
-
-func ensureServerUnique(tx *gorm.DB, ip string, port int, excludeID uint64) error {
-	q := tx.Where("deleted_at IS NULL AND ip = ? AND ssh_port = ?", ip, port)
-	if excludeID > 0 {
-		q = q.Where("id <> ?", excludeID)
-	}
-	var existing provisiondomain.DeployServer
-	if err := q.Select("id").First(&existing).Error; err == nil {
-		return ErrWithMessage(ErrConflict, "同一 IP 和 SSH 端口已存在")
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+func ensureServerUnique(ctx context.Context, repository ports.Repository, ip string, port int, excludeID uint64) error {
+	exists, err := repository.ServerExists(ctx, ip, port, excludeID)
+	if err != nil {
 		return err
+	}
+	if exists {
+		return ErrWithMessage(ErrConflict, "同一 IP 和 SSH 端口已存在")
 	}
 	return nil
 }
-
 func deployServerToItem(row provisiondomain.DeployServer) DeployServerItem {
-	return DeployServerItem{
-		ID: row.ID, Name: row.Name, IP: row.IP, SSHPort: row.SSHPort, User: row.User, AuthType: row.AuthType, CredentialID: row.CredentialID,
-		OS: row.OS, OSVersion: row.OSVersion, Kernel: row.Kernel, CPUCores: row.CPUCores, MemoryMB: row.MemoryMB, DiskGB: row.DiskGB,
-		Status: row.Status, Labels: map[string]any(row.Labels), Remark: row.Remark,
-		CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339),
-	}
+	return DeployServerItem{ID: row.ID, Name: row.Name, IP: row.IP, SSHPort: row.SSHPort, User: row.User, AuthType: row.AuthType, CredentialID: row.CredentialID, OS: row.OS, OSVersion: row.OSVersion, Kernel: row.Kernel, CPUCores: row.CPUCores, MemoryMB: row.MemoryMB, DiskGB: row.DiskGB, Status: row.Status, Labels: map[string]any(row.Labels), Remark: row.Remark, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339)}
 }
-
 func stringPtrOrNil(value string) *string {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -370,7 +325,6 @@ func stringPtrOrNil(value string) *string {
 	}
 	return &value
 }
-
 func encryptProvisioningSecret(secret, plaintext string) (string, error) {
 	sum := sha256.Sum256([]byte(secret))
 	block, err := aes.NewCipher(sum[:])

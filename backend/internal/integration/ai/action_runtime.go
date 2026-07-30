@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
+	aimysql "k8s-platform-backend/internal/ai/adapters/mysql"
 	aiapp "k8s-platform-backend/internal/ai/application"
 	model "k8s-platform-backend/internal/ai/domain"
 	changemysql "k8s-platform-backend/internal/change/adapters/mysql"
@@ -45,7 +46,7 @@ func NewActionRuntime(db *gorm.DB, workloadActions *kopsapp.ActionProposalServic
 }
 
 func NewActionRuntimeWithChangeService(db *gorm.DB, workloadActions *kopsapp.ActionProposalService, changeService *changeapp.Service) *ActionRuntime {
-	return &ActionRuntime{core: aiapp.NewActionService(db, workloadActionExecutor{service: workloadActions}, changeConfirmationAdapter{service: changeService})}
+	return &ActionRuntime{core: aiapp.NewActionService(aimysql.NewRepository(db), workloadActionExecutor{service: workloadActions}, changeConfirmationAdapter{service: changeService})}
 }
 
 func (r *ActionRuntime) CreateProposal(ctx context.Context, clusterID, userID uint64, username string, req aiapp.CreateActionProposalRequest) (aiapp.ActionProposalResult, error) {

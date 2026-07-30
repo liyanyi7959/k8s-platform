@@ -57,7 +57,7 @@ func (ctl *Controller) execute(c *gin.Context, command domain.Command) {
 	}
 	var request application.CommandRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		problem.Write(c, stdhttp.StatusBadRequest, "https://aiops.local/problems/invalid-request", "请求参数错误", "请求体必须包含 expected_version")
+		problem.WriteKind(c, problem.KindInvalidRequest, "请求体必须包含 expected_version")
 		return
 	}
 	claims, _ := middleware.GetClaims(c)
@@ -76,7 +76,7 @@ func (ctl *Controller) execute(c *gin.Context, command domain.Command) {
 func incidentID(c *gin.Context) (uint64, bool) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil || id == 0 {
-		problem.Write(c, stdhttp.StatusBadRequest, "https://aiops.local/problems/invalid-request", "请求参数错误", "incident id 必须是正整数")
+		problem.WriteKind(c, problem.KindInvalidRequest, "incident id 必须是正整数")
 		return 0, false
 	}
 	return id, true
@@ -93,14 +93,14 @@ func parseInt(value string, fallback int) int {
 func writeError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, domain.ErrNotFound):
-		problem.Write(c, stdhttp.StatusNotFound, "https://aiops.local/problems/incident-not-found", "事件不存在", "指定的事件不存在或已被删除")
+		problem.WriteKind(c, problem.KindIncidentNotFound, "指定的事件不存在或已被删除")
 	case errors.Is(err, domain.ErrVersionConflict):
-		problem.Write(c, stdhttp.StatusConflict, "https://aiops.local/problems/version-conflict", "事件已被其他用户更新", "请刷新事件详情后重试")
+		problem.WriteKind(c, problem.KindVersionConflict, "请刷新事件详情后重试")
 	case errors.Is(err, domain.ErrInvalidTransition):
-		problem.Write(c, stdhttp.StatusConflict, "https://aiops.local/problems/invalid-incident-transition", "当前状态不允许此操作", err.Error())
+		problem.WriteKind(c, problem.KindInvalidIncidentTransition, err.Error())
 	case errors.Is(err, domain.ErrValidation):
-		problem.Write(c, stdhttp.StatusUnprocessableEntity, "https://aiops.local/problems/domain-validation", "事件处置校验失败", err.Error())
+		problem.WriteKind(c, problem.KindDomainValidation, err.Error())
 	default:
-		problem.Write(c, stdhttp.StatusInternalServerError, "https://aiops.local/problems/internal", "内部错误", "事件服务暂时不可用")
+		problem.WriteKind(c, problem.KindInternal, "事件服务暂时不可用")
 	}
 }

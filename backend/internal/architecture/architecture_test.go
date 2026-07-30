@@ -43,6 +43,9 @@ func TestApplicationPackagesDoNotDependOnAdaptersOrLegacyLayers(t *testing.T) {
 		walkGoFiles(t, applicationDir, func(path string, file *ast.File) {
 			for _, spec := range file.Imports {
 				importPath := unquoteImport(t, spec.Path.Value)
+				if importPath == "gorm.io/gorm" {
+					t.Errorf("%s: application imports database implementation %q; depend on a context port instead", path, importPath)
+				}
 				for _, forbidden := range []string{"/adapters/", "/legacy/", "/router"} {
 					if strings.Contains(importPath, forbidden) {
 						t.Errorf("%s: application imports forbidden layer %q", path, importPath)

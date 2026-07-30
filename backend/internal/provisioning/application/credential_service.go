@@ -2,24 +2,22 @@ package application
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	provisiondomain "k8s-platform-backend/internal/provisioning/domain"
+	"k8s-platform-backend/internal/provisioning/ports"
 )
 
 // CredentialService owns reusable SSH credentials. It stores only encrypted
 // secret material and exposes metadata-only DTOs to HTTP adapters.
 type CredentialService struct {
-	db            *gorm.DB
+	repository    ports.Repository
 	encryptionKey string
 }
 
-func NewCredentialService(db *gorm.DB, encryptionKey string) *CredentialService {
-	return &CredentialService{db: db, encryptionKey: encryptionKey}
+func NewCredentialService(repository ports.Repository, encryptionKey string) *CredentialService {
+	return &CredentialService{repository: repository, encryptionKey: encryptionKey}
 }
 
 type SSHCredentialItem struct {
@@ -58,19 +56,10 @@ type UpdateSSHCredentialRequest struct {
 
 func (s *CredentialService) List(ctx context.Context, req ListCredentialsRequest) (PageResult[SSHCredentialItem], error) {
 	page, pageSize := normalizePage(req.Page, req.PageSize)
-	q := s.db.WithContext(ctx).Model(&provisiondomain.SSHCredential{}).Where("deleted_at IS NULL")
-	if keyword := strings.TrimSpace(req.Keyword); keyword != "" {
-		q = q.Where("name LIKE ? OR username LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
-	}
-	if authType := strings.TrimSpace(req.AuthType); authType != "" {
-		q = q.Where("auth_type = ?", authType)
-	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return PageResult[SSHCredentialItem]{}, err
-	}
-	var rows []provisiondomain.SSHCredential
-	if err := q.Order("id desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&rows).Error; err != nil {
+	rows, total, err := s.repository.ListCredentials(ctx, ports.CredentialListQuery{
+		Keyword: strings.TrimSpace(req.Keyword), AuthType: strings.TrimSpace(req.AuthType), Offset: (page - 1) * pageSize, Limit: pageSize,
+	})
+	if err != nil {
 		return PageResult[SSHCredentialItem]{}, err
 	}
 	items := make([]SSHCredentialItem, 0, len(rows))
@@ -81,7 +70,7 @@ func (s *CredentialService) List(ctx context.Context, req ListCredentialsRequest
 		}
 		items = append(items, sshCredentialToItem(row, count))
 	}
-	return PageResult[SSHCredentialItem]{List: items, Total: int(total), Page: page, PageSize: pageSize}, nil
+	return PageResult[SSHCredentialItem]{List: items, Total: total, Page: page, PageSize: pageSize}, nil
 }
 
 func (s *CredentialService) Create(ctx context.Context, req CreateSSHCredentialRequest) (uint64, error) {
@@ -106,7 +95,7 @@ func (s *CredentialService) Create(ctx context.Context, req CreateSSHCredentialR
 		return 0, err
 	}
 	row := provisiondomain.SSHCredential{Name: name, AuthType: authType, Username: username, CredentialEnc: encrypted, Remark: stringPtrOrNil(req.Remark)}
-	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
+	if err := s.repository.CreateCredential(ctx, &row); err != nil {
 		return 0, err
 	}
 	return row.ID, nil
@@ -116,12 +105,12 @@ func (s *CredentialService) Get(ctx context.Context, id uint64) (SSHCredentialIt
 	if id == 0 {
 		return SSHCredentialItem{}, ErrInvalidParams
 	}
-	var row provisiondomain.SSHCredential
-	if err := s.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return SSHCredentialItem{}, ErrNotFound
-		}
+	row, found, err := s.repository.FindCredential(ctx, id)
+	if err != nil {
 		return SSHCredentialItem{}, err
+	}
+	if !found {
+		return SSHCredentialItem{}, ErrNotFound
 	}
 	count, err := s.countServers(ctx, row.ID)
 	if err != nil {
@@ -154,11 +143,11 @@ func (s *CredentialService) Update(ctx context.Context, id uint64, req UpdateSSH
 		}
 		updates["credential_enc"] = encrypted
 	}
-	res := s.db.WithContext(ctx).Model(&provisiondomain.SSHCredential{}).Where("deleted_at IS NULL AND id = ?", id).Updates(updates)
-	if res.Error != nil {
-		return res.Error
+	updated, err := s.repository.UpdateCredential(ctx, id, updates)
+	if err != nil {
+		return err
 	}
-	if res.RowsAffected == 0 {
+	if !updated {
 		return ErrNotFound
 	}
 	return nil
@@ -169,11 +158,11 @@ func (s *CredentialService) Delete(ctx context.Context, id uint64) error {
 		return ErrInvalidParams
 	}
 	now := time.Now().UTC()
-	res := s.db.WithContext(ctx).Model(&provisiondomain.SSHCredential{}).Where("deleted_at IS NULL AND id = ?", id).Update("deleted_at", &now)
-	if res.Error != nil {
-		return res.Error
+	updated, err := s.repository.SoftDeleteCredentials(ctx, []uint64{id}, now)
+	if err != nil {
+		return err
 	}
-	if res.RowsAffected == 0 {
+	if updated == 0 {
 		return ErrNotFound
 	}
 	return nil
@@ -184,22 +173,18 @@ func (s *CredentialService) BatchDelete(ctx context.Context, ids []uint64) error
 		return ErrInvalidParams
 	}
 	now := time.Now().UTC()
-	res := s.db.WithContext(ctx).Model(&provisiondomain.SSHCredential{}).Where("deleted_at IS NULL AND id IN ?", ids).Update("deleted_at", &now)
-	if res.Error != nil {
-		return res.Error
+	updated, err := s.repository.SoftDeleteCredentials(ctx, ids, now)
+	if err != nil {
+		return err
 	}
-	if res.RowsAffected == 0 {
+	if updated == 0 {
 		return ErrNotFound
 	}
 	return nil
 }
 
 func (s *CredentialService) countServers(ctx context.Context, credentialID uint64) (int, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&provisiondomain.DeployServer{}).Where("deleted_at IS NULL AND credential_id = ?", credentialID).Count(&count).Error; err != nil {
-		return 0, err
-	}
-	return int(count), nil
+	return s.repository.CountServersByCredential(ctx, credentialID)
 }
 
 func sshCredentialToItem(row provisiondomain.SSHCredential, serverCount int) SSHCredentialItem {

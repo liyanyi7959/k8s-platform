@@ -6,9 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	aidomain "k8s-platform-backend/internal/ai/domain"
+	"k8s-platform-backend/internal/ai/ports"
 )
 
 type AIProviderItem struct {
@@ -25,7 +24,6 @@ type AIProviderItem struct {
 	CreatedAt    string           `json:"created_at"`
 	UpdatedAt    string           `json:"updated_at"`
 }
-
 type CreateAIProviderRequest struct {
 	Name         string           `json:"name"`
 	ProviderType string           `json:"provider_type"`
@@ -37,7 +35,6 @@ type CreateAIProviderRequest struct {
 	Priority     *int             `json:"priority"`
 	Meta         aidomain.JSONMap `json:"meta"`
 }
-
 type PatchAIProviderRequest struct {
 	Name         *string           `json:"name"`
 	ProviderType *string           `json:"provider_type"`
@@ -49,7 +46,6 @@ type PatchAIProviderRequest struct {
 	Priority     *int              `json:"priority"`
 	Meta         *aidomain.JSONMap `json:"meta"`
 }
-
 type AIModelItem struct {
 	ID                       uint64           `json:"id"`
 	ProviderID               uint64           `json:"provider_id"`
@@ -72,13 +68,11 @@ type AIModelItem struct {
 	CreatedAt                string           `json:"created_at"`
 	UpdatedAt                string           `json:"updated_at"`
 }
-
 type ListAIModelsRequest struct {
 	ProviderID uint64
 	ModelType  string
 	Enabled    *bool
 }
-
 type CreateAIModelRequest struct {
 	ProviderID               uint64           `json:"provider_id"`
 	Name                     string           `json:"name"`
@@ -97,7 +91,6 @@ type CreateAIModelRequest struct {
 	ContextWindow            *int             `json:"context_window"`
 	Meta                     aidomain.JSONMap `json:"meta"`
 }
-
 type PatchAIModelRequest struct {
 	ProviderID               *uint64           `json:"provider_id"`
 	Name                     *string           `json:"name"`
@@ -118,485 +111,242 @@ type PatchAIModelRequest struct {
 }
 
 type AIProviderService struct {
-	db            *gorm.DB
+	repository    ports.ProviderRepository
 	encryptionKey string
 }
 
-func NewAIProviderService(db *gorm.DB, encryptionKey string) *AIProviderService {
-	return &AIProviderService{db: db, encryptionKey: encryptionKey}
+func NewAIProviderService(repository ports.ProviderRepository, encryptionKey string) *AIProviderService {
+	return &AIProviderService{repository: repository, encryptionKey: encryptionKey}
 }
-
 func (s *AIProviderService) ListProviders(ctx context.Context) ([]AIProviderItem, error) {
-	if s.db == nil {
-		return nil, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return nil, errors.New("provider repository is required")
 	}
-
-	var rows []aidomain.AIProvider
-	if err := s.db.WithContext(ctx).
-		Where("deleted_at IS NULL").
-		Order("priority ASC, id DESC").
-		Find(&rows).Error; err != nil {
+	rows, err := s.repository.ListProviders(ctx)
+	if err != nil {
 		return nil, err
 	}
-
-	items := make([]AIProviderItem, 0, len(rows))
+	out := make([]AIProviderItem, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, AIProviderItem{
-			ID:           row.ID,
-			Name:         row.Name,
-			ProviderType: row.ProviderType,
-			VendorCode:   row.VendorCode,
-			BaseURL:      row.BaseURL,
-			AuthScheme:   row.AuthScheme,
-			Enabled:      row.Enabled,
-			Priority:     row.Priority,
-			HasAPIKey:    row.APIKeyEnc != nil && strings.TrimSpace(*row.APIKeyEnc) != "",
-			Meta:         row.MetaJSON,
-			CreatedAt:    row.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:    row.UpdatedAt.UTC().Format(time.RFC3339),
-		})
+		out = append(out, buildAIProviderItem(row))
 	}
-	return items, nil
+	return out, nil
 }
-
+func buildAIProviderItem(row aidomain.AIProvider) AIProviderItem {
+	return AIProviderItem{ID: row.ID, Name: row.Name, ProviderType: row.ProviderType, VendorCode: row.VendorCode, BaseURL: row.BaseURL, AuthScheme: row.AuthScheme, Enabled: row.Enabled, Priority: row.Priority, HasAPIKey: row.APIKeyEnc != nil && strings.TrimSpace(*row.APIKeyEnc) != "", Meta: row.MetaJSON, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339)}
+}
 func (s *AIProviderService) CreateProvider(ctx context.Context, req CreateAIProviderRequest) (uint64, error) {
-	if s.db == nil {
-		return 0, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return 0, errors.New("provider repository is required")
 	}
-
 	name := strings.TrimSpace(req.Name)
-	providerType := normalizeAIProviderType(req.ProviderType)
+	kind := normalizeAIProviderType(req.ProviderType)
 	if name == "" {
 		return 0, ErrWithMessage(ErrInvalidParams, "AI 提供商名称不能为空")
 	}
-	if providerType == "" {
+	if kind == "" {
 		return 0, ErrWithMessage(ErrInvalidParams, "AI 提供商类型不能为空")
 	}
-
-	row := aidomain.AIProvider{
-		Name:         name,
-		ProviderType: providerType,
-		VendorCode:   normalizeAIVendorCode(req.VendorCode),
-		BaseURL:      strings.TrimSpace(req.BaseURL),
-		AuthScheme:   normalizeAIAuthScheme(req.AuthScheme),
-		Enabled:      boolOrDefault(req.Enabled, true),
-		Priority:     intOrDefault(req.Priority, 100),
-		MetaJSON:     req.Meta,
-	}
+	row := aidomain.AIProvider{Name: name, ProviderType: kind, VendorCode: normalizeAIVendorCode(req.VendorCode), BaseURL: strings.TrimSpace(req.BaseURL), AuthScheme: normalizeAIAuthScheme(req.AuthScheme), Enabled: boolOrDefault(req.Enabled, true), Priority: intOrDefault(req.Priority, 100), MetaJSON: req.Meta}
 	if row.AuthScheme == "" {
 		row.AuthScheme = "bearer"
 	}
-
-	if strings.TrimSpace(req.APIKey) != "" {
-		enc, err := encryptText(s.encryptionKey, strings.TrimSpace(req.APIKey))
+	if key := strings.TrimSpace(req.APIKey); key != "" {
+		encoded, err := encryptText(s.encryptionKey, key)
 		if err != nil {
 			return 0, err
 		}
-		row.APIKeyEnc = &enc
+		row.APIKeyEnc = &encoded
 	}
-
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var existing aidomain.AIProvider
-		if err := tx.Where("deleted_at IS NULL AND name = ?", row.Name).First(&existing).Error; err == nil {
-			return ErrConflict
-		} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
+	if err := s.repository.CreateProvider(ctx, &row); err != nil {
+		if errors.Is(err, ports.ErrConflict) {
+			return 0, ErrConflict
 		}
-		return tx.Create(&row).Error
-	}); err != nil {
 		return 0, err
 	}
 	return row.ID, nil
 }
-
 func (s *AIProviderService) PatchProvider(ctx context.Context, id uint64, req PatchAIProviderRequest) error {
-	if s.db == nil {
-		return errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return errors.New("provider repository is required")
 	}
 	if id == 0 {
 		return ErrWithMessage(ErrInvalidParams, "AI 提供商 ID 无效")
 	}
-
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row aidomain.AIProvider
-		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
-			return err
+	patch := ports.ProviderPatch{Enabled: req.Enabled, Priority: req.Priority, Meta: req.Meta}
+	if req.Name != nil {
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return ErrWithMessage(ErrInvalidParams, "AI 提供商名称不能为空")
 		}
-
-		updates := map[string]any{}
-		if req.Name != nil {
-			name := strings.TrimSpace(*req.Name)
-			if name == "" {
-				return ErrWithMessage(ErrInvalidParams, "AI 提供商名称不能为空")
-			}
-			var existing aidomain.AIProvider
-			if err := tx.Select("id").Where("deleted_at IS NULL AND name = ? AND id <> ?", name, id).First(&existing).Error; err == nil {
-				return ErrConflict
-			} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		patch.Name = &name
+	}
+	if req.ProviderType != nil {
+		kind := normalizeAIProviderType(*req.ProviderType)
+		if kind == "" {
+			return ErrWithMessage(ErrInvalidParams, "AI 提供商类型不能为空")
+		}
+		patch.ProviderType = &kind
+	}
+	if req.VendorCode != nil {
+		value := normalizeAIVendorCode(*req.VendorCode)
+		patch.VendorCode = &value
+	}
+	if req.BaseURL != nil {
+		value := strings.TrimSpace(*req.BaseURL)
+		patch.BaseURL = &value
+	}
+	if req.AuthScheme != nil {
+		value := normalizeAIAuthScheme(*req.AuthScheme)
+		if value == "" {
+			return ErrWithMessage(ErrInvalidParams, "AI provider auth scheme is invalid")
+		}
+		patch.AuthScheme = &value
+	}
+	if req.APIKey != nil {
+		var encrypted *string
+		if key := strings.TrimSpace(*req.APIKey); key != "" {
+			value, err := encryptText(s.encryptionKey, key)
+			if err != nil {
 				return err
 			}
-			updates["name"] = name
+			encrypted = &value
 		}
-		if req.ProviderType != nil {
-			providerType := normalizeAIProviderType(*req.ProviderType)
-			if providerType == "" {
-				return ErrWithMessage(ErrInvalidParams, "AI 提供商类型不能为空")
-			}
-			updates["provider_type"] = providerType
-		}
-		if req.VendorCode != nil {
-			updates["vendor_code"] = normalizeAIVendorCode(*req.VendorCode)
-		}
-		if req.BaseURL != nil {
-			updates["base_url"] = strings.TrimSpace(*req.BaseURL)
-		}
-		if req.AuthScheme != nil {
-			authScheme := normalizeAIAuthScheme(*req.AuthScheme)
-			if authScheme == "" {
-				return ErrWithMessage(ErrInvalidParams, "AI provider auth scheme is invalid")
-			}
-			updates["auth_scheme"] = authScheme
-		}
-		if req.APIKey != nil {
-			apiKey := strings.TrimSpace(*req.APIKey)
-			if apiKey == "" {
-				updates["api_key_enc"] = nil
-			} else {
-				enc, err := encryptText(s.encryptionKey, apiKey)
-				if err != nil {
-					return err
-				}
-				updates["api_key_enc"] = &enc
-			}
-		}
-		if req.Enabled != nil {
-			updates["enabled"] = *req.Enabled
-		}
-		if req.Priority != nil {
-			updates["priority"] = *req.Priority
-		}
-		if req.Meta != nil {
-			updates["meta_json"] = *req.Meta
-		}
-		if len(updates) == 0 {
-			return nil
-		}
-		return tx.Model(&aidomain.AIProvider{}).Where("id = ? AND deleted_at IS NULL", id).Updates(updates).Error
-	})
+		patch.APIKeyEnc = &encrypted
+	}
+	err := s.repository.PatchProvider(ctx, id, patch)
+	if errors.Is(err, ports.ErrNotFound) {
+		return ErrNotFound
+	}
+	if errors.Is(err, ports.ErrConflict) {
+		return ErrConflict
+	}
+	return err
 }
-
 func (s *AIProviderService) DeleteProvider(ctx context.Context, id uint64) error {
-	if s.db == nil {
-		return errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return errors.New("provider repository is required")
 	}
 	if id == 0 {
 		return ErrWithMessage(ErrInvalidParams, "AI 提供商 ID 无效")
 	}
-
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row aidomain.AIProvider
-		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
-			return err
-		}
-
-		var modelCount int64
-		if err := tx.Model(&aidomain.AIModel{}).
-			Where("deleted_at IS NULL AND provider_id = ?", id).
-			Count(&modelCount).Error; err != nil {
-			return err
-		}
-		if modelCount > 0 {
-			return ErrWithMessage(ErrConflict, "请先删除该提供商下的模型配置")
-		}
-
-		now := time.Now().UTC()
-		return tx.Model(&aidomain.AIProvider{}).
-			Where("id = ? AND deleted_at IS NULL", id).
-			Updates(map[string]any{
-				"deleted_at": now,
-				"updated_at": now,
-			}).Error
-	})
+	err := s.repository.DeleteProvider(ctx, id, time.Now().UTC())
+	if errors.Is(err, ports.ErrNotFound) {
+		return ErrNotFound
+	}
+	if errors.Is(err, ports.ErrProviderInUse) {
+		return ErrWithMessage(ErrConflict, "请先删除该提供商下的模型配置")
+	}
+	return err
 }
-
 func (s *AIProviderService) ListModels(ctx context.Context, req ListAIModelsRequest) ([]AIModelItem, error) {
-	if s.db == nil {
-		return nil, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return nil, errors.New("provider repository is required")
 	}
-
-	type aiModelRow struct {
-		aidomain.AIModel
-		ProviderName string `gorm:"column:provider_name"`
-	}
-
-	q := s.db.WithContext(ctx).
-		Table("ai_models AS m").
-		Select("m.*, p.name AS provider_name").
-		Joins("JOIN ai_providers AS p ON p.id = m.provider_id AND p.deleted_at IS NULL").
-		Where("m.deleted_at IS NULL")
-
-	if req.ProviderID > 0 {
-		q = q.Where("m.provider_id = ?", req.ProviderID)
-	}
-	if v := normalizeAIModelType(req.ModelType); v != "" {
-		q = q.Where("m.model_type = ?", v)
-	}
-	if req.Enabled != nil {
-		q = q.Where("m.enabled = ?", *req.Enabled)
-	}
-
-	var rows []aiModelRow
-	if err := q.Order("m.id DESC").Find(&rows).Error; err != nil {
+	rows, err := s.repository.ListModels(ctx, ports.ModelFilter{ProviderID: req.ProviderID, ModelType: normalizeAIModelType(req.ModelType), Enabled: req.Enabled})
+	if err != nil {
 		return nil, err
 	}
-
-	items := make([]AIModelItem, 0, len(rows))
+	out := make([]AIModelItem, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, AIModelItem{
-			ID:                       row.ID,
-			ProviderID:               row.ProviderID,
-			ProviderName:             row.ProviderName,
-			Name:                     row.Name,
-			ModelCode:                row.ModelCode,
-			ModelType:                row.ModelType,
-			Enabled:                  row.Enabled,
-			SupportsTools:            row.SupportsTools,
-			SupportsVision:           row.SupportsVision,
-			SupportsStreaming:        row.SupportsStreaming,
-			SupportsReasoning:        row.SupportsReasoning,
-			SupportsStructuredOutput: row.SupportsStructuredOutput,
-			SupportsImageGeneration:  row.SupportsImageGeneration,
-			SupportsFileInput:        row.SupportsFileInput,
-			MaxInputTokens:           row.MaxInputTokens,
-			MaxOutputTokens:          row.MaxOutputTokens,
-			ContextWindow:            row.ContextWindow,
-			Meta:                     row.MetaJSON,
-			CreatedAt:                row.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:                row.UpdatedAt.UTC().Format(time.RFC3339),
-		})
+		out = append(out, buildAIModelItem(row.Model, row.ProviderName))
 	}
-	return items, nil
+	return out, nil
 }
-
+func buildAIModelItem(row aidomain.AIModel, providerName string) AIModelItem {
+	return AIModelItem{ID: row.ID, ProviderID: row.ProviderID, ProviderName: providerName, Name: row.Name, ModelCode: row.ModelCode, ModelType: row.ModelType, Enabled: row.Enabled, SupportsTools: row.SupportsTools, SupportsVision: row.SupportsVision, SupportsStreaming: row.SupportsStreaming, SupportsReasoning: row.SupportsReasoning, SupportsStructuredOutput: row.SupportsStructuredOutput, SupportsImageGeneration: row.SupportsImageGeneration, SupportsFileInput: row.SupportsFileInput, MaxInputTokens: row.MaxInputTokens, MaxOutputTokens: row.MaxOutputTokens, ContextWindow: row.ContextWindow, Meta: row.MetaJSON, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339)}
+}
 func (s *AIProviderService) CreateModel(ctx context.Context, req CreateAIModelRequest) (uint64, error) {
-	if s.db == nil {
-		return 0, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return 0, errors.New("provider repository is required")
 	}
 	if req.ProviderID == 0 {
 		return 0, ErrWithMessage(ErrInvalidParams, "模型提供商不能为空")
 	}
-
 	name := strings.TrimSpace(req.Name)
-	modelCode := strings.TrimSpace(req.ModelCode)
-	modelType := normalizeAIModelType(req.ModelType)
+	code := strings.TrimSpace(req.ModelCode)
+	kind := normalizeAIModelType(req.ModelType)
 	if name == "" {
 		return 0, ErrWithMessage(ErrInvalidParams, "模型名称不能为空")
 	}
-	if modelCode == "" {
+	if code == "" {
 		return 0, ErrWithMessage(ErrInvalidParams, "模型编码不能为空")
 	}
-	if modelType == "" {
+	if kind == "" {
 		return 0, ErrWithMessage(ErrInvalidParams, "模型类型不能为空")
 	}
-
-	row := aidomain.AIModel{
-		ProviderID:               req.ProviderID,
-		Name:                     name,
-		ModelCode:                modelCode,
-		ModelType:                modelType,
-		Enabled:                  boolOrDefault(req.Enabled, true),
-		SupportsTools:            boolOrDefault(req.SupportsTools, false),
-		SupportsVision:           boolOrDefault(req.SupportsVision, false),
-		SupportsStreaming:        boolOrDefault(req.SupportsStreaming, false),
-		SupportsReasoning:        boolOrDefault(req.SupportsReasoning, false),
-		SupportsStructuredOutput: boolOrDefault(req.SupportsStructuredOutput, false),
-		SupportsImageGeneration:  boolOrDefault(req.SupportsImageGeneration, false),
-		SupportsFileInput:        boolOrDefault(req.SupportsFileInput, false),
-		MaxInputTokens:           intOrDefault(req.MaxInputTokens, 0),
-		MaxOutputTokens:          intOrDefault(req.MaxOutputTokens, 0),
-		ContextWindow:            intOrDefault(req.ContextWindow, 0),
-		MetaJSON:                 req.Meta,
+	row := aidomain.AIModel{ProviderID: req.ProviderID, Name: name, ModelCode: code, ModelType: kind, Enabled: boolOrDefault(req.Enabled, true), SupportsTools: boolOrDefault(req.SupportsTools, false), SupportsVision: boolOrDefault(req.SupportsVision, false), SupportsStreaming: boolOrDefault(req.SupportsStreaming, false), SupportsReasoning: boolOrDefault(req.SupportsReasoning, false), SupportsStructuredOutput: boolOrDefault(req.SupportsStructuredOutput, false), SupportsImageGeneration: boolOrDefault(req.SupportsImageGeneration, false), SupportsFileInput: boolOrDefault(req.SupportsFileInput, false), MaxInputTokens: intOrDefault(req.MaxInputTokens, 0), MaxOutputTokens: intOrDefault(req.MaxOutputTokens, 0), ContextWindow: intOrDefault(req.ContextWindow, 0), MetaJSON: req.Meta}
+	err := s.repository.CreateModel(ctx, &row)
+	if errors.Is(err, ports.ErrProviderNotFound) {
+		return 0, ErrWithMessage(ErrInvalidParams, "模型提供商不存在")
 	}
-
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var provider aidomain.AIProvider
-		if err := tx.Select("id").Where("deleted_at IS NULL AND id = ?", row.ProviderID).First(&provider).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrWithMessage(ErrInvalidParams, "模型提供商不存在")
-			}
-			return err
-		}
-
-		var existing aidomain.AIModel
-		if err := tx.Where("deleted_at IS NULL AND provider_id = ? AND model_code = ?", row.ProviderID, row.ModelCode).First(&existing).Error; err == nil {
-			return ErrConflict
-		} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
-		return tx.Create(&row).Error
-	}); err != nil {
+	if errors.Is(err, ports.ErrConflict) {
+		return 0, ErrConflict
+	}
+	if err != nil {
 		return 0, err
 	}
 	return row.ID, nil
 }
-
 func (s *AIProviderService) PatchModel(ctx context.Context, id uint64, req PatchAIModelRequest) error {
-	if s.db == nil {
-		return errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return errors.New("provider repository is required")
 	}
 	if id == 0 {
 		return ErrWithMessage(ErrInvalidParams, "模型 ID 无效")
 	}
-
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row aidomain.AIModel
-		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
-			return err
+	patch := ports.ModelPatch{ProviderID: req.ProviderID, Enabled: req.Enabled, SupportsTools: req.SupportsTools, SupportsVision: req.SupportsVision, SupportsStreaming: req.SupportsStreaming, SupportsReasoning: req.SupportsReasoning, SupportsStructuredOutput: req.SupportsStructuredOutput, SupportsImageGeneration: req.SupportsImageGeneration, SupportsFileInput: req.SupportsFileInput, MaxInputTokens: req.MaxInputTokens, MaxOutputTokens: req.MaxOutputTokens, ContextWindow: req.ContextWindow, Meta: req.Meta}
+	if req.ProviderID != nil && *req.ProviderID == 0 {
+		return ErrWithMessage(ErrInvalidParams, "模型提供商不能为空")
+	}
+	if req.Name != nil {
+		value := strings.TrimSpace(*req.Name)
+		if value == "" {
+			return ErrWithMessage(ErrInvalidParams, "模型名称不能为空")
 		}
-
-		nextProviderID := row.ProviderID
-		if req.ProviderID != nil {
-			if *req.ProviderID == 0 {
-				return ErrWithMessage(ErrInvalidParams, "模型提供商不能为空")
-			}
-			var provider aidomain.AIProvider
-			if err := tx.Select("id").Where("deleted_at IS NULL AND id = ?", *req.ProviderID).First(&provider).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return ErrWithMessage(ErrInvalidParams, "模型提供商不存在")
-				}
-				return err
-			}
-			nextProviderID = *req.ProviderID
+		patch.Name = &value
+	}
+	if req.ModelCode != nil {
+		value := strings.TrimSpace(*req.ModelCode)
+		if value == "" {
+			return ErrWithMessage(ErrInvalidParams, "模型编码不能为空")
 		}
-
-		nextModelCode := row.ModelCode
-		if req.ModelCode != nil {
-			nextModelCode = strings.TrimSpace(*req.ModelCode)
-			if nextModelCode == "" {
-				return ErrWithMessage(ErrInvalidParams, "模型编码不能为空")
-			}
+		patch.ModelCode = &value
+	}
+	if req.ModelType != nil {
+		value := normalizeAIModelType(*req.ModelType)
+		if value == "" {
+			return ErrWithMessage(ErrInvalidParams, "模型类型不能为空")
 		}
-
-		if nextProviderID != row.ProviderID || nextModelCode != row.ModelCode {
-			var existing aidomain.AIModel
-			if err := tx.Select("id").Where(
-				"deleted_at IS NULL AND provider_id = ? AND model_code = ? AND id <> ?",
-				nextProviderID, nextModelCode, id,
-			).First(&existing).Error; err == nil {
-				return ErrConflict
-			} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				return err
-			}
-		}
-
-		updates := map[string]any{}
-		if req.ProviderID != nil {
-			updates["provider_id"] = *req.ProviderID
-		}
-		if req.Name != nil {
-			name := strings.TrimSpace(*req.Name)
-			if name == "" {
-				return ErrWithMessage(ErrInvalidParams, "模型名称不能为空")
-			}
-			updates["name"] = name
-		}
-		if req.ModelCode != nil {
-			updates["model_code"] = nextModelCode
-		}
-		if req.ModelType != nil {
-			modelType := normalizeAIModelType(*req.ModelType)
-			if modelType == "" {
-				return ErrWithMessage(ErrInvalidParams, "模型类型不能为空")
-			}
-			updates["model_type"] = modelType
-		}
-		if req.Enabled != nil {
-			updates["enabled"] = *req.Enabled
-		}
-		if req.SupportsTools != nil {
-			updates["supports_tools"] = *req.SupportsTools
-		}
-		if req.SupportsVision != nil {
-			updates["supports_vision"] = *req.SupportsVision
-		}
-		if req.SupportsStreaming != nil {
-			updates["supports_streaming"] = *req.SupportsStreaming
-		}
-		if req.SupportsReasoning != nil {
-			updates["supports_reasoning"] = *req.SupportsReasoning
-		}
-		if req.SupportsStructuredOutput != nil {
-			updates["supports_structured_output"] = *req.SupportsStructuredOutput
-		}
-		if req.SupportsImageGeneration != nil {
-			updates["supports_image_generation"] = *req.SupportsImageGeneration
-		}
-		if req.SupportsFileInput != nil {
-			updates["supports_file_input"] = *req.SupportsFileInput
-		}
-		if req.MaxInputTokens != nil {
-			updates["max_input_tokens"] = *req.MaxInputTokens
-		}
-		if req.MaxOutputTokens != nil {
-			updates["max_output_tokens"] = *req.MaxOutputTokens
-		}
-		if req.ContextWindow != nil {
-			updates["context_window"] = *req.ContextWindow
-		}
-		if req.Meta != nil {
-			updates["meta_json"] = *req.Meta
-		}
-		if len(updates) == 0 {
-			return nil
-		}
-		return tx.Model(&aidomain.AIModel{}).Where("id = ? AND deleted_at IS NULL", id).Updates(updates).Error
-	})
+		patch.ModelType = &value
+	}
+	err := s.repository.PatchModel(ctx, id, patch)
+	if errors.Is(err, ports.ErrNotFound) {
+		return ErrNotFound
+	}
+	if errors.Is(err, ports.ErrProviderNotFound) {
+		return ErrWithMessage(ErrInvalidParams, "模型提供商不存在")
+	}
+	if errors.Is(err, ports.ErrConflict) {
+		return ErrConflict
+	}
+	return err
 }
-
 func (s *AIProviderService) DeleteModel(ctx context.Context, id uint64) error {
-	if s.db == nil {
-		return errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return errors.New("provider repository is required")
 	}
 	if id == 0 {
 		return ErrWithMessage(ErrInvalidParams, "模型 ID 无效")
 	}
-
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row aidomain.AIModel
-		if err := tx.Where("deleted_at IS NULL AND id = ?", id).First(&row).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
-			return err
-		}
-
-		now := time.Now().UTC()
-		return tx.Model(&aidomain.AIModel{}).
-			Where("id = ? AND deleted_at IS NULL", id).
-			Updates(map[string]any{
-				"deleted_at": now,
-				"updated_at": now,
-			}).Error
-	})
+	err := s.repository.DeleteModel(ctx, id, time.Now().UTC())
+	if errors.Is(err, ports.ErrNotFound) {
+		return ErrNotFound
+	}
+	return err
 }
-
-func normalizeAIProviderType(v string) string {
-	return strings.ToLower(strings.TrimSpace(v))
-}
-
-func normalizeAIVendorCode(v string) string {
-	return strings.ToLower(strings.TrimSpace(v))
-}
-
+func normalizeAIProviderType(v string) string { return strings.ToLower(strings.TrimSpace(v)) }
+func normalizeAIVendorCode(v string) string   { return strings.ToLower(strings.TrimSpace(v)) }
 func normalizeAIAuthScheme(v string) string {
 	switch strings.ToLower(strings.TrimSpace(v)) {
 	case "", "bearer":
@@ -609,18 +359,13 @@ func normalizeAIAuthScheme(v string) string {
 		return ""
 	}
 }
-
-func normalizeAIModelType(v string) string {
-	return strings.ToLower(strings.TrimSpace(v))
-}
-
+func normalizeAIModelType(v string) string { return strings.ToLower(strings.TrimSpace(v)) }
 func boolOrDefault(v *bool, def bool) bool {
 	if v == nil {
 		return def
 	}
 	return *v
 }
-
 func intOrDefault(v *int, def int) int {
 	if v == nil {
 		return def

@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	"k8s-platform-backend/internal/ai/domain"
+	"k8s-platform-backend/internal/ai/ports"
 )
 
 type ToolContextRequest struct {
@@ -93,17 +92,17 @@ type ToolRegistryPort interface {
 }
 
 type ToolService struct {
-	db       *gorm.DB
-	registry ToolRegistryPort
+	repository ports.ToolRepository
+	registry   ToolRegistryPort
 }
 
-func NewToolService(db *gorm.DB, registry ToolRegistryPort) *ToolService {
-	return &ToolService{db: db, registry: registry}
+func NewToolService(repository ports.ToolRepository, registry ToolRegistryPort) *ToolService {
+	return &ToolService{repository: repository, registry: registry}
 }
 
 func (s *ToolService) RunAutoDiagnostics(ctx context.Context, req ToolContextRequest) ([]ToolCallItem, string, error) {
-	if s == nil || s.db == nil {
-		return nil, "", errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return nil, "", errors.New("tool repository is required")
 	}
 	if s.registry == nil {
 		return nil, "", errors.New("tool registry is required")
@@ -140,14 +139,14 @@ func (s *ToolService) ListDefinitions() []ToolDefinition {
 }
 
 func (s *ToolService) ListConversationToolCalls(ctx context.Context, conversationID uint64) ([]ToolCallItem, error) {
-	if s == nil || s.db == nil {
-		return nil, errors.New("db is required")
+	if s == nil || s.repository == nil {
+		return nil, errors.New("tool repository is required")
 	}
 	if conversationID == 0 {
 		return nil, ErrorWithMessage(ErrInvalidParams, "conversation ID is invalid")
 	}
-	var rows []domain.AIToolCall
-	if err := s.db.WithContext(ctx).Where("conversation_id = ?", conversationID).Order("created_at ASC, id ASC").Find(&rows).Error; err != nil {
+	rows, err := s.repository.ListToolCalls(ctx, conversationID)
+	if err != nil {
 		return nil, err
 	}
 	items := make([]ToolCallItem, 0, len(rows))
@@ -168,7 +167,7 @@ func (s *ToolService) Execute(ctx context.Context, req ToolContextRequest, toolN
 	if payload, err := json.Marshal(params); err == nil {
 		row.CommandText, row.ParamsJSON = string(payload), domain.JSONMap(params)
 	}
-	if err := s.db.WithContext(ctx).Create(&row).Error; err != nil {
+	if err := s.repository.CreateToolCall(ctx, &row); err != nil {
 		return ToolCallItem{}, ""
 	}
 	if err := s.registry.ValidateToolPermissions(def.RequiredPermissions, req.UserPerms, toolName); err != nil {
@@ -192,16 +191,12 @@ func (s *ToolService) Execute(ctx context.Context, req ToolContextRequest, toolN
 	}
 	resultJSON := toolEvidenceMap(result)
 	row.Status, row.ResultSummary, row.ResultJSON = "succeeded", result.Summary, resultJSON
-	_ = s.db.WithContext(ctx).Model(&domain.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
-		"status": row.Status, "result_summary": row.ResultSummary, "result_json": row.ResultJSON,
-	}).Error
+	_ = s.repository.UpdateToolCall(ctx, row.ID, ports.ToolCallUpdate{Status: row.Status, ResultSummary: row.ResultSummary, Result: row.ResultJSON})
 	return BuildToolCallItem(row), "工具 " + toolName + ": " + result.Summary + "\n" + compactToolResult(resultJSON)
 }
 
 func (s *ToolService) updateFailure(ctx context.Context, row domain.AIToolCall) {
-	_ = s.db.WithContext(ctx).Model(&domain.AIToolCall{}).Where("id = ?", row.ID).Updates(map[string]any{
-		"status": row.Status, "error_message": row.ErrorMessage, "result_summary": row.ResultSummary,
-	}).Error
+	_ = s.repository.UpdateToolCall(ctx, row.ID, ports.ToolCallUpdate{Status: row.Status, ResultSummary: row.ResultSummary, ErrorMessage: row.ErrorMessage})
 }
 
 func BuildToolCallItem(row domain.AIToolCall) ToolCallItem {
