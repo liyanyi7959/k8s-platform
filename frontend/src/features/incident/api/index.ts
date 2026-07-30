@@ -198,7 +198,7 @@ export function listAlertRules(
       }, 200)
     })
   }
-  return request('/api/v1/monitor/alerts', {
+  return request('/api/v2/monitoring/alert-rules', {
     params: { page: params?.page, page_size: params?.pageSize },
     signal,
   }).then(pageResult<AlertRule>)
@@ -225,7 +225,7 @@ export function createAlertRule(data: CreateAlertRuleRequest): Promise<AlertRule
       resolve(newRule)
     })
   }
-  return request('/api/v1/monitor/alerts', { method: 'POST', data })
+  return request('/api/v2/monitoring/alert-rules', { method: 'POST', data })
 }
 
 /** 更新告警规则 */
@@ -244,7 +244,7 @@ export function updateAlertRule(
       }
     })
   }
-  return request(`/api/v1/monitor/alerts/${id}`, { method: 'PUT', data })
+  return request(`/api/v2/monitoring/alert-rules/${id}`, { method: 'PATCH', data })
 }
 
 /** 删除告警规则 */
@@ -260,7 +260,7 @@ export function deleteAlertRule(id: number): Promise<void> {
       }
     })
   }
-  return request(`/api/v1/monitor/alerts/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/monitoring/alert-rules/${id}`, { method: 'DELETE' })
 }
 
 /** 启用/禁用告警规则 */
@@ -277,7 +277,7 @@ export function toggleAlertRule(id: number, enabled: boolean): Promise<void> {
       }
     })
   }
-  return request(`/api/v1/monitor/alerts/${id}`, { method: 'PATCH', data: { enabled } })
+  return request(`/api/v2/monitoring/alert-rules/${id}`, { method: 'PATCH', data: { enabled } })
 }
 
 /** 获取告警事件列表 */
@@ -367,7 +367,7 @@ export function queryMetrics(
       }, 200)
     })
   }
-  return request('/api/v1/monitor/metrics/query', { params, signal })
+  return request('/api/v2/monitoring/metric-queries', { params, signal })
 }
 
 /** 获取监控指标（仪表盘用） */
@@ -400,7 +400,7 @@ export function getMetricsOverview(signal?: AbortSignal): Promise<MetricsOvervie
       }, 200)
     })
   }
-  return request('/api/v1/monitor/metrics/overview', { signal })
+  return request('/api/v2/monitoring/overview', { signal })
 }
 
 /** 获取事件流 */
@@ -433,7 +433,7 @@ export function listEvents(
   if (!params.clusterId) {
     return Promise.resolve({ items: [], total: 0, page: params.page || 1, pageSize: params.pageSize || 20 })
   }
-  return request(`/api/v1/clusters/${params.clusterId}/events`, {
+  return request(`/api/v2/clusters/${params.clusterId}/events`, {
     params: { namespace: params.namespace },
     signal,
   }).then((raw: any) => {

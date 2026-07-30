@@ -12,7 +12,7 @@
 // @title 星枢K8S管理平台 API
 // @version 1.0
 // @description 星枢K8S管理平台后端接口文档（统一响应结构：code/message/data）
-// @BasePath /api/v1
+// @BasePath /api/v2
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization

@@ -173,7 +173,7 @@ func TestBuildAIMessageScopeSnapshotIncludesAttachments(t *testing.T) {
 				ContentType:  "text/plain",
 				FileSize:     256,
 				FileKind:     "text",
-				DownloadURL:  "/api/v1/ai/files/12/content",
+				DownloadURL:  "/api/v2/ai/files/12/content",
 			},
 		},
 	})

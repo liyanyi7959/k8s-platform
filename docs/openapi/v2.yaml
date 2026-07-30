@@ -1,0 +1,378 @@
+openapi: 3.1.0
+info:
+  title: AIOPS Platform API
+  version: 2.0.0
+  description: |
+    唯一对外 HTTP 契约。平台不提供 v1 路由；Kubernetes 与 Prometheus 的上游协议不在本文档范围内。
+servers:
+  - url: /
+paths:
+  /api/v2/session:
+    post:
+      operationId: createSession
+      summary: 登录并创建平台会话
+      requestBody: { $ref: '#/components/requestBodies/Credentials' }
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '400': { $ref: '#/components/responses/Problem' }, '401': { $ref: '#/components/responses/Problem' } }
+  /api/v2/session/logout:
+    post:
+      operationId: deleteSession
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '401': { $ref: '#/components/responses/Problem' } }
+  /api/v2/identity:
+    get:
+      operationId: getIdentity
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '401': { $ref: '#/components/responses/Problem' } }
+  /api/v2/identity/password-change-requests:
+    post:
+      operationId: createPasswordChangeRequest
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '400': { $ref: '#/components/responses/Problem' } }
+  /api/v2/captcha:
+    get:
+      operationId: getCaptcha
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/password-reset-requests:
+    post:
+      operationId: createPasswordResetRequest
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '400': { $ref: '#/components/responses/Problem' } }
+  /api/v2/password-reset-confirmations:
+    post:
+      operationId: createPasswordResetConfirmation
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '400': { $ref: '#/components/responses/Problem' } }
+  /api/v2/users:
+    get:
+      operationId: listUsers
+      responses: { '200': { $ref: '#/components/responses/Page' }, '401': { $ref: '#/components/responses/Problem' } }
+    post:
+      operationId: createUser
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '400': { $ref: '#/components/responses/Problem' } }
+  /api/v2/users/{user_id}:
+    parameters: [{ $ref: '#/components/parameters/UserID' }]
+    patch:
+      operationId: patchUser
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '404': { $ref: '#/components/responses/Problem' } }
+    delete:
+      operationId: deleteUser
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '404': { $ref: '#/components/responses/Problem' } }
+  /api/v2/users/{user_id}/password-reset-requests:
+    parameters: [{ $ref: '#/components/parameters/UserID' }]
+    post:
+      operationId: createUserPasswordResetRequest
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/roles:
+    get:
+      operationId: listRoles
+      responses: { '200': { $ref: '#/components/responses/Page' } }
+    post:
+      operationId: createRole
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/roles/{role_id}:
+    parameters: [{ $ref: '#/components/parameters/RoleID' }]
+    patch:
+      operationId: patchRole
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    delete:
+      operationId: deleteRole
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/permissions:
+    get:
+      operationId: listPermissions
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/platform/settings:
+    get:
+      operationId: getPlatformSettings
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    patch:
+      operationId: patchPlatformSettings
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/projects:
+    get:
+      operationId: listProjects
+      responses: { '200': { $ref: '#/components/responses/Page' } }
+    post:
+      operationId: createProject
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/projects/{project_id}:
+    parameters: [{ $ref: '#/components/parameters/ProjectID' }]
+    get:
+      operationId: getProject
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    patch:
+      operationId: patchProject
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    delete:
+      operationId: deleteProject
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/projects/{project_id}/resources:
+    parameters: [{ $ref: '#/components/parameters/ProjectID' }]
+    get:
+      operationId: listProjectResources
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/projects/{project_id}/namespace-assignments:
+    parameters: [{ $ref: '#/components/parameters/ProjectID' }]
+    put:
+      operationId: replaceProjectNamespaceAssignments
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/application-templates:
+    get:
+      operationId: listApplicationTemplates
+      responses: { '200': { $ref: '#/components/responses/Page' } }
+    post:
+      operationId: createApplicationTemplate
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/application-templates/{template_id}:
+    parameters: [{ $ref: '#/components/parameters/TemplateID' }]
+    get:
+      operationId: getApplicationTemplate
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    patch:
+      operationId: patchApplicationTemplate
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    delete:
+      operationId: deleteApplicationTemplate
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/clusters:
+    get:
+      operationId: listClusters
+      responses: { '200': { $ref: '#/components/responses/Page' } }
+    post:
+      operationId: createCluster
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/cluster-imports:
+    post:
+      operationId: createClusterImport
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '424': { $ref: '#/components/responses/Problem' } }
+  /api/v2/clusters/{cluster_id}:
+    parameters: [{ $ref: '#/components/parameters/ClusterID' }]
+    get:
+      operationId: getCluster
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    patch:
+      operationId: patchCluster
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    delete:
+      operationId: deleteCluster
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/clusters/{cluster_id}/health-checks:
+    parameters: [{ $ref: '#/components/parameters/ClusterID' }]
+    post:
+      operationId: createClusterHealthCheck
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '424': { $ref: '#/components/responses/Problem' } }
+  /api/v2/clusters/{cluster_id}/overview:
+    parameters: [{ $ref: '#/components/parameters/ClusterID' }]
+    get:
+      operationId: getClusterOverview
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/clusters/{cluster_id}/certificate-risks:
+    parameters: [{ $ref: '#/components/parameters/ClusterID' }]
+    get:
+      operationId: listClusterCertificateRisks
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/incidents:
+    get:
+      operationId: listIncidents
+      responses: { '200': { $ref: '#/components/responses/Page' } }
+  /api/v2/incidents/{incident_id}:
+    parameters: [{ $ref: '#/components/parameters/IncidentID' }]
+    get:
+      operationId: getIncident
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '404': { $ref: '#/components/responses/Problem' } }
+  /api/v2/incidents/{incident_id}/{command_resource}:
+    parameters:
+      - { $ref: '#/components/parameters/IncidentID' }
+      - name: command_resource
+        in: path
+        required: true
+        schema: { type: string, enum: [acknowledgements, diagnosis-runs, approval-requests, execution-starts, verification-runs, resolution-attempts] }
+    post:
+      operationId: createIncidentCommand
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '409': { $ref: '#/components/responses/Problem' }, '422': { $ref: '#/components/responses/Problem' } }
+  /api/v2/monitoring/alert-rules:
+    get:
+      operationId: listAlertRules
+      responses: { '200': { $ref: '#/components/responses/Page' } }
+    post:
+      operationId: createAlertRule
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/monitoring/alert-rules/{rule_id}:
+    parameters: [{ $ref: '#/components/parameters/RuleID' }]
+    patch:
+      operationId: patchAlertRule
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    delete:
+      operationId: deleteAlertRule
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/integrations/alertmanager/events:
+    post:
+      operationId: ingestAlertmanagerEvent
+      security: []
+      responses: { '200': { $ref: '#/components/responses/Resource' }, '401': { $ref: '#/components/responses/Problem' } }
+  /api/v2/ai/conversations:
+    get:
+      operationId: listAIConversations
+      responses: { '200': { $ref: '#/components/responses/Page' } }
+    post:
+      operationId: createAIConversation
+      parameters: [{ $ref: '#/components/parameters/ClusterIDQuery' }]
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/ai/conversations/{conversation_id}/messages:
+    parameters:
+      - { $ref: '#/components/parameters/ConversationID' }
+      - { $ref: '#/components/parameters/ClusterIDQuery' }
+    post:
+      operationId: createAIConversationMessage
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/change-proposals:
+    post:
+      operationId: createChangeProposal
+      parameters: [{ $ref: '#/components/parameters/ClusterIDQuery' }]
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/change-proposals/{proposal_id}/approvals:
+    parameters:
+      - { $ref: '#/components/parameters/ProposalID' }
+      - { $ref: '#/components/parameters/ClusterIDQuery' }
+    post:
+      operationId: createChangeProposalApproval
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/provisioning/{resource}:
+    parameters:
+      - name: resource
+        in: path
+        required: true
+        schema: { type: string, enum: [servers, credentials, plans, configurations, repositories] }
+    get:
+      operationId: listProvisioningResources
+      responses: { '200': { $ref: '#/components/responses/Page' } }
+    post:
+      operationId: createProvisioningResource
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/provisioning/plans/{plan_id}/{command_resource}:
+    parameters:
+      - { $ref: '#/components/parameters/PlanID' }
+      - name: command_resource
+        in: path
+        required: true
+        schema: { type: string, enum: [preflight-runs, executions, cancellation-requests, retry-attempts, addon-installations, addon-retry-attempts] }
+    post:
+      operationId: createProvisioningPlanCommand
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/automation/tasks/{task_id}/cancellation-requests:
+    parameters: [{ $ref: '#/components/parameters/TaskID' }]
+    post:
+      operationId: createAutomationTaskCancellationRequest
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/clusters/{cluster_id}/{resource}:
+    description: Kubernetes resource collection. resource is one of the concrete resource families in the API v2 migration ledger.
+    parameters:
+      - { $ref: '#/components/parameters/ClusterID' }
+      - name: resource
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: listClusterResources
+      responses: { '200': { $ref: '#/components/responses/Page' } }
+    post:
+      operationId: createClusterResource
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /api/v2/clusters/{cluster_id}/{resource}/{namespace}/{name}:
+    parameters:
+      - { $ref: '#/components/parameters/ClusterID' }
+      - { $ref: '#/components/parameters/Resource' }
+      - { $ref: '#/components/parameters/Namespace' }
+      - { $ref: '#/components/parameters/Name' }
+    patch:
+      operationId: patchNamespacedClusterResource
+      requestBody: { $ref: '#/components/requestBodies/JsonResource' }
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+    delete:
+      operationId: deleteNamespacedClusterResource
+      responses: { '200': { $ref: '#/components/responses/Resource' } }
+  /streams/v2/{ticket_id}:
+    parameters: [{ $ref: '#/components/parameters/TicketID' }]
+    get:
+      operationId: openStreamTicket
+      description: WebSocket stream. The authenticated ticket kind selects log, exec, or server-terminal transport.
+      responses: { '101': { description: Switching Protocols }, '401': { $ref: '#/components/responses/Problem' }, '403': { $ref: '#/components/responses/Problem' } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    UserID: { name: user_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    RoleID: { name: role_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    ProjectID: { name: project_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    TemplateID: { name: template_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    ClusterID: { name: cluster_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    ClusterIDQuery: { name: cluster_id, in: query, required: true, schema: { type: integer, minimum: 1 } }
+    IncidentID: { name: incident_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    RuleID: { name: rule_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    ConversationID: { name: conversation_id, in: path, required: true, schema: { type: string } }
+    ProposalID: { name: proposal_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    PlanID: { name: plan_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    TaskID: { name: task_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    Resource: { name: resource, in: path, required: true, schema: { type: string } }
+    Namespace: { name: namespace, in: path, required: true, schema: { type: string } }
+    Name: { name: name, in: path, required: true, schema: { type: string } }
+    TicketID: { name: ticket_id, in: path, required: true, schema: { type: string } }
+  requestBodies:
+    Credentials:
+      required: true
+      content: { application/json: { schema: { type: object, required: [username, password], properties: { username: { type: string }, password: { type: string } } } } }
+    JsonResource:
+      required: true
+      content: { application/json: { schema: { type: object, additionalProperties: true } } }
+  responses:
+    Resource:
+      description: Resource response without a legacy envelope.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Resource' } } }
+    Page:
+      description: Paginated resource collection.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Page' } } }
+    Problem:
+      description: RFC 9457 Problem Details.
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+  schemas:
+    Resource: { type: object, additionalProperties: true }
+    Page:
+      type: object
+      required: [items, total, page, page_size]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Resource' } }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        page_size: { type: integer, minimum: 1 }
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        request_id: { type: string }
+security: [{ bearerAuth: [] }]

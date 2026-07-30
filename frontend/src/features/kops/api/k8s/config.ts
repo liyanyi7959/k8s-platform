@@ -14,12 +14,12 @@ export function listConfigMaps(
   params: { namespace: string },
   signal?: AbortSignal,
 ): Promise<ConfigMapList> {
-  return request(`/api/v1/clusters/${clusterId}/configmaps`, { params, signal }).then(extractMappedList(mapConfigMap))
+  return request(`/api/v2/clusters/${clusterId}/configmaps`, { params, signal }).then(extractMappedList(mapConfigMap))
 }
 
 /** 删除 ConfigMap */
 export function deleteConfigMap(clusterId: number, namespace: string, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/configmaps/${namespace}/${name}`, {
+  return request(`/api/v2/clusters/${clusterId}/configmaps/${namespace}/${name}`, {
     method: 'DELETE',
   })
 }
@@ -42,7 +42,7 @@ export function createConfigMap(clusterId: number, namespace: string, data: any)
 
 /** 更新 ConfigMap */
 export function updateConfigMap(clusterId: number, namespace: string, name: string, data: any): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/configmaps/${namespace}/${name}`, {
+  return request(`/api/v2/clusters/${clusterId}/configmaps/${namespace}/${name}`, {
     method: 'PATCH',
     data: {
       namespace,
@@ -55,7 +55,7 @@ export function updateConfigMap(clusterId: number, namespace: string, name: stri
 
 /** 获取 ConfigMap 关联资源 */
 export function getConfigMapRelated(clusterId: number, namespace: string, name: string, signal?: AbortSignal): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/configmaps/${namespace}/${name}/related`, { signal })
+  return request(`/api/v2/clusters/${clusterId}/configmaps/${namespace}/${name}/related`, { signal })
 }
 
 /** 获取 ConfigMap 列表（兼容拓扑图页面调用签名） */
@@ -67,12 +67,12 @@ export function getConfigMaps(clusterId: number, namespace?: string, signal?: Ab
 
 /** 获取 Secret 列表 */
 export function listSecrets(clusterId: number, namespace?: string, signal?: AbortSignal): Promise<SecretList> {
-  return request(`/api/v1/clusters/${clusterId}/secrets`, { params: { namespace }, signal }).then(extractMappedList(mapSecret))
+  return request(`/api/v2/clusters/${clusterId}/secrets`, { params: { namespace }, signal }).then(extractMappedList(mapSecret))
 }
 
 /** 删除 Secret */
 export function deleteSecret(clusterId: number, namespace: string, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/secrets/${namespace}/${name}`, { method: 'DELETE' })
+  return request(`/api/v2/clusters/${clusterId}/secrets/${namespace}/${name}`, { method: 'DELETE' })
 }
 
 /** 创建 Secret */
@@ -94,7 +94,7 @@ export function createSecret(clusterId: number, namespace: string, data: any): P
 
 /** 更新 Secret */
 export function updateSecret(clusterId: number, namespace: string, name: string, data: any): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/secrets/${namespace}/${name}`, {
+  return request(`/api/v2/clusters/${clusterId}/secrets/${namespace}/${name}`, {
     method: 'PATCH',
     data: {
       namespace,
@@ -108,12 +108,12 @@ export function updateSecret(clusterId: number, namespace: string, name: string,
 
 /** 揭示 Secret 明文 */
 export function getSecretReveal(clusterId: number, namespace: string, name: string, signal?: AbortSignal): Promise<{ text: string }> {
-  return request(`/api/v1/clusters/${clusterId}/secrets/${namespace}/${name}/decoded-data`, { signal }).then((res: any) => ({
+  return request(`/api/v2/clusters/${clusterId}/secrets/${namespace}/${name}/decoded-data`, { signal }).then((res: any) => ({
     text: res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
   }))
 }
 
 /** 获取 Secret 关联资源 */
 export function getSecretRelated(clusterId: number, namespace: string, name: string, signal?: AbortSignal): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/secrets/${namespace}/${name}/related`, { signal })
+  return request(`/api/v2/clusters/${clusterId}/secrets/${namespace}/${name}/related`, { signal })
 }

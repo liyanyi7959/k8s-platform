@@ -82,7 +82,7 @@ func (ctl *ServerAccessController) CreateTerminalSession(c *gin.Context) {
 	ctl.sessions.Put(sessionID, kopsapp.ExecSession{Kind: "server", UserID: serverAccessUserID(c), ServerID: id, CreatedAt: time.Now().UTC()})
 	resp.OK(c, gin.H{
 		"session_id": sessionID,
-		"ws_url":     "/api/v1/deploy/servers/terminal/ws?session_id=" + url.QueryEscape(sessionID),
+		"ws_url":     "/streams/v2/" + url.PathEscape(sessionID) + "?kind=server-terminal",
 		"server":     server,
 	})
 }

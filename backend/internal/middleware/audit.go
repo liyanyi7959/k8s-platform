@@ -113,7 +113,7 @@ func shouldAuditRequest(method, path string) bool {
 		return false
 	case "POST":
 		lowerPath := strings.ToLower(strings.TrimSpace(path))
-		if strings.HasSuffix(lowerPath, "/logs/session") {
+		if strings.HasSuffix(lowerPath, "/logs/session") || strings.HasSuffix(lowerPath, "/log-sessions") {
 			// 日志会话只是查看日志前的只读握手，不应误记为“创建 Pod”。
 			return false
 		}
@@ -146,7 +146,7 @@ func inferAction(method, path string) string {
 		if strings.Contains(lower, "/rollout") {
 			return "rollout"
 		}
-		if strings.Contains(lower, "/login") || strings.Contains(lower, "/logout") || strings.Contains(lower, "/change-password") || strings.Contains(lower, "/reset-password") {
+		if strings.Contains(lower, "/session") || strings.Contains(lower, "/identity/password-change-requests") || strings.Contains(lower, "/password-reset-") {
 			return "auth"
 		}
 		return "create"
@@ -157,14 +157,14 @@ func inferAction(method, path string) string {
 	}
 }
 
-// clusterResourcePattern 匹配 /api/v1/clusters/:id/... 路径
+// clusterResourcePattern 匹配 /api/v2/clusters/:id/... 路径
 var clusterResourcePattern = regexp.MustCompile(
-	`/api/v1/clusters/(\d+)/([^/]+)(?:/([^/]+))?(?:/([^/]+))?(?:/([^/]+))?`,
+	`/api/v2/clusters/(\d+)/([^/]+)(?:/([^/]+))?(?:/([^/]+))?(?:/([^/]+))?`,
 )
 
-// topLevelPattern 匹配 /api/v1/resource/... 路径
+// topLevelPattern 匹配 /api/v2/resource/... 路径
 var topLevelPattern = regexp.MustCompile(
-	`/api/v1/([^/]+)(?:/([^/]+))?`,
+	`/api/v2/([^/]+)(?:/([^/]+))?`,
 )
 
 func parsePath(path string) (resource, resourceName string, clusterID uint64, namespace string) {

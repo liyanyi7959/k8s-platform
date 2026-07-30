@@ -11,7 +11,7 @@ export function listPods(
   params: PodListParams,
   signal?: AbortSignal,
 ): Promise<PodList> {
-  return request(`/api/v1/clusters/${clusterId}/pods`, { params, signal }).then(extractMappedList(mapPod))
+  return request(`/api/v2/clusters/${clusterId}/pods`, { params, signal }).then(extractMappedList(mapPod))
 }
 
 /** 获取 Pod 详情 */
@@ -21,7 +21,7 @@ export function getPod(
   name: string,
   signal?: AbortSignal,
 ): Promise<Pod> {
-  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}`, { signal })
+  return request(`/api/v2/clusters/${clusterId}/pods/${namespace}/${name}`, { signal })
 }
 
 /** 获取 Pod YAML */
@@ -31,14 +31,14 @@ export function getPodYaml(
   name: string,
   signal?: AbortSignal,
 ): Promise<{ yaml: string }> {
-  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/yaml`, { signal }).then((res: { text?: string; yaml?: string }) => ({
+  return request(`/api/v2/clusters/${clusterId}/pods/${namespace}/${name}/yaml`, { signal }).then((res: { text?: string; yaml?: string }) => ({
     yaml: res.yaml || res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
   }))
 }
 
 /** 删除 Pod */
 export function deletePod(clusterId: number, namespace: string, name: string, force?: boolean): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}`, {
+  return request(`/api/v2/clusters/${clusterId}/pods/${namespace}/${name}`, {
     method: 'DELETE',
     params: force ? { force: true, grace_period_seconds: 0 } : undefined,
   })
@@ -55,14 +55,14 @@ export function getPodLogs(
   if (options?.container) params.container = options.container
   if (options?.previous) params.previous = true
   if (options?.timestamps) params.timestamps = true
-  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/logs`, { params }).then((res: { text?: string; logs?: string }) => ({
+  return request(`/api/v2/clusters/${clusterId}/pods/${namespace}/${name}/logs`, { params }).then((res: { text?: string; logs?: string }) => ({
     logs: res.text || res.logs || '',
   }))
 }
 
 /** 获取 Pod 终端 WebSocket 地址 */
 export function getPodTerminalUrl(clusterId: number, namespace: string, name: string, options?: { container?: string; command?: string[]; tty?: boolean }): Promise<{ url: string }> {
-  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/exec-sessions`, {
+  return request(`/api/v2/clusters/${clusterId}/pods/${namespace}/${name}/exec-sessions`, {
     method: 'POST',
     data: {
       container: options?.container || undefined,
@@ -76,14 +76,14 @@ export function getPodTerminalUrl(clusterId: number, namespace: string, name: st
 
 /** Pod 巡检诊断 */
 export function getPodInspection(clusterId: number, namespace: string, name: string, signal?: AbortSignal): Promise<{ text: string }> {
-  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/inspection`, { signal }).then((res: any) => ({
+  return request(`/api/v2/clusters/${clusterId}/pods/${namespace}/${name}/inspection`, { signal }).then((res: any) => ({
     text: res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
   }))
 }
 
 /** 获取 Pod 关联事件 */
 export function getPodEvents(clusterId: number, namespace: string, name: string, signal?: AbortSignal): Promise<any[]> {
-  return request(`/api/v1/clusters/${clusterId}/events`, {
+  return request(`/api/v2/clusters/${clusterId}/events`, {
     params: { namespace, field_selector: `involvedObject.name=${name}` },
     signal,
   }).then((res: any) => {
@@ -99,7 +99,7 @@ export function createPodLogSession(
   name: string,
   options?: { container?: string; tailLines?: number; follow?: boolean; previous?: boolean },
 ): Promise<{ sessionId: string; wsUrl: string }> {
-  return request(`/api/v1/clusters/${clusterId}/pods/${namespace}/${name}/log-sessions`, {
+  return request(`/api/v2/clusters/${clusterId}/pods/${namespace}/${name}/log-sessions`, {
     method: 'POST',
     data: {
       container: options?.container,
@@ -115,7 +115,7 @@ export function createPodLogSession(
 
 /** 获取 PodMetrics 列表（资源使用率） */
 export function listPodMetrics(clusterId: number, namespace?: string, signal?: AbortSignal): Promise<any[]> {
-  return request(`/api/v1/clusters/${clusterId}/podmetrics`, {
+  return request(`/api/v2/clusters/${clusterId}/pods/metrics`, {
     params: namespace ? { namespace } : undefined,
     signal,
   }).then((res: any) => {

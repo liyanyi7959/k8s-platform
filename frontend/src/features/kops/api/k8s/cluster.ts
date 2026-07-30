@@ -9,7 +9,7 @@ import { mapNode, mapPod, mapService, mapEvent, extractMappedSimpleList } from '
 
 /** 获取命名空间列表 */
 export function listNamespaces(clusterId: number, signal?: AbortSignal): Promise<Namespace[]> {
-  return request(`/api/v1/clusters/${clusterId}/namespaces`, { signal }).then(
+  return request(`/api/v2/clusters/${clusterId}/namespaces`, { signal }).then(
     extractMappedSimpleList((r: any) => ({
       name: r?.metadata?.name || r?.name || '',
       status: r?.status?.phase || 'Active',
@@ -21,7 +21,7 @@ export function listNamespaces(clusterId: number, signal?: AbortSignal): Promise
 
 /** 创建命名空间 */
 export function createNamespace(clusterId: number, name: string): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/namespaces`, {
+  return request(`/api/v2/clusters/${clusterId}/namespaces`, {
     method: 'POST',
     data: { metadata: { name } },
   })
@@ -29,7 +29,7 @@ export function createNamespace(clusterId: number, name: string): Promise<any> {
 
 /** 删除命名空间 */
 export function deleteNamespace(clusterId: number, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/namespaces/${name}`, { method: 'DELETE' })
+  return request(`/api/v2/clusters/${clusterId}/namespaces/${name}`, { method: 'DELETE' })
 }
 
 /** 获取命名空间列表（带 items 包装，兼容拓扑图） */
@@ -46,7 +46,7 @@ export function getNamespaceInspection(
   namespace: string,
   signal?: AbortSignal,
 ): Promise<{ text: string }> {
-  return request(`/api/v1/clusters/${clusterId}/namespaces/${namespace}/inspection`, {
+  return request(`/api/v2/clusters/${clusterId}/namespaces/${namespace}/inspection`, {
     signal,
   }).then((res: any) => ({
     text: res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
@@ -59,7 +59,7 @@ export function getNamespaceResourcesSummary(
   namespace: string,
   signal?: AbortSignal,
 ): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/namespaces/${namespace}/resources-summary`, {
+  return request(`/api/v2/clusters/${clusterId}/namespaces/${namespace}/resource-summary`, {
     signal,
   })
 }
@@ -70,7 +70,7 @@ export function getNamespaceWorkloadInventory(
   namespace: string,
   signal?: AbortSignal,
 ): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/namespaces/${namespace}/workload-inventory`, {
+  return request(`/api/v2/clusters/${clusterId}/namespaces/${namespace}/workload-inventory`, {
     signal,
   })
 }
@@ -79,7 +79,7 @@ export function getNamespaceWorkloadInventory(
 
 /** 获取节点列表 */
 export function listNodes(clusterId: number, signal?: AbortSignal): Promise<Node[]> {
-  return request(`/api/v1/clusters/${clusterId}/nodes`, { signal }).then(
+  return request(`/api/v2/clusters/${clusterId}/nodes`, { signal }).then(
     extractMappedSimpleList(mapNode),
   )
 }
@@ -90,7 +90,7 @@ export function getNodeDetail(
   name: string,
   signal?: AbortSignal,
 ): Promise<NodeDetail> {
-  return request(`/api/v1/clusters/${clusterId}/nodes/${name}/detail`, { signal }).then(
+  return request(`/api/v2/clusters/${clusterId}/nodes/${name}`, { signal }).then(
     (raw: any) => {
       const base = mapNode(raw)
       const s = raw?.status || {}
@@ -118,12 +118,12 @@ export function getNodeDetail(
 
 /** 停止节点调度 (Cordon) */
 export function cordonNode(clusterId: number, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/nodes/${name}/cordon-requests`, { method: 'POST' })
+  return request(`/api/v2/clusters/${clusterId}/nodes/${name}/cordon-requests`, { method: 'POST' })
 }
 
 /** 恢复节点调度 (Uncordon) */
 export function uncordonNode(clusterId: number, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/nodes/${name}/uncordon-requests`, { method: 'POST' })
+  return request(`/api/v2/clusters/${clusterId}/nodes/${name}/uncordon-requests`, { method: 'POST' })
 }
 
 /** 驱逐节点 (Drain) */
@@ -132,7 +132,7 @@ export function drainNode(
   name: string,
   options?: { force?: boolean; timeout_seconds?: number; ignore_daemonsets?: boolean },
 ): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/nodes/${name}/drain-requests`, {
+  return request(`/api/v2/clusters/${clusterId}/nodes/${name}/drain-requests`, {
     method: 'POST',
     data: options,
   })
@@ -140,7 +140,7 @@ export function drainNode(
 
 /** 删除节点 */
 export function deleteNode(clusterId: number, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/nodes/${name}`, { method: 'DELETE' })
+  return request(`/api/v2/clusters/${clusterId}/nodes/${name}`, { method: 'DELETE' })
 }
 
 /** 获取节点 YAML */
@@ -149,7 +149,7 @@ export function getNodeYaml(
   name: string,
   signal?: AbortSignal,
 ): Promise<{ yaml: string }> {
-  return request(`/api/v1/clusters/${clusterId}/nodes/${name}/yaml`, { signal }).then(
+  return request(`/api/v2/clusters/${clusterId}/nodes/${name}/yaml`, { signal }).then(
     (res: { text?: string; yaml?: string }) => ({
       yaml: res.yaml || res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
     }),
@@ -162,7 +162,7 @@ export function getNodePods(
   nodeName: string,
   signal?: AbortSignal,
 ): Promise<any[]> {
-  return request(`/api/v1/clusters/${clusterId}/nodes/${nodeName}/pods`, { signal }).then(
+  return request(`/api/v2/clusters/${clusterId}/nodes/${nodeName}/pods`, { signal }).then(
     (res: any) => res.list || res || [],
   )
 }
@@ -173,7 +173,7 @@ export function getNodeEvents(
   nodeName: string,
   signal?: AbortSignal,
 ): Promise<any[]> {
-  return request(`/api/v1/clusters/${clusterId}/nodes/${nodeName}/events`, { signal }).then(
+  return request(`/api/v2/clusters/${clusterId}/nodes/${nodeName}/events`, { signal }).then(
     (res: any) => res.list || res || [],
   )
 }
@@ -191,7 +191,7 @@ export function listEvents(
   namespace?: string,
   signal?: AbortSignal,
 ): Promise<K8sEvent[]> {
-  return request(`/api/v1/clusters/${clusterId}/events`, { params: { namespace }, signal }).then(
+  return request(`/api/v2/clusters/${clusterId}/events`, { params: { namespace }, signal }).then(
     extractMappedSimpleList(mapEvent),
   )
 }
@@ -213,7 +213,7 @@ export function getDashboardStats(
   podPending: number
   podFailed: number
 }> {
-  return request(`/api/v1/dashboard/clusters/${clusterId}/overview`, { signal })
+  return request(`/api/v2/clusters/${clusterId}/overview`, { signal })
 }
 
 /** 集群概览 - 完整仪表盘数据 */
@@ -297,7 +297,7 @@ export function getClusterOverview(
   clusterId: number,
   signal?: AbortSignal,
 ): Promise<ClusterOverview> {
-  return request(`/api/v1/dashboard/clusters/${clusterId}/overview`, { signal })
+  return request(`/api/v2/clusters/${clusterId}/overview`, { signal })
 }
 
 /** 证书探测独立于总览首屏加载，避免远程 TLS 握手阻塞核心健康数据。 */
@@ -305,7 +305,7 @@ export function getClusterCertificateRisks(
   clusterId: number,
   signal?: AbortSignal,
 ): Promise<ClusterCertificateRisk[]> {
-  return request(`/api/v1/dashboard/clusters/${clusterId}/certificate-risks`, { signal })
+  return request(`/api/v2/clusters/${clusterId}/certificate-risks`, { signal })
 }
 
 // ==================== Topology ====================
@@ -313,11 +313,11 @@ export function getClusterCertificateRisks(
 /** 获取集群拓扑数据 - 从 nodes、pods、services 端点构造 */
 export async function getTopology(clusterId: number, signal?: AbortSignal): Promise<any> {
   const [nodes, pods, services] = await Promise.all([
-    request(`/api/v1/clusters/${clusterId}/nodes`, { signal }).then(
+    request(`/api/v2/clusters/${clusterId}/nodes`, { signal }).then(
       extractMappedSimpleList(mapNode),
     ),
-    request(`/api/v1/clusters/${clusterId}/pods`, { signal }).then(extractMappedSimpleList(mapPod)),
-    request(`/api/v1/clusters/${clusterId}/services`, { signal }).then(
+    request(`/api/v2/clusters/${clusterId}/pods`, { signal }).then(extractMappedSimpleList(mapPod)),
+    request(`/api/v2/clusters/${clusterId}/services`, { signal }).then(
       extractMappedSimpleList(mapService),
     ),
   ])

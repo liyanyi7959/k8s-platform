@@ -29,7 +29,7 @@ export function listProjects(
   params?: { page?: number; page_size?: number },
   signal?: AbortSignal,
 ): Promise<ProjectListResponse> {
-  return request('/api/v1/projects', {
+  return request('/api/v2/projects', {
     params: { page: 1, page_size: 100, ...params },
     signal,
   })
@@ -37,17 +37,17 @@ export function listProjects(
 
 /** 创建项目 */
 export function createProject(data: Partial<Project>) {
-  return request('/api/v1/projects', { method: 'POST', data })
+  return request('/api/v2/projects', { method: 'POST', data })
 }
 
 /** 更新项目 */
 export function updateProject(id: number, data: Partial<Project>) {
-  return request(`/api/v1/projects/${id}`, { method: 'PUT', data })
+  return request(`/api/v2/projects/${id}`, { method: 'PATCH', data })
 }
 
 /** 删除项目 */
 export function deleteProject(id: number) {
-  return request(`/api/v1/projects/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/projects/${id}`, { method: 'DELETE' })
 }
 
 /** 命名空间资源统计 */
@@ -67,14 +67,14 @@ export interface ProjectResourcesResponse {
 
 /** 获取项目下所有命名空间的资源统计 */
 export function getProjectResources(id: number, signal?: AbortSignal) {
-  return request<ProjectResourcesResponse>(`/api/v1/projects/${id}/resources`, {
+  return request<ProjectResourcesResponse>(`/api/v2/projects/${id}/resources`, {
     signal,
   })
 }
 
 /** 分配命名空间到项目 */
 export function assignNamespaces(id: number, namespaces: string[]) {
-  return request(`/api/v1/projects/${id}/namespaces`, {
+  return request(`/api/v2/projects/${id}/namespace-assignments`, {
     method: 'PUT',
     data: { namespaces },
   })

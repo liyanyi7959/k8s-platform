@@ -77,7 +77,7 @@ func TestAuthControllerLogin_RequiresCaptchaWhenEnabled(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v2/session", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	ctx.Request = req
 

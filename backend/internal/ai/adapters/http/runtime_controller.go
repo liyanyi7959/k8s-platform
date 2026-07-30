@@ -84,6 +84,16 @@ func (ctl *RuntimeController) SendChat(c *gin.Context) {
 	resp.OK(c, data)
 }
 
+// SendChatOrStream keeps the message resource as the single write endpoint.
+// Clients select the streamed representation with Accept: text/event-stream.
+func (ctl *RuntimeController) SendChatOrStream(c *gin.Context) {
+	if strings.Contains(strings.ToLower(c.GetHeader("Accept")), "text/event-stream") {
+		ctl.SendChatStream(c)
+		return
+	}
+	ctl.SendChat(c)
+}
+
 func (ctl *RuntimeController) SendChatStream(c *gin.Context) {
 	request, ok := ctl.bindChatRequest(c)
 	if !ok {

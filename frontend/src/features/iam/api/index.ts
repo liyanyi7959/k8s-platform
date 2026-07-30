@@ -81,7 +81,7 @@ export async function login(data: {
     throw new Error('用户名或密码错误')
   }
 
-  const res = await request<any>('/api/v1/auth/login', {
+  const res = await request<any>('/api/v2/session', {
     method: 'POST',
     data: {
       username: data.username,
@@ -107,7 +107,7 @@ export async function getCurrentUser(): Promise<User> {
     return MOCK_USER
   }
 
-  const res = await request<any>('/api/v1/auth/me')
+  const res = await request<any>('/api/v2/identity')
   return toUser(res)
 }
 
@@ -116,14 +116,14 @@ export async function logout(): Promise<void> {
   if (MOCK_ENABLED) {
     return
   }
-  return request('/api/v1/auth/logout', { method: 'POST' })
+  return request('/api/v2/session/logout', { method: 'POST' })
 }
 
 export async function changePassword(data: {
   oldPassword: string
   newPassword: string
 }): Promise<void> {
-  return request('/api/v1/auth/change-password', {
+  return request('/api/v2/identity/password-change-requests', {
     method: 'POST',
     data: {
       old_password: data.oldPassword,
@@ -138,13 +138,13 @@ export async function getCaptcha(): Promise<{
   target_x?: number
   track_width?: number
 }> {
-  return request('/api/v1/auth/captcha')
+  return request('/api/v2/captcha')
 }
 
 export async function requestPasswordReset(
   identifier: string,
 ): Promise<{ token?: string; username?: string; message: string }> {
-  return request('/api/v1/auth/password-reset/request', {
+  return request('/api/v2/password-reset-requests', {
     method: 'POST',
     data: { identifier },
   })
@@ -154,7 +154,7 @@ export async function confirmPasswordReset(
   token: string,
   newPassword: string,
 ): Promise<{ message: string }> {
-  return request('/api/v1/auth/password-reset/confirm', {
+  return request('/api/v2/password-reset-confirmations', {
     method: 'POST',
     data: { token, new_password: newPassword },
   })
@@ -167,53 +167,53 @@ export function listUsers(params?: UserListParams): Promise<UserListResponse> {
   if (params?.keyword) payload.keyword = params.keyword
   if (params?.status) payload.status = params.status
   if (params?.roleId) payload.role_id = params.roleId
-  return request('/api/v1/users', { params: payload })
+  return request('/api/v2/users', { params: payload })
 }
 
 export function getUserById(id: number): Promise<User> {
-  return request(`/api/v1/users/${id}`)
+  return request(`/api/v2/users/${id}`)
 }
 
 export function createUser(data: CreateUserRequest): Promise<User> {
-  return request('/api/v1/users', { method: 'POST', data })
+  return request('/api/v2/users', { method: 'POST', data })
 }
 
 export function updateUser(id: number, data: UpdateUserRequest): Promise<User> {
-  return request(`/api/v1/users/${id}`, { method: 'PUT', data })
+  return request(`/api/v2/users/${id}`, { method: 'PATCH', data })
 }
 
 export function deleteUser(id: number): Promise<void> {
-  return request(`/api/v1/users/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/users/${id}`, { method: 'DELETE' })
 }
 
 export function resetPassword(id: number, data: ResetPasswordRequest): Promise<void> {
-  return request(`/api/v1/users/${id}/password-reset-requests`, { method: 'POST', data })
+  return request(`/api/v2/users/${id}/password-reset-requests`, { method: 'POST', data })
 }
 
 export function listRoles(params?: RoleListParams): Promise<RoleListResponse> {
   const payload: Record<string, unknown> = {}
   if (params?.page) payload.page = params.page
   if (params?.pageSize) payload.page_size = params.pageSize
-  return request('/api/v1/roles', { params: payload })
+  return request('/api/v2/roles', { params: payload })
 }
 
 export async function listAllRoles(): Promise<Role[]> {
-  const response = await request<RoleListResponse>('/api/v1/roles')
+  const response = await request<RoleListResponse>('/api/v2/roles')
   return response?.items || []
 }
 
 export function listPermissions(): Promise<Permission[]> {
-  return request('/api/v1/permissions')
+  return request('/api/v2/permissions')
 }
 
 export function createRole(data: CreateRoleRequest): Promise<Role> {
-  return request('/api/v1/roles', { method: 'POST', data })
+  return request('/api/v2/roles', { method: 'POST', data })
 }
 
 export function updateRole(id: number, data: UpdateRoleRequest): Promise<Role> {
-  return request(`/api/v1/roles/${id}`, { method: 'PUT', data })
+  return request(`/api/v2/roles/${id}`, { method: 'PATCH', data })
 }
 
 export function deleteRole(id: number): Promise<void> {
-  return request(`/api/v1/roles/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/roles/${id}`, { method: 'DELETE' })
 }

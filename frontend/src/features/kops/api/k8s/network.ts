@@ -30,19 +30,19 @@ export function listServices(
   params: { namespace: string },
   signal?: AbortSignal,
 ): Promise<K8sServiceList> {
-  return request(`/api/v1/clusters/${clusterId}/services`, { params, signal }).then(extractMappedList(mapService))
+  return request(`/api/v2/clusters/${clusterId}/services`, { params, signal }).then(extractMappedList(mapService))
 }
 
 /** 删除 Service */
 export function deleteService(clusterId: number, namespace: string, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/services/${namespace}/${name}`, {
+  return request(`/api/v2/clusters/${clusterId}/services/${namespace}/${name}`, {
     method: 'DELETE',
   })
 }
 
 /** 创建 Service */
 export function createService(clusterId: number, namespace: string, data: any): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/services`, {
+  return request(`/api/v2/clusters/${clusterId}/services`, {
     method: 'POST',
     data: {
       namespace,
@@ -63,7 +63,7 @@ export function createService(clusterId: number, namespace: string, data: any): 
 
 /** 更新 Service */
 export function updateService(clusterId: number, namespace: string, name: string, data: any): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/services/${namespace}/${name}`, {
+  return request(`/api/v2/clusters/${clusterId}/services/${namespace}/${name}`, {
     method: 'PATCH',
     data: {
       namespace,
@@ -83,17 +83,17 @@ export function getK8sServices(clusterId: number, namespace?: string, signal?: A
 
 /** 获取 Ingress 列表 */
 export function listIngresses(clusterId: number, namespace?: string, signal?: AbortSignal): Promise<IngressList> {
-  return request(`/api/v1/clusters/${clusterId}/ingresses`, { params: { namespace }, signal }).then(extractMappedList(mapIngress))
+  return request(`/api/v2/clusters/${clusterId}/ingresses`, { params: { namespace }, signal }).then(extractMappedList(mapIngress))
 }
 
 /** 删除 Ingress */
 export function deleteIngress(clusterId: number, namespace: string, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/ingresses/${namespace}/${name}`, { method: 'DELETE' })
+  return request(`/api/v2/clusters/${clusterId}/ingresses/${namespace}/${name}`, { method: 'DELETE' })
 }
 
 /** 创建 Ingress */
 export function createIngress(clusterId: number, namespace: string, data: any): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/ingresses`, {
+  return request(`/api/v2/clusters/${clusterId}/ingresses`, {
     method: 'POST',
     data: {
       namespace,
@@ -118,7 +118,7 @@ export function createIngress(clusterId: number, namespace: string, data: any): 
 
 /** 更新 Ingress */
 export function updateIngress(clusterId: number, namespace: string, name: string, data: any): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/ingresses/${namespace}/${name}`, {
+  return request(`/api/v2/clusters/${clusterId}/ingresses/${namespace}/${name}`, {
     method: 'PATCH',
     data: {
       namespace,
@@ -134,10 +134,10 @@ export function updateIngress(clusterId: number, namespace: string, name: string
 
 /** 获取 NetworkPolicy 列表 */
 export function listNetworkPolicies(clusterId: number, namespace?: string, signal?: AbortSignal): Promise<NetworkPolicyList> {
-  return request(`/api/v1/clusters/${clusterId}/networkpolicies`, { params: { namespace }, signal }).then(extractMappedList(mapNetworkPolicy))
+  return request(`/api/v2/clusters/${clusterId}/networkpolicies`, { params: { namespace }, signal }).then(extractMappedList(mapNetworkPolicy))
 }
 
 /** 删除 NetworkPolicy */
 export function deleteNetworkPolicy(clusterId: number, namespace: string, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/networkpolicies/${namespace}/${name}`, { method: 'DELETE' })
+  return request(`/api/v2/clusters/${clusterId}/networkpolicies/${namespace}/${name}`, { method: 'DELETE' })
 }

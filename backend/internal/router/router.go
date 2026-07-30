@@ -29,7 +29,6 @@ func New(d Deps) (*gin.Engine, error) {
 	r.Use(middleware.AccessLogger())
 	r.Use(middleware.RecoveryWithZap())
 	r.Use(middleware.CORS())
-	r.Use(middleware.APIDeprecation())
 
 	modules := buildApplicationModules(d)
 

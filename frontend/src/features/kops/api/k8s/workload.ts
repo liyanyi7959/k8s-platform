@@ -24,7 +24,7 @@ export function listWorkloads(
   params: DeploymentListParams & { kind?: WorkloadKind },
   signal?: AbortSignal,
 ): Promise<DeploymentList> {
-  return request(`/api/v1/clusters/${clusterId}/workloads`, { params, signal }).then(extractMappedList(mapDeployment))
+  return request(`/api/v2/clusters/${clusterId}/workloads`, { params, signal }).then(extractMappedList(mapDeployment))
 }
 
 /** 删除工作负载 */
@@ -34,7 +34,7 @@ export function deleteWorkload(
   name: string,
   kind: WorkloadKind = 'Deployment',
 ): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/workloads/${kind}/${namespace}/${name}`, {
+  return request(`/api/v2/clusters/${clusterId}/workloads/${kind}/${namespace}/${name}`, {
     method: 'DELETE',
   })
 }
@@ -47,7 +47,7 @@ export function scaleWorkload(
   replicas: number,
   kind: WorkloadKind = 'Deployment',
 ): Promise<Deployment> {
-  return request(`/api/v1/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}/${namespace}/${name}/scale-operations`, {
+  return request(`/api/v2/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}/${namespace}/${name}/scale-operations`, {
 	method: 'POST',
     data: { kind, namespace, name, replicas },
   })
@@ -60,7 +60,7 @@ export function rollbackDeployment(
   name: string,
   revision: number,
 ): Promise<Deployment> {
-  return request(`/api/v1/clusters/${clusterId}/workloads/deployments/${namespace}/${name}/rollback-attempts`, {
+  return request(`/api/v2/clusters/${clusterId}/workloads/deployments/${namespace}/${name}/rollback-attempts`, {
     method: 'POST',
     data: { revision },
   })
@@ -98,7 +98,7 @@ export function createWorkload(
       },
     ],
   }
-  return request(`/api/v1/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}`, { method: 'POST', data: payload })
+  return request(`/api/v2/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}`, { method: 'POST', data: payload })
 }
 
 /** 重启工作负载 */
@@ -108,18 +108,18 @@ export function restartWorkload(
   name: string,
   kind: WorkloadKind = 'Deployment',
 ): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}/${namespace}/${name}/restart-operations`, { method: 'POST', data: { kind, namespace, name } })
+  return request(`/api/v2/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}/${namespace}/${name}/restart-operations`, { method: 'POST', data: { kind, namespace, name } })
 }
 
 /** 获取 Deployment 详情 */
 export function getDeploymentDetail(clusterId: number, namespace: string, name: string): Promise<Deployment> {
-  return request(`/api/v1/clusters/${clusterId}/deployments/${namespace}/${name}`, {})
+  return request(`/api/v2/clusters/${clusterId}/deployments/${namespace}/${name}`, {})
 }
 
 /** 更新工作负载（编辑） */
 export function updateWorkload(clusterId: number, namespace: string, name: string, data: Record<string, unknown>): Promise<Deployment> {
   const kind = (data.kind as WorkloadKind | undefined) || 'Deployment'
-  return request(`/api/v1/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}/${namespace}/${name}`, {
+  return request(`/api/v2/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}/${namespace}/${name}`, {
     method: 'PATCH',
     data: {
       namespace,
@@ -138,7 +138,7 @@ export function updateWorkloadPaused(
   name: string,
   paused: boolean,
 ): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/workloads/deployments/${namespace}/${name}/pause-state`, {
+  return request(`/api/v2/clusters/${clusterId}/workloads/deployments/${namespace}/${name}/pause-state`, {
     method: 'PATCH',
     data: { kind: 'Deployment', namespace, name, paused },
   })
@@ -153,7 +153,7 @@ export function updateWorkloadImage(
   image: string,
   kind: WorkloadKind = 'Deployment',
 ): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}/${namespace}/${name}/image-updates`, {
+  return request(`/api/v2/clusters/${clusterId}/workloads/${WORKLOAD_ENDPOINT_MAP[kind]}/${namespace}/${name}/image-updates`, {
     method: 'POST',
     data: { kind, namespace, name, container, image },
   })
@@ -167,14 +167,14 @@ export function getDeploymentYaml(
   signal?: AbortSignal,
   kind: WorkloadKind = 'Deployment',
 ): Promise<{ yaml: string }> {
-  return request(`/api/v1/clusters/${clusterId}/workloads/${kind}/${namespace}/${name}/yaml`, { signal }).then((res: { text?: string; yaml?: string }) => ({
+  return request(`/api/v2/clusters/${clusterId}/workloads/${kind}/${namespace}/${name}/yaml`, { signal }).then((res: { text?: string; yaml?: string }) => ({
     yaml: res.yaml || res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
   }))
 }
 
 /** 获取 Deployment 版本历史 */
 export function getDeploymentHistory(clusterId: number, namespace: string, name: string, signal?: AbortSignal): Promise<Array<{ revision: number; changeCause: string; date: string; image: string }>> {
-  return request(`/api/v1/clusters/${clusterId}/workloads/deployments/${namespace}/${name}/rollout-history`, { signal }).then((res: any) => res.history || [])
+  return request(`/api/v2/clusters/${clusterId}/workloads/deployments/${namespace}/${name}/rollout-history`, { signal }).then((res: any) => res.history || [])
 }
 
 /** 获取工作负载列表（兼容 workloads 页面调用签名） */
@@ -198,10 +198,10 @@ export const getDeployments = getWorkloads
 
 /** 获取 ReplicaSet 列表 */
 export function listReplicaSets(clusterId: number, namespace?: string, signal?: AbortSignal): Promise<ReplicaSetList> {
-  return request(`/api/v1/clusters/${clusterId}/replicasets`, { params: { namespace }, signal }).then(extractMappedList(mapReplicaSet))
+  return request(`/api/v2/clusters/${clusterId}/replicasets`, { params: { namespace }, signal }).then(extractMappedList(mapReplicaSet))
 }
 
 /** 删除 ReplicaSet */
 export function deleteReplicaSet(clusterId: number, namespace: string, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/replicasets/${namespace}/${name}`, { method: 'DELETE' })
+  return request(`/api/v2/clusters/${clusterId}/replicasets/${namespace}/${name}`, { method: 'DELETE' })
 }

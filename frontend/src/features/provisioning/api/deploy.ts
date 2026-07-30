@@ -114,13 +114,13 @@ export function getServers(params?: {
   status?: string
 }): Promise<{ items: DeployServer[]; total: number; page: number; pageSize: number }> {
   const { page, pageSize, keyword, status } = params || {}
-  return request('/api/v1/deploy/servers', {
+  return request('/api/v2/provisioning/servers', {
     params: { page, page_size: pageSize, keyword, status },
   }).then((res) => extractPageData<DeployServer>(res))
 }
 
 export function createServer(data: CreateServerRequest): Promise<DeployServer> {
-  return request('/api/v1/deploy/servers', {
+  return request('/api/v2/provisioning/servers', {
     method: 'POST',
     data: {
       name: data.name,
@@ -145,12 +145,12 @@ export function getServerSummary(): Promise<{
   memoryMb: number
   diskGb: number
 }> {
-  return request('/api/v1/deploy/servers/summary').then(camelizeKeys)
+  return request('/api/v2/provisioning/servers/summary').then(camelizeKeys)
 }
 
 export function updateServer(id: number, data: Partial<CreateServerRequest>): Promise<void> {
-  return request(`/api/v1/deploy/servers/${id}`, {
-    method: 'PUT',
+  return request(`/api/v2/provisioning/servers/${id}`, {
+    method: 'PATCH',
     data: {
       name: data.name,
       ip: data.ip,
@@ -166,7 +166,7 @@ export function updateServer(id: number, data: Partial<CreateServerRequest>): Pr
 }
 
 export function deleteServer(id: number): Promise<void> {
-  return request(`/api/v1/deploy/servers/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/provisioning/servers/${id}`, { method: 'DELETE' })
 }
 
 export function probeServerConnection(id: number): Promise<{
@@ -179,7 +179,7 @@ export function probeServerConnection(id: number): Promise<{
   memoryMb?: number
   diskGb?: number
 }> {
-  return request(`/api/v1/deploy/servers/${id}/connection-checks`, { method: 'POST' }).then(camelizeKeys)
+  return request(`/api/v2/provisioning/servers/${id}/connection-checks`, { method: 'POST' }).then(camelizeKeys)
 }
 
 /** @deprecated 使用 probeServerConnection */
@@ -192,7 +192,7 @@ export interface ServerTerminalSession {
 }
 
 export function createServerTerminalSession(id: number): Promise<ServerTerminalSession> {
-  return request(`/api/v1/deploy/servers/${id}/terminal-sessions`, { method: 'POST' }).then(
+  return request(`/api/v2/provisioning/servers/${id}/terminal-tickets`, { method: 'POST' }).then(
     (response) => camelizeKeys(response) as ServerTerminalSession,
   )
 }
@@ -206,7 +206,7 @@ export function getCredentials(params?: {
   pageSize?: number
 }): Promise<{ items: Credential[]; total: number; page: number; pageSize: number }> {
   const { page, pageSize } = params || {}
-  return request('/api/v1/deploy/credentials', {
+  return request('/api/v2/provisioning/credentials', {
     params: { page, page_size: pageSize },
   }).then((res) => extractPageData<Credential>(res))
 }
@@ -214,7 +214,7 @@ export function getCredentials(params?: {
 export function createCredential(data: CreateCredentialRequest): Promise<Credential> {
   const authType = normalizeDeployAuthType(data.authType)
   const credential = authType === 'key' ? (data.privateKey || data.credential || '') : (data.password || data.credential || '')
-  return request('/api/v1/deploy/credentials', {
+  return request('/api/v2/provisioning/credentials', {
     method: 'POST',
     data: {
       name: data.name,
@@ -233,8 +233,8 @@ export function updateCredential(id: number, data: Partial<CreateCredentialReque
     : authType === 'password'
       ? (data.password || data.credential || '')
       : undefined
-  return request(`/api/v1/deploy/credentials/${id}`, {
-    method: 'PUT',
+  return request(`/api/v2/provisioning/credentials/${id}`, {
+    method: 'PATCH',
     data: {
       name: data.name,
       auth_type: authType,
@@ -246,11 +246,11 @@ export function updateCredential(id: number, data: Partial<CreateCredentialReque
 }
 
 export function deleteCredential(id: number): Promise<void> {
-  return request(`/api/v1/deploy/credentials/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/provisioning/credentials/${id}`, { method: 'DELETE' })
 }
 
 export function batchDeleteCredentials(ids: number[]): Promise<void> {
-  return request('/api/v1/deploy/credential-deletion-requests', {
+  return request('/api/v2/provisioning/credential-deletion-requests', {
     method: 'POST',
     data: { ids },
   })
@@ -265,17 +265,17 @@ export function getDeployPlans(params?: {
   pageSize?: number
 }): Promise<{ items: DeployPlan[]; total: number; page: number; pageSize: number }> {
   const { page, pageSize } = params || {}
-  return request('/api/v1/deploy/plans', {
+  return request('/api/v2/provisioning/plans', {
     params: { page, page_size: pageSize },
   }).then((res) => extractPageData<DeployPlan>(res))
 }
 
 export function getDeployPlanById(id: number): Promise<DeployPlan> {
-  return request(`/api/v1/deploy/plans/${id}`).then(mapPlan)
+  return request(`/api/v2/provisioning/plans/${id}`).then(mapPlan)
 }
 
 export function createDeployPlan(data: CreateDeployPlanRequest): Promise<DeployPlan> {
-  return request('/api/v1/deploy/plans', {
+  return request('/api/v2/provisioning/plans', {
     method: 'POST',
     data: {
       name: data.name,
@@ -298,8 +298,8 @@ export function createDeployPlan(data: CreateDeployPlanRequest): Promise<DeployP
 }
 
 export function updateDeployPlan(id: number, data: Partial<CreateDeployPlanRequest>): Promise<void> {
-  return request(`/api/v1/deploy/plans/${id}`, {
-    method: 'PUT',
+  return request(`/api/v2/provisioning/plans/${id}`, {
+    method: 'PATCH',
     data: {
       name: data.name,
       cluster_name: data.clusterName,
@@ -321,29 +321,29 @@ export function updateDeployPlan(id: number, data: Partial<CreateDeployPlanReque
 }
 
 export function deleteDeployPlan(id: number): Promise<void> {
-  return request(`/api/v1/deploy/plans/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/provisioning/plans/${id}`, { method: 'DELETE' })
 }
 
 export function executeDeployPlan(id: number): Promise<{ taskId: number }> {
-  return request(`/api/v1/deploy/plans/${id}/executions`, { method: 'POST' })
+  return request(`/api/v2/provisioning/plans/${id}/executions`, { method: 'POST' })
 }
 
 export function cancelDeployPlan(id: number): Promise<void> {
-  return request(`/api/v1/deploy/plans/${id}/cancellation-requests`, { method: 'POST' })
+  return request(`/api/v2/provisioning/plans/${id}/cancellation-requests`, { method: 'POST' })
 }
 
 export function retryDeployPlan(id: number): Promise<{ taskId: number }> {
-  return request(`/api/v1/deploy/plans/${id}/retry-attempts`, { method: 'POST' })
+  return request(`/api/v2/provisioning/plans/${id}/retry-attempts`, { method: 'POST' })
 }
 
 /** 从指定步骤重试部署 */
 export function retryDeployStep(id: number, stepKey: string): Promise<{ taskId: number }> {
-  return request(`/api/v1/deploy/plans/${id}/steps/${stepKey}/retry-attempts`, { method: 'POST' })
+  return request(`/api/v2/provisioning/plans/${id}/steps/${stepKey}/retry-attempts`, { method: 'POST' })
 }
 
 /** 为已成功的集群补充安装可选组件，不会重跑集群初始化。 */
 export function installDeployPlanAddons(id: number, addons: string[]): Promise<{ taskId: number }> {
-  return request(`/api/v1/deploy/plans/${id}/addon-installations`, {
+  return request(`/api/v2/provisioning/plans/${id}/addon-installations`, {
     method: 'POST',
     data: { addons },
   }).then((res: any) => ({ taskId: Number(res?.task_id ?? res?.taskId) }))
@@ -351,23 +351,23 @@ export function installDeployPlanAddons(id: number, addons: string[]): Promise<{
 
 /** 获取该集群最近一次补充组件任务，用于在部署流水线中持续展示状态。 */
 export function getDeployPlanAddonTask(id: number): Promise<import('@/features/provisioning/types').DeployTask | undefined> {
-  return request(`/api/v1/deploy/plans/${id}/addons/task`).then((res: any) => {
+  return request(`/api/v2/provisioning/plans/${id}/addons/task`).then((res: any) => {
     const task = res?.task
     return task ? camelizeKeys(task) : undefined
   })
 }
 
 export function retryDeployPlanAddons(id: number): Promise<{ taskId: number }> {
-  return request(`/api/v1/deploy/plans/${id}/addon-retry-attempts`, { method: 'POST' })
+  return request(`/api/v2/provisioning/plans/${id}/addon-retry-attempts`, { method: 'POST' })
 }
 
 /** 执行部署前的控制端、拓扑和目标主机就绪检查 */
 export function preflightDeployPlan(id: number): Promise<import('@/features/provisioning/types').DeployPreflightResult> {
-  return request(`/api/v1/deploy/plans/${id}/preflight-checks`, { method: 'POST' }).then(camelizeKeys)
+  return request(`/api/v2/provisioning/plans/${id}/preflight-runs`, { method: 'POST' }).then(camelizeKeys)
 }
 
 export function setDeployPreflightIgnore(id: number, key: string, ignored: boolean): Promise<void> {
-  return request(`/api/v1/deploy/plans/${id}/preflight-checks/overrides`, { method: 'POST', data: { key, ignored } })
+  return request(`/api/v2/provisioning/plans/${id}/preflight-runs/overrides`, { method: 'POST', data: { key, ignored } })
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -376,7 +376,7 @@ export function setDeployPreflightIgnore(id: number, key: string, ignored: boole
 
 /** 获取部署任务详情 */
 export function getDeployTask(taskId: number): Promise<DeployTask> {
-  return request(`/api/v1/deploy/tasks/${taskId}`).then(camelizeKeys)
+  return request(`/api/v2/provisioning/executions/${taskId}`).then(camelizeKeys)
 }
 
 /** 获取部署任务日志（分页），可按 stepKey 过滤 */
@@ -386,7 +386,7 @@ export function getDeployTaskLogs(
   limit = 200,
   stepKey?: string
 ): Promise<{ logs: string[]; entries: Array<{ content: string; createdAt: string }>; total: number; stepKey: string }> {
-  return request(`/api/v1/deploy/tasks/${taskId}/logs`, {
+  return request(`/api/v2/provisioning/executions/${taskId}/logs`, {
     params: { offset, limit, step_key: stepKey },
   }).then((res) => camelizeKeys(res))
 }
@@ -396,12 +396,12 @@ export function getDeployTaskLogSSEUrl(taskId: number, stepKey?: string): string
   const params = new URLSearchParams()
   if (stepKey) params.set('step_key', stepKey)
   const qs = params.toString()
-  return `/api/v1/deploy/tasks/${taskId}/logs/sse${qs ? `?${qs}` : ''}`
+  return `/api/v2/provisioning/executions/${taskId}/events${qs ? `?${qs}` : ''}`
 }
 
 /** 干跑预览 - 返回部署计划的模拟运行流程 */
 export function dryRunDeployPlan(id: number): Promise<any> {
-  return request(`/api/v1/deploy/plans/${id}/simulations`).then(camelizeKeys)
+  return request(`/api/v2/provisioning/plans/${id}/simulations`).then(camelizeKeys)
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -409,7 +409,7 @@ export function dryRunDeployPlan(id: number): Promise<any> {
 // ═══════════════════════════════════════════════════════════
 
 export function getDeployConfigSteps(): Promise<DeployConfigStep[]> {
-  return request('/api/v1/deploy-config/steps').then((res: any) => {
+  return request('/api/v2/deploy-config/steps').then((res: any) => {
     const list = Array.isArray(res) ? res : res?.list || res?.items || []
     return camelizeKeys(list) as DeployConfigStep[]
   })
@@ -422,7 +422,7 @@ export function createDeployConfigStep(data: {
   orderNum?: number
   enabled?: boolean
 }): Promise<DeployConfigStep> {
-  return request('/api/v1/deploy-config/steps', {
+  return request('/api/v2/deploy-config/steps', {
     method: 'POST',
     data: {
       name: data.name,
@@ -441,7 +441,7 @@ export function updateDeployConfigStep(id: number, data: {
   orderNum?: number
   enabled?: boolean
 }): Promise<void> {
-  return request(`/api/v1/deploy-config/steps/${id}`, {
+  return request(`/api/v2/deploy-config/steps/${id}`, {
     method: 'PUT',
     data: {
       name: data.name,
@@ -454,11 +454,11 @@ export function updateDeployConfigStep(id: number, data: {
 }
 
 export function deleteDeployConfigStep(id: number): Promise<void> {
-  return request(`/api/v1/deploy-config/steps/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/deploy-config/steps/${id}`, { method: 'DELETE' })
 }
 
 export function updateStepOrders(steps: { id: number; orderNum: number }[]): Promise<void> {
-  return request('/api/v1/deploy-config/steps/orders', {
+  return request('/api/v2/deploy-config/steps/orders', {
     method: 'PUT',
     data: { orders: steps.map((s) => ({ id: s.id, order_num: s.orderNum })) },
   })
@@ -473,7 +473,7 @@ export function getVersions(params?: {
   pageSize?: number
 }): Promise<{ items: DeployVersion[]; total: number; page: number; pageSize: number }> {
   const { page, pageSize } = params || {}
-  return request('/api/v1/versions', {
+  return request('/api/v2/versions', {
     params: { page, page_size: pageSize },
   }).then((res) => extractPageData<DeployVersion>(res))
 }
@@ -483,18 +483,18 @@ export function createVersion(data: {
   version: string
   remark?: string
 }): Promise<DeployVersion> {
-  return request('/api/v1/versions', {
+  return request('/api/v2/versions', {
     method: 'POST',
     data,
   }).then((res) => camelizeKeys(res) as DeployVersion)
 }
 
 export function publishVersion(id: number): Promise<void> {
-  return request(`/api/v1/versions/${id}/publish`, { method: 'POST' })
+  return request(`/api/v2/versions/${id}/publish`, { method: 'POST' })
 }
 
 export function deleteVersion(id: number): Promise<void> {
-  return request(`/api/v1/versions/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/versions/${id}`, { method: 'DELETE' })
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -505,7 +505,7 @@ import type { DeployStepConfig, RepositoryConfig, ConfigVersion } from '@/featur
 
 /** 列出所有部署步骤配置 */
 export function listDeployStepConfigs(params?: { osType?: string }, signal?: AbortSignal): Promise<DeployStepConfig[]> {
-  return request('/api/v1/deploy/configs', {
+  return request('/api/v2/provisioning/configurations', {
     signal,
     params: {
       os_type: params?.osType,
@@ -518,7 +518,7 @@ export function listDeployStepConfigs(params?: { osType?: string }, signal?: Abo
 
 /** 获取支持的 Linux 分类 */
 export function listSupportedOSTypes(signal?: AbortSignal): Promise<string[]> {
-  return request('/api/v1/deploy/configs/os-types', { signal }).then((res: any) => {
+  return request('/api/v2/provisioning/configurations/os-types', { signal }).then((res: any) => {
     const list = Array.isArray(res) ? res : res?.list || res?.items || []
     return camelizeKeys(list) as string[]
   })
@@ -526,8 +526,8 @@ export function listSupportedOSTypes(signal?: AbortSignal): Promise<string[]> {
 
 /** 更新单个步骤配置 */
 export function updateDeployStepConfig(id: number, data: Partial<DeployStepConfig>): Promise<void> {
-  return request(`/api/v1/deploy/configs/${id}`, {
-    method: 'PUT',
+  return request(`/api/v2/provisioning/configurations/${id}`, {
+    method: 'PATCH',
     data: {
       command_template: data.commandTemplate,
       description: data.description,
@@ -540,7 +540,7 @@ export function updateDeployStepConfig(id: number, data: Partial<DeployStepConfi
 
 /** 获取步骤配置的版本历史 */
 export function listDeployConfigVersions(stepId: number, signal?: AbortSignal): Promise<ConfigVersion[]> {
-  return request(`/api/v1/deploy/configs/${stepId}/versions`, { signal }).then((res: any) => {
+  return request(`/api/v2/provisioning/configurations/${stepId}/versions`, { signal }).then((res: any) => {
     const list = Array.isArray(res) ? res : res?.list || res?.items || []
     return camelizeKeys(list) as ConfigVersion[]
   })
@@ -548,7 +548,7 @@ export function listDeployConfigVersions(stepId: number, signal?: AbortSignal): 
 
 /** 列出所有仓库配置 */
 export function listRepositories(_?: any, signal?: AbortSignal): Promise<RepositoryConfig[]> {
-  return request('/api/v1/deploy/repositories', { signal }).then((res: any) => {
+  return request('/api/v2/provisioning/repositories', { signal }).then((res: any) => {
     const list = Array.isArray(res) ? res : res?.list || res?.items || []
     return camelizeKeys(list) as RepositoryConfig[]
   })
@@ -556,7 +556,7 @@ export function listRepositories(_?: any, signal?: AbortSignal): Promise<Reposit
 
 /** 创建仓库配置 */
 export function createRepository(data: Partial<RepositoryConfig>): Promise<RepositoryConfig> {
-  return request('/api/v1/deploy/repositories', {
+  return request('/api/v2/provisioning/repositories', {
     method: 'POST',
     data: {
       name: data.name,
@@ -574,8 +574,8 @@ export function createRepository(data: Partial<RepositoryConfig>): Promise<Repos
 
 /** 更新仓库配置 */
 export function updateRepository(id: number, data: Partial<RepositoryConfig>): Promise<void> {
-  return request(`/api/v1/deploy/repositories/${id}`, {
-    method: 'PUT',
+  return request(`/api/v2/provisioning/repositories/${id}`, {
+    method: 'PATCH',
     data: {
       name: data.name,
       repo_type: data.repoType,
@@ -592,22 +592,22 @@ export function updateRepository(id: number, data: Partial<RepositoryConfig>): P
 
 /** 删除仓库配置 */
 export function deleteRepository(id: number): Promise<void> {
-  return request(`/api/v1/deploy/repositories/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/provisioning/repositories/${id}`, { method: 'DELETE' })
 }
 
 /** 获取 Ansible playbook 源码 */
 export function getAnsiblePlaybook(): Promise<{ content: string; path: string }> {
-  return request('/api/v1/deploy/ansible/playbook').then(camelizeKeys)
+  return request('/api/v2/provisioning/ansible/playbook').then(camelizeKeys)
 }
 
 /** 获取 Ansible inventory 模板 */
 export function getAnsibleInventoryTemplate(): Promise<{ content: string; path: string }> {
-  return request('/api/v1/deploy/ansible/inventory-template').then(camelizeKeys)
+  return request('/api/v2/provisioning/ansible/inventory-template').then(camelizeKeys)
 }
 
 /** 检查 Ansible 环境 */
 export function checkAnsibleEnv(): Promise<{ installed: boolean; version: string }> {
-  return request('/api/v1/deploy/ansible/env-check').then(camelizeKeys)
+  return request('/api/v2/provisioning/ansible/env-check').then(camelizeKeys)
 }
 
 export interface AnsibleTreeNode {
@@ -620,10 +620,10 @@ export interface AnsibleTreeNode {
 
 /** 获取完整 Ansible 目录树 */
 export function getAnsibleTree(): Promise<AnsibleTreeNode> {
-  return request('/api/v1/deploy/ansible/tree').then(camelizeKeys)
+  return request('/api/v2/provisioning/ansible/tree').then(camelizeKeys)
 }
 
 /** 获取部署计划的 Ansible 执行配置 */
 export function getPlanAnsibleConfig(id: number): Promise<{ playbookPath: string; inventory: string; extraVars: Record<string, any> }> {
-  return request(`/api/v1/deploy/plans/${id}/ansible-config`).then(camelizeKeys)
+  return request(`/api/v2/provisioning/plans/${id}/ansible-config`).then(camelizeKeys)
 }

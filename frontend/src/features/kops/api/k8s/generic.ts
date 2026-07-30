@@ -22,7 +22,7 @@ export function applyYaml(
   yaml: string,
   options?: { defaultNamespace?: string; dryRun?: boolean; createOnly?: boolean; sourceLabel?: string },
 ): Promise<ManifestApplyResult> {
-  return request(`/api/v1/clusters/${clusterId}/manifest-applications`, {
+  return request(`/api/v2/clusters/${clusterId}/manifest-applications`, {
     method: 'POST',
     data: {
       yaml,
@@ -47,7 +47,7 @@ export function listManifestRecords(
   params?: { page?: number; pageSize?: number; status?: string },
   signal?: AbortSignal,
 ): Promise<{ list: any[]; total: number }> {
-  return request(`/api/v1/clusters/${clusterId}/manifests/records`, {
+  return request(`/api/v2/clusters/${clusterId}/manifest-applications`, {
     params: { page: params?.page || 1, page_size: params?.pageSize || 10, status: params?.status },
     signal,
   }).then((res: any) => ({ list: res?.list || [], total: Number(res?.total || 0) }))
@@ -61,7 +61,7 @@ type GenericResourceRouteConfig = {
 
 const GENERIC_RESOURCE_ROUTE_MAP: Record<string, GenericResourceRouteConfig> = {
   pods: { path: 'pods', namespaced: true },
-  podmetrics: { path: 'podmetrics', namespaced: true },
+  podmetrics: { path: 'pods/metrics', namespaced: true },
   services: { path: 'services', namespaced: true },
   configmaps: { path: 'configmaps', namespaced: true },
   secrets: { path: 'secrets', namespaced: true },
@@ -174,7 +174,7 @@ export function listGenericResources(
   signal?: AbortSignal,
 ): Promise<{ items: GenericResourceItem[]; total: number; page: number; pageSize: number }> {
   const config = resolveGenericResourceConfig(resource)
-  return request(`/api/v1/clusters/${clusterId}/${config.path}`, {
+  return request(`/api/v2/clusters/${clusterId}/${config.path}`, {
     params: config.namespaced ? { namespace } : undefined,
     signal,
   }).then(extractMappedList(mapGenericResource))
@@ -189,8 +189,8 @@ export function deleteGenericResource(
 ): Promise<void> {
   const config = resolveGenericResourceConfig(resource)
   const endpoint = config.namespaced
-    ? `/api/v1/clusters/${clusterId}/${config.path}/${namespace || 'default'}/${name}`
-    : `/api/v1/clusters/${clusterId}/${config.path}/${name}`
+    ? `/api/v2/clusters/${clusterId}/${config.path}/${namespace || 'default'}/${name}`
+    : `/api/v2/clusters/${clusterId}/${config.path}/${name}`
   return request(endpoint, { method: 'DELETE' })
 }
 
@@ -199,7 +199,7 @@ export function listPermissionAudits(
   clusterId: number,
   signal?: AbortSignal,
 ): Promise<{ items: any[]; total: number; page: number; pageSize: number }> {
-  return request('/api/v1/permission-audits', {
+  return request('/api/v2/permission-audits', {
     params: { cluster_id: clusterId, page: 1, page_size: 100 },
     signal,
   }).then((res: any) => ({
@@ -216,7 +216,7 @@ export function defaultRBACMatrix(
   namespaces: string[],
   signal?: AbortSignal,
 ): Promise<RBACMatrixRequest> {
-  return request(`/api/v1/clusters/${clusterId}/permission-audits/rbac-matrix/default`, {
+  return request(`/api/v2/clusters/${clusterId}/permission-audits/rbac-matrix/default`, {
     params: { namespaces: namespaces.join(',') },
     signal,
   })
@@ -227,7 +227,7 @@ export function buildRBACFromMatrix(
   clusterId: number,
   matrix: RBACMatrixRequest,
 ): Promise<{ yaml_content: string }> {
-  return request(`/api/v1/clusters/${clusterId}/permission-audits/rbac-matrix/yaml`, {
+  return request(`/api/v2/clusters/${clusterId}/permission-audits/rbac-matrix/yaml`, {
     method: 'POST',
     data: matrix,
   })
@@ -237,10 +237,10 @@ export function buildRBACFromMatrix(
 export function getResourceYaml(clusterId: number, resource: string, namespace: string, name: string): Promise<{ yaml: string }> {
   const config = resolveGenericResourceConfig(resource)
   const endpoint = config.workload
-    ? `/api/v1/clusters/${clusterId}/workloads/${config.path}/${namespace}/${name}/yaml`
+    ? `/api/v2/clusters/${clusterId}/workloads/${config.path}/${namespace}/${name}/yaml`
     : config.namespaced
-      ? `/api/v1/clusters/${clusterId}/${config.path}/${namespace}/${name}/yaml`
-      : `/api/v1/clusters/${clusterId}/${config.path}/${name}/yaml`
+      ? `/api/v2/clusters/${clusterId}/${config.path}/${namespace}/${name}/yaml`
+      : `/api/v2/clusters/${clusterId}/${config.path}/${name}/yaml`
   return request(endpoint, {}).then((res: { text?: string; yaml?: string }) => ({
     yaml: res.yaml || res.text || (typeof res === 'string' ? res : JSON.stringify(res, null, 2)),
   }))
@@ -248,7 +248,7 @@ export function getResourceYaml(clusterId: number, resource: string, namespace: 
 
 /** Helm release 列表 */
 export function listHelmReleases(clusterId: number, namespace?: string, signal?: AbortSignal): Promise<{ items: any[]; source?: string }> {
-  return request(`/api/v1/clusters/${clusterId}/helm/releases`, { params: { namespace }, signal }).then((res: any) => ({
+  return request(`/api/v2/clusters/${clusterId}/helm/releases`, { params: { namespace }, signal }).then((res: any) => ({
     items: Array.isArray(res?.list) ? res.list : [],
     source: res?.source,
   }))
@@ -261,19 +261,19 @@ export function getHelmReleaseDetail(
   name: string,
   signal?: AbortSignal,
 ): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/helm/releases/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, { signal })
+  return request(`/api/v2/clusters/${clusterId}/helm/releases/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, { signal })
 }
 
 /** 节点资源使用率 */
 export function listNodeMetrics(clusterId: number, signal?: AbortSignal): Promise<any[]> {
-  return request(`/api/v1/clusters/${clusterId}/nodes/metrics`, { signal }).then((res: any) =>
+  return request(`/api/v2/clusters/${clusterId}/nodes/metrics`, { signal }).then((res: any) =>
     Array.isArray(res?.list) ? res.list : (Array.isArray(res) ? res : []),
   )
 }
 
 /** Pod 资源使用率（Pod 维度 CPU/内存使用量，与 pod.ts 中返回原始 PodMetrics 资源的 listPodMetrics 区分） */
 export function listPodMetricsUsage(clusterId: number, signal?: AbortSignal): Promise<any[]> {
-  return request(`/api/v1/clusters/${clusterId}/pods/metrics`, { signal }).then((res: any) =>
+  return request(`/api/v2/clusters/${clusterId}/pods/metrics`, { signal }).then((res: any) =>
     Array.isArray(res?.list) ? res.list : (Array.isArray(res) ? res : []),
   )
 }
@@ -297,7 +297,7 @@ export interface HelmPreflightResult {
  * Master SSH 资产；缺少 Helm 时在 Master 安装并进行版本确认。
  */
 export function helmPreflight(clusterId: number): Promise<HelmPreflightResult> {
-  return request(`/api/v1/clusters/${clusterId}/helm/preflight-checks`, { method: 'POST' })
+  return request(`/api/v2/clusters/${clusterId}/helm/preflight-checks`, { method: 'POST' })
 }
 
 export function helmInstall(clusterId: number, data: {
@@ -315,12 +315,12 @@ export function helmInstall(clusterId: number, data: {
   execution_target?: 'master'
   master?: HelmPreflightResult['master']
 }> {
-  return request(`/api/v1/clusters/${clusterId}/helm/releases`, { method: 'POST', data })
+  return request(`/api/v2/clusters/${clusterId}/helm/releases`, { method: 'POST', data })
 }
 
 /** Helm 卸载 release */
 export function helmUninstall(clusterId: number, namespace: string, name: string) {
-  return request(`/api/v1/clusters/${clusterId}/helm/releases/${namespace}/${name}`, { method: 'DELETE' })
+  return request(`/api/v2/clusters/${clusterId}/helm/releases/${namespace}/${name}`, { method: 'DELETE' })
 }
 
 export function helmUpgrade(clusterId: number, namespace: string, name: string, data: {
@@ -331,11 +331,11 @@ export function helmUpgrade(clusterId: number, namespace: string, name: string, 
   wait?: boolean
   timeout?: string
 }) {
-  return request(`/api/v1/clusters/${clusterId}/helm/releases/${namespace}/${name}/upgrade-attempts`, { method: 'POST', data })
+  return request(`/api/v2/clusters/${clusterId}/helm/releases/${namespace}/${name}/upgrade-attempts`, { method: 'POST', data })
 }
 
 export function helmRollback(clusterId: number, namespace: string, name: string, revision: number) {
-  return request(`/api/v1/clusters/${clusterId}/helm/releases/${namespace}/${name}/rollback-attempts`, {
+  return request(`/api/v2/clusters/${clusterId}/helm/releases/${namespace}/${name}/rollback-attempts`, {
     method: 'POST', data: { revision, wait: true },
   })
 }
@@ -347,24 +347,24 @@ export interface HelmRepository {
 
 /** 读取目标集群 Master 上实际可用的 Helm 仓库。 */
 export function listHelmRepos(clusterId: number, signal?: AbortSignal): Promise<HelmRepository[]> {
-  return request(`/api/v1/clusters/${clusterId}/helm/repos`, { signal }).then((res: any) =>
+  return request(`/api/v2/clusters/${clusterId}/helm/repos`, { signal }).then((res: any) =>
     Array.isArray(res) ? res : (Array.isArray(res?.list) ? res.list : []),
   )
 }
 
 /** 在目标集群 Master 上添加或同步一个 Helm 仓库。 */
 export function addHelmRepo(clusterId: number, data: HelmRepository): Promise<HelmRepository> {
-  return request(`/api/v1/clusters/${clusterId}/helm/repos`, { method: 'POST', data })
+  return request(`/api/v2/clusters/${clusterId}/helm/repos`, { method: 'POST', data })
 }
 
 /** 从目标集群 Master 的 Helm 仓库注册表中移除一个仓库。 */
 export function deleteHelmRepo(clusterId: number, name: string): Promise<void> {
-  return request(`/api/v1/clusters/${clusterId}/helm/repos/${encodeURIComponent(name)}`, { method: 'DELETE' })
+  return request(`/api/v2/clusters/${clusterId}/helm/repos/${encodeURIComponent(name)}`, { method: 'DELETE' })
 }
 
 /** Helm 搜索 chart */
 export function helmSearch(clusterId: number, keyword: string, signal?: AbortSignal): Promise<any[]> {
-  return request(`/api/v1/clusters/${clusterId}/helm/search`, { params: { keyword }, signal }).then((res: any) =>
+  return request(`/api/v2/clusters/${clusterId}/helm/search`, { params: { keyword }, signal }).then((res: any) =>
     Array.isArray(res) ? res : (Array.isArray(res?.list) ? res.list : []),
   )
 }

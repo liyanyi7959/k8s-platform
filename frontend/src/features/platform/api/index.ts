@@ -61,7 +61,7 @@ export async function listAuditLogs(params?: AuditLogListParams): Promise<AuditL
   if (params?.status) payload.status = params.status
   if (params?.startTime) payload.start_time = params.startTime
   if (params?.endTime) payload.end_time = params.endTime
-  const response = await request<BackendAuditListResponse>('/api/v1/audit-logs', { params: payload })
+  const response = await request<BackendAuditListResponse>('/api/v2/audit-logs', { params: payload })
   return {
     items: (response.items || []).map(normalizeAuditLog),
     total: response.total || 0,
@@ -71,9 +71,9 @@ export async function listAuditLogs(params?: AuditLogListParams): Promise<AuditL
 }
 
 export function getSystemSettings(): Promise<SystemSettings> {
-  return request('/api/v1/system/settings')
+  return request('/api/v2/platform/settings')
 }
 
 export function updateSystemSettings(data: SystemSettings): Promise<SystemSettings> {
-  return request('/api/v1/system/settings', { method: 'PUT', data })
+  return request('/api/v2/platform/settings', { method: 'PATCH', data })
 }

@@ -1,6 +1,6 @@
 /**
  * 修改密码弹窗
- * 调用 /api/v1/auth/change-password，成功后提示并要求重新登录
+ * 调用 /api/v2/identity/password-change-requests，成功后提示并要求重新登录
  */
 import React from 'react'
 import { Modal, Form, Input, message } from 'antd'

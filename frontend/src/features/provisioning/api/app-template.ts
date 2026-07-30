@@ -34,7 +34,7 @@ export function listAppTemplates(
   params?: { category?: string; page?: number; page_size?: number },
   signal?: AbortSignal,
 ): Promise<AppTemplateListResponse> {
-  return request('/api/v1/app-templates', {
+  return request('/api/v2/application-templates', {
     params: { page: 1, page_size: 100, ...params },
     signal,
   })
@@ -42,20 +42,20 @@ export function listAppTemplates(
 
 /** 获取应用模板详情 */
 export function getAppTemplate(id: number, signal?: AbortSignal): Promise<AppTemplate> {
-  return request(`/api/v1/app-templates/${id}`, { signal })
+  return request(`/api/v2/application-templates/${id}`, { signal })
 }
 
 /** 创建应用模板 */
 export function createAppTemplate(data: Partial<AppTemplate>) {
-  return request('/api/v1/app-templates', { method: 'POST', data })
+  return request('/api/v2/application-templates', { method: 'POST', data })
 }
 
 /** 更新应用模板 */
 export function updateAppTemplate(id: number, data: Partial<AppTemplate>) {
-  return request(`/api/v1/app-templates/${id}`, { method: 'PUT', data })
+  return request(`/api/v2/application-templates/${id}`, { method: 'PATCH', data })
 }
 
 /** 删除应用模板 */
 export function deleteAppTemplate(id: number) {
-  return request(`/api/v1/app-templates/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/application-templates/${id}`, { method: 'DELETE' })
 }

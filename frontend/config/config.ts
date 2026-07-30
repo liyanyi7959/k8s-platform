@@ -72,14 +72,9 @@ export default defineConfig({
       .maxEntrypointSize(1200 * 1024)
       .hints('warning')
   },
-  // WebSocket 路由必须在 /api 前面，确保升级请求不会落入普通 HTTP 代理。
+  // 流式路由必须在 /api 前面，确保升级请求不会落入普通 HTTP 代理。
   proxy: {
-    '/api/v1/deploy/servers/terminal/ws': {
-      target: 'ws://localhost:8080',
-      ws: true,
-      changeOrigin: true,
-    },
-    '/api/v1/ws': {
+    '/streams/v2': {
       target: 'ws://localhost:8080',
       ws: true,
       changeOrigin: true,

@@ -31,7 +31,7 @@ export async function listClusters(
   params?: ClusterListParams,
   signal?: AbortSignal,
 ): Promise<ClusterListResponse> {
-  const res = await request<any>('/api/v1/clusters', {
+  const res = await request<any>('/api/v2/clusters', {
     params: {
       page: params?.page,
       page_size: params?.pageSize,
@@ -52,24 +52,24 @@ export async function listClusters(
 
 /** 获取集群详情 */
 export async function getClusterById(id: number, signal?: AbortSignal): Promise<Cluster> {
-  const res = await request<any>(`/api/v1/clusters/${id}`, { signal })
+  const res = await request<any>(`/api/v2/clusters/${id}`, { signal })
   return mapCluster(res)
 }
 
 /** 导入集群 */
 export async function importCluster(data: CreateClusterRequest): Promise<{ clusterId: number }> {
-  const res = await request<any>('/api/v1/clusters/import', { method: 'POST', data })
+  const res = await request<any>('/api/v2/cluster-imports', { method: 'POST', data })
   return { clusterId: res?.cluster_id || 0 }
 }
 
 /** 更新集群 (PATCH) */
 export async function updateCluster(id: number, data: UpdateClusterRequest): Promise<void> {
-  return request(`/api/v1/clusters/${id}`, { method: 'PATCH', data })
+  return request(`/api/v2/clusters/${id}`, { method: 'PATCH', data })
 }
 
 /** 删除集群 */
 export async function deleteCluster(id: number): Promise<void> {
-  return request(`/api/v1/clusters/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/clusters/${id}`, { method: 'DELETE' })
 }
 
 /** 检查集群健康状态 */
@@ -77,7 +77,7 @@ export async function checkClusterConnection(
   id: number,
   signal?: AbortSignal,
 ): Promise<ClusterHealth> {
-  const res = await request<any>(`/api/v1/clusters/${id}/health-checks`, { method: 'POST', signal })
+  const res = await request<any>(`/api/v2/clusters/${id}/health-checks`, { method: 'POST', signal })
   return {
     apiOk: res?.api_ok ?? false,
     nodeReady: res?.node_ready || 0,

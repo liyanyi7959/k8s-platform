@@ -306,12 +306,12 @@ export function buildAIChatFormData(data: AIChatRequest): FormData {
   return formData
 }
 
-export function getAIChatStreamUrl(clusterId: number | string): string {
-  return `/api/v1/clusters/${clusterId}/ai/chat/stream`
+export function getAIChatStreamUrl(clusterId: number | string, conversationId?: number | string): string {
+  return `/api/v2/ai/conversations/${conversationId || 'new'}/messages?cluster_id=${encodeURIComponent(String(clusterId))}`
 }
 
-export function getChatUrl(clusterId: number | string): string {
-  return getAIChatStreamUrl(clusterId)
+export function getChatUrl(clusterId: number | string, conversationId?: number | string): string {
+  return getAIChatStreamUrl(clusterId, conversationId)
 }
 
 export function buildAIChatFetchRequest(data: AIChatRequest): Pick<RequestInit, 'body' | 'headers'> {
@@ -329,56 +329,56 @@ export function buildAIChatFetchRequest(data: AIChatRequest): Pick<RequestInit, 
 }
 
 export function listAIProviders(signal?: AbortSignal): Promise<AIProvider[]> {
-  return request<unknown[]>('/api/v1/ai/providers', { signal }).then((items) => (items || []).map(mapAIProvider))
+  return request<unknown[]>('/api/v2/ai/providers', { signal }).then((items) => (items || []).map(mapAIProvider))
 }
 
 export function createAIProvider(data: CreateAIProviderRequest): Promise<{ id: number }> {
-  return request<any>('/api/v1/ai/providers', {
+  return request<any>('/api/v2/ai/providers', {
     method: 'POST',
     data: toAIProviderPayload(data),
   }).then((result) => ({ id: Number(result?.id || 0) }))
 }
 
 export function updateAIProvider(id: number, data: Partial<CreateAIProviderRequest>): Promise<void> {
-  return request(`/api/v1/ai/providers/${id}`, {
+  return request(`/api/v2/ai/providers/${id}`, {
     method: 'PATCH',
     data: toAIProviderPayload(data),
   })
 }
 
 export function deleteAIProvider(id: number): Promise<void> {
-  return request(`/api/v1/ai/providers/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/ai/providers/${id}`, { method: 'DELETE' })
 }
 
 export function listAIModels(signal?: AbortSignal): Promise<AIModel[]> {
-  return request<unknown[]>('/api/v1/ai/models', { signal }).then((items) => (items || []).map(mapAIModel))
+  return request<unknown[]>('/api/v2/ai/models', { signal }).then((items) => (items || []).map(mapAIModel))
 }
 
 export function createAIModel(data: CreateAIModelRequest): Promise<{ id: number }> {
-  return request<any>('/api/v1/ai/models', {
+  return request<any>('/api/v2/ai/models', {
     method: 'POST',
     data: toAIModelPayload(data),
   }).then((result) => ({ id: Number(result?.id || 0) }))
 }
 
 export function updateAIModel(id: number, data: Partial<CreateAIModelRequest>): Promise<void> {
-  return request(`/api/v1/ai/models/${id}`, {
+  return request(`/api/v2/ai/models/${id}`, {
     method: 'PATCH',
     data: toAIModelPayload(data),
   })
 }
 
 export function deleteAIModel(id: number): Promise<void> {
-  return request(`/api/v1/ai/models/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/ai/models/${id}`, { method: 'DELETE' })
 }
 
 export function getAIRouteSettings(signal?: AbortSignal): Promise<AIRouteSettings> {
-  return request('/api/v1/ai/route-settings', { signal }).then(mapAIRouteSettings)
+  return request('/api/v2/ai/route-settings', { signal }).then(mapAIRouteSettings)
 }
 
 export function updateAIRouteSettings(data: UpdateAIRouteSettingsRequest): Promise<AIRouteSettings> {
-  return request('/api/v1/ai/route-settings', {
-    method: 'PUT',
+  return request('/api/v2/ai/route-settings', {
+    method: 'PATCH',
     data: toRouteSettingsPayload(data),
   }).then(mapAIRouteSettings)
 }
@@ -387,7 +387,7 @@ export function listConversations(
   params?: AIConversationListParams,
   signal?: AbortSignal,
 ): Promise<AIConversationListResponse> {
-  return request<any>('/api/v1/ai/conversations', {
+  return request<any>('/api/v2/ai/conversations', {
     params: {
       page: params?.page,
       page_size: params?.pageSize,
@@ -406,23 +406,23 @@ export function listConversations(
 }
 
 export function getConversation(id: number | string, signal?: AbortSignal): Promise<AIConversationDetail> {
-  return request(`/api/v1/ai/conversations/${id}`, { signal }).then(mapAIConversationDetail)
+  return request(`/api/v2/ai/conversations/${id}`, { signal }).then(mapAIConversationDetail)
 }
 
 /** 更新会话标题（后端可能未实现 PATCH，调用失败时由前端本地回退） */
 export function updateConversation(id: number | string, data: { title?: string }): Promise<any> {
-  return request(`/api/v1/ai/conversations/${id}`, {
+  return request(`/api/v2/ai/conversations/${id}`, {
     method: 'PATCH',
     data,
   })
 }
 
 export function deleteConversation(id: number | string): Promise<void> {
-  return request(`/api/v1/ai/conversations/${id}`, { method: 'DELETE' })
+  return request(`/api/v2/ai/conversations/${id}`, { method: 'DELETE' })
 }
 
 export function createConversation(data: CreateAIConversationRequest): Promise<{ id: number }> {
-  return request<any>(`/api/v1/clusters/${data.clusterId}/ai/conversations`, {
+  return request<any>(`/api/v2/ai/conversations?cluster_id=${encodeURIComponent(String(data.clusterId))}`, {
     method: 'POST',
     data: {
       title: data.title,
@@ -435,15 +435,17 @@ export function createConversation(data: CreateAIConversationRequest): Promise<{
 }
 
 export function sendAIChatMessage(clusterId: number, data: AIChatRequest): Promise<AIChatResponse> {
+	const conversationID = data.conversationId || 'new'
+	const endpoint = `/api/v2/ai/conversations/${conversationID}/messages?cluster_id=${encodeURIComponent(String(clusterId))}`
   if (data.files?.length) {
-    return request(`/api/v1/clusters/${clusterId}/ai/chat`, {
+    return request(endpoint, {
       method: 'POST',
       timeout: AI_CHAT_REQUEST_TIMEOUT,
       data: buildAIChatFormData(data),
     }).then((result: any) => camelize<AIChatResponse>(result))
   }
 
-  return request(`/api/v1/clusters/${clusterId}/ai/chat`, {
+  return request(endpoint, {
     method: 'POST',
     timeout: AI_CHAT_REQUEST_TIMEOUT,
     data: toAIChatPayload(data),
@@ -455,7 +457,7 @@ export function confirmActionProposal(clusterId: number, actionId: number, data:
   confirmation_text: string
   confirm_risk: boolean
 }): Promise<any> {
-  return request(`/api/v1/clusters/${clusterId}/ai/actions/${actionId}/confirm`, {
+  return request(`/api/v2/change-proposals/${actionId}/approvals?cluster_id=${encodeURIComponent(String(clusterId))}`, {
     method: 'POST',
     data,
   })

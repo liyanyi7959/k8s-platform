@@ -229,7 +229,7 @@ func buildAIMessageAttachmentItem(row aidomain.AIUploadedFile) AIMessageAttachme
 		Purpose:        row.Purpose,
 		Status:         row.Status,
 		FileKind:       detectAIStoredFileKind(row.OriginalName, row.ContentType),
-		DownloadURL:    fmt.Sprintf("/api/v1/ai/files/%d/content", row.ID),
+		DownloadURL:    fmt.Sprintf("/api/v2/ai/files/%d/content", row.ID),
 		CreatedAt:      row.CreatedAt.UTC().Format(time.RFC3339),
 	}
 }

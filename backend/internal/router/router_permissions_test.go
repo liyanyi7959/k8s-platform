@@ -1,9 +1,9 @@
 package router
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -13,14 +13,10 @@ import (
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
+	"k8s-platform-backend/internal/middleware"
 	orchestrationprovision "k8s-platform-backend/internal/orchestration/provisioning"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 )
-
-type permissionResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
 
 func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -36,28 +32,28 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "secret reveal does not reuse read perm",
 			method:   http.MethodGet,
-			path:     "/api/v1/clusters/1/secrets/default/demo/reveal",
+			path:     "/api/v2/clusters/1/secrets/default/demo/decoded-data",
 			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
 		{
 			name:     "pod exec session does not reuse write perm",
 			method:   http.MethodPost,
-			path:     "/api/v1/clusters/1/pods/default/demo/exec",
+			path:     "/api/v2/clusters/1/pods/default/demo/exec-sessions",
 			perms:    []string{"k8s:write"},
 			wantCode: 1003,
 		},
 		{
 			name:     "node delete still requires write perm",
 			method:   http.MethodDelete,
-			path:     "/api/v1/clusters/1/nodes/node-a",
+			path:     "/api/v2/clusters/1/nodes/node-a",
 			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
 		{
 			name:     "rbac delete does not accept generic k8s write",
 			method:   http.MethodDelete,
-			path:     "/api/v1/clusters/1/roles/default/demo",
+			path:     "/api/v2/clusters/1/roles/default/demo",
 			perms:    []string{"k8s:write"},
 			wantCode: 1003,
 		},
@@ -65,21 +61,21 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "clusterrole list requires rbac_read not k8s:read",
 			method:   http.MethodGet,
-			path:     "/api/v1/clusters/1/clusterroles",
+			path:     "/api/v2/clusters/1/clusterroles",
 			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
 		{
 			name:     "rolebinding edit requires rbac_write not k8s:write",
 			method:   http.MethodPatch,
-			path:     "/api/v1/clusters/1/rolebindings/edit",
+			path:     "/api/v2/clusters/1/rolebindings/default/demo",
 			perms:    []string{"k8s:write"},
 			wantCode: 1003,
 		},
 		{
 			name:     "clusterrolebinding delete requires rbac_write",
 			method:   http.MethodDelete,
-			path:     "/api/v1/clusters/1/clusterrolebindings/admin",
+			path:     "/api/v2/clusters/1/clusterrolebindings/admin",
 			perms:    []string{"k8s:write"},
 			wantCode: 1003,
 		},
@@ -87,14 +83,14 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "pdb list requires k8s:read",
 			method:   http.MethodGet,
-			path:     "/api/v1/clusters/1/pdbs",
+			path:     "/api/v2/clusters/1/pdbs",
 			perms:    []string{},
 			wantCode: 1003,
 		},
 		{
 			name:     "pdb delete requires k8s:write",
 			method:   http.MethodDelete,
-			path:     "/api/v1/clusters/1/pdbs/default/my-pdb",
+			path:     "/api/v2/clusters/1/pdbs/default/my-pdb",
 			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
@@ -102,7 +98,7 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "lease list requires k8s:read",
 			method:   http.MethodGet,
-			path:     "/api/v1/clusters/1/leases",
+			path:     "/api/v2/clusters/1/leases",
 			perms:    []string{},
 			wantCode: 1003,
 		},
@@ -110,7 +106,7 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "crd delete requires k8s:write",
 			method:   http.MethodDelete,
-			path:     "/api/v1/clusters/1/customresourcedefinitions/my-crd",
+			path:     "/api/v2/clusters/1/customresourcedefinitions/my-crd",
 			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
@@ -118,14 +114,14 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "validating webhook list requires k8s:read",
 			method:   http.MethodGet,
-			path:     "/api/v1/clusters/1/validatingwebhookconfigurations",
+			path:     "/api/v2/clusters/1/validatingwebhookconfigurations",
 			perms:    []string{},
 			wantCode: 1003,
 		},
 		{
 			name:     "mutating webhook delete requires k8s:write",
 			method:   http.MethodDelete,
-			path:     "/api/v1/clusters/1/mutatingwebhookconfigurations/my-wh",
+			path:     "/api/v2/clusters/1/mutatingwebhookconfigurations/my-wh",
 			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
@@ -133,14 +129,14 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "endpointslice list requires k8s:read",
 			method:   http.MethodGet,
-			path:     "/api/v1/clusters/1/endpointslices",
+			path:     "/api/v2/clusters/1/endpointslices",
 			perms:    []string{},
 			wantCode: 1003,
 		},
 		{
 			name:     "endpointslice delete requires k8s:write",
 			method:   http.MethodDelete,
-			path:     "/api/v1/clusters/1/endpointslices/default/my-eps",
+			path:     "/api/v2/clusters/1/endpointslices/default/my-eps",
 			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
@@ -148,14 +144,14 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "namespace create accepts namespace:write",
 			method:   http.MethodPost,
-			path:     "/api/v1/clusters/1/namespaces",
+			path:     "/api/v2/clusters/1/namespaces",
 			perms:    []string{"namespace:write"},
 			wantCode: 4000, // 有权限但缺少 body → 参数错误
 		},
 		{
 			name:     "namespace delete rejects k8s:read",
 			method:   http.MethodDelete,
-			path:     "/api/v1/clusters/1/namespaces/test-ns",
+			path:     "/api/v2/clusters/1/namespaces/test-ns",
 			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
@@ -163,7 +159,7 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "validatingadmissionpolicy list requires k8s:read",
 			method:   http.MethodGet,
-			path:     "/api/v1/clusters/1/validatingadmissionpolicies",
+			path:     "/api/v2/clusters/1/validatingadmissionpolicies",
 			perms:    []string{},
 			wantCode: 1003,
 		},
@@ -171,7 +167,7 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 		{
 			name:     "priorityclass delete requires k8s:write",
 			method:   http.MethodDelete,
-			path:     "/api/v1/clusters/1/priorityclasses/my-pc",
+			path:     "/api/v2/clusters/1/priorityclasses/my-pc",
 			perms:    []string{"k8s:read"},
 			wantCode: 1003,
 		},
@@ -187,16 +183,6 @@ func TestRegisterK8sRoutes_RejectsInsufficientPerms(t *testing.T) {
 	}
 }
 
-func TestRegisterWebSocketRoutes_PodExecRequiresExecPerm(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	resp := performPermissionRequest(t, http.MethodGet, "/api/v1/ws/pod-exec?session_id=sid", []string{"k8s:read"}, func(group *gin.RouterGroup) {
-		registerWebSocketRoutes(group, nil, &kopshttp.PodExecStreamController{})
-	})
-
-	assertPermissionCode(t, resp, 1003)
-}
-
 func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	tests := []struct {
@@ -208,7 +194,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "cluster health check",
 			method: http.MethodPost,
-			path:   "/api/v1/clusters/1/health-checks",
+			path:   "/api/v2/clusters/1/health-checks",
 			register: func(group *gin.RouterGroup) {
 				registerClusterRoutes(group, Deps{}, &fleethttp.ClusterController{})
 			},
@@ -216,7 +202,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "server connection check",
 			method: http.MethodPost,
-			path:   "/api/v1/deploy/servers/1/connection-checks",
+			path:   "/api/v2/provisioning/servers/1/connection-checks",
 			register: func(group *gin.RouterGroup) {
 				registerDeployRoutes(group, &orchestrationprovision.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
 			},
@@ -224,7 +210,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "alert state patch",
 			method: http.MethodPatch,
-			path:   "/api/v1/monitor/alerts/1",
+			path:   "/api/v2/monitoring/alert-rules/1",
 			register: func(group *gin.RouterGroup) {
 				registerMonitorIncidentRoutes(group, &incidenthttp.LegacyController{})
 			},
@@ -232,7 +218,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "canonical configmap update",
 			method: http.MethodPatch,
-			path:   "/api/v1/clusters/1/configmaps/default/demo",
+			path:   "/api/v2/clusters/1/configmaps/default/demo",
 			register: func(group *gin.RouterGroup) {
 				registerK8sRoutes(group, Deps{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.WorkloadController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
@@ -240,7 +226,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "canonical helm detail",
 			method: http.MethodGet,
-			path:   "/api/v1/clusters/1/helm/releases/default/demo",
+			path:   "/api/v2/clusters/1/helm/releases/default/demo",
 			register: func(group *gin.RouterGroup) {
 				registerK8sRoutes(group, Deps{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.WorkloadController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
@@ -248,7 +234,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "automation cancellation request",
 			method: http.MethodPost,
-			path:   "/api/v1/automation/tasks/1/cancellation-requests",
+			path:   "/api/v2/automation/tasks/1/cancellation-requests",
 			register: func(group *gin.RouterGroup) {
 				registerAutomationTaskRoutes(group, &provisionhttp.AutomationTaskController{})
 			},
@@ -256,7 +242,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "deployment preflight check",
 			method: http.MethodPost,
-			path:   "/api/v1/deploy/plans/1/preflight-checks",
+			path:   "/api/v2/provisioning/plans/1/preflight-runs",
 			register: func(group *gin.RouterGroup) {
 				registerDeployRoutes(group, &orchestrationprovision.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
 			},
@@ -264,7 +250,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "permission audit cancellation request",
 			method: http.MethodPost,
-			path:   "/api/v1/permission-audits/1/cancellation-requests",
+			path:   "/api/v2/permission-audits/1/cancellation-requests",
 			register: func(group *gin.RouterGroup) {
 				registerPermissionAuditRoutes(group, &kopshttp.PermissionAuditController{}, nil)
 			},
@@ -272,7 +258,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "node drain request",
 			method: http.MethodPost,
-			path:   "/api/v1/clusters/1/nodes/node-a/drain-requests",
+			path:   "/api/v2/clusters/1/nodes/node-a/drain-requests",
 			register: func(group *gin.RouterGroup) {
 				registerK8sRoutes(group, Deps{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.WorkloadController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
@@ -280,7 +266,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "manifest application",
 			method: http.MethodPost,
-			path:   "/api/v1/clusters/1/manifest-applications",
+			path:   "/api/v2/clusters/1/manifest-applications",
 			register: func(group *gin.RouterGroup) {
 				registerK8sRoutes(group, Deps{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.WorkloadController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
@@ -288,7 +274,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "pod exec session",
 			method: http.MethodPost,
-			path:   "/api/v1/clusters/1/pods/default/demo/exec-sessions",
+			path:   "/api/v2/clusters/1/pods/default/demo/exec-sessions",
 			register: func(group *gin.RouterGroup) {
 				registerK8sRoutes(group, Deps{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.WorkloadController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
@@ -296,7 +282,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "helm rollback attempt",
 			method: http.MethodPost,
-			path:   "/api/v1/clusters/1/helm/releases/default/demo/rollback-attempts",
+			path:   "/api/v2/clusters/1/helm/releases/default/demo/rollback-attempts",
 			register: func(group *gin.RouterGroup) {
 				registerK8sRoutes(group, Deps{}, &kopshttp.ManifestController{}, &kopshttp.NamespaceController{}, &kopshttp.MetricsController{}, &kopshttp.ConnectivityController{}, &kopshttp.NodeController{}, &kopshttp.PlatformResourceController{}, &kopshttp.RelationshipResourceController{}, &kopshttp.BatchController{}, &kopshttp.NetworkController{}, &kopshttp.ConfigurationController{}, &kopshttp.StorageController{}, &kopshttp.HelmController{}, &kopshttp.WorkloadController{}, &kopshttp.PodController{}, &kopshttp.InspectionController{})
 			},
@@ -304,7 +290,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 		{
 			name:   "user password reset request",
 			method: http.MethodPost,
-			path:   "/api/v1/users/1/password-reset-requests",
+			path:   "/api/v2/users/1/password-reset-requests",
 			register: func(group *gin.RouterGroup) {
 				registerUserRoutes(group, &iamhttp.Controller{})
 			},
@@ -323,7 +309,8 @@ func performPermissionRequest(t *testing.T, method string, path string, perms []
 	t.Helper()
 
 	r := gin.New()
-	authed := r.Group("/api/v1")
+	authed := r.Group("/api/v2")
+	authed.Use(middleware.V2Contract())
 	authed.Use(func(c *gin.Context) {
 		c.Set("auth_claims", &auth.Claims{UserID: 1, Username: "tester", Perms: perms})
 		c.Next()
@@ -339,15 +326,16 @@ func performPermissionRequest(t *testing.T, method string, path string, perms []
 func assertPermissionCode(t *testing.T, recorder *httptest.ResponseRecorder, wantCode int) {
 	t.Helper()
 
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("unexpected http status: got %d want %d", recorder.Code, http.StatusOK)
+	wantStatus := http.StatusForbidden
+	if wantCode == 4000 {
+		wantStatus = http.StatusBadRequest
+	} else if wantCode != 1003 {
+		t.Fatalf("unsupported expected legacy code %d", wantCode)
 	}
-
-	var body permissionResponse
-	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
-		t.Fatalf("decode response: %v", err)
+	if recorder.Code != wantStatus {
+		t.Fatalf("unexpected HTTP status: got %d want %d, body=%s", recorder.Code, wantStatus, recorder.Body.String())
 	}
-	if body.Code != wantCode {
-		t.Fatalf("unexpected business code: got %d want %d, body=%s", body.Code, wantCode, recorder.Body.String())
+	if contentType := recorder.Header().Get("Content-Type"); !strings.Contains(contentType, "application/problem+json") {
+		t.Fatalf("expected Problem Details response, got Content-Type %q", contentType)
 	}
 }

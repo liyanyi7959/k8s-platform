@@ -12,25 +12,25 @@ func TestShouldAuditRequest(t *testing.T) {
 		{
 			name:   "skip get requests",
 			method: "GET",
-			path:   "/api/v1/clusters/1/pods",
+			path:   "/api/v2/clusters/1/pods",
 			want:   false,
 		},
 		{
 			name:   "skip pod log session handshake",
 			method: "POST",
-			path:   "/api/v1/clusters/1/pods/devops/demo/logs/session",
+			path:   "/api/v2/clusters/1/pods/devops/demo/log-sessions",
 			want:   false,
 		},
 		{
 			name:   "keep pod exec audited",
 			method: "POST",
-			path:   "/api/v1/clusters/1/pods/devops/demo/exec",
+			path:   "/api/v2/clusters/1/pods/devops/demo/exec-sessions",
 			want:   true,
 		},
 		{
 			name:   "keep create workload audited",
 			method: "POST",
-			path:   "/api/v1/clusters/1/workloads/deployments",
+			path:   "/api/v2/clusters/1/workloads/deployments",
 			want:   true,
 		},
 	}

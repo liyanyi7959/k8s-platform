@@ -128,7 +128,7 @@ func registerAIRoutes(authed *gin.RouterGroup, runtime *aihttp.RuntimeController
 	ai.GET("/files/:id/content", aiReadPerm, runtime.DownloadAttachmentContent)
 
 	ai.POST("/conversations", clusterReadPerm, middleware.RequireAnyPermV2("ai:chat", "ai:diagnose"), management.CreateConversation)
-	ai.POST("/conversations/:id/messages", clusterReadPerm, middleware.RequireAnyPermV2("ai:chat", "ai:diagnose"), runtime.SendChat)
+	ai.POST("/conversations/:id/messages", clusterReadPerm, middleware.RequireAnyPermV2("ai:chat", "ai:diagnose"), runtime.SendChatOrStream)
 	ai.GET("/conversations/:id/events", clusterReadPerm, middleware.RequireAnyPermV2("ai:chat", "ai:diagnose"), runtime.SendChatStream)
 	authed.POST("/change-proposals", clusterReadPerm, middleware.RequirePermV2("ai:change_propose"), runtime.CreateActionProposal)
 	authed.POST("/change-proposals/:id/approvals", clusterReadPerm, middleware.RequirePermV2("ai:change_confirm"), middleware.RequirePermV2("k8s:write"), runtime.ConfirmActionProposal)

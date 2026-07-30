@@ -263,6 +263,53 @@ func TestMigrationNumbersDoNotIntroduceNewDuplicates(t *testing.T) {
 	}
 }
 
+func TestPlatformHTTPAPIsAreV2Only(t *testing.T) {
+	backend := backendRoot(t)
+	workspace := filepath.Dir(backend)
+	legacyPath := "/api/" + "v1"
+
+	for _, root := range []string{
+		filepath.Join(backend, "internal", "router"),
+		filepath.Join(workspace, "frontend", "src"),
+		filepath.Join(workspace, "frontend", "config"),
+	} {
+		err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() || (!strings.HasSuffix(entry.Name(), ".go") && !strings.HasSuffix(entry.Name(), ".ts") && !strings.HasSuffix(entry.Name(), ".tsx")) {
+				return nil
+			}
+			content, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+			if strings.Contains(string(content), legacyPath) {
+				t.Errorf("platform API v1 residue found in %s", path)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("walk v2 API boundary %s: %v", root, err)
+		}
+	}
+
+	routerSource, err := os.ReadFile(filepath.Join(backend, "internal", "router", "router.go"))
+	if err != nil {
+		t.Fatalf("read router: %v", err)
+	}
+	if !strings.Contains(string(routerSource), "r.Group(\"/api/v2\")") {
+		t.Error("router must register the v2 API group")
+	}
+	contract, err := os.ReadFile(filepath.Join(workspace, "docs", "openapi", "v2.yaml"))
+	if err != nil {
+		t.Fatalf("read v2 OpenAPI contract: %v", err)
+	}
+	if !strings.Contains(string(contract), "openapi: 3.1.0") {
+		t.Error("v2 OpenAPI contract must declare an OpenAPI version")
+	}
+}
+
 func applicationModuleFields(t *testing.T, path string) []string {
 	t.Helper()
 	parsed, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
