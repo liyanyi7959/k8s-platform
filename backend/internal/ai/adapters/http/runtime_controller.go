@@ -61,11 +61,11 @@ func (ctl *RuntimeController) GetConversation(c *gin.Context) {
 }
 
 func (ctl *RuntimeController) SendChat(c *gin.Context) {
-	clusterID, ok := aiResourceID(c, "id")
+	request, ok := ctl.bindChatRequest(c)
 	if !ok {
 		return
 	}
-	request, ok := ctl.bindChatRequest(c)
+	clusterID, ok := aiClusterID(c)
 	if !ok {
 		return
 	}
@@ -85,11 +85,11 @@ func (ctl *RuntimeController) SendChat(c *gin.Context) {
 }
 
 func (ctl *RuntimeController) SendChatStream(c *gin.Context) {
-	clusterID, ok := aiResourceID(c, "id")
+	request, ok := ctl.bindChatRequest(c)
 	if !ok {
 		return
 	}
-	request, ok := ctl.bindChatRequest(c)
+	clusterID, ok := aiClusterID(c)
 	if !ok {
 		return
 	}
@@ -155,13 +155,13 @@ func (ctl *RuntimeController) DownloadAttachmentContent(c *gin.Context) {
 }
 
 func (ctl *RuntimeController) CreateActionProposal(c *gin.Context) {
-	clusterID, ok := aiResourceID(c, "id")
-	if !ok {
-		return
-	}
 	var request aiapp.CreateActionProposalRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		resp.Fail(c, 4000, "invalid params")
+		return
+	}
+	clusterID, ok := aiClusterID(c)
+	if !ok {
 		return
 	}
 	if ctl == nil || ctl.runtime == nil {
@@ -178,11 +178,15 @@ func (ctl *RuntimeController) CreateActionProposal(c *gin.Context) {
 }
 
 func (ctl *RuntimeController) ConfirmActionProposal(c *gin.Context) {
-	clusterID, ok := aiResourceID(c, "id")
+	clusterID, ok := aiClusterID(c)
 	if !ok {
 		return
 	}
-	proposalID, ok := aiResourceID(c, "actionId")
+	proposalParameter := "actionId"
+	if c.GetString("api_version") == "v2" {
+		proposalParameter = "id"
+	}
+	proposalID, ok := aiResourceID(c, proposalParameter)
 	if !ok {
 		return
 	}

@@ -11,13 +11,13 @@ func registerProjectRoutes(authed *gin.RouterGroup, ctl *workspacehttp.Controlle
 	if ctl == nil {
 		return
 	}
-	read := middleware.RequirePerm("project:read")
-	write := middleware.RequirePerm("project:write")
+	read := middleware.RequirePermV2("project:read")
+	write := middleware.RequirePermV2("project:write")
 	authed.GET("/projects", read, ctl.ListProjects)
 	authed.GET("/projects/:id", read, ctl.GetProject)
 	authed.POST("/projects", write, ctl.CreateProject)
-	authed.PUT("/projects/:id", write, ctl.UpdateProject)
+	authed.PATCH("/projects/:id", write, ctl.UpdateProject)
 	authed.DELETE("/projects/:id", write, ctl.DeleteProject)
 	authed.GET("/projects/:id/resources", read, ctl.GetProjectResources)
-	authed.PUT("/projects/:id/namespaces", write, ctl.AssignNamespaces)
+	authed.PUT("/projects/:id/namespace-assignments", write, ctl.AssignNamespaces)
 }

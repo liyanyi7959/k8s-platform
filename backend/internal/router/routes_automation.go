@@ -11,12 +11,11 @@ func registerAutomationTaskRoutes(authed *gin.RouterGroup, ctl *provisionhttp.Au
 	if ctl == nil {
 		return
 	}
-	read := middleware.RequirePerm("automation:read")
-	execute := middleware.RequirePerm("automation:execute")
+	read := middleware.RequirePermV2("automation:read")
+	execute := middleware.RequirePermV2("automation:execute")
 	tasks := authed.Group("/automation/tasks")
 	tasks.GET("", read, ctl.List)
 	tasks.GET("/:id", read, ctl.Get)
 	tasks.GET("/:id/logs", read, ctl.Logs)
-	tasks.POST("/:id/cancel", execute, ctl.Cancel)
 	tasks.POST("/:id/cancellation-requests", execute, ctl.Cancel)
 }

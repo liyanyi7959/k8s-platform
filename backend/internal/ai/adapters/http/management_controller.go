@@ -170,7 +170,7 @@ func (mc *ManagementController) DeleteConversation(c *gin.Context) {
 	resp.OK[any](c, nil)
 }
 func (mc *ManagementController) CreateConversation(c *gin.Context) {
-	clusterID, ok := aiResourceID(c, "id")
+	clusterID, ok := aiClusterID(c)
 	if !ok {
 		return
 	}
@@ -186,6 +186,18 @@ func (mc *ManagementController) CreateConversation(c *gin.Context) {
 		return
 	}
 	resp.OK(c, gin.H{"id": id})
+}
+
+func aiClusterID(c *gin.Context) (uint64, bool) {
+	if c.GetString("api_version") != "v2" {
+		return aiResourceID(c, "id")
+	}
+	id, err := strconv.ParseUint(strings.TrimSpace(c.Query("cluster_id")), 10, 64)
+	if err != nil || id == 0 {
+		resp.Fail(c, 4000, "参数错误")
+		return 0, false
+	}
+	return id, true
 }
 
 func aiResourceID(c *gin.Context, name string) (uint64, bool) {

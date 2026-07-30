@@ -183,6 +183,46 @@ func TestLegacyCompatibilityTreeIsEmpty(t *testing.T) {
 	}
 }
 
+func TestIntegrationDirectoryIsEmptyAndOrchestrationIsExplicit(t *testing.T) {
+	root := backendRoot(t)
+	integrationRoot := filepath.Join(root, "internal", "integration")
+	if err := filepath.WalkDir(integrationRoot, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
+			t.Errorf("integration source must move to a context adapter or named orchestration workflow: %s", path)
+		}
+		return nil
+	}); err != nil && !os.IsNotExist(err) {
+		t.Fatalf("walk integration directory: %v", err)
+	}
+
+	orchestrationRoot := filepath.Join(root, "internal", "orchestration")
+	entries, err := os.ReadDir(orchestrationRoot)
+	if err != nil {
+		t.Fatalf("read orchestration directory: %v", err)
+	}
+	allowed := map[string]bool{"ai": true, "kops": true, "provisioning": true}
+	found := map[string]bool{}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			t.Errorf("orchestration root must contain named workflow directories only: %s", entry.Name())
+			continue
+		}
+		if !allowed[entry.Name()] {
+			t.Errorf("orchestration workflow %q is not declared in the architecture catalog", entry.Name())
+			continue
+		}
+		found[entry.Name()] = true
+	}
+	for workflow := range allowed {
+		if !found[workflow] {
+			t.Errorf("expected named orchestration workflow %q", workflow)
+		}
+	}
+}
+
 func TestLegacyModelCompatibilityPackageIsEmpty(t *testing.T) {
 	modelDir := filepath.Join(backendRoot(t), "internal", "legacy", "model")
 	entries, err := os.ReadDir(modelDir)

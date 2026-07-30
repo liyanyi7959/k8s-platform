@@ -5,24 +5,24 @@ import (
 	aihttp "k8s-platform-backend/internal/ai/adapters/http"
 	aimysql "k8s-platform-backend/internal/ai/adapters/mysql"
 	aiapp "k8s-platform-backend/internal/ai/application"
-	legacyai "k8s-platform-backend/internal/integration/ai"
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
+	orchestrationai "k8s-platform-backend/internal/orchestration/ai"
 )
 
 func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule {
 	aiRepository := aimysql.NewRepository(d.DB)
 	workloadAction := kopsapp.NewActionProposalService(kopsruntime.NewActionProposalRuntime(runtime.k8s, runtime.nodeOperations, runtime.podOperations, runtime.workloadOperations, runtime.manifestApply))
-	actions := legacyai.NewActionRuntimeWithChangeService(d.DB, workloadAction, change.application)
+	actions := orchestrationai.NewActionRuntimeWithChangeService(d.DB, workloadAction, change.application)
 	resourceInspection := kopsapp.NewInspectionService(kopsruntime.NewInspectionRuntime(runtime.k8s, runtime.nodeOperations, runtime.workloadOperations, runtime.podStreams, runtime.namespaceDiagnosis, runtime.namespaceWorkloads))
 	resourceQuery := aiapp.NewResourceQueryService(
-		legacyai.NewResourceQueryRuntime(runtime.k8s, runtime.nodeOperations, runtime.podStreams),
-		legacyai.NewResourceQueryPresenter(),
+		orchestrationai.NewResourceQueryRuntime(runtime.k8s, runtime.nodeOperations, runtime.podStreams),
+		orchestrationai.NewResourceQueryPresenter(),
 	)
 	fileService := aiapp.NewAIFileService(aiRepository, d.AIUploadDir)
-	toolRegistry := legacyai.NewToolRegistry(
+	toolRegistry := orchestrationai.NewToolRegistry(
 		d.DB,
-		aiapp.NewClusterReadModelService(legacyai.NewClusterReadPort(runtime.dashboard)),
+		aiapp.NewClusterReadModelService(orchestrationai.NewClusterReadPort(runtime.dashboard)),
 		runtime.namespaceDiagnosis,
 		resourceInspection,
 		resourceQuery,
@@ -30,7 +30,7 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 		aiapp.NewResourceExportPolicyService(),
 	)
 	toolService := aiapp.NewToolService(aiRepository, toolRegistry)
-	chatRuntime := legacyai.NewChatRuntime(
+	chatRuntime := orchestrationai.NewChatRuntime(
 		d.DB,
 		aigateway.NewAIGatewayService(d.DB, d.EncryptionKey),
 		toolService,
@@ -40,8 +40,8 @@ func buildAIModule(d Deps, runtime moduleRuntime, change changeModule) aiModule 
 	providerService := aiapp.NewAIProviderService(aiRepository, d.EncryptionKey)
 	routeSettingsService := aiapp.NewAIRouteSettingsService(aiRepository)
 	conversationService := aiapp.NewConversationService(aiRepository)
-	conversationDetailService := aiapp.NewConversationDetailService(aiRepository, legacyai.NewConversationProjection(toolService, actions))
-	runtimeAdapter := legacyai.NewRuntime(
+	conversationDetailService := aiapp.NewConversationDetailService(aiRepository, orchestrationai.NewConversationProjection(toolService, actions))
+	runtimeAdapter := orchestrationai.NewRuntime(
 		conversationDetailService,
 		chatRuntime,
 		toolService,

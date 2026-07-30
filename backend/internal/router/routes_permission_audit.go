@@ -11,10 +11,10 @@ func registerPermissionAuditRoutes(authed *gin.RouterGroup, auditCtl *kopshttp.P
 	if auditCtl == nil {
 		return
 	}
-	auditPerm := middleware.RequirePerm("k8s:permission_audit")
+	auditPerm := middleware.RequirePermV2("k8s:permission_audit")
 	clusters := authed.Group("/clusters")
 	clusters.POST("/:id/permission-audits", auditPerm, auditCtl.CreateManaged)
-	clusters.GET("/:id/permission-audits/latest", auditPerm, auditCtl.LatestForCluster)
+	clusters.GET("/:id/permission-audits", auditPerm, auditCtl.LatestForCluster)
 	clusters.GET("/:id/permission-audits/recommend-rbac", auditPerm, auditCtl.RecommendRBAC)
 	if rbac != nil {
 		clusters.GET("/:id/permission-audits/rbac-matrix/default", auditPerm, rbac.Default)
@@ -27,8 +27,6 @@ func registerPermissionAuditRoutes(authed *gin.RouterGroup, auditCtl *kopshttp.P
 	audits.GET("/:id/logs", auditPerm, auditCtl.Logs)
 	audits.GET("/:id/compare", auditPerm, auditCtl.Compare)
 	audits.GET("/:id/findings", auditPerm, auditCtl.ListFindings)
-	audits.POST("/:id/cancel", auditPerm, auditCtl.Cancel)
-	audits.POST("/adhoc", auditPerm, auditCtl.CreateAdhoc)
 	audits.POST("/:id/cancellation-requests", auditPerm, auditCtl.Cancel)
 	audits.POST("/ad-hoc-audits", auditPerm, auditCtl.CreateAdhoc)
 }

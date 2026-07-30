@@ -51,6 +51,20 @@ wire every context, but it must not contain business rules. `middleware`, `db`,
 `auth`, and `config` provide shared technical capabilities rather than business
 models.
 
+## Cross-context orchestration
+
+`orchestration/` is the explicit, narrow boundary for workflows that must
+coordinate more than one bounded context. Its packages are named by workflow
+(`ai`, `kops`, and `provisioning`) and are composed only from the router.
+Examples include AI action execution through Kops and Change, deployment
+execution across Provisioning, Fleet and Platform, and Kops permission-audit
+workflows.
+
+It is not a general implementation directory: a component that serves one
+bounded context belongs under that context's `adapters/` tree. The former
+`integration/` directory is intentionally empty and is protected by an
+architecture test so it cannot become another legacy service layer.
+
 ## Dependency direction
 
 ```text
@@ -67,6 +81,9 @@ router/composition -> adapters -> application -> domain
 - `application` may import its own `domain` and `ports`, never adapters or legacy layers.
 - An adapter may implement its context's ports, but cannot import another context's adapters.
 - Cross-context collaboration uses an explicit public port or integration event.
+- A temporary cross-context workflow lives only in its named
+  `orchestration/<workflow>` package and must be decomposed into ports/events
+  before it can become single-context behavior.
 - Database tables have one owning context even while all contexts share one MySQL instance.
 
 ## Migration rule

@@ -19,12 +19,23 @@ func AuthRequiredV2(mgr *auth.Manager, authorizationReader RolesPermissionsReade
 			return
 		}
 		authHeader := c.GetHeader("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
+		token := ""
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			token = strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+		} else {
+			connection := strings.ToLower(c.GetHeader("Connection"))
+			upgrade := strings.ToLower(c.GetHeader("Upgrade"))
+			accept := strings.ToLower(c.GetHeader("Accept"))
+			if (strings.Contains(connection, "upgrade") && upgrade == "websocket") || strings.Contains(accept, "text/event-stream") {
+				token = strings.TrimSpace(c.Query("token"))
+			}
+		}
+		if token == "" {
 			problem.Unauthorized(c, "未提供有效的 Bearer Token")
 			c.Abort()
 			return
 		}
-		claims, err := mgr.ParseToken(strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer ")))
+		claims, err := mgr.ParseToken(token)
 		if err != nil {
 			problem.Unauthorized(c, "登录已过期，请重新登录")
 			c.Abort()
@@ -57,6 +68,29 @@ func RequirePermV2(permission string) gin.HandlerFunc {
 			}
 		}
 		problem.Forbidden(c, "当前用户缺少权限："+permission)
+		c.Abort()
+	}
+}
+
+// RequireAnyPermV2 accepts callers with at least one listed permission while
+// retaining the v2 Problem Details error contract.
+func RequireAnyPermV2(permissions ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims, ok := GetClaims(c)
+		if !ok {
+			problem.Unauthorized(c, "登录已过期，请重新登录")
+			c.Abort()
+			return
+		}
+		for _, permission := range permissions {
+			for _, value := range claims.Perms {
+				if value == permission {
+					c.Next()
+					return
+				}
+			}
+		}
+		problem.Forbidden(c, "当前用户缺少所需权限")
 		c.Abort()
 	}
 }

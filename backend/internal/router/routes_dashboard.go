@@ -11,8 +11,8 @@ func registerDashboardRoutes(authed *gin.RouterGroup, d Deps, ctl *fleethttp.Das
 	if ctl == nil {
 		return
 	}
-	dash := authed.Group("/dashboard")
-	dash.Use(middleware.RequirePerm("cluster:read"))
-	dash.GET("/clusters/:id/overview", middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.GetClusterOverview)
-	dash.GET("/clusters/:id/certificate-risks", ctl.GetClusterCertificateRisks)
+	clusters := authed.Group("/clusters")
+	clusters.Use(middleware.RequirePermV2("cluster:read"))
+	clusters.GET("/:id/overview", middleware.CacheJSON(d.CacheStore, d.CacheTTL), ctl.GetClusterOverview)
+	clusters.GET("/:id/certificate-risks", ctl.GetClusterCertificateRisks)
 }

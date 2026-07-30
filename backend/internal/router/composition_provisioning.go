@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	legacyprovision "k8s-platform-backend/internal/integration/provisioning"
+	orchestrationprovision "k8s-platform-backend/internal/orchestration/provisioning"
 	platformapp "k8s-platform-backend/internal/platform/application"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 	provisionmysql "k8s-platform-backend/internal/provisioning/adapters/mysql"
@@ -69,14 +69,14 @@ func buildProvisioningModule(d Deps, runtime moduleRuntime) provisioningModule {
 	appTemplateService := provisionapp.NewAppTemplateService(provisionRepository)
 	serverService := provisionapp.NewServerService(provisionRepository, d.EncryptionKey)
 	credentialService := provisionapp.NewCredentialService(provisionRepository, d.EncryptionKey)
-	sshRuntime := legacyprovision.NewSSHRuntime(d.DB, d.EncryptionKey)
-	preflightRuntime := legacyprovision.NewPreflightRuntime(d.DB, d.EncryptionKey)
-	ansibleRunner := legacyprovision.NewAnsibleRunner(d.DB, d.EncryptionKey, runtime.taskStore)
-	deploymentExecutor := legacyprovision.NewDeploymentExecutor(d.DB, runtime.taskStore, runtime.clusterRegistry, preflightRuntime, ansibleRunner)
-	deploymentRuntime := legacyprovision.NewRuntime(d.DB, deploymentExecutor, preflightRuntime)
+	sshRuntime := orchestrationprovision.NewSSHRuntime(d.DB, d.EncryptionKey)
+	preflightRuntime := orchestrationprovision.NewPreflightRuntime(d.DB, d.EncryptionKey)
+	ansibleRunner := orchestrationprovision.NewAnsibleRunner(d.DB, d.EncryptionKey, runtime.taskStore)
+	deploymentExecutor := orchestrationprovision.NewDeploymentExecutor(d.DB, runtime.taskStore, runtime.clusterRegistry, preflightRuntime, ansibleRunner)
+	deploymentRuntime := orchestrationprovision.NewRuntime(d.DB, deploymentExecutor, preflightRuntime)
 	_ = appTemplateService.SeedBuiltinAppTemplates(context.Background())
 	return provisioningModule{
-		serverAccess: legacyprovision.NewServerAccessController(sshRuntime, runtime.execSessions, serverService),
+		serverAccess: orchestrationprovision.NewServerAccessController(sshRuntime, runtime.execSessions, serverService),
 		servers:      provisionhttp.NewServerController(serverService),
 		credentials:  provisionhttp.NewCredentialController(credentialService),
 		plans:        provisionhttp.NewDeployPlanController(provisionapp.NewDeployPlanService(provisionRepository)),

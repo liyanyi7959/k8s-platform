@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
+	"k8s-platform-backend/pkg/problem"
 )
 
 type ApiResponse[T any] struct {
@@ -44,6 +46,10 @@ func normalizeMessage(msg string) string {
 }
 
 func OK[T any](c *gin.Context, data T) {
+	if isV2(c) {
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	c.Set("resp_code", 0)
 	c.Set("resp_message", "ok")
 	c.JSON(http.StatusOK, ApiResponse[T]{Code: 0, Message: "ok", Data: data})
@@ -55,6 +61,10 @@ func Fail(c *gin.Context, code int, msg string) {
 
 func FailWithData[T any](c *gin.Context, code int, msg string, data T) {
 	msg = normalizeMessage(msg)
+	if isV2(c) {
+		problem.WriteKind(c, legacyProblemKind(code), msg)
+		return
+	}
 	c.Set("resp_code", code)
 	c.Set("resp_message", msg)
 	c.JSON(http.StatusOK, ApiResponse[T]{Code: code, Message: msg, Data: data})
@@ -66,6 +76,11 @@ func HandleK8sError(c *gin.Context, err error) bool {
 		return true
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
+		if isV2(c) {
+			problem.Write(c, http.StatusGatewayTimeout, problem.TypeBaseURI+"timeout", "请求超时", "请求超时")
+			c.Abort()
+			return true
+		}
 		c.Set("resp_code", 5000)
 		c.Set("resp_message", "请求超时")
 		c.JSON(http.StatusGatewayTimeout, ApiResponse[any]{
@@ -77,4 +92,27 @@ func HandleK8sError(c *gin.Context, err error) bool {
 		return true
 	}
 	return false
+}
+
+func isV2(c *gin.Context) bool {
+	return c != nil && c.GetString("api_version") == "v2"
+}
+
+func legacyProblemKind(code int) problem.Kind {
+	switch code {
+	case 1002, 4010:
+		return problem.KindUnauthorized
+	case 1003:
+		return problem.KindForbidden
+	case 2001:
+		return problem.KindClusterCredentialInvalid
+	case 4000:
+		return problem.KindInvalidRequest
+	case 4040:
+		return problem.KindNotFound
+	case 4090:
+		return problem.KindConflict
+	default:
+		return problem.KindInternal
+	}
 }

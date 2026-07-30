@@ -1,8 +1,8 @@
 // router 负责注册 HTTP 路由，并把 controller 绑定到 gin.Engine。
 //
 // 路由组织约定：
-// - 存量 API 使用 `/api/v1`；逐领域迁移后的 API 使用 `/api/v2`
-// - v1 保留历史响应信封，v2 使用 HTTP 语义与 Problem Details
+// - 平台 REST API 仅使用 `/api/v2`；流式会话独立使用 `/streams/v2`
+// - 所有 API 响应使用 HTTP 语义与 Problem Details
 // - 认证/鉴权通过中间件完成：
 //   - RequestID：为每个请求注入 request id，便于排障追踪
 //   - AuthRequiredWithRBAC：解析 JWT，并加载/校验权限点
@@ -63,18 +63,19 @@ func registerRoutes(
 	d Deps,
 	modules applicationModules,
 ) {
-	api := r.Group("/api/v1")
+	api := r.Group("/api/v2")
+	api.Use(middleware.V2Contract())
 
 	// ── 公开接口（无需认证） ──
-	api.POST("/auth/login", d.AuthCtl.Login)
-	api.POST("/auth/logout", d.AuthCtl.Logout)
-	api.GET("/auth/me", d.AuthCtl.Me)
-	api.GET("/auth/captcha", d.AuthCtl.GetCaptcha)
-	api.POST("/auth/password-reset/request", d.AuthCtl.RequestPasswordReset)
-	api.POST("/auth/password-reset/confirm", d.AuthCtl.ConfirmPasswordReset)
+	api.POST("/session", d.AuthCtl.Login)
+	api.POST("/session/logout", d.AuthCtl.Logout)
+	api.GET("/identity", d.AuthCtl.Me)
+	api.GET("/captcha", d.AuthCtl.GetCaptcha)
+	api.POST("/password-reset-requests", d.AuthCtl.RequestPasswordReset)
+	api.POST("/password-reset-confirmations", d.AuthCtl.ConfirmPasswordReset)
 	// Alertmanager 使用单独的共享令牌接入，避免将告警入口暴露为匿名写接口。
 	if token := strings.TrimSpace(os.Getenv("AIOPS_ALERTMANAGER_WEBHOOK_TOKEN")); token != "" && modules.incident.legacy != nil {
-		api.POST("/monitor/webhooks/alertmanager", func(c *gin.Context) {
+		api.POST("/integrations/alertmanager/events", func(c *gin.Context) {
 			if c.GetHeader("X-AIOPS-Webhook-Token") != token {
 				resp.Fail(c, 4010, "Webhook 认证失败")
 				c.Abort()
@@ -86,20 +87,20 @@ func registerRoutes(
 
 	// ── 需认证接口 ──
 	authed := api.Group("")
-	authed.Use(middleware.AuthRequiredWithRBAC(d.JWTMgr, d.AuthorizationReader))
+	authed.Use(middleware.AuthRequiredV2(d.JWTMgr, d.AuthorizationReader))
 
 	// ── 审计中间件（仅对写操作生效） ──
 	if modules.audit.service != nil {
 		authed.Use(middleware.AuditLogger(modules.audit.service))
 	}
 
-	authed.POST("/auth/change-password", d.AuthCtl.ChangePassword)
+	authed.POST("/identity/password-change-requests", d.AuthCtl.ChangePassword)
 
 	registerClusterRoutes(authed, d, modules.fleet.clusters)
 	registerDashboardRoutes(authed, d, modules.fleet.dashboard)
 	registerPermissionAuditRoutes(authed, modules.kops.permissionAudit, modules.kops.rbac)
 	registerK8sRoutes(authed, d, modules.kops.manifests, modules.kops.namespaces, modules.kops.metrics, modules.kops.connectivity, modules.kops.nodes, modules.kops.platform, modules.kops.relationships, modules.kops.batch, modules.kops.network, modules.kops.configuration, modules.kops.storage, modules.kops.helm, modules.kops.workloads, modules.kops.pods, modules.kops.inspection, modules.kops.creator)
-	registerWebSocketRoutes(authed, modules.kops.podLogStream, modules.kops.podExecStream)
+	registerWebSocketRoutes(r, d, modules.kops.podLogStream, modules.kops.podExecStream, modules.provisioning.serverAccess)
 	registerAuditRoutes(authed, modules.audit.controller)
 	registerUserRoutes(authed, modules.iam.users)
 	registerSystemRoutes(authed, modules.platform.settings)
@@ -109,5 +110,5 @@ func registerRoutes(
 	registerAppTemplateRoutes(authed, modules.provisioning.appTemplate)
 	registerMonitorIncidentRoutes(authed, modules.incident.legacy)
 	registerAutomationTaskRoutes(authed, modules.provisioning.automation)
-	registerIncidentV2Routes(r, d, modules.audit.service, modules.incident.v2)
+	registerIncidentV2Routes(authed, modules.incident.v2)
 }

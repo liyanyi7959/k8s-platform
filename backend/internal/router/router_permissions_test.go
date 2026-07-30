@@ -12,8 +12,8 @@ import (
 	fleethttp "k8s-platform-backend/internal/fleet/adapters/http"
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
-	legacyprovision "k8s-platform-backend/internal/integration/provisioning"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
+	orchestrationprovision "k8s-platform-backend/internal/orchestration/provisioning"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 )
 
@@ -218,7 +218,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/deploy/servers/1/connection-checks",
 			register: func(group *gin.RouterGroup) {
-				registerDeployRoutes(group, &legacyprovision.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
+				registerDeployRoutes(group, &orchestrationprovision.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
 			},
 		},
 		{
@@ -258,7 +258,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v1/deploy/plans/1/preflight-checks",
 			register: func(group *gin.RouterGroup) {
-				registerDeployRoutes(group, &legacyprovision.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
+				registerDeployRoutes(group, &orchestrationprovision.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
 			},
 		},
 		{

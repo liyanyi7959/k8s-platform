@@ -12,13 +12,13 @@ func registerClusterRoutes(authed *gin.RouterGroup, d Deps, ctl *fleethttp.Clust
 		return
 	}
 	clusters := authed.Group("/clusters")
-	clusters.Use(middleware.RequirePerm("cluster:read"))
+	clusters.Use(middleware.RequirePermV2("cluster:read"))
 	clusters.GET("", ctl.List)
+	clusters.POST("", middleware.RequirePermV2("cluster:create"), ctl.Import)
 	clusters.GET("/:id", ctl.Get)
-	clusters.POST("/:id/check-health", ctl.CheckHealth)
 	clusters.POST("/:id/health-checks", ctl.CheckHealth)
-	clusters.PATCH("/:id", middleware.RequirePerm("cluster:create"), ctl.Patch)
-	clusters.DELETE("/:id", middleware.RequirePerm("cluster:create"), ctl.Delete)
+	clusters.PATCH("/:id", middleware.RequirePermV2("cluster:create"), ctl.Patch)
+	clusters.DELETE("/:id", middleware.RequirePermV2("cluster:create"), ctl.Delete)
 
-	authed.POST("/clusters/import", middleware.RequirePerm("cluster:create"), ctl.Import)
+	authed.POST("/cluster-imports", middleware.RequirePermV2("cluster:create"), ctl.Import)
 }

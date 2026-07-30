@@ -11,11 +11,11 @@ func registerAppTemplateRoutes(authed *gin.RouterGroup, ctl *provisionhttp.AppTe
 	if ctl == nil {
 		return
 	}
-	read := middleware.RequirePerm("appstore:read")
-	write := middleware.RequirePerm("appstore:write")
-	authed.GET("/app-templates", read, ctl.ListAppTemplates)
-	authed.GET("/app-templates/:id", read, ctl.GetAppTemplate)
-	authed.POST("/app-templates", write, ctl.CreateAppTemplate)
-	authed.PUT("/app-templates/:id", write, ctl.UpdateAppTemplate)
-	authed.DELETE("/app-templates/:id", write, ctl.DeleteAppTemplate)
+	read := middleware.RequirePermV2("appstore:read")
+	write := middleware.RequirePermV2("appstore:write")
+	authed.GET("/application-templates", read, ctl.ListAppTemplates)
+	authed.GET("/application-templates/:id", read, ctl.GetAppTemplate)
+	authed.POST("/application-templates", write, ctl.CreateAppTemplate)
+	authed.PATCH("/application-templates/:id", write, ctl.UpdateAppTemplate)
+	authed.DELETE("/application-templates/:id", write, ctl.DeleteAppTemplate)
 }

@@ -52,19 +52,19 @@ func registerK8sRoutes(authed *gin.RouterGroup, d Deps, manifest *kopshttp.Manif
 	if len(creators) > 0 && creators[0] != nil {
 		creator = creators[0]
 	}
-	resourceSupportReadPerm := middleware.RequireAnyPerm("k8s:read", "k8s:rbac_read")
+	resourceSupportReadPerm := middleware.RequireAnyPermV2("k8s:read", "k8s:rbac_read")
 	k8s := authed.Group("")
 	args := k8sRouteArgs{
 		k8s: k8s, d: d, manifest: manifest, namespace: namespace, metrics: metrics, connectivity: connectivity, nodes: nodes, platform: platform, relationships: relationships, batch: batch, network: network, configuration: configuration, storage: storage, helm: helm, workloads: workloads, pods: pods, inspection: inspection, creator: creator,
 		perm: k8sPerms{
-			read:                   middleware.RequirePerm("k8s:read"),
-			write:                  middleware.RequirePerm("k8s:write"),
-			namespaceRead:          middleware.RequireAnyPerm("namespace:read", "k8s:read"),
-			namespaceWrite:         middleware.RequireAnyPerm("namespace:write", "k8s:write"),
-			secretReveal:           middleware.RequirePerm("k8s:secret_reveal"),
-			rbacRead:               middleware.RequirePerm("k8s:rbac_read"),
-			rbacWrite:              middleware.RequirePerm("k8s:rbac_write"),
-			exec:                   middleware.RequirePerm("k8s:exec"),
+			read:                   middleware.RequirePermV2("k8s:read"),
+			write:                  middleware.RequirePermV2("k8s:write"),
+			namespaceRead:          middleware.RequireAnyPermV2("namespace:read", "k8s:read"),
+			namespaceWrite:         middleware.RequireAnyPermV2("namespace:write", "k8s:write"),
+			secretReveal:           middleware.RequirePermV2("k8s:secret_reveal"),
+			rbacRead:               middleware.RequirePermV2("k8s:rbac_read"),
+			rbacWrite:              middleware.RequirePermV2("k8s:rbac_write"),
+			exec:                   middleware.RequirePermV2("k8s:exec"),
 			resourceSupportRead:    resourceSupportReadPerm,
 			storageSnapshotSupport: resourceSupportReadPerm,
 		},
