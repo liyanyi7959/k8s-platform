@@ -9,7 +9,6 @@ import (
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
-	orchestrationprovision "k8s-platform-backend/internal/orchestration/provisioning"
 	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 	workspacehttp "k8s-platform-backend/internal/workspace/adapters/http"
@@ -85,7 +84,7 @@ type changeModule struct {
 }
 
 type provisioningModule struct {
-	serverAccess *orchestrationprovision.ServerAccessController
+	serverAccess *provisionhttp.ServerAccessController
 	servers      *provisionhttp.ServerController
 	credentials  *provisionhttp.CredentialController
 	plans        *provisionhttp.DeployPlanController

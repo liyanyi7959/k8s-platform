@@ -2,17 +2,14 @@ package provisioning
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
-	fleetapp "k8s-platform-backend/internal/fleet/application"
 	platformapp "k8s-platform-backend/internal/platform/application"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
+	provisionports "k8s-platform-backend/internal/provisioning/ports"
 )
 
 // DeploymentExecutor owns the operational state machine for a deployment
@@ -23,22 +20,22 @@ import (
 // concrete implementations are wired at the composition root; no legacy
 // service coordinator participates in deployment execution.
 type DeploymentExecutor struct {
-	db              *gorm.DB
-	taskStore       *platformapp.TaskStore
-	clusterRegistry *fleetapp.Registry
+	repository      provisionports.Repository
+	taskStore       DeploymentTaskStore
+	clusterRegistry ClusterRegistrar
 	preflight       *PreflightRuntime
 	ansibleRunner   *AnsibleRunner
 }
 
 func NewDeploymentExecutor(
-	db *gorm.DB,
-	taskStore *platformapp.TaskStore,
-	clusterRegistry *fleetapp.Registry,
+	repository provisionports.Repository,
+	taskStore DeploymentTaskStore,
+	clusterRegistry ClusterRegistrar,
 	preflight *PreflightRuntime,
 	ansibleRunner *AnsibleRunner,
 ) *DeploymentExecutor {
 	return &DeploymentExecutor{
-		db:              db,
+		repository:      repository,
 		taskStore:       taskStore,
 		clusterRegistry: clusterRegistry,
 		preflight:       preflight,
@@ -67,13 +64,13 @@ func (e *DeploymentExecutor) executeFromStep(ctx context.Context, planID, userID
 	}
 
 	var taskID uint64
-	err = e.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var plan model.DeployPlan
-		if err := tx.Where("deleted_at IS NULL AND id = ?", planID).First(&plan).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return provisionapp.ErrNotFound
-			}
+	err = e.repository.Transaction(ctx, func(tx provisionports.Repository) error {
+		plan, found, err := tx.FindDeployPlan(ctx, planID)
+		if err != nil {
 			return err
+		}
+		if !found {
+			return provisionapp.ErrNotFound
 		}
 		if plan.Status != "draft" && plan.Status != "failed" && plan.Status != "cancelled" {
 			return provisionapp.ErrWithMessage(provisionapp.ErrConflict, "当前状态不允许执行部署")
@@ -102,9 +99,9 @@ func (e *DeploymentExecutor) executeFromStep(ctx context.Context, planID, userID
 			return err
 		}
 		taskID = uint64(task.ID)
-		return tx.Model(&model.DeployPlan{}).Where("id = ?", planID).Updates(map[string]any{
+		return tx.UpdateDeployPlan(ctx, planID, map[string]any{
 			"status": "running", "task_id": taskID,
-		}).Error
+		})
 	})
 	if err != nil {
 		return 0, err
@@ -135,15 +132,15 @@ func (e *DeploymentExecutor) Cancel(ctx context.Context, planID uint64) error {
 	if planID == 0 {
 		return provisionapp.ErrInvalidParams
 	}
-	if e == nil || e.db == nil || e.taskStore == nil {
+	if e == nil || e.repository == nil || e.taskStore == nil {
 		return provisionapp.ErrConflict
 	}
-	var plan model.DeployPlan
-	if err := e.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", planID).First(&plan).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return provisionapp.ErrNotFound
-		}
+	plan, found, err := e.repository.FindDeployPlan(ctx, planID)
+	if err != nil {
 		return err
+	}
+	if !found {
+		return provisionapp.ErrNotFound
 	}
 	if plan.Status != "running" {
 		return provisionapp.ErrWithMessage(provisionapp.ErrConflict, "仅运行中的计划可取消")
@@ -158,15 +155,15 @@ func (e *DeploymentExecutor) Retry(ctx context.Context, planID, userID uint64) (
 	if planID == 0 {
 		return 0, provisionapp.ErrInvalidParams
 	}
-	if e == nil || e.db == nil || e.taskStore == nil {
+	if e == nil || e.repository == nil || e.taskStore == nil {
 		return 0, provisionapp.ErrConflict
 	}
-	var plan model.DeployPlan
-	if err := e.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", planID).First(&plan).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, provisionapp.ErrNotFound
-		}
+	plan, found, err := e.repository.FindDeployPlan(ctx, planID)
+	if err != nil {
 		return 0, err
+	}
+	if !found {
+		return 0, provisionapp.ErrNotFound
 	}
 	if plan.Status != "failed" && plan.Status != "cancelled" {
 		return 0, provisionapp.ErrWithMessage(provisionapp.ErrConflict, "仅失败或已取消的计划可重试")
@@ -190,7 +187,7 @@ func (e *DeploymentExecutor) InstallAddons(ctx context.Context, planID uint64, r
 	if planID == 0 {
 		return 0, provisionapp.ErrInvalidParams
 	}
-	if e == nil || e.db == nil || e.taskStore == nil {
+	if e == nil || e.repository == nil || e.taskStore == nil {
 		return 0, provisionapp.ErrConflict
 	}
 	addons, err := normalizeClusterAddons(requested)
@@ -299,39 +296,44 @@ func (e *DeploymentExecutor) TaskLogs(taskID int64, offset, limit int, stepKey s
 }
 
 func (e *DeploymentExecutor) readyForExecution() error {
-	if e == nil || e.db == nil || e.taskStore == nil || e.preflight == nil {
+	if e == nil || e.repository == nil || e.taskStore == nil || e.preflight == nil {
 		return provisionapp.ErrWithMessage(provisionapp.ErrConflict, "部署运行时未初始化")
 	}
 	return nil
 }
 
 func (e *DeploymentExecutor) planWithNodes(ctx context.Context, planID uint64) (model.DeployPlan, []model.DeployPlanNode, error) {
-	if e == nil || e.db == nil {
+	if e == nil || e.repository == nil {
 		return model.DeployPlan{}, nil, provisionapp.ErrConflict
 	}
-	var plan model.DeployPlan
-	if err := e.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", planID).First(&plan).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return model.DeployPlan{}, nil, provisionapp.ErrNotFound
-		}
+	plan, found, err := e.repository.FindDeployPlan(ctx, planID)
+	if err != nil {
 		return model.DeployPlan{}, nil, err
 	}
-	var nodes []model.DeployPlanNode
-	if err := e.db.WithContext(ctx).Where("plan_id = ?", planID).Order("sort_order asc, id asc").Find(&nodes).Error; err != nil {
+	if !found {
+		return model.DeployPlan{}, nil, provisionapp.ErrNotFound
+	}
+	nodes, err := e.repository.ListDeployPlanNodes(ctx, planID)
+	if err != nil {
 		return model.DeployPlan{}, nil, err
 	}
 	return plan, nodes, nil
 }
 
 func (e *DeploymentExecutor) updatePlanStatus(ctx context.Context, planID uint64, from, to string) error {
-	result := e.db.WithContext(ctx).Model(&model.DeployPlan{}).Where("deleted_at IS NULL AND id = ? AND status = ?", planID, from).Update("status", to)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return provisionapp.ErrWithMessage(provisionapp.ErrConflict, "部署计划状态不允许执行该操作")
-	}
-	return nil
+	return e.repository.Transaction(ctx, func(tx provisionports.Repository) error {
+		plan, found, err := tx.FindDeployPlan(ctx, planID)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return provisionapp.ErrNotFound
+		}
+		if plan.Status != from {
+			return provisionapp.ErrWithMessage(provisionapp.ErrConflict, "部署计划状态不允许执行该操作")
+		}
+		return tx.UpdateDeployPlan(ctx, planID, map[string]any{"status": to})
+	})
 }
 
 func (e *DeploymentExecutor) ansiblePipeline(ctx context.Context, planID uint64, taskID int64) {
@@ -473,7 +475,7 @@ func (e *DeploymentExecutor) registerClusterAfterDeploy(ctx context.Context, pla
 	if err != nil {
 		return 0, fmt.Errorf("注册集群失败: %w", err)
 	}
-	_ = e.db.WithContext(ctx).Model(&model.DeployPlan{}).Where("id = ?", plan.ID).Update("cluster_id", clusterID).Error
+	_ = e.repository.UpdateDeployPlan(ctx, plan.ID, map[string]any{"cluster_id": clusterID})
 	return clusterID, nil
 }
 
@@ -524,7 +526,7 @@ func (e *DeploymentExecutor) addonInstallPipeline(ctx context.Context, planID, t
 	if containsClusterAddon(addons, "helm") {
 		updates["helm_install"] = true
 	}
-	if err := e.db.WithContext(ctx).Model(&model.DeployPlan{}).Where("id = ?", planID).Updates(updates).Error; err != nil {
+	if err := e.repository.UpdateDeployPlan(ctx, uint64(planID), updates); err != nil {
 		e.markTaskFailed(task, "组件已完成安装，但更新部署方案记录失败："+err.Error())
 		return
 	}
@@ -570,8 +572,8 @@ func (e *DeploymentExecutor) markTaskCanceled(task *platformapp.Task) {
 }
 
 func (e *DeploymentExecutor) updatePlanStatusDirect(ctx context.Context, planID uint64, status string) {
-	if e != nil && e.db != nil {
-		_ = e.db.WithContext(ctx).Model(&model.DeployPlan{}).Where("id = ?", planID).Update("status", status).Error
+	if e != nil && e.repository != nil {
+		_ = e.repository.UpdateDeployPlan(ctx, planID, map[string]any{"status": status})
 	}
 }
 

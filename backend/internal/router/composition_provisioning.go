@@ -7,7 +7,9 @@ import (
 	orchestrationprovision "k8s-platform-backend/internal/orchestration/provisioning"
 	platformapp "k8s-platform-backend/internal/platform/application"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
+	provisionmemory "k8s-platform-backend/internal/provisioning/adapters/memory"
 	provisionmysql "k8s-platform-backend/internal/provisioning/adapters/mysql"
+	provisionssh "k8s-platform-backend/internal/provisioning/adapters/ssh"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 )
 
@@ -69,14 +71,15 @@ func buildProvisioningModule(d Deps, runtime moduleRuntime) provisioningModule {
 	appTemplateService := provisionapp.NewAppTemplateService(provisionRepository)
 	serverService := provisionapp.NewServerService(provisionRepository, d.EncryptionKey)
 	credentialService := provisionapp.NewCredentialService(provisionRepository, d.EncryptionKey)
-	sshRuntime := orchestrationprovision.NewSSHRuntime(d.DB, d.EncryptionKey)
+	sshRuntime := provisionssh.NewSSHRuntime(d.DB, d.EncryptionKey)
+	terminalSessions := provisionmemory.NewTerminalSessionStore(0)
 	preflightRuntime := orchestrationprovision.NewPreflightRuntime(d.DB, d.EncryptionKey)
 	ansibleRunner := orchestrationprovision.NewAnsibleRunner(d.DB, d.EncryptionKey, runtime.taskStore)
-	deploymentExecutor := orchestrationprovision.NewDeploymentExecutor(d.DB, runtime.taskStore, runtime.clusterRegistry, preflightRuntime, ansibleRunner)
+	deploymentExecutor := orchestrationprovision.NewDeploymentExecutor(provisionRepository, runtime.taskStore, runtime.clusterRegistry, preflightRuntime, ansibleRunner)
 	deploymentRuntime := orchestrationprovision.NewRuntime(d.DB, deploymentExecutor, preflightRuntime)
 	_ = appTemplateService.SeedBuiltinAppTemplates(context.Background())
 	return provisioningModule{
-		serverAccess: orchestrationprovision.NewServerAccessController(sshRuntime, runtime.execSessions, serverService),
+		serverAccess: provisionhttp.NewServerAccessController(sshRuntime, terminalSessions, serverService),
 		servers:      provisionhttp.NewServerController(serverService),
 		credentials:  provisionhttp.NewCredentialController(credentialService),
 		plans:        provisionhttp.NewDeployPlanController(provisionapp.NewDeployPlanService(provisionRepository)),

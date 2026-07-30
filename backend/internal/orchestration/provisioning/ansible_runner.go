@@ -33,10 +33,10 @@ type AnsibleRunner struct {
 	db            *gorm.DB
 	encryptionKey string
 	config        *provisionapp.DeployConfigService
-	taskStore     *platformapp.TaskStore
+	taskStore     DeploymentTaskStore
 }
 
-func NewAnsibleRunner(db *gorm.DB, encryptionKey string, taskStore *platformapp.TaskStore) *AnsibleRunner {
+func NewAnsibleRunner(db *gorm.DB, encryptionKey string, taskStore DeploymentTaskStore) *AnsibleRunner {
 	return &AnsibleRunner{
 		db:            db,
 		encryptionKey: encryptionKey,

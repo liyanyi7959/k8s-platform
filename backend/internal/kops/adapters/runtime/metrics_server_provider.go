@@ -10,18 +10,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 
 	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 )
 
-type metricsServerProvider struct {
-	transport *service.K8sService
+type MetricsServerTransport interface {
+	TypedClient(context.Context, uint64) (*kubernetes.Clientset, error)
+	DynamicClient(context.Context, uint64) (*dynamic.DynamicClient, error)
 }
+
+type metricsServerProvider struct{ transport MetricsServerTransport }
 
 // NewMetricsServerProvider builds the Kops-owned metrics-server adapter.
 // Cross-context provider selection may consume only this application port.
-func NewMetricsServerProvider(transport *service.K8sService) kopsapp.MetricsProvider {
+func NewMetricsServerProvider(transport MetricsServerTransport) kopsapp.MetricsProvider {
 	return &metricsServerProvider{transport: transport}
 }
 

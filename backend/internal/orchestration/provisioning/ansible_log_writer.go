@@ -16,14 +16,14 @@ import (
 // produces the stream, rather than to a separate service coordinator.
 type ansibleLogWriter struct {
 	task            *platformapp.Task
-	store           *platformapp.TaskStore
+	store           DeploymentTaskStore
 	mu              sync.Mutex
 	buf             []byte
 	stepIndex       int
 	failedStepIndex int
 }
 
-func newAnsibleLogWriter(task *platformapp.Task, store *platformapp.TaskStore) *ansibleLogWriter {
+func newAnsibleLogWriter(task *platformapp.Task, store DeploymentTaskStore) *ansibleLogWriter {
 	return &ansibleLogWriter{task: task, store: store, stepIndex: -1, failedStepIndex: -1}
 }
 

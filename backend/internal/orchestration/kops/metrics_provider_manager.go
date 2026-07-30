@@ -9,21 +9,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	fleetapp "k8s-platform-backend/internal/fleet/application"
-	fleetdomain "k8s-platform-backend/internal/fleet/domain"
-	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
+	kopsports "k8s-platform-backend/internal/kops/ports"
 )
 
 // MetricsProviderManager owns metrics-provider discovery, selection and
 // persistence. Kubernetes clients remain a narrow transport dependency.
 type MetricsProviderManager struct {
-	transport *service.K8sService
-	clusters  *fleetapp.Registry
+	transport kopsports.MetricsTransport
+	clusters  kopsports.MetricsClusterStore
 }
 
-func NewMetricsProviderManager(transport *service.K8sService, clusters *fleetapp.Registry) *MetricsProviderManager {
+func NewMetricsProviderManager(transport kopsports.MetricsTransport, clusters kopsports.MetricsClusterStore) *MetricsProviderManager {
 	return &MetricsProviderManager{transport: transport, clusters: clusters}
 }
 
@@ -154,13 +152,13 @@ func prometheusServiceCandidate(serviceValue *corev1.Service) (kopsapp.Prometheu
 	})
 }
 
-func (m *MetricsProviderManager) monitorSource(ctx context.Context, clusterID uint64) (*fleetdomain.Cluster, error) {
+func (m *MetricsProviderManager) monitorSource(ctx context.Context, clusterID uint64) (kopsports.MetricsCluster, error) {
 	if m == nil || m.clusters == nil {
-		return nil, kopsapp.ErrConflict
+		return kopsports.MetricsCluster{}, kopsapp.ErrConflict
 	}
 	cluster, err := m.clusters.MonitorSource(ctx, clusterID)
 	if err != nil {
-		return nil, metricsManagerError(err)
+		return kopsports.MetricsCluster{}, err
 	}
 	return cluster, nil
 }
@@ -169,20 +167,5 @@ func (m *MetricsProviderManager) updateMonitorSource(ctx context.Context, cluste
 	if m == nil || m.clusters == nil {
 		return kopsapp.ErrConflict
 	}
-	return metricsManagerError(m.clusters.UpdateMonitorSource(ctx, clusterID, string(source), url, string(status)))
-}
-
-func metricsManagerError(err error) error {
-	switch {
-	case err == nil:
-		return nil
-	case errors.Is(err, fleetdomain.ErrValidation):
-		return kopsapp.ErrInvalidParams
-	case errors.Is(err, fleetdomain.ErrNotFound):
-		return kopsapp.ErrNotFound
-	case errors.Is(err, fleetdomain.ErrConflict):
-		return kopsapp.ErrConflict
-	default:
-		return err
-	}
+	return m.clusters.UpdateMonitorSource(ctx, clusterID, string(source), url, string(status))
 }

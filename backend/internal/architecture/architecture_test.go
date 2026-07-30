@@ -223,6 +223,26 @@ func TestIntegrationDirectoryIsEmptyAndOrchestrationIsExplicit(t *testing.T) {
 	}
 }
 
+func TestOrchestrationDoesNotContainHTTPAdapters(t *testing.T) {
+	orchestrationRoot := filepath.Join(backendRoot(t), "internal", "orchestration")
+	forbidden := []string{
+		"github.com/gin-gonic/gin",
+		"github.com/gorilla/websocket",
+		modulePrefix + "middleware",
+		"k8s-platform-backend/pkg/resp",
+	}
+	walkGoFiles(t, orchestrationRoot, func(path string, file *ast.File) {
+		for _, spec := range file.Imports {
+			importPath := unquoteImport(t, spec.Path.Value)
+			for _, value := range forbidden {
+				if importPath == value {
+					t.Errorf("%s: orchestration workflow imports HTTP adapter dependency %q", path, importPath)
+				}
+			}
+		}
+	})
+}
+
 func TestLegacyModelCompatibilityPackageIsEmpty(t *testing.T) {
 	modelDir := filepath.Join(backendRoot(t), "internal", "legacy", "model")
 	entries, err := os.ReadDir(modelDir)

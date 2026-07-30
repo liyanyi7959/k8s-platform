@@ -11,11 +11,11 @@ import (
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	"k8s-platform-backend/internal/middleware"
-	orchestrationprovision "k8s-platform-backend/internal/orchestration/provisioning"
 	platformhttp "k8s-platform-backend/internal/platform/adapters/http"
+	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 )
 
-func registerWebSocketRoutes(r *gin.Engine, d Deps, podLog *kopshttp.PodLogStreamController, podExec *kopshttp.PodExecStreamController, terminal *orchestrationprovision.ServerAccessController) {
+func registerWebSocketRoutes(r *gin.Engine, d Deps, podLog *kopshttp.PodLogStreamController, podExec *kopshttp.PodExecStreamController, terminal *provisionhttp.ServerAccessController) {
 	if podLog == nil && podExec == nil && terminal == nil {
 		return
 	}

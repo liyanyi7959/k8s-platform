@@ -14,7 +14,6 @@ import (
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	"k8s-platform-backend/internal/middleware"
-	orchestrationprovision "k8s-platform-backend/internal/orchestration/provisioning"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 )
 
@@ -204,7 +203,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v2/provisioning/servers/1/connection-checks",
 			register: func(group *gin.RouterGroup) {
-				registerDeployRoutes(group, &orchestrationprovision.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
+				registerDeployRoutes(group, &provisionhttp.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
 			},
 		},
 		{
@@ -244,7 +243,7 @@ func TestCanonicalCompatibilityRoutesAreRegisteredAndProtected(t *testing.T) {
 			method: http.MethodPost,
 			path:   "/api/v2/provisioning/plans/1/preflight-runs",
 			register: func(group *gin.RouterGroup) {
-				registerDeployRoutes(group, &orchestrationprovision.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
+				registerDeployRoutes(group, &provisionhttp.ServerAccessController{}, &provisionhttp.ServerController{}, &provisionhttp.CredentialController{}, &provisionhttp.DeployPlanController{}, &provisionhttp.RuntimeController{}, &provisionhttp.TaskController{}, nil)
 			},
 		},
 		{

@@ -4,11 +4,10 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"k8s-platform-backend/internal/middleware"
-	orchestrationprovision "k8s-platform-backend/internal/orchestration/provisioning"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 )
 
-func registerDeployRoutes(authed *gin.RouterGroup, serverAccess *orchestrationprovision.ServerAccessController, serverCtl *provisionhttp.ServerController, credentialCtl *provisionhttp.CredentialController, planCtl *provisionhttp.DeployPlanController, runtimeCtl *provisionhttp.RuntimeController, taskCtl *provisionhttp.TaskController, configCtl *provisionhttp.DeployConfigController) {
+func registerDeployRoutes(authed *gin.RouterGroup, serverAccess *provisionhttp.ServerAccessController, serverCtl *provisionhttp.ServerController, credentialCtl *provisionhttp.CredentialController, planCtl *provisionhttp.DeployPlanController, runtimeCtl *provisionhttp.RuntimeController, taskCtl *provisionhttp.TaskController, configCtl *provisionhttp.DeployConfigController) {
 	if serverAccess == nil || serverCtl == nil || credentialCtl == nil || planCtl == nil || runtimeCtl == nil || taskCtl == nil {
 		return
 	}

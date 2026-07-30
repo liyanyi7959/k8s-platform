@@ -1,4 +1,4 @@
-package provisioning
+package ssh
 
 import (
 	"context"
@@ -7,9 +7,9 @@ import (
 	"golang.org/x/crypto/ssh"
 	"gorm.io/gorm"
 
-	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
 	model "k8s-platform-backend/internal/provisioning/domain"
+	provisionports "k8s-platform-backend/internal/provisioning/ports"
 	secretcrypto "k8s-platform-backend/internal/transport/secretcrypto"
 	sshtransport "k8s-platform-backend/internal/transport/ssh"
 )
@@ -26,24 +26,24 @@ func NewSSHRuntime(db *gorm.DB, encryptionKey string) *SSHRuntime {
 	return &SSHRuntime{db: db, encryptionKey: encryptionKey}
 }
 
-func (r *SSHRuntime) ProbeServerSSH(ctx context.Context, id uint64) (provisionapp.SSHProbeResult, error) {
+func (r *SSHRuntime) ProbeServerSSH(ctx context.Context, id uint64) (provisionports.SSHProbeResult, error) {
 	if id == 0 {
-		return provisionapp.SSHProbeResult{}, service.ErrInvalidParams
+		return provisionports.SSHProbeResult{}, provisionapp.ErrInvalidParams
 	}
 	server, credential, err := r.resolveServerSSHConfig(ctx, id)
 	if err != nil {
 		_ = r.updateServerStatus(ctx, id, "unavailable")
-		return provisionapp.SSHProbeResult{}, err
+		return provisionports.SSHProbeResult{}, err
 	}
-	probe, err := sshtransport.Probe(ctx, deploymentSSHConfig(server), credential)
-	result := provisionapp.SSHProbeResult{
+	probe, err := sshtransport.Probe(ctx, serverSSHConfig(server), credential)
+	result := provisionports.SSHProbeResult{
 		OS: probe.OS, OSVersion: probe.OSVersion, Kernel: probe.Kernel,
 		CPUCores: probe.CPUCores, MemoryMB: probe.MemoryMB, DiskGB: probe.DiskGB,
 	}
 	status := "available"
 	if err != nil {
 		status = "unavailable"
-		result = provisionapp.SSHProbeResult{Status: status, Message: err.Error()}
+		result = provisionports.SSHProbeResult{Status: status, Message: err.Error()}
 	} else {
 		result.Status = status
 		result.Message = "SSH 连接成功"
@@ -68,13 +68,13 @@ func (r *SSHRuntime) ProbeServerSSH(ctx context.Context, id uint64) (provisionap
 		updates["disk_gb"] = *result.DiskGB
 	}
 	if r == nil || r.db == nil {
-		return provisionapp.SSHProbeResult{}, service.ErrConflict
+		return provisionports.SSHProbeResult{}, provisionapp.ErrConflict
 	}
 	if dbErr := r.db.WithContext(ctx).Model(&model.DeployServer{}).Where("deleted_at IS NULL AND id = ?", id).Updates(updates).Error; dbErr != nil {
-		return provisionapp.SSHProbeResult{}, dbErr
+		return provisionports.SSHProbeResult{}, dbErr
 	}
 	if err != nil {
-		return result, service.ErrWithMessage(service.ErrInvalidParams, result.Message)
+		return result, provisionapp.ErrWithMessage(provisionapp.ErrInvalidParams, result.Message)
 	}
 	return result, nil
 }
@@ -83,34 +83,34 @@ func (r *SSHRuntime) ProbeServerSSH(ctx context.Context, id uint64) (provisionap
 // needed for audit logging. Credentials remain inside the runtime.
 func (r *SSHRuntime) OpenServerSSH(ctx context.Context, id uint64) (*ssh.Client, string, error) {
 	if id == 0 {
-		return nil, "", service.ErrInvalidParams
+		return nil, "", provisionapp.ErrInvalidParams
 	}
 	server, credential, err := r.resolveServerSSHConfig(ctx, id)
 	if err != nil {
 		_ = r.updateServerStatus(ctx, id, "unavailable")
 		return nil, "", err
 	}
-	client, err := sshtransport.Dial(ctx, deploymentSSHConfig(server), credential)
+	client, err := sshtransport.Dial(ctx, serverSSHConfig(server), credential)
 	if err != nil {
 		_ = r.updateServerStatus(ctx, id, "unavailable")
-		return nil, "", service.ErrWithMessage(service.ErrInvalidParams, err.Error())
+		return nil, "", provisionapp.ErrWithMessage(provisionapp.ErrInvalidParams, err.Error())
 	}
 	_ = r.updateServerStatus(ctx, id, "available")
 	return client, server.Name, nil
 }
 
-func deploymentSSHConfig(server model.DeployServer) sshtransport.Config {
+func serverSSHConfig(server model.DeployServer) sshtransport.Config {
 	return sshtransport.Config{Host: server.IP, Port: server.SSHPort, User: server.User, AuthType: server.AuthType}
 }
 
 func (r *SSHRuntime) resolveServerSSHConfig(ctx context.Context, id uint64) (model.DeployServer, string, error) {
 	if r == nil || r.db == nil {
-		return model.DeployServer{}, "", service.ErrConflict
+		return model.DeployServer{}, "", provisionapp.ErrConflict
 	}
 	var server model.DeployServer
 	if err := r.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&server).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return model.DeployServer{}, "", service.ErrNotFound
+			return model.DeployServer{}, "", provisionapp.ErrNotFound
 		}
 		return model.DeployServer{}, "", err
 	}
@@ -120,7 +120,7 @@ func (r *SSHRuntime) resolveServerSSHConfig(ctx context.Context, id uint64) (mod
 		var credential model.SSHCredential
 		if err := r.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", *server.CredentialID).First(&credential).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return model.DeployServer{}, "", service.ErrWithMessage(service.ErrNotFound, "关联的凭据不存在")
+				return model.DeployServer{}, "", provisionapp.ErrWithMessage(provisionapp.ErrNotFound, "关联的凭据不存在")
 			}
 			return model.DeployServer{}, "", err
 		}
@@ -130,21 +130,21 @@ func (r *SSHRuntime) resolveServerSSHConfig(ctx context.Context, id uint64) (mod
 
 	credential, err := secretcrypto.Decrypt(r.encryptionKey, credentialEnc)
 	if err != nil {
-		return model.DeployServer{}, "", service.ErrWithMessage(service.ErrCrypto, "服务器凭证解密失败")
+		return model.DeployServer{}, "", provisionapp.ErrWithMessage(nil, "服务器凭证解密失败")
 	}
 	return server, credential, nil
 }
 
 func (r *SSHRuntime) updateServerStatus(ctx context.Context, id uint64, status string) error {
 	if r == nil || r.db == nil {
-		return service.ErrConflict
+		return provisionapp.ErrConflict
 	}
 	result := r.db.WithContext(ctx).Model(&model.DeployServer{}).Where("deleted_at IS NULL AND id = ?", id).Update("status", status)
 	if result.Error != nil {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return service.ErrNotFound
+		return provisionapp.ErrNotFound
 	}
 	return nil
 }

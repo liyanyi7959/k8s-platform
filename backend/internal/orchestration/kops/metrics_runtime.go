@@ -3,10 +3,9 @@ package kops
 import (
 	"context"
 
-	fleetapp "k8s-platform-backend/internal/fleet/application"
-	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
+	kopsports "k8s-platform-backend/internal/kops/ports"
 )
 
 // MetricsRuntime formats Kops metrics responses while provider discovery and
@@ -15,7 +14,7 @@ type MetricsRuntime struct {
 	manager *MetricsProviderManager
 }
 
-func NewMetricsRuntime(transport *service.K8sService, clusters *fleetapp.Registry) *MetricsRuntime {
+func NewMetricsRuntime(transport kopsports.MetricsTransport, clusters kopsports.MetricsClusterStore) *MetricsRuntime {
 	return &MetricsRuntime{manager: NewMetricsProviderManager(transport, clusters)}
 }
 

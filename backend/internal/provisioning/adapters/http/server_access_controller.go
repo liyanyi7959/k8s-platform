@@ -1,4 +1,4 @@
-package provisioning
+package http
 
 import (
 	"context"
@@ -18,10 +18,9 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 
-	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
-	kopsapp "k8s-platform-backend/internal/kops/application"
 	"k8s-platform-backend/internal/middleware"
 	provisionapp "k8s-platform-backend/internal/provisioning/application"
+	provisionports "k8s-platform-backend/internal/provisioning/ports"
 	"k8s-platform-backend/pkg/resp"
 )
 
@@ -29,21 +28,16 @@ import (
 // interactive terminal. Its runtime dependency is independent from
 // DeploymentExecutor, which owns Ansible and deployment-plan execution.
 type ServerAccessController struct {
-	runtime  serverAccessRuntime
-	sessions *kopsapp.ExecSessionStore
+	runtime  provisionports.ServerAccessRuntime
+	sessions provisionports.TerminalSessionStore
 	servers  serverAccessReader
-}
-
-type serverAccessRuntime interface {
-	ProbeServerSSH(context.Context, uint64) (provisionapp.SSHProbeResult, error)
-	OpenServerSSH(context.Context, uint64) (*ssh.Client, string, error)
 }
 
 type serverAccessReader interface {
 	Get(context.Context, uint64) (provisionapp.DeployServerItem, error)
 }
 
-func NewServerAccessController(runtime serverAccessRuntime, sessions *kopsapp.ExecSessionStore, servers serverAccessReader) *ServerAccessController {
+func NewServerAccessController(runtime provisionports.ServerAccessRuntime, sessions provisionports.TerminalSessionStore, servers serverAccessReader) *ServerAccessController {
 	return &ServerAccessController{runtime: runtime, sessions: sessions, servers: servers}
 }
 
@@ -79,7 +73,7 @@ func (ctl *ServerAccessController) CreateTerminalSession(c *gin.Context) {
 		return
 	}
 	sessionID := ctl.sessions.NewSessionID()
-	ctl.sessions.Put(sessionID, kopsapp.ExecSession{Kind: "server", UserID: serverAccessUserID(c), ServerID: id, CreatedAt: time.Now().UTC()})
+	ctl.sessions.Put(sessionID, provisionports.TerminalSession{UserID: serverAccessUserID(c), ServerID: id, CreatedAt: time.Now().UTC()})
 	resp.OK(c, gin.H{
 		"session_id": sessionID,
 		"ws_url":     "/streams/v2/" + url.PathEscape(sessionID) + "?kind=server-terminal",
@@ -94,7 +88,7 @@ func (ctl *ServerAccessController) TerminalWS(c *gin.Context) {
 		return
 	}
 	pending, ok := ctl.sessions.Get(sessionID)
-	if !ok || pending.Kind != "server" || pending.ServerID == 0 {
+	if !ok || pending.ServerID == 0 {
 		resp.Fail(c, 4040, "terminal session not found")
 		return
 	}
@@ -111,7 +105,7 @@ func (ctl *ServerAccessController) TerminalWS(c *gin.Context) {
 	defer connection.Close()
 
 	terminal, ok := ctl.sessions.Take(sessionID)
-	if !ok || terminal.Kind != "server" || terminal.UserID != serverAccessUserID(c) {
+	if !ok || terminal.UserID != serverAccessUserID(c) {
 		_ = connection.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "session invalid"), time.Now().Add(3*time.Second))
 		return
 	}
@@ -263,19 +257,16 @@ func serverAccessUserID(c *gin.Context) uint64 {
 
 func writeServerAccessError(c *gin.Context, err error) {
 	message := "internal error"
-	if userMessage, ok := service.UserMessage(err); ok && strings.TrimSpace(userMessage) != "" {
-		message = userMessage
-	}
 	var provisioningError *provisionapp.Error
 	if errors.As(err, &provisioningError) && strings.TrimSpace(provisioningError.UserMessage()) != "" {
 		message = provisioningError.UserMessage()
 	}
 	switch {
-	case errors.Is(err, service.ErrInvalidParams), errors.Is(err, provisionapp.ErrInvalidParams):
+	case errors.Is(err, provisionapp.ErrInvalidParams):
 		resp.Fail(c, 4000, message)
-	case errors.Is(err, service.ErrNotFound), errors.Is(err, provisionapp.ErrNotFound):
+	case errors.Is(err, provisionapp.ErrNotFound):
 		resp.Fail(c, 4040, message)
-	case errors.Is(err, service.ErrConflict), errors.Is(err, provisionapp.ErrConflict):
+	case errors.Is(err, provisionapp.ErrConflict):
 		resp.Fail(c, 4090, message)
 	default:
 		resp.Fail(c, 5000, message)
@@ -304,8 +295,9 @@ func sameOriginServerTerminalRequest(request *http.Request) bool {
 
 func serverTerminalCloseReason(err error, fallback string) string {
 	message := strings.TrimSpace(fallback)
-	if userMessage, ok := service.UserMessage(err); ok && strings.TrimSpace(userMessage) != "" {
-		message = strings.TrimSpace(userMessage)
+	var provisioningError *provisionapp.Error
+	if errors.As(err, &provisioningError) && strings.TrimSpace(provisioningError.UserMessage()) != "" {
+		message = provisioningError.UserMessage()
 	} else if err != nil && strings.TrimSpace(err.Error()) != "" {
 		message = strings.TrimSpace(err.Error())
 	}
