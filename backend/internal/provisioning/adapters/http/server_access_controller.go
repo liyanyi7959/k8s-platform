@@ -82,7 +82,7 @@ func (ctl *ServerAccessController) CreateTerminalSession(c *gin.Context) {
 }
 
 func (ctl *ServerAccessController) TerminalWS(c *gin.Context) {
-	sessionID := strings.TrimSpace(c.Query("session_id"))
+	sessionID := terminalStreamTicketID(c)
 	if sessionID == "" || ctl == nil || ctl.sessions == nil || ctl.runtime == nil {
 		resp.Fail(c, 4000, "invalid params")
 		return
@@ -245,6 +245,18 @@ func serverAccessID(c *gin.Context, name string) (uint64, bool) {
 		return 0, false
 	}
 	return id, true
+}
+
+// terminalStreamTicketID accepts the V2 stream route's path ticket while
+// retaining the query parameter for older/internal callers of this adapter.
+func terminalStreamTicketID(c *gin.Context) string {
+	if c == nil {
+		return ""
+	}
+	if ticketID := strings.TrimSpace(c.Param("ticket_id")); ticketID != "" {
+		return ticketID
+	}
+	return strings.TrimSpace(c.Query("session_id"))
 }
 
 func serverAccessUserID(c *gin.Context) uint64 {

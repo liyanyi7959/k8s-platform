@@ -2,7 +2,6 @@ package kops
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 

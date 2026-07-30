@@ -34,7 +34,7 @@ func (ctl *PodLogStreamController) Stream(c *gin.Context) {
 		resp.Fail(c, 5000, "internal error")
 		return
 	}
-	sessionID := strings.TrimSpace(c.Query("session_id"))
+	sessionID := streamTicketID(c)
 	if sessionID == "" {
 		resp.Fail(c, 4000, "invalid params")
 		return
@@ -104,6 +104,18 @@ type podLogFrame struct {
 	Type    string `json:"type"`
 	Data    string `json:"data,omitempty"`
 	Message string `json:"message,omitempty"`
+}
+
+// streamTicketID accepts the V2 stream route's path ticket while retaining the
+// query parameter for older/internal callers of this adapter.
+func streamTicketID(c *gin.Context) string {
+	if c == nil {
+		return ""
+	}
+	if ticketID := strings.TrimSpace(c.Param("ticket_id")); ticketID != "" {
+		return ticketID
+	}
+	return strings.TrimSpace(c.Query("session_id"))
 }
 
 func podStreamSameOrigin(request *http.Request) bool {

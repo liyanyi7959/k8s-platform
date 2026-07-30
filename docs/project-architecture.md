@@ -168,9 +168,15 @@ Kops application
 | --- | --- | --- |
 | `orchestration/ai/` | AI Chat 运行时、工具注册、资源查询、动作提案执行与会话投影 | AI、Kops、Change、Audit。 |
 | `orchestration/kops/` | Helm 运行时、Metrics Provider 管理、权限审计引擎 | Kops、Fleet、Audit。 |
-| `orchestration/provisioning/` | Ansible Runner、预检、部署执行、插件安装、SSH 主机终端 | Provisioning、Fleet、Kops、Platform。 |
+| `orchestration/provisioning/` | Ansible Runner、预检、部署执行与插件安装 | Provisioning、Fleet、Platform。 |
 
 判断代码是否应放入 `orchestration`：如果它只服务一个上下文，应放回该上下文的 `application` 或 `adapters`；只有一个用例必须同时编排两个以上上下文时，才进入对应的 workflow 目录。
+
+已完成的收敛边界如下：
+
+- 主机 SSH 探测、终端 HTTP/WebSocket 控制器及一次性终端 ticket 已归入 `provisioning/adapters`，通过 `provisioning/ports` 注入 SSH runtime 和 ticket store；它不再共享 Kops 的 Pod Exec 会话。
+- 集群部署执行器通过 `provisioning/ports.Repository` 读写部署计划，通过 `DeploymentTaskStore` 与 `ClusterRegistrar` 协作 Platform 任务中心和 Fleet 集群纳管，不再持有 GORM、TaskStore 或 Fleet Registry 实现。
+- Metrics Provider 管理器通过 `kops/ports` 读取/更新监控源和获取 Kubernetes client；Fleet 聚合到监控配置的映射位于 `router` 组合根。
 
 ### 3.7 `router/` 的组织方式
 
@@ -354,6 +360,6 @@ features/<context>/
 
 ## 9. 当前架构演进重点
 
-- 模块化单体已经完成按上下文的垂直拆分，下一步应继续将 `orchestration` 中较大的工作流通过 port / 事件进一步收敛。
+- 模块化单体已经完成按上下文的垂直拆分；部署执行和指标管理已先行通过 port 收敛。下一步应继续拆分权限审计与 Helm 等仍较大的跨上下文工作流，并在可异步、可重试的副作用处引入持久化事件。
 - CI/CD 页面目前归 Provisioning feature；若后端形成独立 CI/CD 限界上下文，应同步拆出 `internal/cicd` 与 `features/cicd`，避免目录归属和业务所有权长期不一致。
 - 新接口只可新增 V2 契约，并同时更新 `docs/openapi/v2.yaml`、前端 API 模块、路由权限测试与必要的架构守卫。

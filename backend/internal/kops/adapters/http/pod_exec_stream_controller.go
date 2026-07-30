@@ -36,7 +36,7 @@ func (ctl *PodExecStreamController) Stream(c *gin.Context) {
 		resp.Fail(c, 5000, "internal error")
 		return
 	}
-	sessionID := strings.TrimSpace(c.Query("session_id"))
+	sessionID := streamTicketID(c)
 	if sessionID == "" {
 		resp.Fail(c, 4000, "invalid params")
 		return

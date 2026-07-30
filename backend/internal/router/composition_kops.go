@@ -1,10 +1,16 @@
 package router
 
 import (
+	"context"
+	"errors"
+
+	fleetapp "k8s-platform-backend/internal/fleet/application"
+	fleetdomain "k8s-platform-backend/internal/fleet/domain"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
+	kopsports "k8s-platform-backend/internal/kops/ports"
 	orchestrationkops "k8s-platform-backend/internal/orchestration/kops"
 )
 
@@ -23,7 +29,7 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 	return kopsModule{
 		manifests:       kopshttp.NewManifestController(kopsapp.NewManifestService(runtime.manifestApply)),
 		namespaces:      kopshttp.NewNamespaceController(kopsapp.NewNamespaceService(kopsruntime.NewNamespaceRuntime(runtime.k8s, runtime.nodeOperations, runtime.namespaceSummary))),
-		metrics:         kopshttp.NewMetricsController(kopsapp.NewMetricsService(orchestrationkops.NewMetricsRuntime(runtime.k8s, runtime.clusterRegistry))),
+		metrics:         kopshttp.NewMetricsController(kopsapp.NewMetricsService(orchestrationkops.NewMetricsRuntime(runtime.k8s, fleetMetricsStore{registry: runtime.clusterRegistry}))),
 		connectivity:    kopshttp.NewConnectivityController(kopsapp.NewConnectivityService(kopsruntime.NewConnectivityRuntime(runtime.k8s))),
 		nodes:           kopshttp.NewNodeController(kopsapp.NewNodeService(kopsruntime.NewNodeRuntime(runtime.k8s, runtime.nodeOperations))),
 		platform:        kopshttp.NewPlatformResourceController(kopsapp.NewPlatformResourceService(kopsruntime.NewPlatformResourceRuntime(runtime.k8s))),
@@ -41,5 +47,46 @@ func buildKopsModule(d Deps, runtime moduleRuntime) kopsModule {
 		creator:         kopshttp.NewResourceCreatorController(kopsapp.NewResourceCreatorService(kopsruntime.NewResourceCreatorRuntime(runtime.k8s))),
 		permissionAudit: kopshttp.NewPermissionAuditController(kopsapp.NewPermissionAuditService(orchestrationkops.NewPermissionAuditRuntimeWithStore(permissionAuditEngine, d.DB))),
 		rbac:            kopshttp.NewRBACController(),
+	}
+}
+
+// fleetMetricsStore is the composition-root adapter from the Fleet aggregate
+// to the narrow Kops metrics port. The workflow sees only monitoring fields,
+// not Fleet's registry implementation or domain aggregate.
+type fleetMetricsStore struct{ registry *fleetapp.Registry }
+
+func (store fleetMetricsStore) MonitorSource(ctx context.Context, clusterID uint64) (kopsports.MetricsCluster, error) {
+	if store.registry == nil {
+		return kopsports.MetricsCluster{}, kopsapp.ErrConflict
+	}
+	cluster, err := store.registry.MonitorSource(ctx, clusterID)
+	if err != nil {
+		return kopsports.MetricsCluster{}, fleetMetricsStoreError(err)
+	}
+	return kopsports.MetricsCluster{
+		MonitorSource: cluster.MonitorSource, PrometheusURL: cluster.PrometheusURL,
+		PrometheusStatus: cluster.PrometheusStatus, PrometheusDetectedAt: cluster.PrometheusDetectedAt,
+	}, nil
+}
+
+func (store fleetMetricsStore) UpdateMonitorSource(ctx context.Context, clusterID uint64, source, url, status string) error {
+	if store.registry == nil {
+		return kopsapp.ErrConflict
+	}
+	return fleetMetricsStoreError(store.registry.UpdateMonitorSource(ctx, clusterID, source, url, status))
+}
+
+func fleetMetricsStoreError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, fleetdomain.ErrValidation):
+		return kopsapp.ErrInvalidParams
+	case errors.Is(err, fleetdomain.ErrNotFound):
+		return kopsapp.ErrNotFound
+	case errors.Is(err, fleetdomain.ErrConflict):
+		return kopsapp.ErrConflict
+	default:
+		return err
 	}
 }

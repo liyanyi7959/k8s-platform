@@ -243,6 +243,36 @@ func TestOrchestrationDoesNotContainHTTPAdapters(t *testing.T) {
 	})
 }
 
+func TestExtractedWorkflowsKeepInfrastructureBehindPorts(t *testing.T) {
+	root := backendRoot(t)
+	for path, forbiddenImports := range map[string][]string{
+		filepath.Join(root, "internal", "orchestration", "provisioning", "deployment_executor.go"): {
+			"gorm.io/gorm", modulePrefix + "fleet/application",
+		},
+		filepath.Join(root, "internal", "orchestration", "kops", "metrics_provider_manager.go"): {
+			modulePrefix + "fleet/application", modulePrefix + "fleet/domain", modulePrefix + "kops/adapters/kubernetes",
+		},
+	} {
+		file, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ImportsOnly)
+		if err != nil {
+			t.Fatalf("parse workflow %s: %v", path, err)
+		}
+		for _, spec := range file.Imports {
+			importPath := unquoteImport(t, spec.Path.Value)
+			for _, forbidden := range forbiddenImports {
+				if importPath == forbidden {
+					t.Errorf("%s: extracted workflow must use a port instead of %q", path, importPath)
+				}
+			}
+		}
+	}
+
+	legacyController := filepath.Join(root, "internal", "orchestration", "provisioning", "server_access_controller.go")
+	if _, err := os.Stat(legacyController); !os.IsNotExist(err) {
+		t.Errorf("single-context server access HTTP adapter must not return to orchestration: %s", legacyController)
+	}
+}
+
 func TestLegacyModelCompatibilityPackageIsEmpty(t *testing.T) {
 	modelDir := filepath.Join(backendRoot(t), "internal", "legacy", "model")
 	entries, err := os.ReadDir(modelDir)

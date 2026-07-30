@@ -1,7 +1,6 @@
 package router
 
 import (
-	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +27,6 @@ func registerWebSocketRoutes(r *gin.Engine, d Deps, podLog *kopshttp.PodLogStrea
 			c.Status(400)
 			return
 		}
-		c.Request.URL.RawQuery = "session_id=" + url.QueryEscape(ticketID)
 		switch kind {
 		case "pod-log":
 			if podLog != nil {
