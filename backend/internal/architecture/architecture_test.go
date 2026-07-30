@@ -99,6 +99,28 @@ func TestContextsDoNotImportOtherContextInternals(t *testing.T) {
 	}
 }
 
+func TestKopsRuntimeAdaptersStayWithinKopsOrSharedTransport(t *testing.T) {
+	runtimeDir := filepath.Join(backendRoot(t), "internal", "kops", "adapters", "runtime")
+	allowedPrefixes := []string{
+		modulePrefix + "kops/",
+		modulePrefix + "transport/",
+	}
+	walkGoFiles(t, runtimeDir, func(path string, file *ast.File) {
+		for _, spec := range file.Imports {
+			importPath := unquoteImport(t, spec.Path.Value)
+			if !strings.HasPrefix(importPath, modulePrefix) {
+				continue
+			}
+			for _, allowed := range allowedPrefixes {
+				if strings.HasPrefix(importPath, allowed) {
+					return
+				}
+			}
+			t.Errorf("%s: Kops runtime adapter imports a foreign context %q", path, importPath)
+		}
+	})
+}
+
 func TestCompositionRootCatalogsEveryCurrentModule(t *testing.T) {
 	type moduleCatalog struct {
 		audit        struct{}

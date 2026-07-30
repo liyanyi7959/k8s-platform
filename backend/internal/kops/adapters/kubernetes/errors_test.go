@@ -115,4 +115,3 @@ func TestSentinels_Independent(t *testing.T) {
 }
 
 // ────────── PageResult ──────────
-

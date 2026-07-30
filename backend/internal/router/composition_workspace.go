@@ -3,7 +3,6 @@ package router
 import (
 	"context"
 
-	legacykops "k8s-platform-backend/internal/integration/kops"
 	kopsapp "k8s-platform-backend/internal/kops/application"
 	workspacehttp "k8s-platform-backend/internal/workspace/adapters/http"
 	workspacemysql "k8s-platform-backend/internal/workspace/adapters/mysql"
@@ -31,7 +30,3 @@ func buildWorkspaceModule(d Deps, runtime moduleRuntime) workspaceModule {
 	applicationService := workspaceapp.NewService(workspacemysql.NewRepository(d.DB), namespaceResourceReader{summary: runtime.namespaceSummary})
 	return workspaceModule{projects: workspacehttp.NewController(applicationService)}
 }
-
-// Keep this import local to the workspace composition file: workspace projects
-// use the K8s namespace summary port, while the adapter remains wired at the root.
-var _ = legacykops.NewNamespaceSummaryRuntime

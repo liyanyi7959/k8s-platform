@@ -1,10 +1,9 @@
 package router
 
 import (
+	fleetkubernetes "k8s-platform-backend/internal/fleet/adapters/kubernetes"
 	fleetmysql "k8s-platform-backend/internal/fleet/adapters/mysql"
 	fleetapp "k8s-platform-backend/internal/fleet/application"
-	legacyfleet "k8s-platform-backend/internal/integration/fleet"
-	legacykops "k8s-platform-backend/internal/integration/kops"
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	kopsapp "k8s-platform-backend/internal/kops/application"
@@ -22,7 +21,7 @@ type moduleRuntime struct {
 	podOperations      *kopsruntime.PodOperations
 	podStreams         *kopsruntime.PodStreamOperations
 	workloadOperations *kopsruntime.WorkloadOperations
-	manifestApply      *legacykops.ManifestRuntime
+	manifestApply      *kopsruntime.ManifestRuntime
 	namespaceSummary   *kopsapp.NamespaceSummaryService
 	namespaceWorkloads *kopsapp.NamespaceWorkloadService
 	namespaceDiagnosis *kopsapp.NamespaceDiagnosisService
@@ -40,10 +39,10 @@ func buildModuleRuntime(d Deps) moduleRuntime {
 	podOperations := kopsruntime.NewPodOperations(kubernetesTransport)
 	podStreams := kopsruntime.NewPodStreamOperations(kubernetesTransport)
 	workloadOperations := kopsruntime.NewWorkloadOperations(kubernetesTransport)
-	manifestApply := legacykops.NewManifestRuntime(d.DB, k8sService)
-	namespaceSummary := kopsapp.NewNamespaceSummaryService(legacykops.NewNamespaceSummaryRuntime(k8sService))
-	namespaceWorkloads := kopsapp.NewNamespaceWorkloadService(legacykops.NewNamespaceWorkloadRuntime(k8sService))
-	namespaceDiagnosis := kopsapp.NewNamespaceDiagnosisService(legacykops.NewNamespaceDiagnosisRuntime(k8sService, podOperations), namespaceSummary, namespaceWorkloads)
+	manifestApply := kopsruntime.NewManifestRuntime(d.DB, k8sService)
+	namespaceSummary := kopsapp.NewNamespaceSummaryService(kopsruntime.NewNamespaceSummaryRuntime(k8sService))
+	namespaceWorkloads := kopsapp.NewNamespaceWorkloadService(kopsruntime.NewNamespaceWorkloadRuntime(k8sService))
+	namespaceDiagnosis := kopsapp.NewNamespaceDiagnosisService(kopsruntime.NewNamespaceDiagnosisRuntime(k8sService, podOperations), namespaceSummary, namespaceWorkloads)
 	return moduleRuntime{
 		taskStore:          taskStore,
 		clusterRegistry:    clusterRegistry,
@@ -58,6 +57,6 @@ func buildModuleRuntime(d Deps) moduleRuntime {
 		namespaceDiagnosis: namespaceDiagnosis,
 		execSessions:       kopsapp.NewExecSessionStore(0),
 		logSessions:        kopsapp.NewPodLogSessionStore(0),
-		dashboard:          fleetapp.NewDashboardService(clusterRegistry, legacyfleet.NewDashboardRuntime(k8sService), legacyfleet.NewDashboardCache(d.CacheStore)),
+		dashboard:          fleetapp.NewDashboardService(clusterRegistry, fleetkubernetes.NewDashboardRuntime(k8sService), fleetkubernetes.NewDashboardCache(d.CacheStore)),
 	}
 }

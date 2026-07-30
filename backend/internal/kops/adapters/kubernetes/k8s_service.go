@@ -27,7 +27,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/yaml"
 
-	kopsruntime "k8s-platform-backend/internal/kops/adapters/runtime"
 	cachetransport "k8s-platform-backend/internal/transport/cache"
 )
 
@@ -39,13 +38,13 @@ import (
 // - 统一将 K8s 常见错误（NotFound/AlreadyExists/BadRequest 等）归一化为业务错误；
 // - 为 controller 层提供面向"资源 + 动作"的方法（List/GetYAML/Delete/Patch/Exec 等）。
 type K8sService struct {
-	clusterReg               KubeconfigProvider
-	clusterErrorNormalizer   KubeconfigErrorNormalizer
-	podCache   *podCacheManager
-	objCache   *objCacheManager
-	cache      cachetransport.CacheStore
-	podTTL     time.Duration
-	clients    ClientFactory
+	clusterReg             KubeconfigProvider
+	clusterErrorNormalizer KubeconfigErrorNormalizer
+	podCache               *podCacheManager
+	objCache               *objCacheManager
+	cache                  cachetransport.CacheStore
+	podTTL                 time.Duration
+	clients                ClientFactory
 
 	apiResourcesMu       sync.Mutex
 	apiResourcesInFlight map[string]*apiResourcesFlight
@@ -824,33 +823,33 @@ func (s *K8sService) List(ctx context.Context, clusterID uint64, gvr schema.Grou
 		if extraListOptions != nil {
 			ls = strings.TrimSpace(extraListOptions["label_selector"])
 		}
-		return kopsruntime.NewCachedConfigurationReader(s).ListWithLabelSelector(ctx, clusterID, kopsruntime.CachedPods, namespace, sortBy, order, ls)
+		return NewCachedConfigurationReader(s).ListWithLabelSelector(ctx, clusterID, CachedPods, namespace, sortBy, order, ls)
 	}
 	if isAppsV1DeploymentsGVR(gvr) {
 		ls := ""
 		if extraListOptions != nil {
 			ls = strings.TrimSpace(extraListOptions["label_selector"])
 		}
-		return kopsruntime.NewCachedConfigurationReader(s).ListWithLabelSelector(ctx, clusterID, kopsruntime.CachedDeployments, namespace, sortBy, order, ls)
+		return NewCachedConfigurationReader(s).ListWithLabelSelector(ctx, clusterID, CachedDeployments, namespace, sortBy, order, ls)
 	}
 	if isAppsV1StatefulSetsGVR(gvr) {
 		ls := ""
 		if extraListOptions != nil {
 			ls = strings.TrimSpace(extraListOptions["label_selector"])
 		}
-		return kopsruntime.NewCachedConfigurationReader(s).ListWithLabelSelector(ctx, clusterID, kopsruntime.CachedStatefulSets, namespace, sortBy, order, ls)
+		return NewCachedConfigurationReader(s).ListWithLabelSelector(ctx, clusterID, CachedStatefulSets, namespace, sortBy, order, ls)
 	}
 	if isCoreV1ConfigMapsGVR(gvr) {
-		return kopsruntime.NewCachedConfigurationReader(s).List(ctx, clusterID, kopsruntime.CachedConfigMaps, namespace, sortBy, order)
+		return NewCachedConfigurationReader(s).List(ctx, clusterID, CachedConfigMaps, namespace, sortBy, order)
 	}
 	if isCoreV1SecretsGVR(gvr) {
-		return kopsruntime.NewCachedConfigurationReader(s).List(ctx, clusterID, kopsruntime.CachedSecrets, namespace, sortBy, order)
+		return NewCachedConfigurationReader(s).List(ctx, clusterID, CachedSecrets, namespace, sortBy, order)
 	}
 	if isCoreV1ServiceAccountsGVR(gvr) {
-		return kopsruntime.NewCachedConfigurationReader(s).List(ctx, clusterID, kopsruntime.CachedServiceAccounts, namespace, sortBy, order)
+		return NewCachedConfigurationReader(s).List(ctx, clusterID, CachedServiceAccounts, namespace, sortBy, order)
 	}
 	if isAutoscalingV2HPAGVR(gvr) {
-		return kopsruntime.NewCachedConfigurationReader(s).List(ctx, clusterID, kopsruntime.CachedHPAs, namespace, sortBy, order)
+		return NewCachedConfigurationReader(s).List(ctx, clusterID, CachedHPAs, namespace, sortBy, order)
 	}
 
 	resolvedGVR, err := s.resolveCompatibleGVR(ctx, clusterID, gvr)

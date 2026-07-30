@@ -12,8 +12,8 @@ import (
 	fleethttp "k8s-platform-backend/internal/fleet/adapters/http"
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
-	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	legacyprovision "k8s-platform-backend/internal/integration/provisioning"
+	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 )
 

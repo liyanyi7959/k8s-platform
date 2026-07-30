@@ -113,3 +113,43 @@ func TestMigratedRoutesDoNotReturnToLegacyControllers(t *testing.T) {
 		}
 	}
 }
+
+func TestRouterCompositionAndRouteTablesStayDecomposed(t *testing.T) {
+	root := backendRoot(t)
+
+	modulesPath := filepath.Join(root, "internal", "router", "modules.go")
+	modulesContent, err := os.ReadFile(modulesPath)
+	if err != nil {
+		t.Fatalf("read %s: %v", modulesPath, err)
+	}
+	if strings.Count(string(modulesContent), "func build") != 1 || !strings.Contains(string(modulesContent), "func buildApplicationModules") {
+		t.Fatalf("%s must retain only the shared buildApplicationModules entry point", modulesPath)
+	}
+
+	for _, name := range []string{
+		"composition_ai.go", "composition_audit.go", "composition_change.go", "composition_fleet.go", "composition_iam.go",
+		"composition_incident.go", "composition_kops.go", "composition_platform.go", "composition_provisioning.go", "composition_workspace.go",
+		"routes_kops_cluster.go", "routes_kops_workloads.go", "routes_kops_network.go", "routes_kops_config_storage.go",
+		"routes_kops_rbac.go", "routes_kops_batch.go", "routes_kops_helm.go", "routes_kops_updates.go",
+		"routes_incident.go", "routes_automation.go", "routes_deploy.go", "routes_workspace.go", "routes_app_store.go",
+		"routes_permission_audit.go", "routes_clusters.go", "routes_dashboard.go",
+	} {
+		path := filepath.Join(root, "internal", "router", name)
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("expected decomposed router file %s: %v", path, err)
+		}
+	}
+
+	for _, name := range []string{"routes_business.go", "routes_kops.go"} {
+		path := filepath.Join(root, "internal", "router", name)
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, declaration := range []string{".GET(", ".POST(", ".PUT(", ".PATCH(", ".DELETE("} {
+			if strings.Contains(string(content), declaration) {
+				t.Errorf("%s must delegate concrete route declarations to resource-domain files; found %s", path, declaration)
+			}
+		}
+	}
+}
