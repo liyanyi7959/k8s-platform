@@ -42,12 +42,16 @@ type ActionConfirmationRequest struct {
 	ActorName                      string
 	RiskAccepted                   bool
 	ConfirmationText               string
+	// IdempotencyKey 可选。非空时 Change 域据此识别重复确认，重放返回快照而不重复执行。
+	IdempotencyKey string
 }
 type ActionConfirmationDecision string
 
 const (
 	ActionFirstApproval ActionConfirmationDecision = "first_approval"
 	ActionExecute       ActionConfirmationDecision = "execute"
+	// ActionReplayed 表示幂等键命中的重复确认，此前已登记，不应再次执行。
+	ActionReplayed ActionConfirmationDecision = "replayed"
 )
 
 type ActionConfirmationPort interface {
@@ -135,9 +139,25 @@ func (s *ActionService) ConfirmProposal(ctx context.Context, clusterID, proposal
 	if clusterID == 0 || proposalID == 0 {
 		return ActionConfirmationResult{}, ErrorWithMessage(ErrInvalidParams, "提案参数无效")
 	}
-	decision, err := s.confirmation.ConfirmAction(ctx, ActionConfirmationRequest{ClusterID: clusterID, ProposalID: proposalID, ActorID: userID, ActorName: username, RiskAccepted: req.ConfirmRisk, ConfirmationText: req.ConfirmationText})
+	decision, err := s.confirmation.ConfirmAction(ctx, ActionConfirmationRequest{ClusterID: clusterID, ProposalID: proposalID, ActorID: userID, ActorName: username, RiskAccepted: req.ConfirmRisk, ConfirmationText: req.ConfirmationText, IdempotencyKey: strings.TrimSpace(req.IdempotencyKey)})
 	if err != nil {
 		return ActionConfirmationResult{}, err
+	}
+	if decision == ActionReplayed {
+		// 幂等键命中的重复确认：返回已有提案与执行快照，不再登记或执行。
+		proposal, err := s.GetProposal(ctx, clusterID, proposalID)
+		if err != nil {
+			return ActionConfirmationResult{}, err
+		}
+		executions, err := s.repository.ListActionExecutions(ctx, []uint64{proposalID})
+		if err != nil {
+			return ActionConfirmationResult{}, err
+		}
+		if len(executions) == 0 {
+			return ActionConfirmationResult{ProposalID: proposalID, ExecutionStatus: "already_processed", ResultSummary: "本次确认已处理，请刷新查看最新状态", Proposal: proposal}, nil
+		}
+		item := BuildActionExecutionItem(executions[0])
+		return ActionConfirmationResult{ProposalID: proposalID, ExecutionStatus: executions[0].Status, ResultSummary: "本次确认已处理（幂等命中），请刷新查看最新状态", Proposal: proposal, Execution: &item}, nil
 	}
 	if decision == ActionFirstApproval {
 		proposal, err := s.GetProposal(ctx, clusterID, proposalID)

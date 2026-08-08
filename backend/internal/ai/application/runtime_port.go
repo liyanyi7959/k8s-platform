@@ -88,4 +88,6 @@ type ConfirmActionProposalRequest struct {
 	ConfirmationText string `json:"confirmation_text"`
 	ConfirmRisk      bool   `json:"confirm_risk"`
 	OperatorComment  string `json:"operator_comment"`
+	// IdempotencyKey 可选：重复确认时携带相同值，服务端返回快照而不重复执行。
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
 }

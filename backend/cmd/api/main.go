@@ -35,6 +35,8 @@ import (
 	auditapp "k8s-platform-backend/internal/audit/application"
 	auditdomain "k8s-platform-backend/internal/audit/domain"
 	"k8s-platform-backend/internal/auth"
+	changemysql "k8s-platform-backend/internal/change/adapters/mysql"
+	changeapp "k8s-platform-backend/internal/change/application"
 	"k8s-platform-backend/internal/config"
 	"k8s-platform-backend/internal/db"
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
@@ -135,6 +137,18 @@ func main() {
 	if err != nil {
 		zap.L().Fatal("new_router_failed", zap.Error(err))
 	}
+
+	// 6) Change 执行回收 worker：进程内轮询超时执行，兜底僵尸任务，
+	//    只做状态与审计，不执行任何实际操作。
+	changeRecoveryCtx, stopChangeRecovery := context.WithCancel(context.Background())
+	changeSvc := changeapp.NewService(changemysql.NewRepository(gdb))
+	go changeapp.RunExecutionRecoveryLoop(changeRecoveryCtx, changeSvc, 5*time.Minute, 30*time.Minute)
+	defer stopChangeRecovery()
+
+	// 7) Audit 保留策略 worker：按保留天数定期清理过期审计记录，防止日志无限增长。
+	auditRetentionCtx, stopAuditRetention := context.WithCancel(context.Background())
+	go auditapp.RunRetentionLoop(auditRetentionCtx, auditSvc, auditdomain.RetentionPolicy{Days: 180}, 24*time.Hour)
+	defer stopAuditRetention()
 
 	srv := &http.Server{
 		Addr:         cfg.Server.Addr,

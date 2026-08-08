@@ -41,22 +41,50 @@ func (p *Project) Validate() error {
 }
 
 func SplitNamespaces(value string) []string {
-	parts := strings.Split(value, ",")
-	result := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if trimmed := strings.TrimSpace(part); trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
+	return NewNamespaceAssignment(strings.Split(value, ",")).Values()
 }
 
 func JoinNamespaces(values []string) string {
+	return NewNamespaceAssignment(values).String()
+}
+
+// NamespaceAssignment 是项目命名空间分配的值对象，负责规范化与去重不变式。
+type NamespaceAssignment struct{ values []string }
+
+// NewNamespaceAssignment 构造命名空间分配：去空、去重并保持原有顺序。
+func NewNamespaceAssignment(values []string) NamespaceAssignment {
+	seen := make(map[string]struct{}, len(values))
 	result := make([]string, 0, len(values))
 	for _, value := range values {
 		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			if _, ok := seen[trimmed]; ok {
+				continue
+			}
+			seen[trimmed] = struct{}{}
 			result = append(result, trimmed)
 		}
 	}
-	return strings.Join(result, ",")
+	return NamespaceAssignment{values: result}
+}
+
+// Values 返回规范化后的命名空间列表。
+func (a NamespaceAssignment) Values() []string { return a.values }
+
+// String 返回逗号分隔的持久化表示。
+func (a NamespaceAssignment) String() string { return strings.Join(a.values, ",") }
+
+// Contains 判断命名空间是否已分配。
+func (a NamespaceAssignment) Contains(name string) bool {
+	target := strings.TrimSpace(name)
+	for _, value := range a.values {
+		if value == target {
+			return true
+		}
+	}
+	return false
+}
+
+// AssignNamespaces 通过聚合方法更新命名空间分配（规范化去重）。
+func (p *Project) AssignNamespaces(values []string) {
+	p.Namespaces = NewNamespaceAssignment(values).String()
 }

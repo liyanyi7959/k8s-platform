@@ -49,6 +49,13 @@ type Repository interface {
 	ListDeployPlanNodes(ctx context.Context, planID uint64) ([]provisiondomain.DeployPlanNode, error)
 	SoftDeleteDeployPlan(ctx context.Context, id uint64, deletedAt time.Time) error
 
+	// 部署执行登记：长任务 Durable Job 的租约与终态持久化。
+	CreateDeployJob(ctx context.Context, job *provisiondomain.DeployJob) error
+	FindDeployJobByPlan(ctx context.Context, planID uint64) (provisiondomain.DeployJob, bool, error)
+	HeartbeatDeployJob(ctx context.Context, planID uint64, expiresAt time.Time) (bool, error)
+	CompleteDeployJob(ctx context.Context, planID uint64, status provisiondomain.DeployJobStatus, message string) (bool, error)
+	ListExpiredDeployJobs(ctx context.Context, now time.Time, limit int) ([]provisiondomain.DeployJob, error)
+
 	ListDeployConfigs(ctx context.Context, osTypes []string) ([]provisiondomain.DeployConfig, error)
 	FindDeployConfig(ctx context.Context, id uint64) (provisiondomain.DeployConfig, bool, error)
 	FindDeployConfigByKey(ctx context.Context, stepKey string, osTypes []string) ([]provisiondomain.DeployConfig, error)

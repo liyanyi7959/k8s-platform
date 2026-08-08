@@ -1,0 +1,9 @@
+# ============================================================
+# 星枢 K8S 管理平台 - 命名空间
+# ============================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: k8s-platform
+  labels:
+    app.kubernetes.io/part-of: k8s-platform

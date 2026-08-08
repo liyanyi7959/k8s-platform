@@ -384,6 +384,97 @@ func (r *Repository) SoftDeleteDeployRepository(ctx context.Context, id uint64, 
 	return result.RowsAffected > 0, result.Error
 }
 
+// ---------- 部署执行登记（Durable Job：Lease + Heartbeat） ----------
+
+type deployJobRow struct {
+	ID             uint64     `gorm:"column:id;primaryKey"`
+	PlanID         uint64     `gorm:"column:plan_id"`
+	TaskID         uint64     `gorm:"column:task_id"`
+	JobType        string     `gorm:"column:job_type"`
+	Status         string     `gorm:"column:status"`
+	LeaseExpiresAt *time.Time `gorm:"column:lease_expires_at"`
+	Message        *string    `gorm:"column:message"`
+	CreatedAt      time.Time  `gorm:"column:created_at"`
+	UpdatedAt      time.Time  `gorm:"column:updated_at"`
+}
+
+func (deployJobRow) TableName() string { return "provision_deploy_jobs" }
+
+func (r *Repository) CreateDeployJob(ctx context.Context, job *provisiondomain.DeployJob) error {
+	return r.db.WithContext(ctx).Table("provision_deploy_jobs").Create(toDeployJobRow(job)).Error
+}
+
+func (r *Repository) FindDeployJobByPlan(ctx context.Context, planID uint64) (provisiondomain.DeployJob, bool, error) {
+	var row deployJobRow
+	err := r.db.WithContext(ctx).Where("plan_id = ?", planID).First(&row).Error
+	if err == nil {
+		return fromDeployJobRow(row), true, nil
+	}
+	if err == gorm.ErrRecordNotFound {
+		return provisiondomain.DeployJob{}, false, nil
+	}
+	return provisiondomain.DeployJob{}, false, err
+}
+
+func (r *Repository) HeartbeatDeployJob(ctx context.Context, planID uint64, expiresAt time.Time) (bool, error) {
+	result := r.db.WithContext(ctx).Table("provision_deploy_jobs").
+		Where("plan_id = ? AND status = ?", planID, string(provisiondomain.DeployJobRunning)).
+		Update("lease_expires_at", expiresAt)
+	return result.RowsAffected > 0, result.Error
+}
+
+func (r *Repository) CompleteDeployJob(ctx context.Context, planID uint64, status provisiondomain.DeployJobStatus, message string) (bool, error) {
+	updates := map[string]any{"status": string(status)}
+	if message != "" {
+		updates["message"] = message
+	}
+	result := r.db.WithContext(ctx).Table("provision_deploy_jobs").
+		Where("plan_id = ? AND status = ?", planID, string(provisiondomain.DeployJobRunning)).
+		Updates(updates)
+	return result.RowsAffected > 0, result.Error
+}
+
+func (r *Repository) ListExpiredDeployJobs(ctx context.Context, now time.Time, limit int) ([]provisiondomain.DeployJob, error) {
+	var rows []deployJobRow
+	err := r.db.WithContext(ctx).
+		Where("status = ? AND lease_expires_at IS NOT NULL AND lease_expires_at < ?", string(provisiondomain.DeployJobRunning), now).
+		Order("id ASC").
+		Limit(limit).
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	jobs := make([]provisiondomain.DeployJob, 0, len(rows))
+	for _, row := range rows {
+		jobs = append(jobs, fromDeployJobRow(row))
+	}
+	return jobs, nil
+}
+
+func toDeployJobRow(job *provisiondomain.DeployJob) deployJobRow {
+	row := deployJobRow{
+		PlanID: job.PlanID, TaskID: job.TaskID, JobType: job.JobType,
+		Status: string(job.Status), LeaseExpiresAt: job.LeaseExpiresAt,
+	}
+	if job.Message != "" {
+		message := job.Message
+		row.Message = &message
+	}
+	return row
+}
+
+func fromDeployJobRow(row deployJobRow) provisiondomain.DeployJob {
+	job := provisiondomain.DeployJob{
+		ID: row.ID, PlanID: row.PlanID, TaskID: row.TaskID, JobType: row.JobType,
+		Status: provisiondomain.DeployJobStatus(row.Status), LeaseExpiresAt: row.LeaseExpiresAt,
+		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	}
+	if row.Message != nil {
+		job.Message = *row.Message
+	}
+	return job
+}
+
 var _ ports.Repository = (*Repository)(nil)
 
 // Keep this import-free helper local so query normalization stays in application.

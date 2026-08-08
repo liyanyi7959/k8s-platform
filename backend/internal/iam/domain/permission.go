@@ -39,6 +39,9 @@ var builtinPermissions = []PermissionMetadata{
 	{Code: "incident:manage", Description: "事件认领、处置与验证", Category: "monitor", CategoryLabel: "监控与事件", Builtin: true},
 	{Code: "automation:read", Description: "自动化任务查看", Category: "automation", CategoryLabel: "自动化与变更", Builtin: true},
 	{Code: "automation:execute", Description: "自动化任务取消与执行", Category: "automation", CategoryLabel: "自动化与变更", Builtin: true},
+	{Code: "cicd:read", Description: "CI/CD 流水线、运行和制品查看", Category: "cicd", CategoryLabel: "CI/CD", Builtin: true},
+	{Code: "cicd:write", Description: "CI/CD 流水线和环境配置管理", Category: "cicd", CategoryLabel: "CI/CD", Builtin: true},
+	{Code: "cicd:execute", Description: "CI/CD 流水线运行和取消", Category: "cicd", CategoryLabel: "CI/CD", Builtin: true},
 	{Code: "credential:read", Description: "凭据库查看", Category: "credential", CategoryLabel: "凭据与密钥", Builtin: true},
 	{Code: "credential:write", Description: "凭据库管理", Category: "credential", CategoryLabel: "凭据与密钥", Builtin: true},
 	{Code: "credential:delete", Description: "凭据库删除", Category: "credential", CategoryLabel: "凭据与密钥", Builtin: true},
@@ -74,7 +77,7 @@ func DescribePermission(code string, description *string) PermissionMetadata {
 }
 
 func PermissionCategoryOrder(category string) int {
-	orders := map[string]int{"system": 1, "cluster": 2, "credential": 3, "monitor": 4, "automation": 5, "project": 6, "namespace": 6, "k8s": 7, "rbac": 8, "ai": 9, "deploy": 10, "appstore": 11, "security": 12}
+	orders := map[string]int{"system": 1, "cluster": 2, "credential": 3, "monitor": 4, "automation": 5, "cicd": 5, "project": 6, "namespace": 6, "k8s": 7, "rbac": 8, "ai": 9, "deploy": 10, "appstore": 11, "security": 12}
 	if order, ok := orders[category]; ok {
 		return order
 	}

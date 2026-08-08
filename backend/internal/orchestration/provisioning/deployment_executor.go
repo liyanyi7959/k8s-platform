@@ -12,6 +12,13 @@ import (
 	provisionports "k8s-platform-backend/internal/provisioning/ports"
 )
 
+// 部署执行租约参数：长步骤期间由心跳持续续期，进程崩溃后租约过期交由
+// 进程内 worker 兜底回收。
+const (
+	deployJobLeaseDuration     = 30 * time.Minute
+	deployJobHeartbeatInterval = 2 * time.Minute
+)
+
 // DeploymentExecutor owns the operational state machine for a deployment
 // plan. It is the Provisioning runtime's single owner for task persistence,
 // readiness gating, Ansible execution, and the post-deployment fleet import.
@@ -99,6 +106,14 @@ func (e *DeploymentExecutor) executeFromStep(ctx context.Context, planID, userID
 			return err
 		}
 		taskID = uint64(task.ID)
+		leaseExpiresAt := time.Now().UTC().Add(deployJobLeaseDuration)
+		job := &model.DeployJob{
+			PlanID: planID, TaskID: taskID, JobType: "deploy_cluster",
+			Status: model.DeployJobRunning, LeaseExpiresAt: &leaseExpiresAt,
+		}
+		if err := tx.CreateDeployJob(ctx, job); err != nil {
+			return err
+		}
 		return tx.UpdateDeployPlan(ctx, planID, map[string]any{
 			"status": "running", "task_id": taskID,
 		})
@@ -236,6 +251,14 @@ func (e *DeploymentExecutor) InstallAddons(ctx context.Context, planID uint64, r
 	if err := e.taskStore.Put(task); err != nil {
 		return 0, err
 	}
+	leaseExpiresAt := time.Now().UTC().Add(deployJobLeaseDuration)
+	job := &model.DeployJob{
+		PlanID: planID, TaskID: uint64(task.ID), JobType: "install_cluster_addons",
+		Status: model.DeployJobRunning, LeaseExpiresAt: &leaseExpiresAt,
+	}
+	if err := e.repository.CreateDeployJob(ctx, job); err != nil {
+		return 0, err
+	}
 	go e.addonInstallPipeline(context.Background(), int64(planID), task.ID, addons)
 	return uint64(task.ID), nil
 }
@@ -346,6 +369,10 @@ func (e *DeploymentExecutor) ansiblePipeline(ctx context.Context, planID uint64,
 	defer e.taskStore.UnregisterCancel(taskID)
 	defer cancel()
 
+	heartbeatStop := make(chan struct{})
+	defer close(heartbeatStop)
+	go e.deployJobHeartbeatLoop(planID, heartbeatStop)
+
 	task.Status = platformapp.TaskRunning
 	message := "正在执行 Ansible 部署流水线"
 	task.Message = &message
@@ -357,11 +384,13 @@ func (e *DeploymentExecutor) ansiblePipeline(ctx context.Context, planID uint64,
 		task.AppendLog(fmt.Sprintf("[error] 获取部署计划失败: %v", err), activeTaskStepKey(task))
 		e.markTaskFailed(task, fmt.Sprintf("获取部署计划失败: %v", err))
 		e.updatePlanStatusDirect(ctx, planID, "failed")
+		e.finishDeployJob(ctx, planID, model.DeployJobFailed, fmt.Sprintf("获取部署计划失败: %v", err))
 		return
 	}
 	if ctx.Err() != nil {
 		e.markTaskCanceled(task)
 		e.updatePlanStatusDirect(ctx, planID, "cancelled")
+		e.finishDeployJob(ctx, planID, model.DeployJobCancelled, "任务已取消")
 		return
 	}
 
@@ -379,6 +408,7 @@ func (e *DeploymentExecutor) ansiblePipeline(ctx context.Context, planID uint64,
 	if ctx.Err() != nil {
 		e.markTaskCanceled(task)
 		e.updatePlanStatusDirect(ctx, planID, "cancelled")
+		e.finishDeployJob(ctx, planID, model.DeployJobCancelled, "任务已取消")
 		return
 	}
 	if err != nil {
@@ -391,6 +421,7 @@ func (e *DeploymentExecutor) ansiblePipeline(ctx context.Context, planID uint64,
 		}
 		e.markTaskFailed(task, fmt.Sprintf("部署失败: %v", err))
 		e.updatePlanStatusDirect(ctx, planID, "failed")
+		e.finishDeployJob(ctx, planID, model.DeployJobFailed, fmt.Sprintf("部署失败: %v", err))
 		return
 	}
 
@@ -413,6 +444,7 @@ func (e *DeploymentExecutor) ansiblePipeline(ctx context.Context, planID uint64,
 		}
 		e.markTaskFailed(task, fmt.Sprintf("集群已安装但注册平台失败: %v，请检查日志后重试注册流程", registerErr))
 		e.updatePlanStatusDirect(ctx, planID, "failed")
+		e.finishDeployJob(ctx, planID, model.DeployJobFailed, fmt.Sprintf("集群已安装但注册平台失败: %v", registerErr))
 		return
 	}
 	task.AppendLog(fmt.Sprintf("[info] 集群 %s 注册成功，ID: %d", plan.ClusterName, clusterID), "")
@@ -423,6 +455,7 @@ func (e *DeploymentExecutor) ansiblePipeline(ctx context.Context, planID uint64,
 	task.Message = &message
 	_ = e.taskStore.Put(task)
 	e.updatePlanStatusDirect(ctx, planID, "success")
+	e.finishDeployJob(ctx, planID, model.DeployJobSucceeded, "集群部署成功")
 }
 
 func (e *DeploymentExecutor) initializeAnsibleSteps(task *platformapp.Task) {
@@ -489,6 +522,10 @@ func (e *DeploymentExecutor) addonInstallPipeline(ctx context.Context, planID, t
 	defer e.taskStore.UnregisterCancel(taskID)
 	defer cancel()
 
+	heartbeatStop := make(chan struct{})
+	defer close(heartbeatStop)
+	go e.deployJobHeartbeatLoop(uint64(planID), heartbeatStop)
+
 	now := time.Now().UTC()
 	task.Status = platformapp.TaskRunning
 	task.Steps = []platformapp.TaskStep{newAddonInstallTaskStep(addons, now)}
@@ -499,6 +536,7 @@ func (e *DeploymentExecutor) addonInstallPipeline(ctx context.Context, planID, t
 	plan, nodes, err := e.planWithNodes(ctx, uint64(planID))
 	if err != nil {
 		e.markTaskFailed(task, "读取部署方案失败："+err.Error())
+		e.finishDeployJob(ctx, uint64(planID), model.DeployJobFailed, "读取部署方案失败："+err.Error())
 		return
 	}
 	runPlan := plan
@@ -514,10 +552,12 @@ func (e *DeploymentExecutor) addonInstallPipeline(ctx context.Context, planID, t
 	}
 	if ctx.Err() != nil {
 		e.markTaskCanceled(task)
+		e.finishDeployJob(ctx, uint64(planID), model.DeployJobCancelled, "任务已取消")
 		return
 	}
 	if err != nil {
 		e.markTaskFailed(task, "附加组件安装失败："+err.Error())
+		e.finishDeployJob(ctx, uint64(planID), model.DeployJobFailed, "附加组件安装失败："+err.Error())
 		return
 	}
 
@@ -528,6 +568,7 @@ func (e *DeploymentExecutor) addonInstallPipeline(ctx context.Context, planID, t
 	}
 	if err := e.repository.UpdateDeployPlan(ctx, uint64(planID), updates); err != nil {
 		e.markTaskFailed(task, "组件已完成安装，但更新部署方案记录失败："+err.Error())
+		e.finishDeployJob(ctx, uint64(planID), model.DeployJobFailed, "组件已完成安装，但更新部署方案记录失败："+err.Error())
 		return
 	}
 	finished := time.Now().UTC()
@@ -540,6 +581,7 @@ func (e *DeploymentExecutor) addonInstallPipeline(ctx context.Context, planID, t
 	task.Message = &message
 	task.AppendLog("[info] "+message, "install_addons")
 	_ = e.taskStore.Put(task)
+	e.finishDeployJob(ctx, uint64(planID), model.DeployJobSucceeded, message)
 }
 
 func (e *DeploymentExecutor) markTaskFailed(task *platformapp.Task, message string) {
@@ -569,6 +611,49 @@ func (e *DeploymentExecutor) markTaskCanceled(task *platformapp.Task) {
 	message := "任务已取消"
 	task.Message = &message
 	_ = e.taskStore.Put(task)
+}
+
+// deployJobHeartbeatLoop 在流水线执行期间定期续期 Durable Job 租约，保证
+// 长步骤不被 worker 误判为僵尸；流水线退出时通过 stop 通道停止。
+func (e *DeploymentExecutor) deployJobHeartbeatLoop(planID uint64, stop <-chan struct{}) {
+	if e == nil || e.repository == nil {
+		return
+	}
+	ticker := time.NewTicker(deployJobHeartbeatInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-stop:
+			return
+		case <-ticker.C:
+			expiresAt := time.Now().UTC().Add(deployJobLeaseDuration)
+			_, _ = e.repository.HeartbeatDeployJob(context.Background(), planID, expiresAt)
+		}
+	}
+}
+
+// finishDeployJob 通过领域状态机校验后将 Durable Job 推进到终态。
+func (e *DeploymentExecutor) finishDeployJob(ctx context.Context, planID uint64, status model.DeployJobStatus, message string) {
+	if e == nil || e.repository == nil {
+		return
+	}
+	job, found, err := e.repository.FindDeployJobByPlan(ctx, planID)
+	if err != nil || !found {
+		return
+	}
+	var updated model.DeployJob
+	switch status {
+	case model.DeployJobSucceeded:
+		updated, err = job.Complete(time.Now().UTC())
+	case model.DeployJobCancelled:
+		updated, err = job.Cancel(time.Now().UTC())
+	default:
+		updated, err = job.Fail(time.Now().UTC())
+	}
+	if err != nil {
+		return
+	}
+	_, _ = e.repository.CompleteDeployJob(ctx, planID, updated.Status, message)
 }
 
 func (e *DeploymentExecutor) updatePlanStatusDirect(ctx context.Context, planID uint64, status string) {

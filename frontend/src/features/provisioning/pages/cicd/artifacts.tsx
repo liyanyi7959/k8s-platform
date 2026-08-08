@@ -1,11 +1,13 @@
 /**
  * 制品仓库 - 构建产物管理（容器镜像、Helm Chart 等）
  */
+import { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
 import { Card, Input, Select, Space, Table, Tag } from 'antd'
 import { EyeOutlined } from '@ant-design/icons'
 import { AppPage, EmptyState } from '@/components'
 import type { ProColumns } from '@ant-design/pro-components'
+import { getArtifacts, type Artifact } from '@/features/provisioning/api/cicd'
 
 interface ArtifactRecord {
   id: string
@@ -80,8 +82,11 @@ const MOCK_ARTIFACTS: ArtifactRecord[] = [
   { id: '6', name: 'shared-ui', type: 'package', version: '3.2.1', size: '2.1 MB', pushedAt: '07-24 16:30' },
   { id: '7', name: 'utils-lib', type: 'package', version: '1.0.5', size: '340 KB', pushedAt: '07-24 14:15' },
 ]
+void MOCK_ARTIFACTS
 
 const ArtifactsPage: React.FC = () => {
+  const [artifacts, setArtifacts] = useState<ArtifactRecord[]>([])
+  useEffect(() => { getArtifacts({ page: 1, pageSize: 100 }).then((res) => setArtifacts((res.list || []).map((a: Artifact) => ({ id: String(a.id), name: a.name, type: (a.artifactType || a.artifact_type || 'package') as ArtifactRecord['type'], version: a.version, size: a.sizeBytes ? `${Math.round(a.sizeBytes / 1024)} KB` : '-', pushedAt: a.createdAt || a.created_at || '-' })))) }, [])
   return (
     <AppPage>
       <Card>
@@ -103,7 +108,7 @@ const ArtifactsPage: React.FC = () => {
         <Table<ArtifactRecord>
           rowKey="id"
           columns={columns as any}
-          dataSource={MOCK_ARTIFACTS}
+          dataSource={artifacts}
           pagination={false}
           onRow={(record) => ({ onClick: () => history.push(`/cicd/artifacts/${record.id}`), style: { cursor: 'pointer' } })}
           locale={{

@@ -1,0 +1,129 @@
+# ============================================================
+# 星枢 K8S 管理平台 - 后端服务（模块化单体，唯一业务镜像）
+# Deployment + PVC + Service
+#
+# 注意：
+#   1. image 地址务必替换为你自己的镜像仓库地址与 tag。
+#   2. MYSQL_DSN 使用 $(MYSQL_ROOT_PASSWORD) 引用 Secret，该变量
+#      必须在 env 列表中定义于 MYSQL_DSN 之前（K8s 按顺序解析）。
+#   3. 多副本部署：将 ConfigMap 中 AUTO_MIGRATE 改为 "false"，
+#      由发布流程先执行一次迁移（见 README 升级章节）。
+#   4. 挂载 PVC 到 /app/data（AI 上传等运行时数据），并通过 fsGroup
+#      授权非 root 用户（uid 10001）写入。
+# ============================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-data
+  namespace: k8s-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # storageClassName: ""   # 无默认存储类时在此指定
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: k8s-platform
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      # fsGroup: 让挂载卷对指定组可写（镜像内 appuser 的 gid 为 10001）
+      securityContext:
+        fsGroup: 10001
+        runAsNonRoot: true
+      containers:
+        - name: backend
+          image: registry.example.com/k8s-platform-backend:v1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            # ---- 从 Secret 注入敏感项 ----
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DSN
+              value: "root:$(MYSQL_ROOT_PASSWORD)@tcp(mysql.k8s-platform.svc.cluster.local:3306)/k8splatform?charset=utf8mb4&parseTime=True&loc=Local"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: JWT_SECRET
+            - name: CRYPTO_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: CRYPTO_MASTER_KEY
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: REDIS_PASSWORD
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: ADMIN_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: app-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: k8s-platform
+spec:
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

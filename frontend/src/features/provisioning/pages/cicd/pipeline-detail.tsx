@@ -1,7 +1,7 @@
 /**
  * 流水线详情 - 展示流水线配置、阶段步骤与执行历史
  */
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
 import { Button, Card, Descriptions, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import {
@@ -16,11 +16,12 @@ import {
 } from '@ant-design/icons'
 import { AppPage, YamlEditor } from '@/components'
 import { DESIGN_COLORS } from '@/theme/designTokens'
+import { getPipeline } from '@/features/provisioning/api/cicd'
 
 const { Text } = Typography
 
 // 静态数据（后端 API 就绪后替换）
-const PIPELINE = {
+const DEFAULT_PIPELINE = {
   id: '1',
   name: 'frontend-ci',
   description: '前端项目 CI 流水线：Lint -> Build -> 镜像构建 -> 推送',
@@ -108,6 +109,10 @@ stages:
 `
 
 const PipelineDetailPage: React.FC = () => {
+  const [pipelineData, setPipelineData] = useState<any>(null)
+  const pipelineID = history.location.pathname.split('/').pop() || ''
+  useEffect(() => { if (pipelineID) getPipeline(pipelineID).then(setPipelineData) }, [pipelineID])
+  const PIPELINE = pipelineData ? { ...DEFAULT_PIPELINE, ...pipelineData, trigger: pipelineData.triggerType || pipelineData.trigger_type || DEFAULT_PIPELINE.trigger, description: pipelineData.description || DEFAULT_PIPELINE.description, configYaml: pipelineData.configYaml || pipelineData.config_yaml } : DEFAULT_PIPELINE
   const pipelineStatus = STATUS_META[PIPELINE.status] ?? STATUS_META.idle!
 
   return (
@@ -201,7 +206,7 @@ const PipelineDetailPage: React.FC = () => {
 
         {/* 流水线配置 */}
         <Card title="流水线配置">
-          <YamlEditor readOnly value={PIPELINE_YAML} height={360} />
+          <YamlEditor readOnly value={PIPELINE.configYaml || PIPELINE_YAML} height={360} />
         </Card>
 
         {/* 最近执行历史 */}

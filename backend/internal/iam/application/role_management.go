@@ -169,14 +169,14 @@ func normalizeScope(request *NamespaceScopeRequest, permissions []string) (*port
 	if request == nil {
 		return nil, nil
 	}
-	namespaces := normalizeStrings(request.Namespaces)
-	if len(namespaces) == 0 {
+	scope, err := domain.NewNamespaceScope(request.ClusterID, request.Namespaces, permissions)
+	if err != nil {
+		return nil, err
+	}
+	if scope == nil {
 		return nil, nil
 	}
-	if request.ClusterID == 0 || (permissions != nil && !domain.HasNamespacePermission(permissions)) {
-		return nil, domain.ErrInvalidParams
-	}
-	return &ports.RoleNamespaceScopeData{ClusterID: request.ClusterID, Namespaces: namespaces}, nil
+	return &ports.RoleNamespaceScopeData{ClusterID: scope.ClusterID, Namespaces: scope.Namespaces}, nil
 }
 func createDescription(description, fallback string) *string {
 	value := strings.TrimSpace(description)

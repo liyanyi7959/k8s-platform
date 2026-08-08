@@ -9,8 +9,8 @@ import (
 
 	aiapp "k8s-platform-backend/internal/ai/application"
 	aidomain "k8s-platform-backend/internal/ai/domain"
-	service "k8s-platform-backend/internal/kops/adapters/kubernetes"
 	kopsapp "k8s-platform-backend/internal/kops/application"
+	kopsports "k8s-platform-backend/internal/kops/ports"
 )
 
 // NodeEventReader keeps node-event selection in the Kops infrastructure
@@ -26,22 +26,23 @@ type PodLogReader interface {
 }
 
 // ResourceQueryRuntime adapts the retained Kubernetes transport to AI's
-// resource-query port. Query orchestration stays in ai/application.
+// resource-query port through the controlled generic API boundary. Query
+// orchestration stays in ai/application.
 type ResourceQueryRuntime struct {
-	k8s        *service.K8sService
+	resources  kopsports.GenericResourceQuery
 	nodeEvents NodeEventReader
 	podLogs    PodLogReader
 }
 
-func NewResourceQueryRuntime(k8s *service.K8sService, nodeEvents NodeEventReader, podLogs PodLogReader) *ResourceQueryRuntime {
-	return &ResourceQueryRuntime{k8s: k8s, nodeEvents: nodeEvents, podLogs: podLogs}
+func NewResourceQueryRuntime(resources kopsports.GenericResourceQuery, nodeEvents NodeEventReader, podLogs PodLogReader) *ResourceQueryRuntime {
+	return &ResourceQueryRuntime{resources: resources, nodeEvents: nodeEvents, podLogs: podLogs}
 }
 
 func (r *ResourceQueryRuntime) List(ctx context.Context, clusterID uint64, resource aiapp.ResourceReference, namespace, sortBy, order string, options map[string]string) ([]map[string]any, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.resources == nil {
 		return nil, aiapp.ErrConflict
 	}
-	items, err := r.k8s.List(ctx, clusterID, resourceGVR(resource), namespace, sortBy, order, options)
+	items, err := r.resources.List(ctx, clusterID, resourceGVR(resource), namespace, sortBy, order, options)
 	if err != nil {
 		return nil, err
 	}
@@ -49,10 +50,10 @@ func (r *ResourceQueryRuntime) List(ctx context.Context, clusterID uint64, resou
 }
 
 func (r *ResourceQueryRuntime) Get(ctx context.Context, clusterID uint64, resource aiapp.ResourceReference, namespace, name string) (map[string]any, error) {
-	if r == nil || r.k8s == nil {
+	if r == nil || r.resources == nil {
 		return nil, aiapp.ErrConflict
 	}
-	return r.k8s.GetObject(ctx, clusterID, resourceGVR(resource), namespace, name)
+	return r.resources.GetObject(ctx, clusterID, resourceGVR(resource), namespace, name)
 }
 
 func (r *ResourceQueryRuntime) ListNodeEvents(ctx context.Context, clusterID uint64, name string) ([]map[string]any, error) {

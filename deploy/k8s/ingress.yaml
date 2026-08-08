@@ -1,0 +1,37 @@
+# ============================================================
+# 星枢 K8S 管理平台 - Ingress（可选）
+# 需集群已部署 Ingress Controller（如 ingress-nginx）：
+#   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.2/deploy/static/provider/cloud/deploy.yaml
+#
+# 若集群无 Ingress Controller，可将 backend 的 Service 改为 NodePort
+# 访问：http://<任意节点IP>:30xxx
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend
+  namespace: k8s-platform
+  annotations:
+    # 终端/日志流（WebSocket）需要较长超时
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # AI 文件上传/导出等大体积请求
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: k8s-platform.example.com   # 替换为你的域名
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8080
+  # 如需 HTTPS：先创建证书 Secret，再启用如下配置
+  # tls:
+  #   - hosts:
+  #       - k8s-platform.example.com
+  #     secretName: k8s-platform-tls

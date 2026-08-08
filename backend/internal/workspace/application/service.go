@@ -95,7 +95,7 @@ func (s *Service) AssignNamespaces(ctx context.Context, id uint64, namespaces []
 	if err != nil {
 		return err
 	}
-	project.Namespaces = domain.JoinNamespaces(namespaces)
+	project.AssignNamespaces(namespaces)
 	return s.repository.Update(ctx, project)
 }
 

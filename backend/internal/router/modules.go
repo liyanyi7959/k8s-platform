@@ -5,6 +5,7 @@ import (
 	audithttp "k8s-platform-backend/internal/audit/adapters/http"
 	auditapp "k8s-platform-backend/internal/audit/application"
 	changeapp "k8s-platform-backend/internal/change/application"
+	cicdhttp "k8s-platform-backend/internal/cicd/adapters/http"
 	fleethttp "k8s-platform-backend/internal/fleet/adapters/http"
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	incidenthttp "k8s-platform-backend/internal/incident/adapters/http"
@@ -26,8 +27,11 @@ type applicationModules struct {
 	ai           aiModule
 	change       changeModule
 	provisioning provisioningModule
+	cicd         cicdModule
 	incident     incidentModule
 }
+
+type cicdModule struct{ controller *cicdhttp.Controller }
 
 type auditModule struct {
 	service    *auditapp.Service
@@ -116,6 +120,7 @@ func buildApplicationModules(d Deps) applicationModules {
 	modules.change = buildChangeModule(d, runtime)
 	modules.ai = buildAIModule(d, runtime, modules.change)
 	modules.provisioning = buildProvisioningModule(d, runtime)
+	modules.cicd = buildCICDModule(d, runtime)
 	modules.incident = buildIncidentModule(d)
 	return modules
 }

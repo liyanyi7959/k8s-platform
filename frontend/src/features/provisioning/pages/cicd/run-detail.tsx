@@ -1,7 +1,7 @@
 /**
  * 执行详情 - 展示执行概览、阶段时间线与实时日志
  */
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
 import { Button, Card, Descriptions, Space, Steps, Tag, Typography } from 'antd'
 import {
@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons'
 import { AppPage, TerminalCodeBlock } from '@/components'
 import { DESIGN_COLORS } from '@/theme/designTokens'
+import { getRun, type Run } from '@/features/provisioning/api/cicd'
 
 const { Text } = Typography
 
@@ -78,21 +79,26 @@ const STATUS_META: Record<string, { color: string; text: string }> = {
 
 const RunDetailPage: React.FC = () => {
   const [activeStage, setActiveStage] = useState(0)
-  const currentStage = STAGES[activeStage] ?? STAGES[0]!
-  const runStatus = STATUS_META[RUN.status] ?? STATUS_META.failed!
+  const [runData, setRunData] = useState<Run | null>(null)
+  const runID = history.location.pathname.split('/').pop() || ''
+  useEffect(() => { if (runID) getRun(runID).then(setRunData) }, [runID])
+  const run = runData ? { id: runData.id, pipeline: runData.pipelineName || runData.pipeline_name || '-', status: runData.status, duration: '-', trigger: runData.triggerType || runData.trigger_type || 'manual', startedAt: runData.startedAt || runData.started_at || '-', finishedAt: runData.finishedAt || runData.finished_at || '-', branch: runData.branch || '-', commit: runData.commitSha || runData.commit_sha || '-', commitMessage: runData.commitMessage || runData.commit_message || '-' } : RUN
+  const stages = runData?.stages?.length ? runData.stages.map((stage) => ({ key: stage.stageKey || stage.stage_key || String(stage.id), name: stage.name, status: stage.status as StageRun['status'], duration: '-', logs: stage.log || '' })) : STAGES
+  const currentStage = stages[activeStage] ?? stages[0]!
+  const runStatus = STATUS_META[run.status] ?? STATUS_META.failed!
 
   return (
-    <AppPage keepHeaderTitle title={`执行 #${RUN.id}`}>
+    <AppPage keepHeaderTitle title={`执行 #${run.id}`}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* 顶部操作栏 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
             <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/runs')}>返回</Button>
             <Tag color={runStatus.color}>{runStatus.text}</Tag>
-            <Text type="secondary">耗时 {RUN.duration}</Text>
+            <Text type="secondary">耗时 {run.duration}</Text>
           </Space>
           <Space>
-            {RUN.status === 'running' ? (
+            {run.status === 'running' ? (
               <Button danger icon={<StopOutlined />}>取消执行</Button>
             ) : (
               <Button icon={<ReloadOutlined />}>重新执行</Button>
@@ -104,22 +110,22 @@ const RunDetailPage: React.FC = () => {
         <Card title="执行概览">
           <Descriptions column={{ xs: 1, sm: 2, lg: 3 }}>
             <Descriptions.Item label="流水线">
-              <a onClick={() => history.push('/cicd/pipelines/1')}>{RUN.pipeline}</a>
+              <a onClick={() => history.push('/cicd/pipelines/1')}>{run.pipeline}</a>
             </Descriptions.Item>
-            <Descriptions.Item label="触发者">{RUN.trigger}</Descriptions.Item>
+            <Descriptions.Item label="触发者">{run.trigger}</Descriptions.Item>
             <Descriptions.Item label="状态">
               <Tag color={runStatus.color}>{runStatus.text}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="开始时间">{RUN.startedAt}</Descriptions.Item>
-            <Descriptions.Item label="结束时间">{RUN.finishedAt}</Descriptions.Item>
-            <Descriptions.Item label="耗时">{RUN.duration}</Descriptions.Item>
+            <Descriptions.Item label="开始时间">{run.startedAt}</Descriptions.Item>
+            <Descriptions.Item label="结束时间">{run.finishedAt}</Descriptions.Item>
+            <Descriptions.Item label="耗时">{run.duration}</Descriptions.Item>
             <Descriptions.Item label="代码分支">
-              <Tag color="blue">{RUN.branch}</Tag>
+              <Tag color="blue">{run.branch}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Commit">
-              <Text code>{RUN.commit}</Text>
+              <Text code>{run.commit}</Text>
             </Descriptions.Item>
-            <Descriptions.Item label="提交信息">{RUN.commitMessage}</Descriptions.Item>
+            <Descriptions.Item label="提交信息">{run.commitMessage}</Descriptions.Item>
           </Descriptions>
         </Card>
 
@@ -131,7 +137,7 @@ const RunDetailPage: React.FC = () => {
               direction="vertical"
               size="small"
               current={activeStage}
-              items={STAGES.map((stage, idx) => ({
+              items={stages.map((stage, idx) => ({
                 title: stage.name,
                 description: (
                   <span style={{ cursor: 'pointer', color: idx === activeStage ? DESIGN_COLORS.primary : DESIGN_COLORS.textSecondary }}>
@@ -152,7 +158,7 @@ const RunDetailPage: React.FC = () => {
             style={{ flex: 1, minWidth: 0 }}
           >
             <TerminalCodeBlock
-              title={`${RUN.pipeline}/${currentStage.key}.log`}
+              title={`${run.pipeline}/${currentStage.key}.log`}
               content={currentStage.logs}
             />
           </Card>

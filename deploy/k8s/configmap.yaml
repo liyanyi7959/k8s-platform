@@ -1,0 +1,41 @@
+# ============================================================
+# 星枢 K8S 管理平台 - 非敏感配置（ConfigMap）
+# 环境变量名与 backend/internal/config/config.go 的 applyEnvOverrides 一一对应
+# ============================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: k8s-platform
+data:
+  # ---- 服务 ----
+  ADDR: ":8080"
+  GIN_MODE: "release"
+  # ---- 迁移 ----
+  # 单副本部署可开启自动迁移；多副本（replicas>1）请设为 "false"，
+  # 由发布流程/一次性任务先执行迁移（见 README 升级章节）
+  AUTO_MIGRATE: "true"
+  # ---- 鉴权 ----
+  JWT_TTL: "168h"
+  ADMIN_USERNAME: "admin"
+  # ---- Redis ----
+  REDIS_ENABLED: "true"
+  REDIS_ADDR: "redis.k8s-platform.svc.cluster.local:6379"
+  REDIS_DB: "0"
+  REDIS_DEFAULT_TTL: "20s"
+  # ---- 日志 ----
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  # ---- AI（可选，默认关闭；启用需配置 provider）----
+  AI_ENABLED: "false"
+  # AI_DEFAULT_PROVIDER: "openai"
+  # AI_DEFAULT_CHAT_MODEL: "gpt-4o-mini"
+  # AI_DEFAULT_VISION_MODEL: "gpt-4o-mini"
+  AI_UPLOAD_DIR: "data/ai-uploads"
+  # ---- 邮件（可选，找回密码用）----
+  MAIL_ENABLED: "false"
+  # MAIL_HOST: "smtp.qq.com"
+  # MAIL_PORT: "587"
+  # MAIL_USERNAME: "you@example.com"
+  # MAIL_STARTTLS: "true"
+  # MAIL_SSL: "false"

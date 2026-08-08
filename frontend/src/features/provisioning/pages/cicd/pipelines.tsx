@@ -1,12 +1,13 @@
 /**
  * 流水线管理 - CI/CD Pipeline 定义与编排
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
-import { Button, Card, Drawer, Form, Input, message, Select, Space, Table, Tag, Tooltip } from 'antd'
-import { PlusOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { Button, Card, Drawer, Form, Input, InputNumber, message, Select, Space, Table, Tag, Tooltip } from 'antd'
+import { PlusOutlined, PlayCircleOutlined, DeleteOutlined } from '@ant-design/icons'
 import { AppPage, EmptyState, YamlEditor } from '@/components'
 import type { ProColumns } from '@ant-design/pro-components'
+import { createPipeline, getPipelines, triggerPipeline, type Pipeline } from '@/features/provisioning/api/cicd'
 
 interface PipelineRecord {
   id: string
@@ -51,6 +52,13 @@ stages:
       - name: 推送镜像
         run: docker push registry.example.com/app:latest
 `
+
+type BuilderStep = { key: string; name: string; plugin: string; script: string; repository: string; branch: string; path: string; command: string; image: string; tag: string; context: string }
+type BuilderStage = { key: string; name: string; steps: BuilderStep[] }
+const PLUGIN_OPTIONS = [{ value: 'git', label: 'Git 拉取代码' }, { value: 'bash', label: 'Bash 脚本' }, { value: 'kubectl', label: 'Kubectl 部署' }, { value: 'helm', label: 'Helm 发布' }, { value: 'docker-build', label: 'Docker 构建' }]
+const DEFAULT_BUILDER: BuilderStage[] = [{ key: 'source', name: '代码拉取', steps: [{ key: 'checkout', name: 'Checkout', plugin: 'git', script: '', repository: '', branch: 'main', path: '/workspace/src', command: '', image: '', tag: '', context: '' }] }, { key: 'build', name: '构建', steps: [{ key: 'build-script', name: '构建脚本', plugin: 'bash', script: 'npm install\nnpm run build', repository: '', branch: '', path: '', command: '', image: '', tag: '', context: '' }] }]
+const yamlScalar = (value: string) => JSON.stringify(value || '')
+function builderToYaml(stages: BuilderStage[]) { const lines = ['stages:']; stages.forEach((stage) => { lines.push(`  - key: ${yamlScalar(stage.key)}`, `    name: ${yamlScalar(stage.name)}`, '    steps:'); stage.steps.forEach((step) => { lines.push(`      - key: ${yamlScalar(step.key)}`, `        name: ${yamlScalar(step.name)}`, `        plugin: ${yamlScalar(step.plugin)}`); if (step.plugin === 'git') { lines.push(`        repository: ${yamlScalar(step.repository)}`, `        branch: ${yamlScalar(step.branch)}`, `        path: ${yamlScalar(step.path)}`) } else if (step.plugin === 'bash') { lines.push('        script: |', ...step.script.split('\n').map((line) => `          ${line}`)) } else if (step.plugin === 'docker-build') { lines.push(`        image: ${yamlScalar(step.image)}`, `        tag: ${yamlScalar(step.tag)}`, `        context: ${yamlScalar(step.context)}`) } else { lines.push(`        command: ${yamlScalar(step.command)}`) } }) }); return lines.join('\n') }
 
 const columns: ProColumns<PipelineRecord>[] = [
   {
@@ -98,10 +106,10 @@ const columns: ProColumns<PipelineRecord>[] = [
     title: '操作',
     key: 'action',
     width: 160,
-    render: () => (
+    render: (_, record) => (
       <Space>
         <Tooltip title="执行">
-          <a><PlayCircleOutlined /></a>
+          <a onClick={(event) => { event.stopPropagation(); triggerPipeline(record.id).then(() => message.success('流水线已触发')) }}><PlayCircleOutlined /></a>
         </Tooltip>
         <a>编辑</a>
         <a style={{ color: '#dc2626' }}>删除</a>
@@ -118,21 +126,32 @@ const MOCK_PIPELINES: PipelineRecord[] = [
   { id: '5', name: 'db-migration', trigger: '定时触发', status: 'idle', lastRun: '2026-07-25 18:22', updatedAt: '2026-07-18 08:45' },
   { id: '6', name: 'nginx-deploy', trigger: '代码推送', status: 'success', lastRun: '2026-07-25 10:05', updatedAt: '2026-07-17 14:20' },
 ]
+void MOCK_PIPELINES
 
 const PipelinesPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [form] = Form.useForm()
   const [pipelineYaml, setPipelineYaml] = useState(DEFAULT_PIPELINE_YAML)
+  const [builderStages, setBuilderStages] = useState<BuilderStage[]>(DEFAULT_BUILDER)
+  const [pipelines, setPipelines] = useState<PipelineRecord[]>([])
+  const [loading, setLoading] = useState(false)
+  const loadPipelines = () => {
+    setLoading(true)
+    getPipelines({ page: 1, pageSize: 100 }).then((res) => setPipelines((res.list || []).map((p: Pipeline) => ({ id: String(p.id), name: p.name, trigger: p.triggerType || p.trigger_type || 'manual', status: p.status, lastRun: p.lastRun || p.lastRunAt || '-', updatedAt: p.updatedAt || p.updated_at || '-' })))).finally(() => setLoading(false))
+  }
+  useEffect(() => { loadPipelines() }, [])
 
   const handleAdd = () => {
     form.resetFields()
     form.setFieldsValue({ trigger: 'push' })
     setPipelineYaml(DEFAULT_PIPELINE_YAML)
+    setBuilderStages(DEFAULT_BUILDER)
     setDrawerOpen(true)
   }
 
   const handleSubmit = () => {
-    form.validateFields().then(() => {
+    form.validateFields().then((values) => {
+      createPipeline({ ...values, configYaml: builderToYaml(builderStages) || pipelineYaml }).then(() => loadPipelines())
       message.success('流水线创建成功')
       setDrawerOpen(false)
       form.resetFields()
@@ -143,6 +162,11 @@ const PipelinesPage: React.FC = () => {
     setDrawerOpen(false)
     form.resetFields()
   }
+
+  const addStage = () => setBuilderStages((stages) => [...stages, { key: `stage-${stages.length + 1}`, name: `阶段 ${stages.length + 1}`, steps: [] }])
+  const addStep = (stageIndex: number) => setBuilderStages((stages) => stages.map((stage, index) => index === stageIndex ? { ...stage, steps: [...stage.steps, { key: `step-${stage.steps.length + 1}`, name: `步骤 ${stage.steps.length + 1}`, plugin: 'bash', script: '', repository: '', branch: '', path: '', command: '', image: '', tag: '', context: '' }] } : stage))
+  const updateStage = (stageIndex: number, patch: Partial<BuilderStage>) => setBuilderStages((stages) => stages.map((stage, index) => index === stageIndex ? { ...stage, ...patch } : stage))
+  const updateStep = (stageIndex: number, stepIndex: number, patch: Partial<BuilderStep>) => setBuilderStages((stages) => stages.map((stage, index) => index === stageIndex ? { ...stage, steps: stage.steps.map((step, stepIndexValue) => stepIndexValue === stepIndex ? { ...step, ...patch } : step) } : stage))
 
   return (
     <AppPage>
@@ -162,7 +186,8 @@ const PipelinesPage: React.FC = () => {
         <Table<PipelineRecord>
           rowKey="id"
           columns={columns as any}
-          dataSource={MOCK_PIPELINES}
+          dataSource={pipelines}
+          loading={loading}
           pagination={false}
           onRow={(record) => ({ onClick: () => history.push(`/cicd/pipelines/${record.id}`), style: { cursor: 'pointer' } })}
           locale={{
@@ -194,6 +219,15 @@ const PipelinesPage: React.FC = () => {
           <Form.Item name="trigger" label="触发方式" rules={[{ required: true, message: '请选择触发方式' }]}>
             <Select options={TRIGGER_OPTIONS} />
           </Form.Item>
+          <Form.Item name="clusterId" label="执行集群" rules={[{ required: true, message: '请输入 Kubernetes 集群 ID' }]}>
+            <InputNumber min={1} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="namespace" label="执行命名空间" initialValue="cicd">
+            <Input />
+          </Form.Item>
+          <Form.Item name="runnerImage" label="Runner 镜像" initialValue="alpine:3.20">
+            <Input />
+          </Form.Item>
           <Form.Item noStyle shouldUpdate={(prev, cur) => prev.trigger !== cur.trigger}>
             {({ getFieldValue }) => {
               const trigger = getFieldValue('trigger')
@@ -214,12 +248,35 @@ const PipelinesPage: React.FC = () => {
               return null
             }}
           </Form.Item>
+          <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
+            <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 12 }}>
+              <strong>插件步骤编排</strong>
+              <Button size="small" icon={<PlusOutlined />} onClick={addStage}>添加阶段</Button>
+            </Space>
+            {builderStages.map((stage, stageIndex) => (
+              <Card key={stage.key} size="small" title={<Input value={stage.name} onChange={(event) => updateStage(stageIndex, { name: event.target.value, key: event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') })} />} style={{ marginBottom: 12 }} extra={<Button type="text" danger icon={<DeleteOutlined />} onClick={() => setBuilderStages((stages) => stages.filter((_, index) => index !== stageIndex))} />}>
+                {stage.steps.map((step, stepIndex) => (
+                  <Card key={step.key} size="small" style={{ marginBottom: 8 }} bodyStyle={{ padding: 10 }}>
+                    <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                      <Space.Compact style={{ width: '100%' }}>
+                        <Input value={step.name} placeholder="步骤名称" onChange={(event) => updateStep(stageIndex, stepIndex, { name: event.target.value, key: event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') })} />
+                        <Select value={step.plugin} options={PLUGIN_OPTIONS} style={{ width: 150 }} onChange={(plugin) => updateStep(stageIndex, stepIndex, { plugin })} />
+                        <Button danger icon={<DeleteOutlined />} onClick={() => setBuilderStages((stages) => stages.map((item, index) => index === stageIndex ? { ...item, steps: item.steps.filter((_, childIndex) => childIndex !== stepIndex) } : item))} />
+                      </Space.Compact>
+                      {step.plugin === 'git' ? <><Input placeholder="仓库地址" value={step.repository} onChange={(event) => updateStep(stageIndex, stepIndex, { repository: event.target.value })} /><Space.Compact style={{ width: '100%' }}><Input placeholder="分支" value={step.branch} onChange={(event) => updateStep(stageIndex, stepIndex, { branch: event.target.value })} /><Input placeholder="目录" value={step.path} onChange={(event) => updateStep(stageIndex, stepIndex, { path: event.target.value })} /></Space.Compact></> : step.plugin === 'bash' ? <Input.TextArea rows={3} placeholder="脚本内容" value={step.script} onChange={(event) => updateStep(stageIndex, stepIndex, { script: event.target.value })} /> : step.plugin === 'docker-build' ? <Space.Compact style={{ width: '100%' }}><Input placeholder="镜像仓库" value={step.image} onChange={(event) => updateStep(stageIndex, stepIndex, { image: event.target.value })} /><Input placeholder="Tag" value={step.tag} onChange={(event) => updateStep(stageIndex, stepIndex, { tag: event.target.value })} /><Input placeholder="构建上下文" value={step.context} onChange={(event) => updateStep(stageIndex, stepIndex, { context: event.target.value })} /></Space.Compact> : <Input placeholder="命令，例如 apply -f /workspace/src/k8s" value={step.command} onChange={(event) => updateStep(stageIndex, stepIndex, { command: event.target.value })} />}
+                    </Space>
+                  </Card>
+                ))}
+                <Button type="dashed" block icon={<PlusOutlined />} onClick={() => addStep(stageIndex)}>添加插件步骤</Button>
+              </Card>
+            ))}
+          </div>
         </Form>
         <div style={{ marginTop: 16 }}>
           <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>流水线配置</div>
           <YamlEditor
-            value={pipelineYaml}
-            onChange={setPipelineYaml}
+            value={builderToYaml(builderStages)}
+            readOnly
             height={300}
           />
         </div>

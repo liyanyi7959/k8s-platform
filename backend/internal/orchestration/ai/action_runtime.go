@@ -2,9 +2,11 @@ package ai
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	aimysql "k8s-platform-backend/internal/ai/adapters/mysql"
@@ -39,14 +41,20 @@ const (
 // ActionRuntime adapts Kops execution and Change confirmation ports to the
 // AI action use case. Proposal orchestration stays in aiapp.ActionService;
 // this adapter is deliberately the only place that knows both runtime ports.
-type ActionRuntime struct{ core *aiapp.ActionService }
+type ActionRuntime struct {
+	core          *aiapp.ActionService
+	changeService *changeapp.Service
+}
 
 func NewActionRuntime(db *gorm.DB, workloadActions *kopsapp.ActionProposalService) *ActionRuntime {
 	return NewActionRuntimeWithChangeService(db, workloadActions, changeapp.NewService(changemysql.NewRepository(db)))
 }
 
 func NewActionRuntimeWithChangeService(db *gorm.DB, workloadActions *kopsapp.ActionProposalService, changeService *changeapp.Service) *ActionRuntime {
-	return &ActionRuntime{core: aiapp.NewActionService(aimysql.NewRepository(db), workloadActionExecutor{service: workloadActions}, changeConfirmationAdapter{service: changeService})}
+	return &ActionRuntime{
+		core:          aiapp.NewActionService(aimysql.NewRepository(db), workloadActionExecutor{service: workloadActions}, changeConfirmationAdapter{service: changeService}),
+		changeService: changeService,
+	}
 }
 
 func (r *ActionRuntime) CreateProposal(ctx context.Context, clusterID, userID uint64, username string, req aiapp.CreateActionProposalRequest) (aiapp.ActionProposalResult, error) {
@@ -62,7 +70,39 @@ func (r *ActionRuntime) ConfirmProposal(ctx context.Context, clusterID, proposal
 		return aiapp.ActionConfirmationResult{}, errors.New("action application service is required")
 	}
 	result, err := r.core.ConfirmProposal(ctx, clusterID, proposalID, userID, username, req)
-	return result, mapActionRuntimeError(err)
+	if err != nil {
+		// 确认曾登记过 Change 执行但同步执行失败时回填失败终态；未登记则幂等忽略。
+		r.reportFailedExecution(ctx, proposalID, err)
+		return result, mapActionRuntimeError(err)
+	}
+	// 确认通过且同步执行成功：回填 Change 持久化执行的终态，保证变更可审计。
+	if result.Execution != nil && result.Execution.Status == "succeeded" {
+		r.reportSucceededExecution(ctx, proposalID, result)
+	}
+	return result, nil
+}
+
+func (r *ActionRuntime) reportSucceededExecution(ctx context.Context, proposalID uint64, result aiapp.ActionConfirmationResult) {
+	if r == nil || r.changeService == nil || result.Execution == nil {
+		return
+	}
+	raw, _ := json.Marshal(result.Execution.Result)
+	if err := r.changeService.CompleteExecution(ctx, changeapp.CompleteCommand{ProposalID: proposalID, ResultJSON: string(raw), Summary: result.ResultSummary}); err != nil {
+		zap.L().Warn("change_execution_complete_failed", zap.Uint64("proposal_id", proposalID), zap.Error(err))
+	}
+}
+
+func (r *ActionRuntime) reportFailedExecution(ctx context.Context, proposalID uint64, executionErr error) {
+	if r == nil || r.changeService == nil {
+		return
+	}
+	message := "unknown execution failure"
+	if executionErr != nil {
+		message = executionErr.Error()
+	}
+	if err := r.changeService.FailExecution(ctx, changeapp.FailCommand{ProposalID: proposalID, Message: message}); err != nil {
+		zap.L().Warn("change_execution_fail_reported_failed", zap.Uint64("proposal_id", proposalID), zap.Error(err))
+	}
 }
 
 func (r *ActionRuntime) GetProposal(ctx context.Context, clusterID, proposalID uint64) (aiapp.ActionProposalItem, error) {
@@ -143,9 +183,14 @@ func (adapter changeConfirmationAdapter) ConfirmAction(ctx context.Context, req 
 	result, err := adapter.service.Confirm(ctx, changeapp.ConfirmCommand{
 		ClusterID: req.ClusterID, ProposalID: req.ProposalID, ActorID: req.ActorID, ActorName: req.ActorName,
 		RiskAccepted: req.RiskAccepted, ConfirmationText: req.ConfirmationText,
+		IdempotencyKey: req.IdempotencyKey,
 	})
 	if err != nil {
 		return "", mapChangeConfirmationApplicationError(err)
+	}
+	if result.AlreadyProcessed {
+		// 幂等键命中：本次确认此前已登记，AI 侧不应再次执行。
+		return aiapp.ActionReplayed, nil
 	}
 	switch result.Decision {
 	case changedomain.DecisionRecordFirstApproval:

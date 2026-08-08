@@ -109,5 +109,6 @@ func registerRoutes(
 	registerAppTemplateRoutes(authed, modules.provisioning.appTemplate)
 	registerMonitorIncidentRoutes(authed, modules.incident.legacy)
 	registerAutomationTaskRoutes(authed, modules.provisioning.automation)
+	registerCICDRoutes(authed, modules.cicd.controller)
 	registerIncidentV2Routes(authed, modules.incident.v2)
 }

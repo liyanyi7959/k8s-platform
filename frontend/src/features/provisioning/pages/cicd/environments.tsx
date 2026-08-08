@@ -1,12 +1,13 @@
 /**
  * 环境管理 - 部署环境列表（dev / staging / prod）
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
 import { Button, Card, Col, Drawer, Form, Input, message, Row, Select, Tag, Typography } from 'antd'
 import { PlusOutlined, GlobalOutlined } from '@ant-design/icons'
 import { AppPage, EmptyState } from '@/components'
 import { DESIGN_COLORS } from '@/theme/designTokens'
+import { createEnvironment, getEnvironments, type Environment } from '@/features/provisioning/api/cicd'
 
 const { Text } = Typography
 
@@ -29,6 +30,7 @@ const ENVIRONMENTS: EnvItem[] = [
   { id: '2', name: 'staging', label: '预发', type: 'staging', cluster: 'staging-cluster-01', namespace: 'default', version: 'v1.2.4-rc', status: 'deployed', lastDeploy: '07-26 10:15', deployedBy: 'admin', deployCount: 32 },
   { id: '3', name: 'development', label: '开发', type: 'development', cluster: 'dev-cluster-01', namespace: 'default', version: 'v1.2.4-dev', status: 'failed', lastDeploy: '07-26 09:00', deployedBy: 'ci-bot', deployCount: 86 },
 ]
+void ENVIRONMENTS
 
 const ENV_TYPE_COLOR: Record<string, string> = {
   production: DESIGN_COLORS.danger,
@@ -57,6 +59,9 @@ const CLUSTER_OPTIONS = [
 const EnvironmentsPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [form] = Form.useForm()
+  const [environments, setEnvironments] = useState<EnvItem[]>([])
+  const loadEnvironments = () => getEnvironments().then((res) => setEnvironments((res.list || []).map((e: Environment) => ({ id: String(e.id), name: e.name, label: e.label, type: (e.environmentType || e.environment_type || 'development') as EnvItem['type'], cluster: '-', namespace: e.namespace || 'default', version: e.currentVersion || e.current_version || '-', status: e.status as EnvItem['status'], lastDeploy: e.lastDeployedAt || e.last_deployed_at || '-', deployedBy: e.deployedBy || e.deployed_by || '-', deployCount: e.deployCount || e.deploy_count || 0 }))))
+  useEffect(() => { loadEnvironments() }, [])
 
   const handleAdd = () => {
     form.resetFields()
@@ -65,7 +70,8 @@ const EnvironmentsPage: React.FC = () => {
   }
 
   const handleSubmit = () => {
-    form.validateFields().then(() => {
+    form.validateFields().then((values) => {
+      createEnvironment(values).then(() => loadEnvironments())
       message.success('环境创建成功')
       setDrawerOpen(false)
       form.resetFields()
@@ -85,11 +91,11 @@ const EnvironmentsPage: React.FC = () => {
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>创建环境</Button>
         </div>
 
-        {ENVIRONMENTS.length === 0 ? (
+        {environments.length === 0 ? (
           <EmptyState description="暂无环境，点击「创建环境」配置 dev / staging / prod 等部署环境" />
         ) : (
           <Row gutter={[16, 16]}>
-            {ENVIRONMENTS.map((env) => {
+            {environments.map((env) => {
               const envColor = ENV_TYPE_COLOR[env.type]
               const statusMeta = STATUS_META[env.status] ?? STATUS_META.idle!
               return (

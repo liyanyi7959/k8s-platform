@@ -132,6 +132,7 @@ func TestCompositionRootCatalogsEveryCurrentModule(t *testing.T) {
 		ai           struct{}
 		change       struct{}
 		provisioning struct{}
+		cicd         struct{}
 		incident     struct{}
 	}
 	expected := fieldNames(reflect.TypeOf(moduleCatalog{}))

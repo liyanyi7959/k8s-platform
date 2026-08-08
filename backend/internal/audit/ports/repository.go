@@ -23,6 +23,8 @@ type ListQuery struct {
 type Repository interface {
 	Append(context.Context, domain.Entry) error
 	List(context.Context, ListQuery) ([]domain.Entry, int64, error)
+	// DeleteBefore 删除早于 before 的记录，返回受影响行数。用于保留策略清理。
+	DeleteBefore(context.Context, time.Time) (int64, error)
 }
 
 type Recorder interface {

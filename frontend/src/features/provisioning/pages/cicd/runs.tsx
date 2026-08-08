@@ -1,6 +1,7 @@
 /**
  * 执行记录 - CI/CD Pipeline 运行历史与监控
  */
+import { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
 import { Card, Input, Select, Space, Table, Tag, Tooltip } from 'antd'
 import {
@@ -10,6 +11,7 @@ import {
 } from '@ant-design/icons'
 import { AppPage, EmptyState } from '@/components'
 import type { ProColumns } from '@ant-design/pro-components'
+import { getRuns, type Run } from '@/features/provisioning/api/cicd'
 
 interface RunRecord {
   id: string
@@ -96,8 +98,12 @@ const MOCK_RUNS: RunRecord[] = [
   { id: 'r122', pipeline: 'nginx-deploy', trigger: 'push', status: 'failed', duration: '1m 30s', startedAt: '07-25 10:05' },
   { id: 'r121', pipeline: 'frontend-ci', trigger: 'push', status: 'canceled', duration: '0m 45s', startedAt: '07-25 09:20' },
 ]
+void MOCK_RUNS
 
 const RunsPage: React.FC = () => {
+  const [runs, setRuns] = useState<RunRecord[]>([])
+  const load = () => getRuns({ page: 1, pageSize: 100 }).then((res) => setRuns((res.list || []).map((r: Run) => ({ id: String(r.id), pipeline: r.pipelineName || r.pipeline_name || String(r.pipelineId || r.pipelineID || '-'), trigger: r.triggerType || r.trigger_type || 'manual', status: r.status as RunRecord['status'], duration: '-', startedAt: r.startedAt || r.started_at || '-' }))))
+  useEffect(() => { load() }, [])
   return (
     <AppPage>
       <Card>
@@ -120,7 +126,7 @@ const RunsPage: React.FC = () => {
         <Table<RunRecord>
           rowKey="id"
           columns={columns as any}
-          dataSource={MOCK_RUNS}
+          dataSource={runs}
           pagination={false}
           onRow={(record) => ({ onClick: () => history.push(`/cicd/runs/${record.id}`), style: { cursor: 'pointer' } })}
           locale={{

@@ -2,7 +2,7 @@
  * CI/CD 总览 - 数据仪表盘
  * 展示流水线、执行、制品、环境等核心指标与可视化趋势
  */
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { history } from '@umijs/max'
 import { Button, Card, Col, Row, Tag, Typography } from 'antd'
 import {
@@ -18,6 +18,7 @@ import {
 } from '@ant-design/icons'
 import { AppPage } from '@/components'
 import { DESIGN_COLORS } from '@/theme/designTokens'
+import { getCicdSummary, getEnvironments, getRuns, type Run } from '@/features/provisioning/api/cicd'
 
 const { Text } = Typography
 
@@ -361,6 +362,14 @@ const MetricCard: React.FC<{
 // 主页面
 // ============================================================
 export default function CicdOverviewPage() {
+  const [summary, setSummary] = useState<any>(SUMMARY)
+  const [recentRuns, setRecentRuns] = useState<RecentRun[]>(RECENT_RUNS)
+  const [environmentRows, setEnvironmentRows] = useState<EnvStatus[]>(ENVIRONMENTS)
+  useEffect(() => {
+    getCicdSummary().then(setSummary)
+    getRuns({ page: 1, pageSize: 5 }).then((res) => setRecentRuns((res.list || []).map((r: Run) => ({ id: String(r.id), pipeline: r.pipelineName || r.pipeline_name || '-', trigger: r.triggerType || r.trigger_type || 'manual', status: r.status as RecentRun['status'], duration: '-', startedAt: r.startedAt || r.started_at || '-' }))))
+    getEnvironments().then((res) => setEnvironmentRows((res.list || []).map((e: any) => ({ name: e.name, label: e.label, type: e.environmentType || e.environment_type || 'development', version: e.currentVersion || e.current_version || '-', status: e.status === 'deployed' ? 'deployed' : e.status, lastDeploy: e.lastDeployedAt || e.last_deployed_at || '-', deployedBy: e.deployedBy || e.deployed_by || '-', deployCount: e.deployCount || e.deploy_count || 0 }))))
+  }, [])
   return (
     <AppPage keepHeaderTitle title="CI/CD 概览">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -370,7 +379,7 @@ export default function CicdOverviewPage() {
             <MetricCard
               icon={<BranchesOutlined />}
               label="流水线总数"
-              value={SUMMARY.pipelines}
+              value={summary.pipelines}
               detail="活跃 10 / 暂停 2"
               color={DESIGN_COLORS.primary}
             />
@@ -379,7 +388,7 @@ export default function CicdOverviewPage() {
             <MetricCard
               icon={<HistoryOutlined />}
               label="近 30 天执行"
-              value={SUMMARY.runs30d}
+              value={summary.runs30d}
               detail="日均 11.6 次"
               color={DESIGN_COLORS.dataSecondary}
             />
@@ -388,7 +397,7 @@ export default function CicdOverviewPage() {
             <MetricCard
               icon={<CheckCircleOutlined />}
               label="执行成功率"
-              value={`${SUMMARY.successRate}%`}
+              value={`${summary.successRate ?? summary.success_rate ?? 0}%`}
               detail="成功 330 / 失败 18"
               color={DESIGN_COLORS.success}
             />
@@ -397,7 +406,7 @@ export default function CicdOverviewPage() {
             <MetricCard
               icon={<DatabaseOutlined />}
               label="制品总数"
-              value={SUMMARY.artifacts.toLocaleString()}
+              value={(summary.artifacts ?? 0).toLocaleString()}
               detail="镜像 980 / Chart 276"
               color={DESIGN_COLORS.warning}
             />
@@ -433,7 +442,7 @@ export default function CicdOverviewPage() {
               }
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {RECENT_RUNS.map((run, idx) => {
+                {recentRuns.map((run, idx) => {
                   const meta = RUN_STATUS_META[run.status] ?? RUN_STATUS_META.failed!
                   return (
                     <div
@@ -475,7 +484,7 @@ export default function CicdOverviewPage() {
               }
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {ENVIRONMENTS.map((env) => {
+                {environmentRows.map((env) => {
                   const meta = ENV_STATUS_META[env.status] ?? ENV_STATUS_META.idle!
                   const envColor = ENV_TYPE_COLOR[env.type] ?? DESIGN_COLORS.primary
                   return (

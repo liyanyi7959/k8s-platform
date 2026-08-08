@@ -74,6 +74,11 @@ func (r *Repository) List(ctx context.Context, query ports.ListQuery) ([]domain.
 	return entries, total, nil
 }
 
+func (r *Repository) DeleteBefore(ctx context.Context, before time.Time) (int64, error) {
+	result := r.db.WithContext(ctx).Where("created_at < ?", before).Delete(&auditLogRow{})
+	return result.RowsAffected, result.Error
+}
+
 type auditLogRow struct {
 	ID           uint64    `gorm:"column:id;primaryKey;autoIncrement"`
 	UserID       uint64    `gorm:"column:user_id;not null"`

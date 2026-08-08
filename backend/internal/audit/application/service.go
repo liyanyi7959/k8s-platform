@@ -69,3 +69,12 @@ func normalizePage(page, pageSize int) (int, int) {
 	}
 	return page, pageSize
 }
+
+// Prune 按保留策略清理过期审计记录，返回删除条数。策略无效时返回领域错误。
+func (s *Service) Prune(ctx context.Context, policy domain.RetentionPolicy) (int64, error) {
+	before, err := policy.CutoffBefore(time.Now().UTC())
+	if err != nil {
+		return 0, err
+	}
+	return s.repository.DeleteBefore(ctx, before)
+}
