@@ -71,26 +71,48 @@ const columns: ProColumns<ArtifactRecord>[] = [
   },
 ]
 
-const MOCK_ARTIFACTS: ArtifactRecord[] = [
-  { id: '1', name: 'frontend', type: 'image', version: 'v1.2.3', size: '45.2 MB', pushedAt: '07-26 14:35' },
-  { id: '2', name: 'backend', type: 'image', version: 'v2.0.1', size: '78.5 MB', pushedAt: '07-26 12:05' },
-  { id: '3', name: 'api-gateway', type: 'image', version: 'v1.5.0', size: '52.1 MB', pushedAt: '07-26 10:20' },
-  { id: '4', name: 'app-chart', type: 'helm', version: '0.8.2', size: '12.3 KB', pushedAt: '07-25 18:25' },
-  { id: '5', name: 'nginx-config', type: 'helm', version: '1.1.0', size: '8.5 KB', pushedAt: '07-25 10:08' },
-  { id: '6', name: 'shared-ui', type: 'package', version: '3.2.1', size: '2.1 MB', pushedAt: '07-24 16:30' },
-  { id: '7', name: 'utils-lib', type: 'package', version: '1.0.5', size: '340 KB', pushedAt: '07-24 14:15' },
-]
-void MOCK_ARTIFACTS
+/** 格式化文件大小：< 1024 显示 "x B"，< 1048576 显示 "x.x KB"，否则 "x.x MB" */
+const formatSize = (bytes?: number): string => {
+  if (!bytes) return '-'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / 1048576).toFixed(1) + ' MB'
+}
 
 const ArtifactsPage: React.FC = () => {
   const [artifacts, setArtifacts] = useState<ArtifactRecord[]>([])
-  useEffect(() => { getArtifacts({ page: 1, pageSize: 100 }).then((res) => setArtifacts((res.list || []).map((a: Artifact) => ({ id: String(a.id), name: a.name, type: (a.artifactType || a.artifact_type || 'package') as ArtifactRecord['type'], version: a.version, size: a.sizeBytes ? `${Math.round(a.sizeBytes / 1024)} KB` : '-', pushedAt: a.createdAt || a.created_at || '-' })))) }, [])
+  const [keyword, setKeyword] = useState('')
+  const [typeFilter, setTypeFilter] = useState<string | undefined>(undefined)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [total, setTotal] = useState(0)
+
+  const load = () => {
+    getArtifacts({ page, pageSize, keyword, artifactType: typeFilter }).then((res) => {
+      setArtifacts((res.list || []).map((a: Artifact) => ({
+        id: String(a.id),
+        name: a.name,
+        type: (a.artifactType || a.artifact_type || 'package') as ArtifactRecord['type'],
+        version: a.version,
+        size: formatSize(a.sizeBytes || a.size_bytes),
+        pushedAt: a.createdAt || a.created_at || '-',
+      })))
+      setTotal(res.total || 0)
+    })
+  }
+
+  useEffect(() => { load() }, [page, pageSize, keyword, typeFilter])
   return (
     <AppPage>
       <Card>
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
-            <Input.Search placeholder="搜索制品名称" style={{ width: 240 }} allowClear />
+            <Input.Search
+              placeholder="搜索制品名称"
+              style={{ width: 240 }}
+              allowClear
+              onSearch={(value) => { setKeyword(value); setPage(1) }}
+            />
             <Select
               placeholder="制品类型"
               style={{ width: 140 }}
@@ -100,6 +122,7 @@ const ArtifactsPage: React.FC = () => {
                 { value: 'helm', label: 'Helm Chart' },
                 { value: 'package', label: '通用包' },
               ]}
+              onChange={(value) => { setTypeFilter(value); setPage(1) }}
             />
           </Space>
         </div>
@@ -107,7 +130,14 @@ const ArtifactsPage: React.FC = () => {
           rowKey="id"
           columns={columns as any}
           dataSource={artifacts}
-          pagination={false}
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: true,
+            showTotal: (t) => '共 ' + t + ' 条',
+            onChange: (p, ps) => { setPage(p); setPageSize(ps) },
+          }}
           onRow={(record) => ({ onClick: () => history.push(`/cicd/artifacts/${record.id}`), style: { cursor: 'pointer' } })}
           locale={{
             emptyText: <EmptyState description="暂无制品，构建流水线执行后将自动归集产物" />,

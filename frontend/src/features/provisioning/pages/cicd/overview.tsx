@@ -60,52 +60,64 @@ interface EnvStatus {
 }
 
 // ============================================================
-// 静态数据（后端 API 就绪后替换为 React Query）
+// 数据派生工具函数
 // ============================================================
-const SUMMARY = {
-  pipelines: 12,
-  runs30d: 348,
-  successRate: 94.8,
-  artifacts: 1256,
+
+/** 计算执行时长：< 60s 显示 "x.xs"，否则 "x.xm" */
+function formatDuration(startedAt?: string, finishedAt?: string): string {
+  if (!startedAt || !finishedAt) return '-'
+  const start = new Date(startedAt).getTime()
+  const end = new Date(finishedAt).getTime()
+  if (isNaN(start) || isNaN(end)) return '-'
+  const diff = (end - start) / 1000
+  if (diff < 0) return '-'
+  if (diff < 60) return diff.toFixed(1) + 's'
+  return (diff / 60).toFixed(1) + 'm'
 }
 
-const TREND_DATA: TrendPoint[] = [
-  { date: '07/13', total: 18, success: 17, failed: 1 },
-  { date: '07/14', total: 22, success: 20, failed: 2 },
-  { date: '07/15', total: 15, success: 15, failed: 0 },
-  { date: '07/16', total: 28, success: 26, failed: 2 },
-  { date: '07/17', total: 19, success: 18, failed: 1 },
-  { date: '07/18', total: 12, success: 12, failed: 0 },
-  { date: '07/19', total: 8, success: 7, failed: 1 },
-  { date: '07/20', total: 25, success: 24, failed: 1 },
-  { date: '07/21', total: 30, success: 28, failed: 2 },
-  { date: '07/22', total: 27, success: 26, failed: 1 },
-  { date: '07/23', total: 21, success: 20, failed: 1 },
-  { date: '07/24', total: 24, success: 23, failed: 1 },
-  { date: '07/25', total: 18, success: 17, failed: 1 },
-  { date: '07/26', total: 11, success: 10, failed: 1 },
-]
+/** 从执行记录中按日期分组统计，生成最近 14 天的趋势数据 */
+function deriveTrendData(runs: Run[]): TrendPoint[] {
+  const now = new Date()
+  const days: TrendPoint[] = []
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - i)
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    days.push({ date: month + '/' + day, total: 0, success: 0, failed: 0 })
+  }
+  const dayMap = new Map<string, TrendPoint>(days.map((d) => [d.date, d]))
+  for (const run of runs) {
+    if (!run.startedAt) continue
+    const d = new Date(run.startedAt)
+    if (isNaN(d.getTime())) continue
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const entry = dayMap.get(month + '/' + day)
+    if (!entry) continue
+    entry.total++
+    if (run.status === 'success') entry.success++
+    else if (run.status === 'failed') entry.failed++
+  }
+  return days
+}
 
-const STATUS_SLICES: StatusSlice[] = [
-  { key: 'success', label: '成功', count: 320, color: DESIGN_COLORS.success },
-  { key: 'failed', label: '失败', count: 18, color: DESIGN_COLORS.danger },
-  { key: 'running', label: '执行中', count: 6, color: DESIGN_COLORS.primary },
-  { key: 'canceled', label: '已取消', count: 4, color: DESIGN_COLORS.neutral },
-]
-
-const RECENT_RUNS: RecentRun[] = [
-  { id: '1', pipeline: 'frontend-ci', trigger: 'admin', status: 'success', duration: '3m 24s', startedAt: '07-26 14:32' },
-  { id: '2', pipeline: 'backend-deploy', trigger: 'schedule', status: 'failed', duration: '8m 12s', startedAt: '07-26 12:00' },
-  { id: '3', pipeline: 'api-gateway-build', trigger: 'admin', status: 'success', duration: '5m 43s', startedAt: '07-26 10:15' },
-  { id: '4', pipeline: 'helm-chart-release', trigger: 'admin', status: 'running', duration: '2m 18s', startedAt: '07-26 09:30' },
-  { id: '5', pipeline: 'frontend-ci', trigger: 'push', status: 'success', duration: '3m 15s', startedAt: '07-25 18:22' },
-]
-
-const ENVIRONMENTS: EnvStatus[] = [
-  { name: 'production', label: '生产', type: 'production', version: 'v1.2.3', status: 'deployed', lastDeploy: '07-26 14:32', deployedBy: 'admin', deployCount: 18 },
-  { name: 'staging', label: '预发', type: 'staging', version: 'v1.2.4-rc', status: 'deployed', lastDeploy: '07-26 10:15', deployedBy: 'admin', deployCount: 32 },
-  { name: 'development', label: '开发', type: 'development', version: 'v1.2.4-dev', status: 'failed', lastDeploy: '07-26 09:00', deployedBy: 'ci-bot', deployCount: 86 },
-]
+/** 从执行记录中按状态统计，生成环形图分片数据 */
+function deriveStatusSlices(runs: Run[]): StatusSlice[] {
+  const counts = { success: 0, failed: 0, running: 0, canceled: 0 }
+  for (const run of runs) {
+    if (run.status === 'success') counts.success++
+    else if (run.status === 'failed') counts.failed++
+    else if (run.status === 'running') counts.running++
+    else if (run.status === 'canceled') counts.canceled++
+  }
+  return [
+    { key: 'success', label: '成功', count: counts.success, color: DESIGN_COLORS.success },
+    { key: 'failed', label: '失败', count: counts.failed, color: DESIGN_COLORS.danger },
+    { key: 'running', label: '执行中', count: counts.running, color: DESIGN_COLORS.primary },
+    { key: 'canceled', label: '已取消', count: counts.canceled, color: DESIGN_COLORS.neutral },
+  ]
+}
 
 const ENV_TYPE_COLOR: Record<string, string> = {
   production: DESIGN_COLORS.danger,
@@ -276,7 +288,7 @@ const StatusDonut: React.FC<{ slices: StatusSlice[]; total: number }> = ({ slice
         <circle cx="100" cy="100" r={DONUT_R} fill="none" stroke={DESIGN_COLORS.grid} strokeWidth={DONUT_STROKE} />
         {/* 各状态弧段 */}
         {slices.map((slice) => {
-          const dash = (slice.count / total) * DONUT_C
+          const dash = total > 0 ? (slice.count / total) * DONUT_C : 0
           const gap = DONUT_C - dash
           const el = (
             <circle
@@ -312,7 +324,7 @@ const StatusDonut: React.FC<{ slices: StatusSlice[]; total: number }> = ({ slice
             <span style={{ color: DESIGN_COLORS.textSecondary, minWidth: 48 }}>{slice.label}</span>
             <strong>{slice.count}</strong>
             <span style={{ color: DESIGN_COLORS.textMuted, fontSize: 12 }}>
-              {((slice.count / total) * 100).toFixed(1)}%
+              {total > 0 ? ((slice.count / total) * 100).toFixed(1) + '%' : '-'}
             </span>
           </div>
         ))}
@@ -362,14 +374,31 @@ const MetricCard: React.FC<{
 // 主页面
 // ============================================================
 export default function CicdOverviewPage() {
-  const [summary, setSummary] = useState<any>(SUMMARY)
-  const [recentRuns, setRecentRuns] = useState<RecentRun[]>(RECENT_RUNS)
-  const [environmentRows, setEnvironmentRows] = useState<EnvStatus[]>(ENVIRONMENTS)
+  const [summary, setSummary] = useState<any>({ pipelines: 0, runs30d: 0, successRate: 0, artifacts: 0 })
+  const [allRuns, setAllRuns] = useState<Run[]>([])
+  const [recentRuns, setRecentRuns] = useState<RecentRun[]>([])
+  const [environmentRows, setEnvironmentRows] = useState<EnvStatus[]>([])
   useEffect(() => {
     getCicdSummary().then(setSummary)
-    getRuns({ page: 1, pageSize: 5 }).then((res) => setRecentRuns((res.list || []).map((r: Run) => ({ id: String(r.id), pipeline: r.pipelineName || r.pipeline_name || '-', trigger: r.triggerType || r.trigger_type || 'manual', status: r.status as RecentRun['status'], duration: '-', startedAt: r.startedAt || r.started_at || '-' }))))
+    getRuns({ page: 1, pageSize: 500 }).then((res) => {
+      const list = res.list || []
+      setAllRuns(list)
+      setRecentRuns(list.slice(0, 5).map((r: Run) => ({
+        id: String(r.id),
+        pipeline: r.pipelineName || r.pipeline_name || '-',
+        trigger: r.triggerType || r.trigger_type || 'manual',
+        status: r.status as RecentRun['status'],
+        duration: formatDuration(r.startedAt, r.finishedAt),
+        startedAt: r.startedAt || r.started_at || '-',
+      })))
+    })
     getEnvironments().then((res) => setEnvironmentRows((res.list || []).map((e: any) => ({ name: e.name, label: e.label, type: e.environmentType || e.environment_type || 'development', version: e.currentVersion || e.current_version || '-', status: e.status === 'deployed' ? 'deployed' : e.status, lastDeploy: e.lastDeployedAt || e.last_deployed_at || '-', deployedBy: e.deployedBy || e.deployed_by || '-', deployCount: e.deployCount || e.deploy_count || 0 }))))
   }, [])
+  const trendData = useMemo(() => deriveTrendData(allRuns), [allRuns])
+  const statusSlices = useMemo(() => deriveStatusSlices(allRuns), [allRuns])
+  const runsTotal = allRuns.length
+  const successCount = allRuns.filter((r) => r.status === 'success').length
+  const failedCount = allRuns.filter((r) => r.status === 'failed').length
   return (
     <AppPage keepHeaderTitle title="CI/CD 概览">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -379,8 +408,8 @@ export default function CicdOverviewPage() {
             <MetricCard
               icon={<BranchesOutlined />}
               label="流水线总数"
-              value={summary.pipelines}
-              detail="活跃 10 / 暂停 2"
+              value={summary.pipelines ?? 0}
+              detail="-"
               color={DESIGN_COLORS.primary}
             />
           </Col>
@@ -388,8 +417,8 @@ export default function CicdOverviewPage() {
             <MetricCard
               icon={<HistoryOutlined />}
               label="近 30 天执行"
-              value={summary.runs30d}
-              detail="日均 11.6 次"
+              value={summary.runs30d ?? 0}
+              detail={'日均 ' + ((summary.runs30d ?? 0) / 30).toFixed(1) + ' 次'}
               color={DESIGN_COLORS.dataSecondary}
             />
           </Col>
@@ -397,8 +426,8 @@ export default function CicdOverviewPage() {
             <MetricCard
               icon={<CheckCircleOutlined />}
               label="执行成功率"
-              value={`${summary.successRate ?? summary.success_rate ?? 0}%`}
-              detail="成功 330 / 失败 18"
+              value={(summary.successRate ?? summary.success_rate ?? 0) + '%'}
+              detail={'成功 ' + successCount + ' / 失败 ' + failedCount}
               color={DESIGN_COLORS.success}
             />
           </Col>
@@ -407,7 +436,7 @@ export default function CicdOverviewPage() {
               icon={<DatabaseOutlined />}
               label="制品总数"
               value={(summary.artifacts ?? 0).toLocaleString()}
-              detail="镜像 980 / Chart 276"
+              detail="-"
               color={DESIGN_COLORS.warning}
             />
           </Col>
@@ -420,12 +449,12 @@ export default function CicdOverviewPage() {
               title="执行趋势"
               extra={<Text type="secondary" style={{ fontSize: 13 }}>近 14 天</Text>}
             >
-              <TrendChart data={TREND_DATA} />
+              <TrendChart data={trendData} />
             </Card>
           </Col>
           <Col xs={24} lg={8}>
             <Card title="执行状态分布" extra={<Text type="secondary" style={{ fontSize: 13 }}>近 30 天</Text>}>
-              <StatusDonut slices={STATUS_SLICES} total={SUMMARY.runs30d} />
+              <StatusDonut slices={statusSlices} total={runsTotal} />
             </Card>
           </Col>
         </Row>
@@ -440,7 +469,9 @@ export default function CicdOverviewPage() {
               }
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {recentRuns.map((run, idx) => {
+                {recentRuns.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '24px 0', color: DESIGN_COLORS.textMuted, fontSize: 13 }}>暂无执行记录</div>
+                ) : recentRuns.map((run, idx) => {
                   const meta = RUN_STATUS_META[run.status] ?? RUN_STATUS_META.failed!
                   return (
                     <div
@@ -450,7 +481,7 @@ export default function CicdOverviewPage() {
                         alignItems: 'center',
                         gap: 12,
                         padding: '10px 0',
-                        borderBottom: idx < RECENT_RUNS.length - 1 ? `1px solid ${DESIGN_COLORS.grid}` : 'none',
+                        borderBottom: idx < recentRuns.length - 1 ? '1px solid ' + DESIGN_COLORS.grid : 'none',
                       }}
                     >
                       {meta.icon}
@@ -480,7 +511,9 @@ export default function CicdOverviewPage() {
               }
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {environmentRows.map((env) => {
+                {environmentRows.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '24px 0', color: DESIGN_COLORS.textMuted, fontSize: 13 }}>暂无环境记录</div>
+                ) : environmentRows.map((env) => {
                   const meta = ENV_STATUS_META[env.status] ?? ENV_STATUS_META.idle!
                   const envColor = ENV_TYPE_COLOR[env.type] ?? DESIGN_COLORS.primary
                   return (

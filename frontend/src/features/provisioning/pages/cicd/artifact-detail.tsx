@@ -1,51 +1,95 @@
 /**
  * 制品详情 - 展示制品信息、拉取命令与版本历史
  */
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
-import { Button, Card, Descriptions, Space, Table, Tag, Tooltip, Typography, message } from 'antd'
+import { Button, Card, Descriptions, Modal, Space, Table, Tag, Tooltip, Typography, message } from 'antd'
 import {
   ArrowLeftOutlined,
   CopyOutlined,
   DownloadOutlined,
   DeleteOutlined,
 } from '@ant-design/icons'
-import { AppPage } from '@/components'
+import { AppPage, EmptyState } from '@/components'
 import { DESIGN_COLORS } from '@/theme/designTokens'
+import { getArtifact, type Artifact } from '@/features/provisioning/api/cicd'
 
 const { Text } = Typography
 
-const ARTIFACT = {
-  id: '1',
-  name: 'frontend',
-  type: 'image',
-  typeLabel: '容器镜像',
-  version: 'v1.2.3',
-  size: '45.2 MB',
-  digest: 'sha256:abc123def456ghi789jkl012mno345pqr678stu901vwx234yz',
-  pushedAt: '2026-07-26 14:35',
-  pushedBy: 'admin',
-  pipeline: 'frontend-ci',
-  runId: 'r128',
+const TYPE_LABELS: Record<string, string> = {
+  image: '容器镜像',
+  helm: 'Helm Chart',
+  package: '软件包',
 }
 
-const VERSIONS = [
-  { id: 'v1', version: 'v1.2.3', size: '45.2 MB', pushedAt: '07-26 14:35', pushedBy: 'admin', isCurrent: true },
-  { id: 'v2', version: 'v1.2.2', size: '44.8 MB', pushedAt: '07-25 10:05', pushedBy: 'ci-bot', isCurrent: false },
-  { id: 'v3', version: 'v1.2.1', size: '44.5 MB', pushedAt: '07-24 16:22', pushedBy: 'ci-bot', isCurrent: false },
-  { id: 'v4', version: 'v1.2.0', size: '43.9 MB', pushedAt: '07-23 09:30', pushedBy: 'admin', isCurrent: false },
-  { id: 'v5', version: 'v1.1.9', size: '43.2 MB', pushedAt: '07-22 14:10', pushedBy: 'ci-bot', isCurrent: false },
-]
+const STATUS_META: Record<string, { color: string; text: string }> = {
+  pushed: { color: 'success', text: '已推送' },
+  active: { color: 'success', text: '可用' },
+  failed: { color: 'error', text: '失败' },
+  deleted: { color: 'default', text: '已删除' },
+  pending: { color: 'processing', text: '处理中' },
+}
 
-const PULL_COMMANDS: Record<string, string> = {
-  image: 'docker pull registry.example.com/frontend:v1.2.3',
-  helm: 'helm pull oci://registry.example.com/charts/frontend --version 1.2.3',
-  package: 'npm install frontend@1.2.3',
+const formatSize = (bytes?: number): string => {
+  if (bytes === undefined || bytes === null) return '-'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / 1048576).toFixed(1) + ' MB'
+}
+
+const buildPullCommand = (artifact: Artifact): string => {
+  const repo = artifact.repository || 'registry.example.com'
+  const type = artifact.artifactType || artifact.artifact_type || 'image'
+  if (type === 'helm') {
+    return 'helm pull oci://' + repo + '/charts/' + artifact.name + ' --version ' + artifact.version
+  }
+  if (type === 'package') {
+    return 'npm install ' + artifact.name + '@' + artifact.version
+  }
+  return 'docker pull ' + repo + '/' + artifact.name + ':' + artifact.version
 }
 
 const ArtifactDetailPage: React.FC = () => {
   const [copied, setCopied] = useState(false)
-  const pullCmd = PULL_COMMANDS[ARTIFACT.type] ?? PULL_COMMANDS.image!
+  const [artifact, setArtifact] = useState<Artifact | null>(null)
+  const id = history.location.pathname.split('/').pop() || ''
+
+  useEffect(() => {
+    if (!id) return
+    getArtifact(id)
+      .then(setArtifact)
+      .catch((error) => message.error(error instanceof Error ? error.message : '加载制品详情失败'))
+  }, [id])
+
+  if (!artifact) {
+    return (
+      <AppPage keepHeaderTitle title="制品详情">
+        <EmptyState description={id ? '加载中...' : '制品不存在'} />
+      </AppPage>
+    )
+  }
+
+  const pullCmd = buildPullCommand(artifact)
+  const typeLabel = TYPE_LABELS[artifact.artifactType || artifact.artifact_type || 'image'] || artifact.artifactType || '-'
+  const statusMeta = STATUS_META[artifact.status] || { color: 'default', text: artifact.status }
+  const versions = (artifact as any).versions as any[] | undefined
+  const versionRows = versions && versions.length
+    ? versions.map((v: any) => ({
+        id: v.id || v.version,
+        version: v.version,
+        size: v.size || formatSize(v.sizeBytes || v.size_bytes),
+        pushedAt: v.pushedAt || v.pushed_at || v.createdAt || v.created_at || '-',
+        pushedBy: v.pushedBy || v.pushed_by || '-',
+        isCurrent: v.version === artifact.version,
+      }))
+    : [{
+        id: artifact.id,
+        version: artifact.version,
+        size: formatSize(artifact.sizeBytes || artifact.size_bytes),
+        pushedAt: artifact.createdAt || artifact.created_at || '-',
+        pushedBy: '-',
+        isCurrent: true,
+      }]
 
   const handleCopy = () => {
     navigator.clipboard.writeText(pullCmd).then(() => {
@@ -55,20 +99,37 @@ const ArtifactDetailPage: React.FC = () => {
     })
   }
 
+  const handleDownload = () => {
+    message.info('下载功能开发中')
+  }
+
+  const handleDelete = () => {
+    Modal.confirm({
+      title: '删除制品',
+      content: '确定删除该制品吗？此操作不可恢复。',
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: () => {
+        message.info('删除功能开发中')
+      },
+    })
+  }
+
   return (
-    <AppPage keepHeaderTitle title={ARTIFACT.name}>
+    <AppPage keepHeaderTitle title={artifact.name}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* 顶部操作栏 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
             <Tooltip title="返回制品列表"><Button aria-label="返回制品列表" icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/artifacts')} /></Tooltip>
-            <Tag color="blue">{ARTIFACT.typeLabel}</Tag>
-            <Tag>{ARTIFACT.version}</Tag>
+            <Tag color="blue">{typeLabel}</Tag>
+            <Tag>{artifact.version}</Tag>
           </Space>
           <Space>
-            <Tooltip title="下载制品"><Button aria-label="下载制品" icon={<DownloadOutlined />} /></Tooltip>
+            <Tooltip title="下载制品"><Button aria-label="下载制品" icon={<DownloadOutlined />} onClick={handleDownload} /></Tooltip>
             <Tooltip title="删除制品">
-              <Button danger icon={<DeleteOutlined />} />
+              <Button danger icon={<DeleteOutlined />} onClick={handleDelete} />
             </Tooltip>
           </Space>
         </div>
@@ -76,16 +137,19 @@ const ArtifactDetailPage: React.FC = () => {
         {/* 基本信息 */}
         <Card title="基本信息">
           <Descriptions column={{ xs: 1, sm: 2, lg: 3 }}>
-            <Descriptions.Item label="制品名称">{ARTIFACT.name}</Descriptions.Item>
-            <Descriptions.Item label="类型">{ARTIFACT.typeLabel}</Descriptions.Item>
+            <Descriptions.Item label="制品名称">{artifact.name}</Descriptions.Item>
+            <Descriptions.Item label="类型">{typeLabel}</Descriptions.Item>
             <Descriptions.Item label="当前版本">
-              <Tag color="blue">{ARTIFACT.version}</Tag>
+              <Tag color="blue">{artifact.version}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="大小">{ARTIFACT.size}</Descriptions.Item>
-            <Descriptions.Item label="推送时间">{ARTIFACT.pushedAt}</Descriptions.Item>
-            <Descriptions.Item label="推送者">{ARTIFACT.pushedBy}</Descriptions.Item>
-            <Descriptions.Item label="Digest" span={3}>
-              <Text code copyable style={{ fontSize: 12 }}>{ARTIFACT.digest}</Text>
+            <Descriptions.Item label="大小">{formatSize(artifact.sizeBytes || artifact.size_bytes)}</Descriptions.Item>
+            <Descriptions.Item label="仓库地址">{artifact.repository || '-'}</Descriptions.Item>
+            <Descriptions.Item label="状态">
+              <Tag color={statusMeta.color}>{statusMeta.text}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="创建时间">{artifact.createdAt || artifact.created_at || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Digest" span={2}>
+              <Text code copyable style={{ fontSize: 12 }}>{artifact.digest || '-'}</Text>
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -96,7 +160,7 @@ const ArtifactDetailPage: React.FC = () => {
             style={{
               display: 'flex', alignItems: 'center', gap: 12,
               padding: '12px 16px', borderRadius: 8,
-              background: DESIGN_COLORS.neutral, border: `1px solid ${DESIGN_COLORS.grid}`,
+              background: DESIGN_COLORS.neutral, border: '1px solid ' + DESIGN_COLORS.grid,
             }}
           >
             <Text code style={{ flex: 1, fontSize: 13, wordBreak: 'break-all' }}>
@@ -110,10 +174,10 @@ const ArtifactDetailPage: React.FC = () => {
         <Card title="构建来源">
           <Descriptions column={1}>
             <Descriptions.Item label="流水线">
-              <a onClick={() => history.push('/cicd/pipelines/1')}>{ARTIFACT.pipeline}</a>
+              <a onClick={() => history.push('/cicd/pipelines/' + (artifact.pipelineId || artifact.pipeline_id || ''))}>{artifact.pipelineId || artifact.pipeline_id || '-'}</a>
             </Descriptions.Item>
             <Descriptions.Item label="执行记录">
-              <a onClick={() => history.push(`/cicd/runs/${ARTIFACT.runId}`)}>#{ARTIFACT.runId}</a>
+              <a onClick={() => history.push('/cicd/runs/' + (artifact.runId || artifact.run_id || ''))}>#{artifact.runId || artifact.run_id || '-'}</a>
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -122,13 +186,13 @@ const ArtifactDetailPage: React.FC = () => {
         <Card title="版本历史">
           <Table
             rowKey="id"
-            dataSource={VERSIONS}
+            dataSource={versionRows}
             pagination={false}
             size="small"
             columns={[
               {
                 title: '版本', dataIndex: 'version', key: 'version', width: 120,
-                render: (version: string, record) => (
+                render: (version: string, record: any) => (
                   <Space>
                     <Tag color={record.isCurrent ? 'blue' : 'default'}>{version}</Tag>
                     {record.isCurrent && <Text type="secondary" style={{ fontSize: 12 }}>当前</Text>}
@@ -140,7 +204,7 @@ const ArtifactDetailPage: React.FC = () => {
               { title: '推送者', dataIndex: 'pushedBy', key: 'pushedBy', width: 100 },
               {
                 title: '操作', key: 'action', width: 80,
-                render: (_, record) => (
+                render: (_: any, record: any) => (
                   !record.isCurrent ? <a>切换到此版本</a> : <Text type="secondary">当前版本</Text>
                 ),
               },

@@ -3,7 +3,7 @@
  */
 import React, { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
-import { Button, message, Segmented, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { Button, message, Modal, Segmented, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
   PlayCircleOutlined,
@@ -14,7 +14,7 @@ import {
   RocketOutlined,
 } from '@ant-design/icons'
 import { AppPage, EmptyState, YamlEditor } from '@/components'
-import { getPipeline, getRuns, triggerPipeline } from '@/features/provisioning/api/cicd'
+import { getPipeline, getRuns, triggerPipeline, deletePipeline } from '@/features/provisioning/api/cicd'
 import { yamlToBuilder } from './pipeline-editor'
 
 const { Text } = Typography
@@ -74,7 +74,11 @@ const PipelineDetailPage: React.FC = () => {
   const successRate = runPage?.total ? `${((successRuns / Math.max(recentRuns.length, 1)) * 100).toFixed(1)}%` : '-'
   const displayRuns = recentRuns.map((run: any) => {
     const triggerType = run.triggerType || run.trigger_type || 'manual'
-    return { ...run, trigger: TRIGGER_LABELS[triggerType] || triggerType, duration: '-', startedAt: run.startedAt || run.started_at || '-' }
+    const start = run.startedAt || run.started_at
+    const end = run.finishedAt || run.finished_at
+    let duration = '-'
+    if (start && end) { const ms = new Date(end).getTime() - new Date(start).getTime(); if (ms > 0) duration = ms < 60000 ? (ms / 1000).toFixed(1) + 's' : (ms / 60000).toFixed(1) + 'm' }
+    return { ...run, trigger: TRIGGER_LABELS[triggerType] || triggerType, duration, startedAt: start || '-' }
   })
   const latestRun = recentRuns[0] as any
   const lastRun = latestRun?.startedAt || latestRun?.started_at || PIPELINE.lastRun || '-'
@@ -92,7 +96,7 @@ const PipelineDetailPage: React.FC = () => {
             <Segmented value={detailView} onChange={(value) => setDetailView(value as 'graph' | 'yaml' | 'runs')} options={[{ label: '阶段', value: 'graph' }, { label: 'YAML', value: 'yaml' }, { label: '执行记录', value: 'runs' }]} />
             <Tooltip title="执行流水线"><Button type="primary" aria-label="执行流水线" icon={<PlayCircleOutlined />} onClick={() => triggerPipeline(pipelineID).then(() => message.success('流水线已触发'))} /></Tooltip>
             <Tooltip title="编辑流水线"><Button aria-label="编辑流水线" icon={<EditOutlined />} onClick={() => history.push(`/cicd/pipelines/${pipelineID}/edit`)} /></Tooltip>
-            <Tooltip title="删除流水线"><Button danger aria-label="删除流水线" icon={<DeleteOutlined />} /></Tooltip>
+            <Tooltip title="删除流水线"><Button danger aria-label="删除流水线" icon={<DeleteOutlined />} onClick={() => { Modal.confirm({ title: '删除流水线', content: `确定删除流水线「${PIPELINE.name}」吗？此操作不可恢复。`, okText: '删除', okType: 'danger', cancelText: '取消', onOk: () => deletePipeline(pipelineID).then(() => { message.success('流水线已删除'); history.push('/cicd/pipelines') }).catch((err) => message.error(err instanceof Error ? err.message : '删除失败')) }) }} /></Tooltip>
           </Space>
         </header>
 
@@ -120,7 +124,7 @@ const PipelineDetailPage: React.FC = () => {
 
           {detailView === 'yaml' && <section className="cicd-detail-panel cicd-detail-yaml"><div className="cicd-detail-panel__heading"><Typography.Title level={4}>流水线 YAML</Typography.Title><Tag color="green">只读</Tag></div><YamlEditor readOnly value={PIPELINE.configYaml || 'stages: []'} height={620} /></section>}
 
-          {detailView === 'runs' && <section className="cicd-detail-panel"><div className="cicd-detail-panel__heading"><Typography.Title level={4}>最近执行</Typography.Title><Tooltip title="查看全部执行记录"><Button type="text" aria-label="查看全部执行记录" icon={<ArrowLeftOutlined rotate={180} />} onClick={() => history.push('/cicd/runs')} /></Tooltip></div><Table rowKey="id" dataSource={displayRuns} pagination={false} size="small" onRow={(record) => ({ onClick: () => history.push(`/cicd/runs/${record.id}`), style: { cursor: 'pointer' } })} columns={[{ title: '执行 ID', dataIndex: 'id', key: 'id', width: 100, render: (id: string) => <Text code>#{id}</Text> }, { title: '状态', dataIndex: 'status', key: 'status', width: 110, render: (status: string) => <Tag color={STATUS_META[status]?.color}>{STATUS_META[status]?.text}</Tag> }, { title: '触发者', dataIndex: 'trigger', key: 'trigger', width: 110 }, { title: '耗时', dataIndex: 'duration', key: 'duration', width: 110 }, { title: '开始时间', dataIndex: 'startedAt', key: 'startedAt' }]} /></section>}
+          {detailView === 'runs' && <section className="cicd-detail-panel"><div className="cicd-detail-panel__heading"><Typography.Title level={4}>最近执行</Typography.Title><Tooltip title="查看全部执行记录"><Button type="text" aria-label="查看全部执行记录" icon={<ArrowLeftOutlined rotate={180} />} onClick={() => history.push('/cicd/runs')} /></Tooltip></div><Table rowKey="id" dataSource={displayRuns} pagination={false} size="small" onRow={(record) => ({ onClick: () => history.push(`/cicd/runs/${record.id}`), style: { cursor: 'pointer' } })} columns={[{ title: '执行 ID', dataIndex: 'id', key: 'id', width: 100, render: (id: any) => <Text code>{'#' + id}</Text> }, { title: '状态', dataIndex: 'status', key: 'status', width: 110, render: (status: string) => <Tag color={STATUS_META[status]?.color}>{STATUS_META[status]?.text}</Tag> }, { title: '触发者', dataIndex: 'trigger', key: 'trigger', width: 110 }, { title: '耗时', dataIndex: 'duration', key: 'duration', width: 110 }, { title: '开始时间', dataIndex: 'startedAt', key: 'startedAt' }]} /></section>}
         </main>
       </div>
     </AppPage>

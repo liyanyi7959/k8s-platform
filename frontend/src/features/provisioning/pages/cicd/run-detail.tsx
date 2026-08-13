@@ -1,9 +1,9 @@
 /**
  * 执行详情 - 展示执行概览、阶段时间线与实时日志
  */
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { history } from '@umijs/max'
-import { Button, Card, Descriptions, Space, Steps, Tag, Tooltip, Typography } from 'antd'
+import { Button, Card, Descriptions, message, Modal, Space, Spin, Steps, Tag, Tooltip, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
   ReloadOutlined,
@@ -15,22 +15,9 @@ import {
 } from '@ant-design/icons'
 import { AppPage, TerminalCodeBlock } from '@/components'
 import { DESIGN_COLORS } from '@/theme/designTokens'
-import { getRun, type Run } from '@/features/provisioning/api/cicd'
+import { cancelRun, getRun, triggerPipeline, type Run } from '@/features/provisioning/api/cicd'
 
 const { Text } = Typography
-
-const RUN = {
-  id: 'r128',
-  pipeline: 'frontend-ci',
-  status: 'success',
-  duration: '3m 24s',
-  trigger: 'admin',
-  startedAt: '2026-07-26 14:32:00',
-  finishedAt: '2026-07-26 14:35:24',
-  branch: 'main',
-  commit: 'a1b2c3d',
-  commitMessage: 'feat: add CI/CD dashboard page',
-}
 
 interface StageRun {
   key: string
@@ -39,30 +26,6 @@ interface StageRun {
   duration: string
   logs: string
 }
-
-const STAGES: StageRun[] = [
-  {
-    key: 'lint',
-    name: '代码检查',
-    status: 'success',
-    duration: '20s',
-    logs: `$ npm run lint\n\n> frontend@1.0.0 lint\n> eslint src --ext .ts,.tsx\n\n✓ 0 errors\n✓ 2 warnings\n\nDone in 20.1s`,
-  },
-  {
-    key: 'build',
-    name: '构建',
-    status: 'success',
-    duration: '2m 08s',
-    logs: `$ npm run build\n\n> frontend@1.0.0 build\n> vite build\n\n  ✓ 1023 modules transformed\n  ✓ dist/index.html         0.46 kB\n  ✓ dist/assets/index.js   312.4 kB\n  ✓ dist/assets/index.css   45.2 kB\n\n✓ built in 128.3s`,
-  },
-  {
-    key: 'image',
-    name: '镜像构建',
-    status: 'success',
-    duration: '56s',
-    logs: `$ docker build -t registry.example.com/frontend:v1.2.3 .\n\nStep 1/8 : FROM node:18-alpine AS builder\n ---> 0a3c5e2b...\nStep 2/8 : WORKDIR /app\n ---> Using cache\nStep 8/8 : EXPOSE 80\n ---> Running in 1a2b3c4d\n --->Successfully tagged registry.example.com/frontend:v1.2.3\n\n$ docker push registry.example.com/frontend:v1.2.3\nThe push refers to repository [registry.example.com/frontend]\nv1.2.3: digest: sha256:abc123... size: 5284\n✓ Image pushed successfully`,
-  },
-]
 
 const STAGE_STATUS_ICON: Record<string, React.ReactNode> = {
   success: <CheckCircleOutlined style={{ color: DESIGN_COLORS.success }} />,
@@ -75,20 +38,116 @@ const STATUS_META: Record<string, { color: string; text: string }> = {
   success: { color: 'success', text: '成功' },
   failed: { color: 'error', text: '失败' },
   running: { color: 'processing', text: '执行中' },
+  pending: { color: 'default', text: '等待中' },
+  cancelled: { color: 'warning', text: '已取消' },
+}
+
+/** 计算时长：< 60s 显示 "x.xs"，否则 "x.xm" */
+const calcDuration = (start?: string, end?: string): string => {
+  if (!start || !end) return '-'
+  const startTime = new Date(start).getTime()
+  const endTime = new Date(end).getTime()
+  if (isNaN(startTime) || isNaN(endTime)) return '-'
+  const diff = (endTime - startTime) / 1000
+  if (diff < 0) return '-'
+  if (diff < 60) return diff.toFixed(1) + 's'
+  return (diff / 60).toFixed(1) + 'm'
 }
 
 const RunDetailPage: React.FC = () => {
   const [activeStage, setActiveStage] = useState(0)
   const [runData, setRunData] = useState<Run | null>(null)
+  const [loading, setLoading] = useState(true)
   const runID = history.location.pathname.split('/').pop() || ''
-  useEffect(() => { if (runID) getRun(runID).then(setRunData) }, [runID])
-  const run = runData ? { id: runData.id, pipeline: runData.pipelineName || runData.pipeline_name || '-', status: runData.status, duration: '-', trigger: runData.triggerType || runData.trigger_type || 'manual', startedAt: runData.startedAt || runData.started_at || '-', finishedAt: runData.finishedAt || runData.finished_at || '-', branch: runData.branch || '-', commit: runData.commitSha || runData.commit_sha || '-', commitMessage: runData.commitMessage || runData.commit_message || '-' } : RUN
-  const stages = runData?.stages?.length ? runData.stages.map((stage) => ({ key: stage.stageKey || stage.stage_key || String(stage.id), name: stage.name, status: stage.status as StageRun['status'], duration: '-', logs: stage.log || '' })) : STAGES
-  const currentStage = stages[activeStage] ?? stages[0]!
-  const runStatus = STATUS_META[run.status] ?? STATUS_META.failed!
+
+  const fetchRun = useCallback(() => {
+    if (!runID) return
+    setLoading(true)
+    getRun(runID)
+      .then(setRunData)
+      .catch(() => message.error('获取执行详情失败'))
+      .finally(() => setLoading(false))
+  }, [runID])
+
+  useEffect(() => { fetchRun() }, [fetchRun])
+
+  const handleCancel = () => {
+    Modal.confirm({
+      title: '取消执行',
+      content: '确定要取消此次执行吗？',
+      okText: '确定',
+      cancelText: '取消',
+      onOk: () => {
+        cancelRun(runID)
+          .then(() => { message.success('已发送取消请求'); fetchRun() })
+          .catch(() => message.error('取消执行失败'))
+      },
+    })
+  }
+
+  const handleRerun = () => {
+    const pipelineId = runData?.pipelineId ?? runData?.pipelineID
+    if (!pipelineId) { message.error('缺少流水线信息'); return }
+    Modal.confirm({
+      title: '重新执行',
+      content: '确定要重新触发此流水线吗？',
+      okText: '确定',
+      cancelText: '取消',
+      onOk: () => {
+        triggerPipeline(pipelineId)
+          .then(() => message.success('已触发重新执行'))
+          .catch(() => message.error('触发失败'))
+      },
+    })
+  }
+
+  if (loading && !runData) {
+    return (
+      <AppPage keepHeaderTitle title="执行详情">
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+          <Spin />
+        </div>
+      </AppPage>
+    )
+  }
+
+  if (!runData) {
+    return (
+      <AppPage keepHeaderTitle title="执行详情">
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+          <Text type="secondary">未找到执行记录</Text>
+        </div>
+      </AppPage>
+    )
+  }
+
+  const run = {
+    id: runData.id,
+    pipeline: runData.pipelineName || runData.pipeline_name || '-',
+    pipelineId: runData.pipelineId ?? runData.pipelineID,
+    status: runData.status,
+    duration: calcDuration(runData.startedAt || runData.started_at, runData.finishedAt || runData.finished_at),
+    trigger: runData.triggerType || runData.trigger_type || 'manual',
+    startedAt: runData.startedAt || runData.started_at || '-',
+    finishedAt: runData.finishedAt || runData.finished_at || '-',
+    branch: runData.branch || '-',
+    commit: runData.commitSha || runData.commit_sha || '-',
+    commitMessage: runData.commitMessage || runData.commit_message || '-',
+  }
+
+  const stages: StageRun[] = (runData.stages || []).map((stage) => ({
+    key: stage.stageKey || stage.stage_key || String(stage.id),
+    name: stage.name,
+    status: (stage.status || 'pending') as StageRun['status'],
+    duration: calcDuration(stage.startedAt || stage.started_at, stage.finishedAt || stage.finished_at),
+    logs: stage.log || '',
+  }))
+
+  const currentStage: StageRun = stages[activeStage] ?? stages[0] ?? { key: '', name: '暂无阶段', status: 'pending', duration: '-', logs: '' }
+  const runStatus = STATUS_META[run.status] ?? { color: 'default', text: run.status }
 
   return (
-    <AppPage keepHeaderTitle title={`执行 #${run.id}`}>
+    <AppPage keepHeaderTitle title={'执行 #' + run.id}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* 顶部操作栏 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -99,9 +158,9 @@ const RunDetailPage: React.FC = () => {
           </Space>
           <Space>
             {run.status === 'running' ? (
-              <Tooltip title="取消执行"><Button danger aria-label="取消执行" icon={<StopOutlined />} /></Tooltip>
+              <Tooltip title="取消执行"><Button danger aria-label="取消执行" icon={<StopOutlined />} onClick={handleCancel} /></Tooltip>
             ) : (
-              <Tooltip title="重新执行"><Button aria-label="重新执行" icon={<ReloadOutlined />} /></Tooltip>
+              <Tooltip title="重新执行"><Button aria-label="重新执行" icon={<ReloadOutlined />} onClick={handleRerun} /></Tooltip>
             )}
           </Space>
         </div>
@@ -110,7 +169,7 @@ const RunDetailPage: React.FC = () => {
         <Card title="执行概览">
           <Descriptions column={{ xs: 1, sm: 2, lg: 3 }}>
             <Descriptions.Item label="流水线">
-              <a onClick={() => history.push('/cicd/pipelines/1')}>{run.pipeline}</a>
+              <a onClick={() => history.push('/cicd/pipelines/' + (run.pipelineId ?? ''))}>{run.pipeline}</a>
             </Descriptions.Item>
             <Descriptions.Item label="触发者">{run.trigger}</Descriptions.Item>
             <Descriptions.Item label="状态">
@@ -153,12 +212,12 @@ const RunDetailPage: React.FC = () => {
 
           {/* 右侧日志 */}
           <Card
-            title={`${currentStage.name} - 日志`}
+            title={currentStage.name + ' - 日志'}
             extra={<Text type="secondary" style={{ fontSize: 13 }}>{currentStage.duration}</Text>}
             style={{ flex: 1, minWidth: 0 }}
           >
             <TerminalCodeBlock
-              title={`${run.pipeline}/${currentStage.key}.log`}
+              title={run.pipeline + '/' + currentStage.key + '.log'}
               content={currentStage.logs}
             />
           </Card>

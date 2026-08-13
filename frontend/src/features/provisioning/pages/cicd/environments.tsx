@@ -1,14 +1,14 @@
 /**
  * 环境管理 - 部署环境列表（dev / staging / prod）
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { history } from '@umijs/max'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Card, Col, Drawer, Form, Input, message, Row, Select, Tag, Tooltip, Typography } from 'antd'
-import { PlusOutlined, GlobalOutlined, SaveOutlined } from '@ant-design/icons'
+import { Button, Card, Col, Drawer, Form, Input, message, Popconfirm, Row, Select, Tag, Tooltip, Typography } from 'antd'
+import { DeleteOutlined, EditOutlined, GlobalOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons'
 import { AppPage, EmptyState } from '@/components'
 import { DESIGN_COLORS } from '@/theme/designTokens'
-import { createEnvironment, getEnvironments, type Environment } from '@/features/provisioning/api/cicd'
+import { createEnvironment, deleteEnvironment, getEnvironments, updateEnvironment, type Environment } from '@/features/provisioning/api/cicd'
 import { listClusters } from '@/features/fleet'
 
 const { Text } = Typography
@@ -25,14 +25,8 @@ interface EnvItem {
   lastDeploy: string
   deployedBy: string
   deployCount: number
+  description: string
 }
-
-const ENVIRONMENTS: EnvItem[] = [
-  { id: '1', name: 'production', label: '生产', type: 'production', cluster: 'prod-cluster-01', namespace: 'default', version: 'v1.2.3', status: 'deployed', lastDeploy: '07-26 14:32', deployedBy: 'admin', deployCount: 18 },
-  { id: '2', name: 'staging', label: '预发', type: 'staging', cluster: 'staging-cluster-01', namespace: 'default', version: 'v1.2.4-rc', status: 'deployed', lastDeploy: '07-26 10:15', deployedBy: 'admin', deployCount: 32 },
-  { id: '3', name: 'development', label: '开发', type: 'development', cluster: 'dev-cluster-01', namespace: 'default', version: 'v1.2.4-dev', status: 'failed', lastDeploy: '07-26 09:00', deployedBy: 'ci-bot', deployCount: 86 },
-]
-void ENVIRONMENTS
 
 const ENV_TYPE_COLOR: Record<string, string> = {
   production: DESIGN_COLORS.danger,
@@ -54,6 +48,7 @@ const ENV_TYPE_OPTIONS = [
 
 const EnvironmentsPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [editingEnv, setEditingEnv] = useState<EnvItem | null>(null)
   const [form] = Form.useForm()
   const [environments, setEnvironments] = useState<EnvItem[]>([])
   const clustersQuery = useQuery({
@@ -61,27 +56,59 @@ const EnvironmentsPage: React.FC = () => {
     queryFn: ({ signal }) => listClusters({ page: 1, pageSize: 100 }, signal),
   })
   const clusterOptions = (clustersQuery.data?.items || []).map((cluster) => ({ value: cluster.id, label: cluster.name }))
-  const loadEnvironments = () => getEnvironments().then((res) => setEnvironments((res.list || []).map((e: Environment) => ({ id: String(e.id), name: e.name, label: e.label, type: (e.environmentType || e.environment_type || 'development') as EnvItem['type'], cluster: '-', namespace: e.namespace || 'default', version: e.currentVersion || e.current_version || '-', status: e.status as EnvItem['status'], lastDeploy: e.lastDeployedAt || e.last_deployed_at || '-', deployedBy: e.deployedBy || e.deployed_by || '-', deployCount: e.deployCount || e.deploy_count || 0 }))))
+  const clusterMap = useMemo(() => {
+    const m: Record<string, string> = {}
+    ;(clustersQuery.data?.items || []).forEach((c) => { m[String(c.id)] = c.name })
+    return m
+  }, [clustersQuery.data])
+  const loadEnvironments = () => getEnvironments().then((res) => setEnvironments((res.list || []).map((e: Environment) => ({ id: String(e.id), name: e.name, label: e.label, type: (e.environmentType || e.environment_type || 'development') as EnvItem['type'], cluster: String(e.clusterId || ''), namespace: e.namespace || 'default', version: e.currentVersion || e.current_version || '-', status: e.status as EnvItem['status'], lastDeploy: e.lastDeployedAt || e.last_deployed_at || '-', deployedBy: e.deployedBy || e.deployed_by || '-', deployCount: e.deployCount || e.deploy_count || 0, description: e.description || '' }))))
   useEffect(() => { loadEnvironments() }, [])
 
   const handleAdd = () => {
+    setEditingEnv(null)
     form.resetFields()
     form.setFieldsValue({ type: 'development', namespace: 'default' })
     setDrawerOpen(true)
   }
 
+  const handleEdit = (env: EnvItem) => {
+    setEditingEnv(env)
+    form.setFieldsValue({ name: env.name, type: env.type, clusterId: env.cluster ? Number(env.cluster) : undefined, namespace: env.namespace, description: env.description })
+    setDrawerOpen(true)
+  }
+
+  const handleDelete = (env: EnvItem) => {
+    deleteEnvironment(env.id).then(() => {
+      message.success('环境删除成功')
+      loadEnvironments()
+    })
+  }
+
   const handleSubmit = () => {
     form.validateFields().then((values) => {
-      createEnvironment(values).then(() => loadEnvironments())
-      message.success('环境创建成功')
-      setDrawerOpen(false)
-      form.resetFields()
+      if (editingEnv) {
+        updateEnvironment(editingEnv.id, values).then(() => {
+          message.success('环境更新成功')
+          loadEnvironments()
+          setDrawerOpen(false)
+          form.resetFields()
+          setEditingEnv(null)
+        })
+      } else {
+        createEnvironment(values).then(() => {
+          message.success('环境创建成功')
+          loadEnvironments()
+          setDrawerOpen(false)
+          form.resetFields()
+        })
+      }
     })
   }
 
   const handleClose = () => {
     setDrawerOpen(false)
     form.resetFields()
+    setEditingEnv(null)
   }
 
   return (
@@ -113,7 +140,13 @@ const EnvironmentsPage: React.FC = () => {
                         <strong style={{ fontSize: 15 }}>{env.name}</strong>
                         <Tag style={{ margin: 0, fontSize: 11, color: envColor, borderColor: `${envColor}40`, background: `${envColor}0d` }}>{env.label}</Tag>
                       </div>
-                      <Tag color={statusMeta.color} style={{ margin: 0 }}>{statusMeta.text}</Tag>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Tag color={statusMeta.color} style={{ margin: 0 }}>{statusMeta.text}</Tag>
+                        <Tooltip title="编辑"><Button size="small" type="text" aria-label="编辑环境" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handleEdit(env) }} /></Tooltip>
+                        <Popconfirm title="确认删除该环境？" description="删除后不可恢复" onConfirm={() => handleDelete(env)}>
+                          <Button size="small" type="text" danger aria-label="删除环境" icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
+                        </Popconfirm>
+                      </div>
                     </div>
 
                     {/* 基本信息 */}
@@ -124,7 +157,7 @@ const EnvironmentsPage: React.FC = () => {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Text type="secondary" style={{ fontSize: 12 }}>关联集群</Text>
-                        <Text style={{ fontSize: 13 }}>{env.cluster}</Text>
+                        <Text style={{ fontSize: 13 }}>{clusterMap[env.cluster] || env.cluster || '-'}</Text>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Text type="secondary" style={{ fontSize: 12 }}>命名空间</Text>
@@ -147,7 +180,7 @@ const EnvironmentsPage: React.FC = () => {
 
       {/* 创建环境 Drawer */}
       <Drawer
-        title="创建环境"
+        title={editingEnv ? '编辑环境' : '创建环境'}
         open={drawerOpen}
         onClose={handleClose}
         width={480}
