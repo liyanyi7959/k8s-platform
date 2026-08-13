@@ -3,232 +3,125 @@
  */
 import React, { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
-import { Button, Card, Descriptions, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { Button, message, Segmented, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
   PlayCircleOutlined,
   EditOutlined,
   DeleteOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   BuildOutlined,
   RocketOutlined,
 } from '@ant-design/icons'
-import { AppPage, YamlEditor } from '@/components'
-import { DESIGN_COLORS } from '@/theme/designTokens'
-import { getPipeline } from '@/features/provisioning/api/cicd'
+import { AppPage, EmptyState, YamlEditor } from '@/components'
+import { getPipeline, getRuns, triggerPipeline } from '@/features/provisioning/api/cicd'
+import { yamlToBuilder } from './pipeline-editor'
 
 const { Text } = Typography
 
-// 静态数据（后端 API 就绪后替换）
+// 加载失败或新建状态下使用的空状态
 const DEFAULT_PIPELINE = {
-  id: '1',
-  name: 'frontend-ci',
-  description: '前端项目 CI 流水线：Lint -> Build -> 镜像构建 -> 推送',
-  trigger: '代码推送 (main / develop)',
+  id: '',
+  name: '',
+  description: '',
+  trigger: 'manual',
   status: 'idle',
-  createdAt: '2026-06-15 10:30',
-  updatedAt: '2026-07-20 14:22',
-  lastRun: '2026-07-26 14:32',
-  totalRuns: 128,
-  successRate: 96.1,
+  createdAt: '-',
+  updatedAt: '-',
+  lastRun: '-',
 }
-
-interface Stage {
-  key: string
-  name: string
-  icon: React.ReactNode
-  steps: { name: string; duration: string }[]
-}
-
-const STAGES: Stage[] = [
-  {
-    key: 'lint',
-    name: '代码检查',
-    icon: <CheckCircleOutlined />,
-    steps: [
-      { name: 'ESLint', duration: '12s' },
-      { name: 'Prettier Check', duration: '8s' },
-    ],
-  },
-  {
-    key: 'build',
-    name: '构建',
-    icon: <BuildOutlined />,
-    steps: [
-      { name: 'npm install', duration: '45s' },
-      { name: 'npm run build', duration: '1m 23s' },
-    ],
-  },
-  {
-    key: 'image',
-    name: '镜像构建',
-    icon: <RocketOutlined />,
-    steps: [
-      { name: 'docker build', duration: '2m 15s' },
-      { name: 'docker push', duration: '48s' },
-    ],
-  },
-]
-
-const RECENT_RUNS = [
-  { id: 'r128', status: 'success', duration: '3m 24s', trigger: 'admin', startedAt: '07-26 14:32' },
-  { id: 'r127', status: 'success', duration: '3m 18s', trigger: 'push', startedAt: '07-25 18:22' },
-  { id: 'r126', status: 'failed', duration: '1m 02s', trigger: 'push', startedAt: '07-25 16:10' },
-  { id: 'r125', status: 'success', duration: '3m 30s', trigger: 'push', startedAt: '07-25 10:05' },
-  { id: 'r124', status: 'success', duration: '3m 12s', trigger: 'schedule', startedAt: '07-25 09:00' },
-]
 
 const STATUS_META: Record<string, { color: string; text: string }> = {
   success: { color: 'success', text: '成功' },
   failed: { color: 'error', text: '失败' },
   running: { color: 'processing', text: '执行中' },
+  queued: { color: 'processing', text: '排队中' },
+  canceled: { color: 'default', text: '已取消' },
   idle: { color: 'default', text: '未执行' },
 }
 
-const PIPELINE_YAML = `# 流水线定义
-stages:
-  - name: 代码检查
-    steps:
-      - name: ESLint
-        run: npm run lint
-      - name: Prettier Check
-        run: npm run prettier --check
-  - name: 构建
-    steps:
-      - name: 安装依赖
-        run: npm install
-      - name: 构建产物
-        run: npm run build
-  - name: 镜像构建
-    steps:
-      - name: 构建镜像
-        run: docker build -t registry.example.com/frontend:v1.2.3 .
-      - name: 推送镜像
-        run: docker push registry.example.com/frontend:v1.2.3
-`
+const TRIGGER_LABELS: Record<string, string> = { push: '代码推送', schedule: '定时触发', manual: '手动执行' }
+const PLUGIN_STAGE_ICONS: Record<string, React.ReactNode> = {
+  git: <CheckCircleOutlined />,
+  bash: <BuildOutlined />,
+  kubectl: <RocketOutlined />,
+  helm: <RocketOutlined />,
+  'docker-build': <RocketOutlined />,
+}
 
 const PipelineDetailPage: React.FC = () => {
   const [pipelineData, setPipelineData] = useState<any>(null)
+  const [runPage, setRunPage] = useState<{ list: any[]; total: number } | null>(null)
+  const [detailView, setDetailView] = useState<'graph' | 'yaml' | 'runs'>('graph')
   const pipelineID = history.location.pathname.split('/').pop() || ''
-  useEffect(() => { if (pipelineID) getPipeline(pipelineID).then(setPipelineData) }, [pipelineID])
-  const PIPELINE = pipelineData ? { ...DEFAULT_PIPELINE, ...pipelineData, trigger: pipelineData.triggerType || pipelineData.trigger_type || DEFAULT_PIPELINE.trigger, description: pipelineData.description || DEFAULT_PIPELINE.description, configYaml: pipelineData.configYaml || pipelineData.config_yaml } : DEFAULT_PIPELINE
+  useEffect(() => {
+    if (!pipelineID) return
+    Promise.all([getPipeline(pipelineID), getRuns({ pipelineId: pipelineID, page: 1, pageSize: 100 })])
+      .then(([pipeline, runs]) => { setPipelineData(pipeline); setRunPage(runs) })
+      .catch((error) => message.error(error instanceof Error ? error.message : '加载流水线详情失败'))
+  }, [pipelineID])
+  const PIPELINE = pipelineData ? {
+    ...DEFAULT_PIPELINE,
+    ...pipelineData,
+    trigger: TRIGGER_LABELS[pipelineData.triggerType || pipelineData.trigger_type] || pipelineData.triggerType || pipelineData.trigger_type || DEFAULT_PIPELINE.trigger,
+    configYaml: pipelineData.configYaml || pipelineData.config_yaml || 'stages: []',
+  } : DEFAULT_PIPELINE
   const pipelineStatus = STATUS_META[PIPELINE.status] ?? STATUS_META.idle!
+  const stages = yamlToBuilder(PIPELINE.configYaml, false)
+  const recentRuns = runPage?.list || []
+  const totalRuns = runPage?.total ?? '-'
+  const successRuns = recentRuns.filter((run) => run.status === 'success').length
+  const successRate = runPage?.total ? `${((successRuns / Math.max(recentRuns.length, 1)) * 100).toFixed(1)}%` : '-'
+  const displayRuns = recentRuns.map((run: any) => {
+    const triggerType = run.triggerType || run.trigger_type || 'manual'
+    return { ...run, trigger: TRIGGER_LABELS[triggerType] || triggerType, duration: '-', startedAt: run.startedAt || run.started_at || '-' }
+  })
+  const latestRun = recentRuns[0] as any
+  const lastRun = latestRun?.startedAt || latestRun?.started_at || PIPELINE.lastRun || '-'
 
   return (
-    <AppPage keepHeaderTitle title={PIPELINE.name}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* 顶部操作栏 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Space>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/pipelines')}>返回</Button>
+    <AppPage className="cicd-detail-page">
+      <div className="cicd-detail-shell">
+        <header className="cicd-detail-toolbar">
+          <div className="cicd-detail-toolbar__identity">
+            <Tooltip title="返回流水线列表"><Button type="text" aria-label="返回流水线列表" icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/pipelines')} /></Tooltip>
+            <div><Typography.Text type="secondary">CI/CD</Typography.Text><Typography.Title level={3}>{PIPELINE.name}</Typography.Title></div>
             <Tag color={pipelineStatus.color}>{pipelineStatus.text}</Tag>
-          </Space>
-          <Space>
-            <Button type="primary" icon={<PlayCircleOutlined />}>执行</Button>
-            <Button icon={<EditOutlined />}>编辑</Button>
-            <Tooltip title="删除">
-              <Button danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Space>
-        </div>
-
-        {/* 基本信息 */}
-        <Card title="基本信息">
-          <Descriptions column={{ xs: 1, sm: 2, lg: 3 }}>
-            <Descriptions.Item label="流水线名称">{PIPELINE.name}</Descriptions.Item>
-            <Descriptions.Item label="触发方式">{PIPELINE.trigger}</Descriptions.Item>
-            <Descriptions.Item label="描述">{PIPELINE.description}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{PIPELINE.createdAt}</Descriptions.Item>
-            <Descriptions.Item label="更新时间">{PIPELINE.updatedAt}</Descriptions.Item>
-            <Descriptions.Item label="最近执行">{PIPELINE.lastRun}</Descriptions.Item>
-            <Descriptions.Item label="总执行次数">{PIPELINE.totalRuns}</Descriptions.Item>
-            <Descriptions.Item label="成功率">
-              <Text strong style={{ color: DESIGN_COLORS.success }}>{PIPELINE.successRate}%</Text>
-            </Descriptions.Item>
-          </Descriptions>
-        </Card>
-
-        {/* 流水线阶段 */}
-        <Card title="流水线阶段">
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, overflowX: 'auto', paddingBottom: 8 }}>
-            {STAGES.map((stage, idx) => (
-              <React.Fragment key={stage.key}>
-                <div style={{ flexShrink: 0, width: 240 }}>
-                  <div
-                    style={{
-                      border: `1px solid ${DESIGN_COLORS.grid}`,
-                      borderRadius: 10,
-                      padding: 16,
-                      background: '#fff',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                      <div
-                        style={{
-                          width: 32, height: 32, borderRadius: '50%',
-                          background: DESIGN_COLORS.primarySoft, color: DESIGN_COLORS.primary,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
-                        }}
-                      >
-                        {stage.icon}
-                      </div>
-                      <div>
-                        <Text strong>{stage.name}</Text>
-                        <div><Text code style={{ fontSize: 11 }}>{stage.key}</Text></div>
-                      </div>
-                    </div>
-                    {stage.steps.map((step, si) => (
-                      <div
-                        key={si}
-                        style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          padding: '6px 0', borderBottom: si < stage.steps.length - 1 ? `1px solid ${DESIGN_COLORS.grid}` : 'none',
-                        }}
-                      >
-                        <Text style={{ fontSize: 13 }}>{step.name}</Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          <ClockCircleOutlined /> {step.duration}
-                        </Text>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {idx < STAGES.length - 1 && (
-                  <div style={{ display: 'flex', alignItems: 'center', height: 80, padding: '0 4px', color: DESIGN_COLORS.textMuted }}>
-                    <ArrowLeftOutlined rotate={180} />
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
           </div>
-        </Card>
+          <Space>
+            <Segmented value={detailView} onChange={(value) => setDetailView(value as 'graph' | 'yaml' | 'runs')} options={[{ label: '阶段', value: 'graph' }, { label: 'YAML', value: 'yaml' }, { label: '执行记录', value: 'runs' }]} />
+            <Tooltip title="执行流水线"><Button type="primary" aria-label="执行流水线" icon={<PlayCircleOutlined />} onClick={() => triggerPipeline(pipelineID).then(() => message.success('流水线已触发'))} /></Tooltip>
+            <Tooltip title="编辑流水线"><Button aria-label="编辑流水线" icon={<EditOutlined />} onClick={() => history.push(`/cicd/pipelines/${pipelineID}/edit`)} /></Tooltip>
+            <Tooltip title="删除流水线"><Button danger aria-label="删除流水线" icon={<DeleteOutlined />} /></Tooltip>
+          </Space>
+        </header>
 
-        {/* 流水线配置 */}
-        <Card title="流水线配置">
-          <YamlEditor readOnly value={PIPELINE.configYaml || PIPELINE_YAML} height={360} />
-        </Card>
+        <section className="cicd-detail-summary">
+          <div><span>触发方式</span><strong>{PIPELINE.trigger}</strong></div>
+          <div><span>最近执行</span><strong>{lastRun}</strong></div>
+          <div><span>执行次数</span><strong>{totalRuns}</strong></div>
+          <div><span>成功率</span><strong className="cicd-detail-summary__success">{successRate}</strong></div>
+          <div><span>更新时间</span><strong>{PIPELINE.updatedAt}</strong></div>
+        </section>
 
-        {/* 最近执行历史 */}
-        <Card title="最近执行" extra={<Button type="link" onClick={() => history.push('/cicd/runs')}>查看全部</Button>}>
-          <Table
-            rowKey="id"
-            dataSource={RECENT_RUNS}
-            pagination={false}
-            size="small"
-            onRow={(record) => ({ onClick: () => history.push(`/cicd/runs/${record.id}`), style: { cursor: 'pointer' } })}
-            columns={[
-              { title: '执行ID', dataIndex: 'id', key: 'id', width: 80, render: (id: string) => <Text code>#{id}</Text> },
-              {
-                title: '状态', dataIndex: 'status', key: 'status', width: 100,
-                render: (status: string) => <Tag color={STATUS_META[status]?.color}>{STATUS_META[status]?.text}</Tag>,
-              },
-              { title: '触发者', dataIndex: 'trigger', key: 'trigger', width: 100 },
-              { title: '耗时', dataIndex: 'duration', key: 'duration', width: 100 },
-              { title: '开始时间', dataIndex: 'startedAt', key: 'startedAt' },
-            ]}
-          />
-        </Card>
+        <main className="cicd-detail-content">
+          {detailView === 'graph' && <section className="cicd-detail-panel">
+            <div className="cicd-detail-panel__heading"><Typography.Title level={4}>流水线阶段</Typography.Title><Text type="secondary">按顺序执行</Text></div>
+            <div className="cicd-detail-stage-flow">
+              {stages.length ? stages.map((stage: any, idx: number) => <React.Fragment key={stage.key}>
+                <article className="cicd-detail-stage">
+                  <header><span className="cicd-detail-stage__icon">{PLUGIN_STAGE_ICONS[stage.steps?.[0]?.plugin] || <BuildOutlined />}</span><div><strong>{stage.name}</strong><Text code>{stage.key}</Text></div></header>
+                  <div className="cicd-detail-stage__steps">{(stage.steps || []).map((step: any) => <div key={step.key}><span>{step.name}</span><Text type="secondary">{step.plugin}</Text></div>)}</div>
+                </article>
+                {idx < stages.length - 1 && <span className="cicd-detail-stage__connector"><ArrowLeftOutlined rotate={180} /></span>}
+              </React.Fragment>) : <EmptyState description="流水线未配置阶段" />}
+            </div>
+          </section>}
+
+          {detailView === 'yaml' && <section className="cicd-detail-panel cicd-detail-yaml"><div className="cicd-detail-panel__heading"><Typography.Title level={4}>流水线 YAML</Typography.Title><Tag color="green">只读</Tag></div><YamlEditor readOnly value={PIPELINE.configYaml || 'stages: []'} height={620} /></section>}
+
+          {detailView === 'runs' && <section className="cicd-detail-panel"><div className="cicd-detail-panel__heading"><Typography.Title level={4}>最近执行</Typography.Title><Tooltip title="查看全部执行记录"><Button type="text" aria-label="查看全部执行记录" icon={<ArrowLeftOutlined rotate={180} />} onClick={() => history.push('/cicd/runs')} /></Tooltip></div><Table rowKey="id" dataSource={displayRuns} pagination={false} size="small" onRow={(record) => ({ onClick: () => history.push(`/cicd/runs/${record.id}`), style: { cursor: 'pointer' } })} columns={[{ title: '执行 ID', dataIndex: 'id', key: 'id', width: 100, render: (id: string) => <Text code>#{id}</Text> }, { title: '状态', dataIndex: 'status', key: 'status', width: 110, render: (status: string) => <Tag color={STATUS_META[status]?.color}>{STATUS_META[status]?.text}</Tag> }, { title: '触发者', dataIndex: 'trigger', key: 'trigger', width: 110 }, { title: '耗时', dataIndex: 'duration', key: 'duration', width: 110 }, { title: '开始时间', dataIndex: 'startedAt', key: 'startedAt' }]} /></section>}
+        </main>
       </div>
     </AppPage>
   )

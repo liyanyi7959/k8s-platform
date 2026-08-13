@@ -143,6 +143,8 @@ const routes: any[] = [
       { path: '/cicd', redirect: '/cicd/overview' },
       { name: '总览', path: '/cicd/overview', component: '@/features/provisioning/pages/cicd/overview' },
       { name: '流水线', path: '/cicd/pipelines', component: '@/features/provisioning/pages/cicd/pipelines' },
+      { path: '/cicd/pipelines/new', component: '@/features/provisioning/pages/cicd/pipeline-editor', hideInMenu: true },
+      { path: '/cicd/pipelines/:id/edit', component: '@/features/provisioning/pages/cicd/pipeline-editor', hideInMenu: true },
       { path: '/cicd/pipelines/:id', component: '@/features/provisioning/pages/cicd/pipeline-detail', hideInMenu: true },
       { name: '执行记录', path: '/cicd/runs', component: '@/features/provisioning/pages/cicd/runs' },
       { path: '/cicd/runs/:id', component: '@/features/provisioning/pages/cicd/run-detail', hideInMenu: true },

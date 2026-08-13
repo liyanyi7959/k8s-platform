@@ -87,7 +87,7 @@ func normalizePage(page, size int) (int, int) {
 	}
 	return page, size
 }
-func (s *Service) ListPipelines(ctx context.Context, page, size int, keyword, status string) (Page[domain.Pipeline], error) {
+func (s *Service) ListPipelines(ctx context.Context, page, size int, keyword, status, triggerType string) (Page[domain.Pipeline], error) {
 	page, size = normalizePage(page, size)
 	q := s.db.WithContext(ctx).Model(&domain.Pipeline{})
 	if keyword != "" {
@@ -95,6 +95,9 @@ func (s *Service) ListPipelines(ctx context.Context, page, size int, keyword, st
 	}
 	if status != "" {
 		q = q.Where("status = ?", status)
+	}
+	if triggerType != "" {
+		q = q.Where("trigger_type = ?", triggerType)
 	}
 	var total int64
 	if err := q.Count(&total).Error; err != nil {

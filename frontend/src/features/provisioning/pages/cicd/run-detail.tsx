@@ -3,7 +3,7 @@
  */
 import React, { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
-import { Button, Card, Descriptions, Space, Steps, Tag, Typography } from 'antd'
+import { Button, Card, Descriptions, Space, Steps, Tag, Tooltip, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
   ReloadOutlined,
@@ -93,15 +93,15 @@ const RunDetailPage: React.FC = () => {
         {/* 顶部操作栏 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/runs')}>返回</Button>
+            <Tooltip title="返回执行记录"><Button aria-label="返回执行记录" icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/runs')} /></Tooltip>
             <Tag color={runStatus.color}>{runStatus.text}</Tag>
             <Text type="secondary">耗时 {run.duration}</Text>
           </Space>
           <Space>
             {run.status === 'running' ? (
-              <Button danger icon={<StopOutlined />}>取消执行</Button>
+              <Tooltip title="取消执行"><Button danger aria-label="取消执行" icon={<StopOutlined />} /></Tooltip>
             ) : (
-              <Button icon={<ReloadOutlined />}>重新执行</Button>
+              <Tooltip title="重新执行"><Button aria-label="重新执行" icon={<ReloadOutlined />} /></Tooltip>
             )}
           </Space>
         </div>

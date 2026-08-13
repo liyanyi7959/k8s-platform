@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react'
 import { history } from '@umijs/max'
-import { Button, Card, Col, Row, Tag, Typography } from 'antd'
+import { Button, Card, Col, Row, Tag, Tooltip, Typography } from 'antd'
 import {
   BranchesOutlined,
   HistoryOutlined,
@@ -436,9 +436,7 @@ export default function CicdOverviewPage() {
             <Card
               title="最近执行"
               extra={
-                <Button type="link" onClick={() => history.push('/cicd/runs')}>
-                  查看全部 <ArrowRightOutlined />
-                </Button>
+                <Tooltip title="查看全部执行记录"><Button type="text" aria-label="查看全部执行记录" icon={<ArrowRightOutlined />} onClick={() => history.push('/cicd/runs')} /></Tooltip>
               }
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -478,9 +476,7 @@ export default function CicdOverviewPage() {
             <Card
               title="环境部署状态"
               extra={
-                <Button type="link" onClick={() => history.push('/cicd/environments')}>
-                  管理 <ArrowRightOutlined />
-                </Button>
+                <Tooltip title="管理部署环境"><Button type="text" aria-label="管理部署环境" icon={<ArrowRightOutlined />} onClick={() => history.push('/cicd/environments')} /></Tooltip>
               }
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

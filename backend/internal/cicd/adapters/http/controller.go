@@ -21,7 +21,7 @@ func (ctl *Controller) Summary(c *gin.Context) {
 	resp.OK(c, data)
 }
 func (ctl *Controller) ListPipelines(c *gin.Context) {
-	data, err := ctl.service.ListPipelines(c.Request.Context(), atoi(c.Query("page"), 1), atoi(c.Query("page_size"), 20), c.Query("keyword"), c.Query("status"))
+	data, err := ctl.service.ListPipelines(c.Request.Context(), atoi(c.Query("page"), 1), atoi(c.Query("page_size"), 20), c.Query("keyword"), c.Query("status"), c.Query("trigger_type"))
 	if err != nil {
 		fail(c, err)
 		return

@@ -3,7 +3,7 @@
  */
 import { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
-import { Card, Input, Select, Space, Table, Tag } from 'antd'
+import { Button, Card, Input, Select, Space, Table, Tag, Tooltip } from 'antd'
 import { EyeOutlined } from '@ant-design/icons'
 import { AppPage, EmptyState } from '@/components'
 import type { ProColumns } from '@ant-design/pro-components'
@@ -65,10 +65,8 @@ const columns: ProColumns<ArtifactRecord>[] = [
     title: '操作',
     key: 'action',
     width: 100,
-    render: () => (
-      <Space>
-        <a><EyeOutlined /> 详情</a>
-      </Space>
+    render: (_, record) => (
+      <Tooltip title="查看详情"><Button type="text" aria-label="查看详情" icon={<EyeOutlined />} onClick={(event) => { event.stopPropagation(); history.push(`/cicd/artifacts/${record.id}`) }} /></Tooltip>
     ),
   },
 ]

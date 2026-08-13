@@ -3,7 +3,7 @@
  */
 import React from 'react'
 import { history } from '@umijs/max'
-import { Button, Card, Descriptions, Space, Table, Tag, Typography } from 'antd'
+import { Button, Card, Descriptions, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
   RocketOutlined,
@@ -64,15 +64,15 @@ const EnvironmentDetailPage: React.FC = () => {
         {/* 顶部操作栏 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/environments')}>返回</Button>
+            <Tooltip title="返回环境列表"><Button aria-label="返回环境列表" icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/environments')} /></Tooltip>
             <Tag style={{ color: envColor, borderColor: `${envColor}40`, background: `${envColor}0d` }}>{ENV.label}</Tag>
             <Tag color={ENV.status === 'deployed' ? 'success' : 'error'}>
               {ENV.status === 'deployed' ? '已部署' : '部署失败'}
             </Tag>
           </Space>
           <Space>
-            <Button type="primary" icon={<RocketOutlined />}>部署</Button>
-            <Button icon={<RollbackOutlined />}>回滚</Button>
+            <Tooltip title="部署"><Button type="primary" aria-label="部署" icon={<RocketOutlined />} /></Tooltip>
+            <Tooltip title="回滚"><Button aria-label="回滚" icon={<RollbackOutlined />} /></Tooltip>
           </Space>
         </div>
 

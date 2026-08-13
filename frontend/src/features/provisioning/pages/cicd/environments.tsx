@@ -3,11 +3,13 @@
  */
 import { useEffect, useState } from 'react'
 import { history } from '@umijs/max'
-import { Button, Card, Col, Drawer, Form, Input, message, Row, Select, Tag, Typography } from 'antd'
-import { PlusOutlined, GlobalOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
+import { Button, Card, Col, Drawer, Form, Input, message, Row, Select, Tag, Tooltip, Typography } from 'antd'
+import { PlusOutlined, GlobalOutlined, SaveOutlined } from '@ant-design/icons'
 import { AppPage, EmptyState } from '@/components'
 import { DESIGN_COLORS } from '@/theme/designTokens'
 import { createEnvironment, getEnvironments, type Environment } from '@/features/provisioning/api/cicd'
+import { listClusters } from '@/features/fleet'
 
 const { Text } = Typography
 
@@ -50,16 +52,15 @@ const ENV_TYPE_OPTIONS = [
   { value: 'development', label: '开发环境' },
 ]
 
-const CLUSTER_OPTIONS = [
-  { value: 'prod-cluster-01', label: 'prod-cluster-01' },
-  { value: 'staging-cluster-01', label: 'staging-cluster-01' },
-  { value: 'dev-cluster-01', label: 'dev-cluster-01' },
-]
-
 const EnvironmentsPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [form] = Form.useForm()
   const [environments, setEnvironments] = useState<EnvItem[]>([])
+  const clustersQuery = useQuery({
+    queryKey: ['cicd-environment-clusters'],
+    queryFn: ({ signal }) => listClusters({ page: 1, pageSize: 100 }, signal),
+  })
+  const clusterOptions = (clustersQuery.data?.items || []).map((cluster) => ({ value: cluster.id, label: cluster.name }))
   const loadEnvironments = () => getEnvironments().then((res) => setEnvironments((res.list || []).map((e: Environment) => ({ id: String(e.id), name: e.name, label: e.label, type: (e.environmentType || e.environment_type || 'development') as EnvItem['type'], cluster: '-', namespace: e.namespace || 'default', version: e.currentVersion || e.current_version || '-', status: e.status as EnvItem['status'], lastDeploy: e.lastDeployedAt || e.last_deployed_at || '-', deployedBy: e.deployedBy || e.deployed_by || '-', deployCount: e.deployCount || e.deploy_count || 0 }))))
   useEffect(() => { loadEnvironments() }, [])
 
@@ -88,7 +89,7 @@ const EnvironmentsPage: React.FC = () => {
       <Card>
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 16, fontWeight: 500 }}>环境列表</span>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>创建环境</Button>
+          <Tooltip title="创建环境"><Button type="primary" aria-label="创建环境" icon={<PlusOutlined />} onClick={handleAdd} /></Tooltip>
         </div>
 
         {environments.length === 0 ? (
@@ -151,7 +152,7 @@ const EnvironmentsPage: React.FC = () => {
         onClose={handleClose}
         width={480}
         extra={
-          <Button type="primary" onClick={handleSubmit}>保存</Button>
+          <Tooltip title="保存"><Button type="primary" aria-label="保存" icon={<SaveOutlined />} onClick={handleSubmit} /></Tooltip>
         }
       >
         <Form form={form} layout="vertical">
@@ -161,8 +162,8 @@ const EnvironmentsPage: React.FC = () => {
           <Form.Item name="type" label="环境类型" rules={[{ required: true, message: '请选择环境类型' }]}>
             <Select options={ENV_TYPE_OPTIONS} />
           </Form.Item>
-          <Form.Item name="cluster" label="关联集群" rules={[{ required: true, message: '请选择关联集群' }]}>
-            <Select showSearch placeholder="选择集群" options={CLUSTER_OPTIONS} />
+          <Form.Item name="clusterId" label="关联集群" rules={[{ required: true, message: '请选择关联集群' }]}>
+            <Select showSearch optionFilterProp="label" loading={clustersQuery.isLoading} placeholder="选择集群" options={clusterOptions} />
           </Form.Item>
           <Form.Item name="namespace" label="命名空间" rules={[{ required: true, message: '请输入命名空间' }]}>
             <Input placeholder="default" />

@@ -10,7 +10,7 @@ export interface Page<T> { list: T[]; total: number; page: number; page_size: nu
 const camelize = (v: any): any => Array.isArray(v) ? v.map(camelize) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k,x]) => [k.replace(/_([a-z])/g,(_,c)=>c.toUpperCase()), camelize(x)])) : v
 const unwrap = <T>(res: any): T => camelize(res?.data ?? res)
 export const getCicdSummary = () => request('/api/v2/cicd/summary').then(unwrap)
-export const getPipelines = (params?: any): Promise<Page<Pipeline>> => request('/api/v2/cicd/pipelines', { params: { ...params, page_size: params?.pageSize } }).then((res) => unwrap<Page<Pipeline>>(res))
+export const getPipelines = (params?: any): Promise<Page<Pipeline>> => request('/api/v2/cicd/pipelines', { params: { ...params, page_size: params?.pageSize, trigger_type: params?.triggerType } }).then((res) => unwrap<Page<Pipeline>>(res))
 export const getPipeline = (id: number | string): Promise<Pipeline> => request(`/api/v2/cicd/pipelines/${id}`).then((res) => unwrap<Pipeline>(res))
 export const createPipeline = (data: any) => request('/api/v2/cicd/pipelines', { method: 'POST', data: { ...data, trigger_type: data.triggerType ?? data.trigger, cluster_id: data.clusterId, runner_image: data.runnerImage, config_yaml: data.configYaml } }).then(unwrap)
 export const updatePipeline = (id: number | string, data: any) => request(`/api/v2/cicd/pipelines/${id}`, { method: 'PATCH', data: { ...data, trigger_type: data.triggerType ?? data.trigger, cluster_id: data.clusterId, runner_image: data.runnerImage, config_yaml: data.configYaml } })
@@ -22,7 +22,7 @@ export const cancelRun = (id: number | string) => request(`/api/v2/cicd/runs/${i
 export const getArtifacts = (params?: any): Promise<Page<Artifact>> => request('/api/v2/cicd/artifacts', { params: { ...params, page_size: params?.pageSize } }).then((res) => unwrap<Page<Artifact>>(res))
 export const getArtifact = (id: number | string): Promise<Artifact> => request(`/api/v2/cicd/artifacts/${id}`).then((res) => unwrap<Artifact>(res))
 export const getEnvironments = (): Promise<{ list: Environment[]; total: number }> => request('/api/v2/cicd/environments').then((res) => unwrap<{ list: Environment[]; total: number }>(res))
-export const createEnvironment = (data: any) => request('/api/v2/cicd/environments', { method: 'POST', data: { ...data, environment_type: data.environmentType ?? data.type } }).then(unwrap)
-export const updateEnvironment = (id: number | string, data: any) => request(`/api/v2/cicd/environments/${id}`, { method: 'PATCH', data: { ...data, environment_type: data.environmentType ?? data.type } })
+export const createEnvironment = (data: any) => request('/api/v2/cicd/environments', { method: 'POST', data: { ...data, environment_type: data.environmentType ?? data.type, cluster_id: data.clusterId ?? data.cluster } }).then(unwrap)
+export const updateEnvironment = (id: number | string, data: any) => request(`/api/v2/cicd/environments/${id}`, { method: 'PATCH', data: { ...data, environment_type: data.environmentType ?? data.type, cluster_id: data.clusterId ?? data.cluster } })
 export const deleteEnvironment = (id: number | string) => request(`/api/v2/cicd/environments/${id}`, { method: 'DELETE' })
 export const getEnvironment = (id: number | string): Promise<Environment> => request(`/api/v2/cicd/environments/${id}`).then((res) => unwrap<Environment>(res))

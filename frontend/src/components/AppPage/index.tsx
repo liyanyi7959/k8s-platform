@@ -37,6 +37,7 @@ const getAutomaticBreadcrumb = (pathname: string): BreadcrumbProps | undefined =
 
   // CI/CD 详情页面包屑
   const cicdRoot = { title: 'CI/CD', href: '/cicd/overview' }
+  if (pathname === '/cicd/pipelines/new' || /^\/cicd\/pipelines\/[^/]+\/edit$/.test(pathname)) return undefined
   if (/^\/cicd\/pipelines\/[^/]+$/.test(pathname)) return { items: [cicdRoot, { title: '流水线', href: '/cicd/pipelines' }, { title: '详情' }] }
   if (/^\/cicd\/runs\/[^/]+$/.test(pathname)) return { items: [cicdRoot, { title: '执行记录', href: '/cicd/runs' }, { title: '详情' }] }
   if (/^\/cicd\/artifacts\/[^/]+$/.test(pathname)) return { items: [cicdRoot, { title: '制品仓库', href: '/cicd/artifacts' }, { title: '详情' }] }

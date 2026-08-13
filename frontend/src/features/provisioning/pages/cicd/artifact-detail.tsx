@@ -61,12 +61,12 @@ const ArtifactDetailPage: React.FC = () => {
         {/* 顶部操作栏 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/artifacts')}>返回</Button>
+            <Tooltip title="返回制品列表"><Button aria-label="返回制品列表" icon={<ArrowLeftOutlined />} onClick={() => history.push('/cicd/artifacts')} /></Tooltip>
             <Tag color="blue">{ARTIFACT.typeLabel}</Tag>
             <Tag>{ARTIFACT.version}</Tag>
           </Space>
           <Space>
-            <Button icon={<DownloadOutlined />}>下载</Button>
+            <Tooltip title="下载制品"><Button aria-label="下载制品" icon={<DownloadOutlined />} /></Tooltip>
             <Tooltip title="删除制品">
               <Button danger icon={<DeleteOutlined />} />
             </Tooltip>
@@ -102,9 +102,7 @@ const ArtifactDetailPage: React.FC = () => {
             <Text code style={{ flex: 1, fontSize: 13, wordBreak: 'break-all' }}>
               {pullCmd}
             </Text>
-            <Button type="primary" icon={<CopyOutlined />} onClick={handleCopy}>
-              {copied ? '已复制' : '复制'}
-            </Button>
+            <Tooltip title={copied ? '已复制' : '复制命令'}><Button type="primary" aria-label="复制命令" icon={<CopyOutlined />} onClick={handleCopy} /></Tooltip>
           </div>
         </Card>
 
