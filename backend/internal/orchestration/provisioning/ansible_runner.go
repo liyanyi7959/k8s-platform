@@ -153,7 +153,7 @@ func (r *AnsibleRunner) serverCredential(ctx context.Context, serverID uint64) (
 	}
 	ciphertext, authType := server.CredentialEnc, server.AuthType
 	if server.CredentialID != nil && *server.CredentialID > 0 {
-		var credential model.SSHCredential
+		var credential model.Credential
 		if err := r.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", *server.CredentialID).First(&credential).Error; err != nil {
 			return model.DeployServer{}, "", "", fmt.Errorf("关联的凭据不存在: %w", err)
 		}

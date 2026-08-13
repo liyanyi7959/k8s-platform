@@ -121,8 +121,8 @@ func (r *Repository) findAppTemplateByName(ctx context.Context, name string) (pr
 	return provisiondomain.AppTemplate{}, false, err
 }
 
-func (r *Repository) ListCredentials(ctx context.Context, query ports.CredentialListQuery) ([]provisiondomain.SSHCredential, int, error) {
-	q := r.db.WithContext(ctx).Model(&provisiondomain.SSHCredential{}).Where("deleted_at IS NULL")
+func (r *Repository) ListCredentials(ctx context.Context, query ports.CredentialListQuery) ([]provisiondomain.Credential, int, error) {
+	q := r.db.WithContext(ctx).Model(&provisiondomain.Credential{}).Where("deleted_at IS NULL")
 	if query.Keyword != "" {
 		pattern := "%" + query.Keyword + "%"
 		q = q.Where("name LIKE ? OR username LIKE ?", pattern, pattern)
@@ -130,36 +130,39 @@ func (r *Repository) ListCredentials(ctx context.Context, query ports.Credential
 	if query.AuthType != "" {
 		q = q.Where("auth_type = ?", query.AuthType)
 	}
+	if query.Type != "" {
+		q = q.Where("type = ?", query.Type)
+	}
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	var rows []provisiondomain.SSHCredential
+	var rows []provisiondomain.Credential
 	if err := q.Order("id desc").Offset(query.Offset).Limit(query.Limit).Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
 	return rows, int(total), nil
 }
-func (r *Repository) FindCredential(ctx context.Context, id uint64) (provisiondomain.SSHCredential, bool, error) {
-	var row provisiondomain.SSHCredential
+func (r *Repository) FindCredential(ctx context.Context, id uint64) (provisiondomain.Credential, bool, error) {
+	var row provisiondomain.Credential
 	err := r.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", id).First(&row).Error
 	if err == nil {
 		return row, true, nil
 	}
 	if err == gorm.ErrRecordNotFound {
-		return provisiondomain.SSHCredential{}, false, nil
+		return provisiondomain.Credential{}, false, nil
 	}
-	return provisiondomain.SSHCredential{}, false, err
+	return provisiondomain.Credential{}, false, err
 }
-func (r *Repository) CreateCredential(ctx context.Context, credential *provisiondomain.SSHCredential) error {
+func (r *Repository) CreateCredential(ctx context.Context, credential *provisiondomain.Credential) error {
 	return r.db.WithContext(ctx).Create(credential).Error
 }
 func (r *Repository) UpdateCredential(ctx context.Context, id uint64, updates map[string]any) (bool, error) {
-	result := r.db.WithContext(ctx).Model(&provisiondomain.SSHCredential{}).Where("deleted_at IS NULL AND id = ?", id).Updates(updates)
+	result := r.db.WithContext(ctx).Model(&provisiondomain.Credential{}).Where("deleted_at IS NULL AND id = ?", id).Updates(updates)
 	return result.RowsAffected > 0, result.Error
 }
 func (r *Repository) SoftDeleteCredentials(ctx context.Context, ids []uint64, deletedAt time.Time) (int64, error) {
-	result := r.db.WithContext(ctx).Model(&provisiondomain.SSHCredential{}).Where("deleted_at IS NULL AND id IN ?", ids).Update("deleted_at", deletedAt)
+	result := r.db.WithContext(ctx).Model(&provisiondomain.Credential{}).Where("deleted_at IS NULL AND id IN ?", ids).Update("deleted_at", deletedAt)
 	return result.RowsAffected, result.Error
 }
 func (r *Repository) CountServersByCredential(ctx context.Context, credentialID uint64) (int, error) {

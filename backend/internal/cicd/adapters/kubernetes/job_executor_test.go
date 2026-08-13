@@ -40,6 +40,64 @@ func TestBuildScriptCompilesPluginsAndMarkers(t *testing.T) {
 	}
 }
 
+func TestDockerLoginPlugin(t *testing.T) {
+	script, err := BuildScript("stages:\n  - key: login\n    steps:\n      - key: registry\n        plugin: docker-login\n        image: harbor.example.com\n        credentials_secret: regcred\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, part := range []string{"docker login", "harbor.example.com"} {
+		if !strings.Contains(script, part) {
+			t.Fatalf("script missing %q: %s", part, script)
+		}
+	}
+}
+
+func TestEnvInjectPlugin(t *testing.T) {
+	script, err := BuildScript("stages:\n  - key: env\n    steps:\n      - key: inject\n        plugin: env-inject\n        env:\n          FOO: bar\n          BAZ: qux\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, part := range []string{"export FOO='bar'", "export BAZ='qux'"} {
+		if !strings.Contains(script, part) {
+			t.Fatalf("script missing %q: %s", part, script)
+		}
+	}
+}
+
+func TestWaitPlugin(t *testing.T) {
+	script, err := BuildScript("stages:\n  - key: wait\n    steps:\n      - key: rollout\n        plugin: wait\n        command: kubectl rollout status deployment/app\n        timeout: 30\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, part := range []string{"kubectl rollout status deployment/app", "seq 1 30"} {
+		if !strings.Contains(script, part) {
+			t.Fatalf("script missing %q: %s", part, script)
+		}
+	}
+}
+
+func TestWebhookPlugin(t *testing.T) {
+	script, err := BuildScript("stages:\n  - key: notify\n    steps:\n      - key: slack\n        plugin: webhook\n        url: https://hooks.slack.com/services/xxx\n        method: POST\n        body: '{\"text\":\"deploy done\"}'\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, part := range []string{"curl", "POST", "hooks.slack.com"} {
+		if !strings.Contains(script, part) {
+			t.Fatalf("script missing %q: %s", part, script)
+		}
+	}
+}
+
+func TestSleepPlugin(t *testing.T) {
+	script, err := BuildScript("stages:\n  - key: delay\n    steps:\n      - key: pause\n        plugin: sleep\n        timeout: 10\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(script, "sleep 10") {
+		t.Fatalf("script missing %q: %s", "sleep 10", script)
+	}
+}
+
 func TestBuildScriptRejectsInvalidYAML(t *testing.T) {
 	if _, err := BuildScript("stages: ["); err == nil {
 		t.Fatal("expected invalid yaml error")

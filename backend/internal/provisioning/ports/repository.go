@@ -24,9 +24,9 @@ type Repository interface {
 	SoftDeleteAppTemplate(ctx context.Context, id uint64, deletedAt time.Time) (bool, error)
 	SeedBuiltinAppTemplates(ctx context.Context, templates []provisiondomain.AppTemplate) error
 
-	ListCredentials(ctx context.Context, query CredentialListQuery) ([]provisiondomain.SSHCredential, int, error)
-	FindCredential(ctx context.Context, id uint64) (provisiondomain.SSHCredential, bool, error)
-	CreateCredential(ctx context.Context, credential *provisiondomain.SSHCredential) error
+	ListCredentials(ctx context.Context, query CredentialListQuery) ([]provisiondomain.Credential, int, error)
+	FindCredential(ctx context.Context, id uint64) (provisiondomain.Credential, bool, error)
+	CreateCredential(ctx context.Context, credential *provisiondomain.Credential) error
 	UpdateCredential(ctx context.Context, id uint64, updates map[string]any) (bool, error)
 	SoftDeleteCredentials(ctx context.Context, ids []uint64, deletedAt time.Time) (int64, error)
 	CountServersByCredential(ctx context.Context, credentialID uint64) (int, error)
@@ -74,6 +74,7 @@ type Repository interface {
 type CredentialListQuery struct {
 	Keyword  string
 	AuthType string
+	Type     string
 	Offset   int
 	Limit    int
 }

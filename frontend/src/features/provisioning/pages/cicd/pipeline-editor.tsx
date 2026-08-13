@@ -4,11 +4,16 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, Divider, Drawer, Input, message, Modal, Segmented, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import {
   ArrowLeftOutlined,
+  BgColorsOutlined,
   CheckCircleOutlined,
+  ClockCircleOutlined,
   CodeOutlined,
   DeleteOutlined,
   DeploymentUnitOutlined,
   GithubOutlined,
+  HourglassOutlined,
+  LoginOutlined,
+  NotificationOutlined,
   PlayCircleOutlined,
   PlusOutlined,
   QuestionCircleOutlined,
@@ -18,9 +23,10 @@ import {
 } from '@ant-design/icons'
 import { AppPage, YamlEditor } from '@/components'
 import { createPipeline, getPipeline, triggerPipeline, updatePipeline } from '@/features/provisioning/api/cicd'
+import { getCredentials } from '@/features/provisioning/api/deploy'
 import { listClusters } from '@/features/fleet'
 
-type PluginType = 'git' | 'bash' | 'kubectl' | 'helm' | 'docker-build'
+type PluginType = 'git' | 'bash' | 'kubectl' | 'helm' | 'docker-build' | 'docker-login' | 'env-inject' | 'wait' | 'webhook' | 'sleep'
 
 export type BuilderStep = {
   key: string
@@ -35,6 +41,12 @@ export type BuilderStep = {
   image: string
   tag: string
   context: string
+  credentialsSecret: string
+  env: string
+  url: string
+  method: string
+  body: string
+  timeout: string
 }
 
 export type BuilderStage = { key: string; name: string; steps: BuilderStep[] }
@@ -61,6 +73,11 @@ const PLUGIN_CATALOG: Array<{ type: PluginType; title: string; description: stri
   { type: 'kubectl', title: 'Kubectl', description: '执行 Kubernetes 命令', icon: <DeploymentUnitOutlined />, tone: 'cyan', category: '部署发布' },
   { type: 'helm', title: 'Helm', description: '安装或升级 Helm Release', icon: <UploadOutlined />, tone: 'green', category: '部署发布' },
   { type: 'docker-build', title: 'Docker Build', description: '构建并推送容器镜像', icon: <ThunderboltOutlined />, tone: 'orange', category: '构建工具' },
+  { type: 'docker-login', title: 'Docker Login', description: '登录镜像仓库', icon: <LoginOutlined />, tone: 'orange', category: '构建工具' },
+  { type: 'env-inject', title: 'Env Inject', description: '注入环境变量', icon: <BgColorsOutlined />, tone: 'purple', category: '环境配置' },
+  { type: 'wait', title: 'Wait', description: '等待条件满足', icon: <HourglassOutlined />, tone: 'gold', category: '部署发布' },
+  { type: 'webhook', title: 'Webhook', description: 'HTTP 通知', icon: <NotificationOutlined />, tone: 'magenta', category: '通知' },
+  { type: 'sleep', title: 'Sleep', description: '延时等待', icon: <ClockCircleOutlined />, tone: 'default', category: '环境配置' },
 ]
 
 const emptyStep = (plugin: PluginType = 'bash', index = 1): BuilderStep => ({
@@ -76,6 +93,12 @@ const emptyStep = (plugin: PluginType = 'bash', index = 1): BuilderStep => ({
   image: '',
   tag: 'latest',
   context: '.',
+  credentialsSecret: '',
+  env: '',
+  url: '',
+  method: 'GET',
+  body: '',
+  timeout: plugin === 'sleep' ? '1' : '60',
 })
 
 const createInitialStages = (): BuilderStage[] => [{ key: 'stage-1', name: '阶段 1', steps: [] }]
@@ -94,6 +117,19 @@ export function builderToYaml(stages: BuilderStage[]) {
         lines.push('        script: |', ...(step.script || '').split('\n').map((line) => `          ${line}`))
       } else if (step.plugin === 'docker-build') {
         lines.push(`        image: ${yamlScalar(step.image)}`, `        tag: ${yamlScalar(step.tag)}`, `        context: ${yamlScalar(step.context)}`)
+      } else if (step.plugin === 'docker-login') {
+        lines.push(`        image: ${yamlScalar(step.image)}`, `        credentialsSecret: ${yamlScalar(step.credentialsSecret)}`)
+      } else if (step.plugin === 'env-inject') {
+        lines.push('        env: |', ...(step.env || '').split('\n').map((line) => `          ${line}`))
+      } else if (step.plugin === 'wait') {
+        lines.push(`        command: ${yamlScalar(step.command)}`, `        timeout: ${yamlScalar(step.timeout)}`)
+      } else if (step.plugin === 'webhook') {
+        lines.push(`        url: ${yamlScalar(step.url)}`, `        method: ${yamlScalar(step.method)}`)
+        if (step.method === 'POST' || step.method === 'PUT') {
+          lines.push('        body: |', ...(step.body || '').split('\n').map((line) => `          ${line}`))
+        }
+      } else if (step.plugin === 'sleep') {
+        lines.push(`        timeout: ${yamlScalar(step.timeout)}`)
       } else {
         lines.push(`        command: ${yamlScalar(step.command)}`)
       }
@@ -161,12 +197,36 @@ export function yamlToBuilder(yaml?: string, fallbackToInitial = true): BuilderS
       step.script = scriptLines.join('\n').replace(/\n+$/, '')
       continue
     }
-    const field = line.match(/^\s{8}(name|plugin|repository|branch|path|command|run|image|tag|context):\s*(.*)$/)
+    const envMarker = line.match(/^\s{8}env:\s*\|\s*$/)
+    if (envMarker) {
+      const envLines: string[] = []
+      index += 1
+      while (index < lines.length && (/^\s{10}/.test(lines[index] || '') || !(lines[index] || '').trim())) {
+        envLines.push((lines[index] || '').replace(/^\s{10}/, ''))
+        index += 1
+      }
+      index -= 1
+      step.env = envLines.join('\n').replace(/\n+$/, '')
+      continue
+    }
+    const bodyMarker = line.match(/^\s{8}body:\s*\|\s*$/)
+    if (bodyMarker) {
+      const bodyLines: string[] = []
+      index += 1
+      while (index < lines.length && (/^\s{10}/.test(lines[index] || '') || !(lines[index] || '').trim())) {
+        bodyLines.push((lines[index] || '').replace(/^\s{10}/, ''))
+        index += 1
+      }
+      index -= 1
+      step.body = bodyLines.join('\n').replace(/\n+$/, '')
+      continue
+    }
+    const field = line.match(/^\s{8}(name|plugin|repository|branch|path|command|run|image|tag|context|url|method|timeout|credentialsSecret):\s*(.*)$/)
     if (!field) continue
     const fieldName = field[1] || ''
     const value = parseYamlScalar(field[2] || '')
     if (fieldName === 'name') currentStep.name = value
-    else if (fieldName === 'plugin') currentStep.plugin = (['git', 'bash', 'kubectl', 'helm', 'docker-build'].includes(value) ? value : 'bash') as PluginType
+    else if (fieldName === 'plugin') currentStep.plugin = (['git', 'bash', 'kubectl', 'helm', 'docker-build', 'docker-login', 'env-inject', 'wait', 'webhook', 'sleep'].includes(value) ? value : 'bash') as PluginType
     else if (fieldName === 'run') {
       currentStep.run = value
       if (currentStep.plugin === 'bash') currentStep.script = value
@@ -196,6 +256,7 @@ const PipelineEditorPage: React.FC = () => {
   const [editorView, setEditorView] = useState<'graph' | 'yaml'>('graph')
   const [saving, setSaving] = useState(false)
   const [loadingPipeline, setLoadingPipeline] = useState(Boolean(pipelineID))
+  const [credentialOptions, setCredentialOptions] = useState<{ label: string; value: string }[]>([])
   const clustersQuery = useQuery({
     queryKey: ['cicd-editor-clusters'],
     queryFn: ({ signal }) => listClusters({ page: 1, pageSize: 100 }, signal),
@@ -229,6 +290,13 @@ const PipelineEditorPage: React.FC = () => {
       setStages(parsedStages)
     }).catch((error) => message.error(error instanceof Error ? error.message : '加载流水线失败')).finally(() => setLoadingPipeline(false))
   }, [pipelineID])
+
+  useEffect(() => {
+    getCredentials().then((res) => {
+      const list = res.items || []
+      setCredentialOptions(list.map((c: any) => ({ label: c.name + ' (' + c.authType + ')', value: c.name })))
+    }).catch(() => {})
+  }, [])
 
   const selectedStep = stages[selected.stageIndex]?.steps[selected.stepIndex]
   const filteredPlugins = useMemo(() => PLUGIN_CATALOG.filter((item) => `${item.title} ${item.description} ${item.category}`.toLowerCase().includes(catalogFilter.toLowerCase())), [catalogFilter])
@@ -387,6 +455,11 @@ const PipelineEditorPage: React.FC = () => {
             {selectedStep.plugin === 'bash' && <label>脚本内容<Input.TextArea className="pipeline-editor-command-editor" value={selectedStep.script} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { script: event.target.value })} autoSize={{ minRows: 7, maxRows: 14 }} placeholder={'echo "start build"'} /></label>}
             {(selectedStep.plugin === 'kubectl' || selectedStep.plugin === 'helm') && <label>命令参数<Input.TextArea className="pipeline-editor-command-editor" value={selectedStep.command} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { command: event.target.value })} autoSize={{ minRows: 6, maxRows: 12 }} placeholder={selectedStep.plugin === 'kubectl' ? 'kubectl apply -f /workspace/src/k8s' : 'helm upgrade --install app ./chart'} /></label>}
             {selectedStep.plugin === 'docker-build' && <><label>镜像仓库<Input value={selectedStep.image} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { image: event.target.value })} placeholder="registry.example.com/app" /></label><div className="pipeline-editor-inspector__row"><label>Tag<Input value={selectedStep.tag} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { tag: event.target.value })} /></label><label>构建上下文<Input value={selectedStep.context} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { context: event.target.value })} /></label></div></>}
+            {selectedStep.plugin === 'docker-login' && <><label>镜像仓库地址<Input value={selectedStep.image} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { image: event.target.value })} placeholder="registry.example.com" /></label><label>凭据 Secret<Select showSearch optionFilterProp="label" options={credentialOptions} value={selectedStep.credentialsSecret || undefined} onChange={(credentialsSecret) => updateStep(selected.stageIndex, selected.stepIndex, { credentialsSecret })} placeholder="选择凭据" /></label></>}
+            {selectedStep.plugin === 'env-inject' && <label>环境变量<Input.TextArea className="pipeline-editor-command-editor" value={selectedStep.env} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { env: event.target.value })} autoSize={{ minRows: 6, maxRows: 12 }} placeholder={'KEY=VALUE\n每行一个'} /></label>}
+            {selectedStep.plugin === 'wait' && <><label>检查命令<Input.TextArea className="pipeline-editor-command-editor" value={selectedStep.command} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { command: event.target.value })} autoSize={{ minRows: 4, maxRows: 10 }} placeholder={'curl -s http://api/health | grep ok'} /></label><label>超时秒数<Input value={selectedStep.timeout} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { timeout: event.target.value })} placeholder="60" /></label></>}
+            {selectedStep.plugin === 'webhook' && <><label>请求 URL<Input value={selectedStep.url} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { url: event.target.value })} placeholder="https://example.com/webhook" /></label><label>HTTP 方法<Select value={selectedStep.method} onChange={(method) => updateStep(selected.stageIndex, selected.stepIndex, { method })} options={[{ label: 'GET', value: 'GET' }, { label: 'POST', value: 'POST' }, { label: 'PUT', value: 'PUT' }, { label: 'DELETE', value: 'DELETE' }]} /></label>{(selectedStep.method === 'POST' || selectedStep.method === 'PUT') && <label>请求体<Input.TextArea className="pipeline-editor-command-editor" value={selectedStep.body} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { body: event.target.value })} autoSize={{ minRows: 4, maxRows: 10 }} placeholder={'{"key":"value"}'} /></label>}</>}
+            {selectedStep.plugin === 'sleep' && <label>睡眠秒数<Input value={selectedStep.timeout} onChange={(event) => updateStep(selected.stageIndex, selected.stepIndex, { timeout: event.target.value })} placeholder="1" /></label>}
             <Divider />
           </div>}
         </Drawer>

@@ -25,11 +25,29 @@ export interface DeployServer {
   updatedAt: string
 }
 
+/** 凭据类型常量 */
+export const CREDENTIAL_TYPE_SSH = 'ssh'
+export const CREDENTIAL_TYPE_KUBECONFIG = 'kubeconfig'
+export const CREDENTIAL_TYPE_GIT = 'git'
+export const CREDENTIAL_TYPE_DOCKER_REGISTRY = 'docker-registry'
+export const CREDENTIAL_TYPE_TOKEN = 'token'
+
+export const CREDENTIAL_TYPES = [
+  CREDENTIAL_TYPE_SSH,
+  CREDENTIAL_TYPE_KUBECONFIG,
+  CREDENTIAL_TYPE_GIT,
+  CREDENTIAL_TYPE_DOCKER_REGISTRY,
+  CREDENTIAL_TYPE_TOKEN,
+] as const
+
+export type CredentialType = typeof CREDENTIAL_TYPES[number]
+
 /** SSH 凭证 */
 export interface Credential {
   id: number
   name: string
-  authType: string // password / key
+  type: string // ssh / kubeconfig / git / docker-registry / token
+  authType: string // password / key（仅 type=ssh 时有意义）
   username: string
   remark?: string
   serverCount?: number
@@ -172,8 +190,9 @@ export interface CreateServerRequest {
 /** 创建凭证请求 */
 export interface CreateCredentialRequest {
   name: string
-  authType: string
-  username: string
+  type: string // ssh / kubeconfig / git / docker-registry / token
+  authType?: string // password / key（仅 type=ssh 时使用）
+  username?: string
   credential?: string
   password?: string
   privateKey?: string

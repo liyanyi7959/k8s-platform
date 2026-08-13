@@ -30,6 +30,10 @@ type WorkflowStep struct {
 	Args              []string          `json:"args" yaml:"args"`
 	CredentialsSecret string            `json:"credentials_secret" yaml:"credentials_secret"`
 	Env               map[string]string `json:"env" yaml:"env"`
+	URL               string            `json:"url" yaml:"url"`
+	Method            string            `json:"method" yaml:"method"`
+	Body              string            `json:"body" yaml:"body"`
+	Timeout           int               `json:"timeout" yaml:"timeout"`
 }
 
 func ParseWorkflow(raw string) (Workflow, error) {

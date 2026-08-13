@@ -138,7 +138,7 @@ func (r *Runtime) maskedInventory(ctx context.Context, nodes []model.DeployPlanN
 			return "", err
 		}
 		if server.CredentialID != nil && *server.CredentialID > 0 {
-			var credential model.SSHCredential
+			var credential model.Credential
 			if err := r.db.WithContext(ctx).Where("deleted_at IS NULL AND id = ?", *server.CredentialID).First(&credential).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return "", provisionapp.ErrWithMessage(provisionapp.ErrNotFound, "部署节点关联的 SSH 凭据不存在")

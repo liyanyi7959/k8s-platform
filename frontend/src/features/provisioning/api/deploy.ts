@@ -74,11 +74,16 @@ function mapServer(raw: any): DeployServer {
 
 /** 凭证映射 */
 function mapCredential(raw: any): Credential {
-  const data = camelizeKeys(raw) as Credential & { type?: string }
-  const authType = normalizeDeployAuthType((data as any).authType || (data as any).type)
+  const data = camelizeKeys(raw) as Credential
+  const credType = data.type || 'ssh'
+  // 仅在 type=ssh 时规范化 authType
+  const authType = credType === 'ssh'
+    ? (normalizeDeployAuthType(data.authType) || 'password')
+    : (data.authType || '')
   return {
     ...data,
-    authType: authType || 'password',
+    type: credType,
+    authType,
   }
 }
 
@@ -212,12 +217,25 @@ export function getCredentials(params?: {
 }
 
 export function createCredential(data: CreateCredentialRequest): Promise<Credential> {
-  const authType = normalizeDeployAuthType(data.authType)
-  const credential = authType === 'key' ? (data.privateKey || data.credential || '') : (data.password || data.credential || '')
+  const credType = data.type || 'ssh'
+  let authType: string | undefined
+  let credential = ''
+
+  if (credType === 'ssh') {
+    authType = normalizeDeployAuthType(data.authType)
+    credential = authType === 'key'
+      ? (data.privateKey || data.credential || '')
+      : (data.password || data.credential || '')
+  } else {
+    // 非SSH类型，credential 直接取 password/privateKey/credential
+    credential = data.password || data.privateKey || data.credential || ''
+  }
+
   return request('/api/v2/provisioning/credentials', {
     method: 'POST',
     data: {
       name: data.name,
+      type: credType,
       auth_type: authType,
       username: data.username,
       credential,
@@ -227,16 +245,25 @@ export function createCredential(data: CreateCredentialRequest): Promise<Credent
 }
 
 export function updateCredential(id: number, data: Partial<CreateCredentialRequest>): Promise<void> {
-  const authType = data.authType ? normalizeDeployAuthType(data.authType) : undefined
-  const credential = authType === 'key'
-    ? (data.privateKey || data.credential || '')
-    : authType === 'password'
-      ? (data.password || data.credential || '')
-      : undefined
+  const credType = data.type || 'ssh'
+  let authType: string | undefined
+  let credential: string | undefined
+
+  if (credType === 'ssh') {
+    authType = data.authType ? normalizeDeployAuthType(data.authType) : undefined
+    if (authType === 'key') {
+      credential = data.privateKey || data.credential || undefined
+    } else if (authType === 'password') {
+      credential = data.password || data.credential || undefined
+    }
+  } else {
+    credential = data.password || data.privateKey || data.credential || undefined
+  }
   return request(`/api/v2/provisioning/credentials/${id}`, {
     method: 'PATCH',
     data: {
       name: data.name,
+      type: data.type,
       auth_type: authType,
       username: data.username,
       credential,

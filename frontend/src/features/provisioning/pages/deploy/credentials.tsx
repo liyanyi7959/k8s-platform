@@ -4,7 +4,7 @@
  */
 import { useState } from 'react'
 import {
-  Card, Table, Button, Space, Tag, Modal, Form, Input, Radio, Popconfirm,
+  Card, Table, Button, Space, Tag, Modal, Form, Input, Radio, Select, Popconfirm,
   message, Typography, Tooltip,
 } from 'antd'
 import {
@@ -28,7 +28,8 @@ export default function CredentialsPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
   const [form] = Form.useForm()
 
-  const credType = Form.useWatch('authType', form) || 'key'
+  const credType = Form.useWatch('type', form) || 'ssh'
+  const sshAuthType = Form.useWatch('authType', form) || 'key'
 
   const { data, isLoading } = useQuery({
     queryKey: ['deploy-credentials'],
@@ -87,6 +88,7 @@ export default function CredentialsPage() {
     setEditing(record)
     form.setFieldsValue({
       name: record.name,
+      type: record.type || 'ssh',
       authType: record.authType,
       username: record.username,
       remark: record.remark,
@@ -120,11 +122,29 @@ export default function CredentialsPage() {
       width: 120,
       align: 'center',
       render: (type: string) => {
+        const map: Record<string, { color: string; text: string }> = {
+          ssh: { color: 'blue', text: 'SSH' },
+          kubeconfig: { color: 'purple', text: 'Kubeconfig' },
+          git: { color: 'green', text: 'Git' },
+          'docker-registry': { color: 'orange', text: 'Docker Registry' },
+          token: { color: 'default', text: 'Token' },
+        }
+        const item = map[type] || { color: 'default', text: type }
+        return <Tag color={item.color}>{item.text}</Tag>
+      },
+    },
+    {
+      title: '认证方式',
+      dataIndex: 'authType',
+      width: 100,
+      align: 'center',
+      render: (authType: string, record: Credential) => {
+        if (record.type !== 'ssh') return <Text type="secondary">-</Text>
         const map: Record<string, { color: string; text: string; icon: React.ReactNode }> = {
           key: { color: 'blue', text: '密钥', icon: <KeyOutlined /> },
           password: { color: 'orange', text: '密码', icon: <LockOutlined /> },
         }
-        const item = map[type] || { color: 'default', text: type, icon: null }
+        const item = map[authType] || { color: 'default', text: authType, icon: null }
         return <Tag color={item.color} icon={item.icon}>{item.text}</Tag>
       },
     },
@@ -172,7 +192,7 @@ export default function CredentialsPage() {
       <Card
         title={
           <Space>
-            <Text type="secondary">已管理 {data?.items?.length || 0} 份 SSH 凭证</Text>
+            <Text type="secondary">已管理 {data?.items?.length || 0} 份凭据</Text>
             {selectedRowKeys.length > 0 && (
               <Text type="secondary" style={{ fontWeight: 'normal', fontSize: 13 }}>
                 已选 {selectedRowKeys.length} 项
@@ -222,48 +242,119 @@ export default function CredentialsPage() {
         destroyOnClose
         width={520}
       >
-        <Form form={form} layout="vertical" initialValues={{ authType: 'key' }}>
+        <Form form={form} layout="vertical" initialValues={{ type: 'ssh', authType: 'key' }}>
           <Form.Item name="name" label="凭证名称" rules={[{ required: true, message: '请输入凭证名称' }]}>
             <Input placeholder="例如：生产环境 root 密钥" />
           </Form.Item>
 
-          <Form.Item name="authType" label="认证方式" rules={[{ required: true }]}> 
-            <Radio.Group>
-              <Radio.Button value="key"><KeyOutlined /> SSH 密钥</Radio.Button>
-              <Radio.Button value="password"><LockOutlined /> 密码</Radio.Button>
-            </Radio.Group>
+          <Form.Item name="type" label="凭据类型" rules={[{ required: true }]}>
+            <Select
+              disabled={!!editing}
+              options={[
+                { value: 'ssh', label: 'SSH 密钥/密码' },
+                { value: 'kubeconfig', label: 'Kubeconfig' },
+                { value: 'git', label: 'Git 凭据' },
+                { value: 'docker-registry', label: 'Docker Registry' },
+                { value: 'token', label: 'API Token' },
+              ]}
+            />
           </Form.Item>
 
-          <Form.Item name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>
-            <Input placeholder="root" />
-          </Form.Item>
-
-          {credType === 'key' && (
+          {credType === 'ssh' && (
             <>
-              <Form.Item
-                name="privateKey"
-                label="私钥内容"
-                rules={[{ required: !editing, message: '请输入私钥' }]}
-              >
-                <TextArea
-                  rows={6}
-                  placeholder="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
-                  style={{ fontFamily: 'monospace', fontSize: 12 }}
-                />
+              <Form.Item name="authType" label="认证方式" rules={[{ required: true }]}>
+                <Radio.Group>
+                  <Radio.Button value="key"><KeyOutlined /> SSH 密钥</Radio.Button>
+                  <Radio.Button value="password"><LockOutlined /> 密码</Radio.Button>
+                </Radio.Group>
               </Form.Item>
-              <Form.Item name="passphrase" label="密钥密码（可选）">
-                <Input.Password disabled placeholder="当前后端不单独存储 passphrase，如有需要请直接使用未加密或预处理后的私钥" />
+
+              <Form.Item name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>
+                <Input placeholder="root" />
+              </Form.Item>
+
+              {sshAuthType === 'key' && (
+                <>
+                  <Form.Item
+                    name="privateKey"
+                    label="私钥内容"
+                    rules={[{ required: !editing, message: '请输入私钥' }]}
+                  >
+                    <TextArea
+                      rows={6}
+                      placeholder="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+                      style={{ fontFamily: 'monospace', fontSize: 12 }}
+                    />
+                  </Form.Item>
+                  <Form.Item name="passphrase" label="密钥密码（可选）">
+                    <Input.Password disabled placeholder="当前后端不单独存储 passphrase，如有需要请直接使用未加密或预处理后的私钥" />
+                  </Form.Item>
+                </>
+              )}
+
+              {sshAuthType === 'password' && (
+                <Form.Item
+                  name="password"
+                  label="登录密码"
+                  rules={[{ required: !editing, message: '请输入密码' }]}
+                >
+                  <Input.Password placeholder="SSH 登录密码" />
+                </Form.Item>
+              )}
+            </>
+          )}
+
+          {credType === 'kubeconfig' && (
+            <Form.Item
+              name="privateKey"
+              label="Kubeconfig 内容"
+              rules={[{ required: !editing, message: '请输入 kubeconfig 内容' }]}
+            >
+              <TextArea
+                rows={8}
+                placeholder={'apiVersion: v1\nkind: Config\nclusters:\n- name: ...\n  cluster:\n    server: ...\n    certificate-authority-data: ...\ncontexts:\n...'}
+                style={{ fontFamily: 'monospace', fontSize: 12 }}
+              />
+            </Form.Item>
+          )}
+
+          {credType === 'git' && (
+            <>
+              <Form.Item name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>
+                <Input placeholder="git 用户名" />
+              </Form.Item>
+              <Form.Item
+                name="password"
+                label="密码 / Token"
+                rules={[{ required: !editing, message: '请输入密码或 Token' }]}
+              >
+                <Input.Password placeholder="Git 密码或 Personal Access Token" />
               </Form.Item>
             </>
           )}
 
-          {credType === 'password' && (
+          {credType === 'docker-registry' && (
+            <>
+              <Form.Item name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>
+                <Input placeholder="镜像仓库用户名" />
+              </Form.Item>
+              <Form.Item
+                name="password"
+                label="密码"
+                rules={[{ required: !editing, message: '请输入密码' }]}
+              >
+                <Input.Password placeholder="镜像仓库密码" />
+              </Form.Item>
+            </>
+          )}
+
+          {credType === 'token' && (
             <Form.Item
               name="password"
-              label="登录密码"
-              rules={[{ required: !editing, message: '请输入密码' }]}
+              label="Token 值"
+              rules={[{ required: !editing, message: '请输入 Token' }]}
             >
-              <Input.Password placeholder="SSH 登录密码" />
+              <Input.Password placeholder="API Token" />
             </Form.Item>
           )}
 
@@ -275,7 +366,7 @@ export default function CredentialsPage() {
             <AppAlert
               type="info"
               showIcon
-              message="编辑模式下，敏感字段（密码/私钥）留空则保持不变。"
+              message="编辑模式下，敏感字段留空则保持不变。"
               style={{ marginBottom: 16 }}
             />
           )}

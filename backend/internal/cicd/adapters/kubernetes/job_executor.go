@@ -123,6 +123,62 @@ func pluginCommand(step cicdapp.WorkflowStep) (string, error) {
 			ctx = "."
 		}
 		return "docker build -t " + shellQuote(image+":"+tag) + " " + shellQuote(ctx) + " && docker push " + shellQuote(image+":"+tag), nil
+	case "docker-login":
+		registry := step.Image
+		if registry == "" {
+			return "", fmt.Errorf("docker-login step %q requires image (registry URL)", step.Name)
+		}
+		if step.CredentialsSecret == "" {
+			return "", fmt.Errorf("docker-login step %q requires credentials_secret", step.Name)
+		}
+		return "echo \"$REGISTRY_PASSWORD\" | docker login -u \"$REGISTRY_USERNAME\" --password-stdin " + shellQuote(registry), nil
+	case "env-inject":
+		// env-inject: export env vars for subsequent steps in the same Job container
+		if len(step.Env) == 0 {
+			return "true # env-inject: no env vars defined", nil
+		}
+		var lines []string
+		for key, value := range step.Env {
+			if strings.TrimSpace(key) != "" {
+				lines = append(lines, "export "+key+"="+shellQuote(value))
+			}
+		}
+		if len(lines) == 0 {
+			return "true # env-inject: no valid env vars", nil
+		}
+		return strings.Join(lines, "\n"), nil
+	case "wait":
+		// wait: poll a command until it succeeds or timeout
+		checkCmd := step.Command
+		if checkCmd == "" {
+			return "", fmt.Errorf("wait step %q requires command", step.Name)
+		}
+		timeout := step.Timeout
+		if timeout <= 0 {
+			timeout = 60
+		}
+		return fmt.Sprintf("for i in $(seq 1 %d); do if %s; then exit 0; fi; sleep 1; done; echo 'timeout after %ds'; exit 1", timeout, checkCmd, timeout), nil
+	case "webhook":
+		// webhook: send HTTP request (GET/POST) to a URL
+		url := step.URL
+		if url == "" {
+			return "", fmt.Errorf("webhook step %q requires url", step.Name)
+		}
+		method := strings.ToUpper(strings.TrimSpace(step.Method))
+		if method == "" {
+			method = "GET"
+		}
+		cmd := "curl -sS -X " + method + " " + shellQuote(url)
+		if step.Body != "" {
+			cmd += " -H 'Content-Type: application/json' -d " + shellQuote(step.Body)
+		}
+		return cmd, nil
+	case "sleep":
+		seconds := step.Timeout
+		if seconds <= 0 {
+			seconds = 1
+		}
+		return fmt.Sprintf("sleep %d", seconds), nil
 	default:
 		return "", fmt.Errorf("unsupported pipeline plugin %q", step.Plugin)
 	}

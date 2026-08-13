@@ -56,9 +56,10 @@ type DeployServer struct {
 
 func (DeployServer) TableName() string { return "deploy_servers" }
 
-type SSHCredential struct {
+type Credential struct {
 	ID            uint64     `gorm:"column:id;primaryKey;autoIncrement"`
 	Name          string     `gorm:"column:name"`
+	Type          string     `gorm:"column:type"`
 	AuthType      string     `gorm:"column:auth_type"`
 	Username      string     `gorm:"column:username"`
 	CredentialEnc string     `gorm:"column:credential_enc"`
@@ -68,7 +69,7 @@ type SSHCredential struct {
 	DeletedAt     *time.Time `gorm:"column:deleted_at"`
 }
 
-func (SSHCredential) TableName() string { return "ssh_credentials" }
+func (Credential) TableName() string { return "credentials" }
 
 // DeployPlan owns the desired cluster-installation configuration and its
 // execution state. Transport and Ansible execution remain adapter concerns.

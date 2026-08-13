@@ -30,7 +30,7 @@ func (cc *CredentialController) List(c *gin.Context) {
 }
 
 func (cc *CredentialController) Create(c *gin.Context) {
-	var req provisionapp.CreateSSHCredentialRequest
+	var req provisionapp.CreateCredentialRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "参数错误")
 		return
@@ -61,7 +61,7 @@ func (cc *CredentialController) Update(c *gin.Context) {
 	if !ok {
 		return
 	}
-	var req provisionapp.UpdateSSHCredentialRequest
+	var req provisionapp.UpdateCredentialRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		resp.Fail(c, 4000, "参数错误")
 		return
