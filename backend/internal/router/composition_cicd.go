@@ -7,6 +7,9 @@ import (
 )
 
 func buildCICDModule(d Deps, runtime moduleRuntime) cicdModule {
-	executor := cicdkube.NewJobExecutor(runtime.k8s)
-	return cicdModule{controller: cicdhttp.NewController(cicdapp.NewService(d.DB, executor))}
+	executor := cicdkube.NewJobExecutor(runtime.k8s, d.DB)
+	return cicdModule{
+		controller: cicdhttp.NewController(cicdapp.NewService(d.DB, executor)),
+		logStream:  cicdhttp.NewCICDLogStreamController(executor),
+	}
 }

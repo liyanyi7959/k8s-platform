@@ -17,7 +17,10 @@ import (
 	typedcore "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	cicdapp "k8s-platform-backend/internal/cicd/application"
+	cicddomain "k8s-platform-backend/internal/cicd/domain"
 	kopsclient "k8s-platform-backend/internal/kops/adapters/kubernetes"
+
+	"gorm.io/gorm"
 )
 
 type kubeClient interface {
@@ -38,17 +41,18 @@ func (p serviceProvider) TypedClient(ctx context.Context, clusterID uint64) (kub
 
 type JobExecutor struct {
 	clients      clientProvider
+	db           *gorm.DB
 	pollInterval time.Duration
 }
 
-func NewJobExecutor(service *kopsclient.K8sService) *JobExecutor {
-	return &JobExecutor{clients: serviceProvider{service: service}, pollInterval: 2 * time.Second}
+func NewJobExecutor(service *kopsclient.K8sService, db *gorm.DB) *JobExecutor {
+	return &JobExecutor{clients: serviceProvider{service: service}, db: db, pollInterval: 2 * time.Second}
 }
-func NewJobExecutorWithProvider(provider clientProvider, pollInterval time.Duration) *JobExecutor {
+func NewJobExecutorWithProvider(provider clientProvider, db *gorm.DB, pollInterval time.Duration) *JobExecutor {
 	if pollInterval <= 0 {
 		pollInterval = 2 * time.Second
 	}
-	return &JobExecutor{clients: provider, pollInterval: pollInterval}
+	return &JobExecutor{clients: provider, db: db, pollInterval: pollInterval}
 }
 
 func BuildScript(configYAML string) (string, error) {
@@ -317,6 +321,37 @@ func (e *JobExecutor) Cancel(ctx context.Context, ref cicdapp.JobRef) error {
 	}
 	return client.BatchV1().Jobs(ref.Namespace).Delete(ctx, ref.Name, metav1.DeleteOptions{PropagationPolicy: ptr(metav1.DeletePropagationBackground)})
 }
+
+// StreamRunLogs returns a log stream for the pod of the given CICD run.
+func (e *JobExecutor) StreamRunLogs(ctx context.Context, runID uint64, follow bool) (io.ReadCloser, error) {
+	if e == nil || e.clients == nil || e.db == nil {
+		return nil, errors.New("job executor not initialized")
+	}
+	var run cicddomain.Run
+	if err := e.db.WithContext(ctx).Where("id = ?", runID).First(&run).Error; err != nil {
+		return nil, fmt.Errorf("run not found: %w", err)
+	}
+	if run.ExecutorClusterID == nil || run.ExecutorJobName == "" || run.ExecutorNamespace == "" {
+		return nil, fmt.Errorf("run %d has no executor info", runID)
+	}
+	client, err := e.clients.TypedClient(ctx, *run.ExecutorClusterID)
+	if err != nil {
+		return nil, err
+	}
+	pods, err := client.CoreV1().Pods(run.ExecutorNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.Set{"job-name": run.ExecutorJobName}.AsSelector().String()})
+	if err != nil {
+		return nil, err
+	}
+	if len(pods.Items) == 0 {
+		return nil, fmt.Errorf("pod not found for job %s", run.ExecutorJobName)
+	}
+	opts := &corev1.PodLogOptions{Container: "runner"}
+	if follow {
+		opts.Follow = true
+	}
+	return client.CoreV1().Pods(run.ExecutorNamespace).GetLogs(pods.Items[0].Name, opts).Stream(ctx)
+}
+
 func (e *JobExecutor) readPodLog(ctx context.Context, client kubeClient, namespace, jobName string) string {
 	pods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.Set{"job-name": jobName}.AsSelector().String()})
 	if err != nil || len(pods.Items) == 0 {

@@ -106,7 +106,7 @@ func TestBuildScriptRejectsInvalidYAML(t *testing.T) {
 
 func TestSubmitCreatesLabeledJob(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	executor := NewJobExecutorWithProvider(fakeProvider{client: client}, 1)
+	executor := NewJobExecutorWithProvider(fakeProvider{client: client}, nil, 1)
 	ref, err := executor.Submit(context.Background(), cicdapp.JobRequest{RunID: 12, PipelineID: 3, PipelineName: "frontend-ci", ClusterID: 7, Namespace: "cicd", RunnerImage: "alpine:3.20", ConfigYAML: "stages: []"})
 	if err != nil {
 		t.Fatal(err)
@@ -122,7 +122,7 @@ func TestSubmitCreatesLabeledJob(t *testing.T) {
 
 func TestCancelDeletesJob(t *testing.T) {
 	client := fake.NewSimpleClientset(&batchv1.Job{ObjectMeta: metav1.ObjectMeta{Name: "cicd-job", Namespace: "cicd"}})
-	executor := NewJobExecutorWithProvider(fakeProvider{client: client}, 1)
+	executor := NewJobExecutorWithProvider(fakeProvider{client: client}, nil, 1)
 	if err := executor.Cancel(context.Background(), cicdapp.JobRef{Name: "cicd-job", Namespace: "cicd", ClusterID: 1}); err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestCancelDeletesJob(t *testing.T) {
 
 func TestWaitReturnsWhenJobCompletes(t *testing.T) {
 	client := fake.NewSimpleClientset(&batchv1.Job{ObjectMeta: metav1.ObjectMeta{Name: "cicd-job", Namespace: "cicd"}, Status: batchv1.JobStatus{Conditions: []batchv1.JobCondition{{Type: batchv1.JobComplete, Status: "True"}}}})
-	executor := NewJobExecutorWithProvider(fakeProvider{client: client}, 1)
+	executor := NewJobExecutorWithProvider(fakeProvider{client: client}, nil, 1)
 	seen := ""
 	err := executor.Wait(context.Background(), cicdapp.JobRef{Name: "cicd-job", Namespace: "cicd", ClusterID: 1}, func(progress cicdapp.JobProgress) { seen = progress.Status })
 	if err != nil || seen != "success" {

@@ -5,6 +5,7 @@ import (
 
 	aihttp "k8s-platform-backend/internal/ai/adapters/http"
 	audithttp "k8s-platform-backend/internal/audit/adapters/http"
+	cicdhttp "k8s-platform-backend/internal/cicd/adapters/http"
 	iamhttp "k8s-platform-backend/internal/iam/adapters/http"
 	kopshttp "k8s-platform-backend/internal/kops/adapters/http"
 	"k8s-platform-backend/internal/middleware"
@@ -12,8 +13,8 @@ import (
 	provisionhttp "k8s-platform-backend/internal/provisioning/adapters/http"
 )
 
-func registerWebSocketRoutes(r *gin.Engine, d Deps, podLog *kopshttp.PodLogStreamController, podExec *kopshttp.PodExecStreamController, terminal *provisionhttp.ServerAccessController) {
-	if podLog == nil && podExec == nil && terminal == nil {
+func registerWebSocketRoutes(r *gin.Engine, d Deps, podLog *kopshttp.PodLogStreamController, podExec *kopshttp.PodExecStreamController, terminal *provisionhttp.ServerAccessController, cicdLog *cicdhttp.CICDLogStreamController) {
+	if podLog == nil && podExec == nil && terminal == nil && cicdLog == nil {
 		return
 	}
 	streams := r.Group("/streams/v2")
@@ -29,6 +30,9 @@ func registerWebSocketRoutes(r *gin.Engine, d Deps, podLog *kopshttp.PodLogStrea
 	}
 	if terminal != nil {
 		streams.GET("/server-terminal/:ticket_id", terminal.TerminalWS)
+	}
+	if cicdLog != nil {
+		streams.GET("/cicd-run-logs/:run_id", cicdLog.Stream)
 	}
 }
 

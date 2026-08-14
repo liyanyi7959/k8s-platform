@@ -99,7 +99,7 @@ func registerRoutes(
 	registerDashboardRoutes(authed, d, modules.fleet.dashboard)
 	registerPermissionAuditRoutes(authed, modules.kops.permissionAudit, modules.kops.rbac)
 	registerK8sRoutes(authed, d, modules.kops.manifests, modules.kops.namespaces, modules.kops.metrics, modules.kops.connectivity, modules.kops.nodes, modules.kops.platform, modules.kops.relationships, modules.kops.batch, modules.kops.network, modules.kops.configuration, modules.kops.storage, modules.kops.helm, modules.kops.workloads, modules.kops.pods, modules.kops.inspection, modules.kops.creator)
-	registerWebSocketRoutes(r, d, modules.kops.podLogStream, modules.kops.podExecStream, modules.provisioning.serverAccess)
+	registerWebSocketRoutes(r, d, modules.kops.podLogStream, modules.kops.podExecStream, modules.provisioning.serverAccess, modules.cicd.logStream)
 	registerAuditRoutes(authed, modules.audit.controller)
 	registerUserRoutes(authed, modules.iam.users)
 	registerSystemRoutes(authed, modules.platform.settings)

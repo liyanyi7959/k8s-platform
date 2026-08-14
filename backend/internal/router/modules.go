@@ -31,7 +31,10 @@ type applicationModules struct {
 	incident     incidentModule
 }
 
-type cicdModule struct{ controller *cicdhttp.Controller }
+type cicdModule struct {
+	controller *cicdhttp.Controller
+	logStream  *cicdhttp.CICDLogStreamController
+}
 
 type auditModule struct {
 	service    *auditapp.Service

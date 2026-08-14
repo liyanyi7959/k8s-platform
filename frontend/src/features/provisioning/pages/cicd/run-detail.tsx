@@ -1,7 +1,7 @@
 /**
  * 执行详情 - 展示执行概览、阶段时间线与实时日志
  */
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { history } from '@umijs/max'
 import { Button, Card, Descriptions, message, Modal, Space, Spin, Steps, Tag, Tooltip, Typography } from 'antd'
 import {
@@ -42,6 +42,14 @@ const STATUS_META: Record<string, { color: string; text: string }> = {
   cancelled: { color: 'warning', text: '已取消' },
 }
 
+/** 实时日志 WebSocket 连接状态标签 */
+const WS_TAG_META: Record<string, { color: string; text: string }> = {
+  connecting: { color: 'processing', text: '连接中' },
+  connected: { color: 'success', text: '实时' },
+  disconnected: { color: 'default', text: '已断开' },
+  finished: { color: 'blue', text: '已完成' },
+}
+
 /** 计算时长：< 60s 显示 "x.xs"，否则 "x.xm" */
 const calcDuration = (start?: string, end?: string): string => {
   if (!start || !end) return '-'
@@ -70,6 +78,65 @@ const RunDetailPage: React.FC = () => {
   }, [runID])
 
   useEffect(() => { fetchRun() }, [fetchRun])
+
+  // ── 实时日志 WebSocket ──
+  const [liveLogs, setLiveLogs] = useState('')
+  const [wsStatus, setWsStatus] = useState<'idle' | 'connecting' | 'connected' | 'disconnected' | 'finished'>('idle')
+  const logContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // 仅在执行中时建立实时日志连接
+    if (!runID || runData?.status !== 'running') {
+      setWsStatus('idle')
+      return
+    }
+    setWsStatus('connecting')
+    setLiveLogs('')
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const token = localStorage.getItem('token') || ''
+    const wsUrl = protocol + '//' + window.location.host + '/streams/v2/cicd-run-logs/' + runID + '?token=' + encodeURIComponent(token)
+
+    const ws = new WebSocket(wsUrl)
+    let streamEnded = false
+
+    ws.onopen = () => setWsStatus('connected')
+
+    ws.onmessage = (event) => {
+      try {
+        const frame = JSON.parse(event.data) as { type?: string; data?: string; message?: string }
+        if (frame.type === 'chunk' && frame.data) {
+          setLiveLogs((prev) => prev + frame.data)
+        } else if (frame.type === 'eof') {
+          streamEnded = true
+          setWsStatus('finished')
+        } else if (frame.type === 'error') {
+          message.error(frame.message || '日志流读取失败')
+        }
+      } catch {
+        // 忽略非 JSON 帧
+      }
+    }
+
+    ws.onerror = () => setWsStatus('disconnected')
+
+    ws.onclose = () => {
+      if (!streamEnded) setWsStatus('disconnected')
+    }
+
+    return () => {
+      streamEnded = true
+      if (ws.readyState !== WebSocket.CLOSED) {
+        ws.close(1000, 'run detail unmount')
+      }
+    }
+  }, [runID, runData?.status])
+
+  // 日志内容变化时自动滚动到底部
+  useEffect(() => {
+    const el = logContainerRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [liveLogs, activeStage])
 
   const handleCancel = () => {
     Modal.confirm({
@@ -146,6 +213,11 @@ const RunDetailPage: React.FC = () => {
   const currentStage: StageRun = stages[activeStage] ?? stages[0] ?? { key: '', name: '暂无阶段', status: 'pending', duration: '-', logs: '' }
   const runStatus = STATUS_META[run.status] ?? { color: 'default', text: run.status }
 
+  // WebSocket 活跃（已连接或已结束）且当前阶段执行中时优先显示实时日志
+  const showLive = (wsStatus === 'connected' || wsStatus === 'finished') && currentStage.status === 'running'
+  const displayLogs = showLive ? liveLogs : currentStage.logs
+  const wsTag = currentStage.status === 'running' ? WS_TAG_META[wsStatus] : null
+
   return (
     <AppPage keepHeaderTitle title={'执行 #' + run.id}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -213,13 +285,20 @@ const RunDetailPage: React.FC = () => {
           {/* 右侧日志 */}
           <Card
             title={currentStage.name + ' - 日志'}
-            extra={<Text type="secondary" style={{ fontSize: 13 }}>{currentStage.duration}</Text>}
+            extra={
+              <Space>
+                {wsTag ? <Tag color={wsTag.color}>{wsTag.text}</Tag> : null}
+                <Text type="secondary" style={{ fontSize: 13 }}>{currentStage.duration}</Text>
+              </Space>
+            }
             style={{ flex: 1, minWidth: 0 }}
           >
-            <TerminalCodeBlock
-              title={run.pipeline + '/' + currentStage.key + '.log'}
-              content={currentStage.logs}
-            />
+            <div ref={logContainerRef} style={{ maxHeight: 520, overflowY: 'auto' }}>
+              <TerminalCodeBlock
+                title={run.pipeline + '/' + currentStage.key + '.log'}
+                content={displayLogs}
+              />
+            </div>
           </Card>
         </div>
       </div>
