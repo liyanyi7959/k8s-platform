@@ -82,11 +82,18 @@ const AppPage: React.FC<AppPageProps> = ({
     ? false
     : breadcrumbRender ?? (mergedBreadcrumb ? ((_, defaultDom) => defaultDom) : false)
 
+  // Most pages provide their own workspace heading.  Keeping a title-only
+  // PageHeader here would still reserve its header height even though the
+  // global layout intentionally hides the title, making those pages start
+  // lower than pages without a title.  Retain the header only when it also
+  // carries a breadcrumb (where the reserved row is meaningful).
+  const pageTitle = mergedBreadcrumb && mergedBreadcrumbRender !== false && keepHeaderTitle ? title : false
+
   return (
     <PageContainer
       {...rest}
       className={['app-page-container', className].filter(Boolean).join(' ')}
-      title={keepHeaderTitle ? title : false}
+      title={pageTitle}
       header={mergedHeader}
       breadcrumb={mergedBreadcrumb}
       breadcrumbRender={mergedBreadcrumbRender}
